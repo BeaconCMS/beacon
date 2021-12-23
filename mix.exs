@@ -23,6 +23,7 @@ defmodule Beacon.MixProject do
   defp deps do
     [
       {:ecto_sql, "~> 3.6"},
+      {:gettext, "~> 0.18"},
       {:phoenix_pubsub, "2.0.0"},
       {:phoenix_live_view, "~> 0.17.5"},
       {:postgrex, ">= 0.0.0"}

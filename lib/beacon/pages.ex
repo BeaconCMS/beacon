@@ -58,6 +58,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
+        Beacon.Loader.DBLoader.load_from_db()
         page
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -95,7 +96,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.update(page_changeset),
            {:ok, _} <- create_version_for_page(page) do
-        Beacon.PubSub.broadcast_page_update(page.site, page.path)
+        Beacon.Loader.DBLoader.load_from_db()
         page
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -122,7 +123,14 @@ defmodule Beacon.Pages do
 
   """
   def delete_page(%Page{} = page) do
-    Repo.delete(page)
+    case Repo.delete(page) do
+      {:ok, _} ->
+        Beacon.Loader.DBLoader.load_from_db()
+        {:ok, page}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """

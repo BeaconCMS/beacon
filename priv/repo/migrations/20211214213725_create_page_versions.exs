@@ -6,7 +6,7 @@ defmodule Beacon.Repo.Migrations.CreatePageVersions do
       add :id, :binary_id, primary_key: true
       add :version, :integer
       add :template, :text
-      add :page_id, references(:pages, on_delete: :nothing, type: :binary_id)
+      add :page_id, references(:pages, on_delete: :delete_all, type: :binary_id)
 
       timestamps()
     end

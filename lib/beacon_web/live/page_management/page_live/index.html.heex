@@ -1,0 +1,42 @@
+<h1>Listing Pages</h1>
+
+<button phx-click="reload_pages">Reload Modules</button>
+<%= if not is_nil(@last_reload_time) do %>
+Last reload time: <%= @last_reload_time %>ms
+<% end %>
+<%= if @live_action in [:new, :edit] do %>
+  <%= live_modal BeaconWeb.PageManagement.PageLive.FormComponent,
+    id: @page.id || :new,
+    title: @page_title,
+    action: @live_action,
+    page: @page,
+    return_to: "/page_management/pages" %>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Site</th>
+      <th>Path</th>
+      <th>Template</th>
+
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="pages">
+    <%= for page <- @pages do %>
+      <tr id={"page-#{page.id}"}>
+        <td><%= page.site %></td>
+        <td><%= page.path %></td>
+        <td><%= page.template %></td>
+
+        <td>
+          <span><%= live_patch "Edit", to: "page_editor/#{page.id}" %></span>
+          <span><%= link "Delete", to: "#", phx_click: "delete", phx_value_id: page.id, data: [confirm: "Are you sure?"] %></span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<span><%= live_patch "New Page", to: "pages/new" %></span>

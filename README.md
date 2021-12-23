@@ -30,6 +30,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       @behaviour Beacon.DataSource.Behaviour
 
       def live_data("my_site", "home", _params), do: %{vals: ["first", "second", "third"]}
+      def live_data(_, _, _), do: %{}
     end
     ```
 1. Add that DataSource to your config.exs:
@@ -107,3 +108,20 @@ Steps to build a Phoenix umbrella project that uses Beacon:
 1. `cd apps/my_app && mix ecto.reset && cd ../..`
 1. `mix phx.server`
 1. visit http://localhost:4000/page/home
+
+To enable Page management:
+
+1. Add the following to the top of your Router:
+    ```elixir
+    require BeaconWeb.PageManagement
+    ```
+1. Add the following scope to your Router:
+    ```elixir
+      scope "/page_management", BeaconWeb.PageManagement do
+        pipe_through :browser
+
+        BeaconWeb.PageManagement.routes()
+      end
+    ```
+1. visit http://localhost:4000/page_management/pages
+1. Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
