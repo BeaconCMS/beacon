@@ -66,7 +66,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
         site: "my_site",
         title: "Sample Home Page",
         meta_tags: %{"foo" => "bar"},
-        stylesheets: [],
+        stylesheet_urls: [],
         body: """
         <header>
           Header

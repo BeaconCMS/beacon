@@ -8,7 +8,7 @@ defmodule Beacon.Repo.Migrations.CreateLayouts do
       add :title, :text
       add :body, :text
       add :meta_tags, :map
-      add :stylesheets, {:array, :text}
+      add :stylesheet_urls, {:array, :text}
 
       timestamps()
     end

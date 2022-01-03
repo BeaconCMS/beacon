@@ -89,7 +89,7 @@ defmodule BeaconWeb.LayoutView do
   end
 
   defp compiled_stylesheet_tags(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{stylesheets: compiled_stylesheet_tags} = compiled_layout_assigns(site, layout_id)
+    %{stylesheet_urls: compiled_stylesheet_tags} = compiled_layout_assigns(site, layout_id)
     compiled_stylesheet_tags
   end
 end

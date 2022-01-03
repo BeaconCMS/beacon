@@ -42,7 +42,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
         %{
           title: #{inspect(layout.title)},
           meta_tags: #{inspect(layout.meta_tags)},
-          stylesheets: #{inspect(layout.stylesheets)}
+          stylesheet_urls: #{inspect(layout.stylesheet_urls)}
         }
       end
     """
