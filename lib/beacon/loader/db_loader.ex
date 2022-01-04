@@ -4,12 +4,15 @@ defmodule Beacon.Loader.DBLoader do
   alias Beacon.Loader.ComponentModuleLoader
   alias Beacon.Loader.LayoutModuleLoader
   alias Beacon.Loader.PageModuleLoader
+  alias Beacon.Loader.StylesheetModuleLoader
   alias Beacon.Pages
+  alias Beacon.Stylesheets
 
   def load_from_db do
     load_components()
     load_layouts()
     load_pages()
+    load_stylesheets()
   end
 
   def load_components do
@@ -39,6 +42,16 @@ defmodule Beacon.Loader.DBLoader do
       {:ok, _} = PageModuleLoader.load_templates(site, pages)
 
       Enum.map(pages, &Beacon.PubSub.broadcast_page_update(site, &1.path))
+    end)
+
+    :ok
+  end
+
+  def load_stylesheets do
+    Stylesheets.list_stylesheets()
+    |> Enum.group_by(& &1.site, & &1)
+    |> Enum.each(fn {site, stylesheets} ->
+      {:ok, _} = StylesheetModuleLoader.load_stylesheets(site, stylesheets)
     end)
 
     :ok

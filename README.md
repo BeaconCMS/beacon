@@ -60,6 +60,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     alias Beacon.Components
     alias Beacon.Pages
     alias Beacon.Layouts
+    alias Beacon.Stylesheets
 
     %{id: layout_id} =
       Layouts.create_layout!(%{
@@ -104,10 +105,21 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       </li>
       """
     })
+
+    Stylesheets.create_stylesheet!(%{
+      site: "my_site",
+      name: "sample_stylesheet",
+      content: "body {cursor: zoom-in;}"
+    })
     ```
 1. `cd apps/my_app && mix ecto.reset && cd ../..`
 1. `mix phx.server`
 1. visit http://localhost:4000/page/home
+1. Note:
+  1. The Header and Footer from the layout
+  1. The list element from the page
+  1. The three components rendered with the live_data from your DataSource
+  1. The zoom in cursor from the stylesheet
 
 To enable Page management:
 

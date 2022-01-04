@@ -19,6 +19,10 @@ defmodule Beacon.Loader do
     module_for_site(site, "Layout")
   end
 
+  def stylesheet_module_for_site(site) do
+    module_for_site(site, "Stylesheet")
+  end
+
   defp module_for_site(site, prefix) do
     site_hash = :crypto.hash(:md5, site) |> Base.encode16()
     Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])

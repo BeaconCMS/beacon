@@ -61,6 +61,15 @@ defmodule BeaconWeb.LayoutView do
     Beacon.Loader.call_function_with_retry(module, :layout_assigns, [layout_id])
   end
 
+  def stylesheet_tag(%{__dynamic_layout_id__: _, __site__: site}) do
+    module = Beacon.Loader.stylesheet_module_for_site(site)
+
+    stylesheet_tag = Beacon.Loader.call_function_with_retry(module, :render, [])
+    {:safe, stylesheet_tag}
+  end
+
+  def stylesheet_tag(_), do: ""
+
   def linked_stylesheets(%{__dynamic_layout_id__: _, __site__: _} = assigns) do
     {:safe, linked_stylesheets_unsafe(assigns)}
   end
