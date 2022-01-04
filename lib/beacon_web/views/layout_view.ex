@@ -61,15 +61,15 @@ defmodule BeaconWeb.LayoutView do
     Beacon.Loader.call_function_with_retry(module, :layout_assigns, [layout_id])
   end
 
-  def stylesheet_tags(%{__dynamic_layout_id__: _, __site__: _} = assigns) do
-    {:safe, stylesheet_tags_unsafe(assigns)}
+  def linked_stylesheets(%{__dynamic_layout_id__: _, __site__: _} = assigns) do
+    {:safe, linked_stylesheets_unsafe(assigns)}
   end
 
-  def stylesheet_tags(_), do: ""
+  def linked_stylesheets(_), do: ""
 
-  def stylesheet_tags_unsafe(assigns) do
+  def linked_stylesheets_unsafe(assigns) do
     assigns
-    |> get_stylesheet_tags()
+    |> get_linked_stylesheets()
     |> Enum.map_join("\n", fn sheet ->
       # TODO: escape key/values here
       ~s(    <link rel="stylesheet" href="#{sheet}">)
@@ -78,18 +78,20 @@ defmodule BeaconWeb.LayoutView do
 
   # for non dynamic pages
 
-  def get_stylesheet_tags(%{layout_assigns: %{stylesheet_tags: stylesheet_tags}} = assigns) do
+  def get_linked_stylesheets(
+        %{layout_assigns: %{linked_stylesheets: linked_stylesheets}} = assigns
+      ) do
     assigns
-    |> compiled_stylesheet_tags()
-    |> Map.merge(stylesheet_tags)
+    |> compiled_linked_stylesheets()
+    |> Map.merge(linked_stylesheets)
   end
 
-  def get_stylesheet_tags(assigns) do
-    compiled_stylesheet_tags(assigns)
+  def get_linked_stylesheets(assigns) do
+    compiled_linked_stylesheets(assigns)
   end
 
-  defp compiled_stylesheet_tags(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{stylesheet_urls: compiled_stylesheet_tags} = compiled_layout_assigns(site, layout_id)
-    compiled_stylesheet_tags
+  defp compiled_linked_stylesheets(%{__dynamic_layout_id__: layout_id, __site__: site}) do
+    %{stylesheet_urls: compiled_linked_stylesheets} = compiled_layout_assigns(site, layout_id)
+    compiled_linked_stylesheets
   end
 end
