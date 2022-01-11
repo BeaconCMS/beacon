@@ -26,9 +26,8 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.18"},
       {:phoenix_pubsub, "2.0.0"},
       {:phoenix_live_view, "~> 0.17.5"},
-      {:postgrex, ">= 0.0.0"}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:safe_code, "~> 0.2.0"}
     ]
   end
 end

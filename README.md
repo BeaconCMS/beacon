@@ -88,7 +88,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       <main>
         <h2>Some Values:</h2>
         <ul>
-          <%= for val <- live_data.vals do %>
+          <%= for val <- live_data[:vals] do %>
             <%= my_component("sample_component", val: val) %>
           <% end %>
         </ul>

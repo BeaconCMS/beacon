@@ -28,6 +28,8 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   end
 
   defp render_component(%Component{name: name, body: body}) do
+    SafeCode.Validator.validate_heex!(body, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+
     """
       def render(#{inspect(name)}, assigns) do
     #{~s(~H""")}

@@ -32,6 +32,10 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp render_page(%Page{path: path, layout_id: layout_id, template: template}) do
+    SafeCode.Validator.validate_heex!(template,
+      extra_function_validators: Beacon.Loader.SafeCodeImpl
+    )
+
     """
       def render(#{inspect(path)}, live_data, assigns) do
     #{~s(~H""")}
