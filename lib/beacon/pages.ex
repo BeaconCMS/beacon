@@ -18,8 +18,8 @@ defmodule Beacon.Pages do
       [%Page{}, ...]
 
   """
-  def list_pages do
-    Repo.all(Page)
+  def list_pages(preloads \\ []) do
+    Page |> Repo.all() |> Repo.preload(preloads)
   end
 
   @doc """

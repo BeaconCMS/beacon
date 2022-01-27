@@ -121,7 +121,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
   1. The three components rendered with the live_data from your DataSource
   1. The zoom in cursor from the stylesheet
 
-To enable Page management:
+To enable Page Management UI:
 
 1. Add the following to the top of your Router:
     ```elixir
@@ -137,3 +137,19 @@ To enable Page management:
     ```
 1. visit http://localhost:4000/page_management/pages
 1. Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
+
+To enable Page Management API:
+
+1. Add the following to the top of your Router:
+    ```elixir
+    require BeaconWeb.PageManagementApi
+    ```
+1. Add the following scope to your Router:
+    ```elixir
+      scope "/page_management_api", BeaconWeb.PageManagementApi do
+        pipe_through :api
+
+        BeaconWeb.PageManagementApi.routes()
+      end
+    ```
+1. Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.

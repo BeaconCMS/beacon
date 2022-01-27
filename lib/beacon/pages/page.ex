@@ -39,6 +39,9 @@ defmodule Beacon.Pages.Page do
       :version
     ])
     |> unique_constraint(:id, name: :pages_pkey)
+    |> unique_constraint([:path, :site])
+    |> foreign_key_constraint(:layout_id)
+    |> foreign_key_constraint(:pending_layout_id)
   end
 
   def update_pending_changeset(page, attrs) do
