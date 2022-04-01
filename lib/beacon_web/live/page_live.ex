@@ -4,7 +4,9 @@ defmodule BeaconWeb.PageLive do
   require Logger
 
   def mount(%{"path" => path} = params, %{"beacon_site" => site}, socket) do
-    live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
+    new_params = Map.drop(params, ["path"])
+    {path, path_params} = Beacon.PathParser.parse(site, path, new_params)
+    live_data = Beacon.DataSource.live_data(site, path, Map.put(new_params, "path_params", path_params))
 
     layout_id =
       site
