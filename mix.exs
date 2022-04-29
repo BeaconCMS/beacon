@@ -27,7 +27,7 @@ defmodule Beacon.MixProject do
       {:phoenix_pubsub, "2.0.0"},
       {:phoenix_live_view, "~> 0.17.5"},
       {:postgrex, ">= 0.0.0"},
-      {:safe_code, "~> 0.2.1"}
+      {:safe_code, "~> 0.2.2"}
     ]
   end
 end
