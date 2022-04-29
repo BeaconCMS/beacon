@@ -28,7 +28,9 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   end
 
   defp render_component(%Component{name: name, body: body}) do
-    SafeCode.Validator.validate_heex!(body, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+    if !Application.get_env(:beacon, :disable_safe_code, false) do
+      SafeCode.Validator.validate_heex!(body, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+    end
 
     """
       def render(#{inspect(name)}, assigns) do
