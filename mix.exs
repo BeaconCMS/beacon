@@ -24,7 +24,7 @@ defmodule Beacon.MixProject do
     [
       {:ecto_sql, "~> 3.6"},
       {:gettext, "~> 0.18"},
-      {:phoenix_pubsub, "2.0.0"},
+      {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_live_view, "~> 0.17.5"},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"}

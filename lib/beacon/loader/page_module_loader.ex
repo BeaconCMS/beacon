@@ -37,14 +37,43 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
 
     """
-      def render(#{inspect(path)}, live_data, assigns) do
+      def render(#{path_to_args(path, "")} = path, beacon_live_data, assigns) do
+        assigns = assigns
+        |> Map.put(:beacon_path_params, #{path_params(path)})
+        |> Map.put(:beacon_live_data, beacon_live_data)
+
     #{~s(~H""")}
     #{template}
     #{~s(""")}
       end
 
-      def layout_id_for_path(#{inspect(path)}), do: #{inspect(layout_id)}
+      def layout_id_for_path(#{path_to_args(path, "_")}), do: #{inspect(layout_id)}
 
     """
   end
+
+  defp path_to_args("", _), do: "[]"
+
+  defp path_to_args(path, prefix) do
+    args =
+      path
+      |> String.split("/")
+      |> Enum.map_join(",", &path_segment_to_arg(&1, prefix))
+
+    "[#{args}]"
+  end
+
+  def path_params(path) do
+    vars =
+      path
+      |> String.split("/")
+      |> Enum.filter(&String.starts_with?(&1, ":"))
+      |> Enum.map(fn ":" <> var -> "#{var}: #{var}" end)
+      |> Enum.join(", ")
+
+    "%{#{vars}}"
+  end
+
+  defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
+  defp path_segment_to_arg(segment, _prefix), do: "\"" <> segment <> "\""
 end

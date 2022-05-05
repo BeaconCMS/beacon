@@ -27,10 +27,10 @@ defmodule Beacon.Pages.Page do
   @doc false
   def changeset(page \\ %Page{}, %{} = attrs) do
     page
-    |> cast(attrs, [:path, :site, :template, :layout_id, :version])
+    |> cast(attrs, [:site, :template, :layout_id, :version])
+    |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
     |> validate_required([
-      :path,
       :site,
       :template,
       :layout_id,
@@ -38,6 +38,7 @@ defmodule Beacon.Pages.Page do
       :pending_layout_id,
       :version
     ])
+    |> validate_string([:path])
     |> unique_constraint(:id, name: :pages_pkey)
     |> unique_constraint([:path, :site])
     |> foreign_key_constraint(:layout_id)
@@ -61,5 +62,14 @@ defmodule Beacon.Pages.Page do
       nil -> changeset
       layout_id -> put_change(changeset, :pending_layout_id, layout_id)
     end
+  end
+
+  def validate_string(changeset, fields) do
+    Enum.reduce(fields, changeset, fn field, changeset ->
+      case get_field(changeset, field) do
+        val when is_binary(val) -> changeset
+        _ -> add_error(changeset, field, "Not a string")
+      end
+    end)
   end
 end
