@@ -9,7 +9,7 @@ defmodule Beacon.Pages.Page do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  schema "pages" do
+  schema "beacon_pages" do
     field(:path, :string)
     field(:site, :string)
     field(:template, :string)

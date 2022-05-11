@@ -4,7 +4,7 @@ defmodule Beacon.Components.Component do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  schema "components" do
+  schema "beacon_components" do
     field(:body, :string)
     field(:name, :string)
     field(:site, :string)

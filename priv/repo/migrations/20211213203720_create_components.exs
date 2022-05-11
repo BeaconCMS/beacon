@@ -2,7 +2,7 @@ defmodule Beacon.Repo.Migrations.CreateComponents do
   use Ecto.Migration
 
   def change do
-    create table(:components, primary_key: false) do
+    create table(:beacon_components, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text
       add :name, :text
