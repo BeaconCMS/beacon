@@ -20,7 +20,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
     defmodule #{module_name} do
       import Phoenix.LiveView.Helpers
-      import #{component_module}, only: [my_component: 2
+      import #{component_module}, only: [my_component: 2]
       use Phoenix.HTML
       alias BeaconWeb.Router.Helpers, as: Routes
 
