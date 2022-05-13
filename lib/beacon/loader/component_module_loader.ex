@@ -5,24 +5,24 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   alias Beacon.Loader.ModuleLoader
 
   def load_components(site, components) do
-    page_module = Beacon.Loader.page_module_for_site(site)
     component_module = Beacon.Loader.component_module_for_site(site)
 
     render_functions = Enum.map(components, &render_component/1)
 
-    code_string = render(component_module, render_functions, page_module)
+    code_string = render(component_module, render_functions)
     Logger.debug("Loading components: \n#{code_string}")
     :ok = ModuleLoader.load(component_module, code_string)
     {:ok, code_string}
   end
 
-  defp render(component_module, render_functions, page_module) do
+  defp render(component_module, render_functions) do
     """
     defmodule #{component_module} do
       import Phoenix.LiveView.Helpers
-      import #{page_module}, only: [my_component: 2]
       use Phoenix.HTML
       alias BeaconWeb.Router.Helpers, as: Routes
+
+      def my_component(name, assigns \\ []), do: render(name, Enum.into(assigns, %{}))
 
     #{Enum.join(render_functions, "\n")}
     end

@@ -20,11 +20,9 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
     defmodule #{module_name} do
       import Phoenix.LiveView.Helpers
+      import #{component_module}, only: [my_component: 2
       use Phoenix.HTML
       alias BeaconWeb.Router.Helpers, as: Routes
-      alias #{component_module}, as: Components
-
-      def my_component(name, assigns), do: Components.render(name, Enum.into(assigns, %{}))
 
     #{Enum.join(render_functions, "\n")}
     end
