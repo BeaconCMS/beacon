@@ -22,7 +22,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
       use Phoenix.HTML
       alias BeaconWeb.Router.Helpers, as: Routes
 
-      def my_component(name, assigns \\ []), do: render(name, Enum.into(assigns, %{}))
+      def my_component(name, assigns \\\\ []), do: render(name, Enum.into(assigns, %{}))
 
     #{Enum.join(render_functions, "\n")}
     end
