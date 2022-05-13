@@ -23,6 +23,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
       alias BeaconWeb.Router.Helpers, as: Routes
 
     #{Enum.join(render_functions, "\n")}
+      def my_component(name, assigns), do: Components.render(name, Enum.into(assigns, %{}))
     end
     """
   end
