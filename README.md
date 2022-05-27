@@ -84,6 +84,22 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     alias Beacon.Layouts
     alias Beacon.Stylesheets
 
+    Stylesheets.create_stylesheet!(%{
+      site: "my_site",
+      name: "sample_stylesheet",
+      content: "body {cursor: zoom-in;}"
+    })
+
+    Components.create_component!(%{
+      site: "my_site",
+      name: "sample_component",
+      body: """
+      <li>
+        <%= @val %>
+      </li>
+      """
+    })
+
     %{id: layout_id} =
       Layouts.create_layout!(%{
         site: "my_site",
@@ -131,22 +147,6 @@ Steps to build a Phoenix umbrella project that uses Beacon:
         </ul>
       </main>
       """
-    })
-
-    Components.create_component!(%{
-      site: "my_site",
-      name: "sample_component",
-      body: """
-      <li>
-        <%= @val %>
-      </li>
-      """
-    })
-
-    Stylesheets.create_stylesheet!(%{
-      site: "my_site",
-      name: "sample_stylesheet",
-      content: "body {cursor: zoom-in;}"
     })
     ```
 
