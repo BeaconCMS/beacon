@@ -57,6 +57,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       path
       |> String.split("/")
       |> Enum.map_join(",", &path_segment_to_arg(&1, prefix))
+      |> String.replace(",|", " |")
 
     "[#{args}]"
   end
@@ -65,13 +66,17 @@ defmodule Beacon.Loader.PageModuleLoader do
     vars =
       path
       |> String.split("/")
-      |> Enum.filter(&String.starts_with?(&1, ":"))
-      |> Enum.map(fn ":" <> var -> "#{var}: #{var}" end)
+      |> Enum.filter(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "*")))
+      |> Enum.map(fn
+        ":" <> var -> "#{var}: #{var}"
+        "*" <> var -> "#{var}: #{var}"
+      end)
       |> Enum.join(", ")
 
     "%{#{vars}}"
   end
 
   defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
+  defp path_segment_to_arg("*" <> segment, prefix), do: "| " <> prefix <> segment
   defp path_segment_to_arg(segment, _prefix), do: "\"" <> segment <> "\""
 end
