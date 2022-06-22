@@ -35,10 +35,10 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
 
     """
-      def render(#{path_to_args(path, "")} = path, beacon_live_data, assigns) do
+      def render(#{path_to_args(path, "")}, beacon_live_data_priv, assigns) do
         assigns = assigns
         |> Map.put(:beacon_path_params, #{path_params(path)})
-        |> Map.put(:beacon_live_data, beacon_live_data)
+        |> Map.put(:beacon_live_data, beacon_live_data_priv)
 
     #{~s(~H""")}
     #{template}

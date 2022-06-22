@@ -19,7 +19,7 @@ defmodule Beacon.Pages do
 
   """
   def list_pages(preloads \\ []) do
-    Page |> Repo.all() |> Repo.preload(preloads)
+    Page |> order_by(:order) |> Repo.all() |> Repo.preload(preloads)
   end
 
   @doc """

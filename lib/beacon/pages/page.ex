@@ -15,6 +15,7 @@ defmodule Beacon.Pages.Page do
     field(:template, :string)
     field(:pending_template, :string)
     field(:version, :integer, default: 1)
+    field :order, :integer, default: 1
 
     belongs_to(:layout, Layout)
     belongs_to(:pending_layout, Layout)
@@ -27,7 +28,7 @@ defmodule Beacon.Pages.Page do
   @doc false
   def changeset(page \\ %Page{}, %{} = attrs) do
     page
-    |> cast(attrs, [:site, :template, :layout_id, :version])
+    |> cast(attrs, [:site, :order, :template, :layout_id, :version])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
     |> validate_required([
@@ -36,7 +37,8 @@ defmodule Beacon.Pages.Page do
       :layout_id,
       :pending_template,
       :pending_layout_id,
-      :version
+      :version,
+      :order
     ])
     |> validate_string([:path])
     |> unique_constraint(:id, name: :pages_pkey)

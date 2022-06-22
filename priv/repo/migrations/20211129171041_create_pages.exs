@@ -9,6 +9,7 @@ defmodule Beacon.Repo.Migrations.CreatePages do
       add :template, :text
       add :pending_template, :text
       add :version, :integer, default: 1
+      add :order, :integer, default: 1
 
       add :layout_id, references(:beacon_layouts, type: :binary_id)
       add :pending_layout_id, references(:beacon_layouts, type: :binary_id)
