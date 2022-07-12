@@ -9,7 +9,8 @@ config :beacon, Beacon.Repo,
   database: "beacon_test",
   password: "postgres",
   pool: Ecto.Adapters.SQL.Sandbox,
-  username: "postgres"
+  username: "postgres",
+  ownership_timeout: 1_000_000_000
 
 config :beacon,
   ecto_repos: [Beacon.Repo]

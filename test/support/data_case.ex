@@ -1,8 +1,6 @@
 defmodule Beacon.DataCase do
   use ExUnit.CaseTemplate
 
-  use ExUnit.CaseTemplate
-
   using do
     quote do
       alias Beacon.Repo
