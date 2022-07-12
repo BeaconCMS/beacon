@@ -30,8 +30,7 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {%{__live_path__: live_path, __live_data__: live_data}, render_assigns} =
-      Map.split(assigns, [:__live_path__, :__live_data__])
+    {%{__live_path__: live_path, __live_data__: live_data}, render_assigns} = Map.split(assigns, [:__live_path__, :__live_data__])
 
     module = Beacon.Loader.page_module_for_site(assigns.__site__)
 

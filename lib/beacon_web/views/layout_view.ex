@@ -87,9 +87,7 @@ defmodule BeaconWeb.LayoutView do
 
   # for non dynamic pages
 
-  def get_linked_stylesheets(
-        %{layout_assigns: %{linked_stylesheets: linked_stylesheets}} = assigns
-      ) do
+  def get_linked_stylesheets(%{layout_assigns: %{linked_stylesheets: linked_stylesheets}} = assigns) do
     assigns
     |> compiled_linked_stylesheets()
     |> Map.merge(linked_stylesheets)
