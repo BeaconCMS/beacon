@@ -49,10 +49,10 @@ jobs:
            priv/plts
         key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
         restore-keys: ${{ runner.os }}-mix-
-    - name: Mix compile
-      run: mix compile --warnings-as-errors
     - name: Install dependencies
       run: mix deps.get
+    - name: Mix compile
+      run: mix compile --warnings-as-errors
     - name: Run tests
       run: mix test
     - name: Check mix format
