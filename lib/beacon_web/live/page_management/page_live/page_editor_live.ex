@@ -49,8 +49,7 @@ defmodule BeaconWeb.PageManagement.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("copy_version", %{"version" => version_str}, socket) do
-    version =
-      Enum.find(socket.assigns.page.versions, &(&1.version == String.to_integer(version_str)))
+    version = Enum.find(socket.assigns.page.versions, &(&1.version == String.to_integer(version_str)))
 
     Pages.update_page_pending(
       socket.assigns.page,
