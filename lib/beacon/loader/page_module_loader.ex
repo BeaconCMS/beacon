@@ -8,15 +8,20 @@ defmodule Beacon.Loader.PageModuleLoader do
     page_module = Beacon.Loader.page_module_for_site(site)
     component_module = Beacon.Loader.component_module_for_site(site)
 
-    render_functions = Enum.map(pages, &render_page/1)
+    # Group function heads together to avoid compiler warnings
+    functions =
+      for fun <- [&render_page/1, &layout_id_for_path/1],
+          page <- pages do
+        fun.(page)
+      end
 
-    code_string = render(page_module, component_module, render_functions)
+    code_string = render(page_module, component_module, functions)
     Logger.debug("Loading template: \n#{code_string}")
     :ok = ModuleLoader.load(page_module, code_string)
     {:ok, code_string}
   end
 
-  defp render(module_name, component_module, render_functions) do
+  defp render(module_name, component_module, functions) do
     """
     defmodule #{module_name} do
       import Phoenix.LiveView.Helpers
@@ -24,29 +29,31 @@ defmodule Beacon.Loader.PageModuleLoader do
       use Phoenix.HTML
       alias BeaconWeb.Router.Helpers, as: Routes
 
-    #{Enum.join(render_functions, "\n")}
+      #{Enum.join(functions, "\n")}
     end
     """
   end
 
-  defp render_page(%Page{path: path, layout_id: layout_id, template: template}) do
+  defp render_page(%Page{path: path, template: template}) do
     if !Application.get_env(:beacon, :disable_safe_code, false) do
       SafeCode.Validator.validate_heex!(template, extra_function_validators: Beacon.Loader.SafeCodeImpl)
     end
 
     """
-      def render(#{path_to_args(path, "")}, beacon_live_data_priv, assigns) do
+      def render(#{path_to_args(path, "")}, assigns) do
         assigns = assigns
-        |> Map.put(:beacon_path_params, #{path_params(path)})
-        |> Map.put(:beacon_live_data, beacon_live_data_priv)
+        |> Phoenix.LiveView.assign(:beacon_path_params, #{path_params(path)})
 
     #{~s(~H""")}
     #{template}
     #{~s(""")}
       end
+    """
+  end
 
+  defp layout_id_for_path(%Page{path: path, layout_id: layout_id}) do
+    """
       def layout_id_for_path(#{path_to_args(path, "_")}), do: #{inspect(layout_id)}
-
     """
   end
 

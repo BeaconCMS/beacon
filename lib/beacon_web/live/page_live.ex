@@ -13,8 +13,8 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
+      |> assign(:beacon_live_data, live_data)
       |> assign(:__live_path__, path)
-      |> assign(:__live_data__, live_data)
       |> assign(:__page_update_available__, false)
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__site__, site)
@@ -30,11 +30,11 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {%{__live_path__: live_path, __live_data__: live_data}, render_assigns} = Map.split(assigns, [:__live_path__, :__live_data__])
+    {%{__live_path__: live_path}, render_assigns} = Map.split(assigns, [:__live_path__])
 
     module = Beacon.Loader.page_module_for_site(assigns.__site__)
 
-    Beacon.Loader.call_function_with_retry(module, :render, [live_path, live_data, render_assigns])
+    Beacon.Loader.call_function_with_retry(module, :render, [live_path, render_assigns])
   end
 
   def handle_info(:page_updated, socket) do
