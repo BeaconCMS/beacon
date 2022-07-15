@@ -23,7 +23,6 @@ defmodule BeaconWeb do
 
       import Plug.Conn
       import BeaconWeb.Gettext
-      alias BeaconWeb.Router.Helpers, as: Routes
     end
   end
 

@@ -25,7 +25,6 @@ defmodule Beacon.Loader.LayoutModuleLoader do
       use Phoenix.HTML
       import Phoenix.LiveView.Helpers
       import #{component_module}, only: [my_component: 2]
-      alias BeaconWeb.Router.Helpers, as: Routes
 
     #{Enum.join(render_functions, "\n")}
     end
