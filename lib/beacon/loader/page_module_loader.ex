@@ -22,7 +22,6 @@ defmodule Beacon.Loader.PageModuleLoader do
       import Phoenix.LiveView.Helpers
       import #{component_module}, only: [my_component: 2]
       use Phoenix.HTML
-      alias BeaconWeb.Router.Helpers, as: Routes
 
     #{Enum.join(render_functions, "\n")}
     end
@@ -46,7 +45,6 @@ defmodule Beacon.Loader.PageModuleLoader do
       end
 
       def layout_id_for_path(#{path_to_args(path, "_")}), do: #{inspect(layout_id)}
-
     """
   end
 
