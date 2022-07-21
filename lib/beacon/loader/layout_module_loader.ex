@@ -7,12 +7,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
   def load_layouts(site, layouts) do
     component_module = Beacon.Loader.component_module_for_site(site)
     module = Beacon.Loader.layout_module_for_site(site)
-
-    render_functions =
-      Enum.map(layouts, fn layout ->
-        render_layout(layout)
-      end)
-
+    render_functions = Enum.map(layouts, &render_layout/1)
     code_string = render(module, render_functions, component_module)
     Logger.debug("Loading layout: \n#{code_string}")
     :ok = ModuleLoader.load(module, code_string)
@@ -24,7 +19,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     defmodule #{module_name} do
       use Phoenix.HTML
       import Phoenix.LiveView.Helpers
-      import #{component_module}, only: [my_component: 2]
+      #{ModuleLoader.import_my_component(component_module, render_functions)}
 
     #{Enum.join(render_functions, "\n")}
     end
