@@ -14,3 +14,6 @@ config :beacon, Beacon.Repo,
 
 config :beacon,
   ecto_repos: [Beacon.Repo]
+
+# set default DataSource implementation for tests.
+config :beacon, :data_source, DummyApp.BeaconDataSource
