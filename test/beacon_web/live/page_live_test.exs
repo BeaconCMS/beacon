@@ -70,7 +70,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
   ]
 
   Application.put_env(:beacon, DummyApp.Endpoint, @config)
-  Application.put_env(:beacon, :data_source, DummyApp.BeaconDataSource)
 
   @endpoint DummyApp.Endpoint
 
