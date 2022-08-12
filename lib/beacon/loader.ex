@@ -3,6 +3,12 @@ defmodule Beacon.Loader do
 
   require Logger
 
+  defmodule Error do
+    # Using `plug_status` for rendering this exception as 404 in production.
+    # More info: https://hexdocs.pm/phoenix/custom_error_pages.html#custom-exceptions
+    defexception message: "Error in Beacon.Loader", plug_status: 404
+  end
+
   def reload_pages_from_db do
     Server.reload_from_db()
   end
@@ -29,26 +35,34 @@ defmodule Beacon.Loader do
   end
 
   def call_function_with_retry(module, function, args, failure_count \\ 0) do
-    try do
-      apply(module, function, args)
-    rescue
-      e in UndefinedFunctionError ->
-        cond do
-          failure_count >= 10 ->
-            Logger.debug("failed 10 times")
-            reraise e, __STACKTRACE__
+    apply(module, function, args)
+  rescue
+    e in UndefinedFunctionError ->
+      cond do
+        failure_count >= 10 ->
+          Logger.debug("failed 10 times")
+          reraise e, __STACKTRACE__
 
-          %UndefinedFunctionError{
-            function: ^function,
-            module: ^module
-          } = e ->
-            Logger.debug("failed for the #{failure_count + 1} time, retrying")
-            :timer.sleep(100)
-            call_function_with_retry(module, function, args, failure_count + 1)
+        %UndefinedFunctionError{function: ^function, module: ^module} = e ->
+          Logger.debug("failed for the #{failure_count + 1} time, retrying")
+          :timer.sleep(100)
+          call_function_with_retry(module, function, args, failure_count + 1)
 
-          true ->
-            reraise e, __STACKTRACE__
-        end
-    end
+        true ->
+          raise e
+      end
+
+    _e in FunctionClauseError ->
+      error_message = """
+      Could not call #{function} for the given path: #{inspect(List.flatten(args))}.
+
+      Make sure you have created a page for this path. Check Pages.create_page!/2 \
+      for more info.\
+      """
+
+      reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
+
+    e ->
+      raise e
   end
 end

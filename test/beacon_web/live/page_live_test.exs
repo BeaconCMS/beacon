@@ -92,4 +92,19 @@ defmodule BeaconWeb.Live.PageLiveTest do
     assert html =~ ~s(<li id="my-component-third">)
     assert html =~ "<footer>Page footer</footer>"
   end
+
+  test "when the given path doesn't exist" do
+    create_page()
+
+    error_message = """
+    Could not call layout_id_for_path for the given path: [\"no_page_match\"].
+
+    Make sure you have created a page for this path. Check Pages.create_page!/2 \
+    for more info.\
+    """
+
+    assert_raise Beacon.Loader.Error, error_message, fn ->
+      {:ok, _view, _html} = live(Phoenix.ConnTest.build_conn(), "/no_page_match")
+    end
+  end
 end
