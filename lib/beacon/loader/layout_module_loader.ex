@@ -27,7 +27,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
   end
 
   defp render_layout(%Layout{} = layout) do
-    if !Application.get_env(:beacon, :disable_safe_code, false) do
+    if !Application.get_env(:beacon, :disable_safe_code, true) do
       SafeCode.Validator.validate_heex!(layout.body, extra_function_validators: Beacon.Loader.SafeCodeImpl)
     end
 

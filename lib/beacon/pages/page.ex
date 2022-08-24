@@ -4,6 +4,7 @@ defmodule Beacon.Pages.Page do
 
   alias Beacon.Layouts.Layout
   alias Beacon.Pages.Page
+  alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageVersion
   alias Ecto.Changeset
 
@@ -20,6 +21,7 @@ defmodule Beacon.Pages.Page do
     belongs_to(:layout, Layout)
     belongs_to(:pending_layout, Layout)
 
+    has_many(:events, PageEvent)
     has_many(:versions, PageVersion)
 
     timestamps()

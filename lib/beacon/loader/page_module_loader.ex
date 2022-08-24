@@ -3,6 +3,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   alias Beacon.Loader.ModuleLoader
   alias Beacon.Pages.Page
+  alias Beacon.Pages.PageEvent
 
   def load_templates(site, pages) do
     page_module = Beacon.Loader.page_module_for_site(site)
@@ -10,7 +11,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     # Group function heads together to avoid compiler warnings
     functions =
-      for fun <- [&render_page/1, &layout_id_for_path/1],
+      for fun <- [&render_page/1, &layout_id_for_path/1, &handle_event/1],
           page <- pages do
         fun.(page)
       end
@@ -34,7 +35,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp render_page(%Page{path: path, template: template}) do
-    if !Application.get_env(:beacon, :disable_safe_code, false) do
+    if !Application.get_env(:beacon, :disable_safe_code, true) do
       SafeCode.Validator.validate_heex!(template, extra_function_validators: Beacon.Loader.SafeCodeImpl)
     end
 
@@ -54,6 +55,20 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
       def layout_id_for_path(#{path_to_args(path, "_")}), do: #{inspect(layout_id)}
     """
+  end
+
+  defp handle_event(%Page{path: path, events: events}) do
+    Enum.map(events, fn %PageEvent{} = event ->
+      if !Application.get_env(:beacon, :disable_safe_code, true) do
+        SafeCode.Validator.validate!(event.code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+      end
+
+      """
+        def handle_event(#{path_to_args(path, "")}, #{event.event_name}, event_params, socket) do
+          #{event.code}
+        end
+      """
+    end)
   end
 
   defp path_to_args("", _), do: "[]"
