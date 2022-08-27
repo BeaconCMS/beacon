@@ -51,15 +51,21 @@ defmodule Beacon.Pages do
       {:error, %Ecto.Changeset{}}
 
   """
+  @reload_modules? Application.compile_env!(:beacon, :reload_modules?)
+
   def create_page(attrs \\ %{}) do
     Repo.transaction(fn ->
-      page_changeset =
+      page =
         attrs
         |> Page.changeset()
+        |> Repo.insert()
 
-      with {:ok, page} <- Repo.insert(page_changeset),
+      with {:ok, page} <- page,
            {:ok, _page_version} <- create_version_for_page(page) do
-        Beacon.Loader.DBLoader.load_from_db()
+        if @reload_modules? do
+          Beacon.Loader.DBLoader.load_from_db()
+        end
+
         page
       else
         {:error, reason} -> Repo.rollback(reason)

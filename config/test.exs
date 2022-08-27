@@ -17,3 +17,6 @@ config :beacon,
 
 # set default DataSource implementation for tests.
 config :beacon, :data_source, DummyApp.BeaconDataSource
+
+# we want to reload modules manually in test env.
+config :beacon, :reload_modules?, false

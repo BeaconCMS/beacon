@@ -71,7 +71,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       """
     })
 
-    # Make sure events are loaded.
+    # Make sure all the modules are load. They are disabled for Test env.
     Beacon.Loader.DBLoader.load_from_db()
   end
 
