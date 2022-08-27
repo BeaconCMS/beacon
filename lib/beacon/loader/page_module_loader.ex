@@ -64,7 +64,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       end
 
       """
-        def handle_event(#{path_to_args(path, "")}, #{event.event_name}, event_params, socket) do
+        def handle_event(#{path_to_args(path, "")}, "#{event.event_name}", event_params, socket) do
           #{event.code}
         end
       """
