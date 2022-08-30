@@ -300,6 +300,9 @@ defmodule Beacon.Pages do
     |> Repo.insert()
   end
 
+  @doc """
+  Same as create_page_event/1 but raises when there are validation errors.
+  """
   def create_page_event!(attrs \\ %{}) do
     case create_page_event(attrs) do
       {:ok, page_event} -> page_event
