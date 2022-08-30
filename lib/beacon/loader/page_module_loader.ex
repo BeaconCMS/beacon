@@ -35,9 +35,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp render_page(%Page{path: path, template: template}) do
-    if !Application.get_env(:beacon, :disable_safe_code, true) do
-      SafeCode.Validator.validate_heex!(template, extra_function_validators: Beacon.Loader.SafeCodeImpl)
-    end
+    Beacon.Util.safe_code_heex_check!(template)
 
     """
       def render(#{path_to_args(path, "")}, assigns) do
@@ -59,9 +57,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp handle_event(%Page{path: path, events: events}) do
     Enum.map(events, fn %PageEvent{} = event ->
-      if !Application.get_env(:beacon, :disable_safe_code, true) do
-        SafeCode.Validator.validate!(event.code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
-      end
+      Beacon.Util.safe_code_check!(event.code)
 
       """
         def handle_event(#{path_to_args(path, "")}, "#{event.event_name}", event_params, socket) do
