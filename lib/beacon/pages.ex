@@ -295,9 +295,17 @@ defmodule Beacon.Pages do
 
   """
   def create_page_event(attrs \\ %{}) do
-    %PageEvent{}
-    |> PageEvent.changeset(attrs)
+    attrs
+    |> PageEvent.changeset()
     |> Repo.insert()
+    |> case do
+      {:ok, page_event} ->
+        Beacon.Loader.DBLoader.load_from_db()
+        {:ok, page_event}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
