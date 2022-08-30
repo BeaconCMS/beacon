@@ -34,21 +34,24 @@ defmodule Beacon.Loader do
     Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
   end
 
+  @doc """
+  This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
+  """
   def call_function_with_retry(module, function, args, failure_count \\ 0) do
     apply(module, function, args)
   rescue
     e in UndefinedFunctionError ->
-      cond do
-        failure_count >= 10 ->
+      case {failure_count, e} do
+        {x, _} when x >= 10 ->
           Logger.debug("failed 10 times")
           reraise e, __STACKTRACE__
 
-        %UndefinedFunctionError{function: ^function, module: ^module} = e ->
+        {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
           Logger.debug("failed for the #{failure_count + 1} time, retrying")
           :timer.sleep(100)
           call_function_with_retry(module, function, args, failure_count + 1)
 
-        true ->
+        _ ->
           raise e
       end
 

@@ -118,21 +118,26 @@ Steps to build a Phoenix umbrella project that uses Beacon:
         """
       })
 
-    Pages.create_page!(%{
-      path: "home",
-      site: "my_site",
-      layout_id: layout_id,
-      template: """
-      <main>
-        <h2>Some Values:</h2>
-        <ul>
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
-          <% end %>
-        </ul>
-      </main>
-      """
-    })
+    %{id: page_id} =
+      Pages.create_page!(%{
+        path: "home",
+        site: "my_site",
+        layout_id: layout_id,
+        template: """
+        <main>
+          <h2>Some Values:</h2>
+          <ul>
+            <%= for val <- @beacon_live_data[:vals] do %>
+              <%= my_component("sample_component", val: val) %>
+            <% end %>
+          </ul>
+          <.form let={f} for={:greeting} phx-submit="hello">
+            Name: <%= text_input f, :name %> <%= submit "Hello" %>
+          </.form>
+          <%= if assigns[:message], do: assigns.message %>
+        </main>
+        """
+      })
 
     Pages.create_page!(%{
       path: "blog/:blog_slug",
@@ -148,6 +153,15 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       </main>
       """
     })
+
+    Pages.create_page_event!(%{
+      page_id: page_id,
+      event_name: "hello",
+      code: """
+        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+      """
+    })
+
     ```
 
 12. `cd apps/my_app && mix ecto.reset && cd ../..`

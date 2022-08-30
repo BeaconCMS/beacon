@@ -36,7 +36,7 @@ defmodule Beacon.Loader.DBLoader do
   end
 
   def load_pages do
-    Pages.list_pages()
+    Pages.list_pages([:events])
     |> Enum.group_by(& &1.site, & &1)
     |> Enum.each(fn {site, pages} ->
       {:ok, _} = PageModuleLoader.load_templates(site, pages)

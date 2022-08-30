@@ -40,4 +40,17 @@ defmodule BeaconWeb.PageLive do
   def handle_info(:page_updated, socket) do
     {:noreply, assign(socket, :__page_update_available__, true)}
   end
+
+  def handle_event(event_name, event_params, socket) do
+    socket.assigns.__site__
+    |> Beacon.Loader.page_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:handle_event, [socket.assigns.__live_path__, event_name, event_params, socket])
+    |> case do
+      {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
+        {:noreply, socket}
+
+      other ->
+        raise "handle_event for #{socket.assigns.__live_path__} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
+    end
+  end
 end

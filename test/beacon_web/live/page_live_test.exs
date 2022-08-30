@@ -39,21 +39,40 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
-    Pages.create_page!(%{
-      path: "home",
-      site: "my_site",
-      layout_id: layout.id,
-      template: """
-      <main>
-        <h2>Some Values:</h2>
-        <ul>
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
-          <% end %>
-        </ul>
-      </main>
+    page =
+      Pages.create_page!(%{
+        path: "home",
+        site: "my_site",
+        layout_id: layout.id,
+        template: """
+        <main>
+          <h2>Some Values:</h2>
+          <ul>
+            <%= for val <- @beacon_live_data[:vals] do %>
+              <%= my_component("sample_component", val: val) %>
+            <% end %>
+          </ul>
+
+          <.form let={f} for={:greeting} phx-submit="hello">
+            Name: <%= text_input f, :name %>
+            <%= submit "Hello" %>
+          </.form>
+
+          <%= if assigns[:message], do: assigns.message %>
+        </main>
+        """
+      })
+
+    Pages.create_page_event!(%{
+      page_id: page.id,
+      event_name: "hello",
+      code: """
+        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
       """
     })
+
+    # Make sure events are loaded.
+    Beacon.Loader.DBLoader.load_from_db()
   end
 
   # Dummy APP setup.
@@ -82,7 +101,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   test "render the given path" do
     create_page()
 
-    {:ok, _view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
     assert html =~ "body {cursor: zoom-in;}"
     assert html =~ "<header>Page header</header>"
@@ -91,6 +110,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
     assert html =~ ~s(<li id="my-component-second">)
     assert html =~ ~s(<li id="my-component-third">)
     assert html =~ "<footer>Page footer</footer>"
+
+    assert view
+           |> element("form")
+           |> render_submit(%{greeting: %{name: "Beacon"}}) =~ "Hello Beacon"
   end
 
   test "when the given path doesn't exist" do

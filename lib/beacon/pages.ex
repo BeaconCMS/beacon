@@ -7,6 +7,7 @@ defmodule Beacon.Pages do
   alias Beacon.Repo
 
   alias Beacon.Pages.Page
+  alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageVersion
 
   @doc """
@@ -250,5 +251,117 @@ defmodule Beacon.Pages do
   """
   def change_page_version(%PageVersion{} = page_version, attrs \\ %{}) do
     PageVersion.changeset(page_version, attrs)
+  end
+
+  @doc """
+  Returns the list of beacon_page_events.
+
+  ## Examples
+
+      iex> list_beacon_page_events()
+      [%PageEvent{}, ...]
+
+  """
+  def list_beacon_page_events do
+    Repo.all(PageEvent)
+  end
+
+  @doc """
+  Gets a single page_event.
+
+  Raises `Ecto.NoResultsError` if the Page event does not exist.
+
+  ## Examples
+
+      iex> get_page_event!(123)
+      %PageEvent{}
+
+      iex> get_page_event!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_page_event!(id), do: Repo.get!(PageEvent, id)
+
+  @doc """
+  Creates a page_event.
+
+  ## Examples
+
+      iex> create_page_event(%{field: value})
+      {:ok, %PageEvent{}}
+
+      iex> create_page_event(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_page_event(attrs \\ %{}) do
+    attrs
+    |> PageEvent.changeset()
+    |> Repo.insert()
+    |> case do
+      {:ok, page_event} ->
+        Beacon.Loader.DBLoader.load_from_db()
+        {:ok, page_event}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Same as create_page_event/1 but raises when there are validation errors.
+  """
+  def create_page_event!(attrs \\ %{}) do
+    case create_page_event(attrs) do
+      {:ok, page_event} -> page_event
+      {:error, changeset} -> raise "Failed to create page_event #{inspect(changeset.errors)} "
+    end
+  end
+
+  @doc """
+  Updates a page_event.
+
+  ## Examples
+
+      iex> update_page_event(page_event, %{field: new_value})
+      {:ok, %PageEvent{}}
+
+      iex> update_page_event(page_event, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_page_event(%PageEvent{} = page_event, attrs) do
+    page_event
+    |> PageEvent.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a page_event.
+
+  ## Examples
+
+      iex> delete_page_event(page_event)
+      {:ok, %PageEvent{}}
+
+      iex> delete_page_event(page_event)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_page_event(%PageEvent{} = page_event) do
+    Repo.delete(page_event)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking page_event changes.
+
+  ## Examples
+
+      iex> change_page_event(page_event)
+      %Ecto.Changeset{data: %PageEvent{}}
+
+  """
+  def change_page_event(%PageEvent{} = page_event, attrs \\ %{}) do
+    PageEvent.changeset(page_event, attrs)
   end
 end
