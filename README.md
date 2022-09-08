@@ -3,16 +3,19 @@
 Steps to build a Phoenix umbrella project that uses Beacon:
 
 1.  Make sure your phx_new package is up to date:
+
     ```shell
     mix archive.install hex phx_new
     ```
 
 2.  Create an umbrella phoenix app:
+
     ```shell
     mix phx.new --umbrella --install my_app
     ```
 
 3.  Add :beacon as a dependency to both apps in your umbrella project:
+
     ```elixir
       # Local:
       {:beacon, path: "../../../beacon"},
@@ -21,6 +24,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     ```
 
 4.  Update your deps:
+
     ```shell
     mix deps.get
     ```
@@ -28,6 +32,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
 5.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
 
 6.  Configure the Beacon Repo in your dev.exs and prod.exs:
+
     ```elixir
     config :beacon, Beacon.Repo,
       username: "postgres",
@@ -51,12 +56,14 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     ```
 
 8.  Add that DataSource to your config.exs:
+
     ```elixir
     config :beacon,
       data_source: MyApp.BeaconDataSource
     ```
 
 9.  Add a `:beacon` pipeline to your router:
+
     ```elixir
     pipeline :beacon do
       plug BeaconWeb.Plug
@@ -170,17 +177,17 @@ Steps to build a Phoenix umbrella project that uses Beacon:
 
 14. visit <http://localhost:4000/beacon/home> and note:
 
--   The Header and Footer from the layout
--   The list element from the page
--   The three components rendered with the beacon_live_data from your DataSource
--   The zoom in cursor from the stylesheet
+- The Header and Footer from the layout
+- The list element from the page
+- The three components rendered with the beacon_live_data from your DataSource
+- The zoom in cursor from the stylesheet
 
 15. visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
--   The Header and Footer from the layout
--   The path params blog slug
--   The live data blog_slug_uppercase
--   The zoom in cursor from the stylesheet
+- The Header and Footer from the layout
+- The path params blog slug
+- The live data blog_slug_uppercase
+- The zoom in cursor from the stylesheet
 
 To enable Page Management UI:
 
@@ -197,6 +204,7 @@ To enable Page Management UI:
         BeaconWeb.PageManagement.routes()
       end
     ```
+
 3.  visit <http://localhost:4000/page_management/pages>
 4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
@@ -215,4 +223,5 @@ To enable Page Management API:
         BeaconWeb.PageManagementApi.routes()
       end
     ```
+
 3.  Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.
