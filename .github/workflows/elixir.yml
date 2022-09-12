@@ -2,16 +2,15 @@ name: Elixir CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   contents: read
 
 jobs:
   build:
-
     name: Build and test
     runs-on: ubuntu-latest
 
@@ -33,27 +32,27 @@ jobs:
           - 5432:5432
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Elixir
-      uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
-      with:
-        elixir-version: '1.13.2'
-        otp-version: '24.2'
-    - name: Restore dependencies cache
-      uses: actions/cache@v3
-      with:
-        path: |
-           deps
-           _build
-           !_build/prod
-           priv/plts
-        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-        restore-keys: ${{ runner.os }}-mix-
-    - name: Install dependencies
-      run: mix deps.get
-    - name: Mix compile
-      run: mix compile --warnings-as-errors
-    - name: Run tests
-      run: mix test
-    - name: Check mix format
-      run: mix format --check-formatted
+      - uses: actions/checkout@v3
+      - name: Set up Elixir
+        uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+        with:
+          elixir-version: "1.13.2"
+          otp-version: "24.2"
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            !_build/prod
+            priv/plts
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+      - name: Install dependencies
+        run: mix deps.get
+      - name: Mix compile
+        run: mix compile --warnings-as-errors
+      - name: Run tests
+        run: mix test
+      - name: Check mix format
+        run: mix format --check-formatted
