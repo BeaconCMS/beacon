@@ -31,7 +31,7 @@
           <%= checkbox :opts, :publish, value: false %> Publish on Save
           <div>
             <%= submit "Save", phx_disable_with: "Saving..." %>
-            <%= live_patch "Cancel", to: "../pages" %>
+            <%= live_redirect "Cancel", to: "../pages" %>
           </div>
         </.form>
       </td>
