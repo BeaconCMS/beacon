@@ -27,6 +27,7 @@
 
     <div>
       <%= submit "Save", phx_disable_with: "Saving..." %>
+      <%= live_redirect "Cancel", to: "../pages" %>
     </div>
   </.form>
 </div>

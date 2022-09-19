@@ -31,7 +31,7 @@ Last reload time: <%= @last_reload_time %>ms
         <td><%= page.template %></td>
 
         <td>
-          <span><%= live_patch "Edit", to: "page_editor/#{page.id}" %></span>
+          <span><%= live_redirect "Edit", to: "page_editor/#{page.id}" %></span>
           <span><%= link "Delete", to: "#", phx_click: "delete", phx_value_id: page.id, data: [confirm: "Are you sure?"] %></span>
         </td>
       </tr>
