@@ -71,41 +71,6 @@ Beacon supports both.
       runtime: [cd: Path.expand("../assets", __DIR__)]
     ```
 
-    And runtime tailwind config EEx template (TODO: a better way):
-
-    ```elixir
-    # config/runtime.exs
-    config :beacon, BeaconWeb.RuntimeCSS,
-      config_template: """
-      // See the Tailwind configuration guide for advanced usage
-      // https://tailwindcss.com/docs/configuration
-
-      let plugin = require('tailwindcss/plugin')
-
-      module.exports = {
-        prefix: 'compiled-at-runtime-',
-        content: [
-          './js/**/*.js',
-          '../lib/*_web.ex',
-          '../lib/*_web/**/*.*ex',
-          '../deps/beacon/lib/*_web.ex',
-          '../deps/beacon/*_web/**/*.*ex',
-          {raw: `<%= @raw %>`},
-        ],
-        theme: {
-          extend: {},
-        },
-        plugins: [
-          require('@tailwindcss/forms'),
-          plugin(({addVariant}) => addVariant('phx-no-feedback', ['&.phx-no-feedback', '.phx-no-feedback &'])),
-          plugin(({addVariant}) => addVariant('phx-click-loading', ['&.phx-click-loading', '.phx-click-loading &'])),
-          plugin(({addVariant}) => addVariant('phx-submit-loading', ['&.phx-submit-loading', '.phx-submit-loading &'])),
-          plugin(({addVariant}) => addVariant('phx-change-loading', ['&.phx-change-loading', '.phx-change-loading &']))
-        ]
-      }
-      """
-    ```
-
 8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir

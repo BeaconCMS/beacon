@@ -13,8 +13,7 @@ defmodule Beacon.Application do
       {Phoenix.PubSub, name: Beacon.PubSub},
       # Start a worker by calling: Beacon.Worker.start_link(arg)
       # {Beacon.Worker, arg}
-      Beacon.Loader.Server,
-      {BeaconWeb.RuntimeCSS, Application.get_env(:beacon, BeaconWeb.RuntimeCSS)}
+      Beacon.Loader.Server
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
