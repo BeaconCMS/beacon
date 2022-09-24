@@ -55,7 +55,58 @@ Beacon supports both.
       pool_size: 10
     ```
 
-7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+7.  Configure Tailwind:
+
+    Add tailwind configuration:
+
+    ```elixir
+    # config/config.exs
+    config :tailwind,
+      version: "3.1.8",
+      # If you have a `:default` or other profile, you can keep those.
+      # Just add the runtime profile here.
+      # default: [
+      #   ...
+      # ],
+      runtime: [cd: Path.expand("../assets", __DIR__)]
+    ```
+
+    And runtime tailwind config EEx template (TODO: a better way):
+
+    ```elixir
+    # config/runtime.exs
+    config :beacon, BeaconWeb.RuntimeCSS,
+      config_template: """
+      // See the Tailwind configuration guide for advanced usage
+      // https://tailwindcss.com/docs/configuration
+
+      let plugin = require('tailwindcss/plugin')
+
+      module.exports = {
+        prefix: 'compiled-at-runtime-',
+        content: [
+          './js/**/*.js',
+          '../lib/*_web.ex',
+          '../lib/*_web/**/*.*ex',
+          '../deps/beacon/lib/*_web.ex',
+          '../deps/beacon/*_web/**/*.*ex',
+          {raw: `<%= @raw %>`},
+        ],
+        theme: {
+          extend: {},
+        },
+        plugins: [
+          require('@tailwindcss/forms'),
+          plugin(({addVariant}) => addVariant('phx-no-feedback', ['&.phx-no-feedback', '.phx-no-feedback &'])),
+          plugin(({addVariant}) => addVariant('phx-click-loading', ['&.phx-click-loading', '.phx-click-loading &'])),
+          plugin(({addVariant}) => addVariant('phx-submit-loading', ['&.phx-submit-loading', '.phx-submit-loading &'])),
+          plugin(({addVariant}) => addVariant('phx-change-loading', ['&.phx-change-loading', '.phx-change-loading &']))
+        ]
+      }
+      """
+    ```
+
+8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -67,14 +118,14 @@ Beacon supports both.
     end
     ```
 
-8.  Add that DataSource to your config.exs:
+9.  Add that DataSource to your config.exs:
 
     ```elixir
     config :beacon,
       data_source: MyApp.BeaconDataSource
     ```
 
-9.  Add a `:beacon` pipeline to your router:
+10.  Add a `:beacon` pipeline to your router:
 
     ```elixir
     pipeline :beacon do
@@ -82,7 +133,7 @@ Beacon supports both.
     end
     ```
 
-10. Add a `BeaconWeb` scope to your router as shown below:
+11. Add a `BeaconWeb` scope to your router as shown below:
 
     ```elixir
     scope "/", BeaconWeb do
@@ -95,7 +146,7 @@ Beacon supports both.
     end
     ```
 
-11. Add some seeds to your seeds.exs:
+12. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -222,7 +273,7 @@ Beacon supports both.
 - The live data blog_slug_uppercase
 - The zoom in cursor from the stylesheet
 
-To enable Page Management UI:
+#### To enable Page Management UI:
 
 1.  Add the following to the top of your Router:
     ```elixir
@@ -241,7 +292,7 @@ To enable Page Management UI:
 3.  visit <http://localhost:4000/page_management/pages>
 4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
-To enable Page Management API:
+#### To enable Page Management API:
 
 1.  Add the following to the top of your Router:
     ```elixir

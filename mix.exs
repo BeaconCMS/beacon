@@ -47,7 +47,8 @@ defmodule Beacon.MixProject do
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
-      {:plug_cowboy, "~> 2.1", only: :test}
+      {:plug_cowboy, "~> 2.1", only: :test},
+      {:tailwind, "~> 0.1.9"}
     ]
   end
 
