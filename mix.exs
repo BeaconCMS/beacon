@@ -48,7 +48,8 @@ defmodule Beacon.MixProject do
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
       {:plug_cowboy, "~> 2.1", only: :test},
-      {:tailwind, "~> 0.1.9"}
+      {:tailwind, "~> 0.1.9"},
+      {:mimic, "~> 1.7", only: :test}
     ]
   end
 

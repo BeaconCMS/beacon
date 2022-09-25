@@ -20,6 +20,14 @@ defmodule Beacon.DataCase do
       Sandbox.mode(Beacon.Repo, {:shared, self()})
     end
 
+    # Stub the runtime CSS compiler unless we have a tag.
+    # (So we can test the compiler).
+    unless tags[:runtime_css] do
+      Beacon.RuntimeCSS
+      |> Mimic.stub(:compile!, fn _layout, _opts -> "" end)
+      |> Mimic.stub(:compile!, fn _layout -> "" end)
+    end
+
     :ok
   end
 end

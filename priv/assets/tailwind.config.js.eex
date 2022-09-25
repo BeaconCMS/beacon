@@ -4,10 +4,9 @@
 let plugin = require('tailwindcss/plugin')
 
 module.exports = {
-  prefix: 'compiled-at-runtime-',
   content: [
-    '../deps/beacon/lib/*_web.ex',
-    '../deps/beacon/*_web/**/*.*ex',
+    'lib/*_web.ex',
+    'lib/*_web/**/*.*ex',
     {raw: `<%= @raw %>`},
   ],
   theme: {
