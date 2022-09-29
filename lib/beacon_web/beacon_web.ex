@@ -90,7 +90,7 @@ defmodule BeaconWeb do
       use Phoenix.HTML
 
       # Import LiveView and .heex helpers (live_render, live_patch, <.form>, etc)
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       import BeaconWeb.LiveHelpers
 
       # Import basic rendering functionality (render, render_layout, etc)

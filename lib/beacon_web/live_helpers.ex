@@ -1,5 +1,5 @@
 defmodule BeaconWeb.LiveHelpers do
-  import Phoenix.LiveView.Helpers
+  import Phoenix.Component
 
   @doc """
   Renders a component inside the `BeaconWeb.PageManagement.ModalComponent` component.
@@ -17,7 +17,7 @@ defmodule BeaconWeb.LiveHelpers do
   """
   def live_modal(component, opts) do
     path = Keyword.fetch!(opts, :return_to)
-    modal_opts = [id: :modal, return_to: path, component: component, opts: opts]
-    live_component(BeaconWeb.PageManagement.ModalComponent, modal_opts)
+    modal_opts = [module: BeaconWeb.PageManagement.ModalComponent, id: :modal, return_to: path, component: component, opts: opts]
+    live_component(modal_opts)
   end
 end

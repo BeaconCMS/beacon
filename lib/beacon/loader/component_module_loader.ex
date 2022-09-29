@@ -18,7 +18,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   defp render(component_module, render_functions) do
     """
     defmodule #{component_module} do
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       use Phoenix.HTML
 
       def my_component(name, assigns \\\\ []), do: render(name, Enum.into(assigns, %{}))

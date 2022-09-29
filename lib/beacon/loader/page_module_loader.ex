@@ -25,7 +25,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp render(module_name, component_module, functions) do
     """
     defmodule #{module_name} do
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       #{ModuleLoader.import_my_component(component_module, functions)}
       use Phoenix.HTML
 

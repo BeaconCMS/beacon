@@ -18,7 +18,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     """
     defmodule #{module_name} do
       use Phoenix.HTML
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       #{ModuleLoader.import_my_component(component_module, render_functions)}
 
     #{Enum.join(render_functions, "\n")}
