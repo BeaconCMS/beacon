@@ -165,7 +165,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       page_id: page_id,
       event_name: "hello",
       code: """
-        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+        {:noreply, Phoenix.Component.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
       """
     })
 
