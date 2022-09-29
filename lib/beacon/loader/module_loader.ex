@@ -1,4 +1,6 @@
 defmodule Beacon.Loader.ModuleLoader do
+  require Logger
+
   def load(module, code_string) do
     try do
       :code.delete(module)
