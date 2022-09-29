@@ -17,7 +17,6 @@ defmodule BeaconWeb.LiveHelpers do
   """
   def live_modal(component, opts) do
     path = Keyword.fetch!(opts, :return_to)
-    modal_opts = [module: BeaconWeb.PageManagement.ModalComponent, id: :modal, return_to: path, component: component, opts: opts]
-    live_component(modal_opts)
+    live_component(%{module: BeaconWeb.PageManagement.ModalComponent, id: :modal, return_to: path, component: component, opts: opts})
   end
 end
