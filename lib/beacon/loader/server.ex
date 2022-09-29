@@ -12,6 +12,7 @@ defmodule Beacon.Loader.Server do
   end
 
   def init(_opts) do
+    Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
     load_from_db()
     {:ok, %{}}
   end
