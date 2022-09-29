@@ -9,7 +9,7 @@ defmodule Beacon.Loader.ModuleLoader do
       :ok
     rescue
       e in Phoenix.LiveView.HTMLTokenizer.ParseError ->
-        Logger.error("Could not parse code: #{e}")
+        Logger.error("Could not parse code: #{inspect e}")
         :error
     end
   end
