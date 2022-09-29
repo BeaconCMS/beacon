@@ -11,7 +11,12 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
     code_string = render(component_module, render_functions)
     Logger.debug("Loading components: \n#{code_string}")
-    :ok = ModuleLoader.load(component_module, code_string)
+
+    with :error <- ModuleLoader.load(component_module, code_string) do
+        Logger.error("Skipping the last component and attempting with the others...")
+        load_components(site, Enum.drop(components, -1))
+    end
+
     {:ok, code_string}
   end
 

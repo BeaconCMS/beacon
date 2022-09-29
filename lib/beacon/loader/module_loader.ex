@@ -1,11 +1,17 @@
 defmodule Beacon.Loader.ModuleLoader do
   def load(module, code_string) do
-    :code.delete(module)
-    :code.purge(module)
+    try do
+      :code.delete(module)
+      :code.purge(module)
 
-    Code.compile_string(code_string)
-    {:module, ^module} = Code.ensure_loaded(module)
-    :ok
+      Code.compile_string(code_string)
+      {:module, ^module} = Code.ensure_loaded(module)
+      :ok
+    rescue
+      e in Phoenix.LiveView.HTMLTokenizer.ParseError ->
+        Logger.error("Could not parse code: #{e}")
+        :error
+    end
   end
 
   def import_my_component(component_module, functions) do
