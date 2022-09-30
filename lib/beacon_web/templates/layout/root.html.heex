@@ -10,9 +10,9 @@
     <%= csrf_meta_tag() %>
     <title><%= page_title(assigns) %></title>
     <%= if !dynamic_layout?(assigns) do %>
-      <link phx-track-static rel="stylesheet" href={Application.get_env(:beacon, :css_path, "/assets/app.css")}/> 
+      <link phx-track-static rel="stylesheet" href={Beacon.Util.get_config(:css_path, "/assets/app.css")}/> 
     <% end %>
-    <script defer phx-track-static type="text/javascript" src={Application.get_env(:beacon, :js_path, "/assets/app.js")}></script>
+    <script defer phx-track-static type="text/javascript" src={Beacon.Util.get_config(:js_path, "/assets/app.js")}></script>
   </head>
   <body>
     <%= @inner_content %>

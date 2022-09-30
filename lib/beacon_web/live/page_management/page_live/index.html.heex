@@ -10,7 +10,7 @@ Last reload time: <%= @last_reload_time %>ms
     title: @page_title,
     action: @live_action,
     page: @page,
-    return_to: Application.get_env(:beacon, :page_management_path, "/page_management")
+    return_to: Beacon.Util.get_config(:page_management_path, "/page_management")
   %>
 <% end %>
 
@@ -32,7 +32,7 @@ Last reload time: <%= @last_reload_time %>ms
         <td><%= page.template %></td>
 
         <td>
-          <span><%= live_redirect "Edit", to: "#{Application.get_env(:beacon, :page_management_path, "/page_management")}/page_editor/#{page.id}" %></span>
+          <span><%= live_redirect "Edit", to: "#{Beacon.Util.get_config(:page_management_path, "/page_management")}/page_editor/#{page.id}" %></span>
           <span><%= link "Delete", to: "#", phx_click: "delete", phx_value_id: page.id, data: [confirm: "Are you sure?"] %></span>
         </td>
       </tr>
