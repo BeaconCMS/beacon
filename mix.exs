@@ -32,7 +32,6 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.18"},
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_live_view, "~> 0.18.1"},
-      {:surface, "~> 0.18.0", optional: true},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:plug_cowboy, "~> 2.1", only: [:test]},
