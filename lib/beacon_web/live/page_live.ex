@@ -26,7 +26,7 @@ defmodule BeaconWeb.PageLive do
 
     Beacon.PubSub.subscribe_page_update(site, path)
 
-    if(Code.ensure_loaded?(Surface), do: {:ok, Surface.init(socket)}, else: {:ok, socket})
+    {:ok, socket}
   end
 
   def render(assigns) do
