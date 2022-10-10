@@ -16,5 +16,4 @@ defmodule Beacon.Util do
   defp check_code?, do: get_config(:safe_code_check, @default_safe_code_check)
 
   def get_config(key, default), do: Application.get_env(:beacon, key, default)
-
 end

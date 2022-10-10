@@ -16,7 +16,7 @@ defmodule Beacon.Pages.Page do
     field(:template, :string)
     field(:pending_template, :string)
     field(:version, :integer, default: 1)
-    field :order, :integer, default: 1
+    field(:order, :integer, default: 1)
 
     belongs_to(:layout, Layout)
     belongs_to(:pending_layout, Layout)

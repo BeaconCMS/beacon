@@ -7,10 +7,10 @@ defmodule Beacon.Pages.PageEvent do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_page_events" do
-    field :code, :string
-    field :event_name, :string
-    field :order, :integer, default: 1
-    field :page_id, :binary_id
+    field(:code, :string)
+    field(:event_name, :string)
+    field(:order, :integer, default: 1)
+    field(:page_id, :binary_id)
 
     timestamps()
   end
