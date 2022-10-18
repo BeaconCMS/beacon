@@ -1,7 +1,7 @@
-defmodule Beacon.RuntimeCSSTest do
+defmodule Beacon.CSSCompilerTest do
   use Beacon.DataCase, async: true
 
-  alias Beacon.RuntimeCSS
+  alias Beacon.CSSCompiler
 
   alias Beacon.Components
   alias Beacon.Layouts
@@ -10,10 +10,18 @@ defmodule Beacon.RuntimeCSSTest do
 
   import ExUnit.CaptureIO
 
-  @config_template """
+  @db_config_template """
   module.exports = {
     prefix: 'bcms-test-',
     content: [ {raw: `<%= @raw %>`} ],
+    theme: { extend: {} },
+  }
+  """
+
+  @file_config_template """
+  module.exports = {
+    prefix: 'bcms-test-',
+    content: ['test/support/templates/*.*ex'],
     theme: { extend: {} },
   }
   """
@@ -90,16 +98,25 @@ defmodule Beacon.RuntimeCSSTest do
   end
 
   describe "compile!/2" do
-    @describetag :runtime_css
     setup [:create_page]
 
     test "includes classes from the database", %{layout: layout} do
       capture_io(fn ->
-        assert output = RuntimeCSS.compile!(layout, config_template: @config_template)
+        assert output = CSSCompiler.compile!(layout, config_template: @db_config_template)
         refute output =~ "text-md"
         assert output =~ "bcms-test-text-sm"
         assert output =~ "bcms-test-text-lg"
         assert output =~ "bcms-test-text-xl"
+      end)
+    end
+
+    test "includes classes from template files", %{layout: layout} do
+      capture_io(fn ->
+        assert output = CSSCompiler.compile!(layout, config_template: @file_config_template)
+        refute output =~ "text-blue-400"
+        refute output =~ "text-red-100"
+        assert output =~ "bcms-test-text-red-800"
+        assert output =~ "bcms-test-text-blue-300"
       end)
     end
   end

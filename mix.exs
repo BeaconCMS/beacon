@@ -49,7 +49,7 @@ defmodule Beacon.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:plug_cowboy, "~> 2.1", only: :test},
       {:tailwind, "~> 0.1.9"},
-      {:mimic, "~> 1.7", only: :test}
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 
@@ -61,7 +61,7 @@ defmodule Beacon.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup"],
+      setup: ["deps.get", "ecto.setup", "tailwind.install"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]

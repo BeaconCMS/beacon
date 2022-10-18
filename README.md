@@ -57,18 +57,13 @@ Beacon supports both.
 
 7.  Configure Tailwind:
 
-    Add tailwind configuration:
+    Add an empty `:runtime` profile to your tailwind configuration:
 
     ```elixir
     # config/config.exs
     config :tailwind,
       version: "3.1.8",
-      # If you have a `:default` or other profile, you can keep those.
-      # Just add the runtime profile here.
-      # default: [
-      #   ...
-      # ],
-      runtime: [cd: Path.expand("../assets", __DIR__)]
+      runtime: []
     ```
 
 8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
