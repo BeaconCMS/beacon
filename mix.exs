@@ -30,8 +30,8 @@ defmodule Beacon.MixProject do
     [
       {:ecto_sql, "~> 3.6"},
       {:gettext, "~> 0.20"},
-      {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_live_view, "~> 0.17.5"},
+      {:phoenix_pubsub, "~> 2.1"},
+      {:phoenix_live_view, "~> 0.17.12"},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:plug_cowboy, "~> 2.1", only: [:test]},
