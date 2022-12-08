@@ -30,8 +30,13 @@ defmodule Beacon.MixProject do
     [
       {:ecto_sql, "~> 3.6"},
       {:gettext, "~> 0.20"},
+      {:heroicons, "~> 0.5"},
+      # TODO remove override after the final Phoenix 1.7 is released
+      {:phoenix, "~> 1.7.0-rc.0", override: true},
+      {:phoenix_live_view, "~> 0.18", override: true},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_live_view, "~> 0.17.12"},
+      # TODO remove phoenix_view after migrating to components
+      {:phoenix_view, "~> 2.0"},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:plug_cowboy, "~> 2.1", only: [:test]},

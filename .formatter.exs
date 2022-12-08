@@ -1,6 +1,6 @@
-# Used by "mix format"
 [
-  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
+  import_deps: [:ecto, :ecto_sql, :phoenix],
   line_length: 150,
-  import_deps: [:ecto]
+  plugins: [Phoenix.LiveView.HTMLFormatter],
+  inputs: ["*.{heex,ex,exs}", "{config,lib,test}/**/*.{heex,ex,exs}"]
 ]
