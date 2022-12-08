@@ -20,7 +20,7 @@ jobs:
       matrix:
         include:
           - elixir: '1.14.0'
-            otp: '23.0'
+            otp: '23'
 
           - elixir: '1.14.2'
             otp: '25.1.2'
