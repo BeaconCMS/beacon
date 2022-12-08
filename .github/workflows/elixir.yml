@@ -13,49 +13,68 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build and test
+  test:
+    name: mix test (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
+
+    strategy:
+      matrix:
+        include:
+          - elixir: '1.14.0'
+            otp: '23.0'
+
+          - elixir: '1.14.2'
+            otp: '25.1.2'
+            lint: true
+
     runs-on: ubuntu-latest
 
     services:
-      # Label used to access the service container
       postgres:
-        # Docker Hub image
         image: postgres:13.1
         env:
           POSTGRES_PASSWORD: postgres
-        # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          # Maps tcp port 5432 on service container to the host
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.14.1"
-          otp-version: "24.3.4"
-      - name: Restore dependencies cache
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Restore cache
         uses: actions/cache@v3
+        id: mix-cache
         with:
           path: |
             deps
             _build
-            !_build/prod
-            priv/plts
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
-      - name: Install dependencies
-        run: mix deps.get
-      - name: Mix compile
-        run: mix compile --warnings-as-errors
-      - name: Run tests
-        run: mix test
-      - name: Check mix format
-        run: mix format --check-formatted
+          key: mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+      - name: Install mix deps
+        if: steps.mix-cache.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - run: mix compile --warnings-as-errors
+        if: ${{ matrix.lint }}
+
+      - run: mix format --check-formatted
+        if: ${{ matrix.lint }}
+
+      - run: mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+
+      - run: mix test
