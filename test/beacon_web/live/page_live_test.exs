@@ -9,7 +9,30 @@ defmodule BeaconWeb.Live.PageLiveTest do
   alias Beacon.Components
   alias Beacon.Stylesheets
 
-  defp create_page do
+  # Dummy APP setup.
+  @config [
+    debug_errors: false,
+    render_errors: [view: DummyApp.ErrorView],
+    root: Path.expand("..", __DIR__),
+    secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
+    url: [host: "localhost"],
+    live_view: [signing_salt: "ykjYicLHN3EuW0FO"],
+    url: [host: "test-app.com"],
+    http: [port: 4000],
+    server: true
+  ]
+
+  Application.put_env(:beacon, DummyApp.Endpoint, @config)
+
+  @endpoint DummyApp.Endpoint
+
+  setup_all do
+    start_supervised!(@endpoint)
+    on_exit(fn -> Application.delete_env(:beacon, :serve_endpoints) end)
+    :ok
+  end
+
+  setup do
     Stylesheets.create_stylesheet!(%{
       site: "my_site",
       name: "sample_stylesheet",
@@ -59,49 +82,20 @@ defmodule BeaconWeb.Live.PageLiveTest do
           </.form>
 
           <%= if assigns[:message], do: assigns.message %>
+
+          <%= dynamic_helper("upcase", %{name: "test_name"}) %>
         </main>
         """
       })
 
-    Pages.create_page_event!(%{
-      page_id: page.id,
-      event_name: "hello",
-      code: """
-        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
-
     # Make sure events are loaded.
     Beacon.Loader.DBLoader.load_from_db()
-  end
 
-  # Dummy APP setup.
-  @config [
-    debug_errors: false,
-    render_errors: [view: DummyApp.ErrorView],
-    root: Path.expand("..", __DIR__),
-    secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
-    url: [host: "localhost"],
-    live_view: [signing_salt: "ykjYicLHN3EuW0FO"],
-    url: [host: "test-app.com"],
-    http: [port: 4000],
-    server: true
-  ]
-
-  Application.put_env(:beacon, DummyApp.Endpoint, @config)
-
-  @endpoint DummyApp.Endpoint
-
-  setup_all do
-    start_supervised!(@endpoint)
-    on_exit(fn -> Application.delete_env(:beacon, :serve_endpoints) end)
-    :ok
+    [page: page]
   end
 
   test "render the given path" do
-    create_page()
-
-    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+    {:ok, _view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
     assert html =~ "body {cursor: zoom-in;}"
     assert html =~ "<header>Page header</header>"
@@ -110,17 +104,21 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   test "render component" do
-    create_page()
-
-    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+    {:ok, _view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
     assert html =~ ~s(<li id="my-component-first">)
     assert html =~ ~s(<li id="my-component-second">)
     assert html =~ ~s(<li id="my-component-third">)
   end
 
-  test "render event" do
-    create_page()
+  test "render event", %{page: page} do
+    Pages.create_page_event!(%{
+      page_id: page.id,
+      event_name: "hello",
+      code: """
+        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+      """
+    })
 
     {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
@@ -129,9 +127,21 @@ defmodule BeaconWeb.Live.PageLiveTest do
            |> render_submit() =~ "Hello Beacon"
   end
 
-  test "when the given path doesn't exist" do
-    create_page()
+  test "render helper", %{page: page} do
+    Pages.create_page_helper!(%{
+      page_id: page.id,
+      helper_name: "upcase",
+      code: """
+        String.upcase(args.name)
+      """
+    })
 
+    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+
+    assert html =~ ~s(TEST_NAME)
+  end
+
+  test "when the given path doesn't exist" do
     error_message = """
     Could not call layout_id_for_path for the given path: [\"no_page_match\"].
 

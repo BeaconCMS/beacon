@@ -53,4 +53,8 @@ defmodule BeaconWeb.PageLive do
         raise "handle_event for #{socket.assigns.__live_path__} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
     end
   end
+
+  def dynamic_helper(page_module, helper_name, args) do
+    Kernel.apply(page_module, String.to_atom(helper_name), List.wrap(args))
+  end
 end

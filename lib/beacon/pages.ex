@@ -8,6 +8,7 @@ defmodule Beacon.Pages do
 
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
+  alias Beacon.Pages.PageHelper
   alias Beacon.Pages.PageVersion
 
   @doc """
@@ -315,6 +316,42 @@ defmodule Beacon.Pages do
     case create_page_event(attrs) do
       {:ok, page_event} -> page_event
       {:error, changeset} -> raise "Failed to create page_event #{inspect(changeset.errors)} "
+    end
+  end
+
+  @doc """
+  Creates a page_helper.
+
+  ## Examples
+
+      iex> create_page_helper(%{field: value})
+      {:ok, %PageHelper{}}
+
+      iex> create_page_helper(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_page_helper(attrs) do
+    attrs
+    |> PageHelper.changeset()
+    |> Repo.insert()
+    |> case do
+      {:ok, page_helper} ->
+        Beacon.Loader.DBLoader.load_from_db()
+        {:ok, page_helper}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Same as create_page_helper/1 but raises when there are validation errors.
+  """
+  def create_page_helper!(attrs) do
+    case create_page_helper(attrs) do
+      {:ok, page_helper} -> page_helper
+      {:error, changeset} -> raise "Failed to create page_helper #{inspect(changeset.errors)} "
     end
   end
 

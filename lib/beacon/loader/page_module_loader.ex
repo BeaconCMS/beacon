@@ -4,6 +4,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   alias Beacon.Loader.ModuleLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
+  alias Beacon.Pages.PageHelper
 
   def load_templates(site, pages) do
     page_module = Beacon.Loader.page_module_for_site(site)
@@ -11,10 +12,10 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     # Group function heads together to avoid compiler warnings
     functions =
-      for fun <- [&render_page/1, &layout_id_for_path/1, &handle_event/1],
+      for fun <- [&render_page/1, &layout_id_for_path/1, &handle_event/1, &helper/1, &dynamic_helper/1],
           page <- pages do
         fun.(page)
-      end
+      end ++ [page_module(page_module)]
 
     code_string = render(page_module, component_module, functions)
     Logger.debug("Loading template: \n#{code_string}")
@@ -55,6 +56,14 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
   end
 
+  defp page_module(page_module) do
+    """
+      def page_module do
+        String.to_atom("#{page_module}")
+      end
+    """
+  end
+
   defp handle_event(%Page{path: path, events: events}) do
     Enum.map(events, fn %PageEvent{} = event ->
       Beacon.Util.safe_code_check!(event.code)
@@ -65,6 +74,26 @@ defmodule Beacon.Loader.PageModuleLoader do
         end
       """
     end)
+  end
+
+  def helper(%Page{helpers: helpers}) do
+    Enum.map(helpers, fn %PageHelper{} = helper ->
+      Beacon.Util.safe_code_check!(helper.code)
+
+      """
+        def #{helper.helper_name}(args) do
+          #{helper.code}
+        end
+      """
+    end)
+  end
+
+  defp dynamic_helper(_) do
+    """
+      def dynamic_helper(helper_name, args) do
+        BeaconWeb.PageLive.dynamic_helper(page_module(), helper_name, args)
+      end
+    """
   end
 
   defp path_to_args("", _), do: "[]"
