@@ -106,14 +106,27 @@ defmodule BeaconWeb.Live.PageLiveTest do
     assert html =~ "body {cursor: zoom-in;}"
     assert html =~ "<header>Page header</header>"
     assert html =~ ~s"<main><h2>Some Values:</h2>"
+    assert html =~ "<footer>Page footer</footer>"
+  end
+
+  test "render component" do
+    create_page()
+
+    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+
     assert html =~ ~s(<li id="my-component-first">)
     assert html =~ ~s(<li id="my-component-second">)
     assert html =~ ~s(<li id="my-component-third">)
-    assert html =~ "<footer>Page footer</footer>"
+  end
+
+  test "render event" do
+    create_page()
+
+    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
     assert view
-           |> element("form")
-           |> render_submit(%{greeting: %{name: "Beacon"}}) =~ "Hello Beacon"
+           |> form("form", %{greeting: %{name: "Beacon"}})
+           |> render_submit() =~ "Hello Beacon"
   end
 
   test "when the given path doesn't exist" do
