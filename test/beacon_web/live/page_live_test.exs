@@ -88,6 +88,22 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
+    Pages.create_page_event!(%{
+      page_id: page.id,
+      event_name: "hello",
+      code: """
+        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+      """
+    })
+
+    Pages.create_page_helper!(%{
+      page_id: page.id,
+      helper_name: "upcase",
+      code: """
+        String.upcase(args.name)
+      """
+    })
+
     # Make sure events are loaded.
     Beacon.Loader.DBLoader.load_from_db()
 
@@ -111,32 +127,16 @@ defmodule BeaconWeb.Live.PageLiveTest do
     assert html =~ ~s(<li id="my-component-third">)
   end
 
-  test "render event", %{page: page} do
-    Pages.create_page_event!(%{
-      page_id: page.id,
-      event_name: "hello",
-      code: """
-        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
-
-    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+  test "render event" do
+    {:ok, view, _html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
     assert view
            |> form("form", %{greeting: %{name: "Beacon"}})
            |> render_submit() =~ "Hello Beacon"
   end
 
-  test "render helper", %{page: page} do
-    Pages.create_page_helper!(%{
-      page_id: page.id,
-      helper_name: "upcase",
-      code: """
-        String.upcase(args.name)
-      """
-    })
-
-    {:ok, view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
+  test "render helper" do
+    {:ok, _view, html} = live(Phoenix.ConnTest.build_conn(), "/home")
 
     assert html =~ ~s(TEST_NAME)
   end
