@@ -55,6 +55,6 @@ defmodule BeaconWeb.PageLive do
   end
 
   def dynamic_helper(page_module, helper_name, args) do
-    Kernel.apply(page_module, String.to_atom(helper_name), [args])
+    Beacon.Loader.call_function_with_retry(page_module, String.to_atom(helper_name), [args])
   end
 end
