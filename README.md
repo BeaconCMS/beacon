@@ -138,10 +138,14 @@ Steps to build a Phoenix umbrella project that uses Beacon:
               <%= my_component("sample_component", val: val) %>
             <% end %>
           </ul>
+
           <.form let={f} for={:greeting} phx-submit="hello">
             Name: <%= text_input f, :name %> <%= submit "Hello" %>
           </.form>
+
           <%= if assigns[:message], do: assigns.message %>
+
+          <%= dynamic_helper("upcase", %{name: "Beacon"}) %>
         </main>
         """
       })
@@ -169,6 +173,13 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       """
     })
 
+    Pages.create_page_helper!(%{
+      page_id: page.id,
+      helper_name: "upcase",
+      code: """
+        String.upcase(args.name)
+      """
+    })
     ```
 
 12. `cd apps/my_app && mix ecto.reset && cd ../..`

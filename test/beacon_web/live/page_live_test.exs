@@ -106,8 +106,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     # Make sure events are loaded.
     Beacon.Loader.DBLoader.load_from_db()
-
-    [page: page]
   end
 
   test "render the given path" do
