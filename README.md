@@ -44,8 +44,9 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     config :beacon, Beacon.Repo,
       username: "postgres",
       password: "postgres",
-      database: "my_app_beacon",
       hostname: "localhost",
+      database: "my_app_beacon",
+      stacktrace: true,
       show_sensitive_data_on_connection_error: true,
       pool_size: 10
     ```
