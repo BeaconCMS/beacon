@@ -92,7 +92,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp dynamic_helper(_) do
     """
       def dynamic_helper(helper_name, args) do
-        BeaconWeb.PageLive.dynamic_helper(page_module(), helper_name, args)
+        Beacon.Loader.call_function_with_retry(page_module(), String.to_atom(helper_name), [args])
       end
     """
   end
