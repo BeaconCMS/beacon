@@ -5,9 +5,9 @@ defmodule Beacon.Stylesheets.Stylesheet do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_stylesheets" do
-    field(:content, :string)
-    field(:name, :string)
-    field(:site, :string)
+    field :content, :string
+    field :name, :string
+    field :site, :string
 
     timestamps()
   end

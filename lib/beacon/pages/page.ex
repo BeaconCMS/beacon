@@ -5,24 +5,26 @@ defmodule Beacon.Pages.Page do
   alias Beacon.Layouts.Layout
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
+  alias Beacon.Pages.PageHelper
   alias Beacon.Pages.PageVersion
   alias Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
-    field(:path, :string)
-    field(:site, :string)
-    field(:template, :string)
-    field(:pending_template, :string)
-    field(:version, :integer, default: 1)
+    field :path, :string
+    field :site, :string
+    field :template, :string
+    field :pending_template, :string
+    field :version, :integer, default: 1
     field :order, :integer, default: 1
 
-    belongs_to(:layout, Layout)
-    belongs_to(:pending_layout, Layout)
+    belongs_to :layout, Layout
+    belongs_to :pending_layout, Layout
 
-    has_many(:events, PageEvent)
-    has_many(:versions, PageVersion)
+    has_many :events, PageEvent
+    has_many :helpers, PageHelper
+    has_many :versions, PageVersion
 
     timestamps()
   end
