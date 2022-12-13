@@ -10,6 +10,15 @@ config :dummy_app, DummyApp.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+config :beacon, Beacon.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "my_app_beacon",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

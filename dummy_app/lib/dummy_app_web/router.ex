@@ -14,10 +14,23 @@ defmodule DummyAppWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :beacon do
+    plug BeaconWeb.Plug
+  end
+
   scope "/", DummyAppWeb do
     pipe_through :browser
 
     get "/", PageController, :home
+  end
+
+  scope "/", BeaconWeb do
+    pipe_through :browser
+    pipe_through :beacon
+
+    live_session :beacon, session: %{"beacon_site" => "my_site"} do
+      live "/beacon/*path", PageLive, :path
+    end
   end
 
   # Other scopes may use custom stacks.
@@ -27,7 +40,6 @@ defmodule DummyAppWeb.Router do
 
   # Enable Swoosh mailbox preview in development
   if Application.compile_env(:dummy_app, :dev_routes) do
-
     scope "/dev" do
       pipe_through :browser
 

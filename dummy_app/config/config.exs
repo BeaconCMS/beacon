@@ -8,7 +8,7 @@
 import Config
 
 config :dummy_app,
-  ecto_repos: [DummyApp.Repo]
+  ecto_repos: [DummyApp.Repo, Beacon.Repo]
 
 # Configures the endpoint
 config :dummy_app, DummyAppWeb.Endpoint,
@@ -58,6 +58,8 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+config :beacon, data_source: DummyApp.BeaconDataSource
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

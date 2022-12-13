@@ -32,13 +32,18 @@ defmodule DummyApp.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      # TODO uncomment after merging https://github.com/BeaconCMS/beacon/pull/61
+      # {:beacon, path: ".."},
+      {:beacon, github: "leandrocp/beacon", ref: "lcp-up-phoenix-1-7"},
       {:phoenix, "~> 1.7.0-rc.0", override: true},
+      # {:phoenix, github: "phoenixframework/phoenix"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.18.3"},
+      {:phoenix_live_view, "~> 0.18.3", override: true},
+      {:phoenix_view, "~> 2.0"},
       {:heroicons, "~> 0.5"},
       {:floki, ">= 0.30.0", only: :test},
       {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
