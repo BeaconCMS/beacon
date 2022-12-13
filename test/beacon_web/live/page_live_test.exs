@@ -99,8 +99,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
     Pages.create_page_helper!(%{
       page_id: page.id,
       helper_name: "upcase",
+      helper_args: "%{name: name}",
       code: """
-        String.upcase(args.name)
+        String.upcase(name)
       """
     })
 

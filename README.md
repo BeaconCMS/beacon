@@ -145,7 +145,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
 
           <%= if assigns[:message], do: assigns.message %>
 
-          <%= dynamic_helper("upcase", %{name: "Beacon"}) %>
+          <%= dynamic_helper("upcase", "Beacon") %>
         </main>
         """
       })
@@ -176,8 +176,9 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     Pages.create_page_helper!(%{
       page_id: page.id,
       helper_name: "upcase",
+      helper_args: "name",
       code: """
-        String.upcase(args.name)
+        String.upcase(name)
       """
     })
     ```

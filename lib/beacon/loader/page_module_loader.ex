@@ -76,12 +76,13 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
+  # TODO: validate fn name and args
   def helper(%Page{helpers: helpers}) do
     Enum.map(helpers, fn %PageHelper{} = helper ->
       Beacon.Util.safe_code_check!(helper.code)
 
       """
-        def #{helper.helper_name}(args) do
+        def #{helper.helper_name}(#{helper.helper_args}) do
           #{helper.code}
         end
       """

@@ -9,6 +9,7 @@ defmodule Beacon.Pages.PageHelper do
   schema "beacon_page_helpers" do
     field :code, :string
     field :helper_name, :string
+    field :helper_args, :string
     field :order, :integer, default: 1
     field :page_id, :binary_id
 
@@ -18,7 +19,7 @@ defmodule Beacon.Pages.PageHelper do
   @doc false
   def changeset(page_helper \\ %PageHelper{}, attrs) do
     page_helper
-    |> cast(attrs, [:code, :order, :helper_name, :page_id])
-    |> validate_required([:code, :order, :helper_name, :page_id])
+    |> cast(attrs, [:code, :order, :helper_name, :helper_args, :page_id])
+    |> validate_required([:code, :order, :helper_name, :helper_args, :page_id])
   end
 end
