@@ -1,5 +1,7 @@
 defmodule DummyAppWeb.Router do
   use DummyAppWeb, :router
+  require BeaconWeb.PageManagement
+  require BeaconWeb.PageManagementApi
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -31,6 +33,18 @@ defmodule DummyAppWeb.Router do
     live_session :beacon, session: %{"beacon_site" => "my_site"} do
       live "/beacon/*path", PageLive, :path
     end
+  end
+
+  scope "/page_management", BeaconWeb.PageManagement do
+    pipe_through :browser
+
+    BeaconWeb.PageManagement.routes()
+  end
+
+  scope "/page_management_api", BeaconWeb.PageManagementApi do
+    pipe_through :api
+
+    BeaconWeb.PageManagementApi.routes()
   end
 
   # Other scopes may use custom stacks.
