@@ -5,11 +5,11 @@ defmodule Beacon.Layouts.Layout do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_layouts" do
-    field(:body, :string)
-    field(:meta_tags, :map)
-    field(:site, :string)
-    field(:stylesheet_urls, {:array, :string})
-    field(:title, :string)
+    field :body, :string
+    field :meta_tags, :map
+    field :site, :string
+    field :stylesheet_urls, {:array, :string}
+    field :title, :string
 
     timestamps()
   end

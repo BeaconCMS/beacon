@@ -8,10 +8,10 @@ defmodule Beacon.Pages.PageVersion do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_page_versions" do
-    field(:template, :string)
-    field(:version, :integer)
+    field :template, :string
+    field :version, :integer
 
-    belongs_to(:page, Page)
+    belongs_to :page, Page
 
     timestamps()
   end
