@@ -9,6 +9,6 @@ defmodule BeaconWeb.Plug do
 
   @impl Plug
   def call(%Conn{} = conn, _) do
-    Phoenix.Controller.put_root_layout(conn, {BeaconWeb.LayoutView, "root.html"})
+    Phoenix.Controller.put_root_layout(conn, {BeaconWeb.LayoutView, :root})
   end
 end

@@ -9,7 +9,13 @@ defmodule Beacon.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      elixirc_paths: elixirc_paths(Mix.env()),
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:mix],
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters: true
+      ]
     ]
   end
 
@@ -39,8 +45,9 @@ defmodule Beacon.MixProject do
       {:phoenix_view, "~> 2.0"},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:plug_cowboy, "~> 2.1", only: [:test]},
-      {:floki, ">= 0.30.0", only: :test}
+      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
+      {:floki, ">= 0.30.0", only: :test},
+      {:plug_cowboy, "~> 2.1", only: :test}
     ]
   end
 
