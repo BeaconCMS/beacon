@@ -1,6 +1,6 @@
 # Beacon
 
-Steps to build a Phoenix umbrella project that uses Beacon:
+Steps to build a Phoenix app using Beacon:
 
 1.  Make sure your phx_new package is up to date:
 
@@ -8,37 +8,41 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     mix archive.install hex phx_new
     ```
 
-2.  Create an umbrella phoenix app:
+2.  Create either a single or umbrella phoenix app:
+
+    * Single app:
+
+    ```shell
+    mix phx.new --install my_app
+    ```
+
+    * Or Umbrella app:
 
     ```shell
     mix phx.new --umbrella --install my_app
     ```
 
-3.  Add `:beacon` as a dependency to both apps in your umbrella project:
+Beacon supports both.
+
+3.  Add `:beacon` as a dependency:
+
+    If the project is a single app, add beacon to your root `mix.exs` file:
 
     ```elixir
-      # Local:
-      {:beacon, path: "../../../beacon"},
-      # Or from GitHub:
-      {:beacon, github: "beaconCMS/beacon"},
+      {:beacon, github: "beaconCMS/beacon"}
     ```
 
-4.  Update `:phoenix` and `:phoenix_live_view` to the minimum supported versions:
+    Or to both apps `my_app` and `my_app_web` if running in an Umbrella app.
 
-    ```elixir
-      {:phoenix, "~> 1.7.0-rc.0", override: true},
-      {:phoenix_live_view, "~> 0.18.3", override: true},
-    ```
-
-5.  Update your deps:
+4.  Update your deps:
 
     ```shell
     mix deps.get
     ```
 
-6.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+5.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
 
-7.  Configure the Beacon Repo in your dev.exs and prod.exs:
+6.  Configure the Beacon Repo in your dev.exs and prod.exs:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -51,7 +55,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
       pool_size: 10
     ```
 
-8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -63,14 +67,14 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     end
     ```
 
-9.  Add that DataSource to your config.exs:
+8.  Add that DataSource to your config.exs:
 
     ```elixir
     config :beacon,
       data_source: MyApp.BeaconDataSource
     ```
 
-10.  Add a `:beacon` pipeline to your router:
+9.  Add a `:beacon` pipeline to your router:
 
     ```elixir
     pipeline :beacon do
@@ -78,7 +82,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     end
     ```
 
-11. Add a `BeaconWeb` scope to your router as shown below:
+10. Add a `BeaconWeb` scope to your router as shown below:
 
     ```elixir
     scope "/", BeaconWeb do
@@ -91,7 +95,7 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     end
     ```
 
-12. Add some seeds to your seeds.exs:
+11. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -191,18 +195,27 @@ Steps to build a Phoenix umbrella project that uses Beacon:
     })
     ```
 
-13. `cd apps/my_app && mix ecto.reset && cd ../..`
+12. Create database and run seeds:
 
-14. `mix phx.server`
 
-15. visit <http://localhost:4000/beacon/home> and note:
+    ```shell
+    mix ecto.reset
+    ```
+
+13. Start server:
+
+    ```shell
+    mix phx.server
+    ```
+
+14. visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-16. visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+15. visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
