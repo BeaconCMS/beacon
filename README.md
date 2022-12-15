@@ -24,7 +24,7 @@ Steps to build a Phoenix app using Beacon:
 
 Beacon supports both.
 
-3.  Add :beacon as a dependency:
+3.  Add `:beacon` as a dependency:
 
     If the project is a single app, add beacon to your root `mix.exs` file:
 
@@ -48,8 +48,9 @@ Beacon supports both.
     config :beacon, Beacon.Repo,
       username: "postgres",
       password: "postgres",
-      database: "my_app_beacon",
       hostname: "localhost",
+      database: "my_app_beacon",
+      stacktrace: true,
       show_sensitive_data_on_connection_error: true,
       pool_size: 10
     ```
@@ -180,7 +181,7 @@ Beacon supports both.
       page_id: page_id,
       event_name: "hello",
       code: """
-        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
       """
     })
 
