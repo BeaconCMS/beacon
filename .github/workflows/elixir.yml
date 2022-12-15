@@ -75,6 +75,8 @@ jobs:
           key: dialyzer-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
 
       - name: Generate dialyzer plt
+        env:
+          MIX_ENV: dev
         run: mix dialyzer --plt
         if: ${{ matrix.dialyzer && steps.cache-plt.outputs.cache-hit != 'true' }}
 
@@ -88,6 +90,8 @@ jobs:
         if: ${{ matrix.lint }}
 
       - run: mix dialyzer
+        env:
+          MIX_ENV: dev
         if: ${{ matrix.dialyzer }}
 
       - run: mix test
