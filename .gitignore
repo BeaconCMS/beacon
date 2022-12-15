@@ -26,3 +26,7 @@ beacon-*.tar
 /tmp/
 
 .DS_Store
+
+# Dialyzer PTLs
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
