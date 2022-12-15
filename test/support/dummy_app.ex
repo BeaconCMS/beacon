@@ -27,7 +27,7 @@ defmodule DummyApp do
     quote do
       use Phoenix.HTML
 
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       import Phoenix.View
 
       alias DummyApp.Router.Helpers, as: Routes

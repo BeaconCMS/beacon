@@ -2,16 +2,19 @@
 
 <button phx-click="reload_pages">Reload Modules</button>
 <%= if not is_nil(@last_reload_time) do %>
-Last reload time: <%= @last_reload_time %>ms
+  Last reload time: <%= @last_reload_time %>ms
 <% end %>
-<%= if @live_action in [:new, :edit] do %>
-  <%= live_modal BeaconWeb.PageManagement.PageLive.FormComponent,
-    id: @page.id || :new,
-    title: @page_title,
-    action: @live_action,
-    page: @page,
-    return_to: "/page_management/pages" %>
-<% end %>
+
+<.modal :if={@live_action in [:new, :edit]} id="post-modal" show on_cancel={JS.navigate("/posts")}>
+  <.live_component
+    module={BeaconWeb.PageManagement.FormComponent}
+    id={@post.id || :new}
+    title={@page_title}
+    action={@live_action}
+    page={@page}
+    navigate="/page_management/pages"
+  />
+</.modal>
 
 <table>
   <thead>
@@ -31,12 +34,12 @@ Last reload time: <%= @last_reload_time %>ms
         <td><%= page.template %></td>
 
         <td>
-          <span><%= live_redirect "Edit", to: "page_editor/#{page.id}" %></span>
-          <span><%= link "Delete", to: "#", phx_click: "delete", phx_value_id: page.id, data: [confirm: "Are you sure?"] %></span>
+          <span><%= live_redirect("Edit", to: "page_editor/#{page.id}") %></span>
+          <span><%= link("Delete", to: "#", phx_click: "delete", phx_value_id: page.id, data: [confirm: "Are you sure?"]) %></span>
         </td>
       </tr>
     <% end %>
   </tbody>
 </table>
 
-<span><%= live_patch "New Page", to: "pages/new" %></span>
+<span><%= live_patch("New Page", to: "pages/new") %></span>

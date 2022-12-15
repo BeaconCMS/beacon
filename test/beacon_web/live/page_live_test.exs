@@ -92,7 +92,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       page_id: page.id,
       event_name: "hello",
       code: """
-        {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
       """
     })
 

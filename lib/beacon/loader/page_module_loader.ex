@@ -18,6 +18,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       end ++ [page_module(page_module)]
 
     code_string = render(page_module, component_module, functions)
+
     Logger.debug("Loading template: \n#{code_string}")
     :ok = ModuleLoader.load(page_module, code_string)
     {:ok, code_string}
@@ -26,7 +27,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp render(module_name, component_module, functions) do
     """
     defmodule #{module_name} do
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       #{ModuleLoader.import_my_component(component_module, functions)}
       use Phoenix.HTML
 
@@ -40,8 +41,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     """
       def render(#{path_to_args(path, "")}, assigns) do
-        assigns = assigns
-        |> Phoenix.LiveView.assign(:beacon_path_params, #{path_params(path)})
+        assigns = assign(assigns, :beacon_path_params, #{path_params(path)})
 
     #{~s(~H""")}
     #{template}
