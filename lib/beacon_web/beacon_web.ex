@@ -84,7 +84,7 @@ defmodule BeaconWeb do
     end
   end
 
-  # TODO remove phoenix_view after migrating to components
+  # TODO remove phoenix_view after migrating to Phoenix.Component
   defp view_helpers do
     quote do
       # Use all HTML functionality (forms, tags, etc)
