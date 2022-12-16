@@ -1,23 +1,35 @@
 defmodule BeaconWeb do
   @moduledoc """
   The entrypoint for defining your web interface, such
-  as controllers, views, channels and so on.
+  as controllers, components, channels, and so on.
 
   This can be used in your application as:
 
       use BeaconWeb, :controller
-      use BeaconWeb, :view
+      use BeaconWeb, :html
 
-  The definitions below will be executed for every view,
-  controller, etc, so keep them short and clean, focused
+  The definitions below will be executed for every controller,
+  component, etc, so keep them short and clean, focused
   on imports, uses and aliases.
 
   Do NOT define functions inside the quoted expressions
-  below. Instead, define any helper function in modules
-  and import those modules here.
+  below. Instead, define additional modules and import
+  those modules here.
   """
 
   def controller do
+    quote do
+      use Phoenix.Controller,
+        namespace: BeaconWeb,
+        formats: [:html, :json],
+        layouts: [html: BeaconWeb.Layouts]
+
+      import Plug.Conn
+      import BeaconWeb.Gettext
+    end
+  end
+
+  def api_controller do
     quote do
       use Phoenix.Controller, namespace: BeaconWeb
 
@@ -26,36 +38,12 @@ defmodule BeaconWeb do
     end
   end
 
-  def view do
-    quote do
-      use Phoenix.View,
-        root: "lib/beacon_web/templates",
-        namespace: BeaconWeb
-
-      # Import convenience functions from controllers
-      import Phoenix.Controller,
-        only: [get_flash: 1, get_flash: 2, view_module: 1, view_template: 1]
-
-      # Include shared imports and aliases for views
-      unquote(view_helpers())
-    end
-  end
-
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {BeaconWeb.LayoutView, :live}
+        layout: {BeaconWeb.Layouts, :app}
 
-      unquote(view_helpers())
-    end
-  end
-
-  def live_view_dynamic do
-    quote do
-      use Phoenix.LiveView,
-        layout: {BeaconWeb.DynamicLayoutView, :live_dynamic}
-
-      unquote(view_helpers())
+      unquote(html_helpers())
     end
   end
 
@@ -63,44 +51,35 @@ defmodule BeaconWeb do
     quote do
       use Phoenix.LiveComponent
 
-      unquote(view_helpers())
+      unquote(html_helpers())
     end
   end
 
-  def router do
+  def html do
     quote do
-      use Phoenix.Router
+      use Phoenix.Component
 
-      import Plug.Conn
-      import Phoenix.Controller
-      import Phoenix.LiveView.Router
+      # Import convenience functions from controllers
+      import Phoenix.Controller,
+        only: [get_csrf_token: 0, view_module: 1, view_template: 1]
+
+      # Include general helpers for rendering HTML
+      unquote(html_helpers())
     end
   end
 
-  def channel do
+  defp html_helpers do
     quote do
-      use Phoenix.Channel
-      import BeaconWeb.Gettext
-    end
-  end
-
-  # TODO remove phoenix_view after migrating to Phoenix.Component
-  defp view_helpers do
-    quote do
-      # Use all HTML functionality (forms, tags, etc)
-      use Phoenix.HTML
-
-      # Import LiveView and .heex helpers (live_render, live_patch, <.form>, etc)
-      import Phoenix.Component
+      # HTML escaping functionality
+      import Phoenix.HTML
+      # Core UI components and translation
       import BeaconWeb.CoreComponents
-
-      # Legacy view
-      import Phoenix.View
+      import BeaconWeb.Gettext
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
 
-      # import BeaconWeb.Gettext
+      # Router helpers
       alias BeaconWeb.Router.Helpers, as: Routes
     end
   end

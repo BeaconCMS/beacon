@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagementApi.FallbackController do
+defmodule BeaconWeb.FallbackController do
   @moduledoc """
   Translates controller action results into valid `Plug.Conn` responses.
 
@@ -10,7 +10,7 @@ defmodule BeaconWeb.PageManagementApi.FallbackController do
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)
-    |> put_view(BeaconWeb.ChangesetView)
+    |> put_view(json: BeaconWeb.ChangesetJSON)
     |> render("error.json", changeset: changeset)
   end
 
@@ -18,7 +18,7 @@ defmodule BeaconWeb.PageManagementApi.FallbackController do
   def call(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
-    |> put_view(BeaconWeb.ErrorView)
+    |> put_view(html: BeaconWeb.ErrorHTML, json: BeaconWeb.ErrorJSON)
     |> render(:"404")
   end
 end

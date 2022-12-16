@@ -1,59 +1,41 @@
 <div>
-  <table>
-    <tr>
-      <td style="vertical-align: top;">
-        <%= live_patch("Pages", to: "../pages") %>
-        <h2>Edit Page</h2>
+  <.header>
+    Edit Page
 
-        <.form :let={f} for={@changeset} id="page-form" phx-change="validate" phx-submit="save">
-          <%= label(f, :path) %>
-          <%= text_input(f, :path, disabled: true) %>
-          <%= error_tag(f, :path) %>
+    <:actions>
+      <.link navigate="/page_management/pages">
+        <.button>Pages</.button>
+      </.link>
+    </:actions>
+  </.header>
 
-          <%= label(f, :site) %>
-          <%= text_input(f, :site, disabled: true) %>
-          <%= error_tag(f, :site) %>
+  <.simple_form :let={f} for={@changeset} id="page-form" phx-change="validate" phx-submit="save">
+    <.input field={{f, :site}} type="text" label="Site" disabled="true" />
+    <.input field={{f, :path}} type="text" label="Path" disabled="true" />
+    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} />
+    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" />
+    <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
 
-          <%= label(f, :pending_layout_id) %>
-          <%= select(f, :pending_layout_id, layouts_to_options(@site_layouts)) %>
-          <%= error_tag(f, :pending_layout_id) %>
+    <:actions>
+      <.button phx-disable-with="Saving...">Save</.button>
+    </:actions>
+  </.simple_form>
+</div>
 
-          <%= label(f, :pending_template) %>
-          <%= textarea(f, :pending_template, style: "height: 20rem") %>
-          <%= error_tag(f, :pending_template) %>
+<div>
+  <.header>
+    History
+  </.header>
 
-          <%= checkbox(:opts, :publish, value: false) %> Publish on Save
-          <div>
-            <%= submit("Save", phx_disable_with: "Saving...") %>
-            <%= live_redirect("Cancel", to: "../pages") %>
-          </div>
-        </.form>
-      </td>
-      <td style="vertical-align: top;">
-        <h3>History</h3>
-        <table>
-          <tr>
-            <td>Current</td>
-            <td>Edit</td>
-            <td>Version</td>
-          </tr>
-          <%= for page_version <- sort_page_versions(@page.versions) do %>
-            <tr>
-              <td>
-                <%= if page_version.version == @page.version do %>
-                  <b>Current</b>
-                <% end %>
-              </td>
-              <td>
-                <button phx-click="copy_version" phx-value-version={page_version.version}>
-                  Copy
-                </button>
-              </td>
-              <td><%= page_version.version %></td>
-            </tr>
-          <% end %>
-        </table>
-      </td>
-    </tr>
-  </table>
+  <.table id="page-versions" rows={sort_page_versions(@page.versions)}>
+    <:col :let={page_version} label="Current">
+      <%= if page_version.version == @page.version do %>
+        <b>Current</b>
+      <% end %>
+    </:col>
+    <:col :let={page_version} label="Version"><%= page_version.version %></:col>
+    <:action :let={page_version}>
+      <.button phx-click="copy_version" phx-value-version={page_version.version}>Copy</.button>
+    </:action>
+  </.table>
 </div>

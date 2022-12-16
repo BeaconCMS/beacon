@@ -1,45 +1,36 @@
-<h1>Listing Pages</h1>
+<.header>
+  Listing Pages
+  <:actions>
+    <.button phx-click="reload_pages" class="ml-2">Reload Pages</.button>
+    <.link patch="pages/new">
+      <.button>New Page</.button>
+    </.link>
+  </:actions>
 
-<button phx-click="reload_pages">Reload Modules</button>
-<%= if not is_nil(@last_reload_time) do %>
-  Last reload time: <%= @last_reload_time %>ms
-<% end %>
+  <:subtitle>
+    <div :if={@last_reload_time}>
+      <p>Last reload time: <%= @last_reload_time %>ms</p>
+    </div>
+  </:subtitle>
+</.header>
 
-<.modal :if={@live_action in [:new, :edit]} id="post-modal" show on_cancel={JS.navigate("/posts")}>
+<.table id="pages" rows={@pages}>
+  <:col :let={page} label="Site"><%= page.site %></:col>
+  <:col :let={page} label="Path"><%= page.path %></:col>
+  <:col :let={page} label="Template"><pre><%= page.template %></pre></:col>
+
+  <:action :let={page}>
+    <.link navigate={"/page_management/page_editor/#{page.id}"}>Edit</.link>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="page-modal" show on_cancel={JS.navigate("/page_management/pages")}>
   <.live_component
-    module={BeaconWeb.PageManagement.FormComponent}
-    id={@post.id || :new}
+    module={BeaconWeb.PageManagement.PageLive.FormComponent},
+    id={@page.id || :new}
     title={@page_title}
     action={@live_action}
     page={@page}
     navigate="/page_management/pages"
   />
 </.modal>
-
-<table>
-  <thead>
-    <tr>
-      <th>Site</th>
-      <th>Path</th>
-      <th>Template</th>
-
-      <th></th>
-    </tr>
-  </thead>
-  <tbody id="pages">
-    <%= for page <- @pages do %>
-      <tr id={"page-#{page.id}"}>
-        <td><%= page.site %></td>
-        <td><%= page.path %></td>
-        <td><%= page.template %></td>
-
-        <td>
-          <span><%= live_redirect("Edit", to: "page_editor/#{page.id}") %></span>
-          <span><%= link("Delete", to: "#", phx_click: "delete", phx_value_id: page.id, data: [confirm: "Are you sure?"]) %></span>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
-<span><%= live_patch("New Page", to: "pages/new") %></span>

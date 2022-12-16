@@ -1,5 +1,5 @@
 defmodule BeaconWeb.PageLive do
-  use BeaconWeb, :live_view_dynamic
+  use BeaconWeb, :live_view
 
   require Logger
 
@@ -21,12 +21,12 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> push_event("meta", %{meta: BeaconWeb.LayoutView.meta_tags_unsafe(socket.assigns)})
+      |> push_event("meta", %{meta: BeaconWeb.Layouts.meta_tags_unsafe(socket.assigns)})
       |> push_event("lang", %{lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)
 
-    {:ok, socket}
+    {:ok, socket, layout: {BeaconWeb.Layouts, :dynamic}}
   end
 
   def render(assigns) do
