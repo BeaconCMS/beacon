@@ -12,7 +12,8 @@
     <%= if !dynamic_layout?(assigns) do %>
       <link phx-track-static rel="stylesheet" href="/assets/app.css" />
     <% end %>
-    <script defer phx-track-static type="text/javascript" src="/assets/app.js"></script>
+    <script defer phx-track-static type="text/javascript" src="/assets/app.js">
+    </script>
   </head>
   <body class="bg-white antialiased">
     <%= @inner_content %>

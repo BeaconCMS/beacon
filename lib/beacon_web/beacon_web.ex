@@ -29,15 +29,6 @@ defmodule BeaconWeb do
     end
   end
 
-  def api_controller do
-    quote do
-      use Phoenix.Controller, namespace: BeaconWeb
-
-      import Plug.Conn
-      import BeaconWeb.Gettext
-    end
-  end
-
   def live_view do
     quote do
       use Phoenix.LiveView,
