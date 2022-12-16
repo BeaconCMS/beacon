@@ -27,10 +27,11 @@ defmodule Beacon.CSSCompiler do
     case exit_code do
       0 ->
         compiled_css = File.read!(output_file)
-        cleanup!(tmp_dir, config_file, output_file)
+        cleanup(tmp_dir, config_file, output_file)
         compiled_css
 
       exit_code ->
+        cleanup(tmp_dir, config_file, output_file)
         raise "Error running tailwind with exit code #{exit_code}"
     end
   end
@@ -72,9 +73,9 @@ defmodule Beacon.CSSCompiler do
 
   defp random_dir, do: :crypto.strong_rand_bytes(12) |> Base.encode16()
 
-  defp cleanup!(tmp_dir, config_file, output_file) do
-    File.rm!(config_file)
-    File.rm!(output_file)
-    File.rmdir!(tmp_dir)
+  defp cleanup(tmp_dir, config_file, output_file) do
+    File.rm(config_file)
+    File.rm(output_file)
+    File.rmdir(tmp_dir)
   end
 end
