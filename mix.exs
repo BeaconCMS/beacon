@@ -41,6 +41,7 @@ defmodule Beacon.MixProject do
       {:phoenix, "~> 1.7.0-rc.0", override: true},
       {:phoenix_live_view, "~> 0.18", override: true},
       {:phoenix_pubsub, "~> 2.1"},
+      {:phoenix_view, "~> 2.0", only: :test},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
