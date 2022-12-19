@@ -4,27 +4,25 @@ defmodule BeaconWeb.PageManagementApi.PageController do
   alias Beacon.Pages
   alias Beacon.Pages.Page
 
-  action_fallback(BeaconWeb.PageManagementApi.FallbackController)
+  action_fallback BeaconWeb.PageManagementApi.FallbackController
 
   def index(conn, _params) do
     pages = Pages.list_pages()
-    render(conn, "index.json", pages: pages)
+    render(conn, :index, pages: pages)
   end
 
   def create(conn, %{"page" => page_params}) do
-    IO.inspect(conn, limit: :infinity)
-
     with {:ok, %Page{} = page} <- Pages.create_page(page_params) do
       conn
       |> put_status(:created)
       # |> put_resp_header("location", Routes.page_path(conn, :show, page))
-      |> render("show.json", page: page)
+      |> render(:show, page: page)
     end
   end
 
   def show(conn, %{"id" => id}) do
     page = Pages.get_page!(id, [:versions, :layout, :pending_layout])
-    render(conn, "show.json", page: page)
+    render(conn, :show, page: page)
   end
 
   def update_page_pending(conn, %{"id" => id, "page" => page_params}) do
@@ -36,7 +34,7 @@ defmodule BeaconWeb.PageManagementApi.PageController do
 
       {%{"template" => template, "layout_id" => layout_id}, %{}} ->
         with {:ok, %Page{} = page} <- Pages.update_page_pending(page, template, layout_id) do
-          render(conn, "show.json", page: page)
+          render(conn, :show, page: page)
         end
 
       _ ->
@@ -48,7 +46,7 @@ defmodule BeaconWeb.PageManagementApi.PageController do
     page = Pages.get_page!(id)
 
     with {:ok, %Page{} = page} <- Pages.publish_page(page) do
-      render(conn, "show.json", page: page)
+      render(conn, :show, page: page)
     end
   end
 

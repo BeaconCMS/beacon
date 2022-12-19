@@ -1,11 +1,13 @@
-defmodule BeaconWeb.LayoutView do
-  use BeaconWeb, :view
-
+defmodule BeaconWeb.Layouts do
+  use BeaconWeb, :html
   require Logger
 
-  # Phoenix LiveDashboard is available only in development by default,
-  # so we instruct Elixir to not warn if the dashboard route is missing.
-  @compile {:no_warn_undefined, {Routes, :live_dashboard_path, 2}}
+  embed_templates "layouts/*"
+
+  def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
+    module = Beacon.Loader.layout_module_for_site(site)
+    Beacon.Loader.call_function_with_retry(module, :render, [layout_id, assigns])
+  end
 
   def page_title(%{layout_assigns: %{page_title: page_title}}), do: page_title
 
