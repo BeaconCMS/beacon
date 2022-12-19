@@ -232,7 +232,7 @@ Beacon supports both.
     require BeaconWeb.Admin
     ```
 
-2.  Add the following scope to your Router:
+2.  Add the following scope to your Router **before** the `BeaconWeb` scope:
 
     ```elixir
       scope "/beacon/admin, BeaconWeb.Admin do
