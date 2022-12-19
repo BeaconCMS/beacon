@@ -17,7 +17,7 @@ defmodule BeaconWeb.PageManagement.PageEditorLive do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save", %{"page" => page_attrs, "opts" => %{"publish" => publish}}, socket) do
+  def handle_event("save", %{"page" => page_attrs, "publish" => publish}, socket) do
     {:ok, page} =
       Pages.update_page_pending(
         socket.assigns.page,
@@ -34,6 +34,8 @@ defmodule BeaconWeb.PageManagement.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("validate", %{"page" => page}, socket) do
+    page = %{"pending_template" => String.trim(page["pending_template"])}
+
     changeset =
       socket.assigns.page
       |> Pages.change_page(page)

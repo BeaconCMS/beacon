@@ -56,7 +56,7 @@ defmodule BeaconWeb.PageManagement.PageLive.FormComponent do
         {:noreply,
          socket
          |> put_flash(:info, "Page created successfully")
-         |> push_redirect(to: socket.assigns.return_to)}
+         |> push_navigate(to: socket.assigns.navigate)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         socket =
