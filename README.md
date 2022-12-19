@@ -1,5 +1,7 @@
 # Beacon
 
+#### Install
+
 Steps to build a Phoenix app using Beacon:
 
 1.  Make sure your phx_new package is up to date:
@@ -222,31 +224,38 @@ Beacon supports both.
 - The live data blog_slug_uppercase
 - The zoom in cursor from the stylesheet
 
-To enable Page Management UI:
+#### Page and Asset Management UI
 
 1.  Add the following to the top of your Router:
+
     ```elixir
-    require BeaconWeb.PageManagement
+    require BeaconWeb.Admin
     ```
+
 2.  Add the following scope to your Router:
 
     ```elixir
-      scope "/page_management", BeaconWeb.PageManagement do
+      scope "/beacon/admin, BeaconWeb.Admin do
         pipe_through :browser
 
-        BeaconWeb.PageManagement.routes()
+        BeaconWeb.Admin.routes()
       end
     ```
 
-3.  visit <http://localhost:4000/page_management/pages>
-4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
+You're free to choose the prefix that best suits your needs, for eg: `scope "/cms/management, BeaconWeb.Admin`.
 
-To enable Page Management API:
+3.  visit <http://localhost:4000/beacon/admin>
+
+4. Navigate to page editor with version management, create new pages, or upload assets.
+
+#### Page and Asset Management API
 
 1.  Add the following to the top of your Router:
+
     ```elixir
     require BeaconWeb.PageManagementApi
     ```
+
 2.  Add the following scope to your Router:
 
     ```elixir
