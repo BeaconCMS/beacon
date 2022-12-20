@@ -6,9 +6,9 @@ defmodule DummyApp.Endpoint do
 
   @session_options [store: :cookie, key: "_dummy_app_key", signing_salt: "secret"]
 
-  socket("/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]])
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
-  plug(Plug.Session, store: :cookie, key: "_app_key", signing_salt: "5Ude+fet")
+  plug Plug.Session, store: :cookie, key: "_app_key", signing_salt: "5Ude+fet"
 
-  plug(DummyApp.Router)
+  plug DummyApp.Router
 end
