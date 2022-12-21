@@ -4,9 +4,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
-  alias Beacon.Pages
-  alias Beacon.Layouts
   alias Beacon.Components
+  alias Beacon.Layouts
+  alias Beacon.Pages
   alias Beacon.Stylesheets
 
   # Dummy APP setup.
