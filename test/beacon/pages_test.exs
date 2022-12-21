@@ -1,11 +1,11 @@
 defmodule Beacon.PagesTest do
   use Beacon.DataCase, async: true
 
-  alias Beacon.Pages
-  alias Beacon.Layouts
   alias Beacon.Components
-  alias Beacon.Stylesheets
+  alias Beacon.Layouts
+  alias Beacon.Pages
   alias Beacon.Pages.Page
+  alias Beacon.Stylesheets
 
   defp create_page do
     Stylesheets.create_stylesheet!(%{

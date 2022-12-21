@@ -4,9 +4,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
-  alias Beacon.Pages
-  alias Beacon.Layouts
   alias Beacon.Components
+  alias Beacon.Layouts
+  alias Beacon.Loader.DBLoader
+  alias Beacon.Pages
   alias Beacon.Stylesheets
 
   # Dummy APP setup.
@@ -106,7 +107,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     })
 
     # Make sure events are loaded.
-    Beacon.Loader.DBLoader.load_from_db()
+    DBLoader.load_from_db()
   end
 
   test "render the given path" do
