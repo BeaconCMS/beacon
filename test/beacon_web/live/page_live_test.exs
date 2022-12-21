@@ -6,6 +6,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   alias Beacon.Components
   alias Beacon.Layouts
+  alias Beacon.Loader.DBLoader
   alias Beacon.Pages
   alias Beacon.Stylesheets
 
@@ -106,7 +107,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     })
 
     # Make sure events are loaded.
-    Beacon.Loader.DBLoader.load_from_db()
+    DBLoader.load_from_db()
   end
 
   test "render the given path" do
