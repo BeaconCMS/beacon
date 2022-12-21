@@ -46,7 +46,8 @@ defmodule Beacon.MixProject do
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
-      {:plug_cowboy, "~> 2.1", only: :test}
+      {:plug_cowboy, "~> 2.1", only: :test},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -58,7 +59,7 @@ defmodule Beacon.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup"],
+      setup: ["deps.get"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
