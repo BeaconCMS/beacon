@@ -42,7 +42,7 @@ defmodule Beacon.DataSource do
       reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
 
     error ->
-      raise error
+      reraise error, __STACKTRACE__
   end
 
   defp get_data_source do
