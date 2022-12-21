@@ -89,6 +89,9 @@ jobs:
       - run: mix deps.unlock --check-unused
         if: ${{ matrix.lint }}
 
+      - run: mix credo --strict
+        if: ${{ matrix.lint }}
+
       - run: mix test
 
       - run: mix dialyzer
