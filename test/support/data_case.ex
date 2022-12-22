@@ -20,6 +20,9 @@ defmodule Beacon.DataCase do
       Sandbox.mode(Beacon.Repo, {:shared, self()})
     end
 
+    # By default, don't run the CSS compiler.
+    Mox.stub(CSSCompilerMock, :compile!, fn _layout, _opts -> "" end)
+
     :ok
   end
 end

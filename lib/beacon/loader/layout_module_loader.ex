@@ -3,6 +3,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   alias Beacon.Layouts.Layout
   alias Beacon.Loader.ModuleLoader
+  alias Beacon.RuntimeCSS
 
   def load_layouts(site, layouts) do
     component_module = Beacon.Loader.component_module_for_site(site)
@@ -28,6 +29,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   defp render_layout(%Layout{} = layout) do
     Beacon.Util.safe_code_heex_check!(layout.body)
+    runtime_css = RuntimeCSS.compile!(layout)
 
     """
       def render(#{inspect(layout.id)}, assigns) do
@@ -40,7 +42,10 @@ defmodule Beacon.Loader.LayoutModuleLoader do
         %{
           title: #{inspect(layout.title)},
           meta_tags: #{inspect(layout.meta_tags)},
-          stylesheet_urls: #{inspect(layout.stylesheet_urls)}
+          stylesheet_urls: #{inspect(layout.stylesheet_urls)},
+          runtime_css: \"""
+            #{runtime_css}
+            \"""
         }
       end
     """
