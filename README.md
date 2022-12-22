@@ -253,8 +253,6 @@ Beacon supports both.
       end
     ```
 
-You're free to choose the prefix that best suits your needs, for eg: `scope "/cms/management, BeaconWeb.Admin`.
-
 3. Visit <http://localhost:4000/beacon/admin>
 
 4. Navigate to page editor with version management, create new pages, or upload assets.
