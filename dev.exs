@@ -44,7 +44,7 @@ defmodule SamplePhoenix.ErrorView do
 end
 
 defmodule SamplePhoenix.LayoutView do
-  import Phoenix.Component, only: [sigil_H: 2]
+  import Phoenix.Component, only: [sigil_H: 2, live_title: 1]
   alias SampleAppWeb.Router.Helpers, as: Routes
 
   def render("root.html", assigns) do
@@ -54,11 +54,14 @@ defmodule SamplePhoenix.LayoutView do
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <.live_title suffix=" · Beacon Dev">
+          <%= assigns[:page_title] || "Dev" %>
+        </.live_title>
         <script src="https://cdn.tailwindcss.com">
         </script>
         <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.0-rc.0/priv/static/phoenix.min.js">
         </script>
-        <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.18.3/priv/static/phoenix_live_view.min.js">
+        <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.18.3/priv/static/phoenix_live_view.js">
         </script>
         <script>
           let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket)
@@ -82,7 +85,7 @@ end
 defmodule Router do
   use Phoenix.Router
   import Phoenix.LiveView.Router
-  require BeaconWeb.PageManagement
+  require BeaconWeb.Admin
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -93,9 +96,9 @@ defmodule Router do
     plug BeaconWeb.Plug
   end
 
-  scope "/page_management", BeaconWeb.PageManagement do
+  scope "/beacon/admin", BeaconWeb.Admin do
     pipe_through :browser
-    BeaconWeb.PageManagement.routes()
+    BeaconWeb.Admin.routes()
   end
 
   scope "/", BeaconWeb do
