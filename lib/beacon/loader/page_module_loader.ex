@@ -114,11 +114,10 @@ defmodule Beacon.Loader.PageModuleLoader do
       path
       |> String.split("/")
       |> Enum.filter(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "*")))
-      |> Enum.map(fn
+      |> Enum.map_join(", ", fn
         ":" <> var -> "#{var}: #{var}"
         "*" <> var -> "#{var}: #{var}"
       end)
-      |> Enum.join(", ")
 
     "%{#{vars}}"
   end

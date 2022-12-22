@@ -6,6 +6,7 @@ defmodule Beacon.Pages do
   import Ecto.Query, warn: false
   alias Beacon.Repo
 
+  alias Beacon.Loader.DBLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
@@ -22,6 +23,13 @@ defmodule Beacon.Pages do
   """
   def list_pages(preloads \\ []) do
     Page |> order_by(:order) |> Repo.all() |> Repo.preload(preloads)
+  end
+
+  @doc """
+  List all page templates for a layout.
+  """
+  def list_page_templates_by_layout(layout_id) do
+    Repo.all(from p in Page, where: p.layout_id == ^layout_id, select: p.template)
   end
 
   @doc """
@@ -60,7 +68,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
-        Beacon.Loader.DBLoader.load_from_db()
+        DBLoader.load_from_db()
         page
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -98,7 +106,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.update(page_changeset),
            {:ok, _} <- create_version_for_page(page) do
-        Beacon.Loader.DBLoader.load_from_db()
+        DBLoader.load_from_db()
         page
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -127,7 +135,7 @@ defmodule Beacon.Pages do
   def delete_page(%Page{} = page) do
     case Repo.delete(page) do
       {:ok, _} ->
-        Beacon.Loader.DBLoader.load_from_db()
+        DBLoader.load_from_db()
         {:ok, page}
 
       {:error, reason} ->
@@ -301,7 +309,7 @@ defmodule Beacon.Pages do
     |> Repo.insert()
     |> case do
       {:ok, page_event} ->
-        Beacon.Loader.DBLoader.load_from_db()
+        DBLoader.load_from_db()
         {:ok, page_event}
 
       {:error, reason} ->
@@ -337,7 +345,7 @@ defmodule Beacon.Pages do
     |> Repo.insert()
     |> case do
       {:ok, page_helper} ->
-        Beacon.Loader.DBLoader.load_from_db()
+        DBLoader.load_from_db()
         {:ok, page_helper}
 
       {:error, reason} ->

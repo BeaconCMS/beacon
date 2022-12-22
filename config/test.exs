@@ -17,3 +17,5 @@ config :beacon,
 
 # set default DataSource implementation for tests.
 config :beacon, :data_source, DummyApp.BeaconDataSource
+
+config :beacon, :css_compiler, CSSCompilerMock

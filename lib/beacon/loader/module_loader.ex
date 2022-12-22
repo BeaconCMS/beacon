@@ -9,6 +9,8 @@ defmodule Beacon.Loader.ModuleLoader do
   end
 
   def import_my_component(component_module, functions) do
+    functions = Enum.filter(functions, &is_binary/1)
+
     if Enum.any?(functions, &String.match?(&1, ~r/my_component/)) do
       "import #{component_module}, only: [my_component: 2]"
     else

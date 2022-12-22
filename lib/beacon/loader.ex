@@ -52,7 +52,7 @@ defmodule Beacon.Loader do
           call_function_with_retry(module, function, args, failure_count + 1)
 
         _ ->
-          raise e
+          reraise e, __STACKTRACE__
       end
 
     _e in FunctionClauseError ->
@@ -66,6 +66,6 @@ defmodule Beacon.Loader do
       reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
 
     e ->
-      raise e
+      reraise e, __STACKTRACE__
   end
 end

@@ -80,6 +80,9 @@ jobs:
         run: mix dialyzer --plt
         if: ${{ matrix.dialyzer && steps.cache-plt.outputs.cache-hit != 'true' }}
 
+      - name: Install tailwind
+        run: mix tailwind.install
+
       - run: mix compile --warnings-as-errors
         if: ${{ matrix.lint }}
 
@@ -87,6 +90,9 @@ jobs:
         if: ${{ matrix.lint }}
 
       - run: mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+
+      - run: mix credo --strict
         if: ${{ matrix.lint }}
 
       - run: mix test

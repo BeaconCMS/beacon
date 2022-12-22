@@ -57,7 +57,18 @@ Beacon supports both.
       pool_size: 10
     ```
 
-7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+7.  Configure Tailwind:
+
+    Add an empty `:runtime` profile to your tailwind configuration:
+
+    ```elixir
+    # config/config.exs
+    config :tailwind,
+      version: "3.2.4",
+      runtime: []
+    ```
+
+8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -69,14 +80,14 @@ Beacon supports both.
     end
     ```
 
-8.  Add that DataSource to your config.exs:
+9.  Add that DataSource to your config.exs:
 
     ```elixir
     config :beacon,
       data_source: MyApp.BeaconDataSource
     ```
 
-9.  Add a `:beacon` pipeline to your router:
+10.  Add a `:beacon` pipeline to your router:
 
     ```elixir
     pipeline :beacon do
@@ -84,7 +95,7 @@ Beacon supports both.
     end
     ```
 
-10. Add a `BeaconWeb` scope to your router as shown below:
+11. Add a `BeaconWeb` scope to your router as shown below:
 
     ```elixir
     scope "/", BeaconWeb do
@@ -97,7 +108,7 @@ Beacon supports both.
     end
     ```
 
-11. Add some seeds to your seeds.exs:
+12. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -244,7 +255,7 @@ Beacon supports both.
 
 You're free to choose the prefix that best suits your needs, for eg: `scope "/cms/management, BeaconWeb.Admin`.
 
-3.  visit <http://localhost:4000/beacon/admin>
+3. Visit <http://localhost:4000/beacon/admin>
 
 4. Navigate to page editor with version management, create new pages, or upload assets.
 
@@ -267,3 +278,12 @@ You're free to choose the prefix that best suits your needs, for eg: `scope "/cm
     ```
 
 3.  Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.
+
+### Local Development
+
+`dev.exs` provides a phoenix app running beacon with with code reload enabled:
+
+```shell
+mix deps.get
+mix dev
+```

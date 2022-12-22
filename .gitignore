@@ -30,3 +30,6 @@ beacon-*.tar
 # Dialyzer PTLs
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
+
+# Tailwind dev
+/assets
