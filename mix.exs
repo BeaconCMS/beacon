@@ -52,7 +52,7 @@ defmodule Beacon.MixProject do
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:tailwind, "~> 0.1.9"},
+      {:tailwind, "~> 0.1.9"}
     ]
   end
 
