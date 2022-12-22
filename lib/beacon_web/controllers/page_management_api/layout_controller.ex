@@ -2,13 +2,12 @@ defmodule BeaconWeb.PageManagementApi.LayoutController do
   use BeaconWeb, :controller
 
   alias Beacon.Layouts
-  # alias Beacon.Layouts.Layout
 
-  action_fallback(BeaconWeb.FallbackController)
+  action_fallback BeaconWeb.FallbackController
 
   def index(conn, _params) do
     layouts = Layouts.list_layouts()
-    render(conn, "index.json", layouts: layouts)
+    render(conn, :index, layouts: layouts)
   end
 
   # def create(conn, %{"layout" => layout_params}) do
@@ -16,20 +15,20 @@ defmodule BeaconWeb.PageManagementApi.LayoutController do
   #     conn
   #     |> put_status(:created)
   #     |> put_resp_header("location", Routes.layout_path(conn, :show, layout))
-  #     |> render("show.json", layout: layout)
+  #     |> render(:show, layout: layout)
   #   end
   # end
 
   def show(conn, %{"id" => id}) do
     layout = Layouts.get_layout!(id)
-    render(conn, "show.json", a_layout: layout)
+    render(conn, :show, a_layout: layout)
   end
 
   # def update(conn, %{"id" => id, "layout" => layout_params}) do
   #   layout = Layouts.get_layout!(id)
 
   #   with {:ok, %Layout{} = layout} <- Layouts.update_layout(layout, layout_params) do
-  #     render(conn, "show.json", layout: layout)
+  #     render(conn, :show, layout: layout)
   #   end
   # end
 

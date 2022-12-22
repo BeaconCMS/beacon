@@ -41,14 +41,14 @@ defmodule Beacon.MixProject do
       {:phoenix, "~> 1.7.0-rc.0", override: true},
       {:phoenix_live_view, "~> 0.18", override: true},
       {:phoenix_pubsub, "~> 2.1"},
-      # TODO remove phoenix_view after migrating to components
-      {:phoenix_view, "~> 2.0"},
+      {:phoenix_view, "~> 2.0", only: :test},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
       {:plug_cowboy, "~> 2.1", only: :test},
       {:tailwind, "~> 0.1.9"},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.0", only: :test}
     ]
   end

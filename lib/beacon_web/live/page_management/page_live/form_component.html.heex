@@ -1,26 +1,16 @@
 <div>
-  <h2><%= @title %></h2>
+  <.header>
+    <%= @title %>
+  </.header>
 
-  <.form :let={f} for={@changeset} id="page-form" phx-target={@myself} phx-change="validate" phx-submit="save">
-    <%= label(f, :path) %>
-    <%= text_input(f, :path) %>
-    <%= error_tag(f, :path) %>
+  <.simple_form :let={f} for={@changeset} id="page-form" phx-target={@myself} phx-change="validate" phx-submit="save">
+    <.input field={{f, :site}} type="text" label="Site" />
+    <.input field={{f, :path}} type="text" label="Path" />
+    <.input field={{f, :template}} type="textarea" label="Template" />
+    <.input field={{f, :layout_id}} type="select" label="Template" options={layouts_to_options(@site_layouts)} />
 
-    <%= label(f, :site) %>
-    <%= text_input(f, :site) %>
-    <%= error_tag(f, :site) %>
-
-    <%= label(f, :template) %>
-    <%= textarea(f, :template, style: "height: 20rem") %>
-    <%= error_tag(f, :template) %>
-
-    <%= label(f, :layout_id) %>
-    <%= select(f, :layout_id, layouts_to_options(@site_layouts)) %>
-    <%= error_tag(f, :template) %>
-
-    <div>
-      <%= submit("Save", phx_disable_with: "Saving...") %>
-      <%= live_redirect("Cancel", to: "../pages") %>
-    </div>
-  </.form>
+    <:actions>
+      <.button phx-disable-with="Saving...">Save</.button>
+    </:actions>
+  </.simple_form>
 </div>

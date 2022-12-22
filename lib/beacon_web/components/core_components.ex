@@ -11,6 +11,7 @@ defmodule BeaconWeb.CoreComponents do
   """
   use Phoenix.Component
 
+  alias Phoenix.HTML.Form
   alias Phoenix.LiveView.JS
   import BeaconWeb.Gettext
 
@@ -256,11 +257,11 @@ defmodule BeaconWeb.CoreComponents do
     assigns
     |> assign(field: nil)
     |> assign_new(:name, fn ->
-      name = Phoenix.HTML.Form.input_name(f, field)
+      name = Form.input_name(f, field)
       if assigns.multiple, do: name <> "[]", else: name
     end)
-    |> assign_new(:id, fn -> Phoenix.HTML.Form.input_id(f, field) end)
-    |> assign_new(:value, fn -> Phoenix.HTML.Form.input_value(f, field) end)
+    |> assign_new(:id, fn -> Form.input_id(f, field) end)
+    |> assign_new(:value, fn -> Form.input_value(f, field) end)
     |> assign_new(:errors, fn -> translate_errors(f.errors || [], field) end)
     |> input()
   end
@@ -297,7 +298,7 @@ defmodule BeaconWeb.CoreComponents do
         {@rest}
       >
         <option :if={@prompt} value=""><%= @prompt %></option>
-        <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
+        <%= Form.options_for_select(@options, @value) %>
       </select>
       <.error :for={msg <- @errors}><%= msg %></.error>
     </div>
@@ -564,7 +565,7 @@ defmodule BeaconWeb.CoreComponents do
     error(%{
       errors: form.errors,
       field: field,
-      input_name: Phoenix.HTML.Form.input_name(form, field)
+      input_name: Form.input_name(form, field)
     })
   end
 
