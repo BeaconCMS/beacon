@@ -258,3 +258,12 @@ To enable Page Management API:
     ```
 
 3.  Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.
+
+### Local Development
+
+`dev.exs` provides a phoenix app running beacon with with code reload enabled:
+
+```shell
+mix deps.get
+mix dev
+```

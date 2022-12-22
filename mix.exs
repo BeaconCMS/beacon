@@ -40,13 +40,16 @@ defmodule Beacon.MixProject do
       # TODO remove override after the final Phoenix 1.7 is released
       {:phoenix, "~> 1.7.0-rc.0", override: true},
       {:phoenix_live_view, "~> 0.18", override: true},
+      {:phoenix_live_reload, "~> 1.3", only: :dev},
+      {:phoenix_ecto, "~> 4.4"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_view, "~> 2.0", only: :test},
+      {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
-      {:plug_cowboy, "~> 2.1", only: :test},
+      {:jason, "~> 1.3"},
+      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
@@ -62,6 +65,7 @@ defmodule Beacon.MixProject do
       setup: ["deps.get"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
+      dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end
