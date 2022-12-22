@@ -1,14 +1,14 @@
 defmodule Beacon.CSSCompilerTest do
   use Beacon.DataCase, async: true
 
+  import ExUnit.CaptureIO
+
   alias Beacon.CSSCompiler
 
   alias Beacon.Components
   alias Beacon.Layouts
   alias Beacon.Pages
   alias Beacon.Stylesheets
-
-  import ExUnit.CaptureIO
 
   @db_config_template """
   module.exports = {
@@ -85,7 +85,7 @@ defmodule Beacon.CSSCompilerTest do
         page_id: page.id,
         event_name: "hello",
         code: """
-          {:noreply, Phoenix.LiveView.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+          {:noreply, Phoenix.Component.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
         """
       })
 

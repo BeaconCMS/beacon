@@ -1,6 +1,6 @@
 defmodule Beacon.TestView do
   @moduledoc false
-  use BeaconWeb, :view
+  use BeaconWeb, :html
 
   def render(_, assigns) do
     ~H"""
