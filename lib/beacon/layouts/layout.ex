@@ -2,6 +2,17 @@ defmodule Beacon.Layouts.Layout do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{
+          id: String.t(),
+          body: String.t(),
+          meta_tags: map(),
+          site: String.t(),
+          stylesheet_urls: [String.t()],
+          title: String.t(),
+          inserted_at: NaiveDateTime.t(),
+          updated_at: NaiveDateTime.t()
+        }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_layouts" do

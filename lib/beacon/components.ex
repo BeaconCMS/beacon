@@ -22,6 +22,13 @@ defmodule Beacon.Components do
   end
 
   @doc """
+  List all the components' bodies.
+  """
+  def list_component_bodies do
+    Repo.all(from c in Component, select: c.body)
+  end
+
+  @doc """
   Gets a single component.
 
   Raises `Ecto.NoResultsError` if the Component does not exist.
