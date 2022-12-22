@@ -62,7 +62,7 @@ Beacon supports both.
     ```elixir
     # config/config.exs
     config :tailwind,
-      version: "3.1.8",
+      version: "3.2.4",
       runtime: []
     ```
 
