@@ -34,22 +34,25 @@ defmodule Beacon.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
+      {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
+      {:jason, "~> 1.3"},
+      {:mox, "~> 1.0", only: :test},
       # TODO remove override after the final Phoenix 1.7 is released
       {:phoenix, "~> 1.7.0-rc.0", override: true},
+      {:phoenix_ecto, "~> 4.4"},
+      {:phoenix_live_reload, "~> 1.3", only: :dev},
       {:phoenix_live_view, "~> 0.18", override: true},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_view, "~> 2.0", only: :test},
+      {:phoenix_view, "~> 2.0", only: [:dev, :test]},
+      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
-      {:floki, ">= 0.30.0", only: :test},
-      {:plug_cowboy, "~> 2.1", only: :test},
-      {:tailwind, "~> 0.1.9"},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:mox, "~> 1.0", only: :test}
+      {:tailwind, "~> 0.1.9"}
     ]
   end
 
@@ -64,6 +67,7 @@ defmodule Beacon.MixProject do
       setup: ["deps.get", "ecto.setup", "tailwind.install"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
+      dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end
