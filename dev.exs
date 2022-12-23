@@ -29,14 +29,14 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
 
 Application.put_env(:beacon, :data_source, BeaconDataSource)
 
-Application.put_env(:beacon, Beacon.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "beacon_sample_app_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true
-)
+# Application.put_env(:beacon, Beacon.Repo,
+#   username: "postgres",
+#   password: "postgres",
+#   hostname: "localhost",
+#   database: "beacon_sample_app_dev",
+#   stacktrace: true,
+#   show_sensitive_data_on_connection_error: true
+# )
 
 defmodule SamplePhoenix.ErrorView do
   use Phoenix.View, root: ""
