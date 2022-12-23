@@ -1,7 +1,7 @@
 <.header>
   Media Library
   <:actions>
-    <.link patch="/beacon/admin/media_library/new">
+    <.link patch="/beacon/admin/media_library/upload">
       <.button>Upload</.button>
     </.link>
   </:actions>
@@ -17,10 +17,10 @@
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="asset-modal" show on_cancel={JS.navigate("/beacon/admin/media_library")}>
+<.modal :if={@live_action in [:upload]} id="asset-modal" show on_cancel={JS.navigate("/beacon/admin/media_library")}>
   <.live_component
     module={BeaconWeb.Admin.MediaLibraryLive.FormComponent}
-    id={@asset.id || :new}
+    id={@asset.id || :upload}
     title={@page_title}
     action={@live_action}
     asset={@asset}

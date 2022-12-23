@@ -6,6 +6,7 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
   @foreign_key_type :binary_id
   schema "beacon_assets" do
     field :file_body, :binary
+    field :file_hash, :string
     field :file_name, :string
     field :file_type, :string
     field :site, :string
@@ -16,7 +17,7 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
   @doc false
   def changeset(asset, attrs) do
     asset
-    |> cast(attrs, [:site, :file_name, :file_type, :file_body])
-    |> validate_required([:site, :file_name, :file_type, :file_body])
+    |> cast(attrs, [:site, :file_name, :file_type, :file_body, :file_hash])
+    |> validate_required([:site, :file_name, :file_type, :file_body, :file_hash])
   end
 end

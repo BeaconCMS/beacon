@@ -37,40 +37,25 @@ defmodule Beacon.Admin.MediaLibrary do
   """
   def get_asset!(id), do: Repo.get!(Asset, id)
 
-  @doc """
-  Creates a asset.
+  def get_asset!(site, name) do
+    Repo.get_by!(Asset, site: site, name: name)
+  end
 
-  ## Examples
+  def upload(site, file_path, file_name, file_type) do
+    file_body = File.read!(file_path)
+    file_hash = :crypto.hash(:sha, file_body) |> Base.encode16()
 
-      iex> create_asset(%{field: value})
-      {:ok, %Asset{}}
+    attrs = %{
+      site: site,
+      file_body: file_body,
+      file_hash: file_hash,
+      file_name: file_name,
+      file_type: file_type
+    }
 
-      iex> create_asset(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def create_asset(attrs \\ %{}) do
     %Asset{}
     |> Asset.changeset(attrs)
     |> Repo.insert()
-  end
-
-  @doc """
-  Updates a asset.
-
-  ## Examples
-
-      iex> update_asset(asset, %{field: new_value})
-      {:ok, %Asset{}}
-
-      iex> update_asset(asset, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_asset(%Asset{} = asset, attrs) do
-    asset
-    |> Asset.changeset(attrs)
-    |> Repo.update()
   end
 
   @doc """

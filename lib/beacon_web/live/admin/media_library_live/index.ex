@@ -14,13 +14,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :edit, %{"id" => id}) do
-    socket
-    |> assign(:page_title, "Edit Asset")
-    |> assign(:asset, MediaLibrary.get_asset!(id))
-  end
-
-  defp apply_action(socket, :new, _params) do
+  defp apply_action(socket, :upload, _params) do
     socket
     |> assign(:page_title, "Upload")
     |> assign(:asset, %Asset{})

@@ -105,6 +105,8 @@ defmodule Router do
     pipe_through :browser
     pipe_through :beacon
 
+    get "/beacon/media_library/serve", MediaLibraryController, :show
+
     live_session :beacon, session: %{"beacon_site" => "my_site"} do
       live "/beacon/*path", PageLive, :path
     end
@@ -162,9 +164,19 @@ Beacon.Pages.create_page!(%{
   <main>
     <h1>Dev</h1>
     <%= my_component("sample_component", val: 1) %>
+    <div>
+      <BeaconWeb.Components.image site={@__site__} name="dockyard.png" width="200px" />
+    </div>
   </main>
   """
 })
+
+Beacon.Admin.MediaLibrary.upload(
+  "my_site",
+  Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+  "dockyard.png",
+  "image/png"
+)
 
 Application.ensure_all_started(:plug_cowboy)
 Application.ensure_all_started(:cowboy_websocket)

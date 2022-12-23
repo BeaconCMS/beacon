@@ -35,19 +35,20 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.FormComponent do
   defp handle_progress(:asset, entry, socket) do
     if entry.done? do
       consume_uploaded_entries(socket, :asset, fn %{path: path}, entry ->
-        params = %{
-          site: "todo",
-          file_body: File.read!(path),
-          file_name: entry.client_name,
-          file_type: entry.client_type
-        }
+        Beacon.Admin.MediaLibrary.upload(
+          "my_site",
+          path,
+          entry.client_name,
+          entry.client_type
+        )
 
-        save_asset(socket, :new, params)
-
-        {:ok, params}
+        {:ok, path}
       end)
 
-      {:noreply, socket}
+      {:noreply,
+       socket
+       |> put_flash(:info, "Asset created successfully")
+       |> push_navigate(to: socket.assigns.navigate)}
     else
       {:noreply, socket}
     end
@@ -58,33 +59,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.FormComponent do
     {:noreply, socket}
   end
 
-  def handle_event("save", %{"asset" => asset_params}, socket) do
-    save_asset(socket, socket.assigns.action, asset_params)
-  end
-
-  defp save_asset(socket, :edit, asset_params) do
-    case MediaLibrary.update_asset(socket.assigns.asset, asset_params) do
-      {:ok, _asset} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Asset updated successfully")
-         |> push_navigate(to: socket.assigns.navigate)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, :changeset, changeset)}
-    end
-  end
-
-  defp save_asset(socket, :new, asset_params) do
-    case MediaLibrary.create_asset(asset_params) do
-      {:ok, _asset} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Asset created successfully")
-         |> push_navigate(to: socket.assigns.navigate)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, changeset: changeset)}
-    end
-  end
+  # def handle_event("save", %{"asset" => asset_params}, socket) do
+  #   save_asset(socket, socket.assigns.action, asset_params)
+  # end
 end

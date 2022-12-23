@@ -8,7 +8,7 @@ defmodule BeaconWeb.Admin do
       live "/page_editor/:id", PageEditorLive, :edit
 
       live "/media_library", MediaLibraryLive.Index, :index
-      live "/media_library/new", MediaLibraryLive.Index, :new
+      live "/media_library/upload", MediaLibraryLive.Index, :upload
     end
   end
 end
