@@ -48,18 +48,16 @@ defmodule Beacon.Fixtures do
     layout_id = get_lazy(attrs, :layout_id, fn -> layout_fixture().id end)
 
     attrs
-    |> Enum.into(
-      %{
-        path: "home",
-        site: "my_site",
-        layout_id: layout_id,
-        template: """
-        <main>
-          <h1>my_site#home</h1>
-        </main>
-        """
-      }
-    )
+    |> Enum.into(%{
+      path: "home",
+      site: "my_site",
+      layout_id: layout_id,
+      template: """
+      <main>
+        <h1>my_site#home</h1>
+      </main>
+      """
+    })
     |> Pages.create_page!()
   end
 
