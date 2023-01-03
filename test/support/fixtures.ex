@@ -30,7 +30,8 @@ defmodule Beacon.Fixtures do
   end
 
   def layout_fixture(attrs \\ %{}) do
-    Enum.into(attrs, %{
+    attrs
+    |> Enum.into(%{
       site: "my_site",
       title: "Sample Home Page",
       meta_tags: %{"foo" => "bar"},
