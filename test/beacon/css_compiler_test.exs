@@ -2,13 +2,8 @@ defmodule Beacon.CSSCompilerTest do
   use Beacon.DataCase, async: true
 
   import ExUnit.CaptureIO
-
+  import Beacon.Fixtures
   alias Beacon.CSSCompiler
-
-  alias Beacon.Components
-  alias Beacon.Layouts
-  alias Beacon.Pages
-  alias Beacon.Stylesheets
 
   @db_config_template """
   module.exports = {
@@ -28,15 +23,9 @@ defmodule Beacon.CSSCompilerTest do
 
   defp create_page(_) do
     capture_io(fn ->
-      Stylesheets.create_stylesheet!(%{
-        site: "my_site",
-        name: "sample_stylesheet",
-        content: "body {cursor: zoom-in;}"
-      })
+      stylesheet_fixture()
 
-      Components.create_component!(%{
-        site: "my_site",
-        name: "sample_component",
+      component_fixture(%{
         body: ~S"""
         <li id={"my-component-#{@val}"}>
           <span class="bcms-test-text-sm"><%= @val %></span>
@@ -45,11 +34,7 @@ defmodule Beacon.CSSCompilerTest do
       })
 
       layout =
-        Layouts.create_layout!(%{
-          site: "my_site",
-          title: "Sample Home Page",
-          meta_tags: %{"foo" => "bar"},
-          stylesheet_urls: [],
+        layout_fixture(%{
           body: """
           <header class="bcms-test-text-lg">Page header</header>
           <%= @inner_content %>
@@ -57,39 +42,19 @@ defmodule Beacon.CSSCompilerTest do
           """
         })
 
-      page =
-        Pages.create_page!(%{
-          path: "home",
-          site: "my_site",
-          layout_id: layout.id,
-          template: """
-          <main>
-            <h2 class="bcms-test-text-xl">Some Values:</h2>
-            <ul>
-              <%= for val <- @beacon_live_data[:vals] do %>
-                <%= my_component("sample_component", val: val) %>
-              <% end %>
-            </ul>
-
-            <.form let={f} for={:greeting} phx-submit="hello">
-              Name: <%= text_input f, :name %>
-              <%= submit "Hello" %>
-            </.form>
-
-            <%= if assigns[:message], do: assigns.message %>
-          </main>
-          """
-        })
-
-      Pages.create_page_event!(%{
-        page_id: page.id,
-        event_name: "hello",
-        code: """
-          {:noreply, Phoenix.Component.assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+      page_fixture(%{
+        layout_id: layout.id,
+        template: """
+        <main>
+          <h2 class="bcms-test-text-xl">Some Values:</h2>
+          <%= for val <- @beacon_live_data[:vals] do %>
+            <%= my_component("sample_component", val: val) %>
+          <% end %>
+        </main>
         """
       })
 
-      send(self(), {:ok, layout: layout, page: page})
+      send(self(), {:ok, layout: layout})
     end)
 
     assert_received {:ok, result}
