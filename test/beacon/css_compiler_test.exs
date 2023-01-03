@@ -25,24 +25,24 @@ defmodule Beacon.CSSCompilerTest do
     capture_io(fn ->
       stylesheet_fixture()
 
-      component_fixture(%{
+      component_fixture(
         body: ~S"""
         <li id={"my-component-#{@val}"}>
           <span class="bcms-test-text-sm"><%= @val %></span>
         </li>
         """
-      })
+      )
 
       layout =
-        layout_fixture(%{
+        layout_fixture(
           body: """
           <header class="bcms-test-text-lg">Page header</header>
           <%= @inner_content %>
           <footer class="text-md">Page footer</footer>
           """
-        })
+        )
 
-      page_fixture(%{
+      page_fixture(
         layout_id: layout.id,
         template: """
         <main>
@@ -52,7 +52,7 @@ defmodule Beacon.CSSCompilerTest do
           <% end %>
         </main>
         """
-      })
+      )
 
       send(self(), {:ok, layout: layout})
     end)

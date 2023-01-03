@@ -16,7 +16,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     layout = layout_fixture()
 
     page =
-      page_fixture(%{
+      page_fixture(
         layout_id: layout.id,
         template: """
         <main>
@@ -35,7 +35,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
           <%= dynamic_helper("upcase", %{name: "test_name"}) %>
         </main>
         """
-      })
+      )
 
     page_event_fixture(%{page_id: page.id})
     page_helper_fixture(%{page_id: page.id})
