@@ -8,7 +8,8 @@ defmodule Beacon.Fixtures do
   def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
 
   def stylesheet_fixture(attrs \\ %{}) do
-    Enum.into(attrs, %{
+    attrs
+    |> Enum.into(%{
       site: "my_site",
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
@@ -17,7 +18,8 @@ defmodule Beacon.Fixtures do
   end
 
   def component_fixture(attrs \\ %{}) do
-    Enum.into(attrs, %{
+    attrs
+    |> Enum.into(%{
       site: "my_site",
       name: "sample_component",
       body: ~S"""
@@ -45,8 +47,8 @@ defmodule Beacon.Fixtures do
   def page_fixture(attrs \\ %{}) do
     layout_id = get_lazy(attrs, :layout_id, fn -> layout_fixture().id end)
 
-    Enum.into(
-      attrs,
+    attrs
+    |> Enum.into(
       %{
         path: "home",
         site: "my_site",
@@ -64,7 +66,8 @@ defmodule Beacon.Fixtures do
   def page_event_fixture(attrs \\ %{}) do
     page_id = get_lazy(attrs, :page_id, fn -> page_fixture().id end)
 
-    Enum.into(attrs, %{
+    attrs
+    |> Enum.into(%{
       page_id: page_id,
       event_name: "hello",
       code: """
@@ -77,7 +80,8 @@ defmodule Beacon.Fixtures do
   def page_helper_fixture(attrs \\ %{}) do
     page_id = get_lazy(attrs, :page_id, fn -> page_fixture().id end)
 
-    Enum.into(attrs, %{
+    attrs
+    |> Enum.into(%{
       page_id: page_id,
       helper_name: "upcase",
       helper_args: "%{name: name}",
