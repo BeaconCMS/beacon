@@ -36,6 +36,8 @@ Beacon supports both.
 
 4.  Update your deps:
 
+    Make sure your application is running on Phoenix v1.7+ and Phoenix LiveView v0.18+, and execute:
+
     ```shell
     mix deps.get
     ```
