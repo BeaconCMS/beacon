@@ -73,6 +73,8 @@ jobs:
         with:
           path: priv/plts
           key: dialyzer-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
+          restore-keys: |
+            dialyzer-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
 
       - name: Generate dialyzer plt
         env:
