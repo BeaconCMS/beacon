@@ -1,4 +1,4 @@
-defmodule DummyApp.BeaconDataSource do
+defmodule Beacon.BeaconTest.BeaconDataSource do
   @behaviour Beacon.DataSource.Behaviour
 
   def live_data("my_site", ["home"], _params), do: %{vals: ["first", "second", "third"]}

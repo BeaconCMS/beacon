@@ -1,4 +1,4 @@
-defmodule DummyApp do
+defmodule Beacon.BeaconTest do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
@@ -14,7 +14,7 @@ defmodule DummyApp do
 
   def view do
     quote do
-      use Phoenix.View, root: "lib/dummy_app/templates", namespace: DummyApp
+      use Phoenix.View, root: "test/templates"
 
       import Phoenix.Controller,
         only: [get_flash: 1, get_flash: 2, view_module: 1, view_template: 1]
@@ -30,17 +30,17 @@ defmodule DummyApp do
       import Phoenix.Component
       import Phoenix.View
 
-      alias DummyApp.Router.Helpers, as: Routes
+      alias Beacon.BeaconTest.Router.Helpers, as: Routes
     end
   end
 end
 
-defmodule DummyApp.LayoutView do
-  use DummyApp, :view
+defmodule Beacon.BeaconTest.LayoutView do
+  use Beacon.BeaconTest, :view
 end
 
-defmodule DummyApp.ErrorView do
-  use DummyApp, :view
+defmodule Beacon.BeaconTest.ErrorView do
+  use Beacon.BeaconTest, :view
 
   def render(_template, _assigns), do: "Error"
 end

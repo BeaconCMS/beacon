@@ -1,4 +1,4 @@
-defmodule Beacon.TestView do
+defmodule BeaconWeb.TailwindView do
   @moduledoc false
   use BeaconWeb, :html
 

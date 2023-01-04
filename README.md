@@ -221,14 +221,14 @@ Beacon supports both.
     mix phx.server
     ```
 
-14. visit <http://localhost:4000/beacon/home> and note:
+14. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-15. visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+15. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
@@ -238,9 +238,11 @@ Beacon supports both.
 #### To enable Page Management UI:
 
 1.  Add the following to the top of your Router:
+
     ```elixir
     require BeaconWeb.PageManagement
     ```
+
 2.  Add the following scope to your Router:
 
     ```elixir
@@ -251,15 +253,18 @@ Beacon supports both.
       end
     ```
 
-3.  visit <http://localhost:4000/page_management/pages>
+3.  Visit <http://localhost:4000/page_management/pages>
+
 4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
 #### To enable Page Management API:
 
 1.  Add the following to the top of your Router:
+
     ```elixir
     require BeaconWeb.PageManagementApi
     ```
+
 2.  Add the following scope to your Router:
 
     ```elixir
