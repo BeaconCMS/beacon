@@ -223,14 +223,14 @@ Beacon supports both.
     mix phx.server
     ```
 
-14. visit <http://localhost:4000/beacon/home> and note:
+14. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-15. visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+15. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
@@ -240,6 +240,12 @@ Beacon supports both.
 #### Page and Asset Management UI
 
 1.  Add the following to the top of your Router:
+
+    ```elixir
+    require BeaconWeb.PageManagement
+    ```
+
+2.  Add the following scope to your Router:
 
     ```elixir
     require BeaconWeb.Admin
