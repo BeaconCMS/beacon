@@ -1,7 +1,7 @@
 defmodule Beacon.BeaconTest.Router do
   use Beacon.BeaconTest, :router
 
-  require BeaconWeb.PageManagement
+  require BeaconWeb.Admin
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -16,10 +16,10 @@ defmodule Beacon.BeaconTest.Router do
     plug BeaconWeb.Plug
   end
 
-  scope "/page_management", BeaconWeb.PageManagement do
+  scope "/admin", BeaconWeb.Admin do
     pipe_through :browser
 
-    BeaconWeb.PageManagement.routes()
+    BeaconWeb.Admin.routes()
   end
 
   scope "/", BeaconWeb do
