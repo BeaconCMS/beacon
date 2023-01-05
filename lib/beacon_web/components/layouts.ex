@@ -12,11 +12,13 @@ defmodule BeaconWeb.Layouts do
   phoenix_html_path = Application.app_dir(:phoenix_html, "priv/static/phoenix_html.js")
   phoenix_live_view_path = Application.app_dir(:phoenix_live_view, "priv/static/phoenix_live_view.js")
   beacon_js_path = Path.join(__DIR__, "../../../dist/js/app.js")
+  beacon_admin_css_path = Path.join(__DIR__, "../../../dist/css/admin.css")
 
   @external_resource phoenix_path
   @external_resource phoenix_html_path
   @external_resource phoenix_live_view_path
   @external_resource beacon_js_path
+  @external_resource beacon_admin_css_path
 
   @app_js """
   #{File.read!(phoenix_html_path) |> String.replace("//# sourceMappingURL=", "// ")}
@@ -28,15 +30,32 @@ defmodule BeaconWeb.Layouts do
     @app_js
   end
 
-  # TODO: nonce
+  # TODO: style nonce
+
   def render("app.css", %{__dynamic_layout_id__: layout_id, __site__: site}) do
     %{runtime_css: runtime_css} = compiled_layout_assigns(site, layout_id)
     runtime_css
   end
 
-  # TODO: non dynamic app.css
   def render("app.css", _assigns) do
     ""
+  end
+
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
+    def render("admin.css", _assigns) do
+      """
+      <link phx-track-static rel="stylesheet" href="/dev/assets/admin.css" />
+      """
+    end
+  else
+    @admin_css File.read!(beacon_admin_css_path)
+    def render("admin.css", _assigns) do
+      """
+      <style>
+      #{@admin_css}
+      </style>
+      """
+    end
   end
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do

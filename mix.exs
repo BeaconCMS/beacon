@@ -70,9 +70,7 @@ defmodule Beacon.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.build": [
-        "esbuild default --minify"
-      ]
+      "assets.build": ["esbuild default --minify", "tailwind admin --minify"]
     ]
   end
 end

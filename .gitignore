@@ -31,5 +31,5 @@ beacon-*.tar
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
 
-# Tailwind install
-assets/tailwind.config.js
+# Dev temp files
+/dev/

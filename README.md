@@ -237,6 +237,7 @@ Beacon supports both.
     ```elixir
       scope "/page_management", BeaconWeb.PageManagement do
         pipe_through :browser
+        pipe_through :beacon
 
         BeaconWeb.PageManagement.routes()
       end

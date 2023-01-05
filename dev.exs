@@ -21,14 +21,14 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
     patterns: [
+      ~r"dev/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"dist/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(live|views)/.*(ex)$"
     ]
   ],
   watchers: [
-    # TODO admin profile
-    # esbuild: {Esbuild, :install_and_run, [:admin, ~w(--sourcemap=inline --watch)]}
+    tailwind: {Tailwind, :install_and_run, [:admin_dev, ~w(--watch)]}
   ]
 )
 
@@ -48,13 +48,17 @@ defmodule SamplePhoenix.ErrorView do
   def render(_, _), do: "error"
 end
 
-defmodule Router do
+defmodule SamplePhoenixWeb.Router do
   use Phoenix.Router
   import Phoenix.LiveView.Router
   require BeaconWeb.PageManagement
 
   pipeline :browser do
     plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
   end
 
   pipeline :beacon do
@@ -63,6 +67,7 @@ defmodule Router do
 
   scope "/page_management", BeaconWeb.PageManagement do
     pipe_through :browser
+    pipe_through :beacon
     BeaconWeb.PageManagement.routes()
   end
 
@@ -78,11 +83,23 @@ end
 
 defmodule SamplePhoenix.Endpoint do
   use Phoenix.Endpoint, otp_app: :sample
-  socket "/live", Phoenix.LiveView.Socket
+
+  @session_options [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"]
+
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+
+  plug Plug.Static,
+    at: "/dev",
+    from: "dev/static",
+    gzip: false,
+    only: ~w(assets fonts images favicon.ico robots.txt)
+
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader
-  plug Router
+  plug Plug.RequestId
+  plug Plug.Session, @session_options
+  plug SamplePhoenixWeb.Router
 end
 
 defmodule BeaconDataSource do
