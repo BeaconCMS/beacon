@@ -57,18 +57,7 @@ Beacon supports both.
       pool_size: 10
     ```
 
-7.  Configure Tailwind:
-
-    Add an empty `:runtime` profile to your tailwind configuration:
-
-    ```elixir
-    # config/config.exs
-    config :tailwind,
-      version: "3.2.4",
-      runtime: []
-    ```
-
-8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -80,14 +69,14 @@ Beacon supports both.
     end
     ```
 
-9.  Add that DataSource to your config.exs:
+8.  Add that DataSource to your config.exs:
 
     ```elixir
     config :beacon,
       data_source: MyApp.BeaconDataSource
     ```
 
-10.  Add a `:beacon` pipeline to your router:
+9.  Add a `:beacon` pipeline to your router:
 
     ```elixir
     pipeline :beacon do
@@ -95,7 +84,7 @@ Beacon supports both.
     end
     ```
 
-11. Add a `BeaconWeb` scope to your router as shown below:
+10. Add a `BeaconWeb` scope to your router as shown below:
 
     ```elixir
     scope "/", BeaconWeb do
@@ -108,7 +97,7 @@ Beacon supports both.
     end
     ```
 
-12. Add some seeds to your seeds.exs:
+11. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components

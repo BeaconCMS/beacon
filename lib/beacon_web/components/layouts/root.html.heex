@@ -9,10 +9,12 @@
     <title><%= page_title(assigns) %></title>
     <%= linked_stylesheets(assigns) %>
     <%= stylesheet_tag(assigns) %>
-    <%= if !dynamic_layout?(assigns) do %>
-      <link phx-track-static rel="stylesheet" href="/assets/app.css" />
-    <% end %>
-    <script defer phx-track-static type="text/javascript" src="/assets/app.js">
+
+    <style>
+      <%= raw(render("app.css", assigns)) %>
+    </style>
+    <script phx-track-static type="text/javascript">
+      <%= raw(render("app.js", assigns)) %>
     </script>
   </head>
   <body>

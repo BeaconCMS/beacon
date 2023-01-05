@@ -21,9 +21,14 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
     patterns: [
+      ~r"dist/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(live|views)/.*(ex)$"
     ]
+  ],
+  watchers: [
+    # TODO admin profile
+    # esbuild: {Esbuild, :install_and_run, [:admin, ~w(--sourcemap=inline --watch)]}
   ]
 )
 
@@ -43,42 +48,6 @@ defmodule SamplePhoenix.ErrorView do
   def render(_, _), do: "error"
 end
 
-defmodule SamplePhoenix.LayoutView do
-  import Phoenix.Component, only: [sigil_H: 2]
-  alias SampleAppWeb.Router.Helpers, as: Routes
-
-  def render("root.html", assigns) do
-    ~H"""
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <script src="https://cdn.tailwindcss.com">
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.0-rc.0/priv/static/phoenix.min.js">
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.18.3/priv/static/phoenix_live_view.min.js">
-        </script>
-        <script>
-          let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket)
-          liveSocket.connect()
-        </script>
-      </head>
-      <body>
-        <%= @inner_content %>
-      </body>
-    </html>
-    """
-  end
-
-  def render("live.html", assigns) do
-    ~H"""
-    <%= @inner_content %>
-    """
-  end
-end
-
 defmodule Router do
   use Phoenix.Router
   import Phoenix.LiveView.Router
@@ -86,7 +55,6 @@ defmodule Router do
 
   pipeline :browser do
     plug :accepts, ["html"]
-    plug :put_root_layout, {SamplePhoenix.LayoutView, :root}
   end
 
   pipeline :beacon do
@@ -144,7 +112,7 @@ Beacon.Components.create_component!(%{
   Beacon.Layouts.create_layout!(%{
     site: "my_site",
     title: "Dev",
-    meta_tags: %{},
+    meta_tags: %{"env" => "dev"},
     stylesheet_urls: [],
     body: """
     <%= @inner_content %>
@@ -157,7 +125,8 @@ Beacon.Pages.create_page!(%{
   layout_id: layout_id,
   template: """
   <main>
-    <h1>Dev</h1>
+    <h1 class="text-violet-900">Dev</h1>
+    <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
   </main>
   """
