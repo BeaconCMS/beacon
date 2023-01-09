@@ -10,7 +10,7 @@ config :esbuild,
   version: "0.16.13",
   default: [
     args: ~w(js/app.js --bundle --target=es2020 --outdir=../dist/js),
-    cd: Path.expand("../assets", __DIR__),
+    cd: Path.expand("../priv/assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
@@ -22,7 +22,7 @@ config :tailwind,
       --input=css/admin.css
       --output=../dev/static/assets/admin.css
     ),
-    cd: Path.expand("../assets", __DIR__)
+    cd: Path.expand("../priv/assets", __DIR__)
   ]
 
 config :tailwind,
@@ -33,7 +33,7 @@ config :tailwind,
       --input=css/admin.css
       --output=../dist/css/admin.css
     ),
-    cd: Path.expand("../assets", __DIR__)
+    cd: Path.expand("../priv/assets", __DIR__)
   ]
 
 # Import environment specific config. This must remain at the bottom

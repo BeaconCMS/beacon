@@ -9,20 +9,17 @@ defmodule Beacon.CSSCompiler do
 
   @behaviour Beacon.RuntimeCSS
 
-  @template_tailwind_config_path Path.join("assets", "tailwind.config.js.eex")
-  @input_css_path Path.join(["assets", "css", "app.css"])
+  @template_tailwind_config_path Application.app_dir(:beacon, "priv/assets/tailwind.config.js.eex")
+  @input_css_path Application.app_dir(:beacon, "priv/assets/css/app.css")
 
   @external_resource @template_tailwind_config_path
   @external_resource @input_css_path
 
   @impl Beacon.RuntimeCSS
   def compile!(%Layout{} = layout, opts \\ []) do
-    required_tailwind = Beacon.tailwind_version()
-
-    case Application.get_env(:tailwind, :version, nil) do
-      nil -> Application.put_env(:tailwind, :version, required_tailwind)
-      ^required_tailwind -> :skip
-      other -> raise "Beacon requires Tailwind version #{required_tailwind} but found #{other}"
+    unless Application.get_env(:tailwind, :version) do
+      default_tailwind_version = Beacon.tailwind_version()
+      Application.put_env(:tailwind, :version, default_tailwind_version)
     end
 
     Application.put_env(:tailwind, :beacon_runtime, [])
