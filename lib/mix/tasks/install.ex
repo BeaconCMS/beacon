@@ -6,9 +6,23 @@ defmodule Mix.Tasks.Beacon.Install do
   """
   use Mix.Task
 
+  alias Mix.Tasks.Phx.Gen.Auth.Injector
+
   @switches [
     beacon_site: :string
   ]
+
+  @beacon_repo_config """
+  # Configure your Beacon repo
+  config :beacon, Beacon.Repo,
+    username: "postgres",
+    password: "postgres",
+    hostname: "localhost",
+    database: "my_app_beacon",
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    pool_size: 10
+  """
 
   def run(argv) do
     if Mix.Project.umbrella?() do
@@ -17,18 +31,41 @@ defmodule Mix.Tasks.Beacon.Install do
 
     {options, parsed} = OptionParser.parse!(argv, strict: @switches)
 
-    base_module = Mix.Phoenix.base() |> IO.inspect(label: :base)
+    base_module = Mix.Phoenix.base()
     web_module = Mix.Phoenix.web_module(base_module)
     app_name = Phoenix.Naming.underscore(base_module)
-    config_file = config_file("config.exs") |> File.read!() |> IO.inspect(label: :file)
 
-    maybe_add_beacon_repo(config_file)
+    config_file = config_file("config.exs")
+    maybe_add_beacon_repo(config_file, File.read!(config_file))
+
+    dev_config_file = config_file("dev.exs")
+    prod_config_file = config_file("prod.exs")
+
+    maybe_add_beacon_repo_config([{dev_config_file, File.read!(dev_config_file)}, {prod_config_file, File.read!(prod_config_file)}])
   end
 
-  defp maybe_add_beacon_repo(config_file) do
-    if !String.contains?(config_file, "Beacon.Repo") do
+  defp maybe_add_beacon_repo(config_file, config_file_content) do
+    if !String.contains?(config_file_content, "Beacon.Repo") do
       regex = ~r/ecto_repos: \[(.*)\]/
-      Regex.replace(regex, config_file, "ecto_repos: [\\1, Beacon.Repo]")
+      new_config_file_content = Regex.replace(regex, config_file_content, "ecto_repos: [\\1, Beacon.Repo]")
+
+      File.write!(config_file, new_config_file_content)
+    end
+  end
+
+  defp maybe_add_beacon_repo_config(config_files) when is_list(config_files), do: Enum.map(config_files, &maybe_add_beacon_repo_config/1)
+
+  defp maybe_add_beacon_repo_config({config_file, config_file_content}) do
+    if !String.contains?(config_file_content, "config :beacon, Beacon.Repo,") do
+      new_config_content =
+        Regex.replace(
+          ~r/(use Mix\.Config|import Config)(\r\n|\n|$)/,
+          config_file_content,
+          "\\0\\2#{String.trim_trailing(@beacon_repo_config)}\\2",
+          global: false
+        )
+
+      File.write!(config_file, new_config_content)
     end
   end
 
