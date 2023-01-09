@@ -17,7 +17,12 @@ defmodule Beacon.CSSCompiler do
 
   @impl Beacon.RuntimeCSS
   def compile!(%Layout{} = layout, opts \\ []) do
-    Application.put_env(:tailwind, :version, Beacon.tailwind_version())
+    required_tailwind = Beacon.tailwind_version()
+    case Application.get_env(:tailwind, :version, nil) do
+      nil -> Application.put_env(:tailwind, :version, required_tailwind)
+      ^required_version -> nil
+      other -> raise "Beacon requires Tailwind version #{required_tailwind} but found #{other}"
+    end
     Application.put_env(:tailwind, :beacon_runtime, [])
 
     raw_content = [layout.body, page_templates(layout.id), component_bodies()]
