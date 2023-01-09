@@ -57,18 +57,7 @@ Beacon supports both.
       pool_size: 10
     ```
 
-7.  Configure Tailwind:
-
-    Add an empty `:runtime` profile to your tailwind configuration:
-
-    ```elixir
-    # config/config.exs
-    config :tailwind,
-      version: "3.2.4",
-      runtime: []
-    ```
-
-8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -80,14 +69,14 @@ Beacon supports both.
     end
     ```
 
-9.  Add that DataSource to your config.exs:
+8.  Add that DataSource to your config.exs:
 
     ```elixir
     config :beacon,
       data_source: MyApp.BeaconDataSource
     ```
 
-10.  Add a `:beacon` pipeline to your router:
+9.  Add a `:beacon` pipeline to your router:
 
     ```elixir
     pipeline :beacon do
@@ -95,7 +84,7 @@ Beacon supports both.
     end
     ```
 
-11. Add a `BeaconWeb` scope to your router as shown below:
+10. Add a `BeaconWeb` scope to your router as shown below:
 
     ```elixir
     scope "/", BeaconWeb do
@@ -108,7 +97,7 @@ Beacon supports both.
     end
     ```
 
-12. Add some seeds to your seeds.exs:
+11. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -246,14 +235,15 @@ Beacon supports both.
 2.  Add the following scope to your Router:
 
     ```elixir
-      scope "/page_management", BeaconWeb.PageManagement do
+      scope "/beacon/page_management", BeaconWeb.PageManagement do
         pipe_through :browser
+        pipe_through :beacon
 
         BeaconWeb.PageManagement.routes()
       end
     ```
 
-3.  Visit <http://localhost:4000/page_management/pages>
+3.  Visit <http://localhost:4000/beacon/page_management/pages>
 
 4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 

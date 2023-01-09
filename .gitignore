@@ -31,5 +31,6 @@ beacon-*.tar
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
 
-# Tailwind dev
-/assets
+# Dev temp files
+/dev/
+/priv/dev
