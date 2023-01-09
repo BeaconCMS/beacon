@@ -65,7 +65,7 @@ defmodule SamplePhoenixWeb.Router do
     plug BeaconWeb.Plug
   end
 
-  scope "/page_management", BeaconWeb.PageManagement do
+  scope "/beacon/page_management", BeaconWeb.PageManagement do
     pipe_through :browser
     pipe_through :beacon
     BeaconWeb.PageManagement.routes()

@@ -33,3 +33,4 @@ beacon-*.tar
 
 # Dev temp files
 /dev/
+/priv/dev

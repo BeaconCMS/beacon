@@ -235,7 +235,7 @@ Beacon supports both.
 2.  Add the following scope to your Router:
 
     ```elixir
-      scope "/page_management", BeaconWeb.PageManagement do
+      scope "/beacon/page_management", BeaconWeb.PageManagement do
         pipe_through :browser
         pipe_through :beacon
 
@@ -243,7 +243,7 @@ Beacon supports both.
       end
     ```
 
-3.  Visit <http://localhost:4000/page_management/pages>
+3.  Visit <http://localhost:4000/beacon/page_management/pages>
 
 4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
