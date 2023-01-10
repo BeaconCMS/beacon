@@ -27,9 +27,9 @@ defmodule Mix.Tasks.Beacon.Install do
       Mix.raise("mix beacon.install can only be run inside an application directory")
     end
 
-    {options, parsed} = OptionParser.parse!(argv, strict: @switches)
+    {options, _parsed} = OptionParser.parse!(argv, strict: @switches)
 
-    bindings = build_context_bindings() |> IO.inspect(label: :bindings)
+    bindings = build_context_bindings(options) |> IO.inspect(label: :bindings)
 
     # Add Beacon.Repo to config.exs
     config_file = config_file("config.exs")
@@ -93,26 +93,27 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp build_context_bindings do
+  defp build_context_bindings(options) do
     base_module = Mix.Phoenix.base()
     web_module = Mix.Phoenix.web_module(base_module)
     app_name = Phoenix.Naming.underscore(base_module)
     ctx_app = Mix.Phoenix.context_app()
     lib_path = Mix.Phoenix.context_lib_path(ctx_app, "")
-    templates_path = Mix.Phoenix.context_app_path(ctx_app, "deps/beacon/priv/templates")
+    templates_path = Path.join([Application.app_dir(:beacon), "priv", "templates"])
     root = root_path()
+    beacon_site = Keyword.get(options, :beacon_site, "my_site")
 
     [
       base_module: base_module,
       web_module: web_module,
       app_name: app_name,
       ctx_app: ctx_app,
-      beacon_data_source: [
+      beacon_site: beacon_site,
+      beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
-        template_path: Path.join([root, templates_path, "install/beacon_data_source.ex"]),
+        template_path: Path.join([templates_path, "install/beacon_data_source.ex"]),
         module_name: Module.concat(base_module, "BeaconDataSource")
-      ]
+      }
     ]
   end
-
 end
