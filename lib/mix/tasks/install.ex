@@ -29,7 +29,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     {options, _parsed} = OptionParser.parse!(argv, strict: @switches)
 
-    bindings = build_context_bindings(options) |> IO.inspect(label: :bindings)
+    bindings = build_context_bindings(options)
 
     # Add Beacon.Repo to config.exs
     config_file = config_file("config.exs")
@@ -41,8 +41,9 @@ defmodule Mix.Tasks.Beacon.Install do
 
     maybe_add_beacon_repo_config([{dev_config_file, File.read!(dev_config_file)}, {prod_config_file, File.read!(prod_config_file)}])
 
-    # Create BeaconDataSource file
+    # Create BeaconDataSource file and config
     maybe_create_beacon_data_source_file(bindings)
+    maybe_add_beacon_data_source_to_config(config_file, File.read!(config_file), bindings)
   end
 
   defp maybe_add_beacon_repo(config_file, config_file_content) do
@@ -58,15 +59,19 @@ defmodule Mix.Tasks.Beacon.Install do
 
   defp maybe_add_beacon_repo_config({config_file, config_file_content}) do
     if !String.contains?(config_file_content, "config :beacon, Beacon.Repo,") do
-      new_config_content =
-        Regex.replace(
-          ~r/(use Mix\.Config|import Config)(\r\n|\n|$)/,
-          config_file_content,
-          "\\0\\2#{String.trim_trailing(@beacon_repo_config)}\\2",
-          global: false
-        )
+      new_config_content = add_to_config(config_file_content, @beacon_repo_config)
 
       File.write!(config_file, new_config_content)
+    end
+  end
+
+  defp maybe_add_beacon_data_source_to_config(config_file, config_file_content, bindings) do
+    config_content = EEx.eval_file(get_in(bindings, [:beacon_data_source, :config_template_path]), bindings)
+
+    if !String.contains?(config_file_content, config_content) do
+      new_config_file_content = add_to_config(config_file_content, config_content)
+
+      File.write!(config_file, new_config_file_content)
     end
   end
 
@@ -78,6 +83,15 @@ defmodule Mix.Tasks.Beacon.Install do
       File.touch!(dest_path)
       File.write!(dest_path, EEx.eval_file(template_path, bindings))
     end
+  end
+
+  defp add_to_config(config_content, data_to_add) do
+    Regex.replace(
+      ~r/(use Mix\.Config|import Config)(\r\n|\n|$)/,
+      config_content,
+      "\\0\\2#{String.trim_trailing(data_to_add)}\\2",
+      global: false
+    )
   end
 
   defp config_file(file_name) do
@@ -112,6 +126,7 @@ defmodule Mix.Tasks.Beacon.Install do
       beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install/beacon_data_source.ex"]),
+        config_template_path: Path.join([templates_path, "install/beacon_data_source_config.exs"]),
         module_name: Module.concat(base_module, "BeaconDataSource")
       }
     ]
