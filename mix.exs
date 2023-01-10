@@ -37,7 +37,7 @@ defmodule Beacon.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
-      {:esbuild, "~> 0.6"},
+      {:esbuild, "~> 0.4"},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
@@ -53,7 +53,7 @@ defmodule Beacon.MixProject do
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:postgrex, ">= 0.0.0"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:tailwind, "~> 0.1.9"}
+      {:tailwind, "~> 0.1"}
     ]
   end
 
