@@ -22,6 +22,12 @@ defmodule Mix.Tasks.Beacon.Install do
     pool_size: 10
   """
 
+  @beacon_pipeline """
+    pipeline :beacon do
+      plug BeaconWeb.Plug
+    end
+  """
+
   def run(argv) do
     if Mix.Project.umbrella?() do
       Mix.raise("mix beacon.install can only be run inside an application directory")
@@ -44,6 +50,39 @@ defmodule Mix.Tasks.Beacon.Install do
     # Create BeaconDataSource file and config
     maybe_create_beacon_data_source_file(bindings)
     maybe_add_beacon_data_source_to_config(config_file, File.read!(config_file), bindings)
+
+    # Add pipeline and scope to router
+    maybe_add_beacon_pipeline(bindings)
+    maybe_add_beacon_scope(bindings)
+  end
+
+  def maybe_add_beacon_scope(bindings) do
+    router_file = get_in(bindings, [:router, :path])
+    router_file_content = File.read!(router_file)
+    router_scope_template = get_in(bindings, [:router, :router_scope_template])
+    router_scope_content = EEx.eval_file(router_scope_template, bindings)
+
+    if !String.contains?(router_file_content, "scope \"/\", BeaconWeb do") do
+      new_router_content =
+        router_file_content
+        |> String.trim_trailing()
+        |> String.trim_trailing("end")
+        |> Kernel.<>(router_scope_content)
+
+      File.write!(router_file, new_router_content)
+    end
+  end
+
+  defp maybe_add_beacon_pipeline(bindings) do
+    router_file = get_in(bindings, [:router, :path])
+    router_file_content = File.read!(router_file)
+
+    if !String.contains?(router_file_content, "pipeline :beacon") do
+      regex = ~r/(?s)pipeline :([a-z_]+) do\n.*?end/
+      new_router_file_content = Regex.replace(regex, router_file_content, "\\0\\2\n\n#{String.trim_trailing(@beacon_pipeline)}\\2", global: false)
+
+      File.write!(router_file, new_router_file_content)
+    end
   end
 
   defp maybe_add_beacon_repo(config_file, config_file_content) do
@@ -113,6 +152,7 @@ defmodule Mix.Tasks.Beacon.Install do
     app_name = Phoenix.Naming.underscore(base_module)
     ctx_app = Mix.Phoenix.context_app()
     lib_path = Mix.Phoenix.context_lib_path(ctx_app, "")
+    web_path = Mix.Phoenix.web_path(ctx_app, "")
     templates_path = Path.join([Application.app_dir(:beacon), "priv", "templates"])
     root = root_path()
     beacon_site = Keyword.get(options, :beacon_site, "my_site")
@@ -125,9 +165,13 @@ defmodule Mix.Tasks.Beacon.Install do
       beacon_site: beacon_site,
       beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
-        template_path: Path.join([templates_path, "install/beacon_data_source.ex"]),
-        config_template_path: Path.join([templates_path, "install/beacon_data_source_config.exs"]),
+        template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
+        config_template_path: Path.join([templates_path, "install", "beacon_data_source_config.exs"]),
         module_name: Module.concat(base_module, "BeaconDataSource")
+      },
+      router: %{
+        path: Path.join([root, web_path, "router.ex"]),
+        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
       }
     ]
   end
