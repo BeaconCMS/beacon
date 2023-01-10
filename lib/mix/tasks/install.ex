@@ -99,7 +99,7 @@ defmodule Mix.Tasks.Beacon.Install do
     app_name = Phoenix.Naming.underscore(base_module)
     ctx_app = Mix.Phoenix.context_app()
     lib_path = Mix.Phoenix.context_lib_path(ctx_app, "")
-    templates_path = Mix.Phoenix.context_app_path(ctx_app, "priv/templates")
+    templates_path = Mix.Phoenix.context_app_path(ctx_app, "deps/beacon/priv/templates")
     root = root_path()
 
     [
@@ -114,4 +114,5 @@ defmodule Mix.Tasks.Beacon.Install do
       ]
     ]
   end
+
 end
