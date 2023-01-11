@@ -2,7 +2,19 @@ defmodule Mix.Tasks.Beacon.Install do
   @shortdoc "Generates beacon base files into the project"
 
   @moduledoc """
+  Generates beacon necessary configurations.
 
+  Before running this command, make sure you commited all your changes to git,
+  beacuse it generates new files and modifies existing ones.
+
+    $ mix beacon.install --beacon-site "my-beacon-site"
+
+  The argument `beacon-site` defines the name of your beacon site and is
+  used to generate the necessary configuration files, defaults to `my-site`.
+
+  ## Arguments
+
+    * `--beacon-site` - The name of your beacon site, defaults to `my-site`
   """
   use Mix.Task
 
