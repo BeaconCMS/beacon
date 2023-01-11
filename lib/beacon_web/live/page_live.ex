@@ -3,6 +3,10 @@ defmodule BeaconWeb.PageLive do
 
   require Logger
 
+  def mount(:not_mounted_at_router, _params, socket) do
+    {:ok, socket}
+  end
+
   def mount(%{"path" => path} = params, %{"beacon_site" => site}, socket) do
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 

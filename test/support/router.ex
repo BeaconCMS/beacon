@@ -1,7 +1,6 @@
 defmodule Beacon.BeaconTest.Router do
   use Beacon.BeaconTest, :router
-
-  require BeaconWeb.PageManagement
+  import Beacon.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -11,22 +10,9 @@ defmodule Beacon.BeaconTest.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :beacon do
-    plug BeaconWeb.Plug
-  end
-
-  scope "/page_management", BeaconWeb.PageManagement do
+  scope "/" do
     pipe_through :browser
-
-    BeaconWeb.PageManagement.routes()
-  end
-
-  scope "/", BeaconWeb do
-    pipe_through :browser
-    pipe_through :beacon
-
-    live_session :beacon, session: %{"beacon_site" => "my_site"} do
-      live "/*path", PageLive, :path
-    end
+    beacon_admin "/page_management"
+    beacon_site "/", name: "my_site"
   end
 end

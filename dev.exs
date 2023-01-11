@@ -51,7 +51,7 @@ end
 defmodule SamplePhoenixWeb.Router do
   use Phoenix.Router
   import Phoenix.LiveView.Router
-  require BeaconWeb.PageManagement
+  import Beacon.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -61,23 +61,14 @@ defmodule SamplePhoenixWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :beacon do
-    plug BeaconWeb.Plug
+  scope "/admin" do
+    pipe_through :browser
+    beacon_admin "/"
   end
 
-  scope "/beacon/page_management", BeaconWeb.PageManagement do
+  scope "/dev" do
     pipe_through :browser
-    pipe_through :beacon
-    BeaconWeb.PageManagement.routes()
-  end
-
-  scope "/", BeaconWeb do
-    pipe_through :browser
-    pipe_through :beacon
-
-    live_session :beacon, session: %{"beacon_site" => "my_site"} do
-      live "/beacon/*path", PageLive, :path
-    end
+    beacon_site "/", name: "dev"
   end
 end
 
@@ -112,13 +103,13 @@ Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
 Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
 Beacon.Stylesheets.create_stylesheet!(%{
-  site: "my_site",
+  site: "dev",
   name: "sample_stylesheet",
   content: "body {cursor: zoom-in;}"
 })
 
 Beacon.Components.create_component!(%{
-  site: "my_site",
+  site: "dev",
   name: "sample_component",
   body: """
   <%= @val %>
@@ -127,7 +118,7 @@ Beacon.Components.create_component!(%{
 
 %{id: layout_id} =
   Beacon.Layouts.create_layout!(%{
-    site: "my_site",
+    site: "dev",
     title: "Dev",
     meta_tags: %{"env" => "dev"},
     stylesheet_urls: [],
@@ -138,13 +129,17 @@ Beacon.Components.create_component!(%{
 
 Beacon.Pages.create_page!(%{
   path: "home",
-  site: "my_site",
+  site: "dev",
   layout_id: layout_id,
   template: """
   <main>
     <h1 class="text-violet-900">Dev</h1>
     <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
+
+    <pre><code>
+      <%= inspect(Phoenix.Router.route_info(SamplePhoenixWeb.Router, "GET", "/dev/home", "host"), pretty: true) %>
+    </code></pre>
   </main>
   """
 })
