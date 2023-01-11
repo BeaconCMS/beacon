@@ -1,5 +1,9 @@
 
   scope "/", BeaconWeb do
+    pipeline :beacon do
+      plug BeaconWeb.Plug
+    end
+
     pipe_through :browser
     pipe_through :beacon
 

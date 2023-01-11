@@ -10,24 +10,6 @@ defmodule Mix.Tasks.Beacon.Install do
     beacon_site: :string
   ]
 
-  @beacon_repo_config """
-  # Configure your Beacon repo
-  config :beacon, Beacon.Repo,
-    username: "postgres",
-    password: "postgres",
-    hostname: "localhost",
-    database: "my_app_beacon",
-    stacktrace: true,
-    show_sensitive_data_on_connection_error: true,
-    pool_size: 10
-  """
-
-  @beacon_pipeline """
-    pipeline :beacon do
-      plug BeaconWeb.Plug
-    end
-  """
-
   def run(argv) do
     if Mix.Project.umbrella?() do
       Mix.raise("mix beacon.install can only be run inside an application directory")
@@ -45,15 +27,42 @@ defmodule Mix.Tasks.Beacon.Install do
     dev_config_file = config_file("dev.exs")
     prod_config_file = config_file("prod.exs")
 
-    maybe_add_beacon_repo_config([{dev_config_file, File.read!(dev_config_file)}, {prod_config_file, File.read!(prod_config_file)}])
+    maybe_add_beacon_repo_config(dev_config_file, bindings)
+    maybe_add_beacon_repo_config(prod_config_file, bindings)
 
     # Create BeaconDataSource file and config
     maybe_create_beacon_data_source_file(bindings)
     maybe_add_beacon_data_source_to_config(config_file, File.read!(config_file), bindings)
 
     # Add pipeline and scope to router
-    maybe_add_beacon_pipeline(bindings)
     maybe_add_beacon_scope(bindings)
+
+    # Add seeds content
+    maybe_add_seeds(bindings)
+  end
+
+  defp maybe_add_seeds(bindings) do
+    seeds_path = get_in(bindings, [:seeds, :path])
+    template_path = get_in(bindings, [:seeds, :template_path])
+
+    File.mkdir_p!(Path.dirname(seeds_path))
+    File.touch!(seeds_path)
+
+    seeds_content = EEx.eval_file(template_path, bindings)
+    seeds_file_content = File.read!(seeds_path)
+
+    if !Enum.any?(
+         ["Stylesheets.create_stylesheet!", "Components.create_component!", "Layouts.create_layout!", "Pages.create_page!"],
+         &String.contains?(seeds_file_content, &1)
+       ) do
+      new_seeds_content =
+        seeds_file_content
+        |> String.trim_trailing()
+        |> Kernel.<>(seeds_content)
+        |> String.trim_leading()
+
+      File.write!(seeds_path, new_seeds_content)
+    end
   end
 
   def maybe_add_beacon_scope(bindings) do
@@ -73,18 +82,6 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp maybe_add_beacon_pipeline(bindings) do
-    router_file = get_in(bindings, [:router, :path])
-    router_file_content = File.read!(router_file)
-
-    if !String.contains?(router_file_content, "pipeline :beacon") do
-      regex = ~r/(?s)pipeline :([a-z_]+) do\n.*?end/
-      new_router_file_content = Regex.replace(regex, router_file_content, "\\0\\2\n\n#{String.trim_trailing(@beacon_pipeline)}\\2", global: false)
-
-      File.write!(router_file, new_router_file_content)
-    end
-  end
-
   defp maybe_add_beacon_repo(config_file, config_file_content) do
     if !String.contains?(config_file_content, "Beacon.Repo") do
       regex = ~r/ecto_repos: \[(.*)\]/
@@ -94,11 +91,13 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp maybe_add_beacon_repo_config(config_files) when is_list(config_files), do: Enum.map(config_files, &maybe_add_beacon_repo_config/1)
+  defp maybe_add_beacon_repo_config(config_file, bindings) do
+    config_file_content = File.read!(config_file)
+    templates_path = get_in(bindings, [:templates_path])
+    beacon_repo_config = EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config.exs"]), bindings)
 
-  defp maybe_add_beacon_repo_config({config_file, config_file_content}) do
-    if !String.contains?(config_file_content, "config :beacon, Beacon.Repo,") do
-      new_config_content = add_to_config(config_file_content, @beacon_repo_config)
+    if !String.contains?(config_file_content, beacon_repo_config) do
+      new_config_content = add_to_config(config_file_content, beacon_repo_config)
 
       File.write!(config_file, new_config_content)
     end
@@ -163,6 +162,7 @@ defmodule Mix.Tasks.Beacon.Install do
       app_name: app_name,
       ctx_app: ctx_app,
       beacon_site: beacon_site,
+      templates_path: templates_path,
       beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
@@ -172,6 +172,10 @@ defmodule Mix.Tasks.Beacon.Install do
       router: %{
         path: Path.join([root, web_path, "router.ex"]),
         router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
+      },
+      seeds: %{
+        path: Path.join([root, "priv", "repo", "seeds.exs"]),
+        template_path: Path.join([templates_path, "install", "seeds.exs"])
       }
     ]
   end
