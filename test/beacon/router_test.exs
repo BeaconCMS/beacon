@@ -8,7 +8,11 @@ defmodule Beacon.RouterTest do
   end
 
   test "session opts" do
-    assert {_, [{:session, %{"beacon_site" => "test"}}, {:root_layout, {BeaconWeb.Layouts, :runtime}}], _} = Router.__options__(name: "test")
+    assert {
+             _,
+             [{:session, %{"beacon_site" => "test"}}, {:root_layout, {BeaconWeb.Layouts, :runtime}}],
+             _
+           } = Router.__options__(name: "test")
   end
 
   test "router opts" do
