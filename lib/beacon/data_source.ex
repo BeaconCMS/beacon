@@ -9,7 +9,13 @@ defmodule Beacon.DataSource do
 
   @doc false
   def live_data(site, path, params) do
-    get_data_source(site).live_data(site, path, params)
+    user_data_source_mod = get_data_source(site)
+
+    if user_data_source_mod && is_atom(user_data_source_mod) do
+      user_data_source_mod.live_data(site, path, params)
+    else
+      %{}
+    end
   rescue
     error in FunctionClauseError ->
       args = pop_args_from_stacktrace(__STACKTRACE__)
