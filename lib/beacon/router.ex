@@ -18,7 +18,7 @@ defmodule Beacon.Router do
 
         scope "/", MyAppWeb do
           pipe_through :browser
-          beacon_site "/blog", name: "blog"
+          beacon_site "/blog", name: "blog", data_source: MyApp.BlogDataSource
         end
       end
 
@@ -37,6 +37,8 @@ defmodule Beacon.Router do
   ## Options
 
     * `:name` (required) - identify your site name.
+    * `:data_source` (optional) - module that implements `Beacon.DataSource`
+      to provide assigns to pages.
     * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
 
   """
@@ -46,6 +48,8 @@ defmodule Beacon.Router do
         import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
 
         {session_name, session_opts, route_opts} = o = Beacon.Router.__options__(opts)
+
+        :ok = :persistent_term.put({:beacon, opts[:name], "data_source"}, opts[:data_source])
 
         live_session session_name, session_opts do
           live "/*path", PageLive, :path, route_opts

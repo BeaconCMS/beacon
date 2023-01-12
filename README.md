@@ -69,25 +69,19 @@ Beacon supports both.
     end
     ```
 
-8.  Add that DataSource to your config.exs:
-
-    ```elixir
-    config :beacon,
-      data_source: MyApp.BeaconDataSource
-    ```
-
-9. Import `Beacon.Router` and call `beacon_site` in your app router:
+8. Import `Beacon.Router` and call `beacon_site` in your app router:
 
     ```elixir
     import Beacon.Router
 
     scope "/" do
       pipe_through :browser
-      beacon_site "/beacon", name: "my_site"
+      beacon_site "/beacon", name: "my_site", data_source: MyApp.BeaconDataSource
+
     end
     ```
 
-10. Add some seeds to your seeds.exs:
+9. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -187,27 +181,27 @@ Beacon supports both.
     })
     ```
 
-11. Create database and run seeds:
+10. Create database and run seeds:
 
 
     ```shell
     mix ecto.reset
     ```
 
-12. Start server:
+11. Start server:
 
     ```shell
     mix phx.server
     ```
 
-13. Visit <http://localhost:4000/beacon/home> and note:
+12. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-14. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+13. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug

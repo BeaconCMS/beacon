@@ -32,8 +32,6 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
   ]
 )
 
-Application.put_env(:beacon, :data_source, BeaconDataSource)
-
 Application.put_env(:beacon, Beacon.Repo,
   username: "postgres",
   password: "postgres",
@@ -68,7 +66,7 @@ defmodule SamplePhoenixWeb.Router do
 
   scope "/dev" do
     pipe_through :browser
-    beacon_site "/", name: "dev"
+    beacon_site "/", name: "dev", data_source: BeaconDataSource
   end
 end
 
@@ -96,6 +94,7 @@ end
 defmodule BeaconDataSource do
   @behaviour Beacon.DataSource.Behaviour
 
+  def live_data("dev", ["home"], _params), do: %{year: Date.utc_today().year}
   def live_data(_, _, _), do: %{}
 end
 
@@ -136,6 +135,11 @@ Beacon.Pages.create_page!(%{
     <h1 class="text-violet-900">Dev</h1>
     <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
+
+    <div>
+      <p>From data source:</p>
+      <%= @beacon_live_data[:year] %>
+    </div>
 
     <pre><code>
       <%= inspect(Phoenix.Router.route_info(SamplePhoenixWeb.Router, "GET", "/dev/home", "host"), pretty: true) %>

@@ -1,22 +1,5 @@
 defmodule Beacon.DataSource do
-  @moduledoc """
-  Provides data to your pages programmatically.
-
-  ## Examples
-
-  Given a module implementing data sources in your app:
-
-      defmodule MyApp.BeaconDataSource do
-        @behaviour Beacon.DataSource.Behaviour
-
-        def live_data("my_site", ["home"], _params), do: %{year: Date.utc_today().year}
-      end
-
-  Then an assign becomes available at your home page:
-
-      <%= @beacon_live_data[:year] %>
-
-  """
+  @moduledoc false
 
   @behaviour Beacon.DataSource.Behaviour
 
@@ -24,27 +7,9 @@ defmodule Beacon.DataSource do
     defexception message: "Error in Beacon.DataSource"
   end
 
-  @doc """
-  Calls `live_data/3` from Data Source module defined at User's app config.
-
-  This function expects that a module that implements `Beacon.DataSource.Behaviour`
-  is defined in the User's application.
-
-  ### Examples
-
-      # lib/my_app/beacon_data_source
-      defmodule MyApp.BeaconDataSource do
-        @behaviour Beacon.DataSource.Behaviour
-
-        @impl true
-        def live_data("my_site", ["home"], _params), do: ["first", "second", "third"]
-      end
-
-      # my_app/config/config.exs
-      config :beacon, :data_source, MyApp.BeaconDataSource
-  """
+  @doc false
   def live_data(site, path, params) do
-    get_data_source().live_data(site, path, params)
+    get_data_source(site).live_data(site, path, params)
   rescue
     error in FunctionClauseError ->
       args = pop_args_from_stacktrace(__STACKTRACE__)
@@ -64,8 +29,8 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
-  defp get_data_source do
-    Application.fetch_env!(:beacon, :data_source)
+  defp get_data_source(site) do
+    :persistent_term.get({:beacon, site, "data_source"})
   end
 
   defp pop_args_from_stacktrace(stacktrace) do
