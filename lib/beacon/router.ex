@@ -2,16 +2,43 @@
 
 defmodule Beacon.Router do
   @moduledoc """
-  Beacon routing.
+  Provides routing helpers to instantiate sites, admin interface, or api endpoints.
+
+  In your app router, add `import Beacon.Router` and call one the of the available macros.
   """
 
   @doc """
-  Site routes.
+  Routes for a beacon site.
+
+  ## Examples
+
+      defmodule MyAppWeb.Router do
+        use Phoenix.Router
+        import Beacon.Router
+
+        scope "/", MyAppWeb do
+          pipe_through :browser
+          beacon_site "/blog", name: "blog"
+        end
+      end
+
+  Note that you may have multiple sites in the same scope or
+  separated in multiple scopes, which allows you to pipe
+  your sites through custom pipelines, for eg is your site
+  requires some sort of authentication:
+
+      scope "/protected", MyAppWeb do
+          pipe_through :browser
+          pipe_through :auth
+          beacon_site "/sales", name: "stats"
+        end
+      end
 
   ## Options
 
-    * `:live_socket_path`
-    * `:name`
+    * `:name` (required) - identify your site name.
+    * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
+
   """
   defmacro beacon_site(path, opts \\ []) do
     quote bind_quoted: binding() do

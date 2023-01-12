@@ -1,4 +1,23 @@
 defmodule Beacon.DataSource do
+  @moduledoc """
+  Provides data to your pages programmatically.
+
+  ## Examples
+
+  Given a module implementing data sources in your app:
+
+      defmodule MyApp.BeaconDataSource do
+        @behaviour Beacon.DataSource.Behaviour
+
+        def live_data("my_site", ["home"], _params), do: %{year: Date.utc_today().year}
+      end
+
+  Then an assign becomes available at your home page:
+
+      <%= @beacon_live_data[:year] %>
+
+  """
+
   @behaviour Beacon.DataSource.Behaviour
 
   defmodule Error do
