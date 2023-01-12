@@ -49,8 +49,6 @@ defmodule Beacon.Router do
 
         {session_name, session_opts, route_opts} = o = Beacon.Router.__options__(opts)
 
-        :ok = :persistent_term.put({:beacon, opts[:name], "data_source"}, opts[:data_source])
-
         live_session session_name, session_opts do
           live "/*path", PageLive, :path, route_opts
         end
@@ -73,7 +71,7 @@ defmodule Beacon.Router do
       # TODO: sanitize and format session name
       String.to_atom("beacon_" <> name),
       [
-        session: %{"beacon_site" => opts[:name]},
+        session: %{"beacon_site" => name, "beacon_data_source" => opts[:data_source]},
         root_layout: {BeaconWeb.Layouts, :runtime}
       ],
       [
