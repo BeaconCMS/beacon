@@ -69,35 +69,19 @@ Beacon supports both.
     end
     ```
 
-8.  Add that DataSource to your config.exs:
+8. Import `Beacon.Router` and call `beacon_site` in your app router:
 
     ```elixir
-    config :beacon,
-      data_source: MyApp.BeaconDataSource
-    ```
+    import Beacon.Router
 
-9.  Add a `:beacon` pipeline to your router:
-
-    ```elixir
-    pipeline :beacon do
-      plug BeaconWeb.Plug
-    end
-    ```
-
-10. Add a `BeaconWeb` scope to your router as shown below:
-
-    ```elixir
-    scope "/", BeaconWeb do
+    scope "/" do
       pipe_through :browser
-      pipe_through :beacon
+      beacon_site "/beacon", name: "my_site", data_source: MyApp.BeaconDataSource
 
-      live_session :beacon, session: %{"beacon_site" => "my_site"} do
-        live "/beacon/*path", PageLive, :path
-      end
     end
     ```
 
-11. Add some seeds to your seeds.exs:
+9. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -197,27 +181,27 @@ Beacon supports both.
     })
     ```
 
-12. Create database and run seeds:
+10. Create database and run seeds:
 
 
     ```shell
     mix ecto.reset
     ```
 
-13. Start server:
+11. Start server:
 
     ```shell
     mix phx.server
     ```
 
-14. Visit <http://localhost:4000/beacon/home> and note:
+12. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-15. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+13. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
@@ -226,46 +210,35 @@ Beacon supports both.
 
 #### To enable Page Management UI:
 
-1.  Add the following to the top of your Router:
+1. Import `Beacon.Router` and call `beacon_admin` in your app router:
 
     ```elixir
-    require BeaconWeb.PageManagement
+    import Beacon.Router
+
+    scope "/" do
+      pipe_through :browser
+      beacon_admin "/beacon/page_management"
+    end
     ```
 
-2.  Add the following scope to your Router:
+2. Visit <http://localhost:4000/beacon/page_management/pages>
 
-    ```elixir
-      scope "/beacon/page_management", BeaconWeb.PageManagement do
-        pipe_through :browser
-        pipe_through :beacon
-
-        BeaconWeb.PageManagement.routes()
-      end
-    ```
-
-3.  Visit <http://localhost:4000/beacon/page_management/pages>
-
-4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
+3. Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
 #### To enable Page Management API:
 
-1.  Add the following to the top of your Router:
+1. Import `Beacon.Router` and call `beacon_api` in your router app:
 
     ```elixir
-    require BeaconWeb.PageManagementApi
+    import Beacon.Router
+
+    scope "/api"
+      pipe_through :api
+      beacon_api "/beacon/page_management"
+    end
     ```
 
-2.  Add the following scope to your Router:
-
-    ```elixir
-      scope "/page_management_api", BeaconWeb.PageManagementApi do
-        pipe_through :api
-
-        BeaconWeb.PageManagementApi.routes()
-      end
-    ```
-
-3.  Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.
+2. Check out /lib/beacon/router.ex for currently available API endpoints.
 
 ### Local Development
 
