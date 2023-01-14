@@ -42,9 +42,18 @@ Beacon supports both.
     mix deps.get
     ```
 
-5.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+5. Import `:beacon` in your app formatter deps:
 
-6.  Configure the Beacon Repo in your dev.exs and prod.exs:
+   ```elixir
+   [
+     import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
+     # rest of file
+   ]
+   ```
+
+6.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+
+7.  Configure the Beacon Repo in your dev.exs and prod.exs:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -57,7 +66,7 @@ Beacon supports both.
       pool_size: 10
     ```
 
-7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -69,7 +78,7 @@ Beacon supports both.
     end
     ```
 
-8. Import `Beacon.Router` and call `beacon_site` in your app router:
+9. Import `Beacon.Router` and call `beacon_site` in your app router:
 
     ```elixir
     import Beacon.Router
@@ -81,7 +90,7 @@ Beacon supports both.
     end
     ```
 
-9. Add some seeds to your seeds.exs:
+10. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -181,27 +190,27 @@ Beacon supports both.
     })
     ```
 
-10. Create database and run seeds:
+11. Create database and run seeds:
 
 
     ```shell
     mix ecto.reset
     ```
 
-11. Start server:
+12. Start server:
 
     ```shell
     mix phx.server
     ```
 
-12. Visit <http://localhost:4000/beacon/home> and note:
+13. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-13. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+14. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
