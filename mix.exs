@@ -1,14 +1,18 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
+  @version "0.1.0-dev"
+
   def project do
     [
       app: :beacon,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
+      name: "Beacon",
       deps: deps(),
       aliases: aliases(),
+      docs: docs(),
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
@@ -38,6 +42,7 @@ defmodule Beacon.MixProject do
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.4"},
+      {:ex_doc, "~> 0.29", only: :docs},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
@@ -71,6 +76,14 @@ defmodule Beacon.MixProject do
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.build": ["esbuild default --minify", "tailwind admin --minify"]
+    ]
+  end
+
+  defp docs do
+    [
+      main: "Beacon",
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/BeaconCMS/beacon"
     ]
   end
 end
