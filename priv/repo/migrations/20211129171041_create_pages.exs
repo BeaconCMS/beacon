@@ -4,6 +4,7 @@ defmodule Beacon.Repo.Migrations.CreatePages do
   def change do
     create table(:beacon_pages, primary_key: false) do
       add :id, :binary_id, primary_key: true
+      add :meta_tags, :map
       add :path, :text
       add :site, :text
       add :template, :text

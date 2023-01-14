@@ -34,7 +34,22 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       title: "Sample Home Page",
-      meta_tags: %{"foo" => "bar"},
+      meta_tags: %{"layout-meta-tag-one" => "value", "layout-meta-tag-two" => "value"},
+      stylesheet_urls: [],
+      body: """
+      <header>Page header</header>
+      <%= @inner_content %>
+      <footer>Page footer</footer>
+      """
+    })
+    |> Layouts.create_layout!()
+  end
+
+  def layout_without_meta_fixture(attrs \\ %{}) do
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      title: "Sample Home Page",
       stylesheet_urls: [],
       body: """
       <header>Page header</header>
@@ -46,6 +61,24 @@ defmodule Beacon.Fixtures do
   end
 
   def page_fixture(attrs \\ %{}) do
+    layout_id = get_lazy(attrs, :layout_id, fn -> layout_fixture().id end)
+
+    attrs
+    |> Enum.into(%{
+      path: "home",
+      site: "my_site",
+      layout_id: layout_id,
+      meta_tags: %{"home-meta-tag-one" => "value", "home-meta-tag-two" => "value"},
+      template: """
+      <main>
+        <h1>my_site#home</h1>
+      </main>
+      """
+    })
+    |> Pages.create_page!()
+  end
+
+  def page_without_meta_fixture(attrs \\ %{}) do
     layout_id = get_lazy(attrs, :layout_id, fn -> layout_fixture().id end)
 
     attrs

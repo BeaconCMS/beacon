@@ -29,6 +29,6 @@ defmodule Beacon.Layouts.Layout do
   def changeset(layout, attrs) do
     layout
     |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
-    |> validate_required([:site, :title, :body, :meta_tags, :stylesheet_urls])
+    |> validate_required([:site, :title, :body, :stylesheet_urls])
   end
 end

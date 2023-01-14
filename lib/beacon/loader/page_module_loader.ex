@@ -12,7 +12,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     # Group function heads together to avoid compiler warnings
     functions =
-      for fun <- [&render_page/1, &layout_id_for_path/1, &handle_event/1, &helper/1, &dynamic_helper/1],
+      for fun <- [&render_page/1, &page_assigns/1, &page_id/1, &layout_id_for_path/1, &handle_event/1, &helper/1, &dynamic_helper/1],
           page <- pages do
         fun.(page)
       end ++ [page_module(page_module)]
@@ -42,11 +42,24 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
       def render(#{path_to_args(path, "")}, assigns) do
         assigns = assign(assigns, :beacon_path_params, #{path_params(path)})
-
     #{~s(~H""")}
     #{template}
     #{~s(""")}
       end
+    """
+  end
+
+  defp page_assigns(%Page{id: id, meta_tags: meta_tags}) do
+    """
+      def page_assigns(#{inspect(id)}) do
+        %{ meta_tags: #{inspect(meta_tags)} }
+      end
+    """
+  end
+
+  defp page_id(%Page{id: id, path: path}) do
+    """
+      def page_id(#{path_to_args(path, "")}), do: #{inspect(id)}
     """
   end
 
