@@ -88,12 +88,13 @@ defmodule BeaconWeb.Layouts do
       Enum.map_join(meta_tags, "\n", fn {key, value} ->
         ~s(<meta property="#{key}" content="#{value}">)
       end)
-    else ""
+    else
+      ""
     end
   end
 
   def page_get_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
-    assigns 
+    assigns
     |> compiled_page_meta_tags()
     |> Map.merge(meta_tags)
   end
@@ -128,7 +129,8 @@ defmodule BeaconWeb.Layouts do
       Enum.map_join(meta_tags, "\n", fn {key, value} ->
         ~s(<meta property="#{key}" content="#{value}">)
       end)
-    else ""
+    else
+      ""
     end
   end
 
