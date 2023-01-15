@@ -79,7 +79,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   describe "render meta tags" do
     setup [:create_page]
 
-    test "for a template", %{conn: conn} do
+    test "for a layout", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
       assert html =~ ~s(<meta property="layout-meta-tag-one" content="value"/>)

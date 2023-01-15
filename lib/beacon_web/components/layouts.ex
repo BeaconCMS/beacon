@@ -113,7 +113,7 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
   end
 
-  # template-level meta tags -- rename?
+  # layout-level meta tags -- rename?
 
   def meta_tags(%{__dynamic_layout_id__: _, __dynamic_page_id__: _, __site__: _} = assigns) do
     {:safe, meta_tags_unsafe(assigns)}
