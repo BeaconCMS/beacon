@@ -6,15 +6,15 @@ on:
   pull_request:
     branches: ["main"]
 
-env:
-  MIX_ENV: test
-
 permissions:
   contents: read
 
 jobs:
   test:
     name: mix test (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
+
+    env:
+      MIX_ENV: test
 
     strategy:
       matrix:
@@ -24,8 +24,6 @@ jobs:
 
           - elixir: '1.14.2'
             otp: '25.1.2'
-            lint: true
-            dialyzer: true
 
     runs-on: ubuntu-20.04
 
@@ -59,9 +57,52 @@ jobs:
           path: |
             deps
             _build
-          key: mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+      - name: Install and compile mix deps
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: mix do deps.get, deps.compile
+
+      - run: mix tailwind.install
+
+      - run: mix test
+
+  quality:
+    name: quality
+
+    env:
+      MIX_ENV: dev
+
+    strategy:
+      matrix:
+        include:
+          - elixir: '1.14.2'
+            otp: '25.1.2'
+
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Cache mix deps
+        uses: actions/cache@v3
+        id: cache-deps
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
 
       - name: Install and compile mix deps
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -72,34 +113,21 @@ jobs:
         id: cache-plt
         with:
           path: priv/plts
-          key: dialyzer-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
+          key: dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
           restore-keys: |
-            dialyzer-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
+            dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
 
       - name: Generate dialyzer plt
-        env:
-          MIX_ENV: dev
         run: mix dialyzer --plt
-        if: ${{ matrix.dialyzer && steps.cache-plt.outputs.cache-hit != 'true' }}
 
-      - name: Install tailwind
-        run: mix tailwind.install
+      - run: mix tailwind.install
 
       - run: mix compile --warnings-as-errors
-        if: ${{ matrix.lint }}
 
       - run: mix format --check-formatted
-        if: ${{ matrix.lint }}
 
       - run: mix deps.unlock --check-unused
-        if: ${{ matrix.lint }}
 
       - run: mix credo --strict
-        if: ${{ matrix.lint }}
-
-      - run: mix test
 
       - run: mix dialyzer
-        env:
-          MIX_ENV: dev
-        if: ${{ matrix.dialyzer }}
