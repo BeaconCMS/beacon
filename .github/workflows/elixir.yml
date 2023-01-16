@@ -61,9 +61,8 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
 
-      - name: Install and compile mix deps
+      - run: mix do deps.get, deps.compile
         if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: mix do deps.get, deps.compile
 
       - run: mix tailwind.install
 
@@ -104,9 +103,8 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
 
-      - name: Install and compile mix deps
+      - run: mix do deps.get, deps.compile
         if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: mix do deps.get, deps.compile
 
       - name: Cache dialyzer
         uses: actions/cache@v2
