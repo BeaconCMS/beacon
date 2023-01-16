@@ -254,6 +254,6 @@ Beacon supports both.
 `dev.exs` provides a phoenix app running beacon with with code reload enabled:
 
 ```shell
-mix deps.get
+mix setup
 mix dev
 ```

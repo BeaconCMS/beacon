@@ -70,11 +70,12 @@ defmodule Beacon.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "tailwind.install"],
+      setup: ["deps.get", "assets.setup", "assets.build", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["esbuild default --minify", "tailwind admin --minify"]
     ]
   end
