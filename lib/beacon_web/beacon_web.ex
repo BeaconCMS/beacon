@@ -34,7 +34,7 @@ defmodule BeaconWeb do
       use Phoenix.LiveView,
         layout: {BeaconWeb.Layouts, :app}
 
-      import BeaconWeb.Layouts, only: [live_admin_path: 2, live_admin_path: 3]
+      import Beacon.Router, only: [beacon_admin_path: 2, beacon_admin_path: 3]
 
       unquote(html_helpers())
     end

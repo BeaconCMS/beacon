@@ -119,4 +119,17 @@ defmodule Beacon.Router do
       end
     end
   end
+
+  @doc """
+  Router helper to generate admin paths.
+
+  Prefix is added automatically based on the current router scope.
+  """
+  def beacon_admin_path(socket, path, params \\ %{}) do
+    prefix = socket.router.__beacon_admin_prefix__()
+    path = String.replace("#{prefix}/#{path}", "//", "/")
+    params = for {key, val} <- params, do: {key, val}
+
+    Phoenix.VerifiedRoutes.unverified_path(socket, socket.router, path, params)
+  end
 end

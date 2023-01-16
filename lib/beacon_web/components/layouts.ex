@@ -158,17 +158,4 @@ defmodule BeaconWeb.Layouts do
     %{stylesheet_urls: compiled_linked_stylesheets} = compiled_layout_assigns(site, layout_id)
     compiled_linked_stylesheets
   end
-
-  @doc """
-  Router helper to generate admin paths.
-
-  Prefix is added automatically based on the current router scope.
-  """
-  def live_admin_path(socket, path, params \\ %{}) do
-    prefix = socket.router.__beacon_admin_prefix__()
-    path = String.replace("#{prefix}/#{path}", "//", "/")
-    params = for {key, val} <- params, do: {key, val}
-
-    Phoenix.VerifiedRoutes.unverified_path(socket, socket.router, path, params)
-  end
 end
