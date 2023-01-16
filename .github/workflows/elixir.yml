@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    name: mix test (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
+    name: test (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
 
     env:
       MIX_ENV: test
@@ -69,7 +69,7 @@ jobs:
       - run: mix test
 
   quality:
-    name: quality
+    name: quality (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
 
     env:
       MIX_ENV: dev
