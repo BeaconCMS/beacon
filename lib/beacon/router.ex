@@ -94,6 +94,9 @@ defmodule Beacon.Router do
           live "/page_editor/:id", PageEditorLive, :edit
         end
       end
+
+      @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
+      def __beacon_admin_prefix__, do: @beacon_admin_prefix
     end
   end
 

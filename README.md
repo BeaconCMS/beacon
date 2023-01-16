@@ -224,13 +224,13 @@ Beacon supports both.
     ```elixir
     import Beacon.Router
 
-    scope "/" do
+    scope "/beacon" do
       pipe_through :browser
-      beacon_admin "/beacon/page_management"
+      beacon_admin "/admin"
     end
     ```
 
-2. Visit <http://localhost:4000/beacon/page_management/pages>
+2. Visit <http://localhost:4000/beacon/admin>
 
 3. Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
@@ -243,7 +243,7 @@ Beacon supports both.
 
     scope "/api"
       pipe_through :api
-      beacon_api "/beacon/page_management"
+      beacon_api "/beacon"
     end
     ```
 
