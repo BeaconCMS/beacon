@@ -12,8 +12,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     # Group function heads together to avoid compiler warnings
     functions =
-      for fun <- [&render_page/1, &page_assigns/1, &page_id/1, &layout_id_for_path/1,
-                  &handle_event/1, &helper/1, &dynamic_helper/1],
+      for fun <- [&render_page/1, &page_assigns/1, &page_id/1, &layout_id_for_path/1, &handle_event/1, &helper/1, &dynamic_helper/1],
           page <- pages do
         fun.(page)
       end ++ [page_module(page_module)]
