@@ -44,9 +44,18 @@ Beacon supports both.
     mix deps.get
     ```
 
-5.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+5. Import `:beacon` in your app formatter deps:
 
-6.  Configure the Beacon Repo in your dev.exs and prod.exs:
+   ```elixir
+   [
+     import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
+     # rest of file
+   ]
+   ```
+
+6.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+
+7.  Configure the Beacon Repo in your dev.exs and prod.exs:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -57,17 +66,6 @@ Beacon supports both.
       stacktrace: true,
       show_sensitive_data_on_connection_error: true,
       pool_size: 10
-    ```
-
-7.  Configure Tailwind:
-
-    Add an empty `:runtime` profile to your tailwind configuration:
-
-    ```elixir
-    # config/config.exs
-    config :tailwind,
-      version: "3.2.4",
-      runtime: []
     ```
 
 8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
@@ -82,35 +80,19 @@ Beacon supports both.
     end
     ```
 
-9.  Add that DataSource to your config.exs:
+9. Import `Beacon.Router` and call `beacon_site` in your app router:
 
     ```elixir
-    config :beacon,
-      data_source: MyApp.BeaconDataSource
-    ```
+    import Beacon.Router
 
-10.  Add a `:beacon` pipeline to your router:
-
-    ```elixir
-    pipeline :beacon do
-      plug BeaconWeb.Plug
-    end
-    ```
-
-11. Add a `BeaconWeb` scope to your router as shown below:
-
-    ```elixir
-    scope "/", BeaconWeb do
+    scope "/" do
       pipe_through :browser
-      pipe_through :beacon
+      beacon_site "/beacon", name: "my_site", data_source: MyApp.BeaconDataSource
 
-      live_session :beacon, session: %{"beacon_site" => "my_site"} do
-        live "/beacon/*path", PageLive, :path
-      end
     end
     ```
 
-12. Add some seeds to your seeds.exs:
+10. Add some seeds to your seeds.exs:
 
     ```elixir
     alias Beacon.Components
@@ -210,27 +192,27 @@ Beacon supports both.
     })
     ```
 
-12. Create database and run seeds:
+11. Create database and run seeds:
 
 
     ```shell
     mix ecto.reset
     ```
 
-13. Start server:
+12. Start server:
 
     ```shell
     mix phx.server
     ```
 
-14. Visit <http://localhost:4000/beacon/home> and note:
+13. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-15. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+14. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
@@ -239,51 +221,35 @@ Beacon supports both.
 
 #### Page and Asset Management UI
 
-1.  Add the following to the top of your Router:
+1. Import `Beacon.Router` and call `beacon_admin` in your app router:
 
     ```elixir
-    require BeaconWeb.PageManagement
+    import Beacon.Router
+
+    scope "/" do
+      pipe_through :browser
+      beacon_admin "/beacon/page_management"
+    end
     ```
 
-2.  Add the following scope to your Router:
+2. Visit <http://localhost:4000/beacon/admin>
 
-    ```elixir
-    require BeaconWeb.Admin
-    ```
-
-2.  Add the following scope to your Router **before** the `BeaconWeb` scope:
-
-    ```elixir
-      scope "/beacon/admin, BeaconWeb.Admin do
-        pipe_through :browser
-
-        BeaconWeb.Admin.routes()
-      end
-    ```
-
-3. Visit <http://localhost:4000/beacon/admin>
-
-4. Navigate to page editor with version management, create new pages, or upload assets.
+3. Navigate to page editor with version management, create new pages, or upload assets.
 
 #### Page and Asset Management API
 
-1.  Add the following to the top of your Router:
+1. Import `Beacon.Router` and call `beacon_api` in your router app:
 
     ```elixir
-    require BeaconWeb.PageManagementApi
+    import Beacon.Router
+
+    scope "/api"
+      pipe_through :api
+      beacon_api "/beacon/page_management"
+    end
     ```
 
-2.  Add the following scope to your Router:
-
-    ```elixir
-      scope "/page_management_api", BeaconWeb.PageManagementApi do
-        pipe_through :api
-
-        BeaconWeb.PageManagementApi.routes()
-      end
-    ```
-
-3.  Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.
+2. Check out /lib/beacon/router.ex for currently available API endpoints.
 
 ### Local Development
 

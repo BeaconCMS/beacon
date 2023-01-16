@@ -1,15 +1,13 @@
 Application.put_env(:beacon, Beacon.BeaconTest.Endpoint,
-  debug_errors: false,
-  render_errors: [view: Beacon.BeaconTest.ErrorView],
-  root: Path.expand("..", __DIR__),
+  url: [host: "localhost", port: 4000],
   secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
-  url: [host: "localhost"],
   live_view: [signing_salt: "ykjYicLHN3EuW0FO"],
-  url: [host: "test-app.com"],
-  http: [port: 4000],
-  server: true
+  render_errors: [view: Beacon.BeaconTest.ErrorView],
+  pubsub_server: Beacon.BeaconTest.PubSub,
+  check_origin: false,
+  debug_errors: true
 )
 
 Mox.defmock(CSSCompilerMock, for: Beacon.RuntimeCSS)
 
-ExUnit.start()
+ExUnit.start(exclude: [:skip])

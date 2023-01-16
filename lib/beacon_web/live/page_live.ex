@@ -3,7 +3,16 @@ defmodule BeaconWeb.PageLive do
 
   require Logger
 
-  def mount(%{"path" => path} = params, %{"beacon_site" => site}, socket) do
+  def mount(:not_mounted_at_router, _params, socket) do
+    {:ok, socket}
+  end
+
+  def mount(params, session, socket) do
+    %{"path" => path} = params
+    %{"beacon_site" => site, "beacon_data_source" => data_source} = session
+
+    Beacon.persist_term({:beacon, site, "data_source"}, data_source)
+
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 
     layout_id =

@@ -21,110 +21,84 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
     patterns: [
+      ~r"dev/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"dist/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(live|views)/.*(ex)$"
     ]
+  ],
+  watchers: [
+    tailwind: {Tailwind, :install_and_run, [:admin_dev, ~w(--watch)]}
   ]
 )
 
-Application.put_env(:beacon, :data_source, BeaconDataSource)
-
-# Application.put_env(:beacon, Beacon.Repo,
-#   username: "postgres",
-#   password: "postgres",
-#   hostname: "localhost",
-#   database: "beacon_sample_app_dev",
-#   stacktrace: true,
-#   show_sensitive_data_on_connection_error: true
-# )
+Application.put_env(:beacon, Beacon.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "beacon_sample_app_dev",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true
+)
 
 defmodule SamplePhoenix.ErrorView do
   use Phoenix.View, root: ""
   def render(_, _), do: "error"
 end
 
-defmodule SamplePhoenix.LayoutView do
-  import Phoenix.Component, only: [sigil_H: 2, live_title: 1]
-  alias SampleAppWeb.Router.Helpers, as: Routes
-
-  def render("root.html", assigns) do
-    ~H"""
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <.live_title suffix=" · Beacon Dev">
-          <%= assigns[:page_title] || "Dev" %>
-        </.live_title>
-        <script src="https://cdn.tailwindcss.com">
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.0-rc.0/priv/static/phoenix.min.js">
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.18.3/priv/static/phoenix_live_view.js">
-        </script>
-        <script>
-          let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket)
-          liveSocket.connect()
-        </script>
-      </head>
-      <body>
-        <%= @inner_content %>
-      </body>
-    </html>
-    """
-  end
-
-  def render("live.html", assigns) do
-    ~H"""
-    <%= @inner_content %>
-    """
-  end
-end
-
-defmodule Router do
+defmodule SamplePhoenixWeb.Router do
   use Phoenix.Router
   import Phoenix.LiveView.Router
-  require BeaconWeb.Admin
+  import Beacon.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
-    plug :put_root_layout, {SamplePhoenix.LayoutView, :root}
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
   end
 
-  pipeline :beacon do
-    plug BeaconWeb.Plug
-  end
-
-  scope "/beacon/admin", BeaconWeb.Admin do
+  scope "/admin" do
     pipe_through :browser
-    BeaconWeb.Admin.routes()
+    beacon_admin "/"
   end
 
-  scope "/", BeaconWeb do
+  scope "/dev" do
     pipe_through :browser
     pipe_through :beacon
 
     get "/beacon/media_library/serve", MediaLibraryController, :show
 
-    live_session :beacon, session: %{"beacon_site" => "my_site"} do
-      live "/beacon/*path", PageLive, :path
-    end
+    beacon_site "/", name: "dev", data_source: BeaconDataSource
   end
 end
 
 defmodule SamplePhoenix.Endpoint do
   use Phoenix.Endpoint, otp_app: :sample
-  socket "/live", Phoenix.LiveView.Socket
+
+  @session_options [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"]
+
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+
+  plug Plug.Static,
+    at: "/dev",
+    from: "dev/static",
+    gzip: false,
+    only: ~w(assets fonts images favicon.ico robots.txt)
+
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader
-  plug Router
+  plug Plug.RequestId
+  plug Plug.Session, @session_options
+  plug SamplePhoenixWeb.Router
 end
 
 defmodule BeaconDataSource do
   @behaviour Beacon.DataSource.Behaviour
 
+  def live_data("dev", ["home"], _params), do: %{year: Date.utc_today().year}
   def live_data(_, _, _), do: %{}
 end
 
@@ -132,13 +106,13 @@ Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
 Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
 Beacon.Stylesheets.create_stylesheet!(%{
-  site: "my_site",
+  site: "dev",
   name: "sample_stylesheet",
   content: "body {cursor: zoom-in;}"
 })
 
 Beacon.Components.create_component!(%{
-  site: "my_site",
+  site: "dev",
   name: "sample_component",
   body: """
   <%= @val %>
@@ -147,9 +121,9 @@ Beacon.Components.create_component!(%{
 
 %{id: layout_id} =
   Beacon.Layouts.create_layout!(%{
-    site: "my_site",
+    site: "dev",
     title: "Dev",
-    meta_tags: %{},
+    meta_tags: %{"env" => "dev"},
     stylesheet_urls: [],
     body: """
     <%= @inner_content %>
@@ -158,15 +132,25 @@ Beacon.Components.create_component!(%{
 
 Beacon.Pages.create_page!(%{
   path: "home",
-  site: "my_site",
+  site: "dev",
   layout_id: layout_id,
   template: """
   <main>
-    <h1>Dev</h1>
+    <h1 class="text-violet-900">Dev</h1>
+    <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
     <div>
       <BeaconWeb.Components.image site={@beacon_site} name="dockyard.png" width="200px" />
     </div>
+
+    <div>
+      <p>From data source:</p>
+      <%= @beacon_live_data[:year] %>
+    </div>
+
+    <pre><code>
+      <%= inspect(Phoenix.Router.route_info(SamplePhoenixWeb.Router, "GET", "/dev/home", "host"), pretty: true) %>
+    </code></pre>
   </main>
   """
 })

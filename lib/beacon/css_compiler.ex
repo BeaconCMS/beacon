@@ -9,29 +9,41 @@ defmodule Beacon.CSSCompiler do
 
   @behaviour Beacon.RuntimeCSS
 
+  @template_tailwind_config_path Application.app_dir(:beacon, "priv/assets/tailwind.config.js.eex")
+  @input_css_path Application.app_dir(:beacon, "priv/assets/css/app.css")
+
+  @external_resource @template_tailwind_config_path
+  @external_resource @input_css_path
+
   @impl Beacon.RuntimeCSS
   def compile!(%Layout{} = layout, opts \\ []) do
-    input_file = Path.join(:code.priv_dir(:beacon), "assets/beacon.css")
+    unless Application.get_env(:tailwind, :version) do
+      default_tailwind_version = Beacon.tailwind_version()
+      Application.put_env(:tailwind, :version, default_tailwind_version)
+    end
+
+    Application.put_env(:tailwind, :beacon_runtime, [])
+
     raw_content = [layout.body, page_templates(layout.id), component_bodies()]
     config = build_config(opts[:config_template], raw_content)
     {tmp_dir, config_file} = write_file("tailwind.config.js", config)
-    output_file = Path.join(tmp_dir, "runtime.css")
+    output_css_path = Path.join(tmp_dir, "runtime.css")
 
-    exit_code = Tailwind.run(:runtime, ~w(
+    exit_code = Tailwind.run(:beacon_runtime, ~w(
       --config=#{config_file}
-      --input=#{input_file}
-      --output=#{output_file}
+      --input=#{@input_css_path}
+      --output=#{output_css_path}
       --minify
       ))
 
     case exit_code do
       0 ->
-        compiled_css = File.read!(output_file)
-        cleanup(tmp_dir, config_file, output_file)
+        compiled_css = File.read!(output_css_path)
+        cleanup(tmp_dir, config_file, output_css_path)
         compiled_css
 
       exit_code ->
-        cleanup(tmp_dir, config_file, output_file)
+        cleanup(tmp_dir, config_file, output_css_path)
         raise "Error running tailwind with exit code #{exit_code}"
     end
   end
@@ -41,9 +53,7 @@ defmodule Beacon.CSSCompiler do
   """
   @spec build_config(String.t() | nil, iodata()) :: String.t()
   def build_config(nil, raw_content) do
-    :code.priv_dir(:beacon)
-    |> Path.join("assets/tailwind.config.js.eex")
-    |> EEx.eval_file(assigns: %{raw: IO.iodata_to_binary(raw_content)})
+    EEx.eval_file(@template_tailwind_config_path, assigns: %{raw: IO.iodata_to_binary(raw_content)})
   end
 
   def build_config(config_template, raw_content) do
