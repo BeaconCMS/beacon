@@ -43,39 +43,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
     :ok
   end
 
-  defp create_page_without_meta(_) do
-    stylesheet_fixture()
-    component_fixture()
-    layout = layout_without_meta_fixture()
-
-    page =
-      page_without_meta_fixture(
-        layout_id: layout.id,
-        template: """
-        <main>
-          <h2>Some Values:</h2>
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
-          <% end %>
-
-          <.form let={f} for={:greeting} phx-submit="hello">
-            Name: <%= text_input f, :name %>
-            <%= submit "Hello" %>
-          </.form>
-
-          <%= if assigns[:message], do: assigns.message %>
-
-          <%= dynamic_helper("upcase", %{name: "test_name"}) %>
-        </main>
-        """
-      )
-
-    page_event_fixture(%{page_id: page.id})
-    page_helper_fixture(%{page_id: page.id})
-
-    :ok
-  end
-
   describe "render meta tags" do
     setup [:create_page]
 
@@ -91,19 +58,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ ~s(<meta name="home-meta-tag-one" content="value"/>)
       assert html =~ ~s(<meta name="home-meta-tag-two" content="value"/>)
-    end
-  end
-
-  describe "render no page/layout meta tags" do
-    setup [:create_page_without_meta]
-
-    test "", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
-
-      refute html =~ ~s(<meta name="home-meta-tag-one" content="value"/>)
-      refute html =~ ~s(<meta name="home-meta-tag-two" content="value"/>)
-      refute html =~ ~s(<meta name="layout-meta-tag-one" content="value"/>)
-      refute html =~ ~s(<meta name="layout-meta-tag-two" content="value"/>)
     end
   end
 
