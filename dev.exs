@@ -130,6 +130,7 @@ Beacon.Pages.create_page!(%{
   path: "home",
   site: "dev",
   layout_id: layout_id,
+  meta_tags: %{"home-meta-tag-one" => "value", "home-meta-tag-two" => "value"},
   template: """
   <main>
     <h1 class="text-violet-900">Dev</h1>
