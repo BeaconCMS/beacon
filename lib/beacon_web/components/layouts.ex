@@ -86,7 +86,7 @@ defmodule BeaconWeb.Layouts do
 
     if meta_tags do
       Enum.map_join(meta_tags, "\n", fn {key, value} ->
-        ~s(<meta property="#{key}" content="#{value}">)
+        ~s(<meta name="#{key}" content="#{value}">)
       end)
     else
       ""
@@ -127,7 +127,7 @@ defmodule BeaconWeb.Layouts do
 
     if meta_tags do
       Enum.map_join(meta_tags, "\n", fn {key, value} ->
-        ~s(<meta property="#{key}" content="#{value}">)
+        ~s(<meta name="#{key}" content="#{value}">)
       end)
     else
       ""

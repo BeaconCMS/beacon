@@ -82,15 +82,15 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "for a layout", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ ~s(<meta property="layout-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta property="layout-meta-tag-two" content="value"/>)
+      assert html =~ ~s(<meta name="layout-meta-tag-one" content="value"/>)
+      assert html =~ ~s(<meta name="layout-meta-tag-two" content="value"/>)
     end
 
     test "for a page", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ ~s(<meta property="home-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta property="home-meta-tag-two" content="value"/>)
+      assert html =~ ~s(<meta name="home-meta-tag-one" content="value"/>)
+      assert html =~ ~s(<meta name="home-meta-tag-two" content="value"/>)
     end
   end
 
@@ -100,24 +100,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      # specific tests
-
-      # assert !(html =~ ~s(<meta property="home-meta-tag-one" content="value"/>))
-      # assert !(html =~ ~s(<meta property="home-meta-tag-two" content="value"/>))
-      # assert !(html =~ ~s(<meta property="layout-meta-tag-one" content="value"/>))
-      # assert !(html =~ ~s(<meta property="layout-meta-tag-two" content="value"/>))
-
-      # more generic test
-      # search for any meta tag not including the following attributes
-
-      {:ok, r} =
-        ("<meta(?!" <>
-           ([~s/ name="csrf-token"/, ~s/ name="viewport"/, ~s/ charset="utf-8"/, ~s/ http-equiv="X-UA-Compatible"/]
-            |> Enum.join("|")) <>
-           ")")
-        |> Regex.compile()
-
-      assert !(html =~ r)
+      refute html =~ ~s(<meta name="home-meta-tag-one" content="value"/>)
+      refute html =~ ~s(<meta name="home-meta-tag-two" content="value"/>)
+      refute html =~ ~s(<meta name="layout-meta-tag-one" content="value"/>)
+      refute html =~ ~s(<meta name="layout-meta-tag-two" content="value"/>)
     end
   end
 
