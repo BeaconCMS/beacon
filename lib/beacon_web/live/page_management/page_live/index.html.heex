@@ -2,7 +2,7 @@
   Listing Pages
   <:actions>
     <.button phx-click="reload_pages" class="ml-2">Reload Pages</.button>
-    <.link patch="pages/new">
+    <.link patch={beacon_admin_path(@socket, "/pages/new")}>
       <.button>New Page</.button>
     </.link>
   </:actions>
@@ -20,11 +20,11 @@
   <:col :let={page} label="Template"><pre><%= page.template %></pre></:col>
 
   <:action :let={page}>
-    <.link navigate={"/beacon/page_management/page_editor/#{page.id}"}>Edit</.link>
+    <.link navigate={beacon_admin_path(@socket, "/page_editor/#{page.id}")}>Edit</.link>
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="page-modal" show on_cancel={JS.navigate("/beacon/page_management/pages")}>
+<.modal :if={@live_action in [:new, :edit]} id="page-modal" show on_cancel={JS.navigate(beacon_admin_path(@socket, "/pages"))}>
   <.live_component
     module={BeaconWeb.PageManagement.PageLive.FormComponent}
     ,
@@ -32,6 +32,6 @@
     title={@page_title}
     action={@live_action}
     page={@page}
-    navigate="/beacon/page_management/pages"
+    navigate={beacon_admin_path(@socket, "/pages")}
   />
 </.modal>

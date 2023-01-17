@@ -12,7 +12,7 @@ defmodule Beacon.BeaconTest.Router do
 
   scope "/" do
     pipe_through :browser
-    beacon_admin "/page_management"
+    beacon_admin "/admin"
     beacon_site "/", name: "my_site", data_source: Beacon.BeaconTest.BeaconDataSource
   end
 end

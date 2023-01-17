@@ -59,14 +59,10 @@ defmodule SamplePhoenixWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  scope "/admin" do
+  scope "/" do
     pipe_through :browser
-    beacon_admin "/"
-  end
-
-  scope "/dev" do
-    pipe_through :browser
-    beacon_site "/", name: "dev", data_source: BeaconDataSource
+    beacon_admin "/admin"
+    beacon_site "/dev", name: "dev", data_source: BeaconDataSource
   end
 end
 
