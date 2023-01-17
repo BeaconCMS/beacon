@@ -117,6 +117,7 @@ jobs:
 
       - name: Generate dialyzer plt
         run: mix dialyzer --plt
+        if: steps.cache-plt.outputs.cache-hit != 'true'
 
       - run: mix tailwind.install
 
