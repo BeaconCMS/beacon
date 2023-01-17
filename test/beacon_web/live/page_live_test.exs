@@ -83,29 +83,39 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home")
 
       assert html =~ ~s(<meta property="layout-meta-tag-one" content="value"/>)
+      assert html =~ ~s(<meta property="layout-meta-tag-two" content="value"/>)
     end
 
     test "for a page", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
       assert html =~ ~s(<meta property="home-meta-tag-one" content="value"/>)
-    end
-
-    test "- multiple", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
-
-      assert html =~ ~s(<meta property="layout-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta property="layout-meta-tag-two" content="value"/>)
-      assert html =~ ~s(<meta property="home-meta-tag-one" content="value"/>)
       assert html =~ ~s(<meta property="home-meta-tag-two" content="value"/>)
     end
   end
 
-  describe "render no meta tags" do
+  describe "render no page/layout meta tags" do
     setup [:create_page_without_meta]
 
     test "", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
+
+      assert !(html =~ ~s(<meta property="home-meta-tag-one" content="value"/>))
+      assert !(html =~ ~s(<meta property="home-meta-tag-two" content="value"/>))
+      assert !(html =~ ~s(<meta property="layout-meta-tag-one" content="value"/>))
+      assert !(html =~ ~s(<meta property="layout-meta-tag-two" content="value"/>))
+
+      # more generic test
+      # search for any meta tag not including the following attributes
+
+      {:ok, r} =
+        ("<meta(?!" <>
+           ([~s/ name="csrf-token"/, ~s/ name="viewport"/, ~s/ charset="utf-8"/, ~s/ http-equiv="X-UA-Compatible"/]
+            |> Enum.join("|")) <>
+           ")")
+        |> Regex.compile()
+
+      assert !(html =~ r)
     end
   end
 

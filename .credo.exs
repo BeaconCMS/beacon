@@ -95,7 +95,8 @@
           {Credo.Check.Readability.AliasOrder, []},
           {Credo.Check.Readability.FunctionNames, []},
           {Credo.Check.Readability.LargeNumbers, []},
-          {Credo.Check.Readability.MaxLineLength, [priority: :low, max_length: 120]},
+          # made to match .formatter, otherwise long lines cause workflow to fail
+          {Credo.Check.Readability.MaxLineLength, [priority: :low, max_length: 150]},
           {Credo.Check.Readability.ModuleAttributeNames, []},
           {Credo.Check.Readability.ModuleNames, []},
           {Credo.Check.Readability.ParenthesesInCondition, []},
