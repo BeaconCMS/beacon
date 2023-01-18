@@ -8,7 +8,8 @@ defmodule BeaconWeb.Components do
   @doc """
   Image
   """
-  attr :beacon, :any, required: true # TODO: define a name and struct
+  # TODO: define a name and struct
+  attr :beacon, :any, required: true
   attr :name, :string, required: true
   attr :class, :string, default: nil
   attr :rest, :global

@@ -16,7 +16,7 @@ defmodule Beacon.RouterTest do
   end
 
   test "router opts" do
-    assert {_, _, [private: %{beacon: %{site: "test", live_socket_path: "/live"}}]} = Router.__options__(name: "test")
+    assert {_, _, [private: %{beacon: %{live_socket_path: "/live"}}]} = Router.__options__(name: "test")
   end
 
   describe "options" do
