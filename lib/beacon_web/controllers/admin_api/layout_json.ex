@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagementApi.LayoutJSON do
+defmodule BeaconWeb.AdminApi.LayoutJSON do
   def index(%{layouts: layouts}) do
     %{data: for(layout <- layouts, do: data(layout))}
   end

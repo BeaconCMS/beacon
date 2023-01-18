@@ -26,8 +26,7 @@
 
 <.modal :if={@live_action in [:new, :edit]} id="page-modal" show on_cancel={JS.navigate(beacon_admin_path(@socket, "/pages"))}>
   <.live_component
-    module={BeaconWeb.PageManagement.PageLive.FormComponent}
-    ,
+    module={BeaconWeb.Admin.PageLive.FormComponent}
     id={@page.id || :new}
     title={@page_title}
     action={@live_action}

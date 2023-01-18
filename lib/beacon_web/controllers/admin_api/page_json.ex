@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagementApi.PageJSON do
+defmodule BeaconWeb.AdminApi.PageJSON do
   def index(%{pages: pages}) do
     %{data: for(page <- pages, do: data(page))}
   end

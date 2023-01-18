@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagementApi.LayoutController do
+defmodule BeaconWeb.AdminApi.LayoutController do
   use BeaconWeb, :controller
 
   alias Beacon.Layouts

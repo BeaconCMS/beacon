@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagement.PageLive.Index do
+defmodule BeaconWeb.Admin.PageLive.Index do
   use BeaconWeb, :live_view
 
   alias Beacon.Pages
