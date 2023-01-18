@@ -17,13 +17,13 @@
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:upload]} id="asset-modal" show on_cancel={JS.navigate("/beacon/admin/media_library")}>
+<.modal :if={@live_action in [:upload]} id="asset-modal" show on_cancel={JS.navigate(beacon_admin_path(@socket, "/media_library"))}>
   <.live_component
     module={BeaconWeb.Admin.MediaLibraryLive.FormComponent}
     id={@asset.id || :upload}
     title={@page_title}
     action={@live_action}
     asset={@asset}
-    navigate="/beacon/admin/media_library"
+    navigate={beacon_admin_path(@socket, "/media_library")}
   />
 </.modal>

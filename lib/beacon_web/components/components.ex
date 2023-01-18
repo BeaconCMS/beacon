@@ -3,18 +3,19 @@ defmodule BeaconWeb.Components do
   """
 
   use Phoenix.Component
+  import Beacon.Router, only: [beacon_media_library_asset_path: 2]
 
   @doc """
   Image
   """
-  attr :site, :string, required: true # TODO inject or resolve :site at runtime if possible
+  attr :beacon, :any, required: true # TODO: define a name and struct
   attr :name, :string, required: true
   attr :class, :string, default: nil
   attr :rest, :global
 
   def image(assigns) do
     ~H"""
-    <img src={"/beacon/media_library/serve?site=#{@site}&name=#{@name}"} class={@class} {@rest} />
+    <img src={beacon_media_library_asset_path(@beacon, @name)} class={@class} {@rest} />
     """
   end
 end

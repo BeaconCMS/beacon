@@ -8,11 +8,11 @@ defmodule BeaconWeb.Admin.HomeLive.Index do
       Admin
     </.header>
 
-    <.link navigate="/beacon/admin/pages">
+    <.link navigate={beacon_admin_path(@socket, "/pages")}>
       <.button>Pages</.button>
     </.link>
 
-    <.link navigate="/beacon/admin/media_library">
+    <.link navigate={beacon_admin_path(@socket, "/media_library")}>
       <.button>Media Library</.button>
     </.link>
     """

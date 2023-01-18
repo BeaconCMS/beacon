@@ -50,9 +50,13 @@ defmodule Beacon.Router do
         {session_name, session_opts, route_opts} = o = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
+          get "/beacon_assets/:asset", MediaLibraryController, :show
           live "/*path", PageLive, :path, route_opts
         end
       end
+
+      @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
+      def __beacon_site_prefix__, do: @beacon_site_prefix
     end
   end
 
@@ -75,7 +79,7 @@ defmodule Beacon.Router do
         root_layout: {BeaconWeb.Layouts, :runtime}
       ],
       [
-        private: %{beacon: %{live_socket_path: live_socket_path}}
+        private: %{beacon: %{site: name, live_socket_path: live_socket_path}}
       ]
     }
   end
@@ -89,9 +93,12 @@ defmodule Beacon.Router do
         import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
         live_session :beacon_admin, root_layout: {BeaconWeb.Layouts, :admin} do
+          live "/", HomeLive.Index, :index
           live "/pages", PageLive.Index, :index
           live "/pages/new", PageLive.Index, :new
           live "/page_editor/:id", PageEditorLive, :edit
+          live "/media_library", MediaLibraryLive.Index, :index
+          live "/media_library/upload", MediaLibraryLive.Index, :upload
         end
       end
 
@@ -118,6 +125,11 @@ defmodule Beacon.Router do
         get "/layouts/:id", LayoutController, :show
       end
     end
+  end
+
+  # TODO: secure cross site assets
+  def beacon_media_library_asset_path(beacon, file_name) do
+    beacon.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{beacon.site}"
   end
 
   @doc """

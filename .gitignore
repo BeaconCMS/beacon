@@ -38,3 +38,6 @@ beacon-*.tar
 # Dev temp files
 /dev/
 /priv/dev
+
+# LSP
+/.elixir_ls

@@ -65,7 +65,7 @@ defmodule BeaconWeb.Layouts do
 
   def page_title(%{layout_assigns: %{page_title: page_title}}), do: page_title
 
-  def page_title(%{__dynamic_layout_id__: layout_id, beacon_site: site}) do
+  def page_title(%{__dynamic_layout_id__: layout_id, __site__: site}) do
     %{title: title} = compiled_layout_assigns(site, layout_id)
     title
   end
@@ -165,7 +165,7 @@ defmodule BeaconWeb.Layouts do
 
   def stylesheet_tag(_), do: ""
 
-  def linked_stylesheets(%{__dynamic_layout_id__: _, beacon_site: _} = assigns) do
+  def linked_stylesheets(%{__dynamic_layout_id__: _, __site__: _} = assigns) do
     {:safe, linked_stylesheets_unsafe(assigns)}
   end
 
@@ -192,7 +192,7 @@ defmodule BeaconWeb.Layouts do
     compiled_linked_stylesheets(assigns)
   end
 
-  defp compiled_linked_stylesheets(%{__dynamic_layout_id__: layout_id, beacon_site: site}) do
+  defp compiled_linked_stylesheets(%{__dynamic_layout_id__: layout_id, __site__: site}) do
     %{stylesheet_urls: compiled_linked_stylesheets} = compiled_layout_assigns(site, layout_id)
     compiled_linked_stylesheets
   end

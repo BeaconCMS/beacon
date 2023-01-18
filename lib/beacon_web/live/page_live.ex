@@ -27,6 +27,7 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
+      |> assign(:beacon, %{site: site})
       |> assign(:beacon_live_data, live_data)
       |> assign(:__live_path__, path)
       |> assign(:__page_update_available__, false)
@@ -39,6 +40,8 @@ defmodule BeaconWeb.PageLive do
       |> push_event("meta", %{meta: BeaconWeb.Layouts.layout_meta_tags_unsafe(socket.assigns)})
       |> push_event("lang", %{lang: "en"})
 
+    socket = assign(socket, :beacon, %{site: site, router: socket.router})
+
     Beacon.PubSub.subscribe_page_update(site, path)
 
     {:ok, socket, layout: {BeaconWeb.Layouts, :dynamic}}
@@ -47,7 +50,7 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     {%{__live_path__: live_path}, render_assigns} = Map.split(assigns, [:__live_path__])
 
-    module = Beacon.Loader.page_module_for_site(assigns.beacon_site)
+    module = Beacon.Loader.page_module_for_site(assigns.__site__)
 
     Beacon.Loader.call_function_with_retry(module, :render, [live_path, render_assigns])
   end
@@ -57,7 +60,7 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    socket.assigns.beacon_site
+    socket.assigns.__site__
     |> Beacon.Loader.page_module_for_site()
     |> Beacon.Loader.call_function_with_retry(
       :handle_event,

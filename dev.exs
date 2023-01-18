@@ -61,7 +61,6 @@ defmodule SamplePhoenixWeb.Router do
 
   scope "/" do
     pipe_through :browser
-    get "/beacon/media_library/serve", MediaLibraryController, :show
     beacon_admin "/admin"
     beacon_site "/dev", name: "dev", data_source: BeaconDataSource
   end
@@ -134,7 +133,7 @@ Beacon.Pages.create_page!(%{
     <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
     <div>
-      <BeaconWeb.Components.image site={@beacon_site} name="dockyard.png" width="200px" />
+      <BeaconWeb.Components.image beacon={@beacon} name="dockyard.png" width="200px" />
     </div>
 
     <div>
@@ -150,7 +149,7 @@ Beacon.Pages.create_page!(%{
 })
 
 Beacon.Admin.MediaLibrary.upload(
-  "my_site",
+  "dev",
   Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
   "dockyard.png",
   "image/png"
