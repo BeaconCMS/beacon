@@ -35,7 +35,8 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.FormComponent do
   defp handle_progress(:asset, entry, socket) do
     if entry.done? do
       consume_uploaded_entries(socket, :asset, fn %{path: path}, entry ->
-        Beacon.Admin.MediaLibrary.upload(
+        # TODO: pass site name
+        MediaLibrary.upload(
           "my_site",
           path,
           entry.client_name,
