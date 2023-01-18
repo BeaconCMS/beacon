@@ -79,7 +79,7 @@ defmodule Beacon.Router do
         root_layout: {BeaconWeb.Layouts, :runtime}
       ],
       [
-        private: %{beacon: %{site: name, live_socket_path: live_socket_path}}
+        private: %{beacon: %{live_socket_path: live_socket_path}}
       ]
     }
   end
