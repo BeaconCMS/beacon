@@ -53,7 +53,8 @@ defmodule Mix.Tasks.Beacon.Install do
     maybe_add_seeds(bindings)
   end
 
-  defp maybe_add_seeds(bindings) do
+  @doc false
+  def maybe_add_seeds(bindings) do
     seeds_path = get_in(bindings, [:seeds, :path])
     template_path = get_in(bindings, [:seeds, :template_path])
 
@@ -77,6 +78,7 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
+  @doc false
   def maybe_add_beacon_scope(bindings) do
     router_file = get_in(bindings, [:router, :path])
     router_file_content = File.read!(router_file)
@@ -89,6 +91,7 @@ defmodule Mix.Tasks.Beacon.Install do
         |> String.trim_trailing()
         |> String.trim_trailing("end")
         |> Kernel.<>(router_scope_content)
+        |> Kernel.<>("end\n")
 
       File.write!(router_file, new_router_content)
     end

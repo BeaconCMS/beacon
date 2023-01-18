@@ -1,14 +1,7 @@
+  import Beacon.Router
 
-  scope "/", BeaconWeb do
-    pipeline :beacon do
-      plug BeaconWeb.Plug
-    end
-
+  scope "/" do
     pipe_through :browser
-    pipe_through :beacon
-
-    live_session :beacon, session: %{"beacon_site" => "<%= beacon_site %>"} do
-      live "/beacon/*path", PageLive, :path
-    end
+    beacon_admin "/admin"
+    beacon_site "/<%= beacon_site %>", name: "<%= beacon_site %>", data_source: <%= inspect beacon_data_source.module_name %>
   end
-end
