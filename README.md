@@ -181,7 +181,7 @@ Beacon supports both.
     })
 
     Pages.create_page_helper!(%{
-      page_id: page.id,
+      page_id: page_id,
       helper_name: "upcase",
       helper_args: "name",
       code: """
