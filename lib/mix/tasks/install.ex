@@ -109,7 +109,8 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp maybe_add_beacon_repo_config(config_file, bindings) do
+  @doc false
+  def maybe_add_beacon_repo_config(config_file, bindings) do
     config_file_content = File.read!(config_file)
     templates_path = get_in(bindings, [:templates_path])
     beacon_repo_config = EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config.exs"]), bindings)

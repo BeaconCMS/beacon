@@ -8,22 +8,23 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     Mix.Task.clear()
 
     support_path = Path.join([File.cwd!(), "test", "support", "install_files"])
-    templates_path = Path.join([File.cwd!(), "priv", "templates", "install"])
+    templates_path = Path.join([File.cwd!(), "priv", "templates"])
 
     bindings = [
       beacon_site: "my_test_blog",
+      templates_path: templates_path,
       seeds: %{
         path: Path.join([support_path, "seeds.exs"]),
-        template_path: Path.join([templates_path, "seeds.exs"])
+        template_path: Path.join([templates_path, "install", "seeds.exs"])
       },
       router: %{
         path: Path.join([support_path, "router_test"]),
-        router_scope_template: Path.join([templates_path, "beacon_router_scope.ex"])
+        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
       },
       beacon_data_source: %{
         dest_path: Path.join([support_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "beacon_data_source.ex"]),
-        config_template_path: Path.join([templates_path, "beacon_data_source_config.exs"]),
+        config_template_path: Path.join([templates_path, "install", "beacon_data_source_config.exs"]),
         module_name: Module.concat(Beacon, "BeaconDataSource")
       }
     ]
@@ -130,6 +131,35 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     Install.maybe_add_beacon_repo(test_file)
 
     refute String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo, Beacon.Repo\]/)
+  end
+
+  test "it adds beacon repo config to a config file", %{bindings: bindings, support_path: support_path} do
+    config_file = Path.join([support_path, "config_test.exs"])
+    test_file = random_file_name(config_file)
+    template_file = Path.join([get_in(bindings, [:templates_path]), "install", "beacon_repo_config.exs"])
+
+    repo_config_content = EEx.eval_file(template_file, bindings)
+
+    File.cp!(config_file, test_file)
+
+    Install.maybe_add_beacon_repo_config(test_file, bindings)
+
+    assert String.contains?(File.read!(test_file), repo_config_content)
+  end
+
+  test "it does not add beacon repo config twice to a file", %{bindings: bindings, support_path: support_path} do
+    config_file = Path.join([support_path, "config_test.exs"])
+    test_file = random_file_name(config_file)
+
+    File.cp!(config_file, test_file)
+
+    Install.maybe_add_beacon_repo_config(test_file, bindings)
+
+    new_file_content = File.read!(test_file)
+
+    Install.maybe_add_beacon_repo_config(test_file, bindings)
+
+    assert new_file_content == File.read!(test_file)
   end
 
   defp random_file_name(path) do
