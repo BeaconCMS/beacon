@@ -36,7 +36,7 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> push_event("meta", %{meta: BeaconWeb.Layouts.meta_tags_unsafe(socket.assigns)})
+      |> push_event("meta", %{meta: BeaconWeb.Layouts.layout_meta_tags_unsafe(socket.assigns)})
       |> push_event("lang", %{lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)

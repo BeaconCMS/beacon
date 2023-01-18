@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <%= meta_tags(assigns) %>
+    <%= layout_meta_tags(assigns) %>
     <%= page_meta_tags(assigns) %>
     <title><%= page_title(assigns) %></title>
     <%= linked_stylesheets(assigns) %>
