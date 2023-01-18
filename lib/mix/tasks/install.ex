@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     # Add Beacon.Repo to config.exs
     config_file = config_file("config.exs")
-    maybe_add_beacon_repo(config_file, File.read!(config_file))
+    maybe_add_beacon_repo(config_file)
 
     # Add Beacon.Repo database config to dev.exs and prod.exs
     dev_config_file = config_file("dev.exs")
@@ -85,7 +85,7 @@ defmodule Mix.Tasks.Beacon.Install do
     router_scope_template = get_in(bindings, [:router, :router_scope_template])
     router_scope_content = EEx.eval_file(router_scope_template, bindings)
 
-    if !String.contains?(router_file_content, "scope \"/\", BeaconWeb do") do
+    if !String.contains?(router_file_content, "beacon_site \"") do
       new_router_content =
         router_file_content
         |> String.trim_trailing()
@@ -97,7 +97,10 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp maybe_add_beacon_repo(config_file, config_file_content) do
+  @doc false
+  def maybe_add_beacon_repo(config_file) do
+    config_file_content = File.read!(config_file)
+
     if !String.contains?(config_file_content, "Beacon.Repo") do
       regex = ~r/ecto_repos: \[(.*)\]/
       new_config_file_content = Regex.replace(regex, config_file_content, "ecto_repos: [\\1, Beacon.Repo]")
