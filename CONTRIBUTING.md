@@ -52,7 +52,7 @@ First clone this repository:
 git clone git@github.com:BeaconCMS/beacon.git
 ```
 
-And call setup to install deps:
+Call setup to install deps:
 
 ```sh
 mix setup
@@ -63,3 +63,11 @@ mix setup
 ```sh
 mix test
 ```
+
+## Running a local app
+
+```sh
+mix dev
+```
+
+Visit http://localhost:4000/dev/home or http://localhost:4000/admin/pages

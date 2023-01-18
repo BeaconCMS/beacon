@@ -12,6 +12,7 @@ defmodule Beacon.Pages.Page do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
+    field :meta_tags, :map
     field :path, :string
     field :site, :string
     field :template, :string
@@ -32,7 +33,7 @@ defmodule Beacon.Pages.Page do
   @doc false
   def changeset(page \\ %Page{}, %{} = attrs) do
     page
-    |> cast(attrs, [:site, :order, :template, :layout_id, :version])
+    |> cast(attrs, [:site, :order, :meta_tags, :template, :layout_id, :version])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
     |> validate_required([

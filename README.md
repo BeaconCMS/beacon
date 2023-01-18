@@ -226,9 +226,9 @@ Beacon supports both.
     ```elixir
     import Beacon.Router
 
-    scope "/" do
+    scope "/beacon" do
       pipe_through :browser
-      beacon_admin "/beacon/page_management"
+      beacon_admin "/admin"
     end
     ```
 
@@ -245,7 +245,7 @@ Beacon supports both.
 
     scope "/api"
       pipe_through :api
-      beacon_api "/beacon/page_management"
+      beacon_api "/beacon"
     end
     ```
 
@@ -256,6 +256,6 @@ Beacon supports both.
 `dev.exs` provides a phoenix app running beacon with with code reload enabled:
 
 ```shell
-mix deps.get
+mix setup
 mix dev
 ```

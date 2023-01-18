@@ -59,18 +59,11 @@ defmodule SamplePhoenixWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  scope "/admin" do
+  scope "/" do
     pipe_through :browser
-    beacon_admin "/"
-  end
-
-  scope "/dev" do
-    pipe_through :browser
-    pipe_through :beacon
-
     get "/beacon/media_library/serve", MediaLibraryController, :show
-
-    beacon_site "/", name: "dev", data_source: BeaconDataSource
+    beacon_admin "/admin"
+    beacon_site "/dev", name: "dev", data_source: BeaconDataSource
   end
 end
 
@@ -123,7 +116,7 @@ Beacon.Components.create_component!(%{
   Beacon.Layouts.create_layout!(%{
     site: "dev",
     title: "Dev",
-    meta_tags: %{"env" => "dev"},
+    meta_tags: %{"layout" => "dev"},
     stylesheet_urls: [],
     body: """
     <%= @inner_content %>
@@ -134,6 +127,7 @@ Beacon.Pages.create_page!(%{
   path: "home",
   site: "dev",
   layout_id: layout_id,
+  meta_tags: %{"page" => "home"},
   template: """
   <main>
     <h1 class="text-violet-900">Dev</h1>

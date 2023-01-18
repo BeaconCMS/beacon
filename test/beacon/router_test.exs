@@ -29,4 +29,45 @@ defmodule Beacon.RouterTest do
       assert {_, _, [private: %{beacon: %{live_socket_path: "/live_custom"}}]} = Router.__options__(name: "test", live_socket_path: "/live_custom")
     end
   end
+
+  defmodule RouterSimple do
+    use Beacon.BeaconTest, :router
+    import Beacon.Router
+
+    scope "/" do
+      beacon_admin "/admin"
+    end
+  end
+
+  defmodule RouterNested do
+    use Beacon.BeaconTest, :router
+    import Beacon.Router
+
+    scope "/outer" do
+      scope "/nested" do
+        beacon_admin "/admin"
+      end
+    end
+  end
+
+  defmodule Endpoint do
+    use Phoenix.Endpoint, otp_app: :beacon
+  end
+
+  test "beacon_admin_path" do
+    socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: RouterSimple}
+    import Beacon.Router, only: [beacon_admin_path: 2, beacon_admin_path: 3]
+    start_supervised!(Endpoint)
+
+    assert beacon_admin_path(socket, "/pages") == "/admin/pages"
+    assert beacon_admin_path(socket, :pages, %{foo: :bar}) == "/admin/pages?foo=bar"
+  end
+
+  test "beacon_admin_path nested" do
+    socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: RouterNested}
+    import Beacon.Router, only: [beacon_admin_path: 2]
+    start_supervised!(Endpoint)
+
+    assert beacon_admin_path(socket, "/pages") == "/outer/nested/admin/pages"
+  end
 end

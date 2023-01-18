@@ -20,17 +20,23 @@ defmodule BeaconWeb.PageLive do
       |> Beacon.Loader.page_module_for_site()
       |> Beacon.Loader.call_function_with_retry(:layout_id_for_path, [path])
 
-    socket =
-      socket
-      |> assign(:beacon_live_data, live_data)
-      |> assign(:beacon_site, site)
-      |> assign(:__live_path__, path)
-      |> assign(:__page_update_available__, false)
-      |> assign(:__dynamic_layout_id__, layout_id)
+    page_id =
+      site
+      |> Beacon.Loader.page_module_for_site()
+      |> Beacon.Loader.call_function_with_retry(:page_id, [path])
 
     socket =
       socket
-      |> push_event("meta", %{meta: BeaconWeb.Layouts.meta_tags_unsafe(socket.assigns)})
+      |> assign(:beacon_live_data, live_data)
+      |> assign(:__live_path__, path)
+      |> assign(:__page_update_available__, false)
+      |> assign(:__dynamic_layout_id__, layout_id)
+      |> assign(:__dynamic_page_id__, page_id)
+      |> assign(:__site__, site)
+
+    socket =
+      socket
+      |> push_event("meta", %{meta: BeaconWeb.Layouts.layout_meta_tags_unsafe(socket.assigns)})
       |> push_event("lang", %{lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)
