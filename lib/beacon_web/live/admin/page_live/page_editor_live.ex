@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagement.PageEditorLive do
+defmodule BeaconWeb.Admin.PageEditorLive do
   use BeaconWeb, :live_view
 
   alias Beacon.Layouts

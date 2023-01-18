@@ -1,4 +1,4 @@
-defmodule BeaconWeb.PageManagement.PageLive.FormComponent do
+defmodule BeaconWeb.Admin.PageLive.FormComponent do
   use BeaconWeb, :live_component
 
   alias Beacon.Layouts

@@ -1,10 +1,10 @@
-defmodule BeaconWeb.PageManagementApi.PageController do
+defmodule BeaconWeb.AdminApi.PageController do
   use BeaconWeb, :controller
 
   alias Beacon.Pages
   alias Beacon.Pages.Page
 
-  action_fallback BeaconWeb.PageManagementApi.FallbackController
+  action_fallback BeaconWeb.AdminApi.FallbackController
 
   def index(conn, _params) do
     pages = Pages.list_pages()
