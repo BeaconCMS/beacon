@@ -110,12 +110,26 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
   test "it adds beacon repo to a config file", %{support_path: support_path} do
     config_file = Path.join([support_path, "config_test.exs"])
+    test_file = random_file_name(config_file)
 
-    File.cp!(config_file, random_file_name(config_file))
+    File.cp!(config_file, test_file)
 
-    Install.maybe_add_beacon_repo(config_file)
+    Install.maybe_add_beacon_repo(test_file)
 
-    assert String.match?(File.read!(config_file), ~r/ecto_repos: \[(.*), Beacon.Repo\]/)
+    assert String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo\]/)
+  end
+
+  test "it does not add beacon repo twice or ignores if it exists", %{support_path: support_path} do
+    config_file = Path.join([support_path, "config_test.exs"])
+    test_file = random_file_name(config_file)
+
+    File.cp!(config_file, test_file)
+
+    Install.maybe_add_beacon_repo(test_file)
+
+    Install.maybe_add_beacon_repo(test_file)
+
+    refute String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo, Beacon.Repo\]/)
   end
 
   defp random_file_name(path) do
