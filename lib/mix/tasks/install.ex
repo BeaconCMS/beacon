@@ -7,14 +7,14 @@ defmodule Mix.Tasks.Beacon.Install do
   Before running this command, make sure you commited all your changes to git,
   beacuse it generates new files and modifies existing ones.
 
-    $ mix beacon.install --beacon-site "my-beacon-site"
+    $ mix beacon.install --beacon-site "blog"
 
   The argument `beacon-site` defines the name of your beacon site and is
-  used to generate the necessary configuration files, defaults to `my-site`.
+  used to generate the necessary configuration files, defaults to `my_site`.
 
   ## Arguments
 
-    * `--beacon-site` - The name of your beacon site, defaults to `my-site`
+    * `--beacon-site` - The name of your beacon site, defaults to `my_site`
   """
   use Mix.Task
 
@@ -139,7 +139,7 @@ defmodule Mix.Tasks.Beacon.Install do
     dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
     template_path = get_in(bindings, [:beacon_data_source, :template_path])
 
-    if !File.exists?(dest_path) do
+    unless File.exists?(dest_path) do
       File.touch!(dest_path)
       File.write!(dest_path, EEx.eval_file(template_path, bindings))
     end
