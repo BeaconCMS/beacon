@@ -86,11 +86,10 @@ Beacon supports both.
     scope "/" do
       pipe_through :browser
       beacon_site "/beacon", name: "my_site", data_source: MyApp.BeaconDataSource
-
     end
     ```
 
-10. Add some seeds to your seeds.exs:
+10. Add some seeds to your `priv/repo/seeds.exs` file:
 
     ```elixir
     alias Beacon.Components
@@ -190,11 +189,11 @@ Beacon supports both.
     })
     ```
 
-11. Create database and run seeds:
+11. Setup database, seeds, and tools:
 
 
     ```shell
-    mix ecto.reset
+    mix setup
     ```
 
 12. Start server:
