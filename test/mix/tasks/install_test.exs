@@ -23,7 +23,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       },
       beacon_data_source: %{
         dest_path: Path.join([support_path, "beacon_data_source.ex"]),
-        template_path: Path.join([templates_path, "beacon_data_source.ex"]),
+        template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
         config_template_path: Path.join([templates_path, "install", "beacon_data_source_config.exs"]),
         module_name: Module.concat(Beacon, "BeaconDataSource")
       }
@@ -162,7 +162,56 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert new_file_content == File.read!(test_file)
   end
 
-  defp random_file_name(path) do
+  test "it adds beacon data source config", %{bindings: bindings, support_path: support_path} do
+    config_file = Path.join([support_path, "config_test.exs"])
+    test_file = random_file_name(config_file)
+
+    File.cp!(config_file, test_file)
+
+    Install.maybe_add_beacon_data_source_to_config(test_file, bindings)
+
+    assert String.match?(File.read!(test_file), ~r/config :beacon,\n(.*) data_source: Beacon.BeaconDataSource/)
+  end
+
+  test "it does not add beacon data source config twice", %{bindings: bindings, support_path: support_path} do
+    config_file = Path.join([support_path, "config_test.exs"])
+    test_file = random_file_name(config_file)
+
+    File.cp!(config_file, test_file)
+
+    Install.maybe_add_beacon_data_source_to_config(test_file, bindings)
+
+    new_file_content = File.read!(test_file)
+
+    Install.maybe_add_beacon_data_source_to_config(test_file, bindings)
+
+    assert new_file_content == File.read!(test_file)
+  end
+
+  test "it creates beacon data source file", %{bindings: bindings} do
+    dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
+    random_path = random_file_name(dest_path, false)
+    template_path = get_in(bindings, [:beacon_data_source, :template_path])
+
+    bindings = put_in(bindings, [:beacon_data_source, :dest_path], random_path)
+    file_content = EEx.eval_file(template_path, bindings)
+
+    Install.maybe_create_beacon_data_source_file(bindings)
+
+    assert File.read!(random_path) == file_content
+  end
+
+  test "it does not create a new file if it already exists", %{bindings: bindings} do
+    dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
+    random_path = random_file_name(dest_path)
+    bindings = put_in(bindings, [:beacon_data_source, :dest_path], random_path)
+
+    Install.maybe_create_beacon_data_source_file(bindings)
+
+    assert "" == File.read!(random_path)
+  end
+
+  defp random_file_name(path, create_file? \\ true) do
     path_dir = Path.dirname(path)
     path_file = Path.basename(path)
 
@@ -170,7 +219,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
     file = Path.join([path_dir, "#{uuid}_#{path_file}"])
 
-    File.touch!(file)
+    if create_file?, do: File.touch!(file)
 
     file
   end

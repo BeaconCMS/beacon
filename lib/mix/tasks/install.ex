@@ -44,7 +44,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     # Create BeaconDataSource file and config
     maybe_create_beacon_data_source_file(bindings)
-    maybe_add_beacon_data_source_to_config(config_file, File.read!(config_file), bindings)
+    maybe_add_beacon_data_source_to_config(config_file, bindings)
 
     # Add pipeline and scope to router
     maybe_add_beacon_scope(bindings)
@@ -122,7 +122,9 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp maybe_add_beacon_data_source_to_config(config_file, config_file_content, bindings) do
+  @doc false
+  def maybe_add_beacon_data_source_to_config(config_file, bindings) do
+    config_file_content = File.read!(config_file)
     config_content = EEx.eval_file(get_in(bindings, [:beacon_data_source, :config_template_path]), bindings)
 
     if !String.contains?(config_file_content, config_content) do
@@ -132,7 +134,8 @@ defmodule Mix.Tasks.Beacon.Install do
     end
   end
 
-  defp maybe_create_beacon_data_source_file(bindings) do
+  @doc false
+  def maybe_create_beacon_data_source_file(bindings) do
     dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
     template_path = get_in(bindings, [:beacon_data_source, :template_path])
 
