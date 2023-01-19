@@ -41,7 +41,7 @@ Beacon supports both.
     ```shell
     mix deps.get
     ```
-
+    
 5. Import `:beacon` in your app formatter deps:
 
    ```elixir
@@ -50,6 +50,12 @@ Beacon supports both.
      # rest of file
    ]
    ```
+
+## Configuration
+
+You can now run the generator `beacon.install` to generate all necessary configurations for beacon or you can alternatively manually configure by following the next steps. If you ran the generator you can jump to step 11.
+
+For details about the generator please check out the docs.
 
 6.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
 
