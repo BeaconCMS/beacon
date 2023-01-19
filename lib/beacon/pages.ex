@@ -26,6 +26,13 @@ defmodule Beacon.Pages do
   end
 
   @doc """
+  List all page templates for a layout.
+  """
+  def list_page_templates_by_layout(layout_id) do
+    Repo.all(from p in Page, where: p.layout_id == ^layout_id, select: p.template)
+  end
+
+  @doc """
   Gets a single page.
 
   Raises `Ecto.NoResultsError` if the Page does not exist.

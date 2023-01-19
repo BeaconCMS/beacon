@@ -1,0 +1,40 @@
+<div>
+  <.header>
+    Edit Page
+    <:actions>
+      <.link navigate={beacon_admin_path(@socket, "/pages")}>
+        <.button>Pages</.button>
+      </.link>
+    </:actions>
+  </.header>
+
+  <.simple_form :let={f} for={@changeset} id="page-form" phx-change="validate" phx-submit="save">
+    <.input field={{f, :site}} type="text" label="Site" disabled="true" />
+    <.input field={{f, :path}} type="text" label="Path" disabled="true" />
+    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} />
+    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" />
+    <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
+
+    <:actions>
+      <.button phx-disable-with="Saving...">Save</.button>
+    </:actions>
+  </.simple_form>
+</div>
+
+<div>
+  <.header>
+    History
+  </.header>
+
+  <.table id="page-versions" rows={sort_page_versions(@page.versions)}>
+    <:col :let={page_version} label="Current">
+      <%= if page_version.version == @page.version do %>
+        <b>Current</b>
+      <% end %>
+    </:col>
+    <:col :let={page_version} label="Version"><%= page_version.version %></:col>
+    <:action :let={page_version}>
+      <.button phx-click="copy_version" phx-value-version={page_version.version}>Copy</.button>
+    </:action>
+  </.table>
+</div>
