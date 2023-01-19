@@ -51,6 +51,16 @@ defmodule Mix.Tasks.Beacon.Install do
 
     # Add seeds content
     maybe_add_seeds(bindings)
+
+    Mix.shell().info("""
+      A new site has been configured at /#{bindings[:beacon_site]}
+
+      Now you can adjust your project config files, router.ex, or seeds.exs as you wish and run:
+          $ mix setup
+
+      And then start your Phoenix app:
+          $ mix phx.server
+    """)
   end
 
   @doc false
@@ -113,7 +123,13 @@ defmodule Mix.Tasks.Beacon.Install do
   def maybe_add_beacon_repo_config(config_file, bindings) do
     config_file_content = File.read!(config_file)
     templates_path = get_in(bindings, [:templates_path])
-    beacon_repo_config = EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config.exs"]), bindings)
+
+    beacon_repo_config =
+      if Path.basename(config_file) == "prod.exs" do
+        EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_prod.exs"]), bindings)
+      else
+        EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_dev.exs"]), bindings)
+      end
 
     if !String.contains?(config_file_content, beacon_repo_config) do
       new_config_content = add_to_config(config_file_content, beacon_repo_config)
