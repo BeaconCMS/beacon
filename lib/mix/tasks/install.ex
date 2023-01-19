@@ -52,9 +52,6 @@ defmodule Mix.Tasks.Beacon.Install do
     # Add seeds content
     maybe_add_seeds(bindings)
 
-    # endpoint = MyAppWeb.Endpoint
-    # url = apply(endpoint, :url, [])
-
     Mix.shell().info("""
 
       A new site has been configured at /#{bindings[:beacon_site]} and a sample page is available at /my_site/home
