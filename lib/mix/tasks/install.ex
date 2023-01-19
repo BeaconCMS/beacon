@@ -1,3 +1,4 @@
+# credo:disable-for-this-file Credo.Check.Warning.UnusedPathOperation
 defmodule Mix.Tasks.Beacon.Install do
   @shortdoc "Generates beacon base files into the project"
 
