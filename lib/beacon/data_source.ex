@@ -1,31 +1,21 @@
 defmodule Beacon.DataSource do
+  @moduledoc false
+
   @behaviour Beacon.DataSource.Behaviour
 
   defmodule Error do
     defexception message: "Error in Beacon.DataSource"
   end
 
-  @doc """
-  Calls `live_data/3` from Data Source module defined at User's app config.
-
-  This function expects that a module that implements `Beacon.DataSource.Behaviour`
-  is defined in the User's application.
-
-  ### Examples
-
-      # lib/my_app/beacon_data_source
-      defmodule MyApp.BeaconDataSource do
-        @behaviour Beacon.DataSource.Behaviour
-
-        @impl true
-        def live_data("my_site", ["home"], _params), do: ["first", "second", "third"]
-      end
-
-      # my_app/config/config.exs
-      config :beacon, :data_source, MyApp.BeaconDataSource
-  """
+  @doc false
   def live_data(site, path, params) do
-    get_data_source().live_data(site, path, params)
+    user_data_source_mod = get_data_source(site)
+
+    if user_data_source_mod && is_atom(user_data_source_mod) do
+      user_data_source_mod.live_data(site, path, params)
+    else
+      %{}
+    end
   rescue
     error in FunctionClauseError ->
       args = pop_args_from_stacktrace(__STACKTRACE__)
@@ -45,8 +35,8 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
-  defp get_data_source do
-    Application.fetch_env!(:beacon, :data_source)
+  defp get_data_source(site) do
+    Beacon.get_term({:beacon, site, "data_source"})
   end
 
   defp pop_args_from_stacktrace(stacktrace) do

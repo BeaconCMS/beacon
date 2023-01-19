@@ -2,10 +2,10 @@
 
 Steps to build a Phoenix app using Beacon:
 
-1.  Make sure your phx_new package is up to date:
+1.  Make sure your `phx_new` package is at version 1.7+
 
     ```shell
-    mix archive.install hex phx_new
+    mix archive.install hex phx_new 1.7.0-rc.2
     ```
 
 2.  Create either a single or umbrella phoenix app:
@@ -36,19 +36,30 @@ Beacon supports both.
 
 4.  Update your deps:
 
+    Make sure your application is running on Phoenix v1.7+ and Phoenix LiveView v0.18+, and execute:
+
     ```shell
     mix deps.get
     ```
+    
+5. Import `:beacon` in your app formatter deps:
+
+   ```elixir
+   [
+     import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
+     # rest of file
+   ]
+   ```
 
 ## Configuration
 
-You can now run the generator `beacon.install` to generate all necessary configurations for beacon or you can alternatively manually configure by following the next steps. If you ran the generator you can jump to step 12.
+You can now run the generator `beacon.install` to generate all necessary configurations for beacon or you can alternatively manually configure by following the next steps. If you ran the generator you can jump to step 11.
 
 For details about the generator please check out the docs.
 
-5. Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+6.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
 
-6.  Configure the Beacon Repo in your dev.exs and prod.exs:
+7.  Configure the Beacon Repo in your dev.exs and prod.exs:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -61,7 +72,7 @@ For details about the generator please check out the docs.
       pool_size: 10
     ```
 
-7.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -73,35 +84,18 @@ For details about the generator please check out the docs.
     end
     ```
 
-8.  Add that DataSource to your config.exs:
+9. Import `Beacon.Router` and call `beacon_site` in your app router:
 
     ```elixir
-    config :beacon,
-      data_source: MyApp.BeaconDataSource
-    ```
+    import Beacon.Router
 
-9.  Add a `:beacon` pipeline to your router:
-
-    ```elixir
-    pipeline :beacon do
-      plug BeaconWeb.Plug
-    end
-    ```
-
-10. Add a `BeaconWeb` scope to your router as shown below:
-
-    ```elixir
-    scope "/", BeaconWeb do
+    scope "/" do
       pipe_through :browser
-      pipe_through :beacon
-
-      live_session :beacon, session: %{"beacon_site" => "my_site"} do
-        live "/beacon/*path", PageLive, :path
-      end
+      beacon_site "/beacon", name: "my_site", data_source: MyApp.BeaconDataSource
     end
     ```
 
-11. Add some seeds to your seeds.exs:
+10. Add some seeds to your `priv/repo/seeds.exs` file:
 
     ```elixir
     alias Beacon.Components
@@ -192,7 +186,7 @@ For details about the generator please check out the docs.
     })
 
     Pages.create_page_helper!(%{
-      page_id: page.id,
+      page_id: page_id,
       helper_name: "upcase",
       helper_args: "name",
       code: """
@@ -201,66 +195,70 @@ For details about the generator please check out the docs.
     })
     ```
 
-12. Create database and run seeds:
+11. Setup database, seeds, and tools:
 
 
     ```shell
-    mix ecto.reset
+    mix setup
     ```
 
-13. Start server:
+12. Start server:
 
     ```shell
     mix phx.server
     ```
 
-14. visit <http://localhost:4000/beacon/home> and note:
+13. Visit <http://localhost:4000/beacon/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-15. visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+14. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
 - The live data blog_slug_uppercase
 - The zoom in cursor from the stylesheet
 
-To enable Page Management UI:
+#### To enable Page Management UI:
 
-1.  Add the following to the top of your Router:
-    ```elixir
-    require BeaconWeb.PageManagement
-    ```
-2.  Add the following scope to your Router:
+1. Import `Beacon.Router` and call `beacon_admin` in your app router:
 
     ```elixir
-      scope "/page_management", BeaconWeb.PageManagement do
-        pipe_through :browser
+    import Beacon.Router
 
-        BeaconWeb.PageManagement.routes()
-      end
+    scope "/beacon" do
+      pipe_through :browser
+      beacon_admin "/admin"
+    end
     ```
 
-3.  visit <http://localhost:4000/page_management/pages>
-4.  Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
+2. Visit <http://localhost:4000/beacon/admin>
 
-To enable Page Management API:
+3. Edit the existing page or create a new page then click edit to go to the Page Editor (including version management)
 
-1.  Add the following to the top of your Router:
-    ```elixir
-    require BeaconWeb.PageManagementApi
-    ```
-2.  Add the following scope to your Router:
+#### To enable Page Management API:
+
+1. Import `Beacon.Router` and call `beacon_api` in your router app:
 
     ```elixir
-      scope "/page_management_api", BeaconWeb.PageManagementApi do
-        pipe_through :api
+    import Beacon.Router
 
-        BeaconWeb.PageManagementApi.routes()
-      end
+    scope "/api"
+      pipe_through :api
+      beacon_api "/beacon"
+    end
     ```
 
-3.  Check out /lib/beacon_web/page_management_api.ex for currently available API endpoints.
+2. Check out /lib/beacon/router.ex for currently available API endpoints.
+
+### Local Development
+
+`dev.exs` provides a phoenix app running beacon with with code reload enabled:
+
+```shell
+mix setup
+mix dev
+```

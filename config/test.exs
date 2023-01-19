@@ -12,8 +12,6 @@ config :beacon, Beacon.Repo,
   username: "postgres",
   ownership_timeout: 1_000_000_000
 
-config :beacon,
-  ecto_repos: [Beacon.Repo]
+config :beacon, ecto_repos: [Beacon.Repo]
 
-# set default DataSource implementation for tests.
-config :beacon, :data_source, DummyApp.BeaconDataSource
+config :beacon, :css_compiler, CSSCompilerMock
