@@ -2,10 +2,10 @@
 
 Steps to build a Phoenix app using Beacon:
 
-1.  Make sure your phx_new package is up to date:
+1.  Make sure your `phx_new` package is at version 1.7+
 
     ```shell
-    mix archive.install hex phx_new
+    mix archive.install hex phx_new 1.7.0-rc.2
     ```
 
 2.  Create either a single or umbrella phoenix app:
