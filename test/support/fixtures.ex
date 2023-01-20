@@ -1,4 +1,5 @@
 defmodule Beacon.Fixtures do
+  alias Beacon.Admin.MediaLibrary
   alias Beacon.Components
   alias Beacon.Layouts
   alias Beacon.Pages
@@ -133,7 +134,7 @@ defmodule Beacon.Fixtures do
         file_type: "image/jpg"
       })
 
-    {:ok, asset} = Beacon.Admin.MediaLibrary.upload(attrs.site, attrs.file_path, attrs.file_name, attrs.file_type)
+    {:ok, asset} = MediaLibrary.upload(attrs.site, attrs.file_path, attrs.file_name, attrs.file_type)
     asset
   end
 end

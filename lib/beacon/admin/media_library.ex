@@ -42,13 +42,9 @@ defmodule Beacon.Admin.MediaLibrary do
   end
 
   def upload(site, file_path, file_name, file_type) do
-    file_body = File.read!(file_path)
-    file_hash = :crypto.hash(:sha, file_body) |> Base.encode16()
-
     attrs = %{
       site: site,
-      file_body: file_body,
-      file_hash: file_hash,
+      file_body: File.read!(file_path),
       file_name: file_name,
       file_type: file_type
     }
