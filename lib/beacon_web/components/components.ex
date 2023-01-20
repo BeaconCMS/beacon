@@ -1,5 +1,6 @@
 defmodule BeaconWeb.Components do
   @moduledoc """
+  Beacon built-in Page UI components.
   """
 
   use Phoenix.Component
@@ -7,7 +8,11 @@ defmodule BeaconWeb.Components do
   alias Beacon.BeaconAttrs
 
   @doc """
-  Image
+  Renders a image previously uploaded in Admin Media Library.
+
+  ## Examples
+
+      <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="logo.jpg" width="200px" />
   """
   attr :beacon_attrs, BeaconAttrs, required: true
   attr :name, :string, required: true
