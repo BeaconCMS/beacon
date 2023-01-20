@@ -89,7 +89,7 @@ defmodule Beacon.Router do
   """
   defmacro beacon_admin(path) do
     quote bind_quoted: binding() do
-      scope path, BeaconWeb.PageManagement do
+      scope path, BeaconWeb.Admin do
         import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
         live_session :beacon_admin, root_layout: {BeaconWeb.Layouts, :admin} do
@@ -112,7 +112,7 @@ defmodule Beacon.Router do
   """
   defmacro beacon_api(path) do
     quote bind_quoted: binding() do
-      scope path, BeaconWeb.PageManagementApi do
+      scope path, BeaconWeb.AdminApi do
         import Phoenix.Router, only: [get: 3, post: 3, put: 3]
 
         get "/pages", PageController, :index

@@ -1,30 +1,28 @@
 # Beacon
 
-#### Install
+## Installation
 
-Steps to build a Phoenix app using Beacon:
+1.  Make sure your `phx_new` package is at version 1.7+
 
-1.  Make sure your phx_new package is up to date:
-
-    ```shell
-    mix archive.install hex phx_new
+    ```sh
+    mix archive.install hex phx_new 1.7.0-rc.2
     ```
 
 2.  Create either a single or umbrella phoenix app:
 
     * Single app:
 
-    ```shell
+    ```sh
     mix phx.new --install my_app
     ```
 
     * Or Umbrella app:
 
-    ```shell
+    ```sh
     mix phx.new --umbrella --install my_app
     ```
 
-Beacon supports both.
+Note that Beacon supports both.
 
 3.  Add `:beacon` as a dependency:
 
@@ -38,13 +36,13 @@ Beacon supports both.
 
 4.  Update your deps:
 
-    Make sure your application is running on Phoenix v1.7+ and Phoenix LiveView v0.18+, and execute:
+    Make sure your application is running on Phoenix v1.7+ and Phoenix LiveView v0.18+ then run:
 
-    ```shell
+    ```sh
     mix deps.get
     ```
-
-5. Import `:beacon` in your app formatter deps:
+    
+5. Add `:beacon` to `import_deps` in the .formatter.exs file:
 
    ```elixir
    [
@@ -53,9 +51,25 @@ Beacon supports both.
    ]
    ```
 
-6.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+## Configuration
 
-7.  Configure the Beacon Repo in your dev.exs and prod.exs:
+You can either run a generator or install it manually:
+
+#### Generator
+
+Run and follow instructions:
+
+```sh
+mix beacon.install --beacon-site my_site
+```
+
+For more details please check out the docs: `mix help beacon.install`
+
+#### Manual
+
+1.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+
+2.  Configure the Beacon Repo in your dev.exs and prod.exs:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -63,12 +77,17 @@ Beacon supports both.
       password: "postgres",
       hostname: "localhost",
       database: "my_app_beacon",
-      stacktrace: true,
-      show_sensitive_data_on_connection_error: true,
       pool_size: 10
     ```
 
-8.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+    In dev.exs you may also want to add:
+
+    ```elixir
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    ```
+
+3.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -80,19 +99,18 @@ Beacon supports both.
     end
     ```
 
-9. Import `Beacon.Router` and call `beacon_site` in your app router:
+4. Import `Beacon.Router` and call `beacon_site` in your app router:
 
     ```elixir
     import Beacon.Router
 
     scope "/" do
       pipe_through :browser
-      beacon_site "/beacon", name: "my_site", data_source: MyApp.BeaconDataSource
-
+      beacon_site "/my_site", name: "my_site", data_source: MyApp.BeaconDataSource
     end
     ```
 
-10. Add some seeds to your seeds.exs:
+5. Add some seeds to your `priv/repo/seeds.exs` file:
 
     ```elixir
     alias Beacon.Components
@@ -183,7 +201,7 @@ Beacon supports both.
     })
 
     Pages.create_page_helper!(%{
-      page_id: page.id,
+      page_id: page_id,
       helper_name: "upcase",
       helper_args: "name",
       code: """
@@ -192,27 +210,27 @@ Beacon supports both.
     })
     ```
 
-11. Create database and run seeds:
+6. Setup database, seeds, and tools:
 
 
-    ```shell
-    mix ecto.reset
+    ```sh
+    mix setup
     ```
 
-12. Start server:
+7. Start server:
 
-    ```shell
+    ```sh
     mix phx.server
     ```
 
-13. Visit <http://localhost:4000/beacon/home> and note:
+8. Visit <http://localhost:4000/my_site/home> and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-14. Visit <http://localhost:4000/beacon/blog/beacon_is_awesome> and note:
+9. Visit <http://localhost:4000/my_site/blog/beacon_is_awesome> and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
@@ -255,7 +273,7 @@ Beacon supports both.
 
 `dev.exs` provides a phoenix app running beacon with with code reload enabled:
 
-```shell
+```sh
 mix setup
 mix dev
 ```
