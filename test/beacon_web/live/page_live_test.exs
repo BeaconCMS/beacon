@@ -1,5 +1,5 @@
 defmodule BeaconWeb.Live.PageLiveTest do
-  use BeaconWeb.ConnCase, async: true
+  use BeaconWeb.ConnCase
 
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest

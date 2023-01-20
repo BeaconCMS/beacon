@@ -133,7 +133,7 @@ Beacon.Pages.create_page!(%{
     <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
     <div>
-      <BeaconWeb.Components.image beacon={@beacon} name="dockyard.png" width="200px" />
+      <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard.png" width="200px" />
     </div>
 
     <div>

@@ -36,6 +36,7 @@ defmodule Beacon.RouterTest do
 
     scope "/" do
       beacon_admin "/admin"
+      beacon_site "/", name: "site"
     end
   end
 
@@ -43,9 +44,10 @@ defmodule Beacon.RouterTest do
     use Beacon.BeaconTest, :router
     import Beacon.Router
 
-    scope "/outer" do
+    scope "/parent" do
       scope "/nested" do
         beacon_admin "/admin"
+        beacon_site "/site", name: "site"
       end
     end
   end
@@ -54,20 +56,42 @@ defmodule Beacon.RouterTest do
     use Phoenix.Endpoint, otp_app: :beacon
   end
 
-  test "beacon_admin_path" do
-    socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: RouterSimple}
+  describe "beacon_admin_path" do
     import Beacon.Router, only: [beacon_admin_path: 2, beacon_admin_path: 3]
-    start_supervised!(Endpoint)
 
-    assert beacon_admin_path(socket, "/pages") == "/admin/pages"
-    assert beacon_admin_path(socket, :pages, %{foo: :bar}) == "/admin/pages?foo=bar"
+    setup do
+      start_supervised!(Endpoint)
+      :ok
+    end
+
+    test "plain route" do
+      socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: RouterSimple}
+
+      assert beacon_admin_path(socket, "/pages") == "/admin/pages"
+      assert beacon_admin_path(socket, :pages, %{foo: :bar}) == "/admin/pages?foo=bar"
+    end
+
+    test "nested route" do
+      socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: RouterNested}
+
+      assert beacon_admin_path(socket, "/pages") == "/parent/nested/admin/pages"
+      assert beacon_admin_path(socket, :pages, %{foo: :bar}) == "/parent/nested/admin/pages?foo=bar"
+    end
   end
 
-  test "beacon_admin_path nested" do
-    socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: RouterNested}
-    import Beacon.Router, only: [beacon_admin_path: 2]
-    start_supervised!(Endpoint)
+  describe "beacon_asset_path" do
+    import Beacon.Router, only: [beacon_asset_path: 2]
 
-    assert beacon_admin_path(socket, "/pages") == "/outer/nested/admin/pages"
+    test "plain route" do
+      beacon = %{router: RouterSimple}
+
+      assert beacon_asset_path(beacon, "file.jpg") == "/beacon_assets/file.jpg?site=site"
+    end
+
+    test "nested route" do
+      beacon = %{router: RouterNested}
+
+      assert beacon_asset_path(beacon, "file.jpg") == "/parent/nested/site/beacon_assets/file.jpg?site=site"
+    end
   end
 end

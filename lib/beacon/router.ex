@@ -57,6 +57,11 @@ defmodule Beacon.Router do
 
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
       def __beacon_site_prefix__, do: @beacon_site_prefix
+
+      @beacon_site opts[:name]
+      def __beacon_site__ do
+        @beacon_site
+      end
     end
   end
 
@@ -128,8 +133,9 @@ defmodule Beacon.Router do
   end
 
   # TODO: secure cross site assets
-  def beacon_media_library_asset_path(beacon, file_name) do
-    beacon.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{beacon.site}"
+  def beacon_asset_path(beacon_attrs, file_name) do
+    site = beacon_attrs.router.__beacon_site__()
+    String.replace(beacon_attrs.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{site}", "//", "/")
   end
 
   @doc """

@@ -3,6 +3,8 @@ defmodule BeaconWeb.PageLive do
 
   require Logger
 
+  alias Beacon.BeaconAttrs
+
   def mount(:not_mounted_at_router, _params, socket) do
     {:ok, socket}
   end
@@ -40,7 +42,7 @@ defmodule BeaconWeb.PageLive do
       |> push_event("meta", %{meta: BeaconWeb.Layouts.layout_meta_tags_unsafe(socket.assigns)})
       |> push_event("lang", %{lang: "en"})
 
-    socket = assign(socket, :beacon, %{site: site, router: socket.router})
+    socket = assign(socket, :beacon_attrs, %BeaconAttrs{router: socket.router})
 
     Beacon.PubSub.subscribe_page_update(site, path)
 
