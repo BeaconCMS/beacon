@@ -7,6 +7,10 @@
   </:actions>
 </.header>
 
+<form id="search-form" phx-change="search">
+  <input name="search" value={@search} phx-debounce="100" placeholder="Search assets" type="search" />
+</form>
+
 <.table id="assets" rows={@assets}>
   <:col :let={asset} label="Name"><%= asset.file_name %></:col>
   <:col :let={asset} label="Type"><%= asset.file_type %></:col>

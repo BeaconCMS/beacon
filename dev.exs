@@ -155,6 +155,13 @@ Beacon.Admin.MediaLibrary.upload(
   "image/png"
 )
 
+Beacon.Admin.MediaLibrary.upload(
+  "dev",
+  Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+  "logo.jpg",
+  "image/jpg"
+)
+
 Application.ensure_all_started(:plug_cowboy)
 Application.ensure_all_started(:cowboy_websocket)
 Application.ensure_all_started(:beacon)

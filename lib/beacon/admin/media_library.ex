@@ -21,6 +21,16 @@ defmodule Beacon.Admin.MediaLibrary do
     Repo.all(Asset)
   end
 
+  def search(term) do
+    term = term |> String.split() |> Enum.join("%")
+    term = "%#{term}%"
+
+    Repo.all(
+      from asset in Asset,
+        where: ilike(asset.file_name, ^term)
+    )
+  end
+
   @doc """
   Gets a single asset.
 

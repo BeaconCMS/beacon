@@ -1,24 +1,22 @@
 defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
   use BeaconWeb.ConnCase, async: true
-  alias Beacon.Admin.MediaLibrary
+  import Beacon.Fixtures
 
-  test "upload valid files", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/admin/media_library/upload")
+  test "index", %{conn: conn} do
+    media_library_asset_fixture(file_name: "test_index.jpg")
 
-    assert has_element?(view, "h1", "Upload")
+    {:ok, _view, html} = live(conn, "/admin/media_library")
 
-    asset =
-      file_input(view, "#asset-form", :asset, [
-        %{
-          last_modified: 1_594_171_879_000,
-          name: "image.jpg",
-          content: File.read!("test/support/fixtures/image.jpg"),
-          type: "image/jpg"
-        }
-      ])
+    assert html =~ "test_index.jpg"
+  end
 
-    assert render_upload(asset, "image.jpg") =~ "image.jpg"
+  test "search", %{conn: conn} do
+    media_library_asset_fixture(file_name: "test_search.jpg")
 
-    assert [%{file_name: "image.jpg", file_type: "image/jpg"}] = MediaLibrary.list_assets()
+    {:ok, view, _html} = live(conn, "/admin/media_library")
+
+    assert view
+           |> element("#search-form")
+           |> render_change(%{search: "ar"}) =~ "test_search.jpg"
   end
 end

@@ -5,7 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <title><%= page_title(assigns) %></title>
+    <.live_title suffix=" · Beacon Admin">
+      <%= assigns[:page_title] || "Beacon" %>
+    </.live_title>
     <%= raw(render("admin.css", assigns)) %>
     <script phx-track-static type="text/javascript">
       <%= raw(render("app.js", assigns)) %>
