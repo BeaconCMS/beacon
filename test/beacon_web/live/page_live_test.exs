@@ -107,5 +107,11 @@ defmodule BeaconWeb.Live.PageLiveTest do
         {:ok, _view, _html} = live(conn, "/no_page_match")
       end
     end
+
+    test "routes to custom live path", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/home")
+
+      assert html =~ ~s(phx-socket="/custom_live")
+    end
   end
 end
