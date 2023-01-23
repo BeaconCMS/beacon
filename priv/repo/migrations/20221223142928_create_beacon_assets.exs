@@ -8,6 +8,7 @@ defmodule Beacon.Repo.Migrations.CreateBeaconAssets do
       add :file_name, :string
       add :file_type, :string
       add :file_body, :binary
+      add :deleted_at, :utc_datetime
 
       timestamps()
     end

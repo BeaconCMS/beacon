@@ -45,7 +45,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     asset = MediaLibrary.get_asset!(id)
-    {:ok, _} = MediaLibrary.delete_asset(asset)
+    {:ok, _} = MediaLibrary.soft_delete_asset(asset)
 
     path = beacon_admin_path(socket, "/media_library", search: socket.assigns.search)
     socket = push_patch(socket, to: path)

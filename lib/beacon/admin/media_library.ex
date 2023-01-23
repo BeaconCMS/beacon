@@ -18,7 +18,10 @@ defmodule Beacon.Admin.MediaLibrary do
 
   """
   def list_assets do
-    Repo.all(Asset)
+    Repo.all(
+      from asset in Asset,
+        where: is_nil(asset.deleted_at)
+    )
   end
 
   def search(term) do
@@ -27,7 +30,7 @@ defmodule Beacon.Admin.MediaLibrary do
 
     Repo.all(
       from asset in Asset,
-        where: ilike(asset.file_name, ^term)
+        where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^term)
     )
   end
 
@@ -65,19 +68,30 @@ defmodule Beacon.Admin.MediaLibrary do
   end
 
   @doc """
-  Deletes a asset.
+  Soft deletes a asset.
 
   ## Examples
 
-      iex> delete_asset(asset)
+      iex> soft_delete_asset(asset)
       {:ok, %Asset{}}
 
-      iex> delete_asset(asset)
-      {:error, %Ecto.Changeset{}}
+      iex> soft_delete_asset(invalid_asset)
+      :error
 
   """
-  def delete_asset(%Asset{} = asset) do
-    Repo.delete(asset)
+  def soft_delete_asset(%Asset{} = asset) do
+    now = DateTime.truncate(DateTime.utc_now(), :second)
+
+    update =
+      Repo.update_all(
+        from(asset in Asset, where: asset.id == ^asset.id),
+        set: [deleted_at: now]
+      )
+
+    case update do
+      {1, _} -> {:ok, Repo.reload(asset)}
+      _ -> :error
+    end
   end
 
   @doc """
