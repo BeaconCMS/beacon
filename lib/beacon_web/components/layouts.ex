@@ -26,8 +26,8 @@ defmodule BeaconWeb.Layouts do
   #{File.read!(phoenix_live_view_path) |> String.replace("//# sourceMappingURL=", "// ")}
   #{File.read!(beacon_js_path)}
   """
-  def render("app.js", %{conn: %{private: %{beacon: %{live_socket_path: live_socket_path}}}}) do
-    String.replace(@app_js, "/live", live_socket_path)
+  def live_socket_path(conn) do
+    conn.private.beacon.live_socket_path
   end
 
   def render("app.js", _assigns) do
