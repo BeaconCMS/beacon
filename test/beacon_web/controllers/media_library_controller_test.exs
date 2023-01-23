@@ -3,11 +3,6 @@ defmodule BeaconWeb.Controllers.MediaLibraryControllerTest do
 
   import Beacon.Router, only: [beacon_asset_path: 2]
 
-  setup do
-    start_supervised!(Beacon.BeaconTest.Endpoint)
-    :ok
-  end
-
   test "show", %{conn: conn} do
     Beacon.Fixtures.media_library_asset_fixture()
     beacon = %{router: Beacon.BeaconTest.Router}

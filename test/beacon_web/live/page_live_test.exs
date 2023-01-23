@@ -1,14 +1,9 @@
 defmodule BeaconWeb.Live.PageLiveTest do
-  use BeaconWeb.ConnCase
+  use BeaconWeb.ConnCase, async: true
 
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
   import Beacon.Fixtures
-
-  setup_all do
-    start_supervised!(@endpoint)
-    :ok
-  end
 
   defp create_page(_) do
     stylesheet_fixture()

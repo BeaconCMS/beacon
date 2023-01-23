@@ -10,4 +10,13 @@ Application.put_env(:beacon, Beacon.BeaconTest.Endpoint,
 
 Mox.defmock(CSSCompilerMock, for: Beacon.RuntimeCSS)
 
+Supervisor.start_link(
+  [
+    {Phoenix.PubSub, name: Beacon.BeaconTest.PubSub},
+    Beacon.BeaconTest.Endpoint
+  ],
+  strategy: :one_for_one
+)
+
 ExUnit.start(exclude: [:skip])
+Ecto.Adapters.SQL.Sandbox.mode(Beacon.Repo, :manual)

@@ -1,7 +1,7 @@
 <.header>
   Media Library
   <:actions>
-    <.link patch="/beacon/admin/media_library/upload">
+    <.link patch={beacon_admin_path(@socket, "/media_library/upload")}>
       <.button>Upload</.button>
     </.link>
   </:actions>
@@ -19,7 +19,7 @@
 
 <.modal :if={@live_action in [:upload]} id="asset-modal" show on_cancel={JS.navigate(beacon_admin_path(@socket, "/media_library"))}>
   <.live_component
-    module={BeaconWeb.Admin.MediaLibraryLive.FormComponent}
+    module={BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent}
     id={@asset.id || :upload}
     title={@page_title}
     action={@live_action}
