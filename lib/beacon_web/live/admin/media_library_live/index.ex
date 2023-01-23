@@ -11,7 +11,14 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
 
   @impl true
   def handle_params(params, _url, socket) do
-    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+    search = Map.get(params, "search", "")
+
+    socket =
+      socket
+      |> assign(:search, search)
+      |> apply_action(socket.assigns.live_action, params)
+
+    {:noreply, socket}
   end
 
   defp apply_action(socket, :index, %{"search" => search}) when search not in ["", nil] do
@@ -40,7 +47,10 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
     asset = MediaLibrary.get_asset!(id)
     {:ok, _} = MediaLibrary.delete_asset(asset)
 
-    {:noreply, assign(socket, :assets, list_assets())}
+    path = beacon_admin_path(socket, "/media_library", search: socket.assigns.search)
+    socket = push_patch(socket, to: path)
+
+    {:noreply, socket}
   end
 
   def handle_event("search", %{"search" => search}, socket) do

@@ -133,7 +133,7 @@ Beacon.Pages.create_page!(%{
     <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
     <div>
-      <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard.png" width="200px" />
+      <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
     </div>
 
     <div>
@@ -151,14 +151,14 @@ Beacon.Pages.create_page!(%{
 Beacon.Admin.MediaLibrary.upload(
   "dev",
   Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-  "dockyard.png",
+  "dockyard_1.png",
   "image/png"
 )
 
 Beacon.Admin.MediaLibrary.upload(
   "dev",
   Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-  "logo.jpg",
+  "dockyard_2.jpg",
   "image/jpg"
 )
 
