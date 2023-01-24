@@ -75,7 +75,7 @@ defmodule BeaconWeb.Layouts do
   end
 
   def page_title(_) do
-    Logger.warn("No page title set")
+    Logger.warning("No page title set")
     ""
   end
 

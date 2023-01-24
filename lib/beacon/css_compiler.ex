@@ -9,12 +9,6 @@ defmodule Beacon.CSSCompiler do
 
   @behaviour Beacon.RuntimeCSS
 
-  @template_tailwind_config_path Application.app_dir(:beacon, "priv/assets/tailwind.config.js.eex")
-  @input_css_path Application.app_dir(:beacon, "priv/assets/css/app.css")
-
-  @external_resource @template_tailwind_config_path
-  @external_resource @input_css_path
-
   @impl Beacon.RuntimeCSS
   def compile!(%Layout{} = layout, opts \\ []) do
     unless Application.get_env(:tailwind, :version) do
@@ -27,11 +21,12 @@ defmodule Beacon.CSSCompiler do
     raw_content = [layout.body, page_templates(layout.id), component_bodies()]
     config = build_config(opts[:config_template], raw_content)
     {tmp_dir, config_file} = write_file("tailwind.config.js", config)
+    input_css_path = Path.join([Application.app_dir(:beacon), "priv", "assets", "css", "app.css"])
     output_css_path = Path.join(tmp_dir, "runtime.css")
 
     exit_code = Tailwind.run(:beacon_runtime, ~w(
       --config=#{config_file}
-      --input=#{@input_css_path}
+      --input=#{input_css_path}
       --output=#{output_css_path}
       --minify
       ))
@@ -53,7 +48,8 @@ defmodule Beacon.CSSCompiler do
   """
   @spec build_config(String.t() | nil, iodata()) :: String.t()
   def build_config(nil, raw_content) do
-    EEx.eval_file(@template_tailwind_config_path, assigns: %{raw: IO.iodata_to_binary(raw_content)})
+    template_tailwind_config_path = Path.join([Application.app_dir(:beacon), "priv", "assets", "tailwind.config.js.eex"])
+    EEx.eval_file(template_tailwind_config_path, assigns: %{raw: IO.iodata_to_binary(raw_content)})
   end
 
   def build_config(config_template, raw_content) do
