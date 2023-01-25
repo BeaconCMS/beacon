@@ -104,6 +104,14 @@ Beacon is designed to minimize deployments as much as possible but eventually yo
 fly deploy
 ```
 
+## Populate sample data
+
+Before we can access the deployed site let's run seeds to populate some sample data:
+
+```sh
+ly ssh console --command "/app/bin/seeds"
+```
+
 ## Open
 
 Finally run the following command to see your site live:
