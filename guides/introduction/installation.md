@@ -139,11 +139,11 @@ For more details please check out the docs: `mix help beacon.install`
       pool_size: 10
     ```
 
-    In dev.exs you may also want to add:
+    In dev.exs you may add:
 
     ```elixir
     stacktrace: true,
-    show_sensitive_data_on_connection_error: true,
+    show_sensitive_data_on_connection_error: true
     ```
 
 3.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:

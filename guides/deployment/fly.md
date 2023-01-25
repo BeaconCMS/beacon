@@ -2,8 +2,6 @@
 
 Once you have a Beacon site up and running locally, you can have it deployed on https://fly.io by following this guide.
 
-While Fly provides its own guide to [deploy Elixir apps](https://fly.io/docs/elixir/getting-started/), this will guide you trough all necessary steps but you may check out their docs as well.
-
 ## Fly.io CLI
 
 Firstly instal the fly cli tool as described at https://fly.io/docs/hands-on/install-flyctl. You're gonna use it to deploy your beacon site.
@@ -69,7 +67,7 @@ In both files do:
 * Replace `my_app` with your application name
 * Make them executable by running `chmod +x rel/overlays/bin/beacon_seeds.bat rel/overlays/bin/beacon_seeds` or the equivalent on your system
 
-3. Add this function in the generated `Release` module:
+3. Add this function in the generated `Release` module, usually at `lib/my_app/release.ex`:
 
 ```elixir
 def beacon_seeds do
@@ -81,6 +79,17 @@ def beacon_seeds do
       Code.eval_file(seeds_path)
     end)
 end
+```
+
+## Database connection
+
+Edit `config/runtime.exs` and add the following config after `config :my_app, MyApp.Repo, ...`:
+
+```elixir
+config :beacon, Beacon.Repo,
+  url: database_url,
+  pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+  socket_options: maybe_ipv6
 ```
 
 ## Launch
@@ -107,9 +116,25 @@ fly deploy
 
 Before we can access the deployed site let's run seeds to populate some sample data:
 
+1. Connect to your running application:
+
 ```sh
-ly ssh console --command "/app/bin/beacon_seeds"
+fly ssh console
 ```
+
+2. Open a IEx console:
+
+```sh
+app/bin/my_app remote
+```
+
+3. Then call your seeds function:
+
+```
+MyApp.Release.beacon_seeds
+```
+
+Note that you could save some commands and just call `fly ssh console --command "/app/bin/beacon_seeds"` to run seeds, but it may fail and at this momment it's recommended to connected to the instance as showed before.
 
 ## Open
 
@@ -123,4 +148,4 @@ Change `my_site` to your site name if you have used a custom name when generatin
 
 ## More commands
 
-You can find all available commands at https://fly.io/docs/flyctl and also more tips on the official Phoenix guide at https://github.com/phoenixframework/phoenix/blob/master/guides/deployment/fly.md
+You can find all available commands at https://fly.io/docs/flyctl and also more tips on the official [Phoenix Deploying on Fly.io guide](https://github.com/phoenixframework/phoenix/blob/master/guides/deployment/fly.md).
