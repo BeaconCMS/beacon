@@ -6,12 +6,12 @@ Beacon is a content management system (CMS) built with Phoenix LiveView. It brin
 
 ## Guides
 
-Check out the [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started:
+Check out the [guides](https://github.com/BeaconCMS/beacon/blob/main/README.md) to get started:
 
-* [Installation](guides/introduction/installation.md) to get your first site up and running
-* [Admin](guides/introduction/admin.md) to enable the Admin UI
-* [API](guides/introduction/api.md) to enable the Beacon API
-* [Deployment on Fly.io](guides/deployment/fly.md) to deploy your site to Fly.io
+* [Installation](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/installation.md) to get your first site up and running
+* [Admin](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/admin.md) to enable the Admin UI
+* [API](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/api.md) to enable the Beacon API
+* [Deployment on Fly.io](https://github.com/BeaconCMS/beacon/blob/main/guides/deployment/fly.md) to deploy your site on Fly.io
 
 ## Local Development
 
