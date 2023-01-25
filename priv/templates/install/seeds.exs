@@ -2,7 +2,7 @@
 
 # Script for populating the database. You can run it as:
 #
-#     mix run priv/repo/seeds.exs
+#     mix run priv/repo/beacon_seeds.exs
 
 alias Beacon.Components
 alias Beacon.Pages

@@ -169,7 +169,7 @@ For more details please check out the docs: `mix help beacon.install`
     end
     ```
 
-5. Add some seeds to your `priv/repo/seeds.exs` file:
+5. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
     ```elixir
     alias Beacon.Components
@@ -271,7 +271,7 @@ For more details please check out the docs: `mix help beacon.install`
 
 ## Setup database, seeds, and assets:
 
-Feel free to edit `priv/repo/seeds.exs` as you wish and run:
+Feel free to edit `priv/repo/beacon_seeds.exs` as you wish and run:
 
 ```sh
 mix setup
