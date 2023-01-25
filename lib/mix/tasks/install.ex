@@ -58,7 +58,7 @@ defmodule Mix.Tasks.Beacon.Install do
       A new site has been configured at /#{bindings[:beacon_site]} and a sample page is available at /my_site/home
       usually it can be accessed at http://localhost:4000/my_site/home
 
-      Now you can adjust your project's config files, router.ex, or seeds.exs as you wish and run:
+      Now you can adjust your project's config files, router.ex, or beacon_seeds.exs as you wish and run:
 
           $ mix setup
 
@@ -247,7 +247,7 @@ defmodule Mix.Tasks.Beacon.Install do
         router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
       },
       seeds: %{
-        path: Path.join([root, "priv", "repo", "seeds.exs"]),
+        path: Path.join([root, "priv", "repo", "beacon_seeds.exs"]),
         template_path: Path.join([templates_path, "install", "seeds.exs"])
       }
     ]
