@@ -1,6 +1,6 @@
 # Deploying on Fly.io
 
-Once you have a Beacon site up and running locally you can have it deployed on https://fly.io by following this guide.
+Once you have a Beacon site up and running locally, you can have it deployed on https://fly.io by following this guide.
 
 While Fly provides its own guide to [deploy Elixir apps](https://fly.io/docs/elixir/getting-started/), this will guide you trough all necessary steps but you may check out their docs as well.
 
@@ -49,36 +49,35 @@ COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
 
 ## Seeds
 
-WIP
-
-1. Create the file `rel/overlays/bin/seeds` with the content:
+1. Create the file `rel/overlays/bin/beacon_seeds` with the content:
 
 ```shell
 #!/bin/sh
 cd -P -- "$(dirname -- "$0")"
-exec ./beacon_demo eval BeaconDemo.Release.beacon_seeds
+exec ./my_app eval MyApp.Release.beacon_seeds
 ```
 
-Make it executable.
-
-2. Create the file `rel/overlays/bin/seeds.bat` with the content:
+2. Create the file `rel/overlays/bin/beacon_seeds.bat` with the content:
 
 ```shell
-call "%~dp0\beacon_demo" eval BeaconDemo.Release.beacon_seeds
+call "%~dp0\my_app" eval MyApp.Release.beacon_seeds
 ```
 
-Make it executable.
+In both files do:
 
-3. Add the function in the generated `Release` module:
+* Replace `MyApp` with your main application module name
+* Replace `my_app` with your application name
+* Make them executable by running `chmod +x rel/overlays/bin/beacon_seeds.bat rel/overlays/bin/beacon_seeds` or the equivalent on your system
+
+3. Add this function in the generated `Release` module:
 
 ```elixir
 def beacon_seeds do
   load_app()
-  Application.load(:beacon)
 
   {:ok, _, _} =
     Ecto.Migrator.with_repo(Beacon.Repo, fn _repo ->
-      seeds_path = Path.join([:code.priv_dir(@app), "repo", "seeds.exs"])
+      seeds_path = Path.join([:code.priv_dir(@app), "repo", "beacon_seeds.exs"])
       Code.eval_file(seeds_path)
     end)
 end
@@ -94,11 +93,11 @@ fly launch
 
 When asked if you would like to set up a PostgreSQL database, answer YES and choose the most appropriate configuration for your site.
 
-When asked if you want to deploy, answer YES or run `fly deploy` when you're ready to deploy.
+When asked if you would like to deploy, answer YES or run `fly deploy` afterwards when you're ready to deploy.
 
 ## Deploy
 
-Beacon is designed to minimize deployments as much as possible but eventually you can run to trigger new deployments:
+Beacon is designed to minimize deployments as much as possible but eventually you can trigger new deployments by running:
 
 ```sh
 fly deploy
@@ -109,7 +108,7 @@ fly deploy
 Before we can access the deployed site let's run seeds to populate some sample data:
 
 ```sh
-ly ssh console --command "/app/bin/seeds"
+ly ssh console --command "/app/bin/beacon_seeds"
 ```
 
 ## Open
@@ -117,8 +116,10 @@ ly ssh console --command "/app/bin/seeds"
 Finally run the following command to see your site live:
 
 ```sh
-fly open
+fly open my_site/home
 ```
+
+Change `my_site` to your site name if you have used a custom name when generating your site.
 
 ## More commands
 
