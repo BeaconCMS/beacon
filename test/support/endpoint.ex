@@ -8,6 +8,8 @@ defmodule Beacon.BeaconTest.Endpoint do
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
+  socket "/custom_live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+
   plug Plug.Session, store: :cookie, key: "_beacon_app_key", signing_salt: "5Ude+fet"
 
   plug Beacon.BeaconTest.Router
