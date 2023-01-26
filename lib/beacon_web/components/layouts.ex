@@ -157,8 +157,6 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
-  # for non dynamic pages
-
   def dynamic_layout?(%{__dynamic_layout_id__: _}), do: true
   def dynamic_layout?(_), do: false
 

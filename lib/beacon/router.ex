@@ -50,9 +50,16 @@ defmodule Beacon.Router do
         {session_name, session_opts, route_opts} = o = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
+          get "/beacon_assets/:asset", MediaLibraryController, :show
           live "/*path", PageLive, :path, route_opts
         end
       end
+
+      @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
+      def __beacon_site_prefix__, do: @beacon_site_prefix
+
+      @beacon_site opts[:name]
+      def __beacon_site__, do: @beacon_site
     end
   end
 
@@ -89,9 +96,12 @@ defmodule Beacon.Router do
         import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
         live_session :beacon_admin, root_layout: {BeaconWeb.Layouts, :admin} do
+          live "/", HomeLive.Index, :index
           live "/pages", PageLive.Index, :index
           live "/pages/new", PageLive.Index, :new
           live "/page_editor/:id", PageEditorLive, :edit
+          live "/media_library", MediaLibraryLive.Index, :index
+          live "/media_library/upload", MediaLibraryLive.Index, :upload
         end
       end
 
@@ -120,10 +130,58 @@ defmodule Beacon.Router do
     end
   end
 
+  # TODO: secure cross site assets
   @doc """
-  Router helper to generate admin paths.
+  Router helper to resolve asset path for sites.
 
-  Prefix is added automatically based on the current router scope.
+  ## Examples
+
+      scope "/" do
+        beacon_site "/", name: "my_site"
+      end
+
+      iex> beacon_asset_path(beacon_attrs, "logo.jpg")
+      "/beacon_assets/log.jpg?site=my_site"
+
+
+      scope "/parent" do
+        scope "/nested" do
+          beacon_site "/my_site", name: "my_site"
+        end
+      end
+
+      iex> beacon_asset_path(beacon_attrs, "logo.jpg")
+      "/parent/nested/my_site/beacon_assets/logo.jpg?site=my_site"
+
+  Note that `@beacon_attrs` assign is injected and available in pages automatically.
+  """
+  @spec beacon_asset_path(Beacon.BeaconAttrs.t(), Path.t()) :: String.t()
+  def beacon_asset_path(beacon_attrs, file_name) do
+    site = beacon_attrs.router.__beacon_site__()
+    String.replace(beacon_attrs.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{site}", "//", "/")
+  end
+
+  @doc """
+  Router helper to generate admin paths relative to the current scope.
+
+  ## Examples
+
+      scope "/" do
+        beacon_admin "/admin"
+      end
+
+      iex> beacon_admin_path(@socket, "/pages")
+      "/admin/pages"
+
+
+      scope "/parent" do
+        scope "/nested" do
+          beacon_admin "/admin"
+        end
+      end
+
+      iex> beacon_admin_path(@socket, "/pages", %{active: true})
+      "/parent/nested/admin/pages?active=true
   """
   def beacon_admin_path(socket, path, params \\ %{}) do
     prefix = socket.router.__beacon_admin_prefix__()

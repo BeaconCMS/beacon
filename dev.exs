@@ -132,6 +132,9 @@ Beacon.Pages.create_page!(%{
     <h1 class="text-violet-900">Dev</h1>
     <p class="text-sm">Page</p>
     <%= my_component("sample_component", val: 1) %>
+    <div>
+      <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
+    </div>
 
     <div>
       <p>From data source:</p>
@@ -144,6 +147,20 @@ Beacon.Pages.create_page!(%{
   </main>
   """
 })
+
+Beacon.Admin.MediaLibrary.upload(
+  "dev",
+  Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+  "dockyard_1.png",
+  "image/png"
+)
+
+Beacon.Admin.MediaLibrary.upload(
+  "dev",
+  Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+  "dockyard_2.jpg",
+  "image/jpg"
+)
 
 Application.ensure_all_started(:plug_cowboy)
 Application.ensure_all_started(:cowboy_websocket)

@@ -1,4 +1,5 @@
 defmodule Beacon.Fixtures do
+  alias Beacon.Admin.MediaLibrary
   alias Beacon.Components
   alias Beacon.Layouts
   alias Beacon.Pages
@@ -122,5 +123,18 @@ defmodule Beacon.Fixtures do
       """
     })
     |> Pages.create_page_helper!()
+  end
+
+  def media_library_asset_fixture(attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        site: "my_site",
+        file_path: Path.join(["test", "support", "fixtures", "image.jpg"]),
+        file_name: "image.jpg",
+        file_type: "image/jpg"
+      })
+
+    {:ok, asset} = MediaLibrary.upload(attrs.site, attrs.file_path, attrs.file_name, attrs.file_type)
+    asset
   end
 end
