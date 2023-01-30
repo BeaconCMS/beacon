@@ -1,5 +1,5 @@
 defmodule Beacon.PagesTest do
-  use Beacon.DataCase, async: true
+  use Beacon.DataCase
 
   import Beacon.Fixtures
   alias Beacon.Pages
