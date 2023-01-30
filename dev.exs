@@ -122,29 +122,44 @@ Beacon.Components.create_component!(%{
     """
   })
 
-Beacon.Pages.create_page!(%{
-  path: "home",
-  site: "dev",
-  layout_id: layout_id,
-  meta_tags: %{"page" => "home"},
-  template: """
-  <main>
-    <h1 class="text-violet-900">Dev</h1>
-    <p class="text-sm">Page</p>
-    <%= my_component("sample_component", val: 1) %>
-    <div>
-      <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
-    </div>
+page =
+  Beacon.Pages.create_page!(%{
+    path: "home",
+    site: "dev",
+    layout_id: layout_id,
+    meta_tags: %{"page" => "home"},
+    template: """
+    <main>
+      <h1 class="text-violet-900">Dev</h1>
+      <p class="text-sm">Page</p>
+      <%= my_component("sample_component", val: 1) %>
+      <div>
+        <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
+      </div>
 
-    <div>
-      <p>From data source:</p>
-      <%= @beacon_live_data[:year] %>
-    </div>
+      <div>
+        <p>From data source:</p>
+        <%= @beacon_live_data[:year] %>
+      </div>
 
-    <pre><code>
-      <%= inspect(Phoenix.Router.route_info(SamplePhoenixWeb.Router, "GET", "/dev/home", "host"), pretty: true) %>
-    </code></pre>
-  </main>
+      <div>
+        <p>From dynamic_helper:</p>
+        <%= dynamic_helper("upcase", %{name: "beacon"}) %>
+      </div>
+
+      <pre><code>
+        <%= inspect(Phoenix.Router.route_info(SamplePhoenixWeb.Router, "GET", "/dev/home", "host"), pretty: true) %>
+      </code></pre>
+    </main>
+    """
+  })
+
+Beacon.Pages.create_page_helper!(%{
+  page_id: page.id,
+  helper_name: "upcase",
+  helper_args: "%{name: name}",
+  code: """
+    String.upcase(name)
   """
 })
 
