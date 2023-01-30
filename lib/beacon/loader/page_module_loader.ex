@@ -18,12 +18,11 @@ defmodule Beacon.Loader.PageModuleLoader do
             &page_id/1,
             &layout_id_for_path/1,
             &handle_event/1,
-            &helper/1,
-            &dynamic_helper/1
+            &helper/1
           ],
           page <- pages do
         fun.(page)
-      end ++ [page_module(page_module)]
+      end ++ [dynamic_helper(), page_module(page_module)]
 
     code_string = render(page_module, component_module, functions)
 
@@ -110,7 +109,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
-  defp dynamic_helper(_) do
+  defp dynamic_helper do
     """
       def dynamic_helper(helper_name, args) do
         Beacon.Loader.call_function_with_retry(page_module(), String.to_atom(helper_name), [args])
