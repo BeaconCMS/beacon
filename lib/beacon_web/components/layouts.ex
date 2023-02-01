@@ -8,9 +8,14 @@ defmodule BeaconWeb.Layouts do
 
   # Load assets from host application
   # https://github.com/phoenixframework/phoenix_live_dashboard/blob/d0f776f4bc2ba119e52ec1e0f9f216962b9b6972/lib/phoenix/live_dashboard/layout_view.ex
-  phoenix_path = Application.app_dir(:phoenix, "priv/static/phoenix.js")
+
+  js_ext = fn ->
+    if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev, do: ".js", else: ".min.js"
+  end
+
+  phoenix_path = Application.app_dir(:phoenix, "priv/static/phoenix#{js_ext.()}")
   phoenix_html_path = Application.app_dir(:phoenix_html, "priv/static/phoenix_html.js")
-  phoenix_live_view_path = Application.app_dir(:phoenix_live_view, "priv/static/phoenix_live_view.js")
+  phoenix_live_view_path = Application.app_dir(:phoenix_live_view, "priv/static/phoenix_live_view#{js_ext.()}")
   beacon_js_path = Path.join(__DIR__, "../../../dist/js/app.js")
   beacon_admin_css_path = Path.join(__DIR__, "../../../dist/css/admin.css")
 
