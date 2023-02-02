@@ -1,9 +1,9 @@
-defmodule Beacon.CSSCompilerTest do
+defmodule Beacon.TailwindCompilerTest do
   use Beacon.DataCase, async: true
 
   import ExUnit.CaptureIO
   import Beacon.Fixtures
-  alias Beacon.CSSCompiler
+  alias Beacon.TailwindCompiler
 
   @db_config_template """
   module.exports = {
@@ -67,7 +67,7 @@ defmodule Beacon.CSSCompilerTest do
 
     test "includes classes from the database", %{layout: layout} do
       capture_io(fn ->
-        assert output = CSSCompiler.compile!(layout, config_template: @db_config_template)
+        assert output = TailwindCompiler.compile!(layout, config_template: @db_config_template)
         refute output =~ "text-md"
         assert output =~ "bcms-test-text-sm"
         assert output =~ "bcms-test-text-lg"
@@ -77,7 +77,7 @@ defmodule Beacon.CSSCompilerTest do
 
     test "includes classes from template files", %{layout: layout} do
       capture_io(fn ->
-        assert output = CSSCompiler.compile!(layout, config_template: @file_config_template)
+        assert output = TailwindCompiler.compile!(layout, config_template: @file_config_template)
         refute output =~ "text-blue-400"
         refute output =~ "text-red-100"
         assert output =~ "bcms-test-text-red-800"

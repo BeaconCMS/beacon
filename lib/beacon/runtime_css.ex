@@ -9,7 +9,7 @@ defmodule Beacon.RuntimeCSS do
 
   @callback compile!(Layout.t(), keyword()) :: String.t()
 
-  @default_compiler Beacon.CSSCompiler
+  @default_compiler Beacon.TailwindCompiler
 
   @doc """
   Compiles CSS and outputs it as a string.

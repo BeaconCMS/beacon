@@ -1,4 +1,4 @@
-defmodule Beacon.CSSCompiler do
+defmodule Beacon.TailwindCompiler do
   @moduledoc """
   Default CSS compiler for the runtime CSS compilation.
   """
