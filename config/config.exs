@@ -7,10 +7,10 @@ config :beacon, :generators, binary_id: true
 config :phoenix, :json_library, Jason
 
 config :esbuild,
-  version: "0.16.13",
+  version: "0.17.5",
   default: [
-    args: ~w(js/app.js --bundle --target=es2020 --outdir=../../dist/js),
-    cd: Path.expand("../priv/assets", __DIR__),
+    args: ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static),
+    cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
