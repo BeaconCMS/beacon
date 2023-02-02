@@ -53,8 +53,12 @@ defmodule Beacon.Router do
         end
       end
 
-      scope "/beacon_static", as: false, alias: false do
-        get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
+      unless Module.get_attribute(__MODULE__, :beacon_static_defined) do
+        Module.put_attribute(__MODULE__, :beacon_static_defined, true)
+
+        scope "/beacon_static", as: false, alias: false do
+          get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
+        end
       end
 
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
@@ -107,9 +111,12 @@ defmodule Beacon.Router do
         end
       end
 
-      # TODO: do not duplicate if already defined by beacon_site
-      scope "/beacon_static", as: false, alias: false do
-        get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
+      unless Module.get_attribute(__MODULE__, :beacon_static_defined) do
+        Module.put_attribute(__MODULE__, :beacon_static_defined, true)
+
+        scope "/beacon_static", as: false, alias: false do
+          get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
+        end
       end
 
       @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
