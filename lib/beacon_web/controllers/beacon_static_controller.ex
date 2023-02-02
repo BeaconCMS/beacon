@@ -11,7 +11,7 @@ defmodule BeaconWeb.BeaconStaticController do
       Static.init(
         at: Router.sanitize_path(conn.private.phoenix_router.__beacon_site_prefix__() <> "/beacon_static"),
         from: {:beacon, "priv/static"},
-        only: ~w(app.js),
+        only: ~w(beacon.js beacon.min.js),
         brotli: true,
         gzip: true
       )

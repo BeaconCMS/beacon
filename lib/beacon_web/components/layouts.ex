@@ -40,8 +40,14 @@ defmodule BeaconWeb.Layouts do
     end
   end
 
-  def app_js_path(%{router: router}) do
-    Router.sanitize_path(router.__beacon_site_prefix__() <> "/beacon_static/app.js")
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
+    def app_js_path(%{router: router}) do
+      Router.sanitize_path(router.__beacon_site_prefix__() <> "/beacon_static/beacon.js")
+    end
+  else
+    def app_js_path(%{router: router}) do
+      Router.sanitize_path(router.__beacon_site_prefix__() <> "/beacon_static/beacon.min.js")
+    end
   end
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do

@@ -6,13 +6,20 @@ config :beacon, :generators, binary_id: true
 
 config :phoenix, :json_library, Jason
 
-config :esbuild,
-  version: "0.17.5",
-  default: [
-    args: ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
-  ]
+if Mix.env() == :dev do
+  esbuild = fn args ->
+    [
+      args: ~w(./js/beacon --bundle) ++ args,
+      cd: Path.expand("../assets", __DIR__),
+      env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+    ]
+  end
+
+  config :esbuild,
+    version: "0.17.5",
+    cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
+    cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
+end
 
 # Beacon Admin running in dev.exs
 config :tailwind,

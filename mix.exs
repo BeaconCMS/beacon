@@ -76,7 +76,7 @@ defmodule Beacon.MixProject do
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["esbuild default --minify", "tailwind admin --minify"]
+      "assets.build": ["esbuild cdn", "esbuild cdn_min", "tailwind admin --minify"]
     ]
   end
 
