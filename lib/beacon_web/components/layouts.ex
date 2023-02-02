@@ -2,7 +2,6 @@ defmodule BeaconWeb.Layouts do
   @moduledoc false
 
   use BeaconWeb, :html
-  alias Beacon.Router
   require Logger
 
   embed_templates "layouts/*"
@@ -41,12 +40,12 @@ defmodule BeaconWeb.Layouts do
   end
 
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
-    def app_js_path(%{router: router}) do
-      Router.sanitize_path(router.__beacon_site_prefix__() <> "/beacon_static/beacon.js")
+    def app_js_path do
+      "/beacon_static/beacon.js"
     end
   else
-    def app_js_path(%{router: router}) do
-      Router.sanitize_path(router.__beacon_site_prefix__() <> "/beacon_static/beacon.min.js")
+    def app_js_path do
+      "/beacon_static/beacon.min.js"
     end
   end
 

@@ -48,11 +48,13 @@ defmodule Beacon.Router do
         {session_name, session_opts, route_opts} = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
-          get "/beacon_static/*resource", BeaconStaticController, only: [:index]
-
           get "/beacon_assets/:asset", MediaLibraryController, :show
           live "/*path", PageLive, :path, route_opts
         end
+      end
+
+      scope "/beacon_static", as: false, alias: false do
+        get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
       end
 
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
@@ -103,6 +105,11 @@ defmodule Beacon.Router do
           live "/media_library", MediaLibraryLive.Index, :index
           live "/media_library/upload", MediaLibraryLive.Index, :upload
         end
+      end
+
+      # TODO: do not duplicate if already defined by beacon_site
+      scope "/beacon_static", as: false, alias: false do
+        get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
       end
 
       @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
