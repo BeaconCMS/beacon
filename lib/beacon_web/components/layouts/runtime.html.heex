@@ -13,8 +13,7 @@
     <style>
       <%= raw(render("app.css", assigns)) %>
     </style>
-    <script phx-track-static type="text/javascript">
-      <%= raw(render("app.js", assigns)) %>
+    <script defer phx-track-static type="text/javascript" src={app_js_path()}>
     </script>
   </head>
   <body>

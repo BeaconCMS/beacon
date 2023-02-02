@@ -45,14 +45,16 @@ defmodule Beacon.Router do
   defmacro beacon_site(path, opts \\ []) do
     quote bind_quoted: binding() do
       scope path, BeaconWeb do
-        import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
-
-        {session_name, session_opts, route_opts} = o = Beacon.Router.__options__(opts)
+        {session_name, session_opts, route_opts} = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
           get "/beacon_assets/:asset", MediaLibraryController, :show
           live "/*path", PageLive, :path, route_opts
         end
+      end
+
+      scope "/beacon_static", as: false, alias: false do
+        get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
       end
 
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
@@ -103,6 +105,11 @@ defmodule Beacon.Router do
           live "/media_library", MediaLibraryLive.Index, :index
           live "/media_library/upload", MediaLibraryLive.Index, :upload
         end
+      end
+
+      # TODO: do not duplicate if already defined by beacon_site
+      scope "/beacon_static", as: false, alias: false do
+        get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
       end
 
       @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
@@ -158,7 +165,7 @@ defmodule Beacon.Router do
   @spec beacon_asset_path(Beacon.BeaconAttrs.t(), Path.t()) :: String.t()
   def beacon_asset_path(beacon_attrs, file_name) do
     site = beacon_attrs.router.__beacon_site__()
-    String.replace(beacon_attrs.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{site}", "//", "/")
+    sanitize_path(beacon_attrs.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{site}")
   end
 
   @doc """
@@ -185,9 +192,14 @@ defmodule Beacon.Router do
   """
   def beacon_admin_path(socket, path, params \\ %{}) do
     prefix = socket.router.__beacon_admin_prefix__()
-    path = String.replace("#{prefix}/#{path}", "//", "/")
+    path = sanitize_path("#{prefix}/#{path}")
     params = for {key, val} <- params, do: {key, val}
 
     Phoenix.VerifiedRoutes.unverified_path(socket, socket.router, path, params)
+  end
+
+  @doc false
+  def sanitize_path(path) do
+    String.replace(path, "//", "/")
   end
 end
