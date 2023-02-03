@@ -37,9 +37,10 @@ defmodule Beacon.Router do
   ## Options
 
     * `:name` (required) - identify your site name.
-    * `:data_source` (optional) - module that implements `Beacon.DataSource`
-      to provide assigns to pages.
+    * `:data_source` (optional) - module that implements `Beacon.DataSource` to provide assigns to pages.
     * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
+    * `:tailwind_config` (optional) - path to a custom tailwind config, defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
+      Note that this config file must be a EEx template and include `<%= @beacon_content %>` in the `content` section, see `Beacon.TailwindCompiler` for more info.
 
   """
   defmacro beacon_site(path, opts \\ []) do

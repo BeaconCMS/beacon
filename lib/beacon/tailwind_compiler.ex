@@ -1,6 +1,23 @@
 defmodule Beacon.TailwindCompiler do
   @moduledoc """
-  Default CSS compiler for the runtime CSS compilation.
+  Tailwind compiler for runtime CSS, used on all sites.
+
+  The default configuration is fetched from `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`,
+  you can see the actual file at https://github.com/BeaconCMS/beacon/blob/main/priv/tailwind.config.js.eex
+
+  You can provide your own configuration on `Beacon.Router.beacon_site/2` option `:tailwind_config` but note that 2 rules must be followed for your custom config to work properly:
+
+    1. It has to be a [EEx template](https://hexdocs.pm/eex/EEx.html), ie: ends with `.eex`
+    2. The [content section](https://tailwindcss.com/docs/content-configuration) needs an entry `<%= @beacon_content %>`, eg:
+
+        ```
+        content: [
+          <%= @beacon_content %>
+        ]
+        ```
+
+       You're allowed to include more entries per Tailwind specification, but don't remove that Beacon special placeholder.
+
   """
 
   alias Beacon.Components
@@ -18,10 +35,11 @@ defmodule Beacon.TailwindCompiler do
 
     Application.put_env(:tailwind, :beacon_runtime, [])
 
-    raw_content = [layout.body, page_templates(layout.id), component_bodies()]
-    config = build_config(opts[:config_template], raw_content)
+    # TODO: fetch custom config from router if available
+    config = build_config(opts[:config_template], raw_content(layout))
+
     {tmp_dir, config_file} = write_file("tailwind.config.js", config)
-    input_css_path = Path.join([Application.app_dir(:beacon), "priv", "assets", "css", "app.css"])
+    input_css_path = Path.join([Application.app_dir(:beacon), "priv", "beacon.css"])
     output_css_path = Path.join(tmp_dir, "runtime.css")
 
     exit_code = Tailwind.run(:beacon_runtime, ~w(
@@ -43,25 +61,32 @@ defmodule Beacon.TailwindCompiler do
     end
   end
 
-  @doc """
-  Build CSS runtime config from an EEx template string.
-  """
-  @spec build_config(String.t() | nil, iodata()) :: String.t()
+  @doc false
   def build_config(nil, raw_content) do
-    template_tailwind_config_path = Path.join([Application.app_dir(:beacon), "priv", "assets", "tailwind.config.js.eex"])
-    EEx.eval_file(template_tailwind_config_path, assigns: %{raw: IO.iodata_to_binary(raw_content)})
+    template_tailwind_config_path = Path.join([Application.app_dir(:beacon), "priv", "tailwind.config.js.eex"])
+    EEx.eval_file(template_tailwind_config_path, assigns: %{beacon_content: beacon_content(raw_content)})
   end
 
   def build_config(config_template, raw_content) do
-    EEx.eval_string(config_template, assigns: %{raw: IO.iodata_to_binary(raw_content)})
+    EEx.eval_string(config_template, assigns: %{beacon_content: beacon_content(raw_content)})
   end
 
-  defp component_bodies do
-    Components.list_component_bodies()
+  defp beacon_content(raw_content) do
+    ~s(
+    'lib/*_web.ex',
+    'lib/*_web/**/*.*ex',
+    { raw: '#{raw_content}' }
+    )
   end
 
-  defp page_templates(layout_id) do
-    Pages.list_page_templates_by_layout(layout_id)
+  defp raw_content(layout) do
+    page_templates = Pages.list_page_templates_by_layout(layout.id)
+    component_bodies = Components.list_component_bodies()
+
+    [layout.body, page_templates, component_bodies]
+    |> IO.iodata_to_binary()
+    |> String.replace("\r", "")
+    |> String.replace("\n", "")
   end
 
   defp write_file(filename, content) do
