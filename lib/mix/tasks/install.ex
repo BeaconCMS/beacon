@@ -53,6 +53,9 @@ defmodule Mix.Tasks.Beacon.Install do
     # Add seeds content
     maybe_add_seeds(bindings)
 
+    # Run new seeds in mix setup
+    maybe_update_ecto_alias(bindings)
+
     Mix.shell().info("""
 
       A new site has been configured at /#{bindings[:beacon_site]} and a sample page is available at /my_site/home
@@ -66,6 +69,27 @@ defmodule Mix.Tasks.Beacon.Install do
 
           $ mix phx.server
     """)
+  end
+
+  @doc false
+  def maybe_update_ecto_alias(bindings) do
+    mix_path = get_in(bindings, [:mix, :path])
+    relative_seeds_path = get_in(bindings, [:seeds, :path]) |> Path.relative_to_cwd()
+
+    mix_file_content = File.read!(mix_path)
+
+    cond do
+      String.contains?(mix_file_content, "run #{relative_seeds_path}") ->
+        Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon seeds path into ", Path.relative_to_cwd(mix_path), " (already exists)"])
+
+      !String.contains?(mix_file_content, "ecto.setup") ->
+        Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon seeds path into ", Path.relative_to_cwd(mix_path), " (nothing to update)"])
+
+      true ->
+        new_mix_file_content = String.replace(mix_file_content, ~r/(\"ecto\.setup\":[^]]*)]/, "\\1, \"run #{relative_seeds_path}\"]")
+        Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(mix_path)])
+        File.write!(mix_path, new_mix_file_content)
+    end
   end
 
   @doc false
@@ -249,6 +273,9 @@ defmodule Mix.Tasks.Beacon.Install do
       seeds: %{
         path: Path.join([root, "priv", "repo", "beacon_seeds.exs"]),
         template_path: Path.join([templates_path, "install", "seeds.exs"])
+      },
+      mix: %{
+        path: Path.join([root, "mix.exs"])
       }
     ]
   end
