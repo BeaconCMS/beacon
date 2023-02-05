@@ -38,6 +38,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     #{~s(""")}
       end
 
+
       def layout_assigns(#{inspect(layout.id)}) do
         %{
           title: #{inspect(layout.title)},

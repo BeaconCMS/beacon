@@ -35,7 +35,10 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       title: "Sample Home Page",
-      meta_tags: %{"layout-meta-tag-one" => "value", "layout-meta-tag-two" => "value"},
+      meta_tags: [
+        %{"name" => "layout-meta-tag-one", "content" => "value"},
+        %{"name" => "layout-meta-tag-two", "content" => "value"}  
+      ],
       stylesheet_urls: [],
       body: """
       <header>Page header</header>
@@ -69,7 +72,10 @@ defmodule Beacon.Fixtures do
       path: "home",
       site: "my_site",
       layout_id: layout_id,
-      meta_tags: %{"home-meta-tag-one" => "value", "home-meta-tag-two" => "value"},
+      meta_tags: [
+         %{"name" => "home-meta-tag-one", "content" => "value"},
+         %{"name" => "home-meta-tag-two", "content" => "value"}
+      ],
       template: """
       <main>
         <h1>my_site#home</h1>

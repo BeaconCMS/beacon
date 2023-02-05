@@ -1,11 +1,12 @@
 defmodule Beacon.Layouts.Layout do
   use Ecto.Schema
   import Ecto.Changeset
+  alias Beacon.Types.Tag
 
   @type t :: %__MODULE__{
           id: String.t(),
           body: String.t(),
-          meta_tags: map(),
+          meta_tags: TagType,
           site: String.t(),
           stylesheet_urls: [String.t()],
           title: String.t(),
@@ -17,7 +18,7 @@ defmodule Beacon.Layouts.Layout do
   @foreign_key_type :binary_id
   schema "beacon_layouts" do
     field :body, :string
-    field :meta_tags, :map
+    field :meta_tags, Tag
     field :site, :string
     field :stylesheet_urls, {:array, :string}
     field :title, :string
