@@ -33,6 +33,7 @@ defmodule Beacon do
     |> order
   end
 
+  # ordering of attributes to account for unguaranteed ordering of maps
   defp order(tags) do
     Enum.map(tags, 
       fn tag ->

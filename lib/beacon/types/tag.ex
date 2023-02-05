@@ -9,8 +9,7 @@ defmodule Beacon.Types.Tag do
     {:ok, Enum.map(tags, fn tags -> Map.to_list(tags) end) |> order_name_and_property_first}
   end
 
-  # ordering of attributes such that "name" and "property" precede "content"; 
-  # to account for unguaranteed ordering of maps
+  # ordering of attributes to account for unguaranteed ordering of maps
   defp order_name_and_property_first(tags) do
     Enum.map(tags, 
       fn tag ->
