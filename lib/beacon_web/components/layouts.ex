@@ -79,49 +79,44 @@ defmodule BeaconWeb.Layouts do
     ""
   end
 
-  defp merge_meta_tags(tags) do
-    site_meta_tags = 
-      site_get_meta_tags() 
+  def merge_meta_tags(assigns) do
+    site_meta_tags = site_get_meta_tags()
 
-    layout_meta_tags = 
-      layout_get_meta_tags(tags)
+    layout_meta_tags = layout_get_meta_tags(assigns)
 
-    page_meta_tags = 
-      page_get_meta_tags(tags)
+    page_meta_tags = page_get_meta_tags(assigns)
 
-    layout_meta_tags 
-      |> merge(site_meta_tags) 
-      |> merge(page_meta_tags)
+    page_meta_tags
+    |> merge_tags_and_filter_out_attr_value(layout_meta_tags, "csrf-token")
+    |> merge_tags(site_meta_tags)
   end
 
-  defp merge(tags1, tags2) do
-    Enum.concat(tags1, tags2)
-    # TODO: filter out duplicates by order of succession
-  end
+  defp merge_tags_and_filter_out_attr_value(tags1, tags2, attr_filter) do
+    merge_tags(tags1, tags2)
+    |> Enum.filter(fn
+      attrs = [{_, value}, _] ->
+        value !== attr_filter
 
-  # ...
-  defp filter_out_by(tags1, tags2) do
-    Enum.filter(tags1, 
-      fn attrs1 ->
-        !Enum.all?(attrs1, 
-          fn attr1 ->
-            Enum.any?(tags2, 
-              fn attrs2 ->
-                Enum.member?(attrs2, attr1)
-            end)
-        end)
+      _ ->
+        true
     end)
   end
 
+  defp merge_tags(tags1, tags2) do
+    Enum.concat(tags1, tags2)
+  end
+
   defp join_tag_string(meta_tags) do
-    Enum.map_join(meta_tags, "\n",
-      fn [{attr_type, key}] ->
+    Enum.map_join(meta_tags, "\n", fn
+      [{attr_type, key}] ->
         ~s(<meta #{attr_type}="#{key}">)
 
       [{attr_type, key} | attrs] ->
-        attr_string = Enum.map_join(attrs, " ", fn {attr_type, key} ->
-          ~s(#{attr_type}="#{key}")
-        end)
+        attr_string =
+          Enum.map_join(attrs, " ", fn {attr_type, key} ->
+            ~s(#{attr_type}="#{key}")
+          end)
+
         ~s(<meta #{attr_type}="#{key}" #{attr_string}>)
     end)
   end
@@ -133,17 +128,16 @@ defmodule BeaconWeb.Layouts do
   def meta_tags(_), do: ""
 
   def meta_tags_unsafe(assigns) do
-    meta_tags = 
-      merge_meta_tags(assigns)
-    
-    if meta_tags do
-      join_tag_string(meta_tags) 
+    meta_tags = merge_meta_tags(assigns)
+
+    unless Enum.empty?(meta_tags) do
+      join_tag_string(meta_tags)
     else
       ""
     end
   end
 
-  def site_get_meta_tags() do
+  def site_get_meta_tags do
     Beacon.default_site_meta_tags()
   end
 

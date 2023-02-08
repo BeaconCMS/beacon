@@ -7,8 +7,8 @@ defmodule Beacon.Pages.Page do
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
   alias Beacon.Pages.PageVersion
-  alias Ecto.Changeset
   alias Beacon.Types.Tag
+  alias Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

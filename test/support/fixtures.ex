@@ -36,8 +36,8 @@ defmodule Beacon.Fixtures do
       site: "my_site",
       title: "Sample Home Page",
       meta_tags: [
-        %{"name" => "layout-meta-tag-one", "content" => "value"},
-        %{"name" => "layout-meta-tag-two", "content" => "value"}  
+        %{"content" => "value", "name" => "layout-meta-tag-one"},
+        %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
       stylesheet_urls: [],
       body: """
@@ -73,8 +73,9 @@ defmodule Beacon.Fixtures do
       site: "my_site",
       layout_id: layout_id,
       meta_tags: [
-         %{"name" => "home-meta-tag-one", "content" => "value"},
-         %{"name" => "home-meta-tag-two", "content" => "value"}
+        %{"content" => "value", "name" => "home-meta-tag-one"},
+        %{"name" => "home-meta-tag-two", "content" => "value"},
+        %{"name" => "csrf-token", "content" => "value"}
       ],
       template: """
       <main>
