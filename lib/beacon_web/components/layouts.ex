@@ -94,7 +94,7 @@ defmodule BeaconWeb.Layouts do
   defp merge_tags_and_filter_out_attr_value(tags1, tags2, attr_filter) do
     merge_tags(tags1, tags2)
     |> Enum.filter(fn
-      attrs = [{_, value}, _] ->
+      [{_, value}, _] ->
         value !== attr_filter
 
       _ ->

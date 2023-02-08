@@ -33,14 +33,14 @@ defmodule Beacon.Types.Tag do
           end,
           # swap attributes
           fn
-            nil, kv ->
+            nil, _kv ->
               false
 
             {k1, _}, {k2, _} when k1 == "content" and (k2 == "name" or k2 == "property") ->
               false
 
             # don't swap
-            kv, nil ->
+            _kv, nil ->
               true
 
             _, _ ->
