@@ -21,10 +21,13 @@ defmodule Beacon.Types.Tag do
           fn
             kv = {"name", _} ->
               kv
+
             kv = {"property", _} ->
               kv
+
             kv = {"content", _} ->
               kv
+
             _ ->
               nil
           end,
@@ -32,11 +35,14 @@ defmodule Beacon.Types.Tag do
           fn
             nil, _kv ->
               false
+
             {k1, _}, {k2, _} when k1 == "content" and (k2 == "name" or k2 == "property") ->
               false
+
             # don't swap
             _kv, nil ->
               true
+
             _, _ ->
               true
           end
