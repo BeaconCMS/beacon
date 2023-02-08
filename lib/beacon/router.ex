@@ -18,7 +18,7 @@ defmodule Beacon.Router do
 
         scope "/", MyAppWeb do
           pipe_through :browser
-          beacon_site "/blog", name: "blog", data_source: MyApp.BlogDataSource
+          beacon_site "/blog", name: "blog"
         end
       end
 
@@ -37,8 +37,6 @@ defmodule Beacon.Router do
   ## Options
 
     * `:name` (required) - identify your site name.
-    * `:data_source` (optional) - module that implements `Beacon.DataSource`
-      to provide assigns to pages.
     * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
 
   """
@@ -84,7 +82,7 @@ defmodule Beacon.Router do
       # TODO: sanitize and format session name
       String.to_atom("beacon_" <> name),
       [
-        session: %{"beacon_site" => name, "beacon_data_source" => opts[:data_source]},
+        session: %{"beacon_site" => name},
         root_layout: {BeaconWeb.Layouts, :runtime}
       ],
       [
