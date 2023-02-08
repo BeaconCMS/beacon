@@ -1,6 +1,12 @@
-# mix run --no-halt dev.exs
+# Development Server for Beacon
+#
+# Usage:
+#
+#     $ iex -S mix dev
 #
 # Refs:
+#
+# https://github.com/phoenixframework/phoenix_live_dashboard/blob/e87bbe03203f67947643f0574bb272b681951fa8/dev.exs
 # https://github.com/mcrumm/phoenix_profiler/blob/b882314add2d8783aac76b87c8ded3c123fc71a4/dev.exs
 # https://github.com/chrismccord/single_file_phoenix_fly/blob/bd3b372a5ca94cdd77d22b4fa1818cc4b612bcf5/run.exs
 # https://github.com/wojtekmach/mix_install_examples/blob/2c30c129f36206d3dfa234421ec5869e5e2e82be/phoenix_live_view.exs
@@ -31,15 +37,6 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
   watchers: [
     tailwind: {Tailwind, :install_and_run, [:admin_dev, ~w(--watch)]}
   ]
-)
-
-Application.put_env(:beacon, Beacon.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "beacon_sample_app_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true
 )
 
 defmodule SamplePhoenix.ErrorView do
@@ -178,15 +175,13 @@ Beacon.Admin.MediaLibrary.upload(
   "image/jpg"
 )
 
-Application.ensure_all_started(:plug_cowboy)
-Application.ensure_all_started(:cowboy_websocket)
-Application.ensure_all_started(:beacon)
+Task.start(fn ->
+  children = [
+    {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
+    SamplePhoenix.Endpoint
+  ]
 
-children = [
-  {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
-  SamplePhoenix.Endpoint
-]
+  {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
-{:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
-
-Process.sleep(:infinity)
+  Process.sleep(:infinity)
+end)
