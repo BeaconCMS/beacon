@@ -45,19 +45,14 @@ defmodule Beacon do
           fn
             kv = {"charset", _} ->
               kv
-
             kv = {"http-equiv", _} ->
               kv
-
             kv = {"name", _} ->
               kv
-
             kv = {"property", _} ->
               kv
-
             kv = {"content", _} ->
               kv
-
             _ ->
               nil
           end,
@@ -65,14 +60,11 @@ defmodule Beacon do
           fn
             nil, _kv ->
               false
-
             {k1, _}, {k2, _} when k1 == "content" and (k2 == "charset" or k2 == "http-equiv" or k2 == "name" or k2 == "property") ->
               false
-
             # don't swap
             _kv, nil ->
               true
-
             _, _ ->
               true
           end
