@@ -144,4 +144,31 @@ defmodule Beacon.Fixtures do
     {:ok, asset} = MediaLibrary.upload(attrs.site, attrs.file_path, attrs.file_name, attrs.file_type)
     asset
   end
+
+  @layout_meta_tag_one ~s(<meta name="layout-meta-tag-one" content="value"/>)
+  @layout_meta_tag_two ~s(<meta name="layout-meta-tag-two" content="value"/>)
+  @home_meta_tag_one ~s(<meta name="home-meta-tag-one" content="value"/>)
+  @home_meta_tag_two ~s(<meta name="home-meta-tag-two" content="value"/>)
+  @charset ~s(<meta charset="utf-8"/>)
+  @http_equiv ~s(<meta http-equiv="X-UA-Compatible" content="IE=edge"/>)
+  @viewport ~s(<meta name="viewport" content="width=device-width, initial-scale=1"/>)
+  @csrf_token ~r(<meta name=\"csrf-token\" content=\".+\"\/>)
+
+  def meta_tag_fixture do
+    %{
+      "layout-meta-tag-one" => @layout_meta_tag_one,
+      "layout-meta-tag-two" => @layout_meta_tag_two,
+      "home-meta-tag-one" => @home_meta_tag_one,
+      "home-meta-tag-two" => @home_meta_tag_two,
+      "csrf-token" => @csrf_token,
+      "correct_order" =>
+        @home_meta_tag_one <>
+          @home_meta_tag_two <>
+          @layout_meta_tag_one <>
+          @layout_meta_tag_two <>
+          @charset <>
+          @http_equiv <>
+          @viewport
+    }
+  end
 end

@@ -1,4 +1,4 @@
-defmodule Beacon.MetatagsTest do
+defmodule Beacon.AttributesTest do
   use Beacon.DataCase
 
   alias Beacon.Types.Tag

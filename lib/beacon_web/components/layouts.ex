@@ -87,13 +87,13 @@ defmodule BeaconWeb.Layouts do
     page_meta_tags = page_get_meta_tags(assigns)
 
     page_meta_tags
-    |> merge_tags_and_filter_out_attr_value(layout_meta_tags, "csrf-token")
+    |> merge_tags(layout_meta_tags)
+    |> filter_out_attr_value("csrf-token")
     |> merge_tags(site_meta_tags)
   end
 
-  defp merge_tags_and_filter_out_attr_value(tags1, tags2, attr_filter) do
-    merge_tags(tags1, tags2)
-    |> Enum.filter(fn
+  defp filter_out_attr_value(tags, attr_filter) do
+    Enum.filter(tags, fn
       [{_, value}, _] ->
         value !== attr_filter
 
@@ -130,7 +130,7 @@ defmodule BeaconWeb.Layouts do
   def meta_tags_unsafe(assigns) do
     meta_tags = merge_meta_tags(assigns)
 
-    unless Enum.empty?(meta_tags) do
+    if Enum.empty?(meta_tags) == false do
       join_tag_string(meta_tags)
     else
       ""

@@ -44,15 +44,27 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "for a layout", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ ~s(<meta name="layout-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta name="layout-meta-tag-two" content="value"/>)
+      assert html =~ meta_tag_fixture()["layout-meta-tag-one"]
+      assert html =~ meta_tag_fixture()["layout-meta-tag-two"]
     end
 
     test "for a page", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ ~s(<meta name="home-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta name="home-meta-tag-two" content="value"/>)
+      assert html =~ meta_tag_fixture()["home-meta-tag-one"]
+      assert html =~ meta_tag_fixture()["home-meta-tag-two"]
+    end
+
+    test "in order", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/home")
+
+      assert html =~ meta_tag_fixture()["correct_order"]
+    end
+
+    test "with exactly one csrf-token tag", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/home")
+
+      assert length(Regex.scan(meta_tag_fixture()["csrf-token"], html)) == 1
     end
   end
 
