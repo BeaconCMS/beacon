@@ -61,10 +61,12 @@ defmodule BeaconWeb.Live.PageLiveTest do
       assert html =~ meta_tag_fixture()["correct_order"]
     end
 
-    test "with exactly one csrf-token tag", %{conn: conn} do
+    test "with exactly one csrf-token tag line", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert length(Regex.scan(meta_tag_fixture()["csrf-token"], html)) == 1
+      assert meta_tag_fixture()["csrf-token"]
+             |> Regex.scan(html)
+             |> length() == 1
     end
   end
 
