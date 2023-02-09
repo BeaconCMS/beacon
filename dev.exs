@@ -21,10 +21,11 @@ Application.put_env(:sample, SamplePhoenix.Endpoint,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
     patterns: [
+      ~r"assets/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"dev/.*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"dist/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/beacon/.*(ex)$",
-      ~r"lib/beacon_web/(live|views)/.*(ex)$"
+      ~r"lib/beacon_web/(controllers|live|components)/.*(ex|heex)$"
     ]
   ],
   watchers: [
@@ -148,7 +149,7 @@ page =
       </div>
 
       <pre><code>
-        <%= inspect(Phoenix.Router.route_info(SamplePhoenixWeb.Router, "GET", "/dev/home", "host"), pretty: true) %>
+        <%= inspect(Phoenix.Router.routes(SamplePhoenixWeb.Router), pretty: true) %>
       </code></pre>
     </main>
     """

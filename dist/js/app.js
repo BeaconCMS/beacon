@@ -1,1 +1,0 @@
-(()=>{var t=document.querySelector("html").getAttribute("phx-socket")||"/live",o=document.querySelector("meta[name='csrf-token']").getAttribute("content"),e=new LiveView.LiveSocket(t,Phoenix.Socket,{params:{_csrf_token:o}});e.connect();window.liveSocket=e;})();

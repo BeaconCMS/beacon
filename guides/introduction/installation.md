@@ -269,6 +269,12 @@ For more details please check out the docs: `mix help beacon.install`
     })
     ```
 
+6. Include new seeds in the `ecto.setup` alias in `mix.exs`:
+
+    ```elixir
+    "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs", "run priv/repo/beacon_seeds.exs"],
+    ```
+
 ## Setup database, seeds, and assets:
 
 Feel free to edit `priv/repo/beacon_seeds.exs` as you wish and run:
