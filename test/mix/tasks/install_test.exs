@@ -12,6 +12,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
     bindings = [
       beacon_site: "my_test_blog",
+      ctx_app: :my_app,
       templates_path: templates_path,
       seeds: %{
         path: Path.join([support_path, "seeds.exs"]),
@@ -24,8 +25,10 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       beacon_data_source: %{
         dest_path: Path.join([support_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
-        config_template_path: Path.join([templates_path, "install", "beacon_data_source_config.exs"]),
         module_name: Module.concat(Beacon, "BeaconDataSource")
+      },
+      beacon_config: %{
+        config_template_path: Path.join([templates_path, "install", "beacon_config.exs"])
       }
     ]
 
@@ -51,7 +54,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     end
   end
 
-  test "it generates seeds file", %{bindings: bindings} do
+  test "generates seeds file", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:seeds, :path]))
     bindings = put_in(bindings, [:seeds, :path], dest_file)
 
@@ -64,7 +67,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert File.read!(dest_file) == seeds_content
   end
 
-  test "it does not add seeds content twice", %{bindings: bindings} do
+  test "does not add seeds content twice", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:seeds, :path]))
     bindings = put_in(bindings, [:seeds, :path], dest_file)
 
@@ -78,7 +81,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert file_content == File.read!(dest_file)
   end
 
-  test "it adds router content to its file", %{bindings: bindings} do
+  test "adds router content to its file", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:router, :path]))
     bindings = put_in(bindings, [:router, :path], dest_file)
 
@@ -89,12 +92,10 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     file_content = File.read!(dest_file)
 
     assert file_content =~ ~r/import Beacon\.Router/
-    assert file_content =~ ~r/beacon_site \"\/my_test_blog\"/
-    assert file_content =~ ~r/name: \"my_test_blog\"/
-    assert file_content =~ ~r/data_source: Beacon.BeaconDataSource/
+    assert file_content =~ ~r/beacon_site \"\/my_test_blog\", name: :my_test_blog/
   end
 
-  test "it does not add router content twice or if a beacon config exists", %{bindings: bindings} do
+  test "does not add router content twice or if a beacon config exists", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:router, :path]))
 
     bindings = put_in(bindings, [:router, :path], dest_file)
@@ -110,7 +111,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert file_content == File.read!(dest_file)
   end
 
-  test "it adds beacon repo to a config file", %{support_path: support_path} do
+  test "adds beacon repo to a config file", %{support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
@@ -121,7 +122,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo\]/)
   end
 
-  test "it does not add beacon repo twice or ignores if it exists", %{support_path: support_path} do
+  test "does not add beacon repo twice or ignores if it exists", %{support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
@@ -134,7 +135,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     refute String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo, Beacon.Repo\]/)
   end
 
-  test "it adds beacon repo config to a dev config file", %{bindings: bindings, support_path: support_path} do
+  test "adds beacon repo config to a dev config file", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
     template_file = Path.join([get_in(bindings, [:templates_path]), "install", "beacon_repo_config_dev.exs"])
@@ -148,7 +149,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert String.contains?(File.read!(test_file), repo_config_content)
   end
 
-  test "it adds beacon repo config to a prod config file", %{bindings: bindings, support_path: support_path} do
+  test "adds beacon repo config to a prod config file", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = Path.join([support_path, "prod.exs"])
 
@@ -166,7 +167,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     refute String.contains?(test_file_content, "stacktrace: true")
   end
 
-  test "it does not add beacon repo config twice to a file", %{bindings: bindings, support_path: support_path} do
+  test "does not add beacon repo config twice to a file", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
@@ -181,33 +182,36 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert new_file_content == File.read!(test_file)
   end
 
-  test "it adds beacon data source config", %{bindings: bindings, support_path: support_path} do
+  test "adds beacon config", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
     File.cp!(config_file, test_file)
 
-    Install.maybe_add_beacon_data_source_to_config(test_file, bindings)
+    Install.maybe_add_beacon_config(test_file, bindings)
 
-    assert String.match?(File.read!(test_file), ~r/config :beacon,\n(.*) data_source: Beacon.BeaconDataSource/)
+    test_file_content = File.read!(test_file)
+
+    assert String.contains?(test_file_content, "config :beacon, otp_app: :my_app")
+    assert test_file_content =~ ~r/sites: \[\n.*my_test_blog: \[\n.*data_source: Beacon.BeaconDataSource/
   end
 
-  test "it does not add beacon data source config twice", %{bindings: bindings, support_path: support_path} do
+  test "does not add beacon config twice", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
     File.cp!(config_file, test_file)
 
-    Install.maybe_add_beacon_data_source_to_config(test_file, bindings)
+    Install.maybe_add_beacon_config(test_file, bindings)
 
     new_file_content = File.read!(test_file)
 
-    Install.maybe_add_beacon_data_source_to_config(test_file, bindings)
+    Install.maybe_add_beacon_config(test_file, bindings)
 
     assert new_file_content == File.read!(test_file)
   end
 
-  test "it creates beacon data source file", %{bindings: bindings} do
+  test "creates beacon data source file", %{bindings: bindings} do
     dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
     random_path = random_file_name(dest_path, false)
     template_path = get_in(bindings, [:beacon_data_source, :template_path])
@@ -220,7 +224,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     assert File.read!(random_path) == file_content
   end
 
-  test "it does not create a new file if it already exists", %{bindings: bindings} do
+  test "does not create a new file if it already exists", %{bindings: bindings} do
     dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
     random_path = random_file_name(dest_path)
     bindings = put_in(bindings, [:beacon_data_source, :dest_path], random_path)

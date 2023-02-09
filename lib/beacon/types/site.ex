@@ -5,6 +5,18 @@ defmodule Beacon.Type.Site do
 
   @type t :: atom()
 
+  def valid?(site) when site in ["", nil, true, false], do: false
+
+  def valid?(site) when is_binary(site) do
+    Regex.match?(~r/^[a-zA-Z0-9_]+$/, site)
+  end
+
+  def valid?(site) when is_atom(site) do
+    site |> Atom.to_string() |> valid?()
+  end
+
+  def valid?(_site), do: false
+
   def type, do: :atom
 
   def cast(site) when is_binary(site) do

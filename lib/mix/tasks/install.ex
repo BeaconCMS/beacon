@@ -8,19 +8,19 @@ defmodule Mix.Tasks.Beacon.Install do
   Before running this command, make sure you commited all your changes to git,
   beacuse it generates new files and modifies existing ones.
 
-    $ mix beacon.install --beacon-site "blog"
+    $ mix beacon.install --site blog
 
-  The argument `beacon-site` defines the name of your beacon site and is
-  used to generate the necessary configuration files, defaults to `my_site`.
+  The argument `site` defines the name of your beacon site and is
+  used to generate the necessary configuration files.
 
   ## Arguments
 
-    * `--beacon-site` - The name of your beacon site, defaults to `my_site`
+    * `--site` - The name of your beacon site. Required.
   """
   use Mix.Task
 
   @switches [
-    beacon_site: :string
+    site: :string
   ]
 
   def run(argv) do
@@ -36,16 +36,18 @@ defmodule Mix.Tasks.Beacon.Install do
     config_file_path = config_file_path("config.exs")
     maybe_add_beacon_repo(config_file_path)
 
+    # Add Beacon config
+    maybe_add_beacon_config(config_file_path, bindings)
+
     # Add Beacon.Repo database config to dev.exs and prod.exs
     dev_config_file = config_file_path("dev.exs")
-    prod_config_file = config_file_path("prod.exs")
-
     maybe_add_beacon_repo_config(dev_config_file, bindings)
+
+    prod_config_file = config_file_path("prod.exs")
     maybe_add_beacon_repo_config(prod_config_file, bindings)
 
     # Create BeaconDataSource file and config
     maybe_create_beacon_data_source_file(bindings)
-    maybe_add_beacon_data_source_to_config(config_file_path, bindings)
 
     # Add pipeline and scope to router
     maybe_add_beacon_scope(bindings)
@@ -58,8 +60,8 @@ defmodule Mix.Tasks.Beacon.Install do
 
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:beacon_site]} and a sample page is available at /my_site/home
-      usually it can be accessed at http://localhost:4000/my_site/home
+      A new site has been configured at /#{bindings[:beacon_site]} and a sample page is available at /#{bindings[:beacon_site]}/home
+      usually it can be accessed at http://localhost:4000/#{bindings[:beacon_site]}/home
 
       Now you can adjust your project's config files, router.ex, or beacon_seeds.exs as you wish and run:
 
@@ -186,16 +188,16 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   @doc false
-  def maybe_add_beacon_data_source_to_config(config_file_path, bindings) do
+  def maybe_add_beacon_config(config_file_path, bindings) do
     config_file_content = File.read!(config_file_path)
-    config_content = EEx.eval_file(get_in(bindings, [:beacon_data_source, :config_template_path]), bindings)
+    config_content = EEx.eval_file(get_in(bindings, [:beacon_config, :config_template_path]), bindings)
 
     if String.contains?(config_file_content, config_content) do
       Mix.shell().info([
         :yellow,
         "* skip ",
         :reset,
-        "injecting beacon data source config into ",
+        "injecting beacon config into ",
         Path.relative_to_cwd(config_file_path),
         " (already exists)"
       ])
@@ -243,6 +245,8 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp build_context_bindings(options) do
+    options = validate_options!(options)
+
     base_module = Mix.Phoenix.base()
     web_module = Mix.Phoenix.web_module(base_module)
     app_name = Phoenix.Naming.underscore(base_module)
@@ -251,20 +255,22 @@ defmodule Mix.Tasks.Beacon.Install do
     web_path = Mix.Phoenix.web_path(ctx_app, "")
     templates_path = Path.join([Application.app_dir(:beacon), "priv", "templates"])
     root = root_path()
-    beacon_site = Keyword.get(options, :beacon_site, "my_site")
+    beacon_site = Keyword.get(options, :site)
 
     [
       base_module: base_module,
       web_module: web_module,
       app_name: app_name,
       ctx_app: ctx_app,
-      beacon_site: beacon_site,
       templates_path: templates_path,
+      beacon_site: beacon_site,
       beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
-        config_template_path: Path.join([templates_path, "install", "beacon_data_source_config.exs"]),
         module_name: Module.concat(base_module, "BeaconDataSource")
+      },
+      beacon_config: %{
+        config_template_path: Path.join([templates_path, "install", "beacon_config.exs"])
       },
       router: %{
         path: Path.join([root, web_path, "router.ex"]),
@@ -278,5 +284,26 @@ defmodule Mix.Tasks.Beacon.Install do
         path: Path.join([root, "mix.exs"])
       }
     ]
+  end
+
+  defp raise_with_help!(msg) do
+    Mix.raise("""
+    #{msg}
+
+    mix beacon.install expect a site name, for example:
+
+        mix beacon.install --site blog
+    """)
+  end
+
+  defp validate_options!([] = _options) do
+    raise_with_help!("Missing arguments.")
+  end
+
+  defp validate_options!(options) do
+    cond do
+      !Beacon.Type.Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      :default -> options
+    end
   end
 end
