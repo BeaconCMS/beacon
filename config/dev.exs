@@ -10,7 +10,7 @@ config :beacon, Beacon.Repo,
   show_sensitive_data_on_connection_error: true,
   ownership_timeout: 1_000_000_000
 
-config :beacon, otp_app: :sample
+config :beacon, otp_app: :beacon
 
 config :beacon, Beacon,
   sites: [
