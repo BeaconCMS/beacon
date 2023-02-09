@@ -12,7 +12,7 @@ config :beacon, Beacon.Repo,
 
 config :beacon, otp_app: :sample
 
-config :sample, Beacon,
+config :beacon, Beacon,
   sites: [
     dev: [
       data_source: BeaconDataSource

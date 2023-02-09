@@ -17,7 +17,7 @@ Logger.configure(level: :debug)
 
 Application.put_env(:phoenix, :json_library, Jason)
 
-Application.put_env(:sample, SamplePhoenix.Endpoint,
+Application.put_env(:beacon, SamplePhoenix.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4000],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
@@ -60,12 +60,12 @@ defmodule SamplePhoenixWeb.Router do
   scope "/" do
     pipe_through :browser
     beacon_admin "/admin"
-    beacon_site "/dev", name: "dev", data_source: BeaconDataSource
+    beacon_site "/dev", name: :dev
   end
 end
 
 defmodule SamplePhoenix.Endpoint do
-  use Phoenix.Endpoint, otp_app: :sample
+  use Phoenix.Endpoint, otp_app: :beacon
 
   @session_options [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"]
 
@@ -88,7 +88,7 @@ end
 defmodule BeaconDataSource do
   @behaviour Beacon.DataSource.Behaviour
 
-  def live_data("dev", ["home"], _params), do: %{year: Date.utc_today().year}
+  def live_data(:dev, ["home"], _params), do: %{year: Date.utc_today().year}
   def live_data(_, _, _), do: %{}
 end
 
