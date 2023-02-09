@@ -36,7 +36,7 @@ defmodule Beacon.DataSource do
   end
 
   defp get_data_source(site) do
-    Beacon.get_term({:beacon, site, "data_source"})
+    Beacon.Config.data_source(site)
   end
 
   defp pop_args_from_stacktrace(stacktrace) do

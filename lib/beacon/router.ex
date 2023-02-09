@@ -37,17 +37,16 @@ defmodule Beacon.Router do
   ## Options
 
     * `:name` (required) - identify your site name.
-    * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
 
   """
   defmacro beacon_site(path, opts \\ []) do
     quote bind_quoted: binding() do
       scope path, BeaconWeb do
-        {session_name, session_opts, route_opts} = Beacon.Router.__options__(opts)
+        {session_name, session_opts} = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
           get "/beacon_assets/:asset", MediaLibraryController, :show
-          live "/*path", PageLive, :path, route_opts
+          live "/*path", PageLive, :path
         end
       end
 
@@ -69,8 +68,6 @@ defmodule Beacon.Router do
 
   @doc false
   def __options__(opts) do
-    live_socket_path = Keyword.get(opts, :live_socket_path, "/live")
-
     name =
       if is_bitstring(opts[:name]) do
         opts[:name]
@@ -84,9 +81,6 @@ defmodule Beacon.Router do
       [
         session: %{"beacon_site" => name},
         root_layout: {BeaconWeb.Layouts, :runtime}
-      ],
-      [
-        private: %{beacon: %{live_socket_path: live_socket_path}}
       ]
     }
   end

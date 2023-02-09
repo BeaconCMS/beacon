@@ -10,11 +10,6 @@ defmodule Beacon.DataSourceTest do
   alias Beacon.DataSource
 
   describe "live_data/3" do
-    setup do
-      on_exit(fn -> :persistent_term.erase({:beacon, "data_source_test", "data_source"}) end)
-      :persistent_term.put({:beacon, "data_source_test", "data_source"}, Beacon.BeaconTest.TestDataSource)
-    end
-
     test "when there isn't a live_data match" do
       error_message = """
       Could not find live_data/3 that matches the given args: [\"data_source_test\", [\"unkown\"], %{}].

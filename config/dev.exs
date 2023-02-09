@@ -14,5 +14,7 @@ config :beacon, otp_app: :sample
 
 config :sample, Beacon,
   sites: [
-    dev: [data_source: BeaconDataSource]
+    dev: [
+      data_source: BeaconDataSource
+    ]
   ]

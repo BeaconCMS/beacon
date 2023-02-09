@@ -12,9 +12,6 @@ defmodule BeaconWeb.PageLive do
   def mount(params, session, socket) do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
-    data_source = Beacon.Config.data_source(site)
-
-    Beacon.persist_term({:beacon, site, "data_source"}, data_source)
 
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 

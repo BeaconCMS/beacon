@@ -14,3 +14,11 @@ config :beacon, Beacon.Repo,
 config :beacon, ecto_repos: [Beacon.Repo]
 
 config :beacon, :css_compiler, CSSCompilerMock
+
+config :beacon, otp_app: :beacon
+
+config :beacon, Beacon,
+  sites: [
+    my_site: [data_source: Beacon.BeaconTest.BeaconDataSource, live_socket_path: "/custom_live"],
+    data_source_test: [data_source: Beacon.BeaconTest.TestDataSource]
+  ]
