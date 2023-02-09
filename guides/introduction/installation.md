@@ -28,7 +28,7 @@ mix phx.new --install my_app
 
 7. Add `:beacon` dependency to `.formatter.exs`
 
-8. Run `mix beacon.install --beacon-site my_site`
+8. Run `mix beacon.install --site my_site`
 
 9. Run `mix setup`
 
@@ -119,16 +119,27 @@ Beacon requires a couple of changes in your project to get your first site up an
 Run and follow the instructions:
 
 ```sh
-mix beacon.install --beacon-site my_site
+mix beacon.install --site my_site
 ```
 
 For more details please check out the docs: `mix help beacon.install`
 
 ### Manually
 
-1.  Add `Beacon.Repo` to `config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]` in `config.exs`
+1. Edit your project `config.exs` file:
 
-2.  Configure the Beacon Repo in your dev.exs and prod.exs:
+    ```elixir
+    config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]
+
+    config :beacon, otp_app: :my_app
+
+    config :beacon, Beacon,
+      sites: [
+        my_site: [data_source: MyApp.BeaconDataSource]
+      ]
+    ```
+
+2. Configure the Beacon Repo in your dev.exs and prod.exs:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -146,7 +157,7 @@ For more details please check out the docs: `mix help beacon.install`
     show_sensitive_data_on_connection_error: true
     ```
 
-3.  Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+3. Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
 
     ```elixir
     defmodule MyApp.BeaconDataSource do
@@ -165,9 +176,11 @@ For more details please check out the docs: `mix help beacon.install`
 
     scope "/" do
       pipe_through :browser
-      beacon_site "/my_site", name: "my_site", data_source: MyApp.BeaconDataSource
+      beacon_site "/my_site", name: :my_site
     end
     ```
+
+Note that the site name has to match the same name used in `config.exs`.
 
 5. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
