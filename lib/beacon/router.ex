@@ -18,7 +18,7 @@ defmodule Beacon.Router do
 
         scope "/", MyAppWeb do
           pipe_through :browser
-          beacon_site "/blog", name: "blog"
+          beacon_site "/blog", name: :blog
         end
       end
 
@@ -30,7 +30,7 @@ defmodule Beacon.Router do
       scope "/protected", MyAppWeb do
           pipe_through :browser
           pipe_through :auth
-          beacon_site "/sales", name: "stats"
+          beacon_site "/sales", name: :stats
         end
       end
 
@@ -68,16 +68,18 @@ defmodule Beacon.Router do
 
   @doc false
   def __options__(opts) do
+    {name, _opts} = Keyword.pop(opts, :name)
+
     name =
-      if is_bitstring(opts[:name]) do
+      if name && is_atom(opts[:name]) do
         opts[:name]
       else
-        raise ArgumentError, ":name must be a string, got: #{inspect(opts[:name])}"
+        raise ArgumentError, ":name must be an atom, got: #{inspect(opts[:name])}"
       end
 
     {
       # TODO: sanitize and format session name
-      String.to_atom("beacon_" <> name),
+      String.to_atom("beacon_#{name}"),
       [
         session: %{"beacon_site" => name},
         root_layout: {BeaconWeb.Layouts, :runtime}
@@ -143,7 +145,7 @@ defmodule Beacon.Router do
   ## Examples
 
       scope "/" do
-        beacon_site "/", name: "my_site"
+        beacon_site "/", name: :my_site
       end
 
       iex> beacon_asset_path(beacon_attrs, "logo.jpg")
@@ -152,7 +154,7 @@ defmodule Beacon.Router do
 
       scope "/parent" do
         scope "/nested" do
-          beacon_site "/my_site", name: "my_site"
+          beacon_site "/my_site", name: :my_site
         end
       end
 

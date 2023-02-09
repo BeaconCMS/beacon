@@ -18,7 +18,7 @@ defmodule Beacon.Layouts.Layout do
   schema "beacon_layouts" do
     field :body, :string
     field :meta_tags, :map
-    field :site, :string
+    field :site, Beacon.Type.Site
     field :stylesheet_urls, {:array, :string}
     field :title, :string
 

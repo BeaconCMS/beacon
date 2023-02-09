@@ -24,9 +24,7 @@ defmodule Beacon.Config do
     live_socket_path: "/live"
   ]
 
-  @doc """
-  Return the current OTP App.
-  """
+  @spec otp_app!() :: atom()
   def otp_app! do
     Application.get_env(:beacon, :otp_app) ||
       raise ArgumentError, """
@@ -51,27 +49,18 @@ defmodule Beacon.Config do
       [{:data_source, MyApp.BeaconDataSource}, {:live_socket_path, "/live"}]
 
   """
+  @spec config_for_site!(Beacon.Type.Site.t()) :: keyword()
   def config_for_site!(site) when is_atom(site) do
     old = Kernel.get_in(Application.get_env(otp_app!(), Beacon), [:sites, site]) || []
     Keyword.merge(@defaults, old)
   end
 
-  @doc """
-  TODO
-  """
-  @spec data_source(atom() | String.t()) :: module() | nil
-  def data_source(site) when is_binary(site), do: site |> String.to_atom() |> data_source()
-
+  @spec data_source(Beacon.Type.Site.t()) :: module() | nil
   def data_source(site) when is_atom(site) do
     config_for_site!(site)[:data_source]
   end
 
-  @doc """
-  TODO
-  """
-  @spec live_socket_path(atom() | String.t()) :: String.t()
-  def live_socket_path(site) when is_binary(site), do: site |> String.to_atom() |> live_socket_path()
-
+  @spec live_socket_path(Beacon.Type.Site.t()) :: String.t()
   def live_socket_path(site) when is_atom(site) do
     config_for_site!(site)[:live_socket_path]
   end

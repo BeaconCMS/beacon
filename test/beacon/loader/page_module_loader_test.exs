@@ -16,7 +16,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       page_1 = Repo.preload(page_1, [:events, :helpers])
       page_2 = Repo.preload(page_2, [:events, :helpers])
 
-      {:ok, code_string} = PageModuleLoader.load_templates("test", [page_1, page_2])
+      {:ok, code_string} = PageModuleLoader.load_templates(:test, [page_1, page_2])
 
       assert Regex.scan(~r/page_1_upcase/, code_string) == [["page_1_upcase"]]
       assert Regex.scan(~r/page_2_upcase/, code_string) == [["page_2_upcase"]]
