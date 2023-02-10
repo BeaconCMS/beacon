@@ -15,7 +15,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
   ## Arguments
 
-    * `--site` - The name of your beacon site. Required.
+    * `--site` (required) - The name of your beacon site.
   """
   use Mix.Task
 
