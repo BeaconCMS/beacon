@@ -176,7 +176,7 @@ For more details please check out the docs: `mix help beacon.install`
 
     scope "/" do
       pipe_through :browser
-      beacon_site "/my_site", name: :my_site
+      beacon_site "/my_site", site: :my_site
     end
     ```
 

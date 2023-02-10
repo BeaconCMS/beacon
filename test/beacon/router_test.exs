@@ -4,20 +4,20 @@ defmodule Beacon.RouterTest do
   alias Beacon.Router
 
   test "live_session name" do
-    assert {:beacon_test, _} = Router.__options__(name: :test)
+    assert {:beacon_test, _} = Router.__options__(site: :test)
   end
 
   test "session opts" do
     assert {
              _,
              [{:session, %{"beacon_site" => :test}}, {:root_layout, {BeaconWeb.Layouts, :runtime}}]
-           } = Router.__options__(name: :test)
+           } = Router.__options__(site: :test)
   end
 
   describe "options" do
-    test "require site name as atom" do
+    test "require site as atom" do
       assert_raise ArgumentError, fn -> Router.__options__([]) end
-      assert_raise ArgumentError, fn -> Router.__options__(name: "string") end
+      assert_raise ArgumentError, fn -> Router.__options__(site: "string") end
     end
   end
 
@@ -27,7 +27,7 @@ defmodule Beacon.RouterTest do
 
     scope "/" do
       beacon_admin "/admin"
-      beacon_site "/", name: :site
+      beacon_site "/", site: :site
     end
   end
 
@@ -38,7 +38,7 @@ defmodule Beacon.RouterTest do
     scope "/parent" do
       scope "/nested" do
         beacon_admin "/admin"
-        beacon_site "/site", name: :site
+        beacon_site "/site", site: :site
       end
     end
   end

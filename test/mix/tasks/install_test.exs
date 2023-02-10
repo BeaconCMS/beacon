@@ -25,7 +25,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     templates_path = Path.join([File.cwd!(), "priv", "templates"])
 
     bindings = [
-      beacon_site: "my_test_blog",
+      site: "my_test_blog",
       ctx_app: :my_app,
       templates_path: templates_path,
       seeds: %{
@@ -106,7 +106,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
       file_content = File.read!(dest_file)
       assert file_content =~ ~r/import Beacon\.Router/
-      assert file_content =~ ~r/beacon_site \"\/my_test_blog\", name: :my_test_blog/
+      assert file_content =~ ~r/beacon_site \"\/my_test_blog\", site: :my_test_blog/
     end)
   end
 

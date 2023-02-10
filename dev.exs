@@ -60,7 +60,7 @@ defmodule SamplePhoenixWeb.Router do
   scope "/" do
     pipe_through :browser
     beacon_admin "/admin"
-    beacon_site "/dev", name: :dev
+    beacon_site "/dev", site: :dev
   end
 end
 

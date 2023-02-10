@@ -18,7 +18,7 @@ defmodule Beacon.Router do
 
         scope "/", MyAppWeb do
           pipe_through :browser
-          beacon_site "/blog", name: :blog
+          beacon_site "/blog", site: :blog
         end
       end
 
@@ -30,13 +30,14 @@ defmodule Beacon.Router do
       scope "/protected", MyAppWeb do
           pipe_through :browser
           pipe_through :auth
-          beacon_site "/sales", name: :stats
+          beacon_site "/sales", site: :stats
         end
       end
 
   ## Options
 
-    * `:name` (required) - identify your site name.
+    * `:site` (required) - register your site with a name for identification purposes,
+      used mostlyl for configuration. See `Beacon.Config` for more info.
 
   """
   defmacro beacon_site(path, opts \\ []) do
@@ -58,30 +59,30 @@ defmodule Beacon.Router do
         end
       end
 
+      @beacon_site opts[:site]
+      def __beacon_site__, do: @beacon_site
+
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
       def __beacon_site_prefix__, do: @beacon_site_prefix
-
-      @beacon_site opts[:name]
-      def __beacon_site__, do: @beacon_site
     end
   end
 
   @doc false
   def __options__(opts) do
-    {name, _opts} = Keyword.pop(opts, :name)
+    {site, _opts} = Keyword.pop(opts, :site)
 
-    name =
-      if name && is_atom(opts[:name]) do
-        opts[:name]
+    site =
+      if site && is_atom(opts[:site]) do
+        opts[:site]
       else
-        raise ArgumentError, ":name must be an atom, got: #{inspect(opts[:name])}"
+        raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
       end
 
     {
       # TODO: sanitize and format session name
-      String.to_atom("beacon_#{name}"),
+      String.to_atom("beacon_#{site}"),
       [
-        session: %{"beacon_site" => name},
+        session: %{"beacon_site" => site},
         root_layout: {BeaconWeb.Layouts, :runtime}
       ]
     }
@@ -145,7 +146,7 @@ defmodule Beacon.Router do
   ## Examples
 
       scope "/" do
-        beacon_site "/", name: :my_site
+        beacon_site "/", site: :my_site
       end
 
       iex> beacon_asset_path(beacon_attrs, "logo.jpg")
@@ -154,7 +155,7 @@ defmodule Beacon.Router do
 
       scope "/parent" do
         scope "/nested" do
-          beacon_site "/my_site", name: :my_site
+          beacon_site "/my_site", site: :my_site
         end
       end
 

@@ -62,8 +62,8 @@ defmodule Mix.Tasks.Beacon.Install do
 
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:beacon_site]} and a sample page is available at /#{bindings[:beacon_site]}/home
-      usually it can be accessed at http://localhost:4000/#{bindings[:beacon_site]}/home
+      A new site has been configured at /#{bindings[:site]} and a sample page is available at /#{bindings[:site]}/home
+      usually it can be accessed at http://localhost:4000/#{bindings[:site]}/home
 
       Now you can adjust your project's config files, router.ex, or beacon_seeds.exs as you wish and run:
 
@@ -257,7 +257,7 @@ defmodule Mix.Tasks.Beacon.Install do
     web_path = Mix.Phoenix.web_path(ctx_app, "")
     templates_path = Path.join([Application.app_dir(:beacon), "priv", "templates"])
     root = root_path()
-    beacon_site = Keyword.get(options, :site)
+    site = Keyword.get(options, :site)
 
     [
       base_module: base_module,
@@ -265,7 +265,7 @@ defmodule Mix.Tasks.Beacon.Install do
       app_name: app_name,
       ctx_app: ctx_app,
       templates_path: templates_path,
-      beacon_site: beacon_site,
+      site: site,
       beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
