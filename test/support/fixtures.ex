@@ -145,30 +145,61 @@ defmodule Beacon.Fixtures do
     asset
   end
 
-  @layout_meta_tag_one ~s(<meta name="layout-meta-tag-one" content="value"/>)
-  @layout_meta_tag_two ~s(<meta name="layout-meta-tag-two" content="value"/>)
-  @home_meta_tag_one ~s(<meta name="home-meta-tag-one" content="value"/>)
-  @home_meta_tag_two ~s(<meta name="home-meta-tag-two" content="value"/>)
-  @charset ~s(<meta charset="utf-8"/>)
-  @http_equiv ~s(<meta http-equiv="X-UA-Compatible" content="IE=edge"/>)
-  @viewport ~s(<meta name="viewport" content="width=device-width, initial-scale=1"/>)
-  @csrf_token ~r(<meta name=\"csrf-token\" content=\".+\"\/>)
+  home_meta_tag_one = "<meta[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-one\")[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-one\")[^\/>]*\/>"
+  home_meta_tag_two = "<meta[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-two\")[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-two\")[^\/>]*\/>"
+
+  layout_meta_tag_one =
+    "<meta[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-one\")[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-one\")[^\/>]*\/>"
+
+  layout_meta_tag_two =
+    "<meta[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-two\")[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-two\")[^\/>]*\/>"
+
+  charset = "<meta[^\/>]+charset=\"[^\/>]+\"[^\/>]*\/>"
+  http_equiv = "<meta[^\/>]+(?:content=\"[^\/>]+\"|http-equiv=\"[^\/>]+\")[^\/>]+(?:content=\"[^\/>]+\"|http-equiv=\"[^\/>]+\")[^\/>]*\/>"
+  viewport = "<meta[^\/>]+(?:content=\"[^\/>]+\"|name=\"viewport\")[^\/>]+(?:content=\"[^\/>]+\"|name=\"viewport\")[^\/>]*\/>"
+  csrf_token = "<meta[^\/>]+(?:content=\"[^\/>]+\"|name=\"csrf-token\")[^\/>]+(?:content=\".+\"|name=\"csrf-token\")[^\/>]*\/>"
+
+  correct_order =
+    home_meta_tag_one <>
+      home_meta_tag_two <>
+      layout_meta_tag_one <>
+      layout_meta_tag_two <>
+      charset <>
+      http_equiv <>
+      viewport <>
+      csrf_token
+
+  {:ok, home_meta_tag_one} = home_meta_tag_one |> Regex.compile()
+  {:ok, home_meta_tag_two} = home_meta_tag_two |> Regex.compile()
+  {:ok, layout_meta_tag_one} = layout_meta_tag_one |> Regex.compile()
+  {:ok, layout_meta_tag_two} = layout_meta_tag_two |> Regex.compile()
+  {:ok, charset} = charset |> Regex.compile()
+  {:ok, http_equiv} = http_equiv |> Regex.compile()
+  {:ok, viewport} = viewport |> Regex.compile()
+  {:ok, csrf_token} = csrf_token |> Regex.compile()
+  {:ok, correct_order} = correct_order |> Regex.compile()
+
+  @home_meta_tag_one home_meta_tag_one
+  @home_meta_tag_two home_meta_tag_two
+  @layout_meta_tag_one layout_meta_tag_one
+  @layout_meta_tag_two layout_meta_tag_two
+  @charset charset
+  @http_equiv http_equiv
+  @viewport viewport
+  @csrf_token csrf_token
+  @correct_order correct_order
 
   def meta_tag_fixture do
     %{
-      "layout-meta-tag-one" => @layout_meta_tag_one,
-      "layout-meta-tag-two" => @layout_meta_tag_two,
       "home-meta-tag-one" => @home_meta_tag_one,
       "home-meta-tag-two" => @home_meta_tag_two,
+      "layout-meta-tag-one" => @layout_meta_tag_one,
+      "layout-meta-tag-two" => @layout_meta_tag_two,
+      "charset" => @charset,
+      "http_equiv" => @http_equiv,
+      "viewport" => @viewport,
       "csrf-token" => @csrf_token,
-      "correct_order" =>
-        @home_meta_tag_one <>
-          @home_meta_tag_two <>
-          @layout_meta_tag_one <>
-          @layout_meta_tag_two <>
-          @charset <>
-          @http_equiv <>
-          @viewport
+      "correct_order" => @correct_order
     }
   end
 end

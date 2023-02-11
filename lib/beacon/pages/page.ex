@@ -7,13 +7,12 @@ defmodule Beacon.Pages.Page do
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
   alias Beacon.Pages.PageVersion
-  alias Beacon.Types.Tag
   alias Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
-    field :meta_tags, Tag
+    field :meta_tags, {:array, :map}
     field :path, :string
     field :site, :string
     field :template, :string

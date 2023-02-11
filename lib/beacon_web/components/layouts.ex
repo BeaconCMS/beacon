@@ -70,45 +70,24 @@ defmodule BeaconWeb.Layouts do
     ""
   end
 
+  # Merges to produce HTML in order of page, layout, site for preferred hierarchy during duplicate conflicts
+  # See: https://ogp.me/#array
+
   def merge_meta_tags(assigns) do
     site_meta_tags = site_get_meta_tags()
-
     layout_meta_tags = layout_get_meta_tags(assigns)
-
     page_meta_tags = page_get_meta_tags(assigns)
 
-    page_meta_tags
-    |> merge_tags(layout_meta_tags)
-    |> filter_out_attr_value("csrf-token")
-    |> merge_tags(site_meta_tags)
-  end
+    page_and_layout_meta_tags =
+      (page_meta_tags ++ layout_meta_tags)
+      |> Enum.reject(&(&1["name"] == "csrf-token"))
 
-  defp filter_out_attr_value(tags, attr_filter) do
-    Enum.filter(tags, fn
-      [{_, value}, _] ->
-        value !== attr_filter
-
-      _ ->
-        true
-    end)
-  end
-
-  defp merge_tags(tags1, tags2) do
-    Enum.concat(tags1, tags2)
+    page_and_layout_meta_tags ++ site_meta_tags
   end
 
   defp join_tag_string(meta_tags) do
-    Enum.map_join(meta_tags, "\n", fn
-      [{attr_type, key}] ->
-        ~s(<meta #{attr_type}="#{key}">)
-
-      [{attr_type, key} | attrs] ->
-        attr_string =
-          Enum.map_join(attrs, " ", fn {attr_type, key} ->
-            ~s(#{attr_type}="#{key}")
-          end)
-
-        ~s(<meta #{attr_type}="#{key}" #{attr_string}>)
+    Enum.map_join(meta_tags, "\n", fn tag ->
+      List.to_string(["<meta ", Enum.map_join(tag, " ", fn {key, value} -> ~s(#{key}="#{value}") end), " />"])
     end)
   end
 
