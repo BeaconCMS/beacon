@@ -46,6 +46,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ meta_tag_fixture()["layout-meta-tag-one"]
       assert html =~ meta_tag_fixture()["layout-meta-tag-two"]
+
+      # assert html =~ ~s(<meta content="value" name="layout-meta-tag-one"/>)
+      # assert html =~ ~s(<meta content="value" name="layout-meta-tag-two"/>)
     end
 
     test "for a page", %{conn: conn} do
@@ -53,6 +56,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ meta_tag_fixture()["home-meta-tag-one"]
       assert html =~ meta_tag_fixture()["home-meta-tag-two"]
+
+      # assert html =~ ~s(<meta content="value" name="home-meta-tag-one"/>)
+      # assert html =~ ~s(<meta content="value" name="home-meta-tag-two"/>)
     end
 
     test "in order", %{conn: conn} do
