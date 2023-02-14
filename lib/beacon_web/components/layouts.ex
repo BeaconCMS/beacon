@@ -55,7 +55,7 @@ defmodule BeaconWeb.Layouts do
   end
 
   def live_socket_path(%{__site__: site}) do
-    Beacon.Config.live_socket_path(site)
+    Beacon.Config.fetch!(site).live_socket_path
   end
 
   def page_title(%{layout_assigns: %{page_title: page_title}}), do: page_title

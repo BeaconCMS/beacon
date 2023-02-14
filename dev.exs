@@ -92,96 +92,103 @@ defmodule BeaconDataSource do
   def live_data(_, _, _), do: %{}
 end
 
-Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
-Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
-
-Beacon.Stylesheets.create_stylesheet!(%{
-  site: "dev",
-  name: "sample_stylesheet",
-  content: "body {cursor: zoom-in;}"
-})
-
-Beacon.Components.create_component!(%{
-  site: "dev",
-  name: "sample_component",
-  body: """
-  <%= @val %>
-  """
-})
-
-%{id: layout_id} =
-  Beacon.Layouts.create_layout!(%{
+seeds = fn ->
+  Beacon.Stylesheets.create_stylesheet!(%{
     site: "dev",
-    title: "Dev",
-    meta_tags: %{"layout" => "dev"},
-    stylesheet_urls: [],
+    name: "sample_stylesheet",
+    content: "body {cursor: zoom-in;}"
+  })
+
+  Beacon.Components.create_component!(%{
+    site: "dev",
+    name: "sample_component",
     body: """
-    <%= @inner_content %>
+    <%= @val %>
     """
   })
 
-page =
-  Beacon.Pages.create_page!(%{
-    path: "home",
-    site: "dev",
-    layout_id: layout_id,
-    meta_tags: %{"page" => "home"},
-    template: """
-    <main>
-      <h1 class="text-violet-900">Dev</h1>
-      <p class="text-sm">Page</p>
-      <%= my_component("sample_component", val: 1) %>
-      <div>
-        <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
-      </div>
+  %{id: layout_id} =
+    Beacon.Layouts.create_layout!(%{
+      site: "dev",
+      title: "Dev",
+      meta_tags: %{"layout" => "dev"},
+      stylesheet_urls: [],
+      body: """
+      <%= @inner_content %>
+      """
+    })
 
-      <div>
-        <p>From data source:</p>
-        <%= @beacon_live_data[:year] %>
-      </div>
+  page =
+    Beacon.Pages.create_page!(%{
+      path: "home",
+      site: "dev",
+      layout_id: layout_id,
+      meta_tags: %{"page" => "home"},
+      template: """
+      <main>
+        <h1 class="text-violet-900">Dev</h1>
+        <p class="text-sm">Page</p>
+        <%= my_component("sample_component", val: 1) %>
+        <div>
+          <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
+        </div>
 
-      <div>
-        <p>From dynamic_helper:</p>
-        <%= dynamic_helper("upcase", %{name: "beacon"}) %>
-      </div>
+        <div>
+          <p>From data source:</p>
+          <%= @beacon_live_data[:year] %>
+        </div>
 
-      <pre><code>
-        <%= inspect(Phoenix.Router.routes(SamplePhoenixWeb.Router), pretty: true) %>
-      </code></pre>
-    </main>
+        <div>
+          <p>From dynamic_helper:</p>
+          <%= dynamic_helper("upcase", %{name: "beacon"}) %>
+        </div>
+
+        <pre><code>
+          <%= inspect(Phoenix.Router.routes(SamplePhoenixWeb.Router), pretty: true) %>
+        </code></pre>
+      </main>
+      """
+    })
+
+  Beacon.Pages.create_page_helper!(%{
+    page_id: page.id,
+    helper_name: "upcase",
+    helper_args: "%{name: name}",
+    code: """
+      String.upcase(name)
     """
   })
 
-Beacon.Pages.create_page_helper!(%{
-  page_id: page.id,
-  helper_name: "upcase",
-  helper_args: "%{name: name}",
-  code: """
-    String.upcase(name)
-  """
-})
+  Beacon.Admin.MediaLibrary.upload(
+    "dev",
+    Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+    "dockyard_1.png",
+    "image/png"
+  )
 
-Beacon.Admin.MediaLibrary.upload(
-  "dev",
-  Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-  "dockyard_1.png",
-  "image/png"
-)
-
-Beacon.Admin.MediaLibrary.upload(
-  "dev",
-  Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-  "dockyard_2.jpg",
-  "image/jpg"
-)
+  Beacon.Admin.MediaLibrary.upload(
+    "dev",
+    Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+    "dockyard_2.jpg",
+    "image/jpg"
+  )
+end
 
 Task.start(fn ->
   children = [
     {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
-    SamplePhoenix.Endpoint
+    SamplePhoenix.Endpoint,
+    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource]]}
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
+
+  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
+  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
+
+  seeds.()
+
+  Beacon.Loader.Server.reload_from_db(:dev)
 
   Process.sleep(:infinity)
 end)

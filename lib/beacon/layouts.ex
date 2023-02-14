@@ -21,11 +21,9 @@ defmodule Beacon.Layouts do
     Repo.all(Layout)
   end
 
-  def list_layouts_for_site(site) when is_binary(site) and site != "" do
-    Repo.all(from(l in Layout, where: l.site == ^site))
+  def list_layouts_for_site(site) do
+    Repo.all(from l in Layout, where: l.site == ^site)
   end
-
-  def list_layouts_for_site(_), do: []
 
   @doc """
   Gets a single layout.

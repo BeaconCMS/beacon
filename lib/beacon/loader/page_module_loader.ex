@@ -34,13 +34,21 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp render(module_name, component_module, functions) do
     """
     defmodule #{module_name} do
-      import Phoenix.Component
-      #{ModuleLoader.import_my_component(component_module, functions)}
+      #{maybe_import_phoenix_component(functions)}
+      #{ModuleLoader.maybe_import_my_component(component_module, functions)}
       use Phoenix.HTML
 
       #{Enum.join(functions, "\n")}
     end
     """
+  end
+
+  defp maybe_import_phoenix_component(functions) do
+    if Enum.any?(functions, &String.match?(&1, ~r/def render/)) do
+      "import Phoenix.Component"
+    else
+      ""
+    end
   end
 
   defp render_page(%Page{path: path, template: template}) do

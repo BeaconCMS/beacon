@@ -2,66 +2,64 @@ defmodule Beacon.Config do
   @moduledoc """
   Configuration for sites.
 
-  ## Examples
+  Following is a list of options that each site accepts:
 
-      config :beacon, otp_app: :my_app
+  ## Options
 
-      config :my_app, Beacon,
-        sites: [
-          dev: [data_source: BeaconDataSource]
-        ]
+    * `:site` (required) `t:site/0` - register your site supervisor with this key identifier,
+      see the `t:site/0` type for more info.
 
-  Each site my have the following options:
+    * `:data_source` (optional) `t:data_source/0` - a module that implements `Beacon.DataSource.Behaviour`,
+      used to provide assigns to your site pages.
 
-    * `:data_source` (optional) - module that implements `Beacon.DataSource` to provide assigns to pages.
+    * `css_compiler` (optional) `t:css_compiler/0` - a module that implements `Beacon.RuntimeCSS`,
+      used to compile CSS for pages. Defaults to `Beacon.CSSCompiler`.
 
-    * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
+    * `:live_socket_path` (optional) `t:String.t/0` - path of a live socket where Beacon should connect to. Defaults to "/live".
 
   """
 
-  @defaults [
-    data_source: nil,
-    live_socket_path: "/live"
-  ]
+  alias Beacon.Registry
 
-  @spec otp_app!() :: atom()
-  def otp_app! do
-    Application.get_env(:beacon, :otp_app) ||
-      raise ArgumentError, """
-      Could not find the otp_app configuration for your application.
+  @typedoc """
+  An atom identifying your site.
 
-      Make sure to define it at your config file:
+  It has to be the same name used on `beacon_site` in your application router.
+  """
+  @type site :: atom()
+  @type data_source :: module() | nil
+  @type css_compiler :: module()
 
-          config :beacon, otp_app: :MY_APP
+  @type option ::
+          {:site, site()}
+          | {:data_source, data_source()}
+          | {:css_compiler, css_compiler()}
+          | {:live_socket_path, String.t()}
 
-      See Beacon.Config for more info.
-      """
-  end
+  @type t :: %__MODULE__{
+          site: site(),
+          data_source: data_source(),
+          css_compiler: css_compiler(),
+          live_socket_path: String.t()
+        }
+
+  defstruct site: nil,
+            data_source: nil,
+            css_compiler: Beacon.CSSCompiler,
+            live_socket_path: "/live"
 
   @doc """
-  Resolves and return all the configuration for a given `site`.
+  Build a new `%Beacon.Config{}` instance, used to hold all the configuration for each site.
 
-  Default values are returned if not present.
-
-  ## Examples
-
-      iex> config_for_site!(:blog)
-      [{:data_source, MyApp.BeaconDataSource}, {:live_socket_path, "/live"}]
-
+  See the moduledoc for possible options.
   """
-  @spec config_for_site!(Beacon.Type.Site.t()) :: keyword()
-  def config_for_site!(site) when is_atom(site) do
-    old = Kernel.get_in(Application.get_env(otp_app!(), Beacon), [:sites, site]) || []
-    Keyword.merge(@defaults, old)
+  @spec new([option]) :: t()
+  def new(opts) do
+    struct!(__MODULE__, opts)
   end
 
-  @spec data_source(Beacon.Type.Site.t()) :: module() | nil
-  def data_source(site) when is_atom(site) do
-    config_for_site!(site)[:data_source]
-  end
-
-  @spec live_socket_path(Beacon.Type.Site.t()) :: String.t()
-  def live_socket_path(site) when is_atom(site) do
-    config_for_site!(site)[:live_socket_path]
+  @spec fetch!(site()) :: t()
+  def fetch!(site) do
+    Registry.config!(site)
   end
 end

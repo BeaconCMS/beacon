@@ -4,6 +4,10 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   alias Beacon.Components.Component
   alias Beacon.Loader.ModuleLoader
 
+  def load_components(_site, [] = _components) do
+    :skip
+  end
+
   def load_components(site, components) do
     component_module = Beacon.Loader.component_module_for_site(site)
 

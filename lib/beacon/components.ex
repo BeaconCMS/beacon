@@ -9,7 +9,7 @@ defmodule Beacon.Components do
   alias Beacon.Components.Component
 
   @doc """
-  Returns the list of components.
+  Returns the list of components for a `site`.
 
   ## Examples
 
@@ -17,8 +17,8 @@ defmodule Beacon.Components do
       [%Component{}, ...]
 
   """
-  def list_components do
-    Repo.all(Component)
+  def list_components_for_site(site) do
+    Repo.all(from c in Component, where: c.site == ^site)
   end
 
   @doc """

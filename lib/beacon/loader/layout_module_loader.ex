@@ -19,8 +19,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     """
     defmodule #{module_name} do
       use Phoenix.HTML
-      import Phoenix.Component
-      #{ModuleLoader.import_my_component(component_module, render_functions)}
+      #{ModuleLoader.maybe_import_my_component(component_module, render_functions)}
 
     #{Enum.join(render_functions, "\n")}
     end
@@ -33,6 +32,8 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
     """
       def render(#{inspect(layout.id)}, assigns) do
+        import Phoenix.Component
+
     #{~s(~H""")}
     #{layout.body}
     #{~s(""")}

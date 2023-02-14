@@ -25,6 +25,15 @@ defmodule Beacon.Pages do
     Page |> order_by(:order) |> Repo.all() |> Repo.preload(preloads)
   end
 
+  def list_pages_for_site(site, preloads \\ []) do
+    Repo.all(
+      from p in Page,
+        where: p.site == ^site,
+        preload: ^preloads,
+        order_by: p.order
+    )
+  end
+
   @doc """
   List all page templates for a layout.
   """

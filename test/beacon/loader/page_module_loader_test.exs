@@ -1,5 +1,5 @@
 defmodule Beacon.Loader.PageModuleLoaderTest do
-  use Beacon.DataCase, async: true
+  use Beacon.DataCase
 
   import Beacon.Fixtures
   alias Beacon.Loader.PageModuleLoader

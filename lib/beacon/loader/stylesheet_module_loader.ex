@@ -4,6 +4,10 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
   alias Beacon.Loader.ModuleLoader
   alias Beacon.Stylesheets.Stylesheet
 
+  def load_stylesheets(_site, [] = _stylesheets) do
+    :skip
+  end
+
   def load_stylesheets(site, stylesheets) do
     stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
 

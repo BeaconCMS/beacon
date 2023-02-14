@@ -6,7 +6,7 @@ defmodule Beacon.Layouts.Layout do
           id: String.t(),
           body: String.t(),
           meta_tags: map(),
-          site: String.t(),
+          site: Beacon.Type.Site.t(),
           stylesheet_urls: [String.t()],
           title: String.t(),
           inserted_at: NaiveDateTime.t(),

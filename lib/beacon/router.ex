@@ -36,9 +36,8 @@ defmodule Beacon.Router do
 
   ## Options
 
-    * `:site` (required) - register your site with a name for identification purposes,
-      used mostlyl for configuration. See `Beacon.Config` for more info.
-
+    * `:site` (required) `t:Beacon.Config.site/0` - register your site with a unique name,
+      note that has to be the same name used for configuration, see `Beacon.Config` for more info.
   """
   defmacro beacon_site(path, opts \\ []) do
     quote bind_quoted: binding() do
