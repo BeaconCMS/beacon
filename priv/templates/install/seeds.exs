@@ -57,7 +57,7 @@ Components.create_component!(%{
         <%% end %>
       </ul>
 
-      <.form let={f} for={:greeting} phx-submit="hello">
+      <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
         Name: <%%= text_input f, :name %> <%%= submit "Hello" %>
       </.form>
 

@@ -126,20 +126,13 @@ For more details please check out the docs: `mix help beacon.install`
 
 ### Manually
 
-1. Edit your project `config.exs` file:
+1. Include `Beacon.Repo` in your project's `config.exs` file:
 
     ```elixir
     config :my_app, ecto_repos: [MyApp.Repo, Beacon.Repo]
-
-    config :beacon, otp_app: :my_app
-
-    config :beacon, Beacon,
-      sites: [
-        my_site: [data_source: MyApp.BeaconDataSource]
-      ]
     ```
 
-2. Configure the Beacon Repo in your dev.exs and prod.exs:
+2. Configure the Beacon Repo in dev.exs, prod.exs, or runtime.exs as needed for your environment:
 
     ```elixir
     config :beacon, Beacon.Repo,
@@ -150,7 +143,7 @@ For more details please check out the docs: `mix help beacon.install`
       pool_size: 10
     ```
 
-    In dev.exs you may add:
+    In dev.exs you may add these extra options:
 
     ```elixir
     stacktrace: true,
@@ -163,13 +156,13 @@ For more details please check out the docs: `mix help beacon.install`
     defmodule MyApp.BeaconDataSource do
       @behaviour Beacon.DataSource.Behaviour
 
-      def live_data("my_site", ["home"], _params), do: %{vals: ["first", "second", "third"]}
-      def live_data("my_site", ["blog", blog_slug], _params), do: %{blog_slug_uppercase: String.upcase(blog_slug)}
+      def live_data(:my_site, ["home"], _params), do: %{vals: ["first", "second", "third"]}
+      def live_data(:my_site, ["blog", blog_slug], _params), do: %{blog_slug_uppercase: String.upcase(blog_slug)}
       def live_data(_, _, _), do: %{}
     end
     ```
 
-4. Import `Beacon.Router` and call `beacon_site` in your app router:
+4. Edit `lib/my_app_web/router.ex` to import `Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
 
     ```elixir
     import Beacon.Router
@@ -180,9 +173,31 @@ For more details please check out the docs: `mix help beacon.install`
     end
     ```
 
-Note that the site name has to match the same name used in `config.exs`.
+Make sure you're not adding `beacon_site` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
 
-5. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
+5. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
+
+    ```elixir
+    @impl true
+    def start(_type, _args) do
+      children = [
+        # ommited others for brevity
+        MyAppWeb.Endpoint,
+        {Beacon, sites: [[site: :my_site, data_source: MyApp.BeaconDataSource]]}
+      ]
+
+      opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+    ```
+
+For more info on site options, check out `Beacon.start_link/1`.
+
+**Notes**
+- The site identification has to be the same across your environment, in configuration, `beacon_site`, and `live_data`. In this example we're using `:my_site`.
+- Include it after your app `Endpoint`.
+
+6. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
     ```elixir
     alias Beacon.Components
@@ -238,7 +253,7 @@ Note that the site name has to match the same name used in `config.exs`.
             <% end %>
           </ul>
 
-          <.form let={f} for={:greeting} phx-submit="hello">
+          <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
             Name: <%= text_input f, :name %> <%= submit "Hello" %>
           </.form>
 
