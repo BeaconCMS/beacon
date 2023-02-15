@@ -27,7 +27,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
   end
 
   defp render_layout(%Layout{} = layout) do
-    Beacon.Util.safe_code_heex_check!(layout.body)
+    Beacon.safe_code_heex_check!(layout.site, layout.body)
     runtime_css = RuntimeCSS.compile!(layout)
 
     """

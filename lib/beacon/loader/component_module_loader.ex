@@ -32,8 +32,8 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     """
   end
 
-  defp render_component(%Component{name: name, body: body}) do
-    Beacon.Util.safe_code_heex_check!(body)
+  defp render_component(%Component{site: site, name: name, body: body}) do
+    Beacon.safe_code_heex_check!(site, body)
 
     """
       def render(#{inspect(name)}, assigns) do

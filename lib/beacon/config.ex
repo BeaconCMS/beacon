@@ -35,18 +35,21 @@ defmodule Beacon.Config do
           | {:data_source, data_source()}
           | {:css_compiler, css_compiler()}
           | {:live_socket_path, String.t()}
+          | {:safe_code_check, boolean()}
 
   @type t :: %__MODULE__{
           site: site(),
           data_source: data_source(),
           css_compiler: css_compiler(),
-          live_socket_path: String.t()
+          live_socket_path: String.t(),
+          safe_code_check: boolean()
         }
 
   defstruct site: nil,
             data_source: nil,
             css_compiler: Beacon.CSSCompiler,
-            live_socket_path: "/live"
+            live_socket_path: "/live",
+            safe_code_check: false
 
   @doc """
   Build a new `%Beacon.Config{}` instance, used to hold all the configuration for each site.

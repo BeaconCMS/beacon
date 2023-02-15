@@ -7,8 +7,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
-      page_1 = page_fixture(site: "test", path: "1")
-      page_2 = page_fixture(site: "test", path: "2")
+      page_1 = page_fixture(site: "my_site", path: "1")
+      page_2 = page_fixture(site: "my_site", path: "2")
 
       page_helper_fixture(page_id: page_1.id, helper_name: "page_1_upcase")
       page_helper_fixture(page_id: page_2.id, helper_name: "page_2_upcase")

@@ -51,8 +51,8 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  defp render_page(%Page{path: path, template: template}) do
-    Beacon.Util.safe_code_heex_check!(template)
+  defp render_page(%Page{site: site, path: path, template: template}) do
+    Beacon.safe_code_heex_check!(site, template)
 
     """
       def render(#{path_to_args(path, "")}, assigns) do
@@ -92,9 +92,9 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
   end
 
-  defp handle_event(%Page{path: path, events: events}) do
+  defp handle_event(%Page{site: site, path: path, events: events}) do
     Enum.map(events, fn %PageEvent{} = event ->
-      Beacon.Util.safe_code_check!(event.code)
+      Beacon.safe_code_check!(site, event.code)
 
       """
         def handle_event(#{path_to_args(path, "")}, "#{event.event_name}", event_params, socket) do
@@ -105,9 +105,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   # TODO: validate fn name and args
-  def helper(%Page{helpers: helpers}) do
+  def helper(%Page{site: site, helpers: helpers}) do
     Enum.map(helpers, fn %PageHelper{} = helper ->
-      Beacon.Util.safe_code_check!(helper.code)
+      Beacon.safe_code_check!(site, helper.code)
 
       """
         def #{helper.helper_name}(#{helper.helper_args}) do

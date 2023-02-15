@@ -69,4 +69,18 @@ defmodule Beacon do
   @tailwind_version "3.2.4"
   @doc false
   def tailwind_version, do: @tailwind_version
+
+  @doc false
+  def safe_code_check!(site, code) do
+    if Beacon.Config.fetch!(site).safe_code_check do
+      SafeCode.Validator.validate!(code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+    end
+  end
+
+  @doc false
+  def safe_code_heex_check!(site, code) do
+    if Beacon.Config.fetch!(site).safe_code_check do
+      SafeCode.Validator.validate_heex!(code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+    end
+  end
 end
