@@ -173,7 +173,7 @@ defmodule Mix.Tasks.Beacon.Install do
       Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon supervisor into ", Path.relative_to_cwd(application_file), " (already exists)"])
     else
       site = bindings[:site]
-      data_source = get_in(bindings, [:beacon_data_source, :module_name]) |> inspect()
+      data_source = get_in(bindings, [:beacon_data_source, :module_name])
 
       new_application_file_content =
         application_file_content
