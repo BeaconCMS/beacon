@@ -58,6 +58,7 @@ defmodule Beacon.Config do
   """
   @spec new([option]) :: t()
   def new(opts) do
+    # TODO: validate config opts
     struct!(__MODULE__, opts)
   end
 
