@@ -12,18 +12,19 @@ defmodule Beacon.Registry do
         config
 
       _ ->
-        raise "TODO"
+        raise RuntimeError, """
+        Site #{inspect(site)} was not found. Make sure it's configured and started,
+        see `Beacon.start_link/1` for more info.
+        """
     end
   end
 
-  # TODO: confirm and dry
   def registered_sites do
     match = {{:site, :"$1"}, :_, :_}
     guards = []
     body = [:"$1"]
 
-    spec = [{match, guards, body}]
-    Registry.select(__MODULE__, spec)
+    Registry.select(__MODULE__, [{match, guards, body}])
   end
 
   defp lookup(site) do

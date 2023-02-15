@@ -49,7 +49,9 @@ defmodule Beacon do
 
   @impl true
   def init(opts) do
-    sites = Keyword.get(opts, :sites) || Logger.warning("TODO missing :sites")
+    sites =
+      Keyword.get(opts, :sites) ||
+        Logger.warning("Beacon will be started with no sites configured. See `Beacon.start_link/1` for more info.")
 
     # TODO: pubsub per site
     # children = [
