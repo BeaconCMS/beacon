@@ -36,10 +36,13 @@ defmodule Mix.Tasks.Beacon.InstallTest do
         path: Path.join([support_path, "dummy_router"]),
         router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
       },
+      application: %{
+        path: Path.join([support_path, "dummy_application"])
+      },
       beacon_data_source: %{
         dest_path: Path.join([support_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
-        module_name: Module.concat(Beacon, "BeaconDataSource")
+        module_name: inspect(Module.concat(DummyApp, "BeaconDataSource"))
       },
       beacon_config: %{
         config_template_path: Path.join([templates_path, "install", "beacon_config.exs"])
@@ -68,30 +71,30 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     end
   end
 
-  test "generates seeds file", %{bindings: bindings} do
+  test "creates seeds file", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:seeds, :path]))
     bindings = put_in(bindings, [:seeds, :path], dest_file)
 
     seeds_content = EEx.eval_file(get_in(bindings, [:seeds, :template_path]), bindings) |> String.trim_leading()
 
     capture_io(fn ->
-      Install.maybe_add_seeds(bindings)
+      Install.maybe_create_beacon_seeds(bindings)
 
       assert File.exists?(dest_file)
       assert File.read!(dest_file) == seeds_content
     end)
   end
 
-  test "does not add seeds content twice", %{bindings: bindings} do
+  test "does not create beacon seeds twice", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:seeds, :path]))
     bindings = put_in(bindings, [:seeds, :path], dest_file)
 
     capture_io(fn ->
-      Install.maybe_add_seeds(bindings)
+      Install.maybe_create_beacon_seeds(bindings)
 
       file_content = File.read!(dest_file)
 
-      Install.maybe_add_seeds(bindings)
+      Install.maybe_create_beacon_seeds(bindings)
 
       assert file_content == File.read!(dest_file)
     end)
@@ -102,7 +105,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     bindings = put_in(bindings, [:router, :path], dest_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_scope(bindings)
+      Install.maybe_inject_beacon_site_routes(bindings)
 
       file_content = File.read!(dest_file)
       assert file_content =~ ~r/import Beacon\.Router/
@@ -116,37 +119,37 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     bindings = put_in(bindings, [:router, :path], dest_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_scope(bindings)
+      Install.maybe_inject_beacon_site_routes(bindings)
 
       file_content = File.read!(dest_file)
 
-      Install.maybe_add_beacon_scope(bindings)
+      Install.maybe_inject_beacon_site_routes(bindings)
 
       assert file_content == File.read!(dest_file)
     end)
   end
 
-  test "adds beacon repo to a config file", %{support_path: support_path} do
+  test "injects beacon repo injeto ecto_repos", %{support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
     File.cp!(config_file, test_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_repo(test_file)
+      Install.maybe_inject_beacon_repo_into_ecto_repos(test_file)
       assert String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo\]/)
     end)
   end
 
-  test "does not add beacon repo twice or ignores if it exists", %{support_path: support_path} do
+  test "does not inject beacon repo into ecto_repos twice or ignores if it exists", %{support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
     File.cp!(config_file, test_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_repo(test_file)
-      Install.maybe_add_beacon_repo(test_file)
+      Install.maybe_inject_beacon_repo_into_ecto_repos(test_file)
+      Install.maybe_inject_beacon_repo_into_ecto_repos(test_file)
 
       refute String.match?(File.read!(test_file), ~r/ecto_repos: \[(.*), Beacon.Repo, Beacon.Repo\]/)
     end)
@@ -162,13 +165,13 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     File.cp!(config_file, test_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_repo_config(test_file, bindings)
+      Install.maybe_inject_beacon_repo_config(test_file, bindings)
 
       assert String.contains?(File.read!(test_file), repo_config_content)
     end)
   end
 
-  test "adds beacon repo config to a prod config file", %{bindings: bindings, support_path: support_path} do
+  test "injects beacon repo config to a prod config file", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = Path.join([support_path, "prod.exs"])
 
@@ -179,7 +182,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     File.cp!(config_file, test_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_repo_config(test_file, bindings)
+      Install.maybe_inject_beacon_repo_config(test_file, bindings)
 
       test_file_content = File.read!(test_file)
 
@@ -188,51 +191,18 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     end)
   end
 
-  test "does not add beacon repo config twice to a file", %{bindings: bindings, support_path: support_path} do
+  test "does not inject beacon repo config twice to a file", %{bindings: bindings, support_path: support_path} do
     config_file = Path.join([support_path, "dummy_config.exs"])
     test_file = random_file_name(config_file)
 
     File.cp!(config_file, test_file)
 
     capture_io(fn ->
-      Install.maybe_add_beacon_repo_config(test_file, bindings)
+      Install.maybe_inject_beacon_repo_config(test_file, bindings)
 
       new_file_content = File.read!(test_file)
 
-      Install.maybe_add_beacon_repo_config(test_file, bindings)
-
-      assert new_file_content == File.read!(test_file)
-    end)
-  end
-
-  test "adds beacon config", %{bindings: bindings, support_path: support_path} do
-    config_file = Path.join([support_path, "dummy_config.exs"])
-    test_file = random_file_name(config_file)
-
-    File.cp!(config_file, test_file)
-
-    capture_io(fn ->
-      Install.maybe_add_beacon_config(test_file, bindings)
-
-      test_file_content = File.read!(test_file)
-
-      assert String.contains?(test_file_content, "config :beacon, otp_app: :my_app")
-      assert test_file_content =~ ~r/sites: \[\n.*my_test_blog: \[\n.*data_source: Beacon.BeaconDataSource/
-    end)
-  end
-
-  test "does not add beacon config twice", %{bindings: bindings, support_path: support_path} do
-    config_file = Path.join([support_path, "dummy_config.exs"])
-    test_file = random_file_name(config_file)
-
-    File.cp!(config_file, test_file)
-
-    capture_io(fn ->
-      Install.maybe_add_beacon_config(test_file, bindings)
-
-      new_file_content = File.read!(test_file)
-
-      Install.maybe_add_beacon_config(test_file, bindings)
+      Install.maybe_inject_beacon_repo_config(test_file, bindings)
 
       assert new_file_content == File.read!(test_file)
     end)
@@ -263,5 +233,68 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
       assert "" == File.read!(random_path)
     end)
+  end
+
+  describe "maybe_inject_beacon_supervisor" do
+    def write_application_file(%{bindings: bindings}) do
+      application_file_template = ~S"""
+      defmodule MyApp.Application do
+        use Application
+
+        @impl true
+        def start(_type, _args) do
+          children = [
+            # Start the Ecto repository
+            MyApp.Repo,
+            MyAppWeb.Endpoint
+            # Start a worker by calling: MyApp.Worker.start_link(arg)
+            # {MyApp.Worker, arg}
+         ]
+          opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+          Supervisor.start_link(children, opts)
+        end
+
+        @impl true
+        def config_change(changed, _new, removed) do
+          MyAppWeb.Endpoint.config_change(changed, removed)
+          :ok
+        end
+      end
+      """
+
+      application_file_path = get_in(bindings, [:application, :path])
+      File.write!(application_file_path, application_file_template)
+    end
+
+    setup :write_application_file
+
+    test "does not inject if it already exists", %{bindings: bindings} do
+      output =
+        capture_io(fn ->
+          Install.maybe_inject_beacon_supervisor(bindings)
+          Install.maybe_inject_beacon_supervisor(bindings)
+        end)
+
+      assert output =~ ~r/injecting beacon supervisor into.*dummy_application/
+      assert output =~ ~r/skip.*injecting beacon supervisor/
+    end
+
+    test "append comma after endpoint", %{bindings: bindings} do
+      application_file_path = get_in(bindings, [:application, :path])
+
+      capture_io(fn ->
+        Install.maybe_inject_beacon_supervisor(bindings)
+        assert File.read!(application_file_path) =~ "MyAppWeb.Endpoint,"
+      end)
+    end
+
+    test "append beacon supervisor at end of list", %{bindings: bindings} do
+      application_file_path = get_in(bindings, [:application, :path])
+
+      capture_io(fn ->
+        Install.maybe_inject_beacon_supervisor(bindings)
+        assert File.read!(application_file_path) =~ ~r/{Beacon, sites: \[\[site: :my_test_blog, data_source: DummyApp.BeaconDataSource\]\]}\n.*\]/
+      end)
+    end
   end
 end

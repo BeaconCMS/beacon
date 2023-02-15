@@ -110,6 +110,8 @@ mix deps.get
 ]
 ```
 
+4. Run `mix compile`
+
 ## Configuration and generating your first site
 
 Beacon requires a couple of changes in your project to get your first site up and running. You can either choose to use the `beacon.install` generator provided by Beacon or make such changes manually:
