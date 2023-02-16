@@ -5,7 +5,7 @@ defmodule Beacon.Layouts.Layout do
   @type t :: %__MODULE__{
           id: String.t(),
           body: String.t(),
-          meta_tags: TagType,
+          meta_tags: [map()],
           site: String.t(),
           stylesheet_urls: [String.t()],
           title: String.t(),
