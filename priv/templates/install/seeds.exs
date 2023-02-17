@@ -50,7 +50,7 @@ Components.create_component!(%{
   Pages.create_page!(%{
     path: "home",
     site: "<%= beacon_site %>",
-      meta_tags: [
+    meta_tags: [
       %{"name" => "home-meta-tag-one", "content" => "value"},
       %{"name" => "home-meta-tag-two", "content" => "value"}
     ],
