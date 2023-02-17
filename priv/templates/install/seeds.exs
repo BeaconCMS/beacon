@@ -29,7 +29,10 @@ Components.create_component!(%{
   Layouts.create_layout!(%{
     site: "<%= beacon_site %>",
     title: "Sample Home Page",
-    meta_tags: %{"foo" => "bar"},
+    meta_tags: [
+      %{"name" => "layout-meta-tag-one", "content" => "value"},
+      %{"name" => "layout-meta-tag-two", "content" => "value"}
+    ],
     stylesheet_urls: [],
     body: """
     <header>
@@ -47,7 +50,10 @@ Components.create_component!(%{
   Pages.create_page!(%{
     path: "home",
     site: "<%= beacon_site %>",
-    layout_id: layout_id,
+      meta_tags: [
+      %{"name" => "home-meta-tag-one", "content" => "value"},
+      %{"name" => "home-meta-tag-two", "content" => "value"}
+    ],
     template: """
     <main>
       <h2>Some Values:</h2>
