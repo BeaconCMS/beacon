@@ -18,8 +18,7 @@ defmodule Beacon.CSSCompiler do
 
     Application.put_env(:tailwind, :beacon_runtime, [])
 
-    raw_content = [layout.body, page_templates(layout.id), component_bodies()]
-    config = build_config(opts[:config_template], raw_content)
+    config = build_config(opts[:config_template], raw_content(layout))
     {tmp_dir, config_file} = write_file("tailwind.config.js", config)
     input_css_path = Path.join([Application.app_dir(:beacon), "priv", "assets", "css", "app.css"])
     output_css_path = Path.join(tmp_dir, "runtime.css")
@@ -49,19 +48,23 @@ defmodule Beacon.CSSCompiler do
   @spec build_config(String.t() | nil, iodata()) :: String.t()
   def build_config(nil, raw_content) do
     template_tailwind_config_path = Path.join([Application.app_dir(:beacon), "priv", "assets", "tailwind.config.js.eex"])
-    EEx.eval_file(template_tailwind_config_path, assigns: %{raw: IO.iodata_to_binary(raw_content)})
+    EEx.eval_file(template_tailwind_config_path, assigns: %{raw: raw_content})
   end
 
   def build_config(config_template, raw_content) do
     EEx.eval_string(config_template, assigns: %{raw: IO.iodata_to_binary(raw_content)})
   end
 
-  defp component_bodies do
-    Components.list_component_bodies()
-  end
+  # TODO: figure out if we can instruct tailwind-cli to skip these or if that's a bug
+  defp raw_content(layout) do
+    page_templates = Pages.list_page_templates_by_layout(layout.id)
 
-  defp page_templates(layout_id) do
-    Pages.list_page_templates_by_layout(layout_id)
+    [layout.body, page_templates, Components.list_component_bodies()]
+    |> IO.iodata_to_binary()
+    |> String.replace("$", "")
+    |> String.replace("`", "")
+    |> String.replace("{", "")
+    |> String.replace("}", "")
   end
 
   defp write_file(filename, content) do
