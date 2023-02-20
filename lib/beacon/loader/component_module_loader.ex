@@ -10,7 +10,6 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     render_functions = Enum.map(components, &render_component/1)
 
     code_string = render(component_module, render_functions)
-    Logger.debug("Loading components: \n#{code_string}")
     :ok = ModuleLoader.load(component_module, code_string)
     {:ok, code_string}
   end

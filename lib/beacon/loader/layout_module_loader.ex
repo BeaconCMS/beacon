@@ -10,7 +10,6 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     module = Beacon.Loader.layout_module_for_site(site)
     render_functions = Enum.map(layouts, &render_layout/1)
     code_string = render(module, render_functions, component_module)
-    Logger.debug("Loading layout: \n#{code_string}")
     :ok = ModuleLoader.load(module, code_string)
     {:ok, code_string}
   end
