@@ -95,8 +95,11 @@ defmodule BeaconWeb.Layouts do
   def meta_tags(_), do: ""
 
   def meta_tags_unsafe(assigns) do
+    page_meta_tags = page_meta_tags(assigns) || []
+    layout_meta_tags = layout_meta_tags(assigns) || []
+
     meta_tags =
-      (page_meta_tags(assigns) ++ layout_meta_tags(assigns))
+      (page_meta_tags ++ layout_meta_tags)
       |> Enum.reject(&(&1["name"] == "csrf-token"))
       |> Kernel.++(Beacon.default_site_meta_tags())
 

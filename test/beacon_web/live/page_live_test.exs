@@ -16,9 +16,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
         ]
       )
 
-    page =
+    page_home =
       page_fixture(
         layout_id: layout.id,
+        path: "home",
         template: """
         <main>
           <h2>Some Values:</h2>
@@ -43,8 +44,19 @@ defmodule BeaconWeb.Live.PageLiveTest do
         ]
       )
 
-    page_event_fixture(%{page_id: page.id})
-    page_helper_fixture(%{page_id: page.id})
+    page_event_fixture(%{page_id: page_home.id})
+    page_helper_fixture(%{page_id: page_home.id})
+
+    _page_without_meta_tags =
+      page_fixture(
+        layout_id: layout.id,
+        path: "without_meta_tags",
+        template: """
+        <main>
+        </main>
+        """,
+        meta_tags: nil
+      )
 
     :ok
   end
@@ -77,6 +89,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home")
 
       refute html =~ "csrf-token-page"
+    end
+
+    test "without meta tags", %{conn: conn} do
+      assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
     end
   end
 
