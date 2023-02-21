@@ -116,7 +116,10 @@ Beacon.Components.create_component!(%{
   Beacon.Layouts.create_layout!(%{
     site: "dev",
     title: "Dev",
-    meta_tags: %{"layout" => "dev"},
+    meta_tags: [
+      %{"name" => "layout-meta-tag-one", "content" => "value"},
+      %{"name" => "layout-meta-tag-two", "content" => "value"}
+    ],
     stylesheet_urls: [],
     body: """
     <%= @inner_content %>
@@ -128,7 +131,10 @@ page =
     path: "home",
     site: "dev",
     layout_id: layout_id,
-    meta_tags: %{"page" => "home"},
+    meta_tags: [
+      %{"name" => "home-meta-tag-one", "content" => "value"},
+      %{"name" => "home-meta-tag-two", "content" => "value"}
+    ],
     template: """
     <main>
       <h1 class="text-violet-900">Dev</h1>
