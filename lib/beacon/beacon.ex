@@ -21,4 +21,13 @@ defmodule Beacon do
   def get_term(key) do
     :persistent_term.get(key)
   end
+
+  def default_site_meta_tags do
+    [
+      %{"charset" => "utf-8"},
+      %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
+      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"},
+      %{"name" => "csrf-token", "content" => Phoenix.Controller.get_csrf_token()}
+    ]
+  end
 end
