@@ -10,7 +10,7 @@ defmodule BeaconWeb.BeaconStaticController do
       Static.init(
         at: "/beacon_static",
         from: {:beacon, "priv/static"},
-        only: ~w(beacon.js beacon.min.js),
+        only: ~w(beaconcms.js beaconcms.min.js),
         brotli: true,
         gzip: true
       )

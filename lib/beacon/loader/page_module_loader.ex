@@ -1,6 +1,4 @@
 defmodule Beacon.Loader.PageModuleLoader do
-  require Logger
-
   alias Beacon.Loader.ModuleLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
@@ -26,7 +24,6 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     code_string = render(page_module, component_module, functions)
 
-    Logger.debug("Loading template: \n#{code_string}")
     :ok = ModuleLoader.load(page_module, code_string)
     {:ok, code_string}
   end

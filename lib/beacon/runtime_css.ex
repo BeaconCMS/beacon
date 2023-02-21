@@ -21,7 +21,6 @@ defmodule Beacon.RuntimeCSS do
   """
   @spec compile!(Layout.t(), keyword()) :: String.t()
   def compile!(%Layout{} = layout, opts \\ []) do
-    Logger.debug("[Beacon.RuntimeCSS] compiling CSS...")
     get_compiler(layout.site).compile!(layout, opts)
   end
 

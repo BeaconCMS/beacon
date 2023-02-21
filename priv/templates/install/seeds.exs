@@ -29,7 +29,6 @@ Components.create_component!(%{
   Layouts.create_layout!(%{
     site: "<%= site %>",
     title: "Sample Home Page",
-    meta_tags: %{"foo" => "bar"},
     stylesheet_urls: [],
     body: """
     <header>

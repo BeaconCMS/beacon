@@ -12,7 +12,6 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
     stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
 
     code_string = render_module(stylesheet_module, stylesheets)
-    Logger.debug("Loading stylesheets: \n#{code_string}")
     :ok = ModuleLoader.load(stylesheet_module, code_string)
     {:ok, code_string}
   end

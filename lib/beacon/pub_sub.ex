@@ -12,7 +12,6 @@ defmodule Beacon.PubSub do
   end
 
   defp broadcast(channel, message) when is_binary(channel) do
-    Logger.debug("broadcast #{inspect(channel)} #{inspect(message)}")
     Phoenix.PubSub.broadcast(@pubsub, channel, message)
   end
 
@@ -21,7 +20,6 @@ defmodule Beacon.PubSub do
   # end
 
   defp subscribe(channel) when is_binary(channel) do
-    Logger.debug("subscribe #{inspect(channel)}")
     Phoenix.PubSub.subscribe(@pubsub, channel)
   end
 end
