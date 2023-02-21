@@ -35,10 +35,7 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       title: "Sample Home Page",
-      meta_tags: [
-        %{"content" => "value", "name" => "layout-meta-tag-one"},
-        %{"name" => "layout-meta-tag-two", "content" => "value"}
-      ],
+      meta_tags: [],
       stylesheet_urls: [],
       body: """
       <header>Page header</header>
@@ -72,11 +69,7 @@ defmodule Beacon.Fixtures do
       path: "home",
       site: "my_site",
       layout_id: layout_id,
-      meta_tags: [
-        %{"content" => "value", "name" => "home-meta-tag-one"},
-        %{"name" => "home-meta-tag-two", "content" => "value"},
-        %{"name" => "csrf-token", "content" => "value"}
-      ],
+      meta_tags: [],
       template: """
       <main>
         <h1>my_site#home</h1>
@@ -143,63 +136,5 @@ defmodule Beacon.Fixtures do
 
     {:ok, asset} = MediaLibrary.upload(attrs.site, attrs.file_path, attrs.file_name, attrs.file_type)
     asset
-  end
-
-  home_meta_tag_one = "<meta[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-one\")[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-one\")[^\/>]*\/>"
-  home_meta_tag_two = "<meta[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-two\")[^\/>]+(?:content=\"value\"|name=\"home-meta-tag-two\")[^\/>]*\/>"
-
-  layout_meta_tag_one =
-    "<meta[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-one\")[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-one\")[^\/>]*\/>"
-
-  layout_meta_tag_two =
-    "<meta[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-two\")[^\/>]+(?:content=\"value\"|name=\"layout-meta-tag-two\")[^\/>]*\/>"
-
-  charset = "<meta[^\/>]+charset=\"[^\/>]+\"[^\/>]*\/>"
-  http_equiv = "<meta[^\/>]+(?:content=\"[^\/>]+\"|http-equiv=\"[^\/>]+\")[^\/>]+(?:content=\"[^\/>]+\"|http-equiv=\"[^\/>]+\")[^\/>]*\/>"
-  viewport = "<meta[^\/>]+(?:content=\"[^\/>]+\"|name=\"viewport\")[^\/>]+(?:content=\"[^\/>]+\"|name=\"viewport\")[^\/>]*\/>"
-  csrf_token = "<meta[^\/>]+(?:content=\"[^\/>]+\"|name=\"csrf-token\")[^\/>]+(?:content=\".+\"|name=\"csrf-token\")[^\/>]*\/>"
-
-  correct_order =
-    home_meta_tag_one <>
-      home_meta_tag_two <>
-      layout_meta_tag_one <>
-      layout_meta_tag_two <>
-      charset <>
-      http_equiv <>
-      viewport <>
-      csrf_token
-
-  {:ok, home_meta_tag_one} = home_meta_tag_one |> Regex.compile()
-  {:ok, home_meta_tag_two} = home_meta_tag_two |> Regex.compile()
-  {:ok, layout_meta_tag_one} = layout_meta_tag_one |> Regex.compile()
-  {:ok, layout_meta_tag_two} = layout_meta_tag_two |> Regex.compile()
-  {:ok, charset} = charset |> Regex.compile()
-  {:ok, http_equiv} = http_equiv |> Regex.compile()
-  {:ok, viewport} = viewport |> Regex.compile()
-  {:ok, csrf_token} = csrf_token |> Regex.compile()
-  {:ok, correct_order} = correct_order |> Regex.compile()
-
-  @home_meta_tag_one home_meta_tag_one
-  @home_meta_tag_two home_meta_tag_two
-  @layout_meta_tag_one layout_meta_tag_one
-  @layout_meta_tag_two layout_meta_tag_two
-  @charset charset
-  @http_equiv http_equiv
-  @viewport viewport
-  @csrf_token csrf_token
-  @correct_order correct_order
-
-  def meta_tag_fixture do
-    %{
-      "home-meta-tag-one" => @home_meta_tag_one,
-      "home-meta-tag-two" => @home_meta_tag_two,
-      "layout-meta-tag-one" => @layout_meta_tag_one,
-      "layout-meta-tag-two" => @layout_meta_tag_two,
-      "charset" => @charset,
-      "http_equiv" => @http_equiv,
-      "viewport" => @viewport,
-      "csrf-token" => @csrf_token,
-      "correct_order" => @correct_order
-    }
   end
 end

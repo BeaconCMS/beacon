@@ -8,7 +8,13 @@ defmodule BeaconWeb.Live.PageLiveTest do
   defp create_page(_) do
     stylesheet_fixture()
     component_fixture()
-    layout = layout_fixture()
+
+    layout =
+      layout_fixture(
+        meta_tags: [
+          %{"http-equiv" => "refresh", "content" => "300"}
+        ]
+      )
 
     page =
       page_fixture(
@@ -29,7 +35,12 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
           <%= dynamic_helper("upcase", %{name: "test_name"}) %>
         </main>
-        """
+        """,
+        meta_tags: [
+          %{"name" => "csrf-token", "content" => "csrf-token-page"},
+          %{"name" => "theme-color", "content" => "#3c790a", "media" => "(prefers-color-scheme: dark)"},
+          %{"property" => "og:title", "content" => "Beacon"}
+        ]
       )
 
     page_event_fixture(%{page_id: page.id})
@@ -41,38 +52,31 @@ defmodule BeaconWeb.Live.PageLiveTest do
   describe "render meta tags" do
     setup [:create_page]
 
-    test "for a layout", %{conn: conn} do
+    test "merge layout, page, and site", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ meta_tag_fixture()["layout-meta-tag-one"]
-      assert html =~ meta_tag_fixture()["layout-meta-tag-two"]
+      expected =
+        ~S"""
+        <head>
+          <meta content="#3c790a" media="\(prefers-color-scheme: dark\)" name="theme-color"/>
+          <meta content="Beacon" property="og:title"/>
+          <meta content="300" http-equiv="refresh"/>
+          <meta charset="utf-8"/>
+          <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+          <meta content="width=device-width, initial-scale=1" name="viewport"/>
+          <meta content=".*" name="csrf-token"/>
+        """
+        |> String.replace("\n", "")
+        |> String.replace("  ", "")
+        |> Regex.compile!()
 
-      # assert html =~ ~s(<meta content="value" name="layout-meta-tag-one"/>)
-      # assert html =~ ~s(<meta content="value" name="layout-meta-tag-two"/>)
+      assert html =~ expected
     end
 
-    test "for a page", %{conn: conn} do
+    test "do not overwrite csrf-token", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ meta_tag_fixture()["home-meta-tag-one"]
-      assert html =~ meta_tag_fixture()["home-meta-tag-two"]
-
-      # assert html =~ ~s(<meta content="value" name="home-meta-tag-one"/>)
-      # assert html =~ ~s(<meta content="value" name="home-meta-tag-two"/>)
-    end
-
-    test "in order", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
-
-      assert html =~ meta_tag_fixture()["correct_order"]
-    end
-
-    test "with exactly one csrf-token tag line", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
-
-      assert meta_tag_fixture()["csrf-token"]
-             |> Regex.scan(html)
-             |> length() == 1
+      refute html =~ "csrf-token-page"
     end
   end
 
