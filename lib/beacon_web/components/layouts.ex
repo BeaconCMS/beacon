@@ -45,7 +45,7 @@ defmodule BeaconWeb.Layouts do
     end
   else
     def app_js_path do
-      "/beacon_static/beacon.min.js"
+      "/beacon_static/beaconcms.min.js"
     end
   end
 
