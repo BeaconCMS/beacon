@@ -4,6 +4,10 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   alias Beacon.Components.Component
   alias Beacon.Loader.ModuleLoader
 
+  def load_components(_site, [] = _components) do
+    :skip
+  end
+
   def load_components(site, components) do
     component_module = Beacon.Loader.component_module_for_site(site)
 
@@ -27,8 +31,8 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     """
   end
 
-  defp render_component(%Component{name: name, body: body}) do
-    Beacon.Util.safe_code_heex_check!(body)
+  defp render_component(%Component{site: site, name: name, body: body}) do
+    Beacon.safe_code_heex_check!(site, body)
 
     """
       def render(#{inspect(name)}, assigns) do

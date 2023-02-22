@@ -54,8 +54,8 @@ defmodule BeaconWeb.Layouts do
     Beacon.Loader.call_function_with_retry(module, :render, [layout_id, assigns])
   end
 
-  def live_socket_path(conn) do
-    conn.private.beacon.live_socket_path
+  def live_socket_path(%{__site__: site}) do
+    Beacon.Config.fetch!(site).live_socket_path
   end
 
   defp compiled_page_assigns(site, page_id) do

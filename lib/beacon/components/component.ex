@@ -7,7 +7,7 @@ defmodule Beacon.Components.Component do
   schema "beacon_components" do
     field :body, :string
     field :name, :string
-    field :site, :string
+    field :site, Beacon.Type.Site
 
     timestamps()
   end

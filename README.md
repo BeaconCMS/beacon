@@ -34,5 +34,5 @@ Run the following to get a local server:
 
 ```sh
 mix setup
-mix dev
+iex -S mix dev
 ```

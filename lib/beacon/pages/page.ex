@@ -14,7 +14,7 @@ defmodule Beacon.Pages.Page do
   schema "beacon_pages" do
     field :meta_tags, {:array, :map}, default: []
     field :path, :string
-    field :site, :string
+    field :site, Beacon.Type.Site
     field :template, :string
     field :pending_template, :string
     field :version, :integer, default: 1

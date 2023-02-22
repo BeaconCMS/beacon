@@ -6,7 +6,7 @@ defmodule Beacon.Layouts.Layout do
           id: String.t(),
           body: String.t(),
           meta_tags: [map()],
-          site: String.t(),
+          site: Beacon.Type.Site.t(),
           stylesheet_urls: [String.t()],
           title: String.t(),
           inserted_at: NaiveDateTime.t(),
@@ -18,7 +18,7 @@ defmodule Beacon.Layouts.Layout do
   schema "beacon_layouts" do
     field :body, :string
     field :meta_tags, {:array, :map}, default: []
-    field :site, :string
+    field :site, Beacon.Type.Site
     field :stylesheet_urls, {:array, :string}
     field :title, :string
 

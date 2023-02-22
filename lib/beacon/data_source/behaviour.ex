@@ -9,7 +9,7 @@ defmodule Beacon.DataSource.Behaviour do
       defmodule MyApp.BeaconDataSource do
         @behaviour Beacon.DataSource.Behaviour
 
-        def live_data("my_site", ["home"], _params), do: %{year: Date.utc_today().year}
+        def live_data(:my_site, ["home"], _params), do: %{year: Date.utc_today().year}
       end
 
   Then an assign becomes available at your home page:
@@ -20,5 +20,5 @@ defmodule Beacon.DataSource.Behaviour do
   its name to `beacon_site/2` in your app router.
   """
 
-  @callback live_data(site :: String.t(), path :: [String.t()], params :: map()) :: map()
+  @callback live_data(Beacon.Type.Site.t(), path :: [String.t()], params :: map()) :: map()
 end

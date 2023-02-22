@@ -8,52 +8,41 @@ defmodule Beacon.Loader.DBLoader do
   alias Beacon.Pages
   alias Beacon.Stylesheets
 
+  # TODO: double check if caller can pass `site` to avoid reloading all sites
   def load_from_db do
-    load_components()
-    load_layouts()
-    load_pages()
-    load_stylesheets()
-  end
-
-  def load_components do
-    Components.list_components()
-    |> Enum.group_by(& &1.site, & &1)
-    |> Enum.each(fn {site, components} ->
-      {:ok, _} = ComponentModuleLoader.load_components(site, components)
-    end)
+    for site <- Beacon.Registry.registered_sites() do
+      load_from_db(site)
+    end
 
     :ok
   end
 
-  def load_layouts do
-    Layouts.list_layouts()
-    |> Enum.group_by(& &1.site, & &1)
-    |> Enum.each(fn {site, layouts} ->
-      {:ok, _} = LayoutModuleLoader.load_layouts(site, layouts)
-    end)
+  def load_from_db(site) do
+    load_components(site)
+    load_layouts(site)
+    load_pages(site)
+    load_stylesheets(site)
 
     :ok
   end
 
-  def load_pages do
-    Pages.list_pages([:events, :helpers])
-    |> Enum.group_by(& &1.site, & &1)
-    |> Enum.each(fn {site, pages} ->
-      {:ok, _} = PageModuleLoader.load_templates(site, pages)
-
-      Enum.map(pages, &Beacon.PubSub.broadcast_page_update(site, &1.path))
-    end)
-
-    :ok
+  def load_components(site) do
+    ComponentModuleLoader.load_components(site, Components.list_components_for_site(site))
   end
 
-  def load_stylesheets do
-    Stylesheets.list_stylesheets()
-    |> Enum.group_by(& &1.site, & &1)
-    |> Enum.each(fn {site, stylesheets} ->
-      {:ok, _} = StylesheetModuleLoader.load_stylesheets(site, stylesheets)
-    end)
+  def load_layouts(site) do
+    LayoutModuleLoader.load_layouts(site, Layouts.list_layouts_for_site(site))
+  end
 
-    :ok
+  def load_pages(site) do
+    pages = Pages.list_pages_for_site(site, [:events, :helpers])
+    module = PageModuleLoader.load_templates(site, pages)
+    Enum.each(pages, &Beacon.PubSub.broadcast_page_update(site, &1.path))
+
+    module
+  end
+
+  def load_stylesheets(site) do
+    StylesheetModuleLoader.load_stylesheets(site, Stylesheets.list_stylesheets_for_site(site))
   end
 end

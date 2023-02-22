@@ -18,8 +18,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     """
     defmodule #{module_name} do
       use Phoenix.HTML
-      import Phoenix.Component
-      #{ModuleLoader.import_my_component(component_module, render_functions)}
+      #{ModuleLoader.maybe_import_my_component(component_module, render_functions)}
 
     #{Enum.join(render_functions, "\n")}
     end
@@ -27,11 +26,13 @@ defmodule Beacon.Loader.LayoutModuleLoader do
   end
 
   defp render_layout(%Layout{} = layout) do
-    Beacon.Util.safe_code_heex_check!(layout.body)
+    Beacon.safe_code_heex_check!(layout.site, layout.body)
     runtime_css = RuntimeCSS.compile!(layout)
 
     """
       def render(#{inspect(layout.id)}, assigns) do
+        import Phoenix.Component
+
     #{~s(~H""")}
     #{layout.body}
     #{~s(""")}
