@@ -58,6 +58,18 @@ defmodule BeaconWeb.Layouts do
     conn.private.beacon.live_socket_path
   end
 
+  defp compiled_page_assigns(site, page_id) do
+    site
+    |> Beacon.Loader.page_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+  end
+
+  defp compiled_layout_assigns(site, layout_id) do
+    site
+    |> Beacon.Loader.layout_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+  end
+
   def page_title(%{layout_assigns: %{page_title: page_title}}), do: page_title
 
   def page_title(%{__dynamic_layout_id__: layout_id, __site__: site}) do
@@ -70,27 +82,12 @@ defmodule BeaconWeb.Layouts do
     ""
   end
 
-  # Merges to produce HTML in order of page, layout, site for preferred hierarchy during duplicate conflicts
-  # See: https://ogp.me/#array
+  @doc """
+  Render all page, layout, and site meta tags.
 
-  def merge_meta_tags(assigns) do
-    site_meta_tags = site_get_meta_tags()
-    layout_meta_tags = layout_get_meta_tags(assigns)
-    page_meta_tags = page_get_meta_tags(assigns)
-
-    page_and_layout_meta_tags =
-      (page_meta_tags ++ layout_meta_tags)
-      |> Enum.reject(&(&1["name"] == "csrf-token"))
-
-    page_and_layout_meta_tags ++ site_meta_tags
-  end
-
-  defp join_tag_string(meta_tags) do
-    Enum.map_join(meta_tags, "\n", fn tag ->
-      List.to_string(["<meta ", Enum.map_join(tag, " ", fn {key, value} -> ~s(#{key}="#{value}") end), " />"])
-    end)
-  end
-
+  See `Beacon.default_site_meta_tags/0` for a list of default meta tags
+  that are included in all pages.
+  """
   def meta_tags(%{__dynamic_page_id__: _, __site__: _} = assigns) do
     {:safe, meta_tags_unsafe(assigns)}
   end
@@ -98,59 +95,51 @@ defmodule BeaconWeb.Layouts do
   def meta_tags(_), do: ""
 
   def meta_tags_unsafe(assigns) do
-    meta_tags = merge_meta_tags(assigns)
+    page_meta_tags = page_meta_tags(assigns) || []
+    layout_meta_tags = layout_meta_tags(assigns) || []
 
-    if Enum.empty?(meta_tags) == false do
-      join_tag_string(meta_tags)
-    else
+    meta_tags =
+      (page_meta_tags ++ layout_meta_tags)
+      |> Enum.reject(&(&1["name"] == "csrf-token"))
+      |> Kernel.++(Beacon.default_site_meta_tags())
+
+    if Enum.empty?(meta_tags) do
       ""
+    else
+      Enum.map(meta_tags, fn meta_tag ->
+        ["<meta ", Enum.map(meta_tag, fn {key, value} -> ~s(#{key}="#{value}") end), " />"]
+      end)
     end
   end
 
-  def site_get_meta_tags do
-    Beacon.default_site_meta_tags()
-  end
-
-  def page_get_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
+  defp page_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
     assigns
     |> compiled_page_meta_tags()
     |> Map.merge(meta_tags)
   end
 
-  def page_get_meta_tags(assigns) do
+  defp page_meta_tags(assigns) do
     compiled_page_meta_tags(assigns)
   end
 
   defp compiled_page_meta_tags(%{__dynamic_page_id__: page_id, __site__: site}) do
-    %{meta_tags: page_compiled_meta_tags} = compiled_page_assigns(site, page_id)
-    page_compiled_meta_tags
+    %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
+    meta_tags
   end
 
-  defp compiled_page_assigns(site, page_id) do
-    site
-    |> Beacon.Loader.page_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
-  end
-
-  def layout_get_meta_tags(%{layout_assigns: %{meta_tags: meta_tags}} = assigns) do
+  defp layout_meta_tags(%{layout_assigns: %{meta_tags: meta_tags}} = assigns) do
     assigns
     |> compiled_layout_meta_tags()
     |> Map.merge(meta_tags)
   end
 
-  def layout_get_meta_tags(assigns) do
+  defp layout_meta_tags(assigns) do
     compiled_layout_meta_tags(assigns)
   end
 
   defp compiled_layout_meta_tags(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{meta_tags: compiled_meta_tags} = compiled_layout_assigns(site, layout_id)
-    compiled_meta_tags
-  end
-
-  defp compiled_layout_assigns(site, layout_id) do
-    site
-    |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+    %{meta_tags: meta_tags} = compiled_layout_assigns(site, layout_id)
+    meta_tags
   end
 
   def dynamic_layout?(%{__dynamic_layout_id__: _}), do: true
