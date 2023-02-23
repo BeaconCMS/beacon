@@ -70,14 +70,18 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
-  def page_title(%{layout_assigns: %{page_title: page_title}}), do: page_title
+  def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
+    %{title: page_title} = compiled_page_assigns(site, page_id)
 
-  def page_title(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{title: title} = compiled_layout_assigns(site, layout_id)
-    title
+    if page_title do
+      page_title
+    else
+      %{title: layout_title} = compiled_layout_assigns(site, layout_id)
+      layout_title || missing_page_title()
+    end
   end
 
-  def page_title(_) do
+  defp missing_page_title do
     Logger.warning("No page title set")
     ""
   end

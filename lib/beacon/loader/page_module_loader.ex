@@ -61,10 +61,15 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
   end
 
-  defp page_assigns(%Page{id: id, meta_tags: meta_tags}) do
+  defp page_assigns(%Page{} = page) do
+    %{id: id, meta_tags: meta_tags, title: title} = page
+
     """
       def page_assigns(#{inspect(id)}) do
-        %{ meta_tags: #{inspect(meta_tags)} }
+        %{
+           title: #{inspect(title)},
+           meta_tags: #{inspect(meta_tags)}
+        }
       end
     """
   end

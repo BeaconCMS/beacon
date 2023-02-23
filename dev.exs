@@ -110,7 +110,7 @@ seeds = fn ->
   %{id: layout_id} =
     Beacon.Layouts.create_layout!(%{
       site: "dev",
-      title: "Dev",
+      title: "dev",
       meta_tags: [
         %{"name" => "layout-meta-tag-one", "content" => "value"},
         %{"name" => "layout-meta-tag-two", "content" => "value"}
@@ -125,6 +125,7 @@ seeds = fn ->
     Beacon.Pages.create_page!(%{
       path: "home",
       site: "dev",
+      title: "dev home",
       layout_id: layout_id,
       meta_tags: [
         %{"name" => "home-meta-tag-one", "content" => "value"},
