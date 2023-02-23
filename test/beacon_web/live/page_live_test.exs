@@ -151,9 +151,13 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "page title" do
-    test "on layout", %{conn: conn} do
-      # TODO: make it optional
+    setup do
+      # TODO: make stylesheet optional
       stylesheet_fixture()
+      :ok
+    end
+
+    test "on layout", %{conn: conn} do
       layout = layout_fixture(title: "layout_title")
       page_fixture(layout_id: layout.id, title: nil)
 
@@ -163,8 +167,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "on page overwrite layout", %{conn: conn} do
-      # TODO: make it optional
-      stylesheet_fixture()
       layout = layout_fixture(title: "layout_title")
       page_fixture(layout_id: layout.id, title: "page_title")
 
@@ -172,6 +174,5 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ "<title>page_title</title>"
     end
-
   end
 end
