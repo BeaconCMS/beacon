@@ -41,7 +41,7 @@ defmodule BeaconWeb.Layouts do
 
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
     def app_js_path do
-      "/beacon_static/beacon.js"
+      "/beacon_static/beaconcms.js"
     end
   else
     def app_js_path do
