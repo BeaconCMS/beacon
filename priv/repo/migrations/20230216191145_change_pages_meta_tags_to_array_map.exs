@@ -13,7 +13,7 @@ defmodule Beacon.Repo.Migrations.ChangePagesMetaTagsToArrayMap do
 
     types = %{id: :binary_id, old_meta_tags: :map}
 
-    case repo().query(page_meta_tags) do
+    case repo().query(query_page_meta_tags) do
       {:ok, result} ->
         # for each row, query old meta tags, transform it, and store the transformed values as array
         for row <- result.rows do
