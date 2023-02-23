@@ -1,6 +1,4 @@
 defmodule Beacon.Loader.PageModuleLoader do
-  require Logger
-
   alias Beacon.Loader.ModuleLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
@@ -26,7 +24,6 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     code_string = render(page_module, component_module, functions)
 
-    Logger.debug("Loading template: \n#{code_string}")
     :ok = ModuleLoader.load(page_module, code_string)
     {:ok, code_string}
   end
@@ -34,8 +31,8 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp render(module_name, component_module, functions) do
     """
     defmodule #{module_name} do
-      import Phoenix.Component
-      #{ModuleLoader.import_my_component(component_module, functions)}
+      #{maybe_import_phoenix_component(functions)}
+      #{ModuleLoader.maybe_import_my_component(component_module, functions)}
       use Phoenix.HTML
 
       #{Enum.join(functions, "\n")}
@@ -43,8 +40,16 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
   end
 
-  defp render_page(%Page{path: path, template: template}) do
-    Beacon.Util.safe_code_heex_check!(template)
+  defp maybe_import_phoenix_component(functions) do
+    if Enum.any?(functions, &String.match?(&1, ~r/def render/)) do
+      "import Phoenix.Component"
+    else
+      ""
+    end
+  end
+
+  defp render_page(%Page{site: site, path: path, template: template}) do
+    Beacon.safe_code_heex_check!(site, template)
 
     """
       def render(#{path_to_args(path, "")}, assigns) do
@@ -84,9 +89,9 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
   end
 
-  defp handle_event(%Page{path: path, events: events}) do
+  defp handle_event(%Page{site: site, path: path, events: events}) do
     Enum.map(events, fn %PageEvent{} = event ->
-      Beacon.Util.safe_code_check!(event.code)
+      Beacon.safe_code_check!(site, event.code)
 
       """
         def handle_event(#{path_to_args(path, "")}, "#{event.event_name}", event_params, socket) do
@@ -97,9 +102,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   # TODO: validate fn name and args
-  def helper(%Page{helpers: helpers}) do
+  def helper(%Page{site: site, helpers: helpers}) do
     Enum.map(helpers, fn %PageHelper{} = helper ->
-      Beacon.Util.safe_code_check!(helper.code)
+      Beacon.safe_code_check!(site, helper.code)
 
       """
         def #{helper.helper_name}(#{helper.helper_args}) do

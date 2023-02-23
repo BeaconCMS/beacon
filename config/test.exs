@@ -12,5 +12,3 @@ config :beacon, Beacon.Repo,
   ownership_timeout: 1_000_000_000
 
 config :beacon, ecto_repos: [Beacon.Repo]
-
-config :beacon, :css_compiler, CSSCompilerMock

@@ -9,7 +9,7 @@ defmodule Beacon.Stylesheets do
   alias Beacon.Stylesheets.Stylesheet
 
   @doc """
-  Returns the list of stylesheets.
+  Returns the list of stylesheets for `site`.
 
   ## Examples
 
@@ -17,8 +17,11 @@ defmodule Beacon.Stylesheets do
       [%Stylesheet{}, ...]
 
   """
-  def list_stylesheets do
-    Repo.all(Stylesheet)
+  def list_stylesheets_for_site(site) do
+    Repo.all(
+      from s in Stylesheet,
+        where: s.site == ^site
+    )
   end
 
   @doc """

@@ -9,8 +9,6 @@ defmodule Beacon.RuntimeCSS do
 
   @callback compile!(Layout.t(), keyword()) :: String.t()
 
-  @default_compiler Beacon.TailwindCompiler
-
   @doc """
   Compiles CSS and outputs it as a string.
   There are intermediate `tmp` files for now, due to how Tailwind CSS works.
@@ -23,11 +21,10 @@ defmodule Beacon.RuntimeCSS do
   """
   @spec compile!(Layout.t(), keyword()) :: String.t()
   def compile!(%Layout{} = layout, opts \\ []) do
-    Logger.debug("[Beacon.RuntimeCSS] compiling CSS...")
-    get_compiler().compile!(layout, opts)
+    get_compiler(layout.site).compile!(layout, opts)
   end
 
-  defp get_compiler do
-    Application.get_env(:beacon, :css_compiler, @default_compiler)
+  defp get_compiler(site) do
+    Beacon.Config.fetch!(site).css_compiler
   end
 end

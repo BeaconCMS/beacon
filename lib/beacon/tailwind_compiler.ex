@@ -73,20 +73,23 @@ defmodule Beacon.TailwindCompiler do
 
   defp beacon_content(raw_content) do
     ~s(
-    'lib/*_web.ex',
-    'lib/*_web/**/*.*ex',
-    { raw: '#{raw_content}' }
+      'lib/*_web.ex',
+      'lib/*_web/**/*.*ex',
+      { raw: '#{raw_content}' }
     )
   end
 
   defp raw_content(layout) do
     page_templates = Pages.list_page_templates_by_layout(layout.id)
-    component_bodies = Components.list_component_bodies()
 
-    [layout.body, page_templates, component_bodies]
+    [layout.body, page_templates, Components.list_component_bodies()]
     |> IO.iodata_to_binary()
     |> String.replace("\r", "")
     |> String.replace("\n", "")
+    |> String.replace("$", "")
+    |> String.replace("`", "")
+    |> String.replace("{", "")
+    |> String.replace("}", "")
   end
 
   defp write_file(filename, content) do

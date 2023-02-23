@@ -25,6 +25,15 @@ defmodule Beacon.Pages do
     Page |> order_by(:order) |> Repo.all() |> Repo.preload(preloads)
   end
 
+  def list_pages_for_site(site, preloads \\ []) do
+    Repo.all(
+      from p in Page,
+        where: p.site == ^site,
+        preload: ^preloads,
+        order_by: p.order
+    )
+  end
+
   @doc """
   List all page templates for a layout.
   """
@@ -68,7 +77,10 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
-        DBLoader.load_from_db()
+        unless Map.get(attrs, :skip_reload, false) do
+          DBLoader.load_from_db()
+        end
+
         page
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -309,7 +321,10 @@ defmodule Beacon.Pages do
     |> Repo.insert()
     |> case do
       {:ok, page_event} ->
-        DBLoader.load_from_db()
+        unless Map.get(attrs, :skip_reload, false) do
+          DBLoader.load_from_db()
+        end
+
         {:ok, page_event}
 
       {:error, reason} ->
@@ -345,7 +360,10 @@ defmodule Beacon.Pages do
     |> Repo.insert()
     |> case do
       {:ok, page_helper} ->
-        DBLoader.load_from_db()
+        unless Map.get(attrs, :skip_reload, false) do
+          DBLoader.load_from_db()
+        end
+
         {:ok, page_helper}
 
       {:error, reason} ->

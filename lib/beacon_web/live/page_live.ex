@@ -11,9 +11,7 @@ defmodule BeaconWeb.PageLive do
 
   def mount(params, session, socket) do
     %{"path" => path} = params
-    %{"beacon_site" => site, "beacon_data_source" => data_source} = session
-
-    Beacon.persist_term({:beacon, site, "data_source"}, data_source)
+    %{"beacon_site" => site} = session
 
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 
@@ -39,7 +37,7 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> push_event("meta", %{meta: BeaconWeb.Layouts.layout_meta_tags_unsafe(socket.assigns)})
+      |> push_event("meta", %{meta: BeaconWeb.Layouts.meta_tags_unsafe(socket.assigns)})
       |> push_event("lang", %{lang: "en"})
 
     socket = assign(socket, :beacon_attrs, %BeaconAttrs{router: socket.router})

@@ -30,7 +30,7 @@ defmodule Beacon.Loader do
   end
 
   defp module_for_site(site, prefix) do
-    site_hash = :crypto.hash(:md5, site) |> Base.encode16()
+    site_hash = :crypto.hash(:md5, Atom.to_string(site)) |> Base.encode16()
     Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
   end
 

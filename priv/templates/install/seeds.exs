@@ -10,13 +10,13 @@ alias Beacon.Layouts
 alias Beacon.Stylesheets
 
 Stylesheets.create_stylesheet!(%{
-  site: "<%= beacon_site %>",
+  site: "<%= site %>",
   name: "sample_stylesheet",
   content: "body {cursor: zoom-in;}"
 })
 
 Components.create_component!(%{
-  site: "<%= beacon_site %>",
+  site: "<%= site %>",
   name: "sample_component",
   body: """
   <li>
@@ -27,9 +27,8 @@ Components.create_component!(%{
 
 %{id: layout_id} =
   Layouts.create_layout!(%{
-    site: "<%= beacon_site %>",
+    site: "<%= site %>",
     title: "Sample Home Page",
-    meta_tags: %{"foo" => "bar"},
     stylesheet_urls: [],
     body: """
     <header>
@@ -46,7 +45,7 @@ Components.create_component!(%{
 %{id: page_id} =
   Pages.create_page!(%{
     path: "home",
-    site: "<%= beacon_site %>",
+    site: "<%= site %>",
     layout_id: layout_id,
     template: """
     <main>
@@ -57,7 +56,7 @@ Components.create_component!(%{
         <%% end %>
       </ul>
 
-      <.form let={f} for={:greeting} phx-submit="hello">
+      <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
         Name: <%%= text_input f, :name %> <%%= submit "Hello" %>
       </.form>
 
@@ -70,7 +69,7 @@ Components.create_component!(%{
 
 Pages.create_page!(%{
   path: "blog/:blog_slug",
-  site: "<%= beacon_site %>",
+  site: "<%= site %>",
   layout_id: layout_id,
   template: """
   <main>

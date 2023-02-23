@@ -18,7 +18,7 @@ defmodule Beacon.Router do
 
         scope "/", MyAppWeb do
           pipe_through :browser
-          beacon_site "/blog", name: "blog", data_source: MyApp.BlogDataSource
+          beacon_site "/blog", site: :blog
         end
       end
 
@@ -30,27 +30,23 @@ defmodule Beacon.Router do
       scope "/protected", MyAppWeb do
           pipe_through :browser
           pipe_through :auth
-          beacon_site "/sales", name: "stats"
+          beacon_site "/sales", site: :stats
         end
       end
 
   ## Options
 
-    * `:name` (required) - identify your site name.
-    * `:data_source` (optional) - module that implements `Beacon.DataSource` to provide assigns to pages.
-    * `:live_socket_path` (optional) - path to live view socket, defaults to `/live`.
-    * `:tailwind_config` (optional) - path to a custom tailwind config, defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
-      Note that this config file must be a EEx template and include `<%= @beacon_content %>` in the `content` section, see `Beacon.TailwindCompiler` for more info.
-
+    * `:site` (required) `t:Beacon.Config.site/0` - register your site with a unique name,
+      note that has to be the same name used for configuration, see `Beacon.Config` for more info.
   """
   defmacro beacon_site(path, opts \\ []) do
     quote bind_quoted: binding() do
       scope path, BeaconWeb do
-        {session_name, session_opts, route_opts} = Beacon.Router.__options__(opts)
+        {session_name, session_opts} = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
           get "/beacon_assets/:asset", MediaLibraryController, :show
-          live "/*path", PageLive, :path, route_opts
+          live "/*path", PageLive, :path
         end
       end
 
@@ -62,34 +58,31 @@ defmodule Beacon.Router do
         end
       end
 
+      @beacon_site opts[:site]
+      def __beacon_site__, do: @beacon_site
+
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
       def __beacon_site_prefix__, do: @beacon_site_prefix
-
-      @beacon_site opts[:name]
-      def __beacon_site__, do: @beacon_site
     end
   end
 
   @doc false
   def __options__(opts) do
-    live_socket_path = Keyword.get(opts, :live_socket_path, "/live")
+    {site, _opts} = Keyword.pop(opts, :site)
 
-    name =
-      if is_bitstring(opts[:name]) do
-        opts[:name]
+    site =
+      if site && is_atom(opts[:site]) do
+        opts[:site]
       else
-        raise ArgumentError, ":name must be a string, got: #{inspect(opts[:name])}"
+        raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
       end
 
     {
       # TODO: sanitize and format session name
-      String.to_atom("beacon_" <> name),
+      String.to_atom("beacon_#{site}"),
       [
-        session: %{"beacon_site" => name, "beacon_data_source" => opts[:data_source]},
+        session: %{"beacon_site" => site},
         root_layout: {BeaconWeb.Layouts, :runtime}
-      ],
-      [
-        private: %{beacon: %{live_socket_path: live_socket_path}}
       ]
     }
   end
@@ -152,7 +145,7 @@ defmodule Beacon.Router do
   ## Examples
 
       scope "/" do
-        beacon_site "/", name: "my_site"
+        beacon_site "/", site: :my_site
       end
 
       iex> beacon_asset_path(beacon_attrs, "logo.jpg")
@@ -161,7 +154,7 @@ defmodule Beacon.Router do
 
       scope "/parent" do
         scope "/nested" do
-          beacon_site "/my_site", name: "my_site"
+          beacon_site "/my_site", site: :my_site
         end
       end
 

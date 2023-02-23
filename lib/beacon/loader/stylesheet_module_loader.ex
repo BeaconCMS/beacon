@@ -4,11 +4,14 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
   alias Beacon.Loader.ModuleLoader
   alias Beacon.Stylesheets.Stylesheet
 
+  def load_stylesheets(_site, [] = _stylesheets) do
+    :skip
+  end
+
   def load_stylesheets(site, stylesheets) do
     stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
 
     code_string = render_module(stylesheet_module, stylesheets)
-    Logger.debug("Loading stylesheets: \n#{code_string}")
     :ok = ModuleLoader.load(stylesheet_module, code_string)
     {:ok, code_string}
   end

@@ -1,5 +1,5 @@
 defmodule BeaconWeb.Live.PageLiveTest do
-  use BeaconWeb.ConnCase, async: true
+  use BeaconWeb.ConnCase, async: false
 
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
@@ -8,11 +8,18 @@ defmodule BeaconWeb.Live.PageLiveTest do
   defp create_page(_) do
     stylesheet_fixture()
     component_fixture()
-    layout = layout_fixture()
 
-    page =
+    layout =
+      layout_fixture(
+        meta_tags: [
+          %{"http-equiv" => "refresh", "content" => "300"}
+        ]
+      )
+
+    page_home =
       page_fixture(
         layout_id: layout.id,
+        path: "home",
         template: """
         <main>
           <h2>Some Values:</h2>
@@ -29,11 +36,27 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
           <%= dynamic_helper("upcase", %{name: "test_name"}) %>
         </main>
-        """
+        """,
+        meta_tags: [
+          %{"name" => "csrf-token", "content" => "csrf-token-page"},
+          %{"name" => "theme-color", "content" => "#3c790a", "media" => "(prefers-color-scheme: dark)"},
+          %{"property" => "og:title", "content" => "Beacon"}
+        ]
       )
 
-    page_event_fixture(%{page_id: page.id})
-    page_helper_fixture(%{page_id: page.id})
+    page_event_fixture(%{page_id: page_home.id})
+    page_helper_fixture(%{page_id: page_home.id})
+
+    _page_without_meta_tags =
+      page_fixture(
+        layout_id: layout.id,
+        path: "without_meta_tags",
+        template: """
+        <main>
+        </main>
+        """,
+        meta_tags: nil
+      )
 
     :ok
   end
@@ -41,18 +64,35 @@ defmodule BeaconWeb.Live.PageLiveTest do
   describe "render meta tags" do
     setup [:create_page]
 
-    test "for a layout", %{conn: conn} do
+    test "merge layout, page, and site", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ ~s(<meta name="layout-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta name="layout-meta-tag-two" content="value"/>)
+      expected =
+        ~S"""
+        <head>
+          <meta content="#3c790a" media="\(prefers-color-scheme: dark\)" name="theme-color"/>
+          <meta content="Beacon" property="og:title"/>
+          <meta content="300" http-equiv="refresh"/>
+          <meta charset="utf-8"/>
+          <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+          <meta content="width=device-width, initial-scale=1" name="viewport"/>
+          <meta content=".*" name="csrf-token"/>
+        """
+        |> String.replace("\n", "")
+        |> String.replace("  ", "")
+        |> Regex.compile!()
+
+      assert html =~ expected
     end
 
-    test "for a page", %{conn: conn} do
+    test "do not overwrite csrf-token", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ ~s(<meta name="home-meta-tag-one" content="value"/>)
-      assert html =~ ~s(<meta name="home-meta-tag-two" content="value"/>)
+      refute html =~ "csrf-token-page"
+    end
+
+    test "without meta tags", %{conn: conn} do
+      assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
     end
   end
 

@@ -7,7 +7,7 @@ defmodule Beacon.Stylesheets.Stylesheet do
   schema "beacon_stylesheets" do
     field :content, :string
     field :name, :string
-    field :site, :string
+    field :site, Beacon.Type.Site
 
     timestamps()
   end
