@@ -15,6 +15,9 @@ defmodule Beacon.Config do
     * `css_compiler` (optional) `t:css_compiler/0` - a module that implements `Beacon.RuntimeCSS`,
       used to compile CSS for pages. Defaults to `Beacon.CSSCompiler`.
 
+    * `:tailwind_config` (optional) - path to a custom tailwind config, defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
+      Note that this config file must include `<%= @beacon_content %>` in the `content` section, see `Beacon.TailwindCompiler` for more info.
+
     * `:live_socket_path` (optional) `t:String.t/0` - path of a live socket where Beacon should connect to. Defaults to "/live".
 
   """
@@ -29,11 +32,13 @@ defmodule Beacon.Config do
   @type site :: atom()
   @type data_source :: module() | nil
   @type css_compiler :: module()
+  @type tailwind_config :: Path.t()
 
   @type option ::
           {:site, site()}
           | {:data_source, data_source()}
           | {:css_compiler, css_compiler()}
+          | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, String.t()}
           | {:safe_code_check, boolean()}
 
@@ -41,6 +46,7 @@ defmodule Beacon.Config do
           site: site(),
           data_source: data_source(),
           css_compiler: css_compiler(),
+          tailwind_config: tailwind_config(),
           live_socket_path: String.t(),
           safe_code_check: boolean()
         }
@@ -48,6 +54,7 @@ defmodule Beacon.Config do
   defstruct site: nil,
             data_source: nil,
             css_compiler: Beacon.CSSCompiler,
+            tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
             live_socket_path: "/live",
             safe_code_check: false
 

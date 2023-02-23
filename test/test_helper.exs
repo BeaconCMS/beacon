@@ -19,6 +19,7 @@ Supervisor.start_link(
        [
          site: :my_site,
          css_compiler: CSSCompilerMock,
+         tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.js.eex"]),
          data_source: Beacon.BeaconTest.BeaconDataSource,
          live_socket_path: "/custom_live"
        ],

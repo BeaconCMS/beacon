@@ -27,7 +27,7 @@ defmodule Beacon.DataCase do
     on_exit(fn -> Sandbox.stop_owner(pid) end)
 
     # By default, don't run the CSS compiler.
-    Mox.stub(CSSCompilerMock, :compile!, fn _layout, _opts -> "" end)
+    Mox.stub(CSSCompilerMock, :compile!, fn _layout -> "" end)
 
     :ok
   end

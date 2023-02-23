@@ -4,7 +4,7 @@ defmodule BeaconWeb.TailwindView do
 
   def render(_, assigns) do
     ~H"""
-    <div class="bcms-test-text-red-50"></div>
+    <div class="text-red-50"></div>
     """
   end
 end

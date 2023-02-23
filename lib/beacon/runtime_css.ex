@@ -7,21 +7,15 @@ defmodule Beacon.RuntimeCSS do
 
   require Logger
 
-  @callback compile!(Layout.t(), keyword()) :: String.t()
+  @callback compile!(Layout.t()) :: String.t()
 
   @doc """
   Compiles CSS and outputs it as a string.
   There are intermediate `tmp` files for now, due to how Tailwind CSS works.
-
-  ### Options
-
-   * `:config_template` - The string EEx template used as tailwind config.
-     Defaults to the one in `priv/assets/tailwind.config.js.eex`.
-
   """
-  @spec compile!(Layout.t(), keyword()) :: String.t()
-  def compile!(%Layout{} = layout, opts \\ []) do
-    get_compiler(layout.site).compile!(layout, opts)
+  @spec compile!(Layout.t()) :: String.t()
+  def compile!(%Layout{} = layout) do
+    get_compiler(layout.site).compile!(layout)
   end
 
   defp get_compiler(site) do
