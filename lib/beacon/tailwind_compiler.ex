@@ -88,20 +88,20 @@ defmodule Beacon.TailwindCompiler do
   defp generate_template_files!(tmp_dir, layout) do
     [
       Task.async(fn ->
-        layout_path = Path.join(tmp_dir, "layout_#{sanitize_name(layout.title)}.template")
+        layout_path = Path.join(tmp_dir, "layout_#{remove_special_chars(layout.title)}.template")
         File.write!(layout_path, layout.body)
         [layout_path]
       end),
       Task.async(fn ->
         Enum.map(Components.list_components_for_site(layout.site), fn component ->
-          component_path = Path.join(tmp_dir, "component_#{sanitize_name(component.name)}.template")
+          component_path = Path.join(tmp_dir, "component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
           component_path
         end)
       end),
       Task.async(fn ->
         Enum.map(Pages.list_pages_for_site(layout.site), fn page ->
-          page_path = Path.join(tmp_dir, "page_#{sanitize_name(page.path)}.template")
+          page_path = Path.join(tmp_dir, "page_#{remove_special_chars(page.path)}.template")
           File.write!(page_path, page.template)
           page_path
         end)
@@ -111,7 +111,7 @@ defmodule Beacon.TailwindCompiler do
     |> List.flatten()
   end
 
-  defp sanitize_name(name), do: String.replace(name, ~r/[^[:alnum:]_-]+/, "_")
+  defp remove_special_chars(name), do: String.replace(name, ~r/[^[:alnum:]_-]+/, "_")
 
   defp beacon_content(tmp_dir), do: ~s('#{tmp_dir}/*.template')
 
