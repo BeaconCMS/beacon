@@ -13,7 +13,7 @@ defmodule Beacon.Config do
       used to provide assigns to your site pages.
 
     * `css_compiler` (optional) `t:css_compiler/0` - a module that implements `Beacon.RuntimeCSS`,
-      used to compile CSS for pages. Defaults to `Beacon.CSSCompiler`.
+      used to compile CSS for pages. Defaults to `Beacon.TailwindCompiler`.
 
     * `:tailwind_config` (optional) - path to a custom tailwind config, defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
       Note that this config file must include `<%= @beacon_content %>` in the `content` section, see `Beacon.TailwindCompiler` for more info.
@@ -53,7 +53,7 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             data_source: nil,
-            css_compiler: Beacon.CSSCompiler,
+            css_compiler: Beacon.TailwindCompiler,
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
             live_socket_path: "/live",
             safe_code_check: false

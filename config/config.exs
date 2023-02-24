@@ -23,7 +23,7 @@ end
 
 # Beacon Admin running in dev.exs
 config :tailwind,
-  version: "3.2.4",
+  version: "3.2.7",
   admin_dev: [
     args: ~w(
       --config=tailwind.config.js
@@ -35,7 +35,7 @@ config :tailwind,
 
 # Beacon Admin running in host apps
 config :tailwind,
-  version: "3.2.4",
+  version: "3.2.7",
   admin: [
     args: ~w(
       --config=tailwind.config.js
