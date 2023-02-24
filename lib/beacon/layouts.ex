@@ -21,6 +21,8 @@ defmodule Beacon.Layouts do
     Repo.all(Layout)
   end
 
+  def list_layouts_for_site(nil), do: []
+
   def list_layouts_for_site(site) do
     Repo.all(from l in Layout, where: l.site == ^site)
   end
