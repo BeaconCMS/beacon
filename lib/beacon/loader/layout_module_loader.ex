@@ -43,7 +43,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
           title: #{inspect(layout.title)},
           meta_tags: #{inspect(layout.meta_tags)},
           stylesheet_urls: #{inspect(layout.stylesheet_urls)},
-          runtime_css: \~S"""
+          runtime_css: \~S\"""
             #{runtime_css}
             \"""
         }
