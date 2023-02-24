@@ -10,13 +10,16 @@ defmodule Beacon.RegistryTest do
 
   describe "config!" do
     test "return site config for existing sites" do
-      assert Registry.config!(:my_site) == %Beacon.Config{
-               site: :my_site,
-               data_source: Beacon.BeaconTest.BeaconDataSource,
+      assert %Beacon.Config{
                css_compiler: CSSCompilerMock,
+               data_source: Beacon.BeaconTest.BeaconDataSource,
                live_socket_path: "/custom_live",
-               safe_code_check: false
-             }
+               safe_code_check: false,
+               site: :my_site,
+               tailwind_config: tailwind_config
+             } = Registry.config!(:my_site)
+
+      assert tailwind_config =~ "tailwind.config.js.eex"
     end
 
     test "raise when not found" do
