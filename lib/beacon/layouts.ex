@@ -21,10 +21,22 @@ defmodule Beacon.Layouts do
     Repo.all(Layout)
   end
 
-  def list_layouts_for_site(nil), do: []
-
-  def list_layouts_for_site(site) do
+  def list_layouts_for_site(site) when not is_nil(site) do
     Repo.all(from l in Layout, where: l.site == ^site)
+  end
+
+  @doc """
+  Returns a distinct list of sites associated with layouts.
+
+  ## Examples
+
+      iex> list_distinct_sites_from_layouts()
+      [:site_01, ...]
+
+  """
+  @spec list_distinct_sites_from_layouts :: list(Beacon.Type.Site.t())
+  def list_distinct_sites_from_layouts do
+    Repo.all(from l in Layout, distinct: true, select: l.site)
   end
 
   @doc """
