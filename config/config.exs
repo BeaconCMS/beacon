@@ -23,26 +23,26 @@ end
 
 # Beacon Admin running in dev.exs
 config :tailwind,
-  version: "3.2.4",
+  version: "3.2.7",
   admin_dev: [
     args: ~w(
       --config=tailwind.config.js
       --input=css/admin.css
       --output=../../dev/static/assets/admin.css
     ),
-    cd: Path.expand("../priv/assets", __DIR__)
+    cd: Path.expand("../assets", __DIR__)
   ]
 
 # Beacon Admin running in host apps
 config :tailwind,
-  version: "3.2.4",
+  version: "3.2.7",
   admin: [
     args: ~w(
       --config=tailwind.config.js
       --input=css/admin.css
       --output=../../dist/css/admin.css
     ),
-    cd: Path.expand("../priv/assets", __DIR__)
+    cd: Path.expand("../assets", __DIR__)
   ]
 
 # Import environment specific config. This must remain at the bottom
