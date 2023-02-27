@@ -1,10 +1,9 @@
+/* tailwind */
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* This file is for your main application CSS */
-
-/* Alerts and form errors used by phx.new */
+/* phoenix */
 .alert {
   padding: 15px;
   margin-bottom: 20px;
