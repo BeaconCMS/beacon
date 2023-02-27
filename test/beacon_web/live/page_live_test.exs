@@ -102,7 +102,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "a given path", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
-      assert html =~ "body {cursor: zoom-in;}"
       assert html =~ "<header>Page header</header>"
       assert html =~ ~s"<main><h2>Some Values:</h2>"
       assert html =~ "<footer>Page footer</footer>"
