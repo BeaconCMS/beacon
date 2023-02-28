@@ -43,12 +43,13 @@ defmodule Beacon.Loader do
     e in UndefinedFunctionError ->
       case {failure_count, e} do
         {x, _} when x >= 10 ->
-          Logger.debug("failed 10 times")
+          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} 10 times.")
           reraise e, __STACKTRACE__
 
         {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
-          Logger.debug("failed for the #{failure_count + 1} time, retrying")
-          :timer.sleep(100)
+          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} for the #{failure_count + 1} time. Retrying.")
+          :timer.sleep(100 * (failure_count * 2))
+
           call_function_with_retry(module, function, args, failure_count + 1)
 
         _ ->

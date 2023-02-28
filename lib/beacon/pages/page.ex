@@ -12,12 +12,13 @@ defmodule Beacon.Pages.Page do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
-    field :meta_tags, {:array, :map}, default: []
-    field :path, :string
     field :site, Beacon.Type.Site
+    field :title, :string
+    field :version, :integer, default: 1
+    field :path, :string
     field :template, :string
     field :pending_template, :string
-    field :version, :integer, default: 1
+    field :meta_tags, {:array, :map}, default: []
     field :order, :integer, default: 1
 
     belongs_to :layout, Layout
@@ -33,7 +34,7 @@ defmodule Beacon.Pages.Page do
   @doc false
   def changeset(page \\ %Page{}, %{} = attrs) do
     page
-    |> cast(attrs, [:site, :order, :meta_tags, :template, :layout_id, :version])
+    |> cast(attrs, [:site, :title, :version, :template, :meta_tags, :order, :layout_id])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
     |> validate_required([

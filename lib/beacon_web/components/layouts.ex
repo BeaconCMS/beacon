@@ -70,18 +70,6 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
-  def page_title(%{layout_assigns: %{page_title: page_title}}), do: page_title
-
-  def page_title(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{title: title} = compiled_layout_assigns(site, layout_id)
-    title
-  end
-
-  def page_title(_) do
-    Logger.warning("No page title set")
-    ""
-  end
-
   @doc """
   Render all page, layout, and site meta tags.
 

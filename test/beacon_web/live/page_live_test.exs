@@ -149,4 +149,30 @@ defmodule BeaconWeb.Live.PageLiveTest do
       assert html =~ ~s(phx-socket="/custom_live")
     end
   end
+
+  describe "page title" do
+    setup do
+      # TODO: make stylesheet optional
+      stylesheet_fixture()
+      :ok
+    end
+
+    test "on layout", %{conn: conn} do
+      layout = layout_fixture(title: "layout_title")
+      page_fixture(layout_id: layout.id, title: nil)
+
+      {:ok, view, _html} = live(conn, "/home")
+
+      assert page_title(view) =~ "layout_title"
+    end
+
+    test "on page overwrite layout", %{conn: conn} do
+      layout = layout_fixture(title: "layout_title")
+      page_fixture(layout_id: layout.id, title: "page_title")
+
+      {:ok, view, _html} = live(conn, "/home")
+
+      assert page_title(view) =~ "page_title"
+    end
+  end
 end
