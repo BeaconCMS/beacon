@@ -14,6 +14,7 @@ defmodule Beacon.Pages.Page do
   schema "beacon_pages" do
     field :site, Beacon.Type.Site
     field :title, :string
+    field :description, :string
     field :version, :integer, default: 1
     field :path, :string
     field :template, :string
@@ -34,7 +35,7 @@ defmodule Beacon.Pages.Page do
   @doc false
   def changeset(page \\ %Page{}, %{} = attrs) do
     page
-    |> cast(attrs, [:site, :title, :version, :template, :meta_tags, :order, :layout_id])
+    |> cast(attrs, [:site, :title, :description, :version, :template, :meta_tags, :order, :layout_id])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
     |> validate_required([
