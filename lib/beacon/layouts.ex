@@ -26,6 +26,20 @@ defmodule Beacon.Layouts do
   end
 
   @doc """
+  Returns a distinct list of sites associated with layouts.
+
+  ## Examples
+
+      iex> list_distinct_sites_from_layouts()
+      [:site_01, ...]
+
+  """
+  @spec list_distinct_sites_from_layouts :: list(Beacon.Type.Site.t())
+  def list_distinct_sites_from_layouts do
+    Repo.all(from l in Layout, distinct: true, select: l.site)
+  end
+
+  @doc """
   Gets a single layout.
 
   Raises `Ecto.NoResultsError` if the Layout does not exist.

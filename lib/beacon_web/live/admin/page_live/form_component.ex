@@ -28,7 +28,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     socket =
       socket
       |> assign(:changeset, changeset)
-      |> assign_layouts()
+      |> assign_layouts(page_params)
 
     {:noreply, socket}
   end
@@ -70,9 +70,20 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
 
   defp assign_layouts(%{assigns: %{changeset: changeset}} = socket) do
     layouts =
-      changeset
-      |> Ecto.Changeset.get_field(:site)
-      |> Layouts.list_layouts_for_site()
+      case Ecto.Changeset.get_field(changeset, :site) do
+        nil -> []
+        site -> Layouts.list_layouts_for_site(site)
+      end
+
+    assign(socket, :site_layouts, layouts)
+  end
+
+  defp assign_layouts(socket, %{"site" => ""}) do
+    assign(socket, :site_layouts, [])
+  end
+
+  defp assign_layouts(socket, %{"site" => site}) do
+    layouts = Layouts.list_layouts_for_site(site)
 
     assign(socket, :site_layouts, layouts)
   end
@@ -82,4 +93,6 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
       {title, id}
     end)
   end
+
+  defp list_sites, do: Layouts.list_distinct_sites_from_layouts()
 end

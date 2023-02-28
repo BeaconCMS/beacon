@@ -4,10 +4,10 @@
   </.header>
 
   <.simple_form :let={f} for={@changeset} id="page-form" phx-target={@myself} phx-change="validate" phx-submit="save">
-    <.input field={{f, :site}} type="text" label="Site" />
+    <.input field={{f, :site}} type="select" label="Site" prompt="..." options={list_sites()}/>
     <.input field={{f, :path}} type="text" label="Path" />
     <.input field={{f, :template}} type="textarea" label="Template" />
-    <.input field={{f, :layout_id}} type="select" label="Template" options={layouts_to_options(@site_layouts)} />
+    <.input field={{f, :layout_id}} type="select" label="Template" prompt="..." options={layouts_to_options(@site_layouts)} />
 
     <:actions>
       <.button phx-disable-with="Saving...">Save</.button>
