@@ -22,6 +22,7 @@ defmodule Beacon.TailwindCompiler do
   alias Beacon.Components
   alias Beacon.Layouts.Layout
   alias Beacon.Pages
+  alias Beacon.Stylesheets
 
   @behaviour Beacon.RuntimeCSS
 
@@ -45,7 +46,7 @@ defmodule Beacon.TailwindCompiler do
 
     templates_paths = generate_template_files!(tmp_dir, layout)
 
-    input_css_path = Path.join([Application.app_dir(:beacon), "priv", "beacon.css"])
+    input_css_path = generate_input_css_file!(tmp_dir, layout.site)
 
     output_css_path = Path.join(tmp_dir, "generated.css")
 
@@ -63,7 +64,7 @@ defmodule Beacon.TailwindCompiler do
         raise "Error running tailwind, got exit code: #{exit_code}"
       end
 
-    cleanup(tmp_dir, [generated_config_file_path, output_css_path] ++ templates_paths)
+    cleanup(tmp_dir, [generated_config_file_path, input_css_path, output_css_path] ++ templates_paths)
 
     output
   end
@@ -109,6 +110,23 @@ defmodule Beacon.TailwindCompiler do
     ]
     |> Task.await_many()
     |> List.flatten()
+  end
+
+  # import app css into input css used by tailwind-cli to load tailwind functions and directives
+  defp generate_input_css_file!(tmp_dir, site) do
+    beacon_tailwind_css_path = Path.join([Application.app_dir(:beacon), "priv", "beacon_tailwind.css"])
+
+    # TODO: generate stylesheets per layout?
+    app_css =
+      site
+      |> Stylesheets.list_stylesheets_for_site()
+      |> Enum.map_join(fn stylesheet ->
+        ["\n", "/* ", stylesheet.name, " */", "\n", stylesheet.content, "\n"]
+      end)
+
+    input_css_path = Path.join(tmp_dir, "input.css")
+    File.write!(input_css_path, IO.iodata_to_binary([File.read!(beacon_tailwind_css_path), "\n", app_css]))
+    input_css_path
   end
 
   defp remove_special_chars(name), do: String.replace(name, ~r/[^[:alnum:]_-]+/, "_")

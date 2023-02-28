@@ -50,8 +50,9 @@ defmodule BeaconWeb.Layouts do
   end
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
-    module = Beacon.Loader.layout_module_for_site(site)
-    Beacon.Loader.call_function_with_retry(module, :render, [layout_id, assigns])
+    site
+    |> Beacon.Loader.layout_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:render, [layout_id, assigns])
   end
 
   def live_socket_path(%{__site__: site}) do
@@ -134,9 +135,11 @@ defmodule BeaconWeb.Layouts do
   def dynamic_layout?(_), do: false
 
   def stylesheet_tag(%{__dynamic_layout_id__: _, __site__: site}) do
-    module = Beacon.Loader.stylesheet_module_for_site(site)
+    stylesheet_tag =
+      site
+      |> Beacon.Loader.stylesheet_module_for_site()
+      |> Beacon.Loader.call_function_with_retry(:render, [])
 
-    stylesheet_tag = Beacon.Loader.call_function_with_retry(module, :render, [])
     {:safe, stylesheet_tag}
   end
 

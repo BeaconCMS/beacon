@@ -16,6 +16,7 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
     {:ok, code_string}
   end
 
+  # TODO: check if we'll be using this module to render stylesheets or if we'll rely on RuntimeCSS
   defp render_module(stylesheet_module, stylesheets) do
     """
     defmodule #{stylesheet_module} do
