@@ -161,18 +161,18 @@ defmodule BeaconWeb.Live.PageLiveTest do
       layout = layout_fixture(title: "layout_title")
       page_fixture(layout_id: layout.id, title: nil)
 
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, view, _html} = live(conn, "/home")
 
-      assert html =~ "<title>layout_title</title>"
+      assert page_title(view) =~ "layout_title"
     end
 
     test "on page overwrite layout", %{conn: conn} do
       layout = layout_fixture(title: "layout_title")
       page_fixture(layout_id: layout.id, title: "page_title")
 
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, view, _html} = live(conn, "/home")
 
-      assert html =~ "<title>page_title</title>"
+      assert page_title(view) =~ "page_title"
     end
   end
 end

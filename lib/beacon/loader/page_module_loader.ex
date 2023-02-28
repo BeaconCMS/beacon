@@ -35,7 +35,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       #{ModuleLoader.maybe_import_my_component(component_module, functions)}
       use Phoenix.HTML
 
-      #{Enum.join(functions, "\n")}
+      #{IO.iodata_to_binary(functions)}
     end
     """
   end
@@ -88,9 +88,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp page_module(page_module) do
     """
-      def page_module do
-        String.to_atom("#{page_module}")
-      end
+      def page_module, do: String.to_atom("#{page_module}")
     """
   end
 
