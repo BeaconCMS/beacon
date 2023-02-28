@@ -16,11 +16,11 @@ defmodule Beacon.Layouts.Layout do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_layouts" do
+    field :site, Beacon.Type.Site
+    field :title, :string
     field :body, :string
     field :meta_tags, {:array, :map}, default: []
-    field :site, Beacon.Type.Site
     field :stylesheet_urls, {:array, :string}
-    field :title, :string
 
     timestamps()
   end
@@ -29,6 +29,7 @@ defmodule Beacon.Layouts.Layout do
   def changeset(layout, attrs) do
     layout
     |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
+    # TODO: make stylesheet optional
     |> validate_required([:site, :title, :body, :stylesheet_urls])
   end
 end

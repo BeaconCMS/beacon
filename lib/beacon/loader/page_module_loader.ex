@@ -35,7 +35,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       #{ModuleLoader.maybe_import_my_component(component_module, functions)}
       use Phoenix.HTML
 
-      #{Enum.join(functions, "\n")}
+      #{IO.iodata_to_binary(functions)}
     end
     """
   end
@@ -61,10 +61,15 @@ defmodule Beacon.Loader.PageModuleLoader do
     """
   end
 
-  defp page_assigns(%Page{id: id, meta_tags: meta_tags}) do
+  defp page_assigns(%Page{} = page) do
+    %{id: id, meta_tags: meta_tags, title: title} = page
+
     """
       def page_assigns(#{inspect(id)}) do
-        %{ meta_tags: #{inspect(meta_tags)} }
+        %{
+           title: #{inspect(title)},
+           meta_tags: #{inspect(meta_tags)}
+        }
       end
     """
   end
@@ -83,9 +88,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp page_module(page_module) do
     """
-      def page_module do
-        String.to_atom("#{page_module}")
-      end
+      def page_module, do: String.to_atom("#{page_module}")
     """
   end
 
