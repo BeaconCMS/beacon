@@ -126,6 +126,7 @@ seeds = fn ->
       path: "home",
       site: "dev",
       title: "dev home",
+      description: "page used for development",
       layout_id: layout_id,
       meta_tags: [
         %{"name" => "home-meta-tag-one", "content" => "value"},
