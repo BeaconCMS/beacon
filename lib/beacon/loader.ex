@@ -43,7 +43,7 @@ defmodule Beacon.Loader do
     e in UndefinedFunctionError ->
       case {failure_count, e} do
         {x, _} when x >= 10 ->
-          Logger.debug("Failed to call #{inspect(module)}.#{inspect(function)}.")
+          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} 10 times.")
           reraise e, __STACKTRACE__
 
         {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
