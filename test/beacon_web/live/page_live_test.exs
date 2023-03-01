@@ -70,13 +70,13 @@ defmodule BeaconWeb.Live.PageLiveTest do
       expected =
         ~S"""
         <head>
+          <meta name="csrf-token" content=".*"/>
           <meta content="#3c790a" media="\(prefers-color-scheme: dark\)" name="theme-color"/>
           <meta content="Beacon" property="og:title"/>
           <meta content="300" http-equiv="refresh"/>
           <meta charset="utf-8"/>
           <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
           <meta content="width=device-width, initial-scale=1" name="viewport"/>
-          <meta content=".*" name="csrf-token"/>
         """
         |> String.replace("\n", "")
         |> String.replace("  ", "")
