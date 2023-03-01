@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" phx-socket={live_socket_path(assigns)}>
   <head>
+    <meta name="csrf-token" content={get_csrf_token()} />
     <%= render_meta_tags(assigns) %>
     <.live_title>
       <%= assigns[:page_title] %>

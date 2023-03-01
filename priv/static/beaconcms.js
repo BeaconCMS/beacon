@@ -5089,10 +5089,8 @@ within:
   // js/beacon.js
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
-  window.addEventListener("phx:update-meta-tags", (e) => {
-    document.querySelectorAll("meta:not([name='csrf-token'])").forEach((el) => {
-      el.remove();
-    });
+  window.addEventListener("phx:beacon:page-mounted", (e) => {
+    document.querySelectorAll("meta:not([name='csrf-token'])").forEach((el) => el.remove());
     e.detail.meta_tags.forEach((metaTag) => {
       let newMetaTag = document.createElement("meta");
       Object.keys(metaTag).forEach((key) => {

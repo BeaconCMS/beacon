@@ -29,18 +29,14 @@ defmodule BeaconWeb.PageLive do
       socket
       |> assign(:beacon, %{site: site})
       |> assign(:beacon_live_data, live_data)
+      |> assign(:beacon_attrs, %BeaconAttrs{router: socket.router})
       |> assign(:__live_path__, path)
       |> assign(:__page_update_available__, false)
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
 
-    socket =
-      socket
-      |> push_event("update-meta-tags", %{meta_tags: BeaconWeb.Layouts.meta_tags(socket.assigns)})
-      |> push_event("lang", %{lang: "en"})
-
-    socket = assign(socket, :beacon_attrs, %BeaconAttrs{router: socket.router})
+    socket = push_event(socket, "beacon:page-mounted", %{meta_tags: BeaconWeb.Layouts.meta_tags(socket.assigns), lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)
 

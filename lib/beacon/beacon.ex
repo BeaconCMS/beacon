@@ -90,8 +90,7 @@ defmodule Beacon do
     [
       %{"charset" => "utf-8"},
       %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
-      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"},
-      %{"name" => "csrf-token", "content" => Phoenix.Controller.get_csrf_token()}
+      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
     ]
   end
 end
