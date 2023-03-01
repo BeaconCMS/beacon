@@ -121,7 +121,7 @@ seeds = fn ->
       """
     })
 
-  page =
+  page_home =
     Beacon.Pages.create_page!(%{
       path: "home",
       site: "dev",
@@ -129,14 +129,19 @@ seeds = fn ->
       description: "page used for development",
       layout_id: layout_id,
       meta_tags: [
-        %{"name" => "home-meta-tag-one", "content" => "value"},
-        %{"name" => "home-meta-tag-two", "content" => "value"}
+        %{"property" => "og:title", "content" => "home"}
       ],
       template: """
       <main>
         <h1 class="text-violet-900">Dev</h1>
         <p class="text-sm">Page</p>
+
+        <div>
+          <.link navigate="/dev/other">Other</.link>
+        </div>
+
         <%= my_component("sample_component", val: 1) %>
+
         <div>
           <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
         </div>
@@ -158,8 +163,28 @@ seeds = fn ->
       """
     })
 
+  _page_other =
+    Beacon.Pages.create_page!(%{
+      path: "other",
+      site: "dev",
+      title: "dev other",
+      layout_id: layout_id,
+      meta_tags: [
+        %{"property" => "og:title", "content" => "other"}
+      ],
+      template: """
+      <main>
+        <h1 class="text-violet-900">Other</h1>
+
+        <div>
+          <.link navigate="/dev/home">Home</.link>
+        </div>
+      </main>
+      """
+    })
+
   Beacon.Pages.create_page_helper!(%{
-    page_id: page.id,
+    page_id: page_home.id,
     helper_name: "upcase",
     helper_args: "%{name: name}",
     code: """
