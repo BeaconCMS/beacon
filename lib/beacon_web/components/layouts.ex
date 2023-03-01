@@ -77,29 +77,26 @@ defmodule BeaconWeb.Layouts do
   See `Beacon.default_site_meta_tags/0` for a list of default meta tags
   that are included in all pages.
   """
-  def meta_tags(%{__dynamic_page_id__: _, __site__: _} = assigns) do
-    {:safe, meta_tags_unsafe(assigns)}
+  def render_meta_tags(assigns) do
+    assigns = assign(assigns, :meta_tags, meta_tags(assigns))
+
+    ~H"""
+    <%= for meta_attributes <- @meta_tags do %>
+      <meta {meta_attributes} />
+    <% end %>
+    """
   end
 
-  def meta_tags(_), do: ""
-
-  def meta_tags_unsafe(assigns) do
+  def meta_tags(%{__dynamic_page_id__: _, __site__: _} = assigns) do
     page_meta_tags = page_meta_tags(assigns) || []
     layout_meta_tags = layout_meta_tags(assigns) || []
 
-    meta_tags =
-      (page_meta_tags ++ layout_meta_tags)
-      |> Enum.reject(&(&1["name"] == "csrf-token"))
-      |> Kernel.++(Beacon.default_site_meta_tags())
-
-    if Enum.empty?(meta_tags) do
-      ""
-    else
-      Enum.map(meta_tags, fn meta_tag ->
-        ["<meta ", Enum.map(meta_tag, fn {key, value} -> ~s(#{key}="#{value}") end), " />"]
-      end)
-    end
+    (page_meta_tags ++ layout_meta_tags)
+    |> Enum.reject(&(&1["name"] == "csrf-token"))
+    |> Kernel.++(Beacon.default_site_meta_tags())
   end
+
+  def meta_tags(_), do: []
 
   defp page_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
     assigns

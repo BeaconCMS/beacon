@@ -61,7 +61,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     :ok
   end
 
-  describe "render meta tags" do
+  describe "meta tags" do
     setup [:create_page]
 
     test "merge layout, page, and site", %{conn: conn} do
@@ -70,13 +70,13 @@ defmodule BeaconWeb.Live.PageLiveTest do
       expected =
         ~S"""
         <head>
+          <meta name="csrf-token" content=".*"/>
           <meta content="#3c790a" media="\(prefers-color-scheme: dark\)" name="theme-color"/>
           <meta content="Beacon" property="og:title"/>
           <meta content="300" http-equiv="refresh"/>
           <meta charset="utf-8"/>
           <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
           <meta content="width=device-width, initial-scale=1" name="viewport"/>
-          <meta content=".*" name="csrf-token"/>
         """
         |> String.replace("\n", "")
         |> String.replace("  ", "")
@@ -91,7 +91,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       refute html =~ "csrf-token-page"
     end
 
-    test "without meta tags", %{conn: conn} do
+    test "render without meta tags", %{conn: conn} do
       assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
     end
   end
