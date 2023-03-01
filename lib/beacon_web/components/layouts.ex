@@ -78,14 +78,13 @@ defmodule BeaconWeb.Layouts do
   that are included in all pages.
   """
   def render_meta_tags(assigns) do
-    meta_tags =
-      assigns
-      |> meta_tags()
-      |> Enum.map(fn meta_tag ->
-        ["<meta ", Enum.map(meta_tag, fn {key, value} -> ~s(#{key}="#{value}") end), " />"]
-      end)
+    assigns = assign(assigns, :meta_tags, meta_tags(assigns))
 
-    {:safe, meta_tags}
+    ~H"""
+    <%= for meta_attributes <- @meta_tags do %>
+      <meta {meta_attributes} />
+    <% end %>
+    """
   end
 
   def meta_tags(%{__dynamic_page_id__: _, __site__: _} = assigns) do
