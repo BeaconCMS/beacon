@@ -35,7 +35,6 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
-
   def page_title(site, path, params, live_data, page_title) do
     user_data_source_mod = get_data_source(site)
 
