@@ -35,6 +35,21 @@ defmodule Beacon.Pages do
   end
 
   @doc """
+  Returns a list of all pages for a given site that match the search query.
+
+  The search is for a case-insensitive substring within the page path.
+  """
+  def search_for_site_pages(site, search_query, preloads \\ []) do
+    Repo.all(
+      from p in Page,
+        where: p.site == ^site,
+        where: ilike(p.path, ^"%#{search_query}%"),
+        preload: ^preloads,
+        order_by: [asc: p.order, asc: p.path]
+    )
+  end
+
+  @doc """
   List all page templates for a layout.
   """
   def list_page_templates_by_layout(layout_id) do
