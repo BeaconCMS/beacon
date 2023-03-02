@@ -141,9 +141,15 @@ defmodule Beacon.Pages do
     end)
   end
 
-  def update_page_pending(%Page{} = page, template, layout_id) do
+  def update_page_pending(%Page{} = page, template, layout_id, extra \\ %{}) do
+    params =
+      Map.merge(extra, %{
+        "pending_template" => template,
+        "pending_layout_id" => layout_id
+      })
+
     page
-    |> Page.update_pending_changeset(%{pending_template: template, pending_layout_id: layout_id})
+    |> Page.update_pending_changeset(params)
     |> Repo.update()
   end
 

@@ -11,8 +11,10 @@
   <.simple_form :let={f} for={@changeset} id="page-form" phx-change="validate" phx-submit="save">
     <.input field={{f, :site}} type="text" label="Site" disabled="true" />
     <.input field={{f, :path}} type="text" label="Path" disabled="true" />
-    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} />
-    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" />
+    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
+    <.input field={{f, :title}} type="text" label="Title" phx-debounce="500" />
+    <.input field={{f, :description}} type="textarea" label="Description" phx-debounce="500" />
+    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" phx-debounce="500" input_class="font-mono text-sm" />
     <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
 
     <:actions>
@@ -21,9 +23,9 @@
   </.simple_form>
 </div>
 
-<div>
+<div class="my-4">
   <.header>
-    History
+    Version History
   </.header>
 
   <.table id="page-versions" rows={sort_page_versions(@page.versions)}>

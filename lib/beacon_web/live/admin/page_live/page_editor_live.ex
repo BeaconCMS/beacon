@@ -16,12 +16,13 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save", %{"page" => page_attrs, "publish" => publish}, socket) do
+  def handle_event("save", %{"page" => page_params, "publish" => publish}, socket) do
     {:ok, page} =
       Pages.update_page_pending(
         socket.assigns.page,
-        page_attrs["pending_template"],
-        page_attrs["pending_layout_id"]
+        page_params["pending_template"],
+        page_params["pending_layout_id"],
+        page_params
       )
 
     if publish == "true" do
@@ -32,12 +33,10 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("validate", %{"page" => page}, socket) do
-    page = %{"pending_template" => String.trim(page["pending_template"])}
-
+  def handle_event("validate", %{"page" => page_params}, socket) do
     changeset =
       socket.assigns.page
-      |> Pages.change_page(page)
+      |> Pages.change_page(page_params)
       |> Map.put(:action, :validate)
 
     socket = assign_changeset(socket, changeset)

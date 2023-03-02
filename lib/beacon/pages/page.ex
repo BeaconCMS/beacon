@@ -52,12 +52,16 @@ defmodule Beacon.Pages.Page do
     |> unique_constraint([:path, :site])
     |> foreign_key_constraint(:layout_id)
     |> foreign_key_constraint(:pending_layout_id)
+    |> trim([:pending_template])
+    |> remove_all_newlines([:description])
   end
 
   def update_pending_changeset(page, attrs) do
     page
-    |> cast(attrs, [:pending_template, :pending_layout_id])
+    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags])
     |> validate_required([:pending_template, :pending_layout_id])
+    |> trim([:pending_template])
+    |> remove_all_newlines([:description])
   end
 
   def put_pending(%Changeset{} = changeset) do
@@ -79,6 +83,22 @@ defmodule Beacon.Pages.Page do
         val when is_binary(val) -> changeset
         _ -> add_error(changeset, field, "Not a string")
       end
+    end)
+  end
+
+  defp trim(changeset, fields) do
+    Enum.reduce(fields, changeset, fn f, cs ->
+      update_change(cs, f, &String.trim/1)
+    end)
+  end
+
+  defp remove_all_newlines(changeset, fields) do
+    Enum.reduce(fields, changeset, fn f, cs ->
+      update_change(cs, f, fn value ->
+        value
+        |> String.trim()
+        |> String.replace(~r/\n+/, " ")
+      end)
     end)
   end
 end
