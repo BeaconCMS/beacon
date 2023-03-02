@@ -71,6 +71,40 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
+  def page_title(%{__site__: site, __live_path__: path} = assigns) do
+    params = Map.drop(assigns.conn.params, ["path"])
+    current_page_title = fetch_page_title(assigns)
+    Beacon.DataSource.page_title(site, path, params, current_page_title)
+  end
+
+  def page_title(assigns), do: fetch_page_title(assigns)
+
+  @doc false
+  def fetch_page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
+    %{title: page_title} =
+      site
+      |> Beacon.Loader.page_module_for_site()
+      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+
+    if page_title do
+      page_title
+    else
+      %{title: layout_title} =
+        site
+        |> Beacon.Loader.layout_module_for_site()
+        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+
+      layout_title || missing_page_title()
+    end
+  end
+
+  def fetch_page_title(_), do: missing_page_title()
+
+  defp missing_page_title do
+    Logger.warning("No page title set")
+    ""
+  end
+
   @doc """
   Render all page, layout, and site meta tags.
 

@@ -20,5 +20,9 @@ defmodule Beacon.DataSource.Behaviour do
   its name to `beacon_site/2` in your app router.
   """
 
+  @optional_callbacks page_title: 4
+
   @callback live_data(Beacon.Type.Site.t(), path :: [String.t()], params :: map()) :: map()
+
+  @callback page_title(Beacon.Type.Site.t(), path :: [String.t()], params :: map(), page_title :: String.t()) :: String.t()
 end

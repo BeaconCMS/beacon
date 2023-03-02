@@ -11,7 +11,7 @@ defmodule Beacon.DataSource do
   def live_data(site, path, params) do
     user_data_source_mod = get_data_source(site)
 
-    if user_data_source_mod && is_atom(user_data_source_mod) do
+    if user_data_source_mod && function_exported?(user_data_source_mod, :live_data, 3) do
       user_data_source_mod.live_data(site, path, params)
     else
       %{}
@@ -31,6 +31,25 @@ defmodule Beacon.DataSource do
 
       reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
 
+    error ->
+      reraise error, __STACKTRACE__
+  end
+
+  def page_title(site, path, params, page_title) do
+    user_data_source_mod = get_data_source(site)
+
+    if user_data_source_mod && function_exported?(user_data_source_mod, :page_title, 4) do
+      user_data_source_mod.page_title(site, path, params, page_title)
+    else
+      page_title
+    end
+  rescue
+    _error in FunctionClauseError ->
+      error_message = """
+      TODO
+      """
+
+      reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
     error ->
       reraise error, __STACKTRACE__
   end
