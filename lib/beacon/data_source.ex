@@ -18,7 +18,7 @@ defmodule Beacon.DataSource do
     end
   rescue
     error in FunctionClauseError ->
-      args = pop_args_from_stacktrace(__STACKTRACE__, :live_data)
+      args = pop_args_from_stacktrace(__STACKTRACE__)
       function_arity = "#{error.function}/#{error.arity}"
 
       error_message = """
@@ -73,9 +73,9 @@ defmodule Beacon.DataSource do
     Beacon.Config.fetch!(site).data_source
   end
 
-  defp pop_args_from_stacktrace(stacktrace, fun) do
+  defp pop_args_from_stacktrace(stacktrace) do
     Enum.find_value(stacktrace, [], fn
-      {_module, ^fun, args, _file_info} -> args
+      {_module, :live_data, args, _file_info} -> args
       _ -> []
     end)
   end
