@@ -71,7 +71,7 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
-  def page_title(%{__site__: site, __live_path__: path} = assigns) do
+  def page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
     params = Map.drop(assigns.conn.params, ["path"])
     current_page_title = fetch_page_title(assigns)
     Beacon.DataSource.page_title(site, %{path: path, params: params, page_title: current_page_title, beacon_live_data: assigns.beacon_live_data})
@@ -111,6 +111,25 @@ defmodule BeaconWeb.Layouts do
   See `Beacon.default_site_meta_tags/0` for a list of default meta tags
   that are included in all pages.
   """
+
+  def render_meta_tags(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
+    params = Map.drop(assigns.conn.params, ["path"])
+    current_meta_tags = meta_tags(assigns)
+
+    assigns =
+      assign(
+        assigns,
+        :meta_tags,
+        Beacon.DataSource.meta_tags(site, %{path: path, params: params, meta_tags: current_meta_tags, beacon_live_data: assigns.beacon_live_data})
+      )
+
+    ~H"""
+    <%= for meta_attributes <- @meta_tags do %>
+      <meta {meta_attributes} />
+    <% end %>
+    """
+  end
+
   def render_meta_tags(assigns) do
     assigns = assign(assigns, :meta_tags, meta_tags(assigns))
 

@@ -36,7 +36,9 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
 
-    socket = push_event(socket, "beacon:page-mounted", %{meta_tags: BeaconWeb.Layouts.meta_tags(socket.assigns), lang: "en"})
+    current_meta_tags = BeaconWeb.Layouts.meta_tags(socket.assigns)
+    meta_tags = Beacon.DataSource.meta_tags(site, %{path: path, params: params, meta_tags: current_meta_tags, beacon_live_data: live_data})
+    socket = push_event(socket, "beacon:page-mounted", %{meta_tags: meta_tags, lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)
 

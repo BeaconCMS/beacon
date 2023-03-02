@@ -62,6 +62,33 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
+  def meta_tags(site, opts) do
+    user_data_source_mod = get_data_source(site)
+
+    if user_data_source_mod && is_atom(user_data_source_mod) do
+      user_data_source_mod.meta_tags(site, opts)
+    else
+      opts.meta_tags
+    end
+  rescue
+    error in FunctionClauseError ->
+      args = pop_args_from_stacktrace(__STACKTRACE__, :meta_tags)
+      function_arity = "#{error.function}/#{error.arity}"
+
+      error_message = """
+      Could not find #{function_arity} that matches the given args: \
+      #{inspect(args)}.
+
+      Make sure you have defined a implemention of Beacon.DataSource.#{function_arity} \
+      that matches these args.\
+      """
+
+      reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
+
+    error ->
+      reraise error, __STACKTRACE__
+  end
+
   defp get_data_source(site) do
     Beacon.Config.fetch!(site).data_source
   end
