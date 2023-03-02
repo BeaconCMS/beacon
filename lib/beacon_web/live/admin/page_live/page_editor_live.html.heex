@@ -15,6 +15,10 @@
     <.input field={{f, :title}} type="text" label="Title" phx-debounce="500" />
     <.input field={{f, :description}} type="textarea" label="Description" phx-debounce="500" />
     <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" phx-debounce="500" input_class="font-mono text-sm" />
+
+    <.header>Meta Tags</.header>
+    <.live_component module={MetaTagsComponent} id="meta-tags" field={{f, :meta_tags}} />
+
     <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
 
     <:actions>

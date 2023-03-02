@@ -5,6 +5,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   alias Beacon.Layouts.Layout
   alias Beacon.Pages
 
+  alias BeaconWeb.Admin.PageLive.MetaTagsComponent
+
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
     socket =
@@ -17,6 +19,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("save", %{"page" => page_params, "publish" => publish}, socket) do
+    page_params = MetaTagsComponent.coerce_meta_tag_param(page_params, "meta_tags")
+
     {:ok, page} =
       Pages.update_page_pending(
         socket.assigns.page,
@@ -34,6 +38,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("validate", %{"page" => page_params}, socket) do
+    page_params = MetaTagsComponent.coerce_meta_tag_param(page_params, "meta_tags")
+
     changeset =
       socket.assigns.page
       |> Pages.change_page(page_params)

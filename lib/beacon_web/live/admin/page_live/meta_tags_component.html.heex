@@ -1,0 +1,27 @@
+<div>
+  <div>
+    <.button type="button" phx-click="add" phx-target={@myself}>Add Meta Tag</.button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <%= for {meta_tag, i} <- Enum.with_index(@meta_tags) do %>
+      <div class="flex items-end gap-2 my-2">
+        <%= for attribute <- @attributes do %>
+          <div class="w-64">
+            <.input
+              type="text"
+              label={attribute}
+              name={input_name(@field, i, attribute)}
+              id={input_id(@field, i, attribute)}
+              value={meta_tag[attribute]}
+              errors={[]}
+              phx-debounce="500"
+            />
+          </div>
+        <% end %>
+
+        <.button type="button" phx-click="delete" phx-target={@myself} phx-value-index={i}>Delete</.button>
+      </div>
+    <% end %>
+  </div>
+</div>
