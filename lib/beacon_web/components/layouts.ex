@@ -74,7 +74,7 @@ defmodule BeaconWeb.Layouts do
   def page_title(%{__site__: site, __live_path__: path} = assigns) do
     params = Map.drop(assigns.conn.params, ["path"])
     current_page_title = fetch_page_title(assigns)
-    Beacon.DataSource.page_title(site, path, params, current_page_title)
+    Beacon.DataSource.page_title(site, %{path: path, params: params, page_title: current_page_title, beacon_live_data: assigns.beacon_live_data})
   end
 
   def page_title(assigns), do: fetch_page_title(assigns)

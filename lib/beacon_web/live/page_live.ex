@@ -74,12 +74,19 @@ defmodule BeaconWeb.PageLive do
   def handle_params(params, _url, %{assigns: %{__site__: site, __live_path__: path}} = socket) do
     params = Map.drop(params, ["path"])
     current_page_title = BeaconWeb.Layouts.fetch_page_title(socket.assigns)
-    page_title = Beacon.DataSource.page_title(site, path, params, current_page_title)
+
+    page_title =
+      Beacon.DataSource.page_title(site, %{
+        path: path,
+        params: params,
+        page_title: current_page_title,
+        beacon_live_data: socket.assigns.beacon_live_data
+      })
+
     {:noreply, assign(socket, :page_title, page_title)}
   end
 
   def handle_params(_params, _url, socket) do
     {:noreply, socket}
   end
-
 end

@@ -11,14 +11,14 @@ defmodule Beacon.DataSource do
   def live_data(site, path, params) do
     user_data_source_mod = get_data_source(site)
 
-    if user_data_source_mod && function_exported?(user_data_source_mod, :live_data, 3) do
+    if user_data_source_mod && is_atom(user_data_source_mod) do
       user_data_source_mod.live_data(site, path, params)
     else
       %{}
     end
   rescue
     error in FunctionClauseError ->
-      args = pop_args_from_stacktrace(__STACKTRACE__)
+      args = pop_args_from_stacktrace(__STACKTRACE__, :live_data)
       function_arity = "#{error.function}/#{error.arity}"
 
       error_message = """
@@ -35,21 +35,29 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
-  def page_title(site, path, params, page_title) do
+  def page_title(site, opts) do
     user_data_source_mod = get_data_source(site)
 
-    if user_data_source_mod && function_exported?(user_data_source_mod, :page_title, 4) do
-      user_data_source_mod.page_title(site, path, params, page_title)
+    if user_data_source_mod && is_atom(user_data_source_mod) do
+      user_data_source_mod.page_title(site, opts)
     else
-      page_title
+      opts.page_title
     end
   rescue
-    _error in FunctionClauseError ->
+    error in FunctionClauseError ->
+      args = pop_args_from_stacktrace(__STACKTRACE__, :page_title)
+      function_arity = "#{error.function}/#{error.arity}"
+
       error_message = """
-      TODO
+      Could not find #{function_arity} that matches the given args: \
+      #{inspect(args)}.
+
+      Make sure you have defined a implemention of Beacon.DataSource.#{function_arity} \
+      that matches these args.\
       """
 
       reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
+
     error ->
       reraise error, __STACKTRACE__
   end
@@ -58,9 +66,9 @@ defmodule Beacon.DataSource do
     Beacon.Config.fetch!(site).data_source
   end
 
-  defp pop_args_from_stacktrace(stacktrace) do
+  defp pop_args_from_stacktrace(stacktrace, fun) do
     Enum.find_value(stacktrace, [], fn
-      {_module, :live_data, args, _file_info} -> args
+      {_module, ^fun, args, _file_info} -> args
       _ -> []
     end)
   end

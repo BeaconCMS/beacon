@@ -91,7 +91,7 @@ defmodule BeaconDataSource do
   def live_data(:dev, ["home"], _params), do: %{year: Date.utc_today().year}
   def live_data(_, _, _), do: %{}
 
-  def page_title(:dev, _path, _params, page_title), do: String.upcase(page_title)
+  def page_title(:dev, %{page_title: page_title}), do: String.upcase(page_title)
 end
 
 seeds = fn ->
