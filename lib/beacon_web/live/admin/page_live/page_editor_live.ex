@@ -86,6 +86,6 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   defp sort_page_versions(page_versions) do
-    Enum.sort(page_versions, &(&2.inserted_at <= &1.inserted_at))
+    Enum.sort_by(page_versions, & &1.version, :desc)
   end
 end
