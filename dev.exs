@@ -96,6 +96,8 @@ defmodule BeaconDataSource do
   def meta_tags(:dev, %{beacon_live_data: %{year: year}, meta_tags: meta_tags}) do
     [%{"name" => "year", "content" => year} | meta_tags]
   end
+
+  def meta_tags(:dev, %{meta_tags: meta_tags}), do: meta_tags
 end
 
 seeds = fn ->

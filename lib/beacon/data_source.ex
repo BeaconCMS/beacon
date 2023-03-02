@@ -35,13 +35,19 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
-  def page_title(site, opts) do
+
+  def page_title(site, path, params, live_data, page_title) do
     user_data_source_mod = get_data_source(site)
 
     if user_data_source_mod && is_atom(user_data_source_mod) do
-      user_data_source_mod.page_title(site, opts)
+      user_data_source_mod.page_title(site, %{
+        path: path,
+        params: params,
+        beacon_live_data: live_data,
+        page_title: page_title
+      })
     else
-      opts.page_title
+      page_title
     end
   rescue
     error in FunctionClauseError ->
@@ -62,13 +68,18 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
-  def meta_tags(site, opts) do
+  def meta_tags(site, path, params, live_data, meta_tags) do
     user_data_source_mod = get_data_source(site)
 
     if user_data_source_mod && is_atom(user_data_source_mod) do
-      user_data_source_mod.meta_tags(site, opts)
+      user_data_source_mod.meta_tags(site, %{
+        path: path,
+        params: params,
+        beacon_live_data: live_data,
+        meta_tags: meta_tags
+      })
     else
-      opts.meta_tags
+      meta_tags
     end
   rescue
     error in FunctionClauseError ->

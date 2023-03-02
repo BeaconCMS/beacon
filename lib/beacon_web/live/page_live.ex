@@ -36,9 +36,10 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
 
-    current_meta_tags = BeaconWeb.Layouts.meta_tags(socket.assigns)
-    meta_tags = Beacon.DataSource.meta_tags(site, %{path: path, params: params, meta_tags: current_meta_tags, beacon_live_data: live_data})
-    socket = push_event(socket, "beacon:page-mounted", %{meta_tags: meta_tags, lang: "en"})
+    socket =
+      socket
+      |> assign(:page_title, page_title(params, socket.assigns))
+      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns), lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)
 
@@ -73,22 +74,20 @@ defmodule BeaconWeb.PageLive do
     end
   end
 
-  def handle_params(params, _url, %{assigns: %{__site__: site, __live_path__: path}} = socket) do
-    params = Map.drop(params, ["path"])
-    current_page_title = BeaconWeb.Layouts.fetch_page_title(socket.assigns)
+  def handle_params(params, _url, socket) do
+    socket =
+      socket
+      |> assign(:page_title, page_title(params, socket.assigns))
+      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns), lang: "en"})
 
-    page_title =
-      Beacon.DataSource.page_title(site, %{
-        path: path,
-        params: params,
-        page_title: current_page_title,
-        beacon_live_data: socket.assigns.beacon_live_data
-      })
-
-    {:noreply, assign(socket, :page_title, page_title)}
+    {:noreply, socket}
   end
 
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
+  defp page_title(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
+    Beacon.DataSource.page_title(site, path, params, live_data, BeaconWeb.Layouts.page_title(assigns))
+  end
+
+  defp meta_tags(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
+    Beacon.DataSource.meta_tags(site, path, params, live_data, BeaconWeb.Layouts.meta_tags(assigns))
   end
 end

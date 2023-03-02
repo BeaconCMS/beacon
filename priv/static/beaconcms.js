@@ -5089,7 +5089,7 @@ within:
   // js/beacon.js
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
-  window.addEventListener("phx:beacon:page-mounted", (e) => {
+  window.addEventListener("phx:beacon:page-updated", (e) => {
     document.querySelectorAll("meta:not([name='csrf-token'])").forEach((el) => el.remove());
     e.detail.meta_tags.forEach((metaTag) => {
       let newMetaTag = document.createElement("meta");

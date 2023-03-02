@@ -71,16 +71,15 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
-  def page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
+  def render_page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
     params = Map.drop(assigns.conn.params, ["path"])
-    current_page_title = fetch_page_title(assigns)
-    Beacon.DataSource.page_title(site, %{path: path, params: params, page_title: current_page_title, beacon_live_data: assigns.beacon_live_data})
+    Beacon.DataSource.page_title(site, path, params, assigns.beacon_live_data, page_title(assigns))
   end
 
-  def page_title(assigns), do: fetch_page_title(assigns)
+  def render_page_title(assigns), do: page_title(assigns)
 
   @doc false
-  def fetch_page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
+  def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
     %{title: page_title} =
       site
       |> Beacon.Loader.page_module_for_site()
@@ -98,7 +97,7 @@ defmodule BeaconWeb.Layouts do
     end
   end
 
-  def fetch_page_title(_), do: missing_page_title()
+  def page_title(_), do: missing_page_title()
 
   defp missing_page_title do
     Logger.warning("No page title set")
@@ -114,24 +113,19 @@ defmodule BeaconWeb.Layouts do
 
   def render_meta_tags(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
     params = Map.drop(assigns.conn.params, ["path"])
-    current_meta_tags = meta_tags(assigns)
 
-    assigns =
-      assign(
-        assigns,
-        :meta_tags,
-        Beacon.DataSource.meta_tags(site, %{path: path, params: params, meta_tags: current_meta_tags, beacon_live_data: assigns.beacon_live_data})
-      )
-
-    ~H"""
-    <%= for meta_attributes <- @meta_tags do %>
-      <meta {meta_attributes} />
-    <% end %>
-    """
+    do_render_meta_tags(
+      assigns,
+      Beacon.DataSource.meta_tags(site, path, params, assigns.beacon_live_data, meta_tags(assigns))
+    )
   end
 
   def render_meta_tags(assigns) do
-    assigns = assign(assigns, :meta_tags, meta_tags(assigns))
+    do_render_meta_tags(assigns, meta_tags(assigns))
+  end
+
+  defp do_render_meta_tags(assigns, meta_tags) do
+    assigns = assign(assigns, :meta_tags, meta_tags)
 
     ~H"""
     <%= for meta_attributes <- @meta_tags do %>
@@ -140,7 +134,10 @@ defmodule BeaconWeb.Layouts do
     """
   end
 
-  def meta_tags(%{__dynamic_page_id__: _, __site__: _} = assigns) do
+  @doc """
+  List of all meta tags, including site, layout, and page.
+  """
+  def meta_tags(assigns) do
     page_meta_tags = page_meta_tags(assigns) || []
     layout_meta_tags = layout_meta_tags(assigns) || []
 
@@ -148,8 +145,6 @@ defmodule BeaconWeb.Layouts do
     |> Enum.reject(&(&1["name"] == "csrf-token"))
     |> Kernel.++(Beacon.default_site_meta_tags())
   end
-
-  def meta_tags(_), do: []
 
   defp page_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
     assigns
