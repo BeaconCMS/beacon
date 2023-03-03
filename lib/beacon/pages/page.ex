@@ -109,9 +109,11 @@ defmodule Beacon.Pages.Page do
 
   defp remove_empty_meta_attributes(changeset, field) do
     update_change(changeset, field, fn meta_tags ->
-      Enum.map(meta_tags, fn meta_tag ->
-        Map.reject(meta_tag, fn {_, value} -> String.trim(value) == "" end)
-      end)
+      Enum.map(meta_tags, &reject_empty_values/1)
     end)
+  end
+
+  defp reject_empty_values(meta_tag) do
+    Map.reject(meta_tag, fn {_, value} -> String.trim(value) == "" end)
   end
 end
