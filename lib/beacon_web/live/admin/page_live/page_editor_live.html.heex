@@ -17,7 +17,7 @@
     <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" phx-debounce="500" input_class="font-mono text-sm" />
 
     <.header>Meta Tags</.header>
-    <.live_component module={MetaTagsComponent} id="meta-tags" field={{f, :meta_tags}} />
+    <.live_component module={MetaTagsInputs} id="meta-tags" field={{f, :meta_tags}} extra_attributes={@extra_meta_attributes} />
 
     <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
 
@@ -26,6 +26,26 @@
     </:actions>
   </.simple_form>
 </div>
+
+<%!-- This modal cannot live within the MetaTagsInputs component, because HTML does not permit nested <form>s --%>
+<%= if @new_attribute_modal_visible? do %>
+  <.modal id="new-attribute-modal" show={true} on_cancel={JS.push("hide-new-attribute-modal")}>
+    <:title>New meta tag attribute</:title>
+
+    <.simple_form :let={f} for={:attribute} phx-submit="save-new-attribute">
+      <div class="flex items-center gap-2">
+        <%= for preset <- ~w(http-equiv charset itemprop) do %>
+          <.button phx-click={JS.set_attribute({"value", preset}, to: "#attribute_name")}><%= preset %></.button>
+        <% end %>
+      </div>
+
+      <div>
+        <.input type="text" field={{f, :name}} placeholder="Custom" label="Custom attribute" />
+        <.button class="mt-2">Add custom attribute</.button>
+      </div>
+    </.simple_form>
+  </.modal>
+<% end %>
 
 <div class="my-4">
   <.header>

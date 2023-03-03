@@ -58,6 +58,8 @@ defmodule Beacon.Pages.Page do
   end
 
   def update_pending_changeset(page, attrs) do
+    # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
+    # need them to get going on the admin interface for now
     page
     |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags])
     |> validate_required([:pending_template, :pending_layout_id])
@@ -94,6 +96,7 @@ defmodule Beacon.Pages.Page do
     end)
   end
 
+  # For when the UI is a <textarea> but "\n" would cause problems
   defp remove_all_newlines(changeset, fields) do
     Enum.reduce(fields, changeset, fn f, cs ->
       update_change(cs, f, fn value ->

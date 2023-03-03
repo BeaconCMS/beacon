@@ -1,16 +1,19 @@
 <div>
   <div>
-    <.button type="button" phx-click="add" phx-target={@myself}>Add Meta Tag</.button>
+    <.button type="button" phx-click="add" phx-target={@myself}>New Meta Tag</.button>
+
+    <%!-- Note: no phx-target here; send event directly to PageEditorLive --%>
+    <.button type="button" phx-click="show-new-attribute-modal">New Meta Attribute</.button>
   </div>
 
   <div class="overflow-x-auto">
     <%= for {meta_tag, i} <- Enum.with_index(@meta_tags) do %>
       <div class="flex items-end gap-2 my-2">
         <%= for attribute <- @attributes do %>
-          <div class="w-64">
+          <div class="min-w-[150px] shrink-0">
             <.input
               type="text"
-              label={attribute}
+              label={if(i == 0, do: attribute, else: nil)}
               name={input_name(@field, i, attribute)}
               id={input_id(@field, i, attribute)}
               value={meta_tag[attribute]}
@@ -20,7 +23,7 @@
           </div>
         <% end %>
 
-        <.button type="button" phx-click="delete" phx-target={@myself} phx-value-index={i}>Delete</.button>
+        <.button type="button" phx-click="delete" phx-target={@myself} phx-value-index={i} data-confirm="Are you sure?">Delete</.button>
       </div>
     <% end %>
   </div>

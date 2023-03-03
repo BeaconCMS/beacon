@@ -5,13 +5,15 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   alias Beacon.Layouts.Layout
   alias Beacon.Pages
 
-  alias BeaconWeb.Admin.PageLive.MetaTagsComponent
+  alias BeaconWeb.Admin.PageLive.MetaTagsInputs
 
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
     socket =
       socket
       |> assign(:page_id, id)
+      |> assign(:new_attribute_modal_visible?, false)
+      |> assign(:extra_meta_attributes, [])
       |> assign_page_and_changeset()
 
     {:ok, socket}
@@ -19,7 +21,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("save", %{"page" => page_params, "publish" => publish}, socket) do
-    page_params = MetaTagsComponent.coerce_meta_tag_param(page_params, "meta_tags")
+    page_params = MetaTagsInputs.coerce_meta_tag_param(page_params, "meta_tags")
 
     {:ok, page} =
       Pages.update_page_pending(
@@ -38,7 +40,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("validate", %{"page" => page_params}, socket) do
-    page_params = MetaTagsComponent.coerce_meta_tag_param(page_params, "meta_tags")
+    page_params = MetaTagsInputs.coerce_meta_tag_param(page_params, "meta_tags")
 
     changeset =
       socket.assigns.page
@@ -61,6 +63,28 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     )
 
     {:noreply, assign_page_and_changeset(socket)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("show-new-attribute-modal", _, socket) do
+    {:noreply, assign(socket, :new_attribute_modal_visible?, true)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("hide-new-attribute-modal", _, socket) do
+    {:noreply, assign(socket, :new_attribute_modal_visible?, false)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save-new-attribute", %{"attribute" => %{"name" => name}}, socket) do
+    # Basic validation
+    attributes =
+      case String.trim(name) do
+        "" -> socket.assigns.extra_meta_attributes
+        name -> Enum.uniq(socket.assigns.extra_meta_attributes ++ [name])
+      end
+
+    {:noreply, assign(socket, extra_meta_attributes: attributes, new_attribute_modal_visible?: false)}
   end
 
   defp assign_page_and_changeset(socket) do
