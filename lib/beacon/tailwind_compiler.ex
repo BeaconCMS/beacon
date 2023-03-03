@@ -77,13 +77,14 @@ defmodule Beacon.TailwindCompiler do
   end
 
   # Run tailwind-cli returning the output and exit code
+  # Note that `:cd` is the root dir for regular and umbrella projects so the paths have to be defined accordingly.
   # https://github.com/phoenixframework/tailwind/blob/8cf9810474bf37c1b1dd821503d756885534d2ba/lib/tailwind.ex#L192
   def run(profile, extra_args) when is_atom(profile) and is_list(extra_args) do
     config = Tailwind.config_for!(profile)
     args = config[:args] || []
 
     opts = [
-      cd: config[:cd] || File.cwd!(),
+      cd: File.cwd!(),
       env: config[:env] || %{},
       stderr_to_stdout: true
     ]
@@ -153,7 +154,24 @@ defmodule Beacon.TailwindCompiler do
 
   defp remove_special_chars(name), do: String.replace(name, ~r/[^[:alnum:]_-]+/, "_")
 
-  defp beacon_content(tmp_dir), do: ~s('#{tmp_dir}/*.template')
+  # include paths for the following scenarios:
+  # - regular app
+  # - umbrella app running from root
+  # - umbrella app running from the web app
+  defp beacon_content(tmp_dir) do
+    ~s(
+    './js/**/*.js',
+    '../lib/*_web.ex',
+    '../lib/*_web/**/*.*ex',
+    './assets/js/**/*.js',
+    './lib/*_web.ex',
+    './lib/*_web/**/*.*ex',
+    './apps/*_web/assets/**/*.js',
+    './apps/*_web/lib/*_web.ex',
+    './apps/*_web/lib/*_web/**/*.*ex',
+    '#{tmp_dir}/*.template'
+    )
+  end
 
   defp tmp_dir! do
     tmp_dir = Path.join(System.tmp_dir!(), random_dir())
