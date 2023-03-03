@@ -125,6 +125,8 @@ defmodule Beacon.Pages.Page do
   end
 
   defp reject_empty_values(meta_tag) do
-    Map.reject(meta_tag, fn {_, value} -> String.trim(value) == "" end)
+    meta_tag
+    |> Enum.reject(fn {_key, value} -> String.trim(value) == "" end)
+    |> Map.new()
   end
 end
