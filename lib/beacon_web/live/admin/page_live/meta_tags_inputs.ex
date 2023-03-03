@@ -1,6 +1,8 @@
 defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
   use BeaconWeb, :live_component
 
+  alias Phoenix.HTML.Form
+
   @default_attributes ["name", "property", "content"]
 
   @impl true
@@ -46,7 +48,7 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
     if changed?(socket, :field) or changed?(socket, :extra_attributes) do
       # Fetch the meta tags from the form field
       {form, field} = socket.assigns.field
-      meta_tags = Phoenix.HTML.Form.input_value(form, field)
+      meta_tags = Form.input_value(form, field)
 
       # Aggregate all known meta tag attributes
       attributes = Enum.uniq(socket.assigns.attributes ++ Enum.flat_map(meta_tags, &Map.keys/1) ++ socket.assigns.extra_attributes)
@@ -61,11 +63,11 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
   defp input_field({_form, field}), do: field
 
   defp input_name(field, index, attribute) do
-    Phoenix.HTML.Form.input_name(input_form(field), input_field(field)) <> "[#{index}][#{attribute}]"
+    Form.input_name(input_form(field), input_field(field)) <> "[#{index}][#{attribute}]"
   end
 
   defp input_id(field, index, attribute) do
-    Phoenix.HTML.Form.input_id(input_form(field), input_field(field)) <> "_#{index}_#{attribute}"
+    Form.input_id(input_form(field), input_field(field)) <> "_#{index}_#{attribute}"
   end
 
   # Convert params map %{"0" => %{...}, "1" => %{...}} into a list of maps
