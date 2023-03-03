@@ -35,6 +35,40 @@ defmodule Beacon.DataSource do
       reraise error, __STACKTRACE__
   end
 
+  def page_title(site, path, params, live_data, page_title) do
+    user_data_source_mod = get_data_source(site)
+
+    if user_data_source_mod && function_exported?(user_data_source_mod, :page_title, 2) do
+      user_data_source_mod.page_title(site, %{
+        path: path,
+        params: params,
+        beacon_live_data: live_data,
+        page_title: page_title
+      })
+    else
+      page_title
+    end
+  rescue
+    _error -> page_title
+  end
+
+  def meta_tags(site, path, params, live_data, meta_tags) do
+    user_data_source_mod = get_data_source(site)
+
+    if user_data_source_mod && function_exported?(user_data_source_mod, :meta_tags, 2) do
+      user_data_source_mod.meta_tags(site, %{
+        path: path,
+        params: params,
+        beacon_live_data: live_data,
+        meta_tags: meta_tags
+      })
+    else
+      meta_tags
+    end
+  rescue
+    _error -> meta_tags
+  end
+
   defp get_data_source(site) do
     Beacon.Config.fetch!(site).data_source
   end

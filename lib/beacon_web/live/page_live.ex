@@ -36,7 +36,10 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
 
-    socket = push_event(socket, "beacon:page-mounted", %{meta_tags: BeaconWeb.Layouts.meta_tags(socket.assigns), lang: "en"})
+    socket =
+      socket
+      |> assign(:page_title, page_title(params, socket.assigns))
+      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns), lang: "en"})
 
     Beacon.PubSub.subscribe_page_update(site, path)
 
@@ -71,32 +74,20 @@ defmodule BeaconWeb.PageLive do
     end
   end
 
-  def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :page_title, page_title(socket.assigns))}
+  def handle_params(params, _url, socket) do
+    socket =
+      socket
+      |> assign(:page_title, page_title(params, socket.assigns))
+      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns), lang: "en"})
+
+    {:noreply, socket}
   end
 
-  def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
-    %{title: page_title} =
-      site
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
-
-    if page_title do
-      page_title
-    else
-      %{title: layout_title} =
-        site
-        |> Beacon.Loader.layout_module_for_site()
-        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
-
-      layout_title || missing_page_title()
-    end
+  defp page_title(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
+    Beacon.DataSource.page_title(site, path, params, live_data, BeaconWeb.Layouts.page_title(assigns))
   end
 
-  def page_title(_), do: missing_page_title()
-
-  defp missing_page_title do
-    Logger.warning("No page title set")
-    ""
+  defp meta_tags(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
+    Beacon.DataSource.meta_tags(site, path, params, live_data, BeaconWeb.Layouts.meta_tags(assigns))
   end
 end

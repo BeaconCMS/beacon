@@ -90,6 +90,14 @@ defmodule BeaconDataSource do
 
   def live_data(:dev, ["home"], _params), do: %{year: Date.utc_today().year}
   def live_data(_, _, _), do: %{}
+
+  def page_title(:dev, %{page_title: page_title}), do: String.upcase(page_title)
+
+  def meta_tags(:dev, %{beacon_live_data: %{year: year}, meta_tags: meta_tags}) do
+    [%{"name" => "year", "content" => year} | meta_tags]
+  end
+
+  def meta_tags(:dev, %{meta_tags: meta_tags}), do: meta_tags
 end
 
 seeds = fn ->

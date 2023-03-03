@@ -9,7 +9,7 @@ import {LiveSocket} from "phoenix_live_view"
 let socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live"
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
-window.addEventListener("phx:beacon:page-mounted", e => {
+window.addEventListener("phx:beacon:page-updated", e => {
   // remove current tags, except csrf-token
   document.querySelectorAll("meta:not([name='csrf-token'])").forEach(el => el.remove())
 
