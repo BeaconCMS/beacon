@@ -54,6 +54,7 @@ defmodule Beacon.Pages.Page do
     |> foreign_key_constraint(:pending_layout_id)
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
+    |> remove_empty_meta_attributes(:meta_tags)
   end
 
   def update_pending_changeset(page, attrs) do
@@ -62,6 +63,7 @@ defmodule Beacon.Pages.Page do
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
+    |> remove_empty_meta_attributes(:meta_tags)
   end
 
   def put_pending(%Changeset{} = changeset) do
@@ -98,6 +100,14 @@ defmodule Beacon.Pages.Page do
         value
         |> String.trim()
         |> String.replace(~r/\n+/, " ")
+      end)
+    end)
+  end
+
+  defp remove_empty_meta_attributes(changeset, field) do
+    update_change(changeset, field, fn meta_tags ->
+      Enum.map(meta_tags, fn meta_tag ->
+        Map.reject(meta_tag, fn {_, value} -> String.trim(value) == "" end)
       end)
     end)
   end
