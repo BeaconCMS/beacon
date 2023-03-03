@@ -160,9 +160,6 @@ defmodule Beacon.TailwindCompiler do
   # - umbrella app running from the web app
   defp beacon_content(tmp_dir) do
     ~s(
-    './js/**/*.js',
-    '../lib/*_web.ex',
-    '../lib/*_web/**/*.*ex',
     './assets/js/**/*.js',
     './lib/*_web.ex',
     './lib/*_web/**/*.*ex',
