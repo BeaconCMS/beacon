@@ -59,15 +59,12 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
     end
   end
 
-  defp input_form({form, _field}), do: form
-  defp input_field({_form, field}), do: field
-
-  defp input_name(field, index, attribute) do
-    Form.input_name(input_form(field), input_field(field)) <> "[#{index}][#{attribute}]"
+  defp input_name({form, field}, index, attribute) do
+    Form.input_name(form, field) <> "[#{index}][#{attribute}]"
   end
 
-  defp input_id(field, index, attribute) do
-    Form.input_id(input_form(field), input_field(field)) <> "_#{index}_#{attribute}"
+  defp input_id({form, field}, index, attribute) do
+    Form.input_id(form, field) <> "_#{index}_#{attribute}"
   end
 
   # Convert params map %{"0" => %{...}, "1" => %{...}} into a list of maps
