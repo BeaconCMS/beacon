@@ -92,24 +92,35 @@ defmodule Beacon.Pages.Page do
 
   defp trim(changeset, fields) do
     Enum.reduce(fields, changeset, fn f, cs ->
-      update_change(cs, f, &String.trim/1)
+      update_change(cs, f, fn
+        value when is_binary(value) -> String.trim(value)
+        value -> value
+      end)
     end)
   end
 
   # For when the UI is a <textarea> but "\n" would cause problems
   defp remove_all_newlines(changeset, fields) do
     Enum.reduce(fields, changeset, fn f, cs ->
-      update_change(cs, f, fn value ->
-        value
-        |> String.trim()
-        |> String.replace(~r/\n+/, " ")
+      update_change(cs, f, fn
+        value when is_binary(value) ->
+          value
+          |> String.trim()
+          |> String.replace(~r/\n+/, " ")
+
+        value ->
+          value
       end)
     end)
   end
 
   defp remove_empty_meta_attributes(changeset, field) do
-    update_change(changeset, field, fn meta_tags ->
-      Enum.map(meta_tags, &reject_empty_values/1)
+    update_change(changeset, field, fn
+      meta_tags when is_list(meta_tags) ->
+        Enum.map(meta_tags, &reject_empty_values/1)
+
+      value ->
+        value
     end)
   end
 
