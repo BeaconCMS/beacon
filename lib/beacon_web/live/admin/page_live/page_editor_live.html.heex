@@ -27,7 +27,6 @@
   </.simple_form>
 </div>
 
-<%!-- This modal cannot live within the MetaTagsInputs component, because HTML does not permit nested <form>s --%>
 <%= if @new_attribute_modal_visible? do %>
   <.modal id="new-attribute-modal" show={true} on_cancel={JS.push("hide-new-attribute-modal")}>
     <:title>New meta tag attribute</:title>
