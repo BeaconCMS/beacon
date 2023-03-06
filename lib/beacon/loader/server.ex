@@ -21,14 +21,17 @@ defmodule Beacon.Loader.Server do
     GenServer.call(name(config.site), {:reload_from_db, config.site})
   end
 
-  def init(config) do
-    load_from_db(config.site)
-    {:ok, %{}}
+  def init(_arg) do
+    {:ok, %{}, {:continue, :load_from_db}}
+  end
+
+  def handle_continue(:load_from_db, state) do
+    {:noreply, state, :hibernate}
   end
 
   def handle_call({:reload_from_db, site}, _from, state) do
     load_from_db(site)
-    {:reply, :ok, state}
+    {:reply, :ok, state, :hibernate}
   end
 
   defp load_from_db(site) do
