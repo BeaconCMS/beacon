@@ -44,8 +44,6 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp render_page(%Page{site: site, path: path, template: template, id: id}) do
-    Logger.info("Render page #{inspect(path)} - memory: #{:erlang.memory(:total)}")
-
     Beacon.safe_code_heex_check!(site, template)
 
     ast =
