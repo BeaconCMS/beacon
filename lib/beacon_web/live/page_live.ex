@@ -51,7 +51,7 @@ defmodule BeaconWeb.PageLive do
 
     module = Beacon.Loader.page_module_for_site(assigns.__site__)
 
-    Beacon.Loader.call_function_with_retry(module, :render, [live_path, render_assigns])
+    Beacon.Loader.call_function_with_retry(module, :render, [assigns.__site__, live_path, render_assigns])
   end
 
   def handle_info(:page_updated, socket) do
