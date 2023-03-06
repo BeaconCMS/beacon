@@ -3,6 +3,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
+  require Logger
 
   def load_templates(site, pages) do
     page_module = Beacon.Loader.page_module_for_site(site)
@@ -43,9 +44,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp render_page(%Page{site: site, path: path, template: template, id: id}) do
-    Beacon.safe_code_heex_check!(site, template)
+    Logger.info("Render page #{inspect(path)} - memory: #{:erlang.memory(:total)}")
 
-    file = "page-render-#{id}"
+    Beacon.safe_code_heex_check!(site, template)
 
     ast =
       EEx.compile_string(template,
@@ -54,7 +55,7 @@ defmodule Beacon.Loader.PageModuleLoader do
         trim: true,
         caller: __ENV__,
         source: template,
-        file: file
+        file: "page-render-#{id}"
       )
 
     quote do
