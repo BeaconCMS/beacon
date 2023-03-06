@@ -16,11 +16,22 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       page_1 = Repo.preload(page_1, [:events, :helpers])
       page_2 = Repo.preload(page_2, [:events, :helpers])
 
-      {:ok, code_string} = PageModuleLoader.load_templates(:test, [page_1, page_2])
+      {:ok, ast} = PageModuleLoader.load_templates(:test, [page_1, page_2])
 
-      assert Regex.scan(~r/page_1_upcase/, code_string) == [["page_1_upcase"]]
-      assert Regex.scan(~r/page_2_upcase/, code_string) == [["page_2_upcase"]]
-      assert Regex.scan(~r/dynamic_helper/, code_string) == [["dynamic_helper"]]
+      assert has_function?(ast, :page_1_upcase)
+      assert has_function?(ast, :page_2_upcase)
+      assert has_function?(ast, :dynamic_helper)
     end
+  end
+
+  defp has_function?(ast, helper_name) do
+    {_new_ast, present} =
+      Macro.prewalk(ast, false, fn
+        {^helper_name, _, _} = node, _acc -> {node, true}
+        node, true -> {node, true}
+        node, false -> {node, false}
+      end)
+
+    present
   end
 end

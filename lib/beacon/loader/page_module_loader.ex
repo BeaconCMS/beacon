@@ -109,9 +109,11 @@ defmodule Beacon.Loader.PageModuleLoader do
     Enum.map(helpers, fn %PageHelper{} = helper ->
       Beacon.safe_code_check!(site, helper.code)
 
+      args = Code.string_to_quoted!(helper.helper_args)
+
       quote do
-        def unquote(helper.helper_name)(unquote(helper.helper_args)) do
-          unquote(helper.code)
+        def unquote(String.to_atom(helper.helper_name))(unquote(args)) do
+          unquote(Code.string_to_quoted!(helper.code))
         end
       end
     end)
