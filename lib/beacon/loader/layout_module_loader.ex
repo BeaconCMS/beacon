@@ -30,14 +30,15 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     Beacon.safe_code_heex_check!(layout.site, layout.body)
     runtime_css = RuntimeCSS.compile!(layout)
 
-    ast = EEx.compile_string(layout.body,
-      engine: Phoenix.LiveView.HTMLEngine,
-      line: 1,
-      trim: true,
-      caller: __ENV__,
-      source: layout.body,
-      file: "layout-render-#{layout.id}"
-    )
+    ast =
+      EEx.compile_string(layout.body,
+        engine: Phoenix.LiveView.HTMLEngine,
+        line: 1,
+        trim: true,
+        caller: __ENV__,
+        source: layout.body,
+        file: "layout-render-#{layout.id}"
+      )
 
     quote do
       def render(unquote(layout.id), var!(assigns)) when is_map(var!(assigns)) do

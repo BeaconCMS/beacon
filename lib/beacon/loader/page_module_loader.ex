@@ -10,18 +10,18 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     # Group function heads together to avoid compiler warnings
     functions =
-      for fun <- [
-        &render_page/1,
-        &page_assigns/1,
-        &page_id/1,
-        &layout_id_for_path/1,
-        &handle_event/1,
-        &helper/1
-      ],
-      page <- pages do
-        fun.(page)
-    end ++ [dynamic_helper()]
-    |> List.flatten()
+      (for fun <- [
+             &render_page/1,
+             &page_assigns/1,
+             &page_id/1,
+             &layout_id_for_path/1,
+             &handle_event/1,
+             &helper/1
+           ],
+           page <- pages do
+         fun.(page)
+       end ++ [dynamic_helper()])
+      |> List.flatten()
 
     ast = render(page_module, component_module, functions)
 
@@ -46,14 +46,15 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     file = "page-render-#{id}"
 
-    ast = EEx.compile_string(template,
-      engine: Phoenix.LiveView.HTMLEngine,
-      line: 1,
-      trim: true,
-      caller: __ENV__,
-      source: template,
-      file: file
-    )
+    ast =
+      EEx.compile_string(template,
+        engine: Phoenix.LiveView.HTMLEngine,
+        line: 1,
+        trim: true,
+        caller: __ENV__,
+        source: template,
+        file: file
+      )
 
     quote do
       @file unquote(file)
@@ -70,8 +71,8 @@ defmodule Beacon.Loader.PageModuleLoader do
     quote do
       def page_assigns(unquote(id)) do
         %{
-           title: unquote(title),
-           meta_tags: unquote(Macro.escape(meta_tags))
+          title: unquote(title),
+          meta_tags: unquote(Macro.escape(meta_tags))
         }
       end
     end
@@ -136,7 +137,8 @@ defmodule Beacon.Loader.PageModuleLoader do
     path
     |> String.split("/")
     |> Enum.map(&path_segment_to_arg(&1, prefix))
-      # |> String.replace(",|", " |")
+
+    # |> String.replace(",|", " |")
   end
 
   def path_params(path) do
