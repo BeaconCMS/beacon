@@ -98,7 +98,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
       quote do
         def handle_event(unquote(path_to_args(path, "")), unquote(event.event_name), event_params, socket) do
-          unquote(event.code)
+          unquote(Code.string_to_quoted!(event.code))
         end
       end
     end)
