@@ -137,9 +137,6 @@ defmodule Beacon.Loader.PageModuleLoader do
     |> String.split("/")
     |> Enum.map(&path_segment_to_arg(&1, prefix))
       # |> String.replace(",|", " |")
-
-    # IO.inspect({path, args}, label: "path_to_args: ")
-    # "[#{args}]"
   end
 
   def path_params(path) do
@@ -154,5 +151,5 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
   defp path_segment_to_arg("*" <> segment, prefix), do: "| " <> prefix <> segment
-  defp path_segment_to_arg(segment, _prefix), do: "\"" <> segment <> "\""
+  defp path_segment_to_arg(segment, _prefix), do: segment
 end
