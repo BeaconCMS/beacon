@@ -2,7 +2,7 @@ defmodule Beacon.Loader.Server do
   @moduledoc false
 
   use GenServer
-
+  require Logger
   alias Beacon.Loader.DBLoader
   alias Beacon.Registry
 
@@ -21,17 +21,21 @@ defmodule Beacon.Loader.Server do
     GenServer.call(name(config.site), {:reload_from_db, config.site})
   end
 
-  def init(_arg) do
-    {:ok, %{}, {:continue, :load_from_db}}
+  def init(config) do
+    {:ok, config, {:continue, :load_from_db}}
   end
 
-  def handle_continue(:load_from_db, state) do
-    {:noreply, state, :hibernate}
+  def handle_continue(:load_from_db, config) do
+    Logger.info("memory before load_from_db: #{inspect(:erlang.memory())}")
+    load_from_db(config.site)
+    Logger.info("memory after load_from_db: #{inspect(:erlang.memory())}")
+
+    {:noreply, config, :hibernate}
   end
 
-  def handle_call({:reload_from_db, site}, _from, state) do
+  def handle_call({:reload_from_db, site}, _from, config) do
     load_from_db(site)
-    {:reply, :ok, state, :hibernate}
+    {:reply, :ok, config, :hibernate}
   end
 
   defp load_from_db(site) do
