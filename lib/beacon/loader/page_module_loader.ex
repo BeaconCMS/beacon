@@ -12,7 +12,6 @@ defmodule Beacon.Loader.PageModuleLoader do
     # Group function heads together to avoid compiler warnings
     functions = [
       for fun <- [
-            &store_page/1,
             &page_assigns/1,
             &page_id/1,
             &layout_id_for_path/1,
@@ -22,11 +21,14 @@ defmodule Beacon.Loader.PageModuleLoader do
           page <- pages do
         fun.(page)
       end,
-      dynamic_helper(),
-      dynamic_render()
+      dynamic_helper()
     ]
 
     ast = render(page_module, component_module, functions)
+
+    for page <- pages do
+      store_page(page)
+    end
 
     :ok = ModuleLoader.load(page_module, ast)
     {:ok, ast}
@@ -58,23 +60,6 @@ defmodule Beacon.Loader.PageModuleLoader do
       )
 
     :ets.insert(:beacon_pages, {{site, path}, ast})
-
-    # quote do
-    #   def render(unquote(path_to_args(path, "")), var!(assigns)) when is_map(var!(assigns)) do
-    #     assigns = assign(var!(assigns), :beacon_path_params, unquote(Macro.escape(path_params(path))))
-    #     unquote(ast)
-    #   end
-    # end
-  end
-
-  defp dynamic_render do
-    quote do
-      def render(var!(site), var!(path), var!(assigns)) when is_map(var!(assigns)) do
-        assigns = assign(var!(assigns), :beacon_path_params, var!(path))
-        [{_, ast}] = :ets.lookup(:beacon_pages, {var!(site), var!(path)})
-        ast
-      end
-    end
   end
 
   defp page_assigns(%Page{} = page) do

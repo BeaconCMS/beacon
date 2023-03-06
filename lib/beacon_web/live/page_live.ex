@@ -2,7 +2,6 @@ defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
 
   require Logger
-
   alias Beacon.BeaconAttrs
 
   def mount(:not_mounted_at_router, _params, socket) do
@@ -47,11 +46,13 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {%{__live_path__: live_path}, render_assigns} = Map.split(assigns, [:__live_path__])
+    import Phoenix.Component
 
-    module = Beacon.Loader.page_module_for_site(assigns.__site__)
-
-    Beacon.Loader.call_function_with_retry(module, :render, [assigns.__site__, live_path, render_assigns])
+    [path] = assigns.__live_path__
+    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
+    [{_, ast}] = :ets.lookup(:beacon_pages, {assigns.__site__, path})
+    {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], __ENV__)
+    result
   end
 
   def handle_info(:page_updated, socket) do

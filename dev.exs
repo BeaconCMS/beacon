@@ -148,8 +148,6 @@ seeds = fn ->
           <.link navigate="/dev/other">Other</.link>
         </div>
 
-        <%= my_component("sample_component", val: 1) %>
-
         <div>
           <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
         </div>
@@ -157,11 +155,6 @@ seeds = fn ->
         <div>
           <p>From data source:</p>
           <%= @beacon_live_data[:year] %>
-        </div>
-
-        <div>
-          <p>From dynamic_helper:</p>
-          <%= dynamic_helper("upcase", %{name: "beacon"}) %>
         </div>
 
         <pre><code>
