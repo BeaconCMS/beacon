@@ -2,10 +2,9 @@ defmodule Beacon.Loader.ModuleLoader do
   def load(module, ast) do
     :code.delete(module)
     :code.purge(module)
-
-    Code.compile_quoted(ast)
-
+    [{^module, _}] = Code.compile_quoted(ast)
     {:module, ^module} = Code.ensure_loaded(module)
+
     :ok
   end
 

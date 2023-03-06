@@ -9,19 +9,20 @@ defmodule Beacon.Loader.PageModuleLoader do
     component_module = Beacon.Loader.component_module_for_site(site)
 
     # Group function heads together to avoid compiler warnings
-    functions =
-      (for fun <- [
-             &render_page/1,
-             &page_assigns/1,
-             &page_id/1,
-             &layout_id_for_path/1,
-             &handle_event/1,
-             &helper/1
-           ],
-           page <- pages do
-         fun.(page)
-       end ++ [dynamic_helper()])
-      |> List.flatten()
+    functions = [
+      for fun <- [
+            &render_page/1,
+            &page_assigns/1,
+            &page_id/1,
+            &layout_id_for_path/1,
+            &handle_event/1,
+            &helper/1
+          ],
+          page <- pages do
+        fun.(page)
+      end,
+      dynamic_helper()
+    ]
 
     ast = render(page_module, component_module, functions)
 
@@ -57,7 +58,6 @@ defmodule Beacon.Loader.PageModuleLoader do
       )
 
     quote do
-      @file unquote(file)
       def render(unquote(path_to_args(path, "")), var!(assigns)) when is_map(var!(assigns)) do
         assigns = assign(var!(assigns), :beacon_path_params, unquote(Macro.escape(path_params(path))))
         unquote(ast)
