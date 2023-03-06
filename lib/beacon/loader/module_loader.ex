@@ -1,20 +1,19 @@
 defmodule Beacon.Loader.ModuleLoader do
-  def load(module, code_string) do
+  def load(module, ast) do
     :code.delete(module)
     :code.purge(module)
 
-    Code.compile_string(code_string)
+    a = System.monotonic_time(:millisecond)
+    Code.compile_quoted(ast)
+    b = System.monotonic_time(:millisecond)
+    IO.inspect(b - a, label: "Compile time")
     {:module, ^module} = Code.ensure_loaded(module)
     :ok
   end
 
-  def maybe_import_my_component(component_module, functions) do
-    functions = Enum.filter(functions, &is_binary/1)
-
-    if Enum.any?(functions, &String.match?(&1, ~r/my_component/)) do
-      "import #{component_module}, only: [my_component: 2]"
-    else
-      ""
+  def maybe_import_my_component(component_module, _functions) do
+    quote do
+      import unquote(component_module), only: [my_component: 2]
     end
   end
 end

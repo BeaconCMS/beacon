@@ -8,99 +8,104 @@ defmodule Beacon.Loader.PageModuleLoader do
     page_module = Beacon.Loader.page_module_for_site(site)
     component_module = Beacon.Loader.component_module_for_site(site)
 
+    a = System.monotonic_time(:millisecond)
     # Group function heads together to avoid compiler warnings
     functions =
       for fun <- [
-            &render_page/1,
-            &page_assigns/1,
-            &page_id/1,
-            &layout_id_for_path/1,
-            &handle_event/1,
-            &helper/1
-          ],
-          page <- pages do
+        &render_page/1,
+        &page_assigns/1,
+        &page_id/1,
+        &layout_id_for_path/1,
+        &handle_event/1,
+        &helper/1
+      ],
+      page <- pages do
         fun.(page)
-      end ++ [dynamic_helper(), page_module(page_module)]
+    end ++ [dynamic_helper()]
+    |> List.flatten()
+    b = System.monotonic_time(:millisecond)
 
-    code_string = render(page_module, component_module, functions)
+    IO.inspect(b - a, label: "Pages Build time")
 
-    :ok = ModuleLoader.load(page_module, code_string)
-    {:ok, code_string}
+    ast = render(page_module, component_module, functions)
+
+    :ok = ModuleLoader.load(page_module, ast)
+    {:ok, ast}
   end
 
   defp render(module_name, component_module, functions) do
-    """
-    defmodule #{module_name} do
-      #{maybe_import_phoenix_component(functions)}
-      #{ModuleLoader.maybe_import_my_component(component_module, functions)}
-      use Phoenix.HTML
+    quote do
+      defmodule unquote(module_name) do
+        import Phoenix.Component
+        import unquote(component_module)
 
-      #{IO.iodata_to_binary(functions)}
-    end
-    """
-  end
+        use Phoenix.HTML
 
-  defp maybe_import_phoenix_component(functions) do
-    if Enum.any?(functions, &String.match?(&1, ~r/def render/)) do
-      "import Phoenix.Component"
-    else
-      ""
+        unquote_splicing(functions)
+      end
     end
   end
 
-  defp render_page(%Page{site: site, path: path, template: template}) do
+  defp render_page(%Page{site: site, path: path, template: template, id: id}) do
     Beacon.safe_code_heex_check!(site, template)
 
-    """
-      def render(#{path_to_args(path, "")}, assigns) do
-        assigns = assign(assigns, :beacon_path_params, #{path_params(path)})
-    #{~s(~H""")}
-    #{template}
-    #{~s(""")}
+    ast = EEx.compile_string(template,
+      engine: Phoenix.LiveView.HTMLEngine,
+      line: 1,
+      trim: true,
+      caller: __ENV__,
+      source: template,
+      file: "page-render-#{id}"
+    )
+
+    quote do
+      def render(unquote(path_to_args(path, "")), var!(assigns)) when is_map(var!(assigns)) do
+        assigns = assign(var!(assigns), :beacon_path_params, unquote(Macro.escape(path_params(path))))
+        unquote(ast)
       end
-    """
+    end
   end
 
   defp page_assigns(%Page{} = page) do
     %{id: id, meta_tags: meta_tags, title: title} = page
 
-    """
-      def page_assigns(#{inspect(id)}) do
+    quote do
+      def page_assigns(unquote(id)) do
         %{
-           title: #{inspect(title)},
-           meta_tags: #{inspect(meta_tags)}
+           title: unquote(title),
+           meta_tags: unquote(Macro.escape(meta_tags))
         }
       end
-    """
+    end
   end
 
   defp page_id(%Page{id: id, path: path}) do
-    """
-      def page_id(#{path_to_args(path, "")}), do: #{inspect(id)}
-    """
+    quote do
+      def page_id(unquote(path_to_args(path, ""))), do: unquote(id)
+    end
   end
 
   defp layout_id_for_path(%Page{path: path, layout_id: layout_id}) do
-    """
-      def layout_id_for_path(#{path_to_args(path, "_")}), do: #{inspect(layout_id)}
-    """
+    quote do
+      def layout_id_for_path(unquote(path_to_args(path, "_"))), do: unquote(layout_id)
+    end
   end
 
-  defp page_module(page_module) do
-    """
-      def page_module, do: String.to_atom("#{page_module}")
-    """
-  end
+  # defp page_module(page_module) do
+  #   quote do
+  #     def page_module, do: unquote(page_module)
+  #   end
+  # end
 
   defp handle_event(%Page{site: site, path: path, events: events}) do
     Enum.map(events, fn %PageEvent{} = event ->
       Beacon.safe_code_check!(site, event.code)
 
-      """
-        def handle_event(#{path_to_args(path, "")}, "#{event.event_name}", event_params, socket) do
-          #{event.code}
+      quote do
+        def handle_event(unquote(path_to_args(path, "")), unquote(event.event_name), event_params, socket) do
+          unquote(event.code)
         end
-      """
+      end
     end)
   end
 
@@ -109,45 +114,42 @@ defmodule Beacon.Loader.PageModuleLoader do
     Enum.map(helpers, fn %PageHelper{} = helper ->
       Beacon.safe_code_check!(site, helper.code)
 
-      """
-        def #{helper.helper_name}(#{helper.helper_args}) do
-          #{helper.code}
+      quote do
+        def unquote(helper.helper_name)(unquote(helper.helper_args)) do
+          unquote(helper.code)
         end
-      """
+      end
     end)
   end
 
   defp dynamic_helper do
-    """
+    quote do
       def dynamic_helper(helper_name, args) do
-        Beacon.Loader.call_function_with_retry(page_module(), String.to_atom(helper_name), [args])
+        Beacon.Loader.call_function_with_retry(__MODULE__, String.to_atom(helper_name), [args])
       end
-    """
+    end
   end
 
-  defp path_to_args("", _), do: "[]"
+  defp path_to_args("", _), do: []
 
   defp path_to_args(path, prefix) do
-    args =
-      path
-      |> String.split("/")
-      |> Enum.map_join(",", &path_segment_to_arg(&1, prefix))
-      |> String.replace(",|", " |")
+    path
+    |> String.split("/")
+    |> Enum.map(&path_segment_to_arg(&1, prefix))
+      # |> String.replace(",|", " |")
 
-    "[#{args}]"
+    # IO.inspect({path, args}, label: "path_to_args: ")
+    # "[#{args}]"
   end
 
   def path_params(path) do
-    vars =
-      path
-      |> String.split("/")
-      |> Enum.filter(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "*")))
-      |> Enum.map_join(", ", fn
-        ":" <> var -> "#{var}: #{var}"
-        "*" <> var -> "#{var}: #{var}"
-      end)
-
-    "%{#{vars}}"
+    path
+    |> String.split("/")
+    |> Enum.filter(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "*")))
+    |> Enum.into(%{}, fn
+      ":" <> var -> {var, var}
+      "*" <> var -> {var, var}
+    end)
   end
 
   defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment

@@ -13,34 +13,40 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
     render_functions = Enum.map(components, &render_component/1)
 
-    code_string = render(component_module, render_functions)
-    :ok = ModuleLoader.load(component_module, code_string)
-    {:ok, code_string}
+    ast = render(component_module, render_functions)
+    :ok = ModuleLoader.load(component_module, ast)
+    {:ok, ast}
   end
 
   defp render(component_module, render_functions) do
-    """
-    defmodule #{component_module} do
-      import Phoenix.Component
-      use Phoenix.HTML
+    quote do
+      defmodule unquote(component_module) do
+        import Phoenix.Component
+        use Phoenix.HTML
 
-      def my_component(name, assigns \\\\ []), do: render(name, Enum.into(assigns, %{}))
+        def my_component(name, assigns \\ []), do: render(name, Enum.into(assigns, %{}))
 
-    #{Enum.join(render_functions, "\n")}
+        unquote_splicing(render_functions)
+      end
     end
-    """
   end
 
   defp render_component(%Component{site: site, name: name, body: body}) do
     Beacon.safe_code_heex_check!(site, body)
 
-    """
-      def render(#{inspect(name)}, assigns) do
-    #{~s(~H""")}
-    #{body}
-    #{~s(""")}
-      end
+    ast = EEx.compile_string(body,
+      engine: Phoenix.LiveView.HTMLEngine,
+      line: 1,
+      trim: true,
+      caller: __ENV__,
+      source: body,
+      file: "component-render-#{name}"
+    )
 
-    """
+    quote do
+      def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do
+        unquote(ast)
+      end
+    end
   end
 end

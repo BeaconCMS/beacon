@@ -9,45 +9,49 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     component_module = Beacon.Loader.component_module_for_site(site)
     module = Beacon.Loader.layout_module_for_site(site)
     render_functions = Enum.map(layouts, &render_layout/1)
-    code_string = render(module, render_functions, component_module)
-    :ok = ModuleLoader.load(module, code_string)
-    {:ok, code_string}
+    ast = render(module, render_functions, component_module)
+    :ok = ModuleLoader.load(module, ast)
+    {:ok, ast}
   end
 
   defp render(module_name, render_functions, component_module) do
-    """
-    defmodule #{module_name} do
-      use Phoenix.HTML
-      #{ModuleLoader.maybe_import_my_component(component_module, render_functions)}
+    quote do
+      defmodule unquote(module_name) do
+        use Phoenix.HTML
+        import Phoenix.Component
+        unquote(ModuleLoader.maybe_import_my_component(component_module, render_functions))
 
-    #{Enum.join(render_functions, "\n")}
+        unquote_splicing(render_functions)
+      end
     end
-    """
   end
 
   defp render_layout(%Layout{} = layout) do
     Beacon.safe_code_heex_check!(layout.site, layout.body)
     runtime_css = RuntimeCSS.compile!(layout)
 
-    """
-      def render(#{inspect(layout.id)}, assigns) do
-        import Phoenix.Component
+    ast = EEx.compile_string(layout.body,
+      engine: Phoenix.LiveView.HTMLEngine,
+      line: 1,
+      trim: true,
+      caller: __ENV__,
+      source: layout.body,
+      file: "layout-render-#{layout.id}"
+    )
 
-    #{~s(~H""")}
-    #{layout.body}
-    #{~s(""")}
+    quote do
+      def render(unquote(layout.id), var!(assigns)) when is_map(var!(assigns)) do
+        unquote(ast)
       end
 
-      def layout_assigns(#{inspect(layout.id)}) do
+      def layout_assigns(unquote(layout.id)) do
         %{
-          title: #{inspect(layout.title)},
-          meta_tags: #{inspect(layout.meta_tags)},
-          stylesheet_urls: #{inspect(layout.stylesheet_urls)},
-          runtime_css: \~S\"""
-            #{runtime_css}
-            \"""
+          title: unquote(layout.title),
+          meta_tags: unquote(Macro.escape(layout.meta_tags)),
+          stylesheet_urls: unquote(layout.stylesheet_urls),
+          runtime_css: unquote(runtime_css)
         }
       end
-    """
+    end
   end
 end

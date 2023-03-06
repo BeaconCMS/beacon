@@ -11,20 +11,20 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
   def load_stylesheets(site, stylesheets) do
     stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
 
-    code_string = render_module(stylesheet_module, stylesheets)
-    :ok = ModuleLoader.load(stylesheet_module, code_string)
-    {:ok, code_string}
+    ast = render_module(stylesheet_module, stylesheets)
+    :ok = ModuleLoader.load(stylesheet_module, ast)
+    {:ok, ast}
   end
 
   # TODO: check if we'll be using this module to render stylesheets or if we'll rely on RuntimeCSS
   defp render_module(stylesheet_module, stylesheets) do
-    """
-    defmodule #{stylesheet_module} do
-      def render do
-        #{render_stylesheets(stylesheets)}
+    quote do
+      defmodule unquote(stylesheet_module) do
+        def render do
+          unquote(render_stylesheets(stylesheets))
+        end
       end
     end
-    """
   end
 
   defp render_stylesheets([]), do: ""
