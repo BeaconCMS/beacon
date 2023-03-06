@@ -44,16 +44,19 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp render_page(%Page{site: site, path: path, template: template, id: id}) do
     Beacon.safe_code_heex_check!(site, template)
 
+    file = "page-render-#{id}"
+
     ast = EEx.compile_string(template,
       engine: Phoenix.LiveView.HTMLEngine,
       line: 1,
       trim: true,
       caller: __ENV__,
       source: template,
-      file: "page-render-#{id}"
+      file: file
     )
 
     quote do
+      @file unquote(file)
       def render(unquote(path_to_args(path, "")), var!(assigns)) when is_map(var!(assigns)) do
         assigns = assign(var!(assigns), :beacon_path_params, unquote(Macro.escape(path_params(path))))
         unquote(ast)
@@ -97,7 +100,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       Beacon.safe_code_check!(site, event.code)
 
       quote do
-        def handle_event(unquote(path_to_args(path, "")), unquote(event.event_name), event_params, socket) do
+        def handle_event(unquote(path_to_args(path, "")), unquote(event.event_name), var!(event_params), var!(socket)) do
           unquote(Code.string_to_quoted!(event.code))
         end
       end
