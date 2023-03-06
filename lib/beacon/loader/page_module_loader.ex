@@ -36,10 +36,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp render(module_name, component_module, functions) do
     quote do
       defmodule unquote(module_name) do
-        import Phoenix.Component
-        import unquote(component_module)
-
         use Phoenix.HTML
+        import Phoenix.Component
+        unquote(ModuleLoader.maybe_import_my_component(component_module, functions))
 
         unquote_splicing(functions)
       end
