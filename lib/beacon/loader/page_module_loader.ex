@@ -8,7 +8,6 @@ defmodule Beacon.Loader.PageModuleLoader do
     page_module = Beacon.Loader.page_module_for_site(site)
     component_module = Beacon.Loader.component_module_for_site(site)
 
-    a = System.monotonic_time(:millisecond)
     # Group function heads together to avoid compiler warnings
     functions =
       for fun <- [
@@ -23,9 +22,6 @@ defmodule Beacon.Loader.PageModuleLoader do
         fun.(page)
     end ++ [dynamic_helper()]
     |> List.flatten()
-    b = System.monotonic_time(:millisecond)
-
-    IO.inspect(b - a, label: "Pages Build time")
 
     ast = render(page_module, component_module, functions)
 
