@@ -218,8 +218,8 @@ end
 Task.start(fn ->
   children = [
     {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
-    SamplePhoenix.Endpoint,
-    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource]]}
+    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource]]},
+    SamplePhoenix.Endpoint
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)

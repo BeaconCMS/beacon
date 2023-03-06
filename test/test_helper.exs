@@ -13,7 +13,6 @@ Mox.defmock(CSSCompilerMock, for: Beacon.RuntimeCSS)
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: Beacon.BeaconTest.PubSub},
-    Beacon.BeaconTest.Endpoint,
     {Beacon,
      sites: [
        [
@@ -28,7 +27,8 @@ Supervisor.start_link(
          css_compiler: CSSCompilerMock,
          data_source: Beacon.BeaconTest.TestDataSource
        ]
-     ]}
+     ]},
+    Beacon.BeaconTest.Endpoint
   ],
   strategy: :one_for_one
 )

@@ -184,8 +184,8 @@ Make sure you're not adding `beacon_site` into the existing `scope "/", MyAppWeb
     def start(_type, _args) do
       children = [
         # ommited others for brevity
-        MyAppWeb.Endpoint,
-        {Beacon, sites: [[site: :my_site, data_source: MyApp.BeaconDataSource]]}
+        {Beacon, sites: [[site: :my_site, data_source: MyApp.BeaconDataSource]]},
+        MyAppWeb.Endpoint
       ]
 
       opts = [strategy: :one_for_one, name: MyApp.Supervisor]
