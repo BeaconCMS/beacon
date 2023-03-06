@@ -26,10 +26,7 @@ defmodule Beacon.Loader.Server do
   end
 
   def handle_continue(:load_from_db, config) do
-    Logger.info("memory before load_from_db: #{inspect(:erlang.memory())}")
     load_from_db(config.site)
-    Logger.info("memory after load_from_db: #{inspect(:erlang.memory())}")
-
     {:noreply, config, :hibernate}
   end
 
