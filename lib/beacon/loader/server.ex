@@ -27,12 +27,12 @@ defmodule Beacon.Loader.Server do
 
   def handle_continue(:load_from_db, config) do
     load_from_db(config.site)
-    {:noreply, config, :hibernate}
+    {:noreply, config}
   end
 
   def handle_call({:reload_from_db, site}, _from, config) do
     load_from_db(site)
-    {:reply, :ok, config, :hibernate}
+    {:reply, :ok, config}
   end
 
   defp load_from_db(site) do
