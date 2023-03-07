@@ -47,6 +47,8 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
+    start = System.monotonic_time(:microsecond)
+
     # TODO: path resolution
     path =
       if assigns.__live_path__ == [] do
@@ -65,6 +67,9 @@ defmodule BeaconWeb.PageLive do
     opts = __ENV__ |> Map.from_struct() |> Map.merge(%{functions: functions})
 
     {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], opts)
+
+    Logger.info("[PageLive.render] path: #{path} - time: #{System.monotonic_time(:microsecond) - start} microsecond")
+
     result
   end
 
