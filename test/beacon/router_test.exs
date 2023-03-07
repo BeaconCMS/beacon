@@ -85,4 +85,27 @@ defmodule Beacon.RouterTest do
       assert beacon_asset_path(beacon, "file.jpg") == "/parent/nested/site/beacon_assets/file.jpg?site=site"
     end
   end
+
+  describe "lookup" do
+    # we don't care about values in this test but we create the same structure
+    @value {nil, nil, nil}
+
+    setup do
+      [table: :ets.new(:beacon_router_test, [:set, :protected])]
+    end
+
+    test "not existing path", %{table: table} do
+      refute Router.lookup_path(table, :test, ["home"])
+    end
+
+    test "exact match", %{table: table} do
+      Router.add_page(table, :test, "", @value)
+      Router.add_page(table, :test, "home", @value)
+      Router.add_page(table, :test, "blog/posts/2020-01-my-post", @value)
+
+      assert {{:test, ""}, _} = Router.lookup_path(table, :test, [])
+      assert {{:test, "home"}, _} = Router.lookup_path(table, :test, ["home"])
+      assert {{:test, "blog/posts/2020-01-my-post"}, _} = Router.lookup_path(table, :test, ["blog", "posts", "2020-01-my-post"])
+    end
+  end
 end

@@ -59,7 +59,7 @@ defmodule Beacon.Loader.PageModuleLoader do
         file: "page-render-#{id}"
       )
 
-    :ets.insert(:beacon_pages, {{site, path}, {ast, page_module, component_module}})
+    Beacon.Router.add_page(site, path, {ast, page_module, component_module})
   end
 
   defp page_assigns(%Page{} = page) do

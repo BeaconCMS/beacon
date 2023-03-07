@@ -1,6 +1,6 @@
 defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
-
+  use Phoenix.HTML
   require Logger
   import Phoenix.Component
   alias Beacon.BeaconAttrs
@@ -49,21 +49,25 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     start = System.monotonic_time(:microsecond)
 
-    # TODO: path resolution
-    path =
-      if assigns.__live_path__ == [] do
-        ""
-      else
-        [path] = assigns.__live_path__
-        path
-      end
+    {{_, path}, _} =
+      Beacon.Router.lookup_path(assigns.__site__, assigns.__live_path__) ||
+        raise """
+        Route not found for path #{inspect(assigns.__live_path__)}
+
+        Make sure a page was created for that path.
+        """
 
     # TODO: beacon_path_params
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
 
-    [{_, {ast, page_module, component_module}}] = :ets.lookup(:beacon_pages, {assigns.__site__, path})
+    {ast, page_module, component_module} = Beacon.Router.lookup_key(assigns.__site__, path)
 
-    functions = [{page_module, [dynamic_helper: 2]}, {component_module, [my_component: 2]} | __ENV__.functions]
+    functions = [
+      {page_module, [dynamic_helper: 2]},
+      {component_module, [my_component: 2]}
+      | __ENV__.functions
+    ]
+
     opts = __ENV__ |> Map.from_struct() |> Map.merge(%{functions: functions})
 
     {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], opts)

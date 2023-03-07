@@ -2,7 +2,7 @@ defmodule Beacon.Loader.Server do
   @moduledoc false
 
   use GenServer
-  require Logger
+
   alias Beacon.Loader.DBLoader
   alias Beacon.Registry
 
@@ -22,12 +22,8 @@ defmodule Beacon.Loader.Server do
   end
 
   def init(config) do
-    {:ok, config, {:continue, :load_from_db}}
-  end
-
-  def handle_continue(:load_from_db, config) do
     load_from_db(config.site)
-    {:noreply, config}
+    {:ok, config}
   end
 
   def handle_call({:reload_from_db, site}, _from, config) do

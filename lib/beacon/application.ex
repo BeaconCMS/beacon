@@ -14,7 +14,7 @@ defmodule Beacon.Application do
       Beacon.Repo
     ]
 
-    :ets.new(:beacon_pages, [:set, :named_table, :public, read_concurrency: true])
+    :ets.new(:beacon_routes, [:set, :named_table, :public, read_concurrency: true])
 
     Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
   end

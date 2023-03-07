@@ -203,4 +203,57 @@ defmodule Beacon.Router do
   def sanitize_path(path) do
     String.replace(path, "//", "/")
   end
+
+  @doc false
+  def add_page(site, path, {_, _, _} = value) do
+    add_page(:beacon_routes, site, path, value)
+  end
+
+  @doc false
+  def add_page(table, site, path, value) do
+    :ets.insert(table, {{site, path}, value})
+  end
+
+  @doc false
+  def lookup_key(site, path) do
+    [{_, value}] = :ets.lookup(:beacon_routes, {site, path})
+    value
+  end
+
+  @doc false
+  def lookup_path(site, path) do
+    lookup_path(:beacon_routes, site, path)
+  end
+
+  # Lookup for a path stored in ets that is coming from a live view.
+  #
+  # Note that the `path` is the full expanded path coming from the request at runtime,
+  # while the path stored in the ets table is the page path stored at compile time.
+  # That means a page path with dynamic parts like `/posts/*slug` in ets is received here as `/posts/my-post`,
+  # and to make this lookup find the correct record in ets, we have to take some rules into account:
+  #
+  # - return exact matches right away
+  # -
+  @doc false
+  def lookup_path(table, site, path) when is_atom(site) and is_list(path) do
+    # TODO: dynamic parts
+    path =
+      if path == [] do
+        ""
+      else
+        Enum.join(path, "/")
+      end
+
+    match = {{site, path}, :_}
+    guards = []
+    body = [:"$_"]
+
+    case :ets.select(table, [{match, guards, body}]) do
+      [] -> nil
+      [match] -> match
+    end
+  end
+
+  @doc false
+  def lookup_path(_table, _site, _path), do: nil
 end
