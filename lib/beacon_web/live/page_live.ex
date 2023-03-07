@@ -68,7 +68,11 @@ defmodule BeaconWeb.PageLive do
       | __ENV__.functions
     ]
 
-    opts = __ENV__ |> Map.from_struct() |> Map.merge(%{functions: functions})
+    opts =
+      __ENV__
+      |> Map.from_struct()
+      |> Keyword.new()
+      |> Keyword.put(:functions, functions)
 
     {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], opts)
 
