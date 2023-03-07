@@ -2,6 +2,7 @@ defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
 
   require Logger
+  import Phoenix.Component
   alias Beacon.BeaconAttrs
 
   def mount(:not_mounted_at_router, _params, socket) do
@@ -46,12 +47,24 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    import Phoenix.Component
+    # TODO: path resolution
+    path =
+      if assigns.__live_path__ == [] do
+        ""
+      else
+        [path] = assigns.__live_path__
+        path
+      end
 
-    [path] = assigns.__live_path__
+    # TODO: beacon_path_params
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
-    [{_, ast}] = :ets.lookup(:beacon_pages, {assigns.__site__, path})
-    {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], __ENV__)
+
+    [{_, {ast, page_module, component_module}}] = :ets.lookup(:beacon_pages, {assigns.__site__, path})
+
+    functions = [{page_module, [dynamic_helper: 2]}, {component_module, [my_component: 2]} | __ENV__.functions]
+    opts = __ENV__ |> Map.from_struct() |> Map.merge(%{functions: functions})
+
+    {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], opts)
     result
   end
 

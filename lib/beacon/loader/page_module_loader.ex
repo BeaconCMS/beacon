@@ -26,9 +26,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     ast = render(page_module, component_module, functions)
 
-    for page <- pages do
-      store_page(page)
-    end
+    Enum.each(pages, fn page -> store_page(page, page_module, component_module) end)
 
     :ok = ModuleLoader.load(page_module, ast)
     {:ok, ast}
@@ -46,7 +44,9 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  defp store_page(%Page{site: site, path: path, template: template, id: id}) do
+  defp store_page(%Page{} = page, page_module, component_module) do
+    %{site: site, path: path, template: template, id: id} = page
+
     Beacon.safe_code_heex_check!(site, template)
 
     ast =
@@ -59,7 +59,7 @@ defmodule Beacon.Loader.PageModuleLoader do
         file: "page-render-#{id}"
       )
 
-    :ets.insert(:beacon_pages, {{site, path}, ast})
+    :ets.insert(:beacon_pages, {{site, path}, {ast, page_module, component_module}})
   end
 
   defp page_assigns(%Page{} = page) do
