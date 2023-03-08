@@ -15,10 +15,12 @@ defmodule BeaconWeb.PageLive do
 
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 
-    {{_, _}, {page_id, layout_id, _, _, _}} =
+    {{_site, _path}, {page_id, layout_id, ast, page_module, component_module}} =
       Beacon.Router.lookup_path(site, path) ||
         raise """
-        TODO
+        Route not found for path #{inspect(path)}
+
+        Make sure a page was created for that path.
         """
 
     socket =
@@ -31,6 +33,9 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
+      |> assign(:__beacon_page_template_ast__, ast)
+      |> assign(:__beacon_page_module__, page_module)
+      |> assign(:__beacon_component_module__, component_module)
 
     socket =
       socket
@@ -45,20 +50,12 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     start = System.monotonic_time(:microsecond)
 
-    {{_, path}, {_, _, ast, page_module, component_module}} =
-      Beacon.Router.lookup_path(assigns.__site__, assigns.__live_path__) ||
-        raise """
-        Route not found for path #{inspect(assigns.__live_path__)}
-
-        Make sure a page was created for that path.
-        """
-
     # TODO: beacon_path_params
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
 
     functions = [
-      {page_module, [dynamic_helper: 2]},
-      {component_module, [my_component: 2]}
+      {assigns.__beacon_page_module__, [dynamic_helper: 2]},
+      {assigns.__beacon_component_module__, [my_component: 2]}
       | __ENV__.functions
     ]
 
@@ -68,9 +65,9 @@ defmodule BeaconWeb.PageLive do
       |> Keyword.new()
       |> Keyword.put(:functions, functions)
 
-    {result, _bindings} = Code.eval_quoted(ast, [assigns: assigns], opts)
+    {result, _bindings} = Code.eval_quoted(assigns.__beacon_page_template_ast__, [assigns: assigns], opts)
 
-    Logger.info("[PageLive.render] path: #{path} - time: #{System.monotonic_time(:microsecond) - start} microsecond")
+    Logger.info("[PageLive.render] path: #{inspect(assigns.__live_path__)} - time: #{System.monotonic_time(:microsecond) - start} microsecond")
 
     result
   end
