@@ -205,19 +205,13 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def add_page(site, path, {_, _, _} = value) do
+  def add_page(site, path, {_page_id, _layout_id, _ast, _page_module, _component_module} = value) do
     add_page(:beacon_routes, site, path, value)
   end
 
   @doc false
-  def add_page(table, site, path, value) do
+  def add_page(table, site, path, {_page_id, _layout_id, _ast, _page_module, _component_module} = value) do
     :ets.insert(table, {{site, path}, value})
-  end
-
-  @doc false
-  def lookup_key(site, path) do
-    [{_, value}] = :ets.lookup(:beacon_routes, {site, path})
-    value
   end
 
   @doc false

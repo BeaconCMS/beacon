@@ -15,15 +15,11 @@ defmodule BeaconWeb.PageLive do
 
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 
-    layout_id =
-      site
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:layout_id_for_path, [path])
-
-    page_id =
-      site
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_id, [path])
+    {{_, _}, {page_id, layout_id, _, _, _}} =
+      Beacon.Router.lookup_path(site, path) ||
+        raise """
+        TODO
+        """
 
     socket =
       socket
@@ -49,7 +45,7 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     start = System.monotonic_time(:microsecond)
 
-    {{_, path}, _} =
+    {{_, path}, {_, _, ast, page_module, component_module}} =
       Beacon.Router.lookup_path(assigns.__site__, assigns.__live_path__) ||
         raise """
         Route not found for path #{inspect(assigns.__live_path__)}
@@ -59,8 +55,6 @@ defmodule BeaconWeb.PageLive do
 
     # TODO: beacon_path_params
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
-
-    {ast, page_module, component_module} = Beacon.Router.lookup_key(assigns.__site__, path)
 
     functions = [
       {page_module, [dynamic_helper: 2]},

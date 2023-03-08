@@ -13,8 +13,6 @@ defmodule Beacon.Loader.PageModuleLoader do
     functions = [
       for fun <- [
             &page_assigns/1,
-            &page_id/1,
-            &layout_id_for_path/1,
             &handle_event/1,
             &helper/1
           ],
@@ -45,7 +43,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp store_page(%Page{} = page, page_module, component_module) do
-    %{site: site, path: path, template: template, id: id} = page
+    %{id: page_id, layout_id: layout_id, site: site, path: path, template: template} = page
 
     Beacon.safe_code_heex_check!(site, template)
 
@@ -56,10 +54,10 @@ defmodule Beacon.Loader.PageModuleLoader do
         trim: true,
         caller: __ENV__,
         source: template,
-        file: "page-render-#{id}"
+        file: "page-render-#{page_id}"
       )
 
-    Beacon.Router.add_page(site, path, {ast, page_module, component_module})
+    Beacon.Router.add_page(site, path, {page_id, layout_id, ast, page_module, component_module})
   end
 
   defp page_assigns(%Page{} = page) do
@@ -75,24 +73,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  defp page_id(%Page{id: id, path: path}) do
-    quote do
-      def page_id(unquote(path_to_args(path, ""))), do: unquote(id)
-    end
-  end
-
-  defp layout_id_for_path(%Page{path: path, layout_id: layout_id}) do
-    quote do
-      def layout_id_for_path(unquote(path_to_args(path, "_"))), do: unquote(layout_id)
-    end
-  end
-
-  # defp page_module(page_module) do
-  #   quote do
-  #     def page_module, do: unquote(page_module)
-  #   end
-  # end
-
+  # TODO: path_to_args in paths with dynamic segments may be broken
   defp handle_event(%Page{site: site, path: path, events: events}) do
     Enum.map(events, fn %PageEvent{} = event ->
       Beacon.safe_code_check!(site, event.code)

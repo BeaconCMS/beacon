@@ -130,14 +130,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "raise when the given path doesn't exist", %{conn: conn} do
-      error_message = """
-      Could not call layout_id_for_path for the given path: [\"no_page_match\"].
-
-      Make sure you have created a page for this path. Check Pages.create_page!/2 \
-      for more info.\
-      """
-
-      assert_raise Beacon.Loader.Error, error_message, fn ->
+      assert_raise RuntimeError, fn ->
         {:ok, _view, _html} = live(conn, "/no_page_match")
       end
     end
