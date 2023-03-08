@@ -296,12 +296,17 @@ defmodule Beacon.Router do
     end
   end
 
+  # compare `page_path` with `path_info` considering dynamic segments
+  # page_path is the value from beacon_pages.path and it contains
+  # the compile-time path, including dynamic segments, for eg: /posts/*slug
+  # while path_info is the expanded value coming from the live view request,
+  # eg: /posts/my-new-post
   defp match_path?(page_path, path_info) do
     page_path = String.split(page_path, "/", trim: true)
 
     # if path has a catch-all segment, eg: /posts/*slug
-    # we ignore the rest starting at the catch-all position
-    # because it will always match what comes afterward
+    # we ignore the rest starting at after the catch-all position
+    # because it will always match what comes after it
     start_catch_all =
       Enum.find_index(page_path, fn segment ->
         String.starts_with?(segment, "*")
@@ -315,15 +320,16 @@ defmodule Beacon.Router do
       end
 
     List.myers_difference(page_path, path_info, fn a, b ->
-      cond do
-        # consider dynamic segments as true because they always match
-        # as long as size of segments matches
-        String.starts_with?(a, ":") -> [eq: ":dyn"]
-        String.starts_with?(a, "*") -> [eq: ":dyn"]
-        :default -> String.myers_difference(a, b)
+      # consider dynamic segments as equal because they always match
+      if String.starts_with?(a, ":") || String.starts_with?(a, "*") do
+        [eq: ":dyn"]
+      else
+        # otherwise keep comparing
+        String.myers_difference(a, b)
       end
     end)
-    # |> dbg
+    # we find a match if all segments are equal, including the diffs
+    # otherwise we return early if any segment is not equal
     |> Enum.reduce_while(false, fn
       {:eq, _}, _acc ->
         {:cont, true}
