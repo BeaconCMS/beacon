@@ -145,7 +145,12 @@ seeds = fn ->
         <p class="text-sm">Page</p>
 
         <div>
-          <.link navigate="/dev/other">Other</.link>
+          <p>Pages:</p>
+          <ul>
+            <li><.link navigate="/dev/other">Other</.link></li>
+            <li><.link navigate="/dev/authors/name">Author</.link></li>
+            <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
+          </ul>
         </div>
 
         <%= my_component("sample_component", val: 1) %>
@@ -163,10 +168,6 @@ seeds = fn ->
           <p>From dynamic_helper:</p>
           <%= dynamic_helper("upcase", %{name: "beacon"}) %>
         </div>
-
-        <pre><code>
-          <%= inspect(Phoenix.Router.routes(SamplePhoenixWeb.Router), pretty: true) %>
-        </code></pre>
       </main>
       """
     })
@@ -185,7 +186,56 @@ seeds = fn ->
         <h1 class="text-violet-900">Other</h1>
 
         <div>
-          <.link navigate="/dev/home">Home</.link>
+          <p>Pages:</p>
+          <ul>
+            <li><.link navigate="/dev/home">Home</.link></li>
+            <li><.link navigate="/dev/authors/name">Author</.link></li>
+            <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
+          </ul>
+        </div>
+      </main>
+      """
+    })
+
+  _page_author =
+    Beacon.Pages.create_page!(%{
+      path: "authors/:author_id",
+      site: "dev",
+      title: "dev author",
+      layout_id: layout_id,
+      template: """
+      <main>
+        <h1 class="text-violet-900">Authors</h1>
+
+        <div>
+          <p>Pages:</p>
+          <ul>
+            <li><.link navigate="/dev/home">Home</.link></li>
+            <li><.link navigate="/dev/other">Other</.link></li>
+            <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
+          </ul>
+        </div>
+      </main>
+      """
+    })
+
+  _page_post =
+    Beacon.Pages.create_page!(%{
+      path: "posts/*slug",
+      site: "dev",
+      title: "dev post",
+      layout_id: layout_id,
+      template: """
+      <main>
+        <h1 class="text-violet-900">Post</h1>
+
+        <div>
+          <p>Pages:</p>
+          <ul>
+            <li><.link navigate="/dev/home">Home</.link></li>
+            <li><.link navigate="/dev/other">Other</.link></li>
+            <li><.link navigate="/dev/authors/name">Author</.link></li>
+          </ul>
         </div>
       </main>
       """

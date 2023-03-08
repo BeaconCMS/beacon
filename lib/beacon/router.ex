@@ -232,16 +232,36 @@ defmodule Beacon.Router do
   # That means a page path with dynamic parts like `/posts/*slug` in ets is received here as `/posts/my-post`,
   # and to make this lookup find the correct record in ets, we have to take some rules into account:
   #
-  # - return exact matches right away
-  # -
+  # Paths with only static segments
+  # - lookup static paths and return early if found a match
+  #
+  # Paths with dynamic segments:
+  # - catch-all "*" -> ignore segments after catch-all
+  # - variable ":" -> traverse the whole path ignoring ":" segments
+  #
   @doc false
-  def lookup_path(table, site, path) when is_atom(site) and is_list(path) do
-    # TODO: dynamic parts
+  def lookup_path(table, site, path, limit \\ 10)
+
+  def lookup_path(table, site, path_info, limit) when is_atom(site) and is_list(path_info) and is_integer(limit) do
+    if route = match_static_routes(table, site, path_info) do
+      route
+    else
+      :ets.safe_fixtable(table, true)
+      route = match_dynamic_routes(:ets.match(table, :"$1", limit), path_info)
+      :ets.safe_fixtable(table, false)
+      route
+    end
+  end
+
+  @doc false
+  def lookup_path(_table, _site, _path, _limit), do: nil
+
+  defp match_static_routes(table, site, path_info) do
     path =
-      if path == [] do
+      if path_info == [] do
         ""
       else
-        Enum.join(path, "/")
+        Enum.join(path_info, "/")
       end
 
     match = {{site, path}, :_}
@@ -249,11 +269,82 @@ defmodule Beacon.Router do
     body = [:"$_"]
 
     case :ets.select(table, [{match, guards, body}]) do
-      [] -> nil
       [match] -> match
+      _ -> nil
     end
   end
 
-  @doc false
-  def lookup_path(_table, _site, _path), do: nil
+  defp match_dynamic_routes(:"$end_of_table", _path_info) do
+    nil
+  end
+
+  defp match_dynamic_routes({routes, :"$end_of_table"}, path_info) do
+    route =
+      Enum.find(routes, fn [{{_site, page_path}, _value}] ->
+        match_path?(page_path, path_info)
+      end)
+
+    case route do
+      [route] -> route
+      _ -> nil
+    end
+  end
+
+  defp match_dynamic_routes({routes, cont}, path_info) do
+    route =
+      Enum.find(routes, fn [{{_site, page_path}, _value}] ->
+        match_path?(page_path, path_info)
+      end)
+
+    case route do
+      [route] -> route
+      _ -> match_dynamic_routes(:ets.match(cont), path_info)
+    end
+  end
+
+  defp match_path?(page_path, path_info) do
+    page_path = String.split(page_path, "/", trim: true)
+
+    # if path has a catch-all segment, eg: /posts/*slug
+    # we ignore the rest starting at the catch-all position
+    # because it will always match what comes afterward
+    start_catch_all =
+      Enum.find_index(page_path, fn segment ->
+        String.starts_with?(segment, "*")
+      end)
+
+    {page_path, path_info} =
+      if start_catch_all do
+        {Enum.take(page_path, start_catch_all + 1), Enum.take(path_info, start_catch_all + 1)}
+      else
+        {page_path, path_info}
+      end
+
+    List.myers_difference(page_path, path_info, fn a, b ->
+      cond do
+        # consider dynamic segments as true because they always match
+        # as long as size of segments matches
+        String.starts_with?(a, ":") -> [eq: ""]
+        String.starts_with?(a, "*") -> [eq: ""]
+        :default -> String.myers_difference(a, b)
+      end
+    end)
+    # |> dbg
+    |> Enum.reduce_while(false, fn
+      {:eq, _}, _acc ->
+        {:cont, true}
+
+      {:diff, diff}, _acc ->
+        eq =
+          Enum.all?(diff, fn
+            {:eq, _v} -> true
+            _ -> false
+          end)
+
+        if eq, do: {:cont, true}, else: {:halt, false}
+
+      {_, _}, _acc ->
+        {:halt, false}
+    end)
+  end
 end
