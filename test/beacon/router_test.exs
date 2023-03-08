@@ -137,6 +137,14 @@ defmodule Beacon.RouterTest do
       assert {{:test, "/posts/*slug"}, _} = Router.lookup_path(table, :test, ["posts", "2022", "my-post"])
     end
 
+    test "catch all with existing path with same prefix", %{table: table} do
+      Router.add_page(table, :test, "/press/releases/*slug", @value)
+      Router.add_page(table, :test, "/press/releases", @value)
+
+      assert {{:test, "/press/releases/*slug"}, _} = Router.lookup_path(table, :test, ["press", "releases", "announcement"])
+      assert {{:test, "/press/releases"}, _} = Router.lookup_path(table, :test, ["press", "releases"])
+    end
+
     test "catch all must match at least 1 segment", %{table: table} do
       Router.add_page(table, :test, "/posts/*slug", @value)
 

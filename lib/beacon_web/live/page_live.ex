@@ -77,8 +77,7 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    socket.assigns.__site__
-    |> Beacon.Loader.page_module_for_site()
+    socket.assigns.__beacon_page_module__
     |> Beacon.Loader.call_function_with_retry(
       :handle_event,
       [socket.assigns.__live_path__, event_name, event_params, socket]

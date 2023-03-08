@@ -205,13 +205,13 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def add_page(site, path, {_page_id, _layout_id, _ast, _page_module, _component_module} = value) do
-    add_page(:beacon_routes, site, path, value)
+  def add_page(site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
+    add_page(:beacon_routes, site, path, metadata)
   end
 
   @doc false
-  def add_page(table, site, path, {_page_id, _layout_id, _ast, _page_module, _component_module} = value) do
-    :ets.insert(table, {{site, path}, value})
+  def add_page(table, site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
+    :ets.insert(table, {{site, path}, metadata})
   end
 
   @doc false
@@ -227,7 +227,7 @@ defmodule Beacon.Router do
   # and to make this lookup find the correct record in ets, we have to take some rules into account:
   #
   # Paths with only static segments
-  # - lookup static paths and return early if found a match
+  # - lookup static paths by key and return early if found a match
   #
   # Paths with dynamic segments:
   # - catch-all "*" -> ignore segments after catch-all
@@ -274,7 +274,7 @@ defmodule Beacon.Router do
 
   defp match_dynamic_routes({routes, :"$end_of_table"}, path_info) do
     route =
-      Enum.find(routes, fn [{{_site, page_path}, _value}] ->
+      Enum.find(routes, fn [{{_site, page_path}, _metadata}] ->
         match_path?(page_path, path_info)
       end)
 
@@ -286,7 +286,7 @@ defmodule Beacon.Router do
 
   defp match_dynamic_routes({routes, cont}, path_info) do
     route =
-      Enum.find(routes, fn [{{_site, page_path}, _value}] ->
+      Enum.find(routes, fn [{{_site, page_path}, _metadata}] ->
         match_path?(page_path, path_info)
       end)
 
@@ -318,8 +318,8 @@ defmodule Beacon.Router do
       cond do
         # consider dynamic segments as true because they always match
         # as long as size of segments matches
-        String.starts_with?(a, ":") -> [eq: ""]
-        String.starts_with?(a, "*") -> [eq: ""]
+        String.starts_with?(a, ":") -> [eq: ":dyn"]
+        String.starts_with?(a, "*") -> [eq: ":dyn"]
         :default -> String.myers_difference(a, b)
       end
     end)

@@ -47,7 +47,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     Beacon.safe_code_heex_check!(site, template)
 
-    ast =
+    template_ast =
       EEx.compile_string(template,
         engine: Phoenix.LiveView.HTMLEngine,
         line: 1,
@@ -57,7 +57,7 @@ defmodule Beacon.Loader.PageModuleLoader do
         file: "page-render-#{page_id}"
       )
 
-    Beacon.Router.add_page(site, path, {page_id, layout_id, ast, page_module, component_module})
+    Beacon.Router.add_page(site, path, {page_id, layout_id, template_ast, page_module, component_module})
   end
 
   defp page_assigns(%Page{} = page) do
