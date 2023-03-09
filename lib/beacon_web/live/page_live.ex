@@ -15,13 +15,7 @@ defmodule BeaconWeb.PageLive do
 
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 
-    {{_site, _path}, {page_id, layout_id, ast, page_module, component_module}} =
-      Beacon.Router.lookup_path(site, path) ||
-        raise """
-        Route not found for path #{inspect(path)}
-
-        Make sure a page was created for that path.
-        """
+    {{_site, _path}, {page_id, layout_id, templat_ast, page_module, component_module}} = lookup_route!(site, path)
 
     socket =
       socket
@@ -33,7 +27,7 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
-      |> assign(:__beacon_page_template_ast__, ast)
+      |> assign(:__beacon_page_template_ast__, templat_ast)
       |> assign(:__beacon_page_module__, page_module)
       |> assign(:__beacon_component_module__, component_module)
 
@@ -50,6 +44,8 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     start = System.monotonic_time(:microsecond)
 
+    {{_site, _path}, {_page_id, _layout_id, template_ast, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
+
     # TODO: beacon_path_params
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
 
@@ -65,11 +61,20 @@ defmodule BeaconWeb.PageLive do
       |> Keyword.new()
       |> Keyword.put(:functions, functions)
 
-    {result, _bindings} = Code.eval_quoted(assigns.__beacon_page_template_ast__, [assigns: assigns], opts)
+    {result, _bindings} = Code.eval_quoted(template_ast, [assigns: assigns], opts)
 
     Logger.info("[PageLive.render] path: #{inspect(assigns.__live_path__)} - time: #{System.monotonic_time(:microsecond) - start} microsecond")
 
     result
+  end
+
+  defp lookup_route!(site, path) do
+    Beacon.Router.lookup_path(site, path) ||
+      raise """
+      Route not found for path #{inspect(path)}
+
+      Make sure a page was created for that path.
+      """
   end
 
   def handle_info(:page_updated, socket) do
