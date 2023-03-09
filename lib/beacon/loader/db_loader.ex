@@ -19,24 +19,10 @@ defmodule Beacon.Loader.DBLoader do
   end
 
   def load_from_db(site) do
-    Logger.info("[DBLoader] Loading site #{site} from db")
-    Logger.info("[DBLoader] memory: #{inspect(:erlang.memory())}")
-
     load_components(site)
-    Logger.info("[DBLoader] Loaded components")
-    Logger.info("[DBLoader] memory: #{inspect(:erlang.memory())}")
-
     load_layouts(site)
-    Logger.info("[DBLoader] Loaded layouts")
-    Logger.info("[DBLoader] memory: #{inspect(:erlang.memory())}")
-
     load_pages(site)
-    Logger.info("[DBLoader] Loaded pages")
-    Logger.info("[DBLoader] memory: #{inspect(:erlang.memory())}")
-
     load_stylesheets(site)
-    Logger.info("[DBLoader] Loaded stylesheets")
-    Logger.info("[DBLoader] memory: #{inspect(:erlang.memory())}")
 
     :ok
   end

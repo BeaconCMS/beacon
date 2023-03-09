@@ -62,8 +62,6 @@ defmodule BeaconWeb.PageLive do
 
     {result, _bindings} = Code.eval_quoted(template_ast, [assigns: assigns], opts)
 
-    Logger.info("[PageLive.render] path: #{inspect(assigns.__live_path__)} - time: #{System.monotonic_time(:microsecond) - start} microsecond")
-
     result
   end
 
