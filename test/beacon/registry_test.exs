@@ -11,7 +11,7 @@ defmodule Beacon.RegistryTest do
   describe "config!" do
     test "return site config for existing sites" do
       assert %Beacon.Config{
-               css_compiler: CSSCompilerMock,
+               css_compiler: Beacon.TailwindCompiler,
                data_source: Beacon.BeaconTest.BeaconDataSource,
                live_socket_path: "/custom_live",
                safe_code_check: false,

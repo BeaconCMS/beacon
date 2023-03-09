@@ -3,7 +3,6 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   alias Beacon.Layouts.Layout
   alias Beacon.Loader.ModuleLoader
-  alias Beacon.RuntimeCSS
 
   def load_layouts(site, layouts) do
     component_module = Beacon.Loader.component_module_for_site(site)
@@ -28,7 +27,6 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   defp render_layout(%Layout{} = layout) do
     Beacon.safe_code_heex_check!(layout.site, layout.body)
-    runtime_css = RuntimeCSS.compile!(layout)
 
     ast =
       EEx.compile_string(layout.body,
@@ -49,8 +47,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
         %{
           title: unquote(layout.title),
           meta_tags: unquote(Macro.escape(layout.meta_tags)),
-          stylesheet_urls: unquote(layout.stylesheet_urls),
-          runtime_css: unquote(runtime_css)
+          stylesheet_urls: unquote(layout.stylesheet_urls)
         }
       end
     end

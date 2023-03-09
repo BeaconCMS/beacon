@@ -47,7 +47,6 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
       {:jason, "~> 1.3"},
-      {:mox, "~> 1.0", only: :test},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},

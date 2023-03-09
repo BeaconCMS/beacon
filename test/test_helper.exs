@@ -8,8 +8,6 @@ Application.put_env(:beacon, Beacon.BeaconTest.Endpoint,
   debug_errors: true
 )
 
-Mox.defmock(CSSCompilerMock, for: Beacon.RuntimeCSS)
-
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: Beacon.BeaconTest.PubSub},
@@ -17,14 +15,12 @@ Supervisor.start_link(
      sites: [
        [
          site: :my_site,
-         css_compiler: CSSCompilerMock,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.js.eex"]),
          data_source: Beacon.BeaconTest.BeaconDataSource,
          live_socket_path: "/custom_live"
        ],
        [
          site: :data_source_test,
-         css_compiler: CSSCompilerMock,
          data_source: Beacon.BeaconTest.TestDataSource
        ]
      ]},
