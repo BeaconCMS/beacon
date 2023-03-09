@@ -119,16 +119,6 @@ defmodule Beacon.Loader.PageModuleLoader do
     # |> String.replace(",|", " |")
   end
 
-  def path_params(path) do
-    path
-    |> String.split("/")
-    |> Enum.filter(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "*")))
-    |> Enum.into(%{}, fn
-      ":" <> var -> {var, var}
-      "*" <> var -> {var, var}
-    end)
-  end
-
   defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
   defp path_segment_to_arg("*" <> segment, prefix), do: "| " <> prefix <> segment
   defp path_segment_to_arg(segment, _prefix), do: segment
