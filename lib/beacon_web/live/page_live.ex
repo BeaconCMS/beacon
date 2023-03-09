@@ -42,8 +42,6 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    start = System.monotonic_time(:microsecond)
-
     {{_site, path}, {_page_id, _layout_id, template_ast, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
 
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, path_params(path, assigns.__live_path__))
