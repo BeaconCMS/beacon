@@ -76,27 +76,20 @@ defmodule BeaconWeb.PageLive do
       """
   end
 
-  def path_params(page_path, path_info) do
+  defp path_params(page_path, path_info) do
     page_path = String.split(page_path, "/")
 
-    {_, params} =
-      page_path
-      |> Enum.reduce({0, %{}}, fn segment, {position, params} ->
-        cond do
-          String.starts_with?(segment, ":") ->
-            ":" <> match = segment
-            {position + 1, Map.put(params, match, Enum.at(path_info, position))}
+    Enum.zip_reduce(page_path, path_info, %{}, fn
+      ":" <> segment, value, acc ->
+        Map.put(acc, segment, value)
 
-          String.starts_with?(segment, "*") ->
-            "*" <> match = segment
-            {position + 1, Map.put(params, match, Enum.drop(path_info, position))}
+      "*" <> segment, value, acc ->
+        position = Enum.find_index(path_info, &(&1 == value))
+        Map.put(acc, segment, Enum.drop(path_info, position))
 
-          :static_segment ->
-            {position + 1, params}
-        end
-      end)
-
-    params
+      _, _, acc ->
+        acc
+    end)
   end
 
   def handle_info(:page_updated, socket) do
