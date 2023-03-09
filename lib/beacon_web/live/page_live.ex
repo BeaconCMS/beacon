@@ -44,10 +44,9 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     start = System.monotonic_time(:microsecond)
 
-    {{_site, _path}, {_page_id, _layout_id, template_ast, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
+    {{_site, path}, {_page_id, _layout_id, template_ast, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
 
-    # TODO: beacon_path_params
-    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, %{})
+    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, path_params(path, assigns.__live_path__))
 
     functions = [
       {assigns.__beacon_page_module__, [dynamic_helper: 2]},
@@ -75,6 +74,29 @@ defmodule BeaconWeb.PageLive do
 
       Make sure a page was created for that path.
       """
+  end
+
+  def path_params(page_path, path_info) do
+    page_path = String.split(page_path, "/")
+
+    {_, params} =
+      page_path
+      |> Enum.reduce({0, %{}}, fn segment, {position, params} ->
+        cond do
+          String.starts_with?(segment, ":") ->
+            ":" <> match = segment
+            {position + 1, Map.put(params, match, Enum.at(path_info, position))}
+
+          String.starts_with?(segment, "*") ->
+            "*" <> match = segment
+            {position + 1, Map.put(params, match, Enum.drop(path_info, position))}
+
+          :static_segment ->
+            {position + 1, params}
+        end
+      end)
+
+    params
   end
 
   def handle_info(:page_updated, socket) do

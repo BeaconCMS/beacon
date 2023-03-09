@@ -147,8 +147,7 @@ seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/other">Other</.link></li>
-            <li><.link navigate="/dev/authors/name">Author</.link></li>
+            <li><.link navigate="/dev/authors/1-author">Author</.link></li>
             <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
           </ul>
         </div>
@@ -172,31 +171,6 @@ seeds = fn ->
       """
     })
 
-  _page_other =
-    Beacon.Pages.create_page!(%{
-      path: "other",
-      site: "dev",
-      title: "dev other",
-      layout_id: layout_id,
-      meta_tags: [
-        %{"property" => "og:title", "content" => "other"}
-      ],
-      template: """
-      <main>
-        <h1 class="text-violet-900">Other</h1>
-
-        <div>
-          <p>Pages:</p>
-          <ul>
-            <li><.link navigate="/dev/home">Home</.link></li>
-            <li><.link navigate="/dev/authors/name">Author</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
-          </ul>
-        </div>
-      </main>
-      """
-    })
-
   _page_author =
     Beacon.Pages.create_page!(%{
       path: "authors/:author_id",
@@ -211,9 +185,13 @@ seeds = fn ->
           <p>Pages:</p>
           <ul>
             <li><.link navigate="/dev/home">Home</.link></li>
-            <li><.link navigate="/dev/other">Other</.link></li>
             <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
           </ul>
+        </div>
+
+        <div>
+          <p>path params:</p>
+          <p><%= inspect @beacon_path_params %></p>
         </div>
       </main>
       """
@@ -233,9 +211,13 @@ seeds = fn ->
           <p>Pages:</p>
           <ul>
             <li><.link navigate="/dev/home">Home</.link></li>
-            <li><.link navigate="/dev/other">Other</.link></li>
-            <li><.link navigate="/dev/authors/name">Author</.link></li>
+            <li><.link navigate="/dev/authors/1-author">Author</.link></li>
           </ul>
+        </div>
+
+        <div>
+          <p>path params:</p>
+          <p><%= inspect @beacon_path_params %></p>
         </div>
       </main>
       """
