@@ -11,7 +11,7 @@ We recomment following the guide thoroughly, but if you want a short version or 
 2. Install Phoenix v1.7+
 
 ```sh
-mix archive.install hex phx_new 1.7.0-rc.2
+mix archive.install hex phx_new
 ```
 
 3. Setup a database
@@ -60,7 +60,7 @@ If that command fails or Elixir version is outdated, please follow [Elixir Insta
 Beacon also requires a minimum Phoenix version to work properly, make sure you have the latest `phx_new` archive - the command to generate new Phoenix applications.
 
 ```sh
-mix archive.install hex phx_new 1.7.0-rc.2
+mix archive.install hex phx_new
 ```
 
 ## Database
