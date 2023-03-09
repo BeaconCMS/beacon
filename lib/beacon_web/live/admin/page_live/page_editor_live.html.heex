@@ -11,8 +11,14 @@
   <.simple_form :let={f} for={@changeset} id="page-form" phx-change="validate" phx-submit="save">
     <.input field={{f, :site}} type="text" label="Site" disabled="true" />
     <.input field={{f, :path}} type="text" label="Path" disabled="true" />
-    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} />
-    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" />
+    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
+    <.input field={{f, :title}} type="text" label="Title" phx-debounce="500" />
+    <.input field={{f, :description}} type="textarea" label="Description" phx-debounce="500" />
+    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" phx-debounce="500" input_class="font-mono text-sm" />
+
+    <.header>Meta Tags</.header>
+    <.live_component module={MetaTagsInputs} id="meta-tags" field={{f, :meta_tags}} extra_attributes={@extra_meta_attributes} />
+
     <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
 
     <:actions>
@@ -21,9 +27,28 @@
   </.simple_form>
 </div>
 
-<div>
+<%= if @new_attribute_modal_visible? do %>
+  <.modal id="new-attribute-modal" show={true} on_cancel={JS.push("hide-new-attribute-modal")}>
+    <:title>New meta tag attribute</:title>
+
+    <.simple_form :let={f} for={:attribute} phx-submit="save-new-attribute">
+      <div class="flex items-center gap-2">
+        <%= for preset <- ~w(http-equiv charset itemprop) do %>
+          <.button phx-click={JS.set_attribute({"value", preset}, to: "#attribute_name")}><%= preset %></.button>
+        <% end %>
+      </div>
+
+      <div>
+        <.input type="text" field={{f, :name}} placeholder="Custom" label="Custom attribute" />
+        <.button class="mt-2">Add custom attribute</.button>
+      </div>
+    </.simple_form>
+  </.modal>
+<% end %>
+
+<div class="my-4">
   <.header>
-    History
+    Version History
   </.header>
 
   <.table id="page-versions" rows={sort_page_versions(@page.versions)}>

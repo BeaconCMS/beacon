@@ -35,6 +35,21 @@ defmodule Beacon.Pages do
   end
 
   @doc """
+  Returns a list of all pages for a given site that match the search query.
+
+  The search is for a case-insensitive substring within the page path.
+  """
+  def search_for_site_pages(site, search_query, preloads \\ []) do
+    Repo.all(
+      from p in Page,
+        where: p.site == ^site,
+        where: ilike(p.path, ^"%#{search_query}%"),
+        preload: ^preloads,
+        order_by: [asc: p.order, asc: p.path]
+    )
+  end
+
+  @doc """
   List all page templates for a layout.
   """
   def list_page_templates_by_layout(layout_id) do
@@ -126,9 +141,15 @@ defmodule Beacon.Pages do
     end)
   end
 
-  def update_page_pending(%Page{} = page, template, layout_id) do
+  def update_page_pending(%Page{} = page, template, layout_id, extra \\ %{}) do
+    params =
+      Map.merge(extra, %{
+        "pending_template" => template,
+        "pending_layout_id" => layout_id
+      })
+
     page
-    |> Page.update_pending_changeset(%{pending_template: template, pending_layout_id: layout_id})
+    |> Page.update_pending_changeset(params)
     |> Repo.update()
   end
 

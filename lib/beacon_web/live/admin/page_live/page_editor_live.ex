@@ -5,24 +5,30 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   alias Beacon.Layouts.Layout
   alias Beacon.Pages
 
+  alias BeaconWeb.Admin.PageLive.MetaTagsInputs
+
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
     socket =
       socket
       |> assign(:page_id, id)
+      |> assign(:new_attribute_modal_visible?, false)
+      |> assign(:extra_meta_attributes, [])
       |> assign_page_and_changeset()
-      |> assign_layouts()
 
     {:ok, socket}
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save", %{"page" => page_attrs, "publish" => publish}, socket) do
+  def handle_event("save", %{"page" => page_params, "publish" => publish}, socket) do
+    page_params = MetaTagsInputs.coerce_meta_tag_param(page_params, "meta_tags")
+
     {:ok, page} =
       Pages.update_page_pending(
         socket.assigns.page,
-        page_attrs["pending_template"],
-        page_attrs["pending_layout_id"]
+        page_params["pending_template"],
+        page_params["pending_layout_id"],
+        page_params
       )
 
     if publish == "true" do
@@ -33,18 +39,15 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("validate", %{"page" => page}, socket) do
-    page = %{"pending_template" => String.trim(page["pending_template"])}
+  def handle_event("validate", %{"page" => page_params}, socket) do
+    page_params = MetaTagsInputs.coerce_meta_tag_param(page_params, "meta_tags")
 
     changeset =
       socket.assigns.page
-      |> Pages.change_page(page)
+      |> Pages.change_page(page_params)
       |> Map.put(:action, :validate)
 
-    socket =
-      socket
-      |> assign(:changeset, changeset)
-      |> assign_layouts()
+    socket = assign_changeset(socket, changeset)
 
     {:noreply, socket}
   end
@@ -62,13 +65,26 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     {:noreply, assign_page_and_changeset(socket)}
   end
 
-  defp assign_layouts(%{assigns: %{changeset: changeset}} = socket) do
-    layouts =
-      changeset
-      |> Ecto.Changeset.get_field(:site)
-      |> Layouts.list_layouts_for_site()
+  @impl Phoenix.LiveView
+  def handle_event("show-new-attribute-modal", _, socket) do
+    {:noreply, assign(socket, :new_attribute_modal_visible?, true)}
+  end
 
-    assign(socket, :site_layouts, layouts)
+  @impl Phoenix.LiveView
+  def handle_event("hide-new-attribute-modal", _, socket) do
+    {:noreply, assign(socket, :new_attribute_modal_visible?, false)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save-new-attribute", %{"attribute" => %{"name" => name}}, socket) do
+    # Basic validation
+    attributes =
+      case String.trim(name) do
+        "" -> socket.assigns.extra_meta_attributes
+        name -> Enum.uniq(socket.assigns.extra_meta_attributes ++ [name])
+      end
+
+    {:noreply, assign(socket, extra_meta_attributes: attributes, new_attribute_modal_visible?: false)}
   end
 
   defp assign_page_and_changeset(socket) do
@@ -76,7 +92,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
     socket
     |> assign(:page, page)
-    |> assign(:changeset, Pages.change_page(page))
+    |> assign_changeset(Pages.change_page(page))
   end
 
   defp layouts_to_options(layouts) do
@@ -86,6 +102,23 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   defp sort_page_versions(page_versions) do
-    Enum.sort(page_versions, &(&2.inserted_at <= &1.inserted_at))
+    Enum.sort_by(page_versions, & &1.version, :desc)
+  end
+
+  defp assign_changeset(socket, new_changeset) do
+    # Only update the :site_layouts assign if the site has changed
+    old_site =
+      case socket.assigns[:changeset] do
+        %Ecto.Changeset{} = changeset -> Ecto.Changeset.get_field(changeset, :site)
+        _ -> nil
+      end
+
+    new_site = Ecto.Changeset.get_field(new_changeset, :site)
+
+    if old_site != new_site do
+      assign(socket, changeset: new_changeset, site_layouts: Layouts.list_layouts_for_site(new_site))
+    else
+      assign(socket, changeset: new_changeset)
+    end
   end
 end

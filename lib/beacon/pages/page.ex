@@ -9,6 +9,8 @@ defmodule Beacon.Pages.Page do
   alias Beacon.Pages.PageVersion
   alias Ecto.Changeset
 
+  @meta_tag_interpolation_keys [:title, :description, :path]
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
@@ -52,12 +54,20 @@ defmodule Beacon.Pages.Page do
     |> unique_constraint([:path, :site])
     |> foreign_key_constraint(:layout_id)
     |> foreign_key_constraint(:pending_layout_id)
+    |> trim([:pending_template])
+    |> remove_all_newlines([:description])
+    |> remove_empty_meta_attributes(:meta_tags)
   end
 
   def update_pending_changeset(page, attrs) do
+    # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
+    # need them to get going on the admin interface for now
     page
-    |> cast(attrs, [:pending_template, :pending_layout_id])
+    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags])
     |> validate_required([:pending_template, :pending_layout_id])
+    |> trim([:pending_template])
+    |> remove_all_newlines([:description])
+    |> remove_empty_meta_attributes(:meta_tags)
   end
 
   def put_pending(%Changeset{} = changeset) do
@@ -81,4 +91,53 @@ defmodule Beacon.Pages.Page do
       end
     end)
   end
+
+  defp trim(changeset, fields) do
+    Enum.reduce(fields, changeset, fn f, cs ->
+      update_change(cs, f, fn
+        value when is_binary(value) -> String.trim(value)
+        value -> value
+      end)
+    end)
+  end
+
+  # For when the UI is a <textarea> but "\n" would cause problems
+  defp remove_all_newlines(changeset, fields) do
+    Enum.reduce(fields, changeset, fn f, cs ->
+      update_change(cs, f, fn
+        value when is_binary(value) ->
+          value
+          |> String.trim()
+          |> String.replace(~r/\n+/, " ")
+
+        value ->
+          value
+      end)
+    end)
+  end
+
+  defp remove_empty_meta_attributes(changeset, field) do
+    update_change(changeset, field, fn
+      meta_tags when is_list(meta_tags) ->
+        Enum.map(meta_tags, &reject_empty_values/1)
+
+      value ->
+        value
+    end)
+  end
+
+  defp reject_empty_values(meta_tag) do
+    meta_tag
+    |> Enum.reject(fn {_key, value} -> String.trim(value) == "" end)
+    |> Map.new()
+  end
+
+  @doc """
+  Returns the list of Page fields which are available to the end user for interpolating into the values of meta
+  tag attributes.
+
+  The interpolation syntax is to surround the field name with %. For example, to insert the page :title, the user would
+  provide the value "%title%".
+  """
+  def meta_tag_interpolation_keys, do: @meta_tag_interpolation_keys
 end
