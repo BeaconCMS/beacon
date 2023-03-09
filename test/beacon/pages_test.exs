@@ -17,4 +17,12 @@ defmodule Beacon.PagesTest do
       assert [%Page{}] = Pages.list_pages()
     end
   end
+
+  test "list_pages_for_site order" do
+    page_fixture(path: "blog_a", order: 0)
+    page_fixture(path: "blog/posts", order: 0)
+    page_fixture(path: "blog_b", order: 1)
+
+    assert [%{path: "blog_a"}, %{path: "blog/posts"}, %{path: "blog_b"}] = Pages.list_pages_for_site(:my_site, [:events, :helpers])
+  end
 end

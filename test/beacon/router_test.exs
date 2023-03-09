@@ -92,7 +92,7 @@ defmodule Beacon.RouterTest do
     @value {nil, nil, nil, nil, nil}
 
     setup do
-      [table: :ets.new(:beacon_router_test, [:set, :protected])]
+      [table: :ets.new(:beacon_router_test, [:ordered_set, :protected])]
     end
 
     test "not existing path", %{table: table} do

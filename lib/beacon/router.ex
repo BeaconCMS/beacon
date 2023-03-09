@@ -240,10 +240,7 @@ defmodule Beacon.Router do
     if route = match_static_routes(table, site, path_info) do
       route
     else
-      :ets.safe_fixtable(table, true)
-      route = match_dynamic_routes(:ets.match(table, :"$1", limit), path_info)
-      :ets.safe_fixtable(table, false)
-      route
+      match_dynamic_routes(:ets.match(table, :"$1", limit), path_info)
     end
   end
 
@@ -302,49 +299,25 @@ defmodule Beacon.Router do
   # while path_info is the expanded value coming from the live view request,
   # eg: /posts/my-new-post
   defp match_path?(page_path, path_info) do
+    has_catch_all? = String.contains?(page_path, "/*")
     page_path = String.split(page_path, "/", trim: true)
+    page_path_length = length(page_path)
+    path_info_length = length(path_info)
 
-    # if path has a catch-all segment, eg: /posts/*slug
-    # we ignore the rest starting at after the catch-all position
-    # because it will always match what comes after it
-    start_catch_all =
-      Enum.find_index(page_path, fn segment ->
-        String.starts_with?(segment, "*")
+    {_, match?} =
+      Enum.reduce_while(path_info, {0, false}, fn segment, {position, _match?} ->
+        matching_segment = Enum.at(page_path, position)
+
+        cond do
+          page_path_length > path_info_length && has_catch_all? -> {:halt, {position, false}}
+          is_nil(matching_segment) -> {:halt, {position, false}}
+          String.starts_with?(matching_segment, "*") -> {:halt, {position, true}}
+          String.starts_with?(matching_segment, ":") -> {:cont, {position + 1, true}}
+          segment == matching_segment -> {:cont, {position + 1, true}}
+          :no_match -> {:halt, {position, false}}
+        end
       end)
 
-    {page_path, path_info} =
-      if start_catch_all do
-        {Enum.take(page_path, start_catch_all + 1), Enum.take(path_info, start_catch_all + 1)}
-      else
-        {page_path, path_info}
-      end
-
-    List.myers_difference(page_path, path_info, fn a, b ->
-      # consider dynamic segments as equal because they always match
-      if String.starts_with?(a, ":") || String.starts_with?(a, "*") do
-        [eq: ":dyn"]
-      else
-        # otherwise keep comparing
-        String.myers_difference(a, b)
-      end
-    end)
-    # we find a match if all segments are equal, including the diffs
-    # otherwise we return early if any segment is not equal
-    |> Enum.reduce_while(false, fn
-      {:eq, _}, _acc ->
-        {:cont, true}
-
-      {:diff, diff}, _acc ->
-        eq =
-          Enum.all?(diff, fn
-            {:eq, _v} -> true
-            _ -> false
-          end)
-
-        if eq, do: {:cont, true}, else: {:halt, false}
-
-      {_, _}, _acc ->
-        {:halt, false}
-    end)
+    match?
   end
 end
