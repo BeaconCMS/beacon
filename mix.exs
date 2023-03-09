@@ -48,8 +48,7 @@ defmodule Beacon.MixProject do
       {:heroicons, "~> 0.5"},
       {:jason, "~> 1.3"},
       {:mox, "~> 1.0", only: :test},
-      # TODO remove override after the final Phoenix 1.7 is released
-      {:phoenix, "~> 1.7.0-rc.0", override: true},
+      {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
       {:phoenix_live_view, "~> 0.18", override: true},
