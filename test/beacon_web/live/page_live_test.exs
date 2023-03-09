@@ -130,7 +130,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "raise when the given path doesn't exist", %{conn: conn} do
-      assert_raise RuntimeError, fn ->
+      assert_raise BeaconWeb.NotFoundError, fn ->
         {:ok, _view, _html} = live(conn, "/no_page_match")
       end
     end
