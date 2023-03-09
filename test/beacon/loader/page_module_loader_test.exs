@@ -34,4 +34,39 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
     present
   end
+
+  describe "page_assigns/1" do
+    test "interpolates the page title, description, and path in meta tags" do
+      page_1 =
+        page_fixture(
+          site: "my_site",
+          path: "1",
+          title: "my first page",
+          description: "hello world",
+          meta_tags: [
+            %{"property" => "og:title", "content" => "my title is %title%"},
+            %{"property" => "og:description", "content" => "my description is %description%"},
+            %{"property" => "og:url", "content" => "http://example.com/%path%"}
+          ]
+        )
+
+      page_1 = Repo.preload(page_1, [:events, :helpers])
+
+      {:ok, ast} = PageModuleLoader.load_templates(:test, [page_1])
+
+      assert has_map?(ast, %{"property" => "og:title", "content" => "my title is my first page"})
+      assert has_map?(ast, %{"property" => "og:description", "content" => "my description is hello world"})
+      assert has_map?(ast, %{"property" => "og:url", "content" => "http://example.com/1"})
+    end
+  end
+
+  defp has_map?(ast, map) do
+    {_new_ast, present} =
+      Macro.prewalk(ast, false, fn
+        {:%{}, _, fields} = node, acc -> {node, acc or map == Map.new(fields)}
+        node, acc -> {node, acc}
+      end)
+
+    present
+  end
 end

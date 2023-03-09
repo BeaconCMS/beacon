@@ -25,4 +25,8 @@
       </div>
     <% end %>
   </div>
+
+  <div class="my-2 text-zinc-500 text-sm">
+    Substitutions: <%= Beacon.Pages.Page.meta_tag_interpolation_keys() |> Enum.map(&"%#{&1}%") |> Enum.join(" ") %>
+  </div>
 </div>

@@ -9,6 +9,8 @@ defmodule Beacon.Pages.Page do
   alias Beacon.Pages.PageVersion
   alias Ecto.Changeset
 
+  @meta_tag_interpolation_keys [:title, :description, :path]
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
@@ -129,4 +131,13 @@ defmodule Beacon.Pages.Page do
     |> Enum.reject(fn {_key, value} -> String.trim(value) == "" end)
     |> Map.new()
   end
+
+  @doc """
+  Returns the list of Page fields which are available to the end user for interpolating into the values of meta
+  tag attributes.
+
+  The interpolation syntax is to surround the field name with %. For example, to insert the page :title, the user would
+  provide the value "%title%".
+  """
+  def meta_tag_interpolation_keys, do: @meta_tag_interpolation_keys
 end
