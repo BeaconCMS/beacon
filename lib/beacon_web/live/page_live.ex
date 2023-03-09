@@ -1,8 +1,8 @@
 defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
-
+  use Phoenix.HTML
   require Logger
-
+  import Phoenix.Component
   alias Beacon.BeaconAttrs
 
   def mount(:not_mounted_at_router, _params, socket) do
@@ -15,15 +15,7 @@ defmodule BeaconWeb.PageLive do
 
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
 
-    layout_id =
-      site
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:layout_id_for_path, [path])
-
-    page_id =
-      site
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_id, [path])
+    {{_site, _path}, {page_id, layout_id, templat_ast, page_module, component_module}} = lookup_route!(site, path)
 
     socket =
       socket
@@ -35,6 +27,9 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
+      |> assign(:__beacon_page_template_ast__, templat_ast)
+      |> assign(:__beacon_page_module__, page_module)
+      |> assign(:__beacon_component_module__, component_module)
 
     socket =
       socket
@@ -47,11 +42,50 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {%{__live_path__: live_path}, render_assigns} = Map.split(assigns, [:__live_path__])
+    {{_site, path}, {_page_id, _layout_id, template_ast, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
 
-    module = Beacon.Loader.page_module_for_site(assigns.__site__)
+    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, path_params(path, assigns.__live_path__))
 
-    Beacon.Loader.call_function_with_retry(module, :render, [live_path, render_assigns])
+    functions = [
+      {assigns.__beacon_page_module__, [dynamic_helper: 2]},
+      {assigns.__beacon_component_module__, [my_component: 2]}
+      | __ENV__.functions
+    ]
+
+    opts =
+      __ENV__
+      |> Map.from_struct()
+      |> Keyword.new()
+      |> Keyword.put(:functions, functions)
+
+    {result, _bindings} = Code.eval_quoted(template_ast, [assigns: assigns], opts)
+
+    result
+  end
+
+  defp lookup_route!(site, path) do
+    Beacon.Router.lookup_path(site, path) ||
+      raise """
+      Route not found for path #{inspect(path)}
+
+      Make sure a page was created for that path.
+      """
+  end
+
+  defp path_params(page_path, path_info) do
+    page_path = String.split(page_path, "/")
+
+    Enum.zip_reduce(page_path, path_info, %{}, fn
+      ":" <> segment, value, acc ->
+        Map.put(acc, segment, value)
+
+      "*" <> segment, value, acc ->
+        position = Enum.find_index(path_info, &(&1 == value))
+        Map.put(acc, segment, Enum.drop(path_info, position))
+
+      _, _, acc ->
+        acc
+    end)
   end
 
   def handle_info(:page_updated, socket) do
@@ -59,8 +93,7 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    socket.assigns.__site__
-    |> Beacon.Loader.page_module_for_site()
+    socket.assigns.__beacon_page_module__
     |> Beacon.Loader.call_function_with_retry(
       :handle_event,
       [socket.assigns.__live_path__, event_name, event_params, socket]

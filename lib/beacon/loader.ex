@@ -47,7 +47,7 @@ defmodule Beacon.Loader do
           reraise e, __STACKTRACE__
 
         {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
-          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} for the #{failure_count + 1} time. Retrying.")
+          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time. Retrying.")
           :timer.sleep(100 * (failure_count * 2))
 
           call_function_with_retry(module, function, args, failure_count + 1)

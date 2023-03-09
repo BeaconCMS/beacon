@@ -7,6 +7,7 @@ defmodule Beacon.Loader.DBLoader do
   alias Beacon.Loader.StylesheetModuleLoader
   alias Beacon.Pages
   alias Beacon.Stylesheets
+  require Logger
 
   # TODO: double check if caller can pass `site` to avoid reloading all sites
   def load_from_db do

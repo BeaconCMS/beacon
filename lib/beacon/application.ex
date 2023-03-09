@@ -14,6 +14,9 @@ defmodule Beacon.Application do
       Beacon.Repo
     ]
 
+    # We store routes by order and length so the most visited pages will likely be in the first rows
+    :ets.new(:beacon_routes, [:ordered_set, :named_table, :public, read_concurrency: true])
+
     Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
   end
 end

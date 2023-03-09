@@ -30,7 +30,7 @@ defmodule Beacon.Pages do
       from p in Page,
         where: p.site == ^site,
         preload: ^preloads,
-        order_by: p.order
+        order_by: [asc: p.order, asc: fragment("length(?)", p.path)]
     )
   end
 

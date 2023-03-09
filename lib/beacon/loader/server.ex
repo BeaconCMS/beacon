@@ -23,12 +23,12 @@ defmodule Beacon.Loader.Server do
 
   def init(config) do
     load_from_db(config.site)
-    {:ok, %{}}
+    {:ok, config}
   end
 
-  def handle_call({:reload_from_db, site}, _from, state) do
+  def handle_call({:reload_from_db, site}, _from, config) do
     load_from_db(site)
-    {:reply, :ok, state}
+    {:reply, :ok, config}
   end
 
   defp load_from_db(site) do
