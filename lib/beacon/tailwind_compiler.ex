@@ -19,16 +19,11 @@ defmodule Beacon.TailwindCompiler do
 
   """
 
-  alias Beacon.Components
-  alias Beacon.Layouts.Layout
-  alias Beacon.Pages
-  alias Beacon.Stylesheets
-
   @behaviour Beacon.RuntimeCSS
 
   @impl Beacon.RuntimeCSS
-  def compile!(%Layout{} = layout) do
-    tailwind_config = tailwind_config!(layout.site)
+  def compile!(site) when is_atom(site) do
+    tailwind_config = tailwind_config!(site)
 
     unless Application.get_env(:tailwind, :version) do
       default_tailwind_version = Beacon.tailwind_version()
@@ -44,9 +39,9 @@ defmodule Beacon.TailwindCompiler do
       |> EEx.eval_file(assigns: %{beacon_content: beacon_content(tmp_dir)})
       |> write_file!(tmp_dir, "tailwind.config.js")
 
-    templates_paths = generate_template_files!(tmp_dir, layout)
+    templates_paths = generate_template_files!(tmp_dir, site)
 
-    input_css_path = generate_input_css_file!(tmp_dir, layout.site)
+    input_css_path = generate_input_css_file!(tmp_dir, site)
 
     output_css_path = Path.join(tmp_dir, "generated.css")
 
@@ -108,23 +103,24 @@ defmodule Beacon.TailwindCompiler do
     end
   end
 
-  # TODO: generate by layout or avoid generating unnecessary files
-  defp generate_template_files!(tmp_dir, layout) do
+  defp generate_template_files!(tmp_dir, site) do
     [
       Task.async(fn ->
-        layout_path = Path.join(tmp_dir, "layout_#{remove_special_chars(layout.title)}.template")
-        File.write!(layout_path, layout.body)
-        [layout_path]
+        Enum.map(Beacon.Layouts.list_layouts_for_site(site), fn layout ->
+          layout_path = Path.join(tmp_dir, "layout_#{remove_special_chars(layout.title)}.template")
+          File.write!(layout_path, layout.body)
+          layout_path
+        end)
       end),
       Task.async(fn ->
-        Enum.map(Components.list_components_for_site(layout.site), fn component ->
+        Enum.map(Beacon.Components.list_components_for_site(site), fn component ->
           component_path = Path.join(tmp_dir, "component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
           component_path
         end)
       end),
       Task.async(fn ->
-        Enum.map(Pages.list_pages_for_site(layout.site), fn page ->
+        Enum.map(Beacon.Pages.list_pages_for_site(site), fn page ->
           page_path = Path.join(tmp_dir, "page_#{remove_special_chars(page.path)}.template")
           File.write!(page_path, page.template)
           page_path
@@ -139,10 +135,9 @@ defmodule Beacon.TailwindCompiler do
   defp generate_input_css_file!(tmp_dir, site) do
     beacon_tailwind_css_path = Path.join([Application.app_dir(:beacon), "priv", "beacon_tailwind.css"])
 
-    # TODO: generate stylesheets per layout?
     app_css =
       site
-      |> Stylesheets.list_stylesheets_for_site()
+      |> Beacon.Stylesheets.list_stylesheets_for_site()
       |> Enum.map_join(fn stylesheet ->
         ["\n", "/* ", stylesheet.name, " */", "\n", stylesheet.content, "\n"]
       end)

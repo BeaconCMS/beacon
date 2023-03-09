@@ -23,6 +23,7 @@ defmodule Beacon.Loader.DBLoader do
     load_layouts(site)
     load_pages(site)
     load_stylesheets(site)
+    load_runtime_css(site)
 
     :ok
   end
@@ -45,5 +46,14 @@ defmodule Beacon.Loader.DBLoader do
 
   def load_stylesheets(site) do
     StylesheetModuleLoader.load_stylesheets(site, Stylesheets.list_stylesheets_for_site(site))
+  end
+
+  def load_runtime_css(site) do
+    # TODO: control loading by env when we get to refactor/improve Server
+    if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
+      ""
+    else
+      Beacon.RuntimeCSS.load(site)
+    end
   end
 end

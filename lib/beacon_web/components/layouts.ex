@@ -13,9 +13,8 @@ defmodule BeaconWeb.Layouts do
   @external_resource beacon_admin_css_path
 
   # TODO: style nonce
-  def render("app.css", %{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{runtime_css: runtime_css} = compiled_layout_assigns(site, layout_id)
-    runtime_css
+  def render("app.css", %{__site__: site}) do
+    Beacon.RuntimeCSS.fetch(site)
   end
 
   def render("app.css", _assigns) do
