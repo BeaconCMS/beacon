@@ -65,7 +65,7 @@ defmodule BeaconWeb.PageLive do
 
   defp lookup_route!(site, path) do
     Beacon.Router.lookup_path(site, path) ||
-      raise """
+      raise BeaconWeb.NotFoundError, """
       Route not found for path #{inspect(path)}
 
       Make sure a page was created for that path.
