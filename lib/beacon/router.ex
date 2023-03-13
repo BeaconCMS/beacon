@@ -65,10 +65,15 @@ defmodule Beacon.Router do
     {site, _opts} = Keyword.pop(opts, :site)
 
     site =
-      if site && is_atom(opts[:site]) do
-        opts[:site]
-      else
-        raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
+      cond do
+        site == :beacon_admin ->
+          raise ArgumentError, ":beacon_admin is a reserved site name."
+
+        site && is_atom(opts[:site]) ->
+          opts[:site]
+
+        :invalid ->
+          raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
       end
 
     {
@@ -86,27 +91,21 @@ defmodule Beacon.Router do
   """
   defmacro beacon_admin(path) do
     quote bind_quoted: binding() do
-      scope path, BeaconWeb.Admin do
+      scope path, alias: false, as: false do
         import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
         live_session :beacon_admin, root_layout: {BeaconWeb.Layouts, :admin} do
-          live "/", HomeLive.Index, :index
-          live "/pages", PageLive.Index, :index
-          live "/pages/new", PageLive.Index, :new
-          live "/page_editor/:id", PageEditorLive, :edit
-          live "/media_library", MediaLibraryLive.Index, :index
-          live "/media_library/upload", MediaLibraryLive.Index, :upload
+          get "/beacon_static/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_admin_static_asset
+          get "/beacon_static/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_admin_static_asset
+
+          live "/", BeaconWeb.Admin.HomeLive.Index, :index
+          live "/pages", BeaconWeb.Admin.PageLive.Index, :index
+          live "/pages/new", BeaconWeb.Admin.PageLive.Index, :new
+          live "/page_editor/:id", BeaconWeb.Admin.PageEditorLive, :edit
+          live "/media_library", BeaconWeb.Admin.MediaLibraryLive.Index, :index
+          live "/media_library/upload", BeaconWeb.Admin.MediaLibraryLive.Index, :upload
         end
       end
-
-      # unless Module.get_attribute(__MODULE__, :beacon_static_defined) do
-      #   Module.put_attribute(__MODULE__, :beacon_static_defined, true)
-      #
-      #   scope "/beacon_static", as: false, alias: false do
-      #     get "/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_static_asset, assigns: %{site: opts[:site]}
-      #     get "/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_static_asset, assigns: %{site: opts[:site]}
-      #   end
-      # end
 
       @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
       def __beacon_admin_prefix__, do: @beacon_admin_prefix

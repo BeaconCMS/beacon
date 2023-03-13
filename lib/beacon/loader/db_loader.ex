@@ -15,12 +15,14 @@ defmodule Beacon.Loader.DBLoader do
       load_from_db(site)
     end
 
+    Beacon.RuntimeJS.load()
+    Beacon.RuntimeCSS.load_admin()
+
     :ok
   end
 
   def load_from_db(site) do
     load_runtime_css(site)
-    Beacon.RuntimeJS.load(site)
     load_components(site)
     load_layouts(site)
     load_pages(site)

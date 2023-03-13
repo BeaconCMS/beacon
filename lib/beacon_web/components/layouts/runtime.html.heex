@@ -7,8 +7,9 @@
       <%= render_page_title(assigns) %>
     </.live_title>
     <%= linked_stylesheets(assigns) %>
-    <link rel="stylesheet" href={static_asset_path(@conn, :css)}>
-    <script defer src={static_asset_path(@conn, :js)}></script>
+    <link rel="stylesheet" href={static_asset_path(@conn, :css)} />
+    <script defer src={static_asset_path(@conn, :js)}>
+    </script>
   </head>
   <body>
     <%= @inner_content %>

@@ -45,12 +45,23 @@ defmodule Beacon.TailwindCompiler do
 
     output_css_path = Path.join(tmp_dir, "generated.css")
 
-    {cli_output, cli_exit_code} = run(:beacon_runtime, ~w(
+    opts =
+      if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
+        ~w(
+      --config=#{generated_config_file_path}
+      --input=#{input_css_path}
+      --output=#{output_css_path}
+    )
+      else
+        ~w(
       --config=#{generated_config_file_path}
       --input=#{input_css_path}
       --output=#{output_css_path}
       --minify
-    ))
+    )
+      end
+
+    {cli_output, cli_exit_code} = run(:beacon_runtime, opts)
 
     output =
       if cli_exit_code == 0 do

@@ -28,6 +28,17 @@ defmodule Beacon.RuntimeCSS do
     :ets.insert(:beacon_assets, {{site, :css}, {hash, css}})
   end
 
+  @doc false
+  def load_admin do
+    css =
+      :beacon
+      |> Application.app_dir(["priv", "static", "assets", "admin.css"])
+      |> File.read!()
+
+    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
+    :ets.insert(:beacon_assets, {{:beacon_admin, :css}, {hash, css}})
+  end
+
   def current_hash(site) do
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_}}) do
       [[hash]] -> hash

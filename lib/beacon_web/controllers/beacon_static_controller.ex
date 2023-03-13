@@ -6,9 +6,17 @@ defmodule BeaconWeb.BeaconStaticController do
 
   def init(asset) when asset in [:css, :js], do: asset
 
-  def call(conn, asset) do
-    {content, content_type} = content_and_type(conn.assigns.site, asset)
+  def call(%{assigns: %{site: site}} = conn, asset) do
+    {content, content_type} = content_and_type(site, asset)
+    serve(conn, content, content_type)
+  end
 
+  def call(conn, asset) do
+    {content, content_type} = content_and_type(:beacon_admin, asset)
+    serve(conn, content, content_type)
+  end
+
+  defp serve(conn, content, content_type) do
     # The static files are served for sites and admin,
     # and we need to disable csrf protection because
     # serving script files are forbidden by the CSRFProtection plug.
@@ -25,7 +33,7 @@ defmodule BeaconWeb.BeaconStaticController do
     {Beacon.RuntimeCSS.fetch(site), "text/css"}
   end
 
-  defp content_and_type(site, :js) do
-    {Beacon.RuntimeJS.fetch(site), "text/javascript"}
+  defp content_and_type(_site, :js) do
+    {Beacon.RuntimeJS.fetch(), "text/javascript"}
   end
 end
