@@ -9,8 +9,7 @@
       <%= assigns[:page_title] || "Beacon" %>
     </.live_title>
     <%= raw(render("admin.css", assigns)) %>
-    <script defer phx-track-static type="text/javascript" src={app_js_path()}>
-    </script>
+    <script defer src={static_asset_path(@conn, :js)}></script>
   </head>
   <body>
     <%= @inner_content %>

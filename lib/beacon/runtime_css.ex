@@ -3,8 +3,6 @@ defmodule Beacon.RuntimeCSS do
   Runtime compilation and processing of CSS files.
   """
 
-  require Logger
-
   @callback compile!(Beacon.Type.Site.t()) :: String.t()
 
   @doc """
@@ -17,7 +15,7 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def fetch(site) do
-    case :ets.match(:beacon_assets, {{site, :css}, :"$1"}) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:_, :"$1"}}) do
       [[css]] -> css
       _ -> "/* CSS not found for site #{inspect(site)} */"
     end
@@ -25,6 +23,15 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def load(site) do
-    :ets.insert(:beacon_assets, {{site, :css}, compile!(site)})
+    css = compile!(site)
+    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
+    :ets.insert(:beacon_assets, {{site, :css}, {hash, css}})
+  end
+
+  def current_hash(site) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_}}) do
+      [[hash]] -> hash
+      _ -> ""
+    end
   end
 end

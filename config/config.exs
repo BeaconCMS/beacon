@@ -17,8 +17,8 @@ if Mix.env() == :dev do
 
   config :esbuild,
     version: "0.17.5",
-    cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beaconcms.js)),
-    cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beaconcms.min.js))
+    cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
+    cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
 end
 
 # Beacon Admin running in dev.exs

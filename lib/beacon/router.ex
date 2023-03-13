@@ -41,20 +41,14 @@ defmodule Beacon.Router do
   """
   defmacro beacon_site(path, opts \\ []) do
     quote bind_quoted: binding() do
-      scope path, BeaconWeb do
+      scope path, alias: false, as: false do
         {session_name, session_opts} = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
-          get "/beacon_assets/:asset", MediaLibraryController, :show
-          live "/*path", PageLive, :path
-        end
-      end
-
-      unless Module.get_attribute(__MODULE__, :beacon_static_defined) do
-        Module.put_attribute(__MODULE__, :beacon_static_defined, true)
-
-        scope "/beacon_static", as: false, alias: false do
-          get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
+          get "/beacon_static/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_static_asset, assigns: %{site: opts[:site]}
+          get "/beacon_static/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_static_asset, assigns: %{site: opts[:site]}
+          get "/beacon_assets/:asset", BeaconWeb.MediaLibraryController, :show
+          live "/*path", BeaconWeb.PageLive, :path
         end
       end
 
@@ -105,13 +99,14 @@ defmodule Beacon.Router do
         end
       end
 
-      unless Module.get_attribute(__MODULE__, :beacon_static_defined) do
-        Module.put_attribute(__MODULE__, :beacon_static_defined, true)
-
-        scope "/beacon_static", as: false, alias: false do
-          get "/*resource", BeaconWeb.BeaconStaticController, only: [:index]
-        end
-      end
+      # unless Module.get_attribute(__MODULE__, :beacon_static_defined) do
+      #   Module.put_attribute(__MODULE__, :beacon_static_defined, true)
+      #
+      #   scope "/beacon_static", as: false, alias: false do
+      #     get "/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_static_asset, assigns: %{site: opts[:site]}
+      #     get "/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_static_asset, assigns: %{site: opts[:site]}
+      #   end
+      # end
 
       @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
       def __beacon_admin_prefix__, do: @beacon_admin_prefix

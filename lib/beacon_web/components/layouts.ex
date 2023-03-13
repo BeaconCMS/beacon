@@ -13,12 +13,17 @@ defmodule BeaconWeb.Layouts do
   @external_resource beacon_admin_css_path
 
   # TODO: style nonce
-  def render("app.css", %{__site__: site}) do
-    Beacon.RuntimeCSS.fetch(site)
-  end
+  def static_asset_path(conn, asset) when asset in [:css, :js] do
+    %{assigns: %{__site__: site}} = conn
+    prefix = conn.private.phoenix_router.__beacon_site_prefix__()
 
-  def render("app.css", _assigns) do
-    ""
+    hash =
+      cond do
+        asset == :css -> Beacon.RuntimeCSS.current_hash(site)
+        asset == :js -> Beacon.RuntimeJS.current_hash(site)
+      end
+
+    "#{prefix}/beacon_static/#{asset}-#{hash}"
   end
 
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
@@ -35,16 +40,6 @@ defmodule BeaconWeb.Layouts do
       #{@admin_css}
       </style>
       """
-    end
-  end
-
-  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
-    def app_js_path do
-      "/beacon_static/beaconcms.js"
-    end
-  else
-    def app_js_path do
-      "/beacon_static/beaconcms.min.js"
     end
   end
 

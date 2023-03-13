@@ -1,10 +1,8 @@
 // app.js used by Admin and Sites (runtime)
 //
-// run `mix assets.build` to distribute updated static assets
-
-import "phoenix_html"
-import {Socket} from "phoenix"
-import {LiveSocket} from "phoenix_live_view"
+// Note:
+// 1. run `mix assets.build` to distribute updated static assets
+// 2. phoenix js loaded from the host application
 
 let socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live"
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -25,6 +23,6 @@ window.addEventListener("phx:beacon:page-updated", e => {
   })
 })
 
-let liveSocket = new LiveSocket(socketPath, Socket, {params: {_csrf_token: csrfToken}})
+let liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {params: {_csrf_token: csrfToken}})
 liveSocket.connect()
 window.liveSocket = liveSocket
