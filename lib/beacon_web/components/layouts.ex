@@ -24,19 +24,15 @@ defmodule BeaconWeb.Layouts do
   end
 
   def admin_static_asset_path(conn, asset) when asset in [:css, :js] do
-    if asset == :css && Code.ensure_loaded?(Mix.Project) && Mix.env() in [:test, :dev] do
-      "/dev/assets/admin.css"
-    else
-      prefix = conn.private.phoenix_router.__beacon_admin_prefix__()
+    prefix = conn.private.phoenix_router.__beacon_admin_prefix__()
 
-      hash =
-        cond do
-          asset == :css -> Beacon.RuntimeCSS.current_hash(:beacon_admin)
-          asset == :js -> Beacon.RuntimeJS.current_hash()
-        end
+    hash =
+      cond do
+        asset == :css -> Beacon.RuntimeCSS.current_hash(:beacon_admin)
+        asset == :js -> Beacon.RuntimeJS.current_hash()
+      end
 
-      Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
-    end
+    Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
   end
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
