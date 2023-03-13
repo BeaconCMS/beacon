@@ -8,8 +8,8 @@
     <.live_title suffix=" · Beacon Admin">
       <%= assigns[:page_title] || "Beacon" %>
     </.live_title>
-    <%= raw(render("admin.css", assigns)) %>
-    <script defer phx-track-static type="text/javascript" src={app_js_path()}>
+    <link rel="stylesheet" href={admin_static_asset_path(@conn, :css)} />
+    <script defer src={admin_static_asset_path(@conn, :js)}>
     </script>
   </head>
   <body>

@@ -6,46 +6,33 @@ defmodule BeaconWeb.Layouts do
 
   embed_templates "layouts/*"
 
-  # Load assets from host application
-  # https://github.com/phoenixframework/phoenix_live_dashboard/blob/d0f776f4bc2ba119e52ec1e0f9f216962b9b6972/lib/phoenix/live_dashboard/layout_view.ex
-
-  beacon_admin_css_path = Path.join(__DIR__, "../../../dist/css/admin.css")
+  beacon_admin_css_path = Path.join(__DIR__, "../../../priv/static/assets/admin.css")
   @external_resource beacon_admin_css_path
 
   # TODO: style nonce
-  def render("app.css", %{__site__: site}) do
-    Beacon.RuntimeCSS.fetch(site)
+  def static_asset_path(conn, asset) when asset in [:css, :js] do
+    %{assigns: %{__site__: site}} = conn
+    prefix = conn.private.phoenix_router.__beacon_site_prefix__()
+
+    hash =
+      cond do
+        asset == :css -> Beacon.RuntimeCSS.current_hash(site)
+        asset == :js -> Beacon.RuntimeJS.current_hash()
+      end
+
+    Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
   end
 
-  def render("app.css", _assigns) do
-    ""
-  end
+  def admin_static_asset_path(conn, asset) when asset in [:css, :js] do
+    prefix = conn.private.phoenix_router.__beacon_admin_prefix__()
 
-  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
-    def render("admin.css", _assigns) do
-      """
-      <link phx-track-static rel="stylesheet" href="/dev/assets/admin.css" />
-      """
-    end
-  else
-    @admin_css File.read!(beacon_admin_css_path)
-    def render("admin.css", _assigns) do
-      """
-      <style>
-      #{@admin_css}
-      </style>
-      """
-    end
-  end
+    hash =
+      cond do
+        asset == :css -> Beacon.RuntimeCSS.current_hash(:beacon_admin)
+        asset == :js -> Beacon.RuntimeJS.current_hash()
+      end
 
-  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
-    def app_js_path do
-      "/beacon_static/beaconcms.js"
-    end
-  else
-    def app_js_path do
-      "/beacon_static/beaconcms.min.js"
-    end
+    Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
   end
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do

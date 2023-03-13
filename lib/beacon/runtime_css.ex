@@ -3,8 +3,6 @@ defmodule Beacon.RuntimeCSS do
   Runtime compilation and processing of CSS files.
   """
 
-  require Logger
-
   @callback compile!(Beacon.Type.Site.t()) :: String.t()
 
   @doc """
@@ -17,7 +15,7 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def fetch(site) do
-    case :ets.match(:beacon_runtime_css, {site, :"$1"}) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
       [[css]] -> css
       _ -> "/* CSS not found for site #{inspect(site)} */"
     end
@@ -25,6 +23,31 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def load(site) do
-    :ets.insert(:beacon_runtime_css, {site, compile!(site)})
+    css = compile!(site)
+    compressed = :zlib.gzip(css)
+    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
+    true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})
+    :ok
+  end
+
+  @doc false
+  def load_admin do
+    css =
+      :beacon
+      |> Application.app_dir(["priv", "static", "assets", "admin.css"])
+      |> File.read!()
+
+    compressed = :zlib.gzip(css)
+
+    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
+    true = :ets.insert(:beacon_assets, {{:beacon_admin, :css}, {hash, css, compressed}})
+    :ok
+  end
+
+  def current_hash(site) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
+      [[hash]] -> hash
+      _ -> ""
+    end
   end
 end
