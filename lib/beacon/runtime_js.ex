@@ -45,7 +45,8 @@ defmodule Beacon.RuntimeJS do
   def load do
     js = build()
     hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
-    :ets.insert(:beacon_assets, {:js, {hash, js}})
+    true = :ets.insert(:beacon_assets, {:js, {hash, js}})
+    :ok
   end
 
   def current_hash do

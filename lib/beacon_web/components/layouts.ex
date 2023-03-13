@@ -39,23 +39,6 @@ defmodule BeaconWeb.Layouts do
     end
   end
 
-  if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
-    def render("admin.css", _assigns) do
-      """
-      <link phx-track-static rel="stylesheet" href="/dev/assets/admin.css" />
-      """
-    end
-  else
-    @admin_css File.read!(beacon_admin_css_path)
-    def render("admin.css", _assigns) do
-      """
-      <style>
-      #{@admin_css}
-      </style>
-      """
-    end
-  end
-
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
     site
     |> Beacon.Loader.layout_module_for_site()

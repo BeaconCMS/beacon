@@ -25,7 +25,8 @@ defmodule Beacon.RuntimeCSS do
   def load(site) do
     css = compile!(site)
     hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
-    :ets.insert(:beacon_assets, {{site, :css}, {hash, css}})
+    true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css}})
+    :ok
   end
 
   @doc false
@@ -36,7 +37,8 @@ defmodule Beacon.RuntimeCSS do
       |> File.read!()
 
     hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
-    :ets.insert(:beacon_assets, {{:beacon_admin, :css}, {hash, css}})
+    true = :ets.insert(:beacon_assets, {{:beacon_admin, :css}, {hash, css}})
+    :ok
   end
 
   def current_hash(site) do
