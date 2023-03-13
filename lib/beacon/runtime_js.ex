@@ -35,7 +35,7 @@ defmodule Beacon.RuntimeJS do
 
   @doc false
   def fetch do
-    case :ets.match(:beacon_assets, {:js, {:_, :"$1"}}) do
+    case :ets.match(:beacon_assets, {:js, {:_, :_, :"$1"}}) do
       [[js]] -> js
       _ -> "// JS not built"
     end
@@ -44,13 +44,14 @@ defmodule Beacon.RuntimeJS do
   @doc false
   def load do
     js = build()
+    compressed = :zlib.gzip(js)
     hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
-    true = :ets.insert(:beacon_assets, {:js, {hash, js}})
+    true = :ets.insert(:beacon_assets, {:js, {hash, js, compressed}})
     :ok
   end
 
   def current_hash do
-    case :ets.match(:beacon_assets, {:js, {:"$1", :_}}) do
+    case :ets.match(:beacon_assets, {:js, {:"$1", :_, :_}}) do
       [[hash]] -> hash
       _ -> ""
     end

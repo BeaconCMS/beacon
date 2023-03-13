@@ -25,6 +25,7 @@ defmodule BeaconWeb.BeaconStaticController do
     conn
     |> put_resp_header("content-type", content_type)
     |> put_resp_header("cache-control", "public, max-age=31536000")
+    |> put_resp_header("content-encoding", "gzip")
     |> send_resp(200, content)
     |> halt()
   end
