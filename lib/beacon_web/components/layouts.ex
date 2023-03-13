@@ -23,7 +23,7 @@ defmodule BeaconWeb.Layouts do
         asset == :js -> Beacon.RuntimeJS.current_hash(site)
       end
 
-    "#{prefix}/beacon_static/#{asset}-#{hash}"
+    Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
   end
 
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :dev do
