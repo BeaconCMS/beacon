@@ -17,7 +17,7 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def fetch(site) do
-    case :ets.match(:beacon_runtime_css, {site, :"$1"}) do
+    case :ets.match(:beacon_assets, {{site, :css}, :"$1"}) do
       [[css]] -> css
       _ -> "/* CSS not found for site #{inspect(site)} */"
     end
@@ -25,6 +25,6 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def load(site) do
-    :ets.insert(:beacon_runtime_css, {site, compile!(site)})
+    :ets.insert(:beacon_assets, {{site, :css}, compile!(site)})
   end
 end
