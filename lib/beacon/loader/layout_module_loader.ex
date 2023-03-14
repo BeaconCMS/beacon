@@ -26,7 +26,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
   end
 
   defp render_layout(%Layout{} = layout) do
-    file = "layout-render-#{layout.title}"
+    file = "site-#{layout.site}-layout-#{layout.title}"
     ast = Beacon.Loader.compile_template!(layout.site, file, layout.body)
 
     quote do
