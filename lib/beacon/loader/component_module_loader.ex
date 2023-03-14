@@ -32,17 +32,8 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   end
 
   defp render_component(%Component{site: site, name: name, body: body}) do
-    Beacon.safe_code_heex_check!(site, body)
-
-    ast =
-      EEx.compile_string(body,
-        engine: Phoenix.LiveView.HTMLEngine,
-        line: 1,
-        trim: true,
-        caller: __ENV__,
-        source: body,
-        file: "component-render-#{name}"
-      )
+    file = "site-#{site}-component-#{name}"
+    ast = Beacon.Loader.compile_template!(site, file, body)
 
     quote do
       def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do

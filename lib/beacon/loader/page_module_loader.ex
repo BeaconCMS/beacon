@@ -44,19 +44,8 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp store_page(%Page{} = page, page_module, component_module) do
     %{id: page_id, layout_id: layout_id, site: site, path: path, template: template} = page
-
-    Beacon.safe_code_heex_check!(site, template)
-
-    template_ast =
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.HTMLEngine,
-        line: 1,
-        trim: true,
-        caller: __ENV__,
-        source: template,
-        file: "page-render-#{page_id}"
-      )
-
+    file = "site-#{page.site}-page-#{page.path}"
+    template_ast = Beacon.Loader.compile_template!(site, file, template)
     Beacon.Router.add_page(site, path, {page_id, layout_id, template_ast, page_module, component_module})
   end
 

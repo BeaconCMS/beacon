@@ -12,7 +12,7 @@ defmodule BeaconWeb.Layouts do
   # TODO: style nonce
   def static_asset_path(conn, asset) when asset in [:css, :js] do
     %{assigns: %{__site__: site}} = conn
-    prefix = conn.private.phoenix_router.__beacon_site_prefix__()
+    prefix = conn.private.phoenix_router.__beacon_site_prefix__(site)
 
     hash =
       cond do

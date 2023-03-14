@@ -74,15 +74,15 @@ defmodule Beacon.RouterTest do
     import Beacon.Router, only: [beacon_asset_path: 2]
 
     test "plain route" do
-      beacon = %{router: RouterSimple}
+      attrs = %Beacon.BeaconAttrs{site: :site, router: RouterSimple}
 
-      assert beacon_asset_path(beacon, "file.jpg") == "/beacon_assets/file.jpg?site=site"
+      assert beacon_asset_path(attrs, "file.jpg") == "/beacon_assets/file.jpg?site=site"
     end
 
     test "nested route" do
-      beacon = %{router: RouterNested}
+      attrs = %Beacon.BeaconAttrs{site: :site, router: RouterNested}
 
-      assert beacon_asset_path(beacon, "file.jpg") == "/parent/nested/site/beacon_assets/file.jpg?site=site"
+      assert beacon_asset_path(attrs, "file.jpg") == "/parent/nested/site/beacon_assets/file.jpg?site=site"
     end
   end
 

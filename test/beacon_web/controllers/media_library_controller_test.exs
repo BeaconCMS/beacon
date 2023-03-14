@@ -5,8 +5,8 @@ defmodule BeaconWeb.Controllers.MediaLibraryControllerTest do
 
   test "show", %{conn: conn} do
     Beacon.Fixtures.media_library_asset_fixture()
-    beacon = %{router: Beacon.BeaconTest.Router}
-    path = beacon_asset_path(beacon, "image.jpg")
+    attrs = %Beacon.BeaconAttrs{site: :my_site, router: Beacon.BeaconTest.Router}
+    path = beacon_asset_path(attrs, "image.jpg")
 
     conn = get(conn, path)
 

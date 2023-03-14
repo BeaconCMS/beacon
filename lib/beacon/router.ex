@@ -52,11 +52,8 @@ defmodule Beacon.Router do
         end
       end
 
-      @beacon_site opts[:site]
-      def __beacon_site__, do: @beacon_site
-
       @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
-      def __beacon_site_prefix__, do: @beacon_site_prefix
+      def __beacon_site_prefix__(site), do: @beacon_site_prefix
     end
   end
 
@@ -158,9 +155,9 @@ defmodule Beacon.Router do
   Note that `@beacon_attrs` assign is injected and available in pages automatically.
   """
   @spec beacon_asset_path(Beacon.BeaconAttrs.t(), Path.t()) :: String.t()
-  def beacon_asset_path(beacon_attrs, file_name) do
-    site = beacon_attrs.router.__beacon_site__()
-    sanitize_path(beacon_attrs.router.__beacon_site_prefix__() <> "/beacon_assets/#{file_name}?site=#{site}")
+  def beacon_asset_path(%Beacon.BeaconAttrs{site: site} = attrs, file_name) do
+    prefix = attrs.router.__beacon_site_prefix__(site)
+    sanitize_path("#{prefix}/beacon_assets/#{file_name}?site=#{site}")
   end
 
   @doc """

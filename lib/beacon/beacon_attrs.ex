@@ -7,9 +7,10 @@ defmodule Beacon.BeaconAttrs do
   resolve paths or fetch the site configuration.
   """
 
-  defstruct router: nil
+  defstruct site: nil, router: nil
 
   @type t :: %__MODULE__{
+          site: Beacon.Type.Site.t(),
           router: module()
         }
 end
