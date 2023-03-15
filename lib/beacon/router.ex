@@ -195,7 +195,7 @@ defmodule Beacon.Router do
   @spec beacon_asset_path(Beacon.BeaconAttrs.t(), Path.t()) :: String.t()
   def beacon_asset_path(%Beacon.BeaconAttrs{} = attrs, file_name) do
     %{site: site, prefix: prefix} = attrs
-    sanitize_path("#{prefix}/beacon_assets/#{file_name}?site=#{site}")
+    sanitize_path("/#{prefix}/beacon_assets/#{file_name}?site=#{site}")
   end
 
   @doc """
