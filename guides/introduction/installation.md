@@ -164,7 +164,7 @@ For more details please check out the docs: `mix help beacon.install`
     end
     ```
 
-4. Edit `lib/my_app_web/router.ex` to import `Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
+4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
 
     ```elixir
     use Beacon.Router
