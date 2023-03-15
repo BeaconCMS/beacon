@@ -1,3 +1,4 @@
+# https://github.com/phoenixframework/phoenix/blob/8ab705603ac695779bf40668b0c63a46ebcc19e5/lib/phoenix/router.ex
 # https://github.com/phoenixframework/phoenix_live_dashboard/blob/3d78c73721ae8db2e501abf51fcc1f7796be0649/lib/phoenix/live_dashboard/router.ex
 
 defmodule Beacon.Router do
@@ -6,6 +7,38 @@ defmodule Beacon.Router do
 
   In your app router, add `import Beacon.Router` and call one the of the available macros.
   """
+
+  defmacro __using__(_opts) do
+    quote do
+      unquote(prelude())
+    end
+  end
+
+  defp prelude do
+    quote do
+      Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
+      import Beacon.Router, only: [beacon_site: 2, beacon_admin: 1, beacon_api: 1]
+      @before_compile unquote(__MODULE__)
+    end
+  end
+
+  defmacro __before_compile__(env) do
+    sites = Module.get_attribute(env.module, :beacon_sites)
+
+    prefixes =
+      for {site, prefix} <- sites do
+        quote do
+          @doc false
+          def __beacon_site_prefix__(unquote(site)), do: unquote(prefix)
+        end
+      end
+
+    quote do
+      @doc false
+      def __beacon_sites__, do: unquote(Macro.escape(sites))
+      unquote(prefixes)
+    end
+  end
 
   @doc """
   Routes for a beacon site.
@@ -39,8 +72,8 @@ defmodule Beacon.Router do
     * `:site` (required) `t:Beacon.Config.site/0` - register your site with a unique name,
       note that has to be the same name used for configuration, see `Beacon.Config` for more info.
   """
-  defmacro beacon_site(path, opts \\ []) do
-    quote bind_quoted: binding() do
+  defmacro beacon_site(path, opts) do
+    quote bind_quoted: binding(), location: :keep do
       scope path, alias: false, as: false do
         {session_name, session_opts} = Beacon.Router.__options__(opts)
 
@@ -52,8 +85,7 @@ defmodule Beacon.Router do
         end
       end
 
-      @beacon_site_prefix Phoenix.Router.scoped_path(__MODULE__, path)
-      def __beacon_site_prefix__(site), do: @beacon_site_prefix
+      @beacon_sites {opts[:site], Phoenix.Router.scoped_path(__MODULE__, path)}
     end
   end
 
@@ -87,7 +119,13 @@ defmodule Beacon.Router do
   Admin routes.
   """
   defmacro beacon_admin(path) do
-    quote bind_quoted: binding() do
+    quote bind_quoted: binding(), location: :keep do
+      if Module.get_attribute(__MODULE__, :beacon_admin_prefix) do
+        raise ArgumentError, """
+        Only one declaration of beacon_admin/1 is allowed per router.
+        """
+      end
+
       scope path, alias: false, as: false do
         import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
@@ -155,8 +193,8 @@ defmodule Beacon.Router do
   Note that `@beacon_attrs` assign is injected and available in pages automatically.
   """
   @spec beacon_asset_path(Beacon.BeaconAttrs.t(), Path.t()) :: String.t()
-  def beacon_asset_path(%Beacon.BeaconAttrs{site: site} = attrs, file_name) do
-    prefix = attrs.router.__beacon_site_prefix__(site)
+  def beacon_asset_path(%Beacon.BeaconAttrs{} = attrs, file_name) do
+    %{site: site, prefix: prefix} = attrs
     sanitize_path("#{prefix}/beacon_assets/#{file_name}?site=#{site}")
   end
 

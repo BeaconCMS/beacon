@@ -21,7 +21,7 @@ defmodule BeaconWeb.PageLive do
       socket
       |> assign(:beacon, %{site: site})
       |> assign(:beacon_live_data, live_data)
-      |> assign(:beacon_attrs, %BeaconAttrs{site: site, router: socket.router})
+      |> assign(:beacon_attrs, %BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)})
       |> assign(:__live_path__, path)
       |> assign(:__page_update_available__, false)
       |> assign(:__dynamic_layout_id__, layout_id)

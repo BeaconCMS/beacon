@@ -46,8 +46,8 @@ end
 
 defmodule SamplePhoenixWeb.Router do
   use Phoenix.Router
+  use Beacon.Router
   import Phoenix.LiveView.Router
-  import Beacon.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -61,6 +61,7 @@ defmodule SamplePhoenixWeb.Router do
     pipe_through :browser
     beacon_admin "/admin"
     beacon_site "/dev", site: :dev
+    beacon_site "/other", site: :other
   end
 end
 
@@ -245,6 +246,28 @@ seeds = fn ->
     "dockyard_2.jpg",
     "image/jpg"
   )
+
+  %{id: other_layout_id} =
+    Beacon.Layouts.create_layout!(%{
+      site: "other",
+      title: "other",
+      stylesheet_urls: [],
+      body: """
+      <%= @inner_content %>
+      """
+    })
+
+  Beacon.Pages.create_page!(%{
+    path: "home",
+    site: "other",
+    title: "other home",
+    layout_id: other_layout_id,
+    template: """
+    <main>
+      <h1 class="text-violet-900">Other</h1>
+    </main>
+    """
+  })
 end
 
 Task.start(fn ->
