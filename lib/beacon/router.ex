@@ -17,6 +17,7 @@ defmodule Beacon.Router do
   defp prelude do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
+      Module.register_attribute(__MODULE__, :beacon_admin_prefix, accumulate: false)
       import Beacon.Router, only: [beacon_site: 2, beacon_admin: 1, beacon_api: 1]
       @before_compile unquote(__MODULE__)
     end
@@ -33,9 +34,12 @@ defmodule Beacon.Router do
         end
       end
 
+    admin_prefix = Module.get_attribute(env.module, :beacon_admin_prefix)
+
     quote do
       @doc false
       def __beacon_sites__, do: unquote(Macro.escape(sites))
+      def __beacon_admin_prefix__, do: unquote(Macro.escape(admin_prefix))
       unquote(prefixes)
     end
   end
@@ -120,10 +124,15 @@ defmodule Beacon.Router do
   """
   defmacro beacon_admin(path) do
     quote bind_quoted: binding(), location: :keep do
-      if Module.get_attribute(__MODULE__, :beacon_admin_prefix) do
+      # check before scope so it can raise with the proper message
+      if existing = Module.get_attribute(__MODULE__, :beacon_admin_prefix) do
         raise ArgumentError, """
         Only one declaration of beacon_admin/1 is allowed per router.
+
+        Can't add #{inspect(path)} when #{inspect(existing)} is already defined.
         """
+      else
+        @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
       end
 
       scope path, alias: false, as: false do
@@ -141,9 +150,6 @@ defmodule Beacon.Router do
           live "/media_library/upload", BeaconWeb.Admin.MediaLibraryLive.Index, :upload
         end
       end
-
-      @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
-      def __beacon_admin_prefix__, do: @beacon_admin_prefix
     end
   end
 
