@@ -1,48 +1,50 @@
-<.header>
-  Listing Pages
-  <:actions>
-    <.button phx-click="reload_pages" class="ml-2">Reload Pages</.button>
-    <.link patch={beacon_admin_path(@socket, "/pages/new")}>
-      <.button>New Page</.button>
-    </.link>
-  </:actions>
+<div :if={@live_action in [:index]}>
+  <.header :if={@live_action in [:index]}>
+    Listing Pages
+    <:actions>
+      <.button phx-click="reload_pages" class="ml-2">Reload Pages</.button>
+      <.link patch={beacon_admin_path(@socket, "/pages/new")}>
+        <.button>New Page</.button>
+      </.link>
+    </:actions>
 
-  <:subtitle>
-    <div :if={@last_reload_time}>
-      <p>Last reload time: <%= @last_reload_time %>ms</p>
-    </div>
-  </:subtitle>
-</.header>
-
-<div class="my-4">
-  <.simple_form :let={f} for={@search_changeset} phx-change="search">
-    <div class="flex gap-4 items-center">
-      <div class="flex-grow">
-        <.input field={{f, :query}} type="search" autofocus={true} phx-debounce="250" placeholder="Search pages by path or title" />
+    <:subtitle>
+      <div :if={@last_reload_time}>
+        <p>Last reload time: <%= @last_reload_time %>ms</p>
       </div>
-      <div>
-        <.input field={{f, :site}} type="select" options={@site_options} />
+    </:subtitle>
+  </.header>
+
+  <div class="my-4">
+    <.simple_form :let={f} for={@search_changeset} phx-change="search">
+      <div class="flex gap-4 items-center">
+        <div class="flex-grow">
+          <.input field={{f, :query}} type="search" autofocus={true} phx-debounce="250" placeholder="Search pages by path or title" />
+        </div>
+        <div>
+          <.input field={{f, :site}} type="select" options={@site_options} />
+        </div>
       </div>
-    </div>
-  </.simple_form>
-</div>
-
-<.table id="pages" rows={@pages}>
-  <:col :let={page} label="Page">
-    <div><%= page.title || "Untitled" %></div>
-    <div class="font-normal text-zinc-500"><%= page.path %></div>
-  </:col>
-
-  <:action :let={page}>
-    <.link navigate={beacon_admin_path(@socket, "/page_editor/#{page.id}")}>Edit</.link>
-  </:action>
-</.table>
-
-<%= if @pages == [] do %>
-  <div class="text-zinc-500 italic">
-    No pages found
+    </.simple_form>
   </div>
-<% end %>
+
+  <.table id="pages" rows={@pages}>
+    <:col :let={page} label="Page">
+      <div><%= page.title || "Untitled" %></div>
+      <div class="font-normal text-zinc-500"><%= page.path %></div>
+    </:col>
+
+    <:action :let={page}>
+      <.link navigate={beacon_admin_path(@socket, "/page_editor/#{page.id}")}>Edit</.link>
+    </:action>
+  </.table>
+
+  <%= if @pages == [] do %>
+    <div class="text-zinc-500 italic">
+      No pages found
+    </div>
+  <% end %>
+</div>
 
 <.modal :if={@live_action in [:new, :edit]} id="page-modal" show on_cancel={JS.navigate(beacon_admin_path(@socket, "/pages"))}>
   <.live_component

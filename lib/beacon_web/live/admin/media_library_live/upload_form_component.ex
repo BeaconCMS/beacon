@@ -17,7 +17,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
         <% end %>
       </section>
 
-      <.form for={:assets} id="asset-form" phx-target={@myself} phx-change="validate" phx-submit="save">
+      <.form for={%{}} as={:assets} id="asset-form" phx-target={@myself} phx-change="validate" phx-submit="save">
         <.live_file_input upload={@uploads.asset} tabindex="0" />
       </.form>
 
