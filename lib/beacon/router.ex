@@ -5,7 +5,7 @@ defmodule Beacon.Router do
   @moduledoc """
   Provides routing helpers to instantiate sites, admin interface, or api endpoints.
 
-  In your app router, add `import Beacon.Router` and call one the of the available macros.
+  In your app router, add `use Beacon.Router` and call one the of the available macros.
   """
 
   defmacro __using__(_opts) do
@@ -47,7 +47,7 @@ defmodule Beacon.Router do
 
       defmodule MyAppWeb.Router do
         use Phoenix.Router
-        import Beacon.Router
+        use Beacon.Router
 
         scope "/", MyAppWeb do
           pipe_through :browser

@@ -108,7 +108,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       Install.maybe_inject_beacon_site_routes(bindings)
 
       file_content = File.read!(dest_file)
-      assert file_content =~ ~r/import Beacon\.Router/
+      assert file_content =~ ~r/use Beacon\.Router/
       assert file_content =~ ~r/beacon_site \"\/my_test_blog\", site: :my_test_blog/
     end)
   end

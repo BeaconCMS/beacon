@@ -23,7 +23,7 @@ defmodule Beacon.RouterTest do
 
   defmodule RouterSimple do
     use Beacon.BeaconTest, :router
-    import Beacon.Router
+    use Beacon.Router
 
     scope "/" do
       beacon_admin "/admin"
@@ -32,7 +32,7 @@ defmodule Beacon.RouterTest do
 
   defmodule RouterNested do
     use Beacon.BeaconTest, :router
-    import Beacon.Router
+    use Beacon.Router
 
     scope "/parent" do
       scope "/nested" do
