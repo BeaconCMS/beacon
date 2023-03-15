@@ -43,8 +43,9 @@ defmodule Beacon.Pages do
     Repo.all(
       from p in Page,
         where: p.site == ^site,
-        where: ilike(p.path, ^"%#{search_query}%"),
+        where: ilike(p.path, ^"%#{search_query}%") or ilike(p.title, ^"%#{search_query}%"),
         preload: ^preloads,
+        limit: 10,
         order_by: [asc: p.order, asc: p.path]
     )
   end
