@@ -13,30 +13,12 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
-
-    {{_site, _path}, {page_id, layout_id, templat_ast, page_module, component_module}} = lookup_route!(site, path)
-
     socket =
       socket
       |> assign(:beacon, %{site: site})
-      |> assign(:beacon_live_data, live_data)
-      |> assign(:beacon_attrs, %BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)})
-      |> assign(:__live_path__, path)
-      |> assign(:__page_update_available__, false)
-      |> assign(:__dynamic_layout_id__, layout_id)
-      |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
-      |> assign(:__beacon_page_template_ast__, templat_ast)
-      |> assign(:__beacon_page_module__, page_module)
-      |> assign(:__beacon_component_module__, component_module)
 
-    socket =
-      socket
-      |> assign(:page_title, page_title(params, socket.assigns))
-      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns), lang: "en"})
-
-    Beacon.PubSub.subscribe_page_update(site, path)
+    if connected?(socket), do: :ok = Beacon.PubSub.subscribe_page_update(site, path)
 
     {:ok, socket, layout: {BeaconWeb.Layouts, :dynamic}}
   end
@@ -108,6 +90,24 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_params(params, _url, socket) do
+    %{"path" => path} = params
+    %{__site__: site} = socket.assigns
+    live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
+    {{_site, _path}, {page_id, layout_id, _templat_ast, page_module, component_module}} = lookup_route!(site, path)
+
+    socket =
+      socket
+      |> assign(:beacon, %{site: site})
+      |> assign(:beacon_live_data, live_data)
+      |> assign(:beacon_attrs, %BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)})
+      |> assign(:__live_path__, path)
+      |> assign(:__page_update_available__, false)
+      |> assign(:__dynamic_layout_id__, layout_id)
+      |> assign(:__dynamic_page_id__, page_id)
+      |> assign(:__site__, site)
+      |> assign(:__beacon_page_module__, page_module)
+      |> assign(:__beacon_component_module__, component_module)
+
     socket =
       socket
       |> assign(:page_title, page_title(params, socket.assigns))
