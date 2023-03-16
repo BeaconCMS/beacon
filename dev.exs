@@ -148,8 +148,8 @@ seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/authors/1-author">Author</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
+            <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
+            <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
           </ul>
         </div>
 
@@ -185,8 +185,8 @@ seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/home">Home</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post</.link></li>
+            <li><.link navigate="/dev/home">Home (navigate)</.link></li>
+            <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
           </ul>
         </div>
 
@@ -211,8 +211,8 @@ seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/home">Home</.link></li>
-            <li><.link navigate="/dev/authors/1-author">Author</.link></li>
+            <li><.link navigate="/dev/home">Home (navigate)</.link></li>
+            <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
           </ul>
         </div>
 
