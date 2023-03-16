@@ -1,6 +1,6 @@
 defmodule Beacon.BeaconTest.Router do
   use Beacon.BeaconTest, :router
-  import Beacon.Router
+  use Beacon.Router
 
   pipeline :browser do
     plug :accepts, ["html"]

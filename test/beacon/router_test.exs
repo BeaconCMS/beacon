@@ -23,22 +23,20 @@ defmodule Beacon.RouterTest do
 
   defmodule RouterSimple do
     use Beacon.BeaconTest, :router
-    import Beacon.Router
+    use Beacon.Router
 
     scope "/" do
       beacon_admin "/admin"
-      beacon_site "/", site: :site
     end
   end
 
   defmodule RouterNested do
     use Beacon.BeaconTest, :router
-    import Beacon.Router
+    use Beacon.Router
 
     scope "/parent" do
       scope "/nested" do
         beacon_admin "/admin"
-        beacon_site "/site", site: :site
       end
     end
   end
@@ -74,15 +72,15 @@ defmodule Beacon.RouterTest do
     import Beacon.Router, only: [beacon_asset_path: 2]
 
     test "plain route" do
-      beacon = %{router: RouterSimple}
+      attrs = %Beacon.BeaconAttrs{site: :site, prefix: ""}
 
-      assert beacon_asset_path(beacon, "file.jpg") == "/beacon_assets/file.jpg?site=site"
+      assert beacon_asset_path(attrs, "file.jpg") == "/beacon_assets/file.jpg?site=site"
     end
 
     test "nested route" do
-      beacon = %{router: RouterNested}
+      attrs = %Beacon.BeaconAttrs{site: :site, prefix: "parent/nested"}
 
-      assert beacon_asset_path(beacon, "file.jpg") == "/parent/nested/site/beacon_assets/file.jpg?site=site"
+      assert beacon_asset_path(attrs, "file.jpg") == "/parent/nested/beacon_assets/file.jpg?site=site"
     end
   end
 

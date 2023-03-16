@@ -1,12 +1,10 @@
 defmodule BeaconWeb.Controllers.MediaLibraryControllerTest do
   use BeaconWeb.ConnCase, async: true
 
-  import Beacon.Router, only: [beacon_asset_path: 2]
-
   test "show", %{conn: conn} do
     Beacon.Fixtures.media_library_asset_fixture()
-    beacon = %{router: Beacon.BeaconTest.Router}
-    path = beacon_asset_path(beacon, "image.jpg")
+    attrs = %Beacon.BeaconAttrs{site: :my_site, prefix: ""}
+    path = Beacon.Router.beacon_asset_path(attrs, "image.jpg")
 
     conn = get(conn, path)
 

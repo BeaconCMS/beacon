@@ -5,7 +5,7 @@ HTTP endpoints to integrate with Beacon layouts, pages, assets, and more.
 1. Edit the file `router.ex` in your project to add:
 
 ```elixir
-import Beacon.Router
+use Beacon.Router
 
 scope "/api"
   pipe_through :api

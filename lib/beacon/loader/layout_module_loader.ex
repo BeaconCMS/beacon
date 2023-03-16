@@ -26,17 +26,8 @@ defmodule Beacon.Loader.LayoutModuleLoader do
   end
 
   defp render_layout(%Layout{} = layout) do
-    Beacon.safe_code_heex_check!(layout.site, layout.body)
-
-    ast =
-      EEx.compile_string(layout.body,
-        engine: Phoenix.LiveView.HTMLEngine,
-        line: 1,
-        trim: true,
-        caller: __ENV__,
-        source: layout.body,
-        file: "layout-render-#{layout.id}"
-      )
+    file = "site-#{layout.site}-layout-#{layout.title}"
+    ast = Beacon.Loader.compile_template!(layout.site, file, layout.body)
 
     quote do
       def render(unquote(layout.id), var!(assigns)) when is_map(var!(assigns)) do

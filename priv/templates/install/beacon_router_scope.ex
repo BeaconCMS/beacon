@@ -1,5 +1,5 @@
 
-  import Beacon.Router
+  use Beacon.Router
 
   scope "/" do
     pipe_through :browser

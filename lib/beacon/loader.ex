@@ -34,9 +34,8 @@ defmodule Beacon.Loader do
     Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
   end
 
-  @doc """
-  This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
-  """
+  @doc false
+  # This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
   def call_function_with_retry(module, function, args, failure_count \\ 0) do
     apply(module, function, args)
   rescue
@@ -68,5 +67,31 @@ defmodule Beacon.Loader do
 
     e ->
       reraise e, __STACKTRACE__
+  end
+
+  @doc false
+  def compile_template!(site, file, template) do
+    Beacon.safe_code_heex_check!(site, template)
+
+    if Code.ensure_loaded?(Phoenix.LiveView.TagEngine) do
+      EEx.compile_string(template,
+        engine: Phoenix.LiveView.TagEngine,
+        line: 1,
+        file: file,
+        caller: __ENV__,
+        source: template,
+        trim: true,
+        tag_handler: Phoenix.LiveView.HTMLEngine
+      )
+    else
+      EEx.compile_string(template,
+        engine: Phoenix.LiveView.HTMLEngine,
+        line: 1,
+        file: file,
+        caller: __ENV__,
+        source: template,
+        trim: true
+      )
+    end
   end
 end
