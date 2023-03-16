@@ -19,7 +19,7 @@
     <.simple_form :let={f} for={@search_changeset} phx-change="search">
       <div class="flex gap-4 items-center">
         <div class="flex-grow">
-          <.input field={{f, :query}} type="search" autofocus={true} phx-debounce="250" placeholder="Search pages by path or title" />
+          <.input field={{f, :query}} type="search" autofocus={true} placeholder="Search pages by path or title" />
         </div>
         <div>
           <.input field={{f, :site}} type="select" options={@site_options} />

@@ -8,7 +8,7 @@
 </.header>
 
 <form id="search-form" phx-change="search">
-  <input name="search" value={@search} phx-debounce="100" placeholder="Search assets" type="search" />
+  <input name="search" value={@search} placeholder="Search assets" type="search" />
 </form>
 
 <.table id="assets" rows={@assets}>
