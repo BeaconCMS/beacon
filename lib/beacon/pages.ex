@@ -124,22 +124,26 @@ defmodule Beacon.Pages do
 
   """
   def publish_page(%Page{} = page) do
-    Repo.transaction(fn ->
-      page_changeset =
-        Page.changeset(page, %{
-          template: page.pending_template,
-          layout_id: page.layout_id,
-          version: page.version + 1
-        })
+    transaction =
+      Repo.transaction(fn ->
+        page_changeset =
+          Page.changeset(page, %{
+            template: page.pending_template,
+            layout_id: page.layout_id,
+            version: page.version + 1
+          })
 
-      with {:ok, page} <- Repo.update(page_changeset),
-           {:ok, _} <- create_version_for_page(page) do
-        # DBLoader.load_from_db()
-        page
-      else
-        {:error, reason} -> Repo.rollback(reason)
-      end
-    end)
+        with {:ok, page} <- Repo.update(page_changeset),
+             {:ok, _} <- create_version_for_page(page) do
+          page
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+
+    DBLoader.load_from_db()
+
+    transaction
   end
 
   def update_page_pending(%Page{} = page, template, layout_id, extra \\ %{}) do
