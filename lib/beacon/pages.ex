@@ -134,7 +134,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.update(page_changeset),
            {:ok, _} <- create_version_for_page(page) do
-        DBLoader.load_from_db()
+        # DBLoader.load_from_db()
         page
       else
         {:error, reason} -> Repo.rollback(reason)
