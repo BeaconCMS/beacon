@@ -120,9 +120,26 @@ defmodule Beacon.Router do
   end
 
   @doc """
-  Admin routes.
+  Admin routes for a beacon site.
+
+  ## Examples
+
+      defmodule MyAppWeb.Router do
+        use Phoenix.Router
+        use Beacon.Router
+
+        scope "/", MyAppWeb do
+          pipe_through :browser
+          beacon_admin "/admin", on_mount: [SomeHook]
+        end
+      end
+
+  ## Options
+
+    * `:on_mount` (optional) , an optional list of `on_mount` hooks passed to `live_session`.
+    This will allow for authenticated routes, among other uses.
   """
-  defmacro beacon_admin(path) do
+  defmacro beacon_admin(path, opts \\ []) do
     quote bind_quoted: binding(), location: :keep do
       # check before scope so it can raise with the proper message
       if existing = Module.get_attribute(__MODULE__, :beacon_admin_prefix) do
@@ -138,7 +155,9 @@ defmodule Beacon.Router do
       scope path, alias: false, as: false do
         import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
-        live_session :beacon_admin, root_layout: {BeaconWeb.Layouts, :admin} do
+        session_opts = Beacon.Router.__admin_session_opts__(opts)
+
+        live_session :beacon_admin, session_opts do
           get "/beacon_static/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_admin_static_asset
           get "/beacon_static/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_admin_static_asset
 
@@ -151,6 +170,22 @@ defmodule Beacon.Router do
         end
       end
     end
+  end
+
+  @doc false
+  def __admin_session_opts__(opts) do
+    if Keyword.has_key?(opts, :root_layout) do
+      raise ArgumentError, """
+      You cannot assign a different root_layout.
+
+      Beacon Admin depends on {BeaconWeb.Layouts, :admin}
+      """
+    end
+
+    [
+      on_mount: Keyword.get(opts, :on_mount, []),
+      root_layout: {BeaconWeb.Layouts, :admin}
+    ]
   end
 
   @doc """

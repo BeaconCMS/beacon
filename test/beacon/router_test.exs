@@ -21,6 +21,26 @@ defmodule Beacon.RouterTest do
     end
   end
 
+  describe "admin options" do
+    test "options are optional" do
+      assert [
+               {:on_mount, []},
+               {:root_layout, {BeaconWeb.Layouts, :admin}}
+             ] = Router.__admin_session_opts__([])
+    end
+
+    test "assigns on_mount" do
+      assert [
+               {:on_mount, [SomeHook]},
+               {:root_layout, {BeaconWeb.Layouts, :admin}}
+             ] = Router.__admin_session_opts__(on_mount: [SomeHook])
+    end
+
+    test "dose not assign root_layout" do
+      assert_raise ArgumentError, fn -> Router.__admin_session_opts__(root_layout: {BeaconWeb.Layouts, :runtime}) end
+    end
+  end
+
   defmodule RouterSimple do
     use Beacon.BeaconTest, :router
     use Beacon.Router
