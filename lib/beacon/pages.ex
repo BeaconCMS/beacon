@@ -113,15 +113,6 @@ defmodule Beacon.Pages do
 
   @doc """
   Updates a page and creates a page_version for the previously current page.
-
-  ## Examples
-
-      iex> update_page(page, %{field: new_value})
-      {:ok, %Page{}}
-
-      iex> update_page(page, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
   """
   def publish_page(%Page{} = page) do
     transaction =
