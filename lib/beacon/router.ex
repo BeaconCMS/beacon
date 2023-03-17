@@ -18,7 +18,7 @@ defmodule Beacon.Router do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
       Module.register_attribute(__MODULE__, :beacon_admin_prefix, accumulate: false)
-      import Beacon.Router, only: [beacon_site: 2, beacon_admin: 1, beacon_api: 1]
+      import Beacon.Router, only: [beacon_site: 2, beacon_admin: 1, beacon_admin: 2, beacon_api: 1]
       @before_compile unquote(__MODULE__)
     end
   end
@@ -177,6 +177,14 @@ defmodule Beacon.Router do
     if Keyword.has_key?(opts, :root_layout) do
       raise ArgumentError, """
       You cannot assign a different root_layout.
+
+      Beacon Admin depends on {BeaconWeb.Layouts, :admin}
+      """
+    end
+
+    if Keyword.has_key?(opts, :layout) do
+      raise ArgumentError, """
+      You cannot assign a layout.
 
       Beacon Admin depends on {BeaconWeb.Layouts, :admin}
       """

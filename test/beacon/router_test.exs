@@ -39,6 +39,10 @@ defmodule Beacon.RouterTest do
     test "dose not assign root_layout" do
       assert_raise ArgumentError, fn -> Router.__admin_session_opts__(root_layout: {BeaconWeb.Layouts, :runtime}) end
     end
+
+    test "dose not assign layout" do
+      assert_raise ArgumentError, fn -> Router.__admin_session_opts__(layout: {BeaconWeb.Layouts, :runtime}) end
+    end
   end
 
   defmodule RouterSimple do
