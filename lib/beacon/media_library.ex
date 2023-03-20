@@ -7,7 +7,7 @@ defmodule Beacon.MediaLibrary do
 
   alias Beacon.MediaLibrary.Asset
 
-  def get_asset!(site, name) do
-    Repo.get_by!(Asset, site: site, file_name: name)
+  def get_asset(site, name) do
+    Repo.get_by(Asset, site: site, file_name: name)
   end
 end
