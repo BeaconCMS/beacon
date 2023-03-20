@@ -284,7 +284,7 @@ defmodule Beacon.Router do
 
   @doc false
   def add_page(site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
-    add_page(:beacon_routes, site, path, metadata)
+    add_page(:beacon_pages, site, path, metadata)
   end
 
   @doc false
@@ -294,7 +294,7 @@ defmodule Beacon.Router do
 
   @doc false
   def lookup_path(site, path) do
-    lookup_path(:beacon_routes, site, path)
+    lookup_path(:beacon_pages, site, path)
   end
 
   # Lookup for a path stored in ets that is coming from a live view.
