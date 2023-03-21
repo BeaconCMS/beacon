@@ -84,29 +84,34 @@ defmodule Beacon.Pages do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_page(attrs \\ %{}) do
+  def create_page(attrs) do
+    skip_reload? = Map.get(attrs, :skip_reload, false)
+
     Repo.transaction(fn ->
-      page_changeset =
-        attrs
-        |> Page.changeset()
+      page_changeset = Page.changeset(attrs)
 
       with {:ok, page} <- Repo.insert(page_changeset),
-           {:ok, _page_version} <- create_version_for_page(page) do
-        # TODO: reload page
-        # Beacon.reload_page(page)
-
+           {:ok, _page_version} <- create_version_for_page(page),
+           :ok <- maybe_reload_page(page, skip_reload?) do
         page
       else
         {:error, reason} -> Repo.rollback(reason)
+        _ -> Repo.rollback(:error)
       end
     end)
   end
 
-  def create_page!(attrs \\ %{}) do
+  def create_page!(attrs) do
     case create_page(attrs) do
       {:ok, page} -> page
       {:error, changeset} -> raise "Failed to create page #{inspect(changeset.errors)} "
     end
+  end
+
+  defp maybe_reload_page(_page, true = _skip_reload?), do: :ok
+
+  defp maybe_reload_page(page, _skip_reload?) do
+    Beacon.reload_page(page)
   end
 
   @doc """

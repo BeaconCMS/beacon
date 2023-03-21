@@ -74,7 +74,8 @@ defmodule Beacon.Fixtures do
       <main>
         <h1>my_site#home</h1>
       </main>
-      """
+      """,
+      skip_reload: true
     })
     |> Pages.create_page!()
   end

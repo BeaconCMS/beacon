@@ -82,8 +82,14 @@ defmodule Beacon do
   @doc """
   Reload all resources of `site`.
   """
-  @spec reload_site(Beacon.Types.Site.t()) :: any
+  @spec reload_site(Beacon.Types.Site.t()) :: :ok
   defdelegate reload_site(site), to: Beacon.Loader
+
+  @doc """
+  Reload `page` and its dependencies.
+  """
+  @spec reload_page(%Beacon.Pages.Page{}) :: :ok
+  defdelegate reload_page(page), to: Beacon.Loader
 
   @doc false
   def safe_code_check!(site, code) do

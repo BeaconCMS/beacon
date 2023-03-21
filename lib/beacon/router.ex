@@ -293,6 +293,11 @@ defmodule Beacon.Router do
   end
 
   @doc false
+  def dump_paths(table) do
+    :ets.match(table, :"$1")
+  end
+
+  @doc false
   def lookup_path(site, path) do
     lookup_path(:beacon_pages, site, path)
   end

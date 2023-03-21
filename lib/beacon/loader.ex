@@ -11,7 +11,7 @@ defmodule Beacon.Loader do
   end
 
   def init(config) do
-    :ok = load_from_db(config.site)
+    :ok = load_site_from_db(config.site)
     {:ok, config}
   end
 
@@ -19,10 +19,16 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def reload_site(site) do
+  def reload_site(site) when is_atom(site) do
     # validate site is valid by fetching config
     config = Beacon.Config.fetch!(site)
     GenServer.call(name(config.site), {:reload_site, config.site})
+  end
+
+  def reload_page(%Beacon.Pages.Page{} = page) do
+    # validate site is valid by fetching config
+    config = Beacon.Config.fetch!(page.site)
+    GenServer.call(name(config.site), {:reload_page, page})
   end
 
   @spec reload_module!(module(), Macro.t()) :: :ok
@@ -39,7 +45,7 @@ defmodule Beacon.Loader do
               __STACKTRACE__
   end
 
-  defp load_from_db(site) do
+  defp load_site_from_db(site) do
     with :ok <- Beacon.RuntimeJS.load(),
          :ok <- Beacon.RuntimeCSS.load_admin(),
          :ok <- load_runtime_css(site),
@@ -76,12 +82,15 @@ defmodule Beacon.Loader do
     site
     |> Beacon.Layouts.list_layouts_for_site()
     |> Enum.map(fn layout ->
-      Task.async(fn ->
-        Beacon.Loader.LayoutModuleLoader.load_layout!(site, layout)
-      end)
+      Task.async(fn -> load_layout(layout) end)
     end)
     |> Task.await_many(60_000)
 
+    :ok
+  end
+
+  defp load_layout(layout) do
+    {:ok, _ast} = Beacon.Loader.LayoutModuleLoader.load_layout!(layout.site, layout)
     :ok
   end
 
@@ -89,13 +98,16 @@ defmodule Beacon.Loader do
     site
     |> Beacon.Pages.list_pages_for_site([:events, :helpers])
     |> Enum.map(fn page ->
-      Task.async(fn ->
-        Beacon.Loader.PageModuleLoader.load_page!(site, page)
-        Beacon.PubSub.broadcast_page_update(site, page.path)
-      end)
+      Task.async(fn -> load_page(page) end)
     end)
     |> Task.await_many(300_000)
 
+    :ok
+  end
+
+  defp load_page(page) do
+    {:ok, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page.site, page)
+    Beacon.PubSub.broadcast_page_update(page.site, page.path)
     :ok
   end
 
@@ -211,6 +223,25 @@ defmodule Beacon.Loader do
   end
 
   def handle_call({:reload_site, site}, _from, config) do
-    {:reply, load_from_db(site), config}
+    {:reply, load_site_from_db(site), config}
+  end
+
+  # TODO: update ets record
+  def handle_call({:reload_page, page}, _from, config) do
+    page = Beacon.Repo.preload(page, [:layout, :events, :helpers])
+
+    reply =
+      with :ok <- load_runtime_css(page.site),
+           # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
+           :ok <- load_components(page.site),
+           :ok <- load_layout(page.layout),
+           :ok <- load_page(page),
+           :ok <- load_stylesheets(page.site) do
+        :ok
+      else
+        _ -> raise Beacon.LoaderError, message: "Failed to load resources for page #{page.title} of site #{page.site}"
+      end
+
+    {:reply, reply, config}
   end
 end
