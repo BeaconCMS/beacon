@@ -88,7 +88,7 @@ defmodule Beacon do
   @doc """
   Reload `page` and its dependencies.
   """
-  @spec reload_page(%Beacon.Pages.Page{}) :: :ok
+  @spec reload_page(Beacon.Pages.Page.t()) :: :ok
   defdelegate reload_page(page), to: Beacon.Loader
 
   @doc false

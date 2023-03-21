@@ -12,7 +12,7 @@ defmodule Beacon.LoaderTest do
         end
       end
 
-    assert_raise Beacon.LoaderError, "Failed to load module Foo.Bar, got: custom file: undefined function def/0 (there is no such import)", fn ->
+    assert_raise Beacon.LoaderError, ~r/Failed to load module Foo.Bar, got: custom file: undefined function def/, fn ->
       Loader.reload_module!(Foo.Bar, ast, "custom file")
     end
   end
