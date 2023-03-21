@@ -227,7 +227,7 @@ For more info on site options, check out `Beacon.start_link/1`.
       Layouts.create_layout!(%{
         site: "my_site",
         title: "Sample Home Page",
-        meta_tags: %{"foo" => "bar"},
+        meta_tags: [%{"foo" => "bar"}],
         stylesheet_urls: [],
         body: """
         <header>
