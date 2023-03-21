@@ -166,7 +166,7 @@ defmodule Beacon.Loader do
       reraise e, __STACKTRACE__
   end
 
-  def compile_template!(site, file, template) do
+  def compile_heex_template!(site, file, template) do
     Beacon.safe_code_heex_check!(site, template)
 
     if Code.ensure_loaded?(Phoenix.LiveView.TagEngine) do

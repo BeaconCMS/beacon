@@ -32,7 +32,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
   defp render_component(%Component{site: site, name: name, body: body}) do
     file = "site-#{site}-component-#{name}"
-    ast = Beacon.Loader.compile_template!(site, file, body)
+    ast = Beacon.Loader.compile_heex_template!(site, file, body)
 
     quote do
       def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do
