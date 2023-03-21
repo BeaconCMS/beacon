@@ -82,7 +82,7 @@ defmodule Beacon do
   @doc """
   Reload all resources of `site`.
   """
-  @spec reload_site(Beacon.Type.Site.t()) :: any
+  @spec reload_site(Beacon.Types.Site.t()) :: any
   defdelegate reload_site(site), to: Beacon.Loader
 
   @doc false

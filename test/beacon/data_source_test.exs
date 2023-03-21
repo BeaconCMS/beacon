@@ -17,7 +17,7 @@ defmodule Beacon.DataSourceTest do
       Make sure you have defined a implemention of Beacon.DataSource.live_data/3 that matches these args.\
       """
 
-      assert_raise Beacon.DataSource.Error, error_message, fn ->
+      assert_raise Beacon.DataSourceError, error_message, fn ->
         assert DataSource.live_data(:data_source_test, ["unkown"], %{})
       end
     end

@@ -34,7 +34,7 @@ defmodule Beacon.Layouts do
       [:site_01, ...]
 
   """
-  @spec list_distinct_sites_from_layouts :: list(Beacon.Type.Site.t())
+  @spec list_distinct_sites_from_layouts :: list(Beacon.Types.Site.t())
   def list_distinct_sites_from_layouts do
     Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
   end

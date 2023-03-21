@@ -3,10 +3,6 @@ defmodule Beacon.DataSource do
 
   @behaviour Beacon.DataSource.Behaviour
 
-  defmodule Error do
-    defexception message: "Error in Beacon.DataSource"
-  end
-
   @doc false
   def live_data(site, path, params) do
     user_data_source_mod = get_data_source(site)
@@ -29,7 +25,7 @@ defmodule Beacon.DataSource do
       that matches these args.\
       """
 
-      reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
+      reraise Beacon.DataSourceError, [message: error_message], __STACKTRACE__
 
     error ->
       reraise error, __STACKTRACE__

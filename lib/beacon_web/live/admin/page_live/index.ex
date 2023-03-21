@@ -12,7 +12,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
     @primary_key false
     embedded_schema do
       field :query, :string, default: ""
-      field :site, Beacon.Type.Site
+      field :site, Beacon.Types.Site
     end
 
     def changeset(form \\ %__MODULE__{}, params \\ %{}) do

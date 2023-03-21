@@ -7,7 +7,7 @@ defmodule Beacon.MediaLibrary.Asset do
     field :file_body, :binary
     field :file_name, :string
     field :file_type, :string
-    field :site, Beacon.Type.Site
+    field :site, Beacon.Types.Site
     field :deleted_at, :utc_datetime
 
     timestamps()
