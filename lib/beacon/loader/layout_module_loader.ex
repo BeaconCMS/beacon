@@ -3,14 +3,14 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   require Logger
 
-  alias Beacon.Layouts.Layout
+  alias Beacon.Loader
 
   def load_layout!(site, layout) do
-    component_module = Beacon.Loader.component_module_for_site(site)
-    module = Beacon.Loader.layout_module_for_site(site, layout.id)
+    component_module = Loader.component_module_for_site(site)
+    module = Loader.layout_module_for_site(site, layout.id)
     render_function = render_layout(layout)
     ast = render(module, render_function, component_module)
-    :ok = Beacon.Loader.reload_module!(module, ast)
+    :ok = Loader.reload_module!(module, ast)
     {:ok, ast}
   end
 
@@ -19,16 +19,16 @@ defmodule Beacon.Loader.LayoutModuleLoader do
       defmodule unquote(module_name) do
         use Phoenix.HTML
         import Phoenix.Component
-        unquote(Beacon.Loader.maybe_import_my_component(component_module, render_function))
+        unquote(Loader.maybe_import_my_component(component_module, render_function))
 
         unquote(render_function)
       end
     end
   end
 
-  defp render_layout(%Layout{} = layout) do
+  defp render_layout(%Beacon.Layouts.Layout{} = layout) do
     file = "site-#{layout.site}-layout-#{layout.title}"
-    ast = Beacon.Loader.compile_heex_template!(layout.site, file, layout.body)
+    ast = Loader.compile_heex_template!(layout.site, file, layout.body)
 
     quote do
       def render(unquote(layout.id), var!(assigns)) when is_map(var!(assigns)) do

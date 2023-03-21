@@ -9,7 +9,6 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
 
   def load_stylesheets(site, stylesheets) do
     stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
-
     ast = render_module(stylesheet_module, stylesheets)
     :ok = Beacon.Loader.reload_module!(stylesheet_module, ast)
     {:ok, ast}

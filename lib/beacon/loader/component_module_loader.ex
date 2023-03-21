@@ -1,19 +1,17 @@
 defmodule Beacon.Loader.ComponentModuleLoader do
   require Logger
 
-  alias Beacon.Components.Component
+  alias Beacon.Loader
 
   def load_components(_site, [] = _components) do
     :skip
   end
 
   def load_components(site, components) do
-    component_module = Beacon.Loader.component_module_for_site(site)
-
+    component_module = Loader.component_module_for_site(site)
     render_functions = Enum.map(components, &render_component/1)
-
     ast = render(component_module, render_functions)
-    :ok = Beacon.Loader.reload_module!(component_module, ast)
+    :ok = Loader.reload_module!(component_module, ast)
     {:ok, ast}
   end
 
@@ -30,9 +28,9 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     end
   end
 
-  defp render_component(%Component{site: site, name: name, body: body}) do
+  defp render_component(%Beacon.Components.Component{site: site, name: name, body: body}) do
     file = "site-#{site}-component-#{name}"
-    ast = Beacon.Loader.compile_heex_template!(site, file, body)
+    ast = Loader.compile_heex_template!(site, file, body)
 
     quote do
       def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do

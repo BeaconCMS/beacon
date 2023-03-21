@@ -1,12 +1,13 @@
 defmodule Beacon.Loader.PageModuleLoader do
+  require Logger
+  alias Beacon.Loader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
-  require Logger
 
   def load_page!(site, page) do
-    component_module = Beacon.Loader.component_module_for_site(site)
-    page_module = Beacon.Loader.page_module_for_site(site, page.id)
+    component_module = Loader.component_module_for_site(site)
+    page_module = Loader.page_module_for_site(site, page.id)
 
     # Group function heads together to avoid compiler warnings
     functions = [
@@ -18,8 +19,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     ast = render(page_module, component_module, functions)
     store_page(page, page_module, component_module)
-    :ok = Beacon.Loader.reload_module!(page_module, ast)
-
+    :ok = Loader.reload_module!(page_module, ast)
     {:ok, ast}
   end
 
@@ -28,7 +28,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       defmodule unquote(module_name) do
         use Phoenix.HTML
         import Phoenix.Component
-        unquote(Beacon.Loader.maybe_import_my_component(component_module, functions))
+        unquote(Loader.maybe_import_my_component(component_module, functions))
 
         unquote_splicing(functions)
       end
@@ -38,7 +38,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp store_page(%Page{} = page, page_module, component_module) do
     %{id: page_id, layout_id: layout_id, site: site, path: path, template: template} = page
     file = "site-#{page.site}-page-#{page.path}"
-    template_ast = Beacon.Loader.compile_heex_template!(site, file, template)
+    template_ast = Loader.compile_heex_template!(site, file, template)
     Beacon.Router.add_page(site, path, {page_id, layout_id, template_ast, page_module, component_module})
   end
 
@@ -106,7 +106,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp dynamic_helper do
     quote do
       def dynamic_helper(helper_name, args) do
-        Beacon.Loader.call_function_with_retry(__MODULE__, String.to_atom(helper_name), [args])
+        Loader.call_function_with_retry(__MODULE__, String.to_atom(helper_name), [args])
       end
     end
   end

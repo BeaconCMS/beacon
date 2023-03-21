@@ -10,8 +10,8 @@ defmodule Beacon.SiteSupervisor do
 
   @impl true
   def init(config) do
+    # start Loader process by demand under the test process
     children =
-      # start Loader process by demand under the test process
       if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
         []
       else
