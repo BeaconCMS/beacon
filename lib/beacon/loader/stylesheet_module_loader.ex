@@ -1,7 +1,6 @@
 defmodule Beacon.Loader.StylesheetModuleLoader do
   require Logger
 
-  alias Beacon.Loader.ModuleLoader
   alias Beacon.Stylesheets.Stylesheet
 
   def load_stylesheets(_site, [] = _stylesheets) do
@@ -12,7 +11,7 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
     stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
 
     ast = render_module(stylesheet_module, stylesheets)
-    :ok = ModuleLoader.load(stylesheet_module, ast)
+    :ok = Beacon.Loader.reload_module!(stylesheet_module, ast)
     {:ok, ast}
   end
 

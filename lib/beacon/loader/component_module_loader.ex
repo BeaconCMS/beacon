@@ -2,7 +2,6 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   require Logger
 
   alias Beacon.Components.Component
-  alias Beacon.Loader.ModuleLoader
 
   def load_components(_site, [] = _components) do
     :skip
@@ -14,7 +13,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     render_functions = Enum.map(components, &render_component/1)
 
     ast = render(component_module, render_functions)
-    :ok = ModuleLoader.load(component_module, ast)
+    :ok = Beacon.Loader.reload_module!(component_module, ast)
     {:ok, ast}
   end
 

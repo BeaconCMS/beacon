@@ -33,7 +33,6 @@ defmodule Beacon.RuntimeJS do
     |> IO.iodata_to_binary()
   end
 
-  @doc false
   def fetch do
     case :ets.match(:beacon_assets, {:js, {:_, :_, :"$1"}}) do
       [[js]] -> js
@@ -41,7 +40,6 @@ defmodule Beacon.RuntimeJS do
     end
   end
 
-  @doc false
   def load do
     js = build()
     compressed = :zlib.gzip(js)

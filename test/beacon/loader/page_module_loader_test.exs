@@ -16,9 +16,11 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       page_1 = Repo.preload(page_1, [:events, :helpers])
       page_2 = Repo.preload(page_2, [:events, :helpers])
 
-      {:ok, ast} = PageModuleLoader.load_templates(:test, [page_1, page_2])
-
+      {:ok, ast} = PageModuleLoader.load_page!(:test, page_1)
       assert has_function?(ast, :page_1_upcase)
+      assert has_function?(ast, :dynamic_helper)
+
+      {:ok, ast} = PageModuleLoader.load_page!(:test, page_2)
       assert has_function?(ast, :page_2_upcase)
       assert has_function?(ast, :dynamic_helper)
     end
@@ -52,7 +54,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
       page_1 = Repo.preload(page_1, [:events, :helpers])
 
-      {:ok, ast} = PageModuleLoader.load_templates(:test, [page_1])
+      {:ok, ast} = PageModuleLoader.load_page!(:test, page_1)
 
       assert has_map?(ast, %{"property" => "og:title", "content" => "my title is my first page"})
       assert has_map?(ast, %{"property" => "og:description", "content" => "my description is hello world"})

@@ -1,32 +1,25 @@
 defmodule Beacon.Loader.PageModuleLoader do
-  alias Beacon.Loader.ModuleLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
   require Logger
 
-  def load_templates(site, pages) do
-    page_module = Beacon.Loader.page_module_for_site(site)
+  def load_page!(site, page) do
     component_module = Beacon.Loader.component_module_for_site(site)
+    page_module = Beacon.Loader.page_module_for_site(site, page.id)
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [
-            &page_assigns/1,
-            &handle_event/1,
-            &helper/1
-          ],
-          page <- pages do
+      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
       dynamic_helper()
     ]
 
     ast = render(page_module, component_module, functions)
+    store_page(page, page_module, component_module)
+    :ok = Beacon.Loader.reload_module!(page_module, ast)
 
-    Enum.each(pages, fn page -> store_page(page, page_module, component_module) end)
-
-    :ok = ModuleLoader.load(page_module, ast)
     {:ok, ast}
   end
 
@@ -35,7 +28,7 @@ defmodule Beacon.Loader.PageModuleLoader do
       defmodule unquote(module_name) do
         use Phoenix.HTML
         import Phoenix.Component
-        unquote(ModuleLoader.maybe_import_my_component(component_module, functions))
+        unquote(Beacon.Loader.maybe_import_my_component(component_module, functions))
 
         unquote_splicing(functions)
       end

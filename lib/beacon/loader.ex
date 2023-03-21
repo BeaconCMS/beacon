@@ -1,21 +1,17 @@
 defmodule Beacon.Loader do
+  # Process to handle resource reloading (layouts, pages, and so on),
+  # each site has its own process started by the site supervisor.
   @moduledoc false
 
   use GenServer
   require Logger
-
-  defmodule Error do
-    # Using `plug_status` for rendering this exception as 404 in production.
-    # More info: https://hexdocs.pm/phoenix/custom_error_pages.html#custom-exceptions
-    defexception message: "Error in Beacon.Loader", plug_status: 404
-  end
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
   end
 
   def init(config) do
-    load_from_db(config.site)
+    :ok = load_from_db(config.site)
     {:ok, config}
   end
 
@@ -24,63 +20,106 @@ defmodule Beacon.Loader do
   end
 
   def reload_site(site) do
+    # validate site is valid by fetching config
     config = Beacon.Config.fetch!(site)
     GenServer.call(name(config.site), {:reload_site, config.site})
   end
 
-  # TODO: check results of each function pass and/or return results
-  # TODO: load each group in parallel
-  defp load_from_db(site) do
-    :ok = Beacon.RuntimeJS.load()
-    :ok = Beacon.RuntimeCSS.load_admin()
-    load_runtime_css(site)
-    load_components(site)
-    load_layouts(site)
-    load_pages(site)
-    load_stylesheets(site)
-
+  @spec reload_module!(module(), Macro.t()) :: :ok
+  def reload_module!(module, ast, file \\ "nofile") do
+    :code.delete(module)
+    :code.purge(module)
+    [{^module, _}] = Code.compile_quoted(ast, file)
+    {:module, ^module} = Code.ensure_loaded(module)
     :ok
+  rescue
+    e ->
+      reraise Beacon.LoaderError,
+              [message: "Failed to load module #{inspect(module)}, got: #{Exception.message(e)}"],
+              __STACKTRACE__
+  end
+
+  defp load_from_db(site) do
+    with :ok <- Beacon.RuntimeJS.load(),
+         :ok <- Beacon.RuntimeCSS.load_admin(),
+         :ok <- load_runtime_css(site),
+         :ok <- load_components(site),
+         :ok <- load_layouts(site),
+         :ok <- load_pages(site),
+         :ok <- load_stylesheets(site) do
+      :ok
+    else
+      _ -> raise Beacon.LoaderError, message: "Failed to load resources for site #{site}"
+    end
   end
 
   defp load_runtime_css(site) do
-    # TODO: control loading by env when we get to refactor/improve Server
+    # too slow to run the css compiler on every test
     if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
-      ""
+      :ok
     else
       Beacon.RuntimeCSS.load(site)
     end
   end
 
+  # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
   defp load_components(site) do
-    Beacon.Loader.ComponentModuleLoader.load_components(site, Beacon.Components.list_components_for_site(site))
+    Beacon.Loader.ComponentModuleLoader.load_components(
+      site,
+      Beacon.Components.list_components_for_site(site)
+    )
+
+    :ok
   end
 
-  def load_layouts(site) do
-    Beacon.Loader.LayoutModuleLoader.load_layouts(site, Beacon.Layouts.list_layouts_for_site(site))
+  defp load_layouts(site) do
+    site
+    |> Beacon.Layouts.list_layouts_for_site()
+    |> Enum.map(fn layout ->
+      Task.async(fn ->
+        Beacon.Loader.LayoutModuleLoader.load_layout!(site, layout)
+      end)
+    end)
+    |> Task.await_many(60_000)
+
+    :ok
   end
 
-  def load_pages(site) do
-    pages = Beacon.Pages.list_pages_for_site(site, [:events, :helpers])
-    module = Beacon.Loader.PageModuleLoader.load_templates(site, pages)
-    Enum.each(pages, &Beacon.PubSub.broadcast_page_update(site, &1.path))
+  defp load_pages(site) do
+    site
+    |> Beacon.Pages.list_pages_for_site([:events, :helpers])
+    |> Enum.map(fn page ->
+      Task.async(fn ->
+        Beacon.Loader.PageModuleLoader.load_page!(site, page)
+        Beacon.PubSub.broadcast_page_update(site, page.path)
+      end)
+    end)
+    |> Task.await_many(300_000)
 
-    module
+    :ok
   end
 
-  def load_stylesheets(site) do
-    Beacon.Loader.StylesheetModuleLoader.load_stylesheets(site, Beacon.Stylesheets.list_stylesheets_for_site(site))
+  defp load_stylesheets(site) do
+    Beacon.Loader.StylesheetModuleLoader.load_stylesheets(
+      site,
+      Beacon.Stylesheets.list_stylesheets_for_site(site)
+    )
+
+    :ok
   end
 
-  def page_module_for_site(site) do
-    module_for_site(site, "Page")
+  def layout_module_for_site(site, layout_id) do
+    prefix = Macro.camelize("layout_#{layout_id}")
+    module_for_site(site, prefix)
+  end
+
+  def page_module_for_site(site, page_id) do
+    prefix = Macro.camelize("page_#{page_id}")
+    module_for_site(site, prefix)
   end
 
   def component_module_for_site(site) do
     module_for_site(site, "Component")
-  end
-
-  def layout_module_for_site(site) do
-    module_for_site(site, "Layout")
   end
 
   def stylesheet_module_for_site(site) do
@@ -104,6 +143,7 @@ defmodule Beacon.Loader do
 
         {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
           Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time. Retrying.")
+
           :timer.sleep(100 * (failure_count * 2))
 
           call_function_with_retry(module, function, args, failure_count + 1)
@@ -120,7 +160,7 @@ defmodule Beacon.Loader do
       for more info.\
       """
 
-      reraise __MODULE__.Error, [message: error_message], __STACKTRACE__
+      reraise Beacon.LoaderError, [message: error_message], __STACKTRACE__
 
     e ->
       reraise e, __STACKTRACE__
@@ -151,8 +191,26 @@ defmodule Beacon.Loader do
     end
   end
 
+  def maybe_import_my_component(_component_module, [] = _functions) do
+  end
+
+  def maybe_import_my_component(component_module, functions) do
+    # TODO: early return
+    {_new_ast, present} =
+      Macro.prewalk(functions, false, fn
+        {:my_component, _, _} = node, _acc -> {node, true}
+        node, true -> {node, true}
+        node, false -> {node, false}
+      end)
+
+    if present do
+      quote do
+        import unquote(component_module), only: [my_component: 2]
+      end
+    end
+  end
+
   def handle_call({:reload_site, site}, _from, config) do
-    load_from_db(site)
-    {:reply, :ok, config}
+    {:reply, load_from_db(site), config}
   end
 end

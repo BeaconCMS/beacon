@@ -1,26 +1,27 @@
 defmodule Beacon.Loader.LayoutModuleLoader do
+  @moduledoc false
+
   require Logger
 
   alias Beacon.Layouts.Layout
-  alias Beacon.Loader.ModuleLoader
 
-  def load_layouts(site, layouts) do
+  def load_layout!(site, layout) do
     component_module = Beacon.Loader.component_module_for_site(site)
-    module = Beacon.Loader.layout_module_for_site(site)
-    render_functions = Enum.map(layouts, &render_layout/1)
-    ast = render(module, render_functions, component_module)
-    :ok = ModuleLoader.load(module, ast)
+    module = Beacon.Loader.layout_module_for_site(site, layout.id)
+    render_function = render_layout(layout)
+    ast = render(module, render_function, component_module)
+    :ok = Beacon.Loader.reload_module!(module, ast)
     {:ok, ast}
   end
 
-  defp render(module_name, render_functions, component_module) do
+  defp render(module_name, render_function, component_module) do
     quote do
       defmodule unquote(module_name) do
         use Phoenix.HTML
         import Phoenix.Component
-        unquote(ModuleLoader.maybe_import_my_component(component_module, render_functions))
+        unquote(Beacon.Loader.maybe_import_my_component(component_module, render_function))
 
-        unquote_splicing(render_functions)
+        unquote(render_function)
       end
     end
   end
