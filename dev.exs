@@ -284,7 +284,7 @@ Task.start(fn ->
 
   seeds.()
 
-  Beacon.Loader.Server.reload_from_db(:dev)
+  Beacon.reload_site(:dev)
 
   Process.sleep(:infinity)
 end)

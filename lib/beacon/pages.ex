@@ -6,7 +6,6 @@ defmodule Beacon.Pages do
   import Ecto.Query, warn: false
   alias Beacon.Repo
 
-  alias Beacon.Loader.DBLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
@@ -93,9 +92,8 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
-        unless Map.get(attrs, :skip_reload, false) do
-          DBLoader.load_from_db()
-        end
+        # TODO: reload page
+        # Beacon.reload_page(page)
 
         page
       else
@@ -126,13 +124,14 @@ defmodule Beacon.Pages do
 
         with {:ok, page} <- Repo.update(page_changeset),
              {:ok, _} <- create_version_for_page(page) do
+          # TODO: reload page
+          # Beacon.reload_page(page)
+
           page
         else
           {:error, reason} -> Repo.rollback(reason)
         end
       end)
-
-    DBLoader.load_from_db()
 
     transaction
   end
@@ -164,7 +163,9 @@ defmodule Beacon.Pages do
   def delete_page(%Page{} = page) do
     case Repo.delete(page) do
       {:ok, _} ->
-        DBLoader.load_from_db()
+        # TODO: reload page
+        # Beacon.reload_page(page)
+
         {:ok, page}
 
       {:error, reason} ->
@@ -338,9 +339,8 @@ defmodule Beacon.Pages do
     |> Repo.insert()
     |> case do
       {:ok, page_event} ->
-        unless Map.get(attrs, :skip_reload, false) do
-          DBLoader.load_from_db()
-        end
+        # TODO: reload page
+        # Beacon.reload_page(page)
 
         {:ok, page_event}
 
@@ -377,9 +377,8 @@ defmodule Beacon.Pages do
     |> Repo.insert()
     |> case do
       {:ok, page_helper} ->
-        unless Map.get(attrs, :skip_reload, false) do
-          DBLoader.load_from_db()
-        end
+        # TODO: reload page
+        # Beacon.reload_page(page)
 
         {:ok, page_helper}
 

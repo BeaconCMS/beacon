@@ -1,6 +1,7 @@
 defmodule Beacon.Loader do
-  alias Beacon.Loader.Server
+  @moduledoc false
 
+  use GenServer
   require Logger
 
   defmodule Error do
@@ -9,8 +10,65 @@ defmodule Beacon.Loader do
     defexception message: "Error in Beacon.Loader", plug_status: 404
   end
 
-  def reload_pages_from_db do
-    Server.reload_from_db()
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: name(config.site))
+  end
+
+  def init(config) do
+    load_from_db(config.site)
+    {:ok, config}
+  end
+
+  def name(site) do
+    Beacon.Registry.via({site, __MODULE__})
+  end
+
+  def reload_site(site) do
+    config = Beacon.Config.fetch!(site)
+    GenServer.call(name(config.site), {:reload_site, config.site})
+  end
+
+  # TODO: check results of each function pass and/or return results
+  # TODO: load each group in parallel
+  defp load_from_db(site) do
+    :ok = Beacon.RuntimeJS.load()
+    :ok = Beacon.RuntimeCSS.load_admin()
+    load_runtime_css(site)
+    load_components(site)
+    load_layouts(site)
+    load_pages(site)
+    load_stylesheets(site)
+
+    :ok
+  end
+
+  defp load_runtime_css(site) do
+    # TODO: control loading by env when we get to refactor/improve Server
+    if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
+      ""
+    else
+      Beacon.RuntimeCSS.load(site)
+    end
+  end
+
+  defp load_components(site) do
+    Beacon.Loader.ComponentModuleLoader.load_components(site, Beacon.Components.list_components_for_site(site))
+  end
+
+  def load_layouts(site) do
+    Beacon.Loader.LayoutModuleLoader.load_layouts(site, Beacon.Layouts.list_layouts_for_site(site))
+  end
+
+  def load_pages(site) do
+    pages = Beacon.Pages.list_pages_for_site(site, [:events, :helpers])
+    module = Beacon.Loader.PageModuleLoader.load_templates(site, pages)
+    Enum.each(pages, &Beacon.PubSub.broadcast_page_update(site, &1.path))
+
+    module
+  end
+
+  def load_stylesheets(site) do
+    Beacon.Loader.StylesheetModuleLoader.load_stylesheets(site, Beacon.Stylesheets.list_stylesheets_for_site(site))
   end
 
   def page_module_for_site(site) do
@@ -34,7 +92,6 @@ defmodule Beacon.Loader do
     Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
   end
 
-  @doc false
   # This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
   def call_function_with_retry(module, function, args, failure_count \\ 0) do
     apply(module, function, args)
@@ -69,7 +126,6 @@ defmodule Beacon.Loader do
       reraise e, __STACKTRACE__
   end
 
-  @doc false
   def compile_template!(site, file, template) do
     Beacon.safe_code_heex_check!(site, template)
 
@@ -93,5 +149,10 @@ defmodule Beacon.Loader do
         trim: true
       )
     end
+  end
+
+  def handle_call({:reload_site, site}, _from, config) do
+    load_from_db(site)
+    {:reply, :ok, config}
   end
 end

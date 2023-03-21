@@ -5,9 +5,15 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.LiveViewTest
   import Beacon.Fixtures
 
+  defp start_loader(_) do
+    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    :ok
+  end
+
   defp create_page(_) do
     stylesheet_fixture()
-    component_fixture()
+
+    component_fixture(name: "sample_component")
 
     layout =
       layout_fixture(
@@ -58,11 +64,13 @@ defmodule BeaconWeb.Live.PageLiveTest do
         meta_tags: nil
       )
 
+    Beacon.reload_site(:my_site)
+
     :ok
   end
 
   describe "meta tags" do
-    setup [:create_page]
+    setup [:start_loader, :create_page]
 
     test "merge layout, page, and site", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
@@ -97,7 +105,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "render" do
-    setup [:create_page]
+    setup [:start_loader, :create_page]
 
     test "a given path", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
@@ -143,15 +151,13 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "page title" do
-    setup do
-      # TODO: make stylesheet optional
-      stylesheet_fixture()
-      :ok
-    end
+    setup [:start_loader]
 
     test "on layout", %{conn: conn} do
+      stylesheet_fixture()
       layout = layout_fixture(title: "layout_title")
       page_fixture(layout_id: layout.id, title: nil)
+      Beacon.reload_site(:my_site)
 
       {:ok, view, _html} = live(conn, "/home")
 
@@ -159,8 +165,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "on page overwrite layout", %{conn: conn} do
+      stylesheet_fixture()
       layout = layout_fixture(title: "layout_title")
       page_fixture(layout_id: layout.id, title: "page_title")
+      Beacon.reload_site(:my_site)
 
       {:ok, view, _html} = live(conn, "/home")
 

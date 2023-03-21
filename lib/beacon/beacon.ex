@@ -72,6 +72,19 @@ defmodule Beacon do
   @doc false
   def tailwind_version, do: @tailwind_version
 
+  @doc """
+  Reload all resources for all running sites.
+  """
+  def reload_all_sites do
+    Enum.map(Beacon.Registry.registered_sites(), &reload_site/1)
+  end
+
+  @doc """
+  Reload all resources of `site`.
+  """
+  @spec reload_site(Beacon.Type.Site.t()) :: any
+  defdelegate reload_site(site), to: Beacon.Loader
+
   @doc false
   def safe_code_check!(site, code) do
     if Beacon.Config.fetch!(site).safe_code_check do
