@@ -71,7 +71,7 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_info(:page_updated, socket) do
-    {:noreply, assign(socket, :__page_update_available__, true)}
+    {:noreply, assign(socket, :__page_updated_at, DateTime.utc_now())}
   end
 
   def handle_event(event_name, event_params, socket) do
@@ -101,7 +101,7 @@ defmodule BeaconWeb.PageLive do
       |> assign(:beacon_live_data, live_data)
       |> assign(:beacon_attrs, %BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)})
       |> assign(:__live_path__, path)
-      |> assign(:__page_update_available__, false)
+      |> assign(:__page_updated_at, DateTime.utc_now())
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
