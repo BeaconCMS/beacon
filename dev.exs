@@ -273,7 +273,7 @@ end
 Task.start(fn ->
   children = [
     {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
-    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource]]},
+    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource], [site: :other]]},
     SamplePhoenix.Endpoint
   ]
 
@@ -284,7 +284,7 @@ Task.start(fn ->
 
   seeds.()
 
-  Beacon.Loader.Server.reload_from_db(:dev)
+  Beacon.reload_all_sites()
 
   Process.sleep(:infinity)
 end)

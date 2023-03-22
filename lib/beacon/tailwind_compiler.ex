@@ -22,7 +22,7 @@ defmodule Beacon.TailwindCompiler do
   @behaviour Beacon.RuntimeCSS
 
   @impl Beacon.RuntimeCSS
-  def compile!(site) when is_atom(site) do
+  def compile(site) when is_atom(site) do
     tailwind_config = tailwind_config!(site)
 
     unless Application.get_env(:tailwind, :version) do
@@ -79,7 +79,7 @@ defmodule Beacon.TailwindCompiler do
 
     cleanup(tmp_dir, [generated_config_file_path, input_css_path, output_css_path] ++ templates_paths)
 
-    output
+    {:ok, output}
   end
 
   # Run tailwind-cli returning the output and exit code

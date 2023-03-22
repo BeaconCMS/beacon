@@ -6,7 +6,6 @@ defmodule Beacon.Pages do
   import Ecto.Query, warn: false
   alias Beacon.Repo
 
-  alias Beacon.Loader.DBLoader
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
@@ -85,56 +84,57 @@ defmodule Beacon.Pages do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_page(attrs \\ %{}) do
+  def create_page(attrs) do
+    skip_reload? = Map.get(attrs, :skip_reload, false)
+
     Repo.transaction(fn ->
-      page_changeset =
-        attrs
-        |> Page.changeset()
+      page_changeset = Page.changeset(attrs)
 
       with {:ok, page} <- Repo.insert(page_changeset),
-           {:ok, _page_version} <- create_version_for_page(page) do
-        unless Map.get(attrs, :skip_reload, false) do
-          DBLoader.load_from_db()
-        end
-
+           {:ok, _page_version} <- create_version_for_page(page),
+           :ok <- maybe_reload_page(page, skip_reload?) do
         page
       else
         {:error, reason} -> Repo.rollback(reason)
+        _ -> Repo.rollback(:error)
       end
     end)
   end
 
-  def create_page!(attrs \\ %{}) do
+  def create_page!(attrs) do
     case create_page(attrs) do
       {:ok, page} -> page
       {:error, changeset} -> raise "Failed to create page #{inspect(changeset.errors)} "
     end
   end
 
+  # skip reload in tests to make it faster and to avoid starting the loader process
+  defp maybe_reload_page(_page, true = _skip_reload?), do: :ok
+
+  defp maybe_reload_page(page, _skip_reload?) do
+    Beacon.reload_page(page)
+  end
+
   @doc """
   Updates a page and creates a page_version for the previously current page.
   """
   def publish_page(%Page{} = page) do
-    transaction =
-      Repo.transaction(fn ->
-        page_changeset =
-          Page.changeset(page, %{
-            template: page.pending_template,
-            layout_id: page.layout_id,
-            version: page.version + 1
-          })
+    Repo.transaction(fn ->
+      page_changeset =
+        Page.changeset(page, %{
+          template: page.pending_template,
+          layout_id: page.layout_id,
+          version: page.version + 1
+        })
 
-        with {:ok, page} <- Repo.update(page_changeset),
-             {:ok, _} <- create_version_for_page(page) do
-          page
-        else
-          {:error, reason} -> Repo.rollback(reason)
-        end
-      end)
-
-    DBLoader.load_from_db()
-
-    transaction
+      with {:ok, page} <- Repo.update(page_changeset),
+           {:ok, _} <- create_version_for_page(page),
+           :ok <- Beacon.reload_page(page) do
+        page
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   def update_page_pending(%Page{} = page, template, layout_id, extra \\ %{}) do
@@ -162,14 +162,14 @@ defmodule Beacon.Pages do
 
   """
   def delete_page(%Page{} = page) do
-    case Repo.delete(page) do
-      {:ok, _} ->
-        DBLoader.load_from_db()
+    Repo.transaction(fn ->
+      with {:ok, _} <- Repo.delete(page),
+           :ok <- Beacon.Loader.unload_page(page) do
         {:ok, page}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   @doc """
@@ -333,20 +333,20 @@ defmodule Beacon.Pages do
 
   """
   def create_page_event(attrs \\ %{}) do
-    attrs
-    |> PageEvent.changeset()
-    |> Repo.insert()
-    |> case do
-      {:ok, page_event} ->
-        unless Map.get(attrs, :skip_reload, false) do
-          DBLoader.load_from_db()
-        end
+    skip_reload? = Map.get(attrs, :skip_reload, false)
 
+    Repo.transaction(fn ->
+      changeset = PageEvent.changeset(attrs)
+
+      with {:ok, page_event} <- Repo.insert(changeset),
+           %{page: page} <- Repo.preload(page_event, :page),
+           :ok <- maybe_reload_page(page, skip_reload?) do
         {:ok, page_event}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+      else
+        {:error, reason} -> Repo.rollback(reason)
+        _ -> Repo.rollback(:fail_create_page_event)
+      end
+    end)
   end
 
   @doc """
@@ -372,20 +372,20 @@ defmodule Beacon.Pages do
 
   """
   def create_page_helper(attrs) do
-    attrs
-    |> PageHelper.changeset()
-    |> Repo.insert()
-    |> case do
-      {:ok, page_helper} ->
-        unless Map.get(attrs, :skip_reload, false) do
-          DBLoader.load_from_db()
-        end
+    skip_reload? = Map.get(attrs, :skip_reload, false)
 
+    Repo.transaction(fn ->
+      changeset = PageHelper.changeset(attrs)
+
+      with {:ok, page_helper} <- Repo.insert(changeset),
+           %{page: page} <- Repo.preload(page_helper, :page),
+           :ok <- maybe_reload_page(page, skip_reload?) do
         {:ok, page_helper}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+      else
+        {:error, reason} -> Repo.rollback(reason)
+        _ -> Repo.rollback(:fail_create_page_helper)
+      end
+    end)
   end
 
   @doc """

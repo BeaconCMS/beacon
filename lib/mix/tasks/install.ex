@@ -19,7 +19,7 @@ defmodule Mix.Tasks.Beacon.Install do
   """
   use Mix.Task
 
-  alias Beacon.Type.Site
+  alias Beacon.Types.Site
 
   @switches [
     site: :string

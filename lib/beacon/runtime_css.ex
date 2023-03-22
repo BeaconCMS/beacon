@@ -3,14 +3,14 @@ defmodule Beacon.RuntimeCSS do
   Runtime compilation and processing of CSS files.
   """
 
-  @callback compile!(Beacon.Type.Site.t()) :: String.t()
+  @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
 
   @doc """
   Compiles the site CSS through tailwind-cli
   """
-  @spec compile!(Beacon.Type.Site.t()) :: String.t()
-  def compile!(site) when is_atom(site) do
-    Beacon.Config.fetch!(site).css_compiler.compile!(site)
+  @spec compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
+  def compile(site) when is_atom(site) do
+    Beacon.Config.fetch!(site).css_compiler.compile(site)
   end
 
   @doc false
@@ -23,7 +23,7 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def load(site) do
-    css = compile!(site)
+    {:ok, css} = compile(site)
     compressed = :zlib.gzip(css)
     hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
     true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})

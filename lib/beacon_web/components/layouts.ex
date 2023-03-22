@@ -37,7 +37,7 @@ defmodule BeaconWeb.Layouts do
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
     site
-    |> Beacon.Loader.layout_module_for_site()
+    |> Beacon.Loader.layout_module_for_site(layout_id)
     |> Beacon.Loader.call_function_with_retry(:render, [layout_id, assigns])
   end
 
@@ -47,13 +47,13 @@ defmodule BeaconWeb.Layouts do
 
   defp compiled_page_assigns(site, page_id) do
     site
-    |> Beacon.Loader.page_module_for_site()
+    |> Beacon.Loader.page_module_for_site(page_id)
     |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
   end
 
   defp compiled_layout_assigns(site, layout_id) do
     site
-    |> Beacon.Loader.layout_module_for_site()
+    |> Beacon.Loader.layout_module_for_site(layout_id)
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
   end
 
@@ -68,7 +68,7 @@ defmodule BeaconWeb.Layouts do
   def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
     %{title: page_title} =
       site
-      |> Beacon.Loader.page_module_for_site()
+      |> Beacon.Loader.page_module_for_site(page_id)
       |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
 
     if page_title do
@@ -76,7 +76,7 @@ defmodule BeaconWeb.Layouts do
     else
       %{title: layout_title} =
         site
-        |> Beacon.Loader.layout_module_for_site()
+        |> Beacon.Loader.layout_module_for_site(layout_id)
         |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
 
       layout_title || missing_page_title()

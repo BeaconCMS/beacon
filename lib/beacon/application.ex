@@ -15,7 +15,7 @@ defmodule Beacon.Application do
     ]
 
     # We store routes by order and length so the most visited pages will likely be in the first rows
-    :ets.new(:beacon_routes, [:ordered_set, :named_table, :public, read_concurrency: true])
+    :ets.new(:beacon_pages, [:ordered_set, :named_table, :public, read_concurrency: true])
 
     :ets.new(:beacon_assets, [:set, :named_table, :public, read_concurrency: true])
 

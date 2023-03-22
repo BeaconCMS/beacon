@@ -12,7 +12,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
     @primary_key false
     embedded_schema do
       field :query, :string, default: ""
-      field :site, Beacon.Type.Site
+      field :site, Beacon.Types.Site
     end
 
     def changeset(form \\ %__MODULE__{}, params \\ %{}) do
@@ -44,7 +44,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   @impl true
   def handle_event("reload_pages", _, socket) do
     start = :os.system_time(:millisecond)
-    Beacon.Loader.reload_pages_from_db()
+    Beacon.reload_all_sites()
 
     {:noreply, assign(socket, :last_reload_time, :os.system_time(:millisecond) - start)}
   end

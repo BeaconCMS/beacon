@@ -10,7 +10,7 @@ defmodule Beacon.BeaconAttrs do
   defstruct site: nil, prefix: nil
 
   @type t :: %__MODULE__{
-          site: Beacon.Type.Site.t(),
+          site: Beacon.Types.Site.t(),
           prefix: String.t()
         }
 end

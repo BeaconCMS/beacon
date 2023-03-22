@@ -19,6 +19,9 @@ defmodule Beacon.Registry do
     end
   end
 
+  @doc """
+  Return a list of all registered sites running in the current instance.
+  """
   def registered_sites do
     match = {{:site, :"$1"}, :_, :_}
     guards = []

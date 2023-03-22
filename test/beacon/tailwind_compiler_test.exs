@@ -39,12 +39,12 @@ defmodule Beacon.TailwindCompilerTest do
     :ok
   end
 
-  describe "compile!/2" do
+  describe "compile/2" do
     setup [:create_page]
 
     test "includes classes from custom content" do
       capture_io(fn ->
-        assert output = TailwindCompiler.compile!(:my_site)
+        assert {:ok, output} = TailwindCompiler.compile(:my_site)
 
         # test/support/templates/*.*ex
         assert output =~ "text-red-50"

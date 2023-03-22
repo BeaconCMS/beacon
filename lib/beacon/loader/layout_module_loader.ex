@@ -1,33 +1,34 @@
 defmodule Beacon.Loader.LayoutModuleLoader do
+  @moduledoc false
+
   require Logger
 
-  alias Beacon.Layouts.Layout
-  alias Beacon.Loader.ModuleLoader
+  alias Beacon.Loader
 
-  def load_layouts(site, layouts) do
-    component_module = Beacon.Loader.component_module_for_site(site)
-    module = Beacon.Loader.layout_module_for_site(site)
-    render_functions = Enum.map(layouts, &render_layout/1)
-    ast = render(module, render_functions, component_module)
-    :ok = ModuleLoader.load(module, ast)
+  def load_layout!(site, layout) do
+    component_module = Loader.component_module_for_site(site)
+    module = Loader.layout_module_for_site(site, layout.id)
+    render_function = render_layout(layout)
+    ast = render(module, render_function, component_module)
+    :ok = Loader.reload_module!(module, ast)
     {:ok, ast}
   end
 
-  defp render(module_name, render_functions, component_module) do
+  defp render(module_name, render_function, component_module) do
     quote do
       defmodule unquote(module_name) do
         use Phoenix.HTML
         import Phoenix.Component
-        unquote(ModuleLoader.maybe_import_my_component(component_module, render_functions))
+        unquote(Loader.maybe_import_my_component(component_module, render_function))
 
-        unquote_splicing(render_functions)
+        unquote(render_function)
       end
     end
   end
 
-  defp render_layout(%Layout{} = layout) do
+  defp render_layout(%Beacon.Layouts.Layout{} = layout) do
     file = "site-#{layout.site}-layout-#{layout.title}"
-    ast = Beacon.Loader.compile_template!(layout.site, file, layout.body)
+    ast = Loader.compile_heex_template!(layout.site, file, layout.body)
 
     quote do
       def render(unquote(layout.id), var!(assigns)) when is_map(var!(assigns)) do

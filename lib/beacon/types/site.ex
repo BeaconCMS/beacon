@@ -1,4 +1,4 @@
-defmodule Beacon.Type.Site do
+defmodule Beacon.Types.Site do
   @moduledoc false
 
   use Ecto.Type
