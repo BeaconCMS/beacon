@@ -1,6 +1,7 @@
 defmodule BeaconWeb.Admin.PageLive.Index do
   use BeaconWeb, :live_view
 
+  alias Beacon.Authorization
   alias Beacon.Layouts
   alias Beacon.Pages
   alias Beacon.Pages.Page
@@ -31,6 +32,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
     socket =
       socket
       |> assign(:last_reload_time, nil)
+      |> assign(:unauthorized, false)
       |> assign_site_options()
 
     {:ok, socket}
@@ -38,7 +40,18 @@ defmodule BeaconWeb.Admin.PageLive.Index do
 
   @impl true
   def handle_params(params, _url, socket) do
-    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+    if Authorization.authorized?(
+         socket.assigns.requestor_context,
+         %{
+           view: BeaconWeb.Admin.PageLive,
+           action: socket.assigns.live_action,
+           params: params
+         }
+       ) do
+      {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true

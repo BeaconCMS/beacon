@@ -190,10 +190,31 @@ defmodule Beacon.Router do
       """
     end
 
+    on_mounts = get_on_mount_list(Keyword.get(opts, :on_mount))
+
     [
-      on_mount: Keyword.get(opts, :on_mount, []),
+      on_mount: on_mounts,
       root_layout: {BeaconWeb.Layouts, :admin}
     ]
+  end
+
+  defp get_on_mount_list(nil), do: [BeaconWeb.Hooks.AssignAuthorizationContext]
+  defp get_on_mount_list([]), do: [BeaconWeb.Hooks.AssignAuthorizationContext]
+
+  defp get_on_mount_list(on_mounts) when is_list(on_mounts) do
+    if Enum.member?(on_mounts, BeaconWeb.Hooks.AssignAuthorizationContext) do
+      on_mounts
+    else
+      on_mounts ++ [BeaconWeb.Hooks.AssignAuthorizationContext]
+    end
+  end
+
+  defp get_on_mount_list(on_mounts) do
+    raise ArgumentError, """
+    `on_mount` option must be a list.
+
+    value: #{inspect(on_mounts)}
+    """
   end
 
   @doc """
