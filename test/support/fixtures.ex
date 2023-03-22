@@ -106,7 +106,8 @@ defmodule Beacon.Fixtures do
       event_name: "hello",
       code: """
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
+      """,
+      skip_reload: true
     })
     |> Pages.create_page_event!()
   end
@@ -121,7 +122,8 @@ defmodule Beacon.Fixtures do
       helper_args: "%{name: name}",
       code: """
         String.upcase(name)
-      """
+      """,
+      skip_reload: true
     })
     |> Pages.create_page_helper!()
   end

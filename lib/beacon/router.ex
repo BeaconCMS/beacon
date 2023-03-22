@@ -293,8 +293,16 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def dump_paths(table) do
-    :ets.match(table, :"$1")
+  def del_page(site, path) do
+    :ets.delete(:beacon_pages, {site, path})
+  end
+
+  @doc false
+  def dump_pages do
+    case :ets.match(:beacon_pages, :"$1") do
+      [] -> []
+      [pages] -> pages
+    end
   end
 
   @doc false

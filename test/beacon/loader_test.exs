@@ -17,7 +17,7 @@ defmodule Beacon.LoaderTest do
     end
   end
 
-  describe "page reload" do
+  describe "page loading" do
     defp start_loader(_) do
       start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
       :ok
@@ -93,6 +93,17 @@ defmodule Beacon.LoaderTest do
       assert html =~ "component_v2"
       assert html =~ "layout_v2"
       assert html =~ "page_v2"
+    end
+
+    test "unload", %{page: page} do
+      module = Beacon.Loader.page_module_for_site(page.site, page.id)
+      assert Keyword.has_key?(module.__info__(:functions), :page_assigns)
+
+      Beacon.Loader.unload_page(page)
+
+      assert_raise UndefinedFunctionError, fn ->
+        module.__info__(:functions)
+      end
     end
   end
 end

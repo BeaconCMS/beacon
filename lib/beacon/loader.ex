@@ -20,15 +20,18 @@ defmodule Beacon.Loader do
   end
 
   def reload_site(site) when is_atom(site) do
-    # validate site is valid by fetching config
     config = Beacon.Config.fetch!(site)
     GenServer.call(name(config.site), {:reload_site, config.site})
   end
 
   def reload_page(%Beacon.Pages.Page{} = page) do
-    # validate site is valid by fetching config
     config = Beacon.Config.fetch!(page.site)
     GenServer.call(name(config.site), {:reload_page, page})
+  end
+
+  def unload_page(%Beacon.Pages.Page{} = page) do
+    config = Beacon.Config.fetch!(page.site)
+    GenServer.call(name(config.site), {:unload_page, page})
   end
 
   @spec reload_module!(module(), Macro.t()) :: :ok
@@ -226,7 +229,6 @@ defmodule Beacon.Loader do
     {:reply, load_site_from_db(site), config}
   end
 
-  # TODO: update ets record
   def handle_call({:reload_page, page}, _from, config) do
     page = Beacon.Repo.preload(page, [:layout, :events, :helpers])
 
@@ -243,5 +245,14 @@ defmodule Beacon.Loader do
       end
 
     {:reply, reply, config}
+  end
+
+  def handle_call({:unload_page, page}, _from, config) do
+    module = page_module_for_site(page.site, page.id)
+    :code.delete(module)
+    :code.purge(module)
+    Beacon.Router.del_page(page.site, page.path)
+
+    {:reply, :ok, config}
   end
 end
