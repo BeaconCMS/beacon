@@ -21,17 +21,17 @@ defmodule Beacon.Loader do
 
   def reload_site(site) when is_atom(site) do
     config = Beacon.Config.fetch!(site)
-    GenServer.call(name(config.site), {:reload_site, config.site})
+    GenServer.call(name(config.site), {:reload_site, config.site}, 300_000)
   end
 
   def reload_page(%Beacon.Pages.Page{} = page) do
     config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:reload_page, page})
+    GenServer.call(name(config.site), {:reload_page, page}, 60_000)
   end
 
   def unload_page(%Beacon.Pages.Page{} = page) do
     config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:unload_page, page})
+    GenServer.call(name(config.site), {:unload_page, page}, 60_000)
   end
 
   @spec reload_module!(module(), Macro.t()) :: :ok
