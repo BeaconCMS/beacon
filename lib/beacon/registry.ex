@@ -1,11 +1,16 @@
 defmodule Beacon.Registry do
+  @doc false
   def child_spec(_arg) do
     Registry.child_spec(keys: :unique, name: __MODULE__)
   end
 
+  @doc false
   def via(key), do: {:via, Registry, {__MODULE__, key}}
+
+  @doc false
   def via(key, value), do: {:via, Registry, {__MODULE__, key, value}}
 
+  @doc false
   def config!(site) do
     case lookup({:site, site}) do
       {_pid, config} ->

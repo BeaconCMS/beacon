@@ -11,7 +11,12 @@ defmodule Beacon.Loader do
   end
 
   def init(config) do
-    :ok = load_site_from_db(config.site)
+    if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
+      :skip
+    else
+      :ok = load_site_from_db(config.site)
+    end
+
     {:ok, config}
   end
 
