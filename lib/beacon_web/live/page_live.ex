@@ -70,12 +70,16 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_info(:page_updated, socket) do
-    runtime_css_path = BeaconWeb.Layouts.static_asset_path(socket, :css)
+    %{assigns: %{__beacon_page_params__: params}} = socket
 
     socket =
       socket
       |> assign(:__page_updated_at, DateTime.utc_now())
-      |> push_event("beacon:page-updated", %{runtime_css_path: runtime_css_path})
+      |> assign(:page_title, page_title(params, socket.assigns))
+      |> push_event("beacon:page-updated", %{
+        meta_tags: meta_tags(params, socket.assigns),
+        runtime_css_path: BeaconWeb.Layouts.static_asset_path(socket, :css)
+      })
 
     {:noreply, socket}
   end
@@ -116,6 +120,7 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__site__, site)
       |> assign(:__beacon_page_module__, page_module)
       |> assign(:__beacon_component_module__, component_module)
+      |> assign(:__beacon_page_params__, params)
 
     socket =
       socket
