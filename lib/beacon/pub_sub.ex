@@ -3,7 +3,8 @@ defmodule Beacon.PubSub do
 
   @pubsub __MODULE__
 
-  def subscribe_page_update(site, path) do
+  def subscribe_page_update(site, path_info) do
+    path = Enum.join(path_info, "/")
     subscribe("beacon:page_update:#{site}:#{path}")
   end
 
