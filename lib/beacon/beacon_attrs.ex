@@ -1,10 +1,8 @@
 defmodule Beacon.BeaconAttrs do
   @moduledoc """
-  The Beacon attributes for pages.
+  The public Beacon's attributes for each page.
 
-  This is injected into every page as an assign `@beacon_attrs`,
-  and is usually passed to component functions so they can
-  resolve paths or fetch the site configuration.
+  It's injected into the Live View process and also as an assign `@beacon_attrs`.
   """
 
   defstruct site: nil, prefix: nil
