@@ -22,6 +22,7 @@ defmodule Beacon.TailwindCompiler do
   @behaviour Beacon.RuntimeCSS
 
   @impl Beacon.RuntimeCSS
+  @spec compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
   def compile(site) when is_atom(site) do
     tailwind_config = tailwind_config!(site)
 
@@ -118,21 +119,21 @@ defmodule Beacon.TailwindCompiler do
     [
       Task.async(fn ->
         Enum.map(Beacon.Layouts.list_layouts_for_site(site), fn layout ->
-          layout_path = Path.join(tmp_dir, "layout_#{remove_special_chars(layout.title)}.template")
+          layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
           File.write!(layout_path, layout.body)
           layout_path
         end)
       end),
       Task.async(fn ->
         Enum.map(Beacon.Components.list_components_for_site(site), fn component ->
-          component_path = Path.join(tmp_dir, "component_#{remove_special_chars(component.name)}.template")
+          component_path = Path.join(tmp_dir, "#{site}_component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
           component_path
         end)
       end),
       Task.async(fn ->
         Enum.map(Beacon.Pages.list_pages_for_site(site), fn page ->
-          page_path = Path.join(tmp_dir, "page_#{remove_special_chars(page.path)}.template")
+          page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
           File.write!(page_path, page.template)
           page_path
         end)
