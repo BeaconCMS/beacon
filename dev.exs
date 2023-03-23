@@ -156,7 +156,7 @@ seeds = fn ->
         <%= my_component("sample_component", val: 1) %>
 
         <div>
-          <BeaconWeb.Components.image beacon_attrs={@beacon_attrs} name="dockyard_1.png" width="200px" />
+          <BeaconWeb.Components.image name="dockyard_1.png" width="200px" />
         </div>
 
         <div>
