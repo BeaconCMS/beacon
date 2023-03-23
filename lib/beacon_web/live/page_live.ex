@@ -71,7 +71,14 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_info(:page_updated, socket) do
-    {:noreply, assign(socket, :__page_update_available__, true)}
+    runtime_css_path = BeaconWeb.Layouts.static_asset_path(socket, :css)
+
+    socket =
+      socket
+      |> assign(:__page_updated_at, DateTime.utc_now())
+      |> push_event("beacon:page-updated", %{runtime_css_path: runtime_css_path})
+
+    {:noreply, socket}
   end
 
   def handle_event(event_name, event_params, socket) do
@@ -101,7 +108,7 @@ defmodule BeaconWeb.PageLive do
       |> assign(:beacon_live_data, live_data)
       |> assign(:beacon_attrs, %BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)})
       |> assign(:__live_path__, path)
-      |> assign(:__page_update_available__, false)
+      |> assign(:__page_updated_at, DateTime.utc_now())
       |> assign(:__dynamic_layout_id__, layout_id)
       |> assign(:__dynamic_page_id__, page_id)
       |> assign(:__site__, site)
@@ -111,7 +118,7 @@ defmodule BeaconWeb.PageLive do
     socket =
       socket
       |> assign(:page_title, page_title(params, socket.assigns))
-      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns), lang: "en"})
+      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns)})
 
     {:noreply, socket}
   end

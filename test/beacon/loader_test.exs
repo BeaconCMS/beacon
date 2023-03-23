@@ -17,7 +17,7 @@ defmodule Beacon.LoaderTest do
     end
   end
 
-  describe "page loading" do
+  describe "resources loading" do
     defp start_loader(_) do
       start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
       :ok
