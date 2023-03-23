@@ -142,7 +142,7 @@ seeds = fn ->
       ],
       template: """
       <main>
-        <h1 class="text-violet-900">Dev</h1>
+        <h1 class="text-violet-500">Dev</h1>
         <p class="text-sm">Page</p>
 
         <div>
@@ -180,7 +180,7 @@ seeds = fn ->
       layout_id: layout_id,
       template: """
       <main>
-        <h1 class="text-violet-900">Authors</h1>
+        <h1 class="text-violet-500">Authors</h1>
 
         <div>
           <p>Pages:</p>
@@ -206,7 +206,7 @@ seeds = fn ->
       layout_id: layout_id,
       template: """
       <main>
-        <h1 class="text-violet-900">Post</h1>
+        <h1 class="text-violet-500">Post</h1>
 
         <div>
           <p>Pages:</p>
@@ -264,7 +264,7 @@ seeds = fn ->
     layout_id: other_layout_id,
     template: """
     <main>
-      <h1 class="text-violet-900">Other</h1>
+      <h1 class="text-violet-500">Other</h1>
     </main>
     """
   })

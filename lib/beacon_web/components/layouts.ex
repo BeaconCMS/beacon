@@ -10,9 +10,9 @@ defmodule BeaconWeb.Layouts do
   @external_resource beacon_admin_css_path
 
   # TODO: style nonce
-  def static_asset_path(conn, asset) when asset in [:css, :js] do
-    %{assigns: %{__site__: site}} = conn
-    prefix = conn.private.phoenix_router.__beacon_site_prefix__(site)
+  def static_asset_path(conn_or_socket, asset) when asset in [:css, :js] do
+    %{assigns: %{__site__: site}} = conn_or_socket
+    prefix = router(conn_or_socket).__beacon_site_prefix__(site)
 
     hash =
       cond do
@@ -23,8 +23,8 @@ defmodule BeaconWeb.Layouts do
     Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
   end
 
-  def admin_static_asset_path(conn, asset) when asset in [:css, :js] do
-    prefix = conn.private.phoenix_router.__beacon_admin_prefix__()
+  def admin_static_asset_path(conn_or_socket, asset) when asset in [:css, :js] do
+    prefix = router(conn_or_socket).__beacon_admin_prefix__()
 
     hash =
       cond do
@@ -34,6 +34,9 @@ defmodule BeaconWeb.Layouts do
 
     Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
   end
+
+  defp router(%Plug.Conn{private: %{phoenix_router: router}}), do: router
+  defp router(%Phoenix.LiveView.Socket{router: router}), do: router
 
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
     site
