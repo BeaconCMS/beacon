@@ -3,9 +3,11 @@
     Listing Pages
     <:actions>
       <.button phx-click="reload_pages" class="ml-2">Reload Pages</.button>
-      <.link patch={beacon_admin_path(@socket, "/pages/new")}>
-        <.button>New Page</.button>
-      </.link>
+      <%= if Authorization.authorized?(@agent, :new, %Page{}) do %>
+        <.link patch={beacon_admin_path(@socket, "/pages/new")}>
+          <.button>New Page</.button>
+        </.link>
+      <% end %>
     </:actions>
 
     <:subtitle>
@@ -35,7 +37,9 @@
     </:col>
 
     <:action :let={page}>
-      <.link navigate={beacon_admin_path(@socket, "/page_editor/#{page.id}")}>Edit</.link>
+      <%= if Authorization.authorized?(@agent, :edit, page) do %>
+        <.link navigate={beacon_admin_path(@socket, "/page_editor/#{page.id}")}>Edit</.link>
+      <% end %>
     </:action>
   </.table>
 
@@ -54,5 +58,6 @@
     action={@live_action}
     page={@page}
     navigate={beacon_admin_path(@socket, "/pages")}
+    agent={@agent}
   />
 </.modal>

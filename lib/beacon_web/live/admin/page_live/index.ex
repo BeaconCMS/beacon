@@ -32,23 +32,15 @@ defmodule BeaconWeb.Admin.PageLive.Index do
     socket =
       socket
       |> assign(:last_reload_time, nil)
-      |> assign(:unauthorized, false)
       |> assign_site_options()
 
     {:ok, socket}
   end
 
   @impl true
-  def handle_params(params, _url, socket) do
-    if Authorization.authorized?(
-         socket.assigns.requestor_context,
-         %{
-           view: BeaconWeb.Admin.PageLive,
-           action: socket.assigns.live_action,
-           params: params
-         }
-       ) do
-      {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  def handle_params(params, _url, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, assigns.live_action, %Page{}) do
+      {:noreply, apply_action(socket, assigns.live_action, params)}
     else
       {:noreply, socket}
     end
@@ -63,11 +55,15 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def handle_event("delete", %{"id" => id}, socket) do
-    page = Pages.get_page!(id)
-    {:ok, _} = Pages.delete_page(page)
+  def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, :delete, %Page{}) do
+      page = Pages.get_page!(id)
+      {:ok, _} = Pages.delete_page(page)
 
-    {:noreply, assign_pages(socket)}
+      {:noreply, assign_pages(socket)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true

@@ -1,9 +1,11 @@
 <.header>
   Media Library
   <:actions>
-    <.link patch={beacon_admin_path(@socket, "/media_library/upload")}>
-      <.button>Upload</.button>
-    </.link>
+    <%= if Authorization.authorized?(@agent, :upload, %Asset{}) do %>
+      <.link patch={beacon_admin_path(@socket, "/media_library/upload")}>
+        <.button>Upload</.button>
+      </.link>
+    <% end %>
   </:actions>
 </.header>
 
@@ -15,9 +17,11 @@
   <:col :let={asset} label="Name"><%= asset.file_name %></:col>
   <:col :let={asset} label="Type"><%= asset.file_type %></:col>
   <:action :let={asset}>
-    <.link phx-click={JS.push("delete", value: %{id: asset.id})} data-confirm="Are you sure?">
-      Delete
-    </.link>
+    <%= if Authorization.authorized?(@agent, :delete, asset) do %>
+      <.link phx-click={JS.push("delete", value: %{id: asset.id})} data-confirm="Are you sure?">
+        Delete
+      </.link>
+    <% end %>
   </:action>
 </.table>
 
@@ -29,5 +33,6 @@
     action={@live_action}
     asset={@asset}
     navigate={beacon_admin_path(@socket, "/media_library")}
+    agent={@agent}
   />
 </.modal>
