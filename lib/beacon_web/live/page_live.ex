@@ -70,15 +70,16 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_info(:page_updated, socket) do
+    # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179
     %{assigns: %{__beacon_page_params__: params}} = socket
 
     socket =
       socket
-      |> assign(:__page_updated_at, DateTime.utc_now())
-      |> assign(:page_title, page_title(params, socket.assigns))
+      # |> assign(:__page_updated_at, DateTime.utc_now())
+      # |> assign(:page_title, page_title(params, socket.assigns))
       |> push_event("beacon:page-updated", %{
-        meta_tags: meta_tags(params, socket.assigns),
-        runtime_css_path: BeaconWeb.Layouts.static_asset_path(socket, :css)
+        meta_tags: meta_tags(params, socket.assigns)
+        # runtime_css_path: BeaconWeb.Layouts.static_asset_path(socket, :css)
       })
 
     {:noreply, socket}
