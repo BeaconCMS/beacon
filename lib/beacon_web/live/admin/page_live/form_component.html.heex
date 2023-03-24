@@ -10,7 +10,7 @@
     <.input field={{f, :layout_id}} type="select" label="Template" prompt="..." options={layouts_to_options(@site_layouts)} />
 
     <:actions>
-      <%= if Authorization.authorized?(@agent, @live_action, @page) do %>
+      <%= if Authorization.authorized?(@agent, @action, @page) do %>
         <.button phx-disable-with="Saving...">Save</.button>
       <% end %>
     </:actions>

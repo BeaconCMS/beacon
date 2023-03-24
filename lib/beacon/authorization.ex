@@ -2,6 +2,7 @@ defmodule Beacon.Authorization do
   @moduledoc false
 
   alias Beacon.Behaviors.Helpers
+  alias Beacon.Registry
 
   @behaviour Beacon.Authorization.Behaviour
 
@@ -34,7 +35,7 @@ defmodule Beacon.Authorization do
     if user_authorization_source_mod && is_atom(user_authorization_source_mod) do
       user_authorization_source_mod.authorized?(agent, operation, context)
     else
-      nil
+      raise "Authorization source is misconfigured. VALUE: #{user_authorization_source_mod}"
     end
   rescue
     error in FunctionClauseError ->
@@ -47,8 +48,12 @@ defmodule Beacon.Authorization do
   end
 
   defp get_authorization_source do
-    :beacon
-    |> Application.get_env(:admin, authorization_source: Beacon.Authorization.DefaultPolicy)
-    |> Keyword.get(:authorization_source)
+    case Registry.registered_sites() do
+      [] ->
+        Beacon.Authorization.DefaultPolicy
+
+      [site | _] ->
+        Registry.config!(site).authorization_source
+    end
   end
 end

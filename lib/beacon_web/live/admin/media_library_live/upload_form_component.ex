@@ -19,7 +19,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
         <% end %>
       </section>
 
-      <%= if Authorization.authorized?(@agent, @live_action, %Asset{}) do %>
+      <%= if Authorization.authorized?(@agent, :upload, %Asset{}) do %>
         <.form for={%{}} as={:assets} id="asset-form" phx-target={@myself} phx-change="validate" phx-submit="save">
           <.live_file_input upload={@uploads.asset} tabindex="0" />
         </.form>
