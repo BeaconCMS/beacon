@@ -190,16 +190,13 @@ defmodule Beacon.Router do
       """
     end
 
-    on_mounts = get_on_mount_list(Keyword.get(opts, :on_mount))
+    on_mounts = get_on_mount_list(Keyword.get(opts, :on_mount, []))
 
     [
       on_mount: on_mounts,
       root_layout: {BeaconWeb.Layouts, :admin}
     ]
   end
-
-  defp get_on_mount_list(nil), do: [BeaconWeb.Hooks.AssignAgent]
-  defp get_on_mount_list([]), do: [BeaconWeb.Hooks.AssignAgent]
 
   defp get_on_mount_list(on_mounts) when is_list(on_mounts) do
     if Enum.member?(on_mounts, BeaconWeb.Hooks.AssignAgent) do

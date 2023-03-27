@@ -23,7 +23,8 @@ Supervisor.start_link(
          site: :data_source_test,
          data_source: Beacon.BeaconTest.TestDataSource
        ]
-     ]},
+     ],
+     authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource,},
     Beacon.BeaconTest.Endpoint
   ],
   strategy: :one_for_one
