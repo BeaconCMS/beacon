@@ -11,3 +11,7 @@ end
 defmodule Beacon.DataSourceError do
   defexception message: "Error in Beacon.DataSource"
 end
+
+defmodule Beacon.AuthorizationError do
+  defexception message: "Error in Beacon.Authorization"
+end
