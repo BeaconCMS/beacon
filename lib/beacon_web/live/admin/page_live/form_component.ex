@@ -1,6 +1,7 @@
 defmodule BeaconWeb.Admin.PageLive.FormComponent do
   use BeaconWeb, :live_component
 
+  alias Beacon.Authorization
   alias Beacon.Layouts
   alias Beacon.Layouts.Layout
   alias Beacon.Pages

@@ -12,6 +12,9 @@ defmodule Beacon.Config do
     * `:data_source` (optional) `t:data_source/0` - a module that implements `Beacon.DataSource.Behaviour`,
       used to provide assigns to your site pages.
 
+    * `:authorization_source` (optional) `t:authorization_source/0` - a module that implements `Beacon.Authorization.Behaviour`,
+      used to provide authorization rules for the admin backend. Defaults to `Beacon.Authorization.DefaultPolicy` and note this config can't be `nil`.
+
     * `css_compiler` (optional) `t:css_compiler/0` - a module that implements `Beacon.RuntimeCSS`,
       used to compile CSS for pages. Defaults to `Beacon.TailwindCompiler`.
 
@@ -31,12 +34,14 @@ defmodule Beacon.Config do
   """
   @type site :: atom()
   @type data_source :: module() | nil
+  @type authorization_source :: module()
   @type css_compiler :: module()
   @type tailwind_config :: Path.t()
 
   @type option ::
           {:site, site()}
           | {:data_source, data_source()}
+          | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, String.t()}
@@ -45,6 +50,7 @@ defmodule Beacon.Config do
   @type t :: %__MODULE__{
           site: site(),
           data_source: data_source(),
+          authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           live_socket_path: String.t(),
@@ -53,6 +59,7 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             data_source: nil,
+            authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.TailwindCompiler,
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
             live_socket_path: "/live",

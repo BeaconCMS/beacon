@@ -3,22 +3,34 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
 
   alias Beacon.Admin.MediaLibrary
   alias Beacon.Admin.MediaLibrary.Asset
+  alias Beacon.Authorization
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, assets: list_assets(), search: "")}
+  def mount(_params, _session, %{assigns: assigns} = socket) do
+    socket =
+      if Authorization.authorized?(assigns.agent, :index, %Asset{}) do
+        assign(socket, assets: list_assets(), search: "")
+      else
+        redirect(socket, to: "/")
+      end
+
+    {:ok, socket}
   end
 
   @impl true
-  def handle_params(params, _url, socket) do
-    search = Map.get(params, "search", "")
+  def handle_params(params, _url, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, assigns.live_action, %Asset{}) do
+      search = Map.get(params, "search", "")
 
-    socket =
-      socket
-      |> assign(:search, search)
-      |> apply_action(socket.assigns.live_action, params)
+      socket =
+        socket
+        |> assign(:search, search)
+        |> apply_action(assigns.live_action, params)
 
-    {:noreply, socket}
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
   defp apply_action(socket, :index, %{"search" => search}) when search not in ["", nil] do
@@ -43,20 +55,28 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   end
 
   @impl true
-  def handle_event("delete", %{"id" => id}, socket) do
-    asset = MediaLibrary.get_asset!(id)
-    {:ok, _} = MediaLibrary.soft_delete_asset(asset)
+  def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, :delete, %Asset{}) do
+      asset = MediaLibrary.get_asset!(id)
+      {:ok, _} = MediaLibrary.soft_delete_asset(asset)
 
-    path = beacon_admin_path(socket, "/media_library", search: socket.assigns.search)
-    socket = push_patch(socket, to: path)
+      path = beacon_admin_path(socket, "/media_library", search: socket.assigns.search)
+      socket = push_patch(socket, to: path)
 
-    {:noreply, socket}
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
-  def handle_event("search", %{"search" => search}, socket) do
-    path = beacon_admin_path(socket, "/media_library", search: search)
-    socket = push_patch(socket, to: path)
-    {:noreply, socket}
+  def handle_event("search", %{"search" => search}, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, :search, %Asset{}) do
+      path = beacon_admin_path(socket, "/media_library", search: search)
+      socket = push_patch(socket, to: path)
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
   defp list_assets do

@@ -1,6 +1,7 @@
 defmodule BeaconWeb.Admin.PageLive.Index do
   use BeaconWeb, :live_view
 
+  alias Beacon.Authorization
   alias Beacon.Layouts
   alias Beacon.Pages
   alias Beacon.Pages.Page
@@ -27,18 +28,26 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, _session, %{assigns: assigns} = socket) do
     socket =
-      socket
-      |> assign(:last_reload_time, nil)
-      |> assign_site_options()
+      if Authorization.authorized?(assigns.agent, :index, %Page{}) do
+        socket
+        |> assign(:last_reload_time, nil)
+        |> assign_site_options()
+      else
+        redirect(socket, to: "/")
+      end
 
     {:ok, socket}
   end
 
   @impl true
-  def handle_params(params, _url, socket) do
-    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  def handle_params(params, _url, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, assigns.live_action, %Page{}) do
+      {:noreply, apply_action(socket, assigns.live_action, params)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -50,11 +59,15 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def handle_event("delete", %{"id" => id}, socket) do
-    page = Pages.get_page!(id)
-    {:ok, _} = Pages.delete_page(page)
+  def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
+    if Authorization.authorized?(assigns.agent, :delete, %Page{}) do
+      page = Pages.get_page!(id)
+      {:ok, _} = Pages.delete_page(page)
 
-    {:noreply, assign_pages(socket)}
+      {:noreply, assign_pages(socket)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
