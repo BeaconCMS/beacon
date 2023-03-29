@@ -6,8 +6,15 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   alias Beacon.Authorization
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, assets: list_assets(), search: "")}
+  def mount(_params, _session, %{assigns: assigns} = socket) do
+    socket =
+      if Authorization.authorized?(assigns.agent, :index, %Asset{}) do
+        assign(socket, assets: list_assets(), search: "")
+      else
+        redirect(socket, to: "/")
+      end
+
+    {:ok, socket}
   end
 
   @impl true

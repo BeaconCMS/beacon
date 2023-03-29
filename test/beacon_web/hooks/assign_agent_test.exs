@@ -1,9 +1,9 @@
 defmodule BeaconWeb.Hooks.AssignAgentTest do
   use BeaconWeb.ConnCase, async: false
 
-  alias BeaconWeb.Hooks.AssignAgent
   alias Beacon.BeaconTest.Endpoint
   alias Beacon.BeaconTest.Router
+  alias BeaconWeb.Hooks.AssignAgent
 
   describe "on_mount/4" do
     test "works", %{conn: conn} do
@@ -13,7 +13,7 @@ defmodule BeaconWeb.Hooks.AssignAgentTest do
         |> get_session()
 
       socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: Router}
-      assert {:cont, %{assigns: %{agent: agent} }} = AssignAgent.on_mount(:default, %{}, session, socket)
+      assert {:cont, %{assigns: %{agent: agent}}} = AssignAgent.on_mount(:default, %{}, session, socket)
 
       assert %{role: :admin, session_id: "admin_session_123"} = agent
     end

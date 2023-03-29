@@ -28,11 +28,15 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, _session, %{assigns: assigns} = socket) do
     socket =
-      socket
-      |> assign(:last_reload_time, nil)
-      |> assign_site_options()
+      if Authorization.authorized?(assigns.agent, :index, %Page{}) do
+        socket
+        |> assign(:last_reload_time, nil)
+        |> assign_site_options()
+      else
+        redirect(socket, to: "/")
+      end
 
     {:ok, socket}
   end
