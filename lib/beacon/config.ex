@@ -13,7 +13,7 @@ defmodule Beacon.Config do
       used to provide assigns to your site pages.
 
     * `:authorization_source` (optional) `t:authorization_source/0` - a module that implements `Beacon.Authorization.Behaviour`,
-      used to provide authorization rules for the admin backend.
+      used to provide authorization rules for the admin backend. Defaults to `Beacon.Authorization.DefaultPolicy` and note this config can't be `nil`.
 
     * `css_compiler` (optional) `t:css_compiler/0` - a module that implements `Beacon.RuntimeCSS`,
       used to compile CSS for pages. Defaults to `Beacon.TailwindCompiler`.
