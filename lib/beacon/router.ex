@@ -199,10 +199,10 @@ defmodule Beacon.Router do
   end
 
   defp get_on_mount_list(on_mounts) when is_list(on_mounts) do
-    if Enum.member?(on_mounts, BeaconWeb.Hooks.AssignAgent) do
+    if Enum.member?(on_mounts, BeaconWeb.Admin.Hooks.AssignAgent) do
       on_mounts
     else
-      on_mounts ++ [BeaconWeb.Hooks.AssignAgent]
+      on_mounts ++ [BeaconWeb.Admin.Hooks.AssignAgent]
     end
   end
 

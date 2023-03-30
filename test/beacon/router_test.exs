@@ -24,23 +24,23 @@ defmodule Beacon.RouterTest do
   describe "admin options" do
     test "options are optional, assigns agent" do
       assert [
-               {:on_mount, [BeaconWeb.Hooks.AssignAgent]},
+               {:on_mount, [BeaconWeb.Admin.Hooks.AssignAgent]},
                {:root_layout, {BeaconWeb.Layouts, :admin}}
              ] = Router.__admin_session_opts__([])
     end
 
     test "assigns on_mount" do
       assert [
-               {:on_mount, [SomeHook, BeaconWeb.Hooks.AssignAgent]},
+               {:on_mount, [SomeHook, BeaconWeb.Admin.Hooks.AssignAgent]},
                {:root_layout, {BeaconWeb.Layouts, :admin}}
              ] = Router.__admin_session_opts__(on_mount: [SomeHook])
     end
 
     test "allows setting of AssignAgent" do
       assert [
-               {:on_mount, [SomeHook, BeaconWeb.Hooks.AssignAgent, SomeOtherHook]},
+               {:on_mount, [SomeHook, BeaconWeb.Admin.Hooks.AssignAgent, SomeOtherHook]},
                {:root_layout, {BeaconWeb.Layouts, :admin}}
-             ] = Router.__admin_session_opts__(on_mount: [SomeHook, BeaconWeb.Hooks.AssignAgent, SomeOtherHook])
+             ] = Router.__admin_session_opts__(on_mount: [SomeHook, BeaconWeb.Admin.Hooks.AssignAgent, SomeOtherHook])
     end
 
     test "dose not assign root_layout" do

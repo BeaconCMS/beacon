@@ -1,4 +1,4 @@
-defmodule BeaconWeb.Hooks.AssignAgent do
+defmodule BeaconWeb.Admin.Hooks.AssignAgent do
   @moduledoc """
   Assigns the agent on the socket to be used by `Beacon.Authorization`.
 

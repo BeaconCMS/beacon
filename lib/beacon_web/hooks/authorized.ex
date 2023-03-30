@@ -1,4 +1,4 @@
-defmodule BeaconWeb.Hooks.Authorized do
+defmodule BeaconWeb.Admin.Hooks.Authorized do
   @moduledoc false
 
   import Phoenix.LiveView

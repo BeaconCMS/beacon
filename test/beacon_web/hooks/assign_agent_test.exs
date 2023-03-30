@@ -1,9 +1,9 @@
-defmodule BeaconWeb.Hooks.AssignAgentTest do
+defmodule BeaconWeb.Admin.Hooks.AssignAgentTest do
   use BeaconWeb.ConnCase, async: false
 
   alias Beacon.BeaconTest.Endpoint
   alias Beacon.BeaconTest.Router
-  alias BeaconWeb.Hooks.AssignAgent
+  alias BeaconWeb.Admin.Hooks.AssignAgent
 
   describe "on_mount/4" do
     test "works", %{conn: conn} do

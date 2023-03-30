@@ -5,7 +5,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   alias Beacon.Admin.MediaLibrary.Asset
   alias Beacon.Authorization
 
-  on_mount {BeaconWeb.Hooks.Authorized, %Asset{}}
+  on_mount {BeaconWeb.Admin.Hooks.Authorized, %Asset{}}
 
   @impl true
   def mount(_params, _session, socket) do

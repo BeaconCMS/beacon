@@ -6,7 +6,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   alias Beacon.Pages
   alias Beacon.Pages.Page
 
-  on_mount {BeaconWeb.Hooks.Authorized, %Page{}}
+  on_mount {BeaconWeb.Admin.Hooks.Authorized, %Page{}}
 
   defmodule SearchForm do
     use Ecto.Schema

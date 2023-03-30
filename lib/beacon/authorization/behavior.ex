@@ -18,7 +18,7 @@ defmodule Beacon.Authorization.Behaviour do
   """
 
   @doc """
-  Return the agent assigned by `BeaconWeb.Hooks.AssignAgent`
+  Return the agent assigned by `BeaconWeb.Admin.Hooks.AssignAgent`
   """
   @callback get_agent(payload :: any()) :: any()
 
