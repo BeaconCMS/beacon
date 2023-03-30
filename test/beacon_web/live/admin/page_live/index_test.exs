@@ -10,7 +10,7 @@ defmodule BeaconWeb.Live.Admin.PageLive.IndexTest do
       conn =
         conn
         |> Phoenix.ConnTest.init_test_session(%{})
-        |> Plug.Conn.put_session(:authorization_bootstrap, %{session_id: "admin_session_123"})
+        |> Plug.Conn.put_session(:session_id, "admin_session_123")
 
       assert {:ok, _view, html} = live(conn, "/admin/pages")
       assert html =~ "New Page"
@@ -23,7 +23,7 @@ defmodule BeaconWeb.Live.Admin.PageLive.IndexTest do
       conn =
         conn
         |> Phoenix.ConnTest.init_test_session(%{})
-        |> Plug.Conn.put_session(:authorization_bootstrap, %{session_id: "editor_session_123"})
+        |> Plug.Conn.put_session(:session_id, "editor_session_123")
 
       assert {:ok, _view, html} = live(conn, "/admin/pages")
       refute html =~ "New Page"
@@ -34,7 +34,7 @@ defmodule BeaconWeb.Live.Admin.PageLive.IndexTest do
       conn =
         conn
         |> Phoenix.ConnTest.init_test_session(%{})
-        |> Plug.Conn.put_session(:authorization_bootstrap, %{session_id: "other_session_123"})
+        |> Plug.Conn.put_session(:session_id, "other_session_123")
 
       assert {:error, {:redirect, %{flash: %{}, to: "/admin"}}} = live(conn, "/admin/pages")
     end
