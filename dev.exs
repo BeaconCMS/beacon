@@ -172,7 +172,9 @@ seeds = fn ->
       """
     })
 
-  _page_author =
+  Beacon.Pages.publish_page(page_home)
+
+  page_author =
     Beacon.Pages.create_page!(%{
       path: "authors/:author_id",
       site: "dev",
@@ -198,7 +200,9 @@ seeds = fn ->
       """
     })
 
-  _page_post =
+  Beacon.Pages.publish_page(page_author)
+
+  page_post =
     Beacon.Pages.create_page!(%{
       path: "posts/*slug",
       site: "dev",
@@ -223,6 +227,8 @@ seeds = fn ->
       </main>
       """
     })
+
+  Beacon.Pages.publish_page(page_post)
 
   Beacon.Pages.create_page_helper!(%{
     page_id: page_home.id,

@@ -234,6 +234,10 @@ defmodule Beacon.Loader do
     {:reply, load_site_from_db(site), config}
   end
 
+  def handle_call({:reload_page, %{status: :draft}}, _from, config) do
+    {:reply, :skip, config}
+  end
+
   def handle_call({:reload_page, page}, _from, config) do
     page = Beacon.Repo.preload(page, [:layout, :events, :helpers])
 

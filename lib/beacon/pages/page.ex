@@ -25,6 +25,7 @@ defmodule Beacon.Pages.Page do
     field :pending_template, :string
     field :meta_tags, {:array, :map}, default: []
     field :order, :integer, default: 1
+    field :status, Ecto.Enum, values: [:draft, :published], default: :draft
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -39,7 +40,17 @@ defmodule Beacon.Pages.Page do
   @doc false
   def changeset(page \\ %Page{}, %{} = attrs) do
     page
-    |> cast(attrs, [:site, :title, :description, :version, :template, :meta_tags, :order, :layout_id])
+    |> cast(attrs, [
+      :site,
+      :title,
+      :description,
+      :version,
+      :template,
+      :meta_tags,
+      :order,
+      :layout_id,
+      :status
+    ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
     |> validate_required([
@@ -65,7 +76,8 @@ defmodule Beacon.Pages.Page do
     # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
     # need them to get going on the admin interface for now
     page
-    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags])
+    # TODO: only allow path if status = draft
+    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :path])
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
