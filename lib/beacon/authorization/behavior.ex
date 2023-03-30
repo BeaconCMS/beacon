@@ -10,11 +10,14 @@ defmodule Beacon.Authorization.Behaviour do
         MyApp.Identity.find_by_session_id!(session_id)
       end
 
-      def authorized?(_, :index, %Page{}), do: true
-      def authorized?(%{role: :admin}, :new, %Page{}), do: true
-      def authorized?(%{role: :fact_checker}, :new, %Page{}), do: false
-      def authorized?(%{role: :admin}, :upload, %Asset{}), do: true
-      def authorized?(_, :upload, %Asset{}), do: false
+      # admin has access to all operations
+      def authorized?(%{role: :admin}, _, _), do: true
+
+      # everyone can access page editor index
+      def authorized?(_, :index, %{mod: :page_editor}), do: true
+
+      # specific role can't delete a resource in page editor
+      def authorized?(%{role: :fact_checker}, :delete, %{mod: :page_editor}), do: false
   """
 
   @doc """
@@ -29,5 +32,5 @@ defmodule Beacon.Authorization.Behaviour do
   Note that Admin will either redirect or display a flash message
   if the operation is not authorized.
   """
-  @callback authorized?(agent :: any(), operation :: atom(), context :: map() | struct() | nil) :: boolean()
+  @callback authorized?(agent :: any(), operation :: atom(), context :: map()) :: boolean()
 end
