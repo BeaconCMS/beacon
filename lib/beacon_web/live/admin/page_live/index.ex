@@ -1,11 +1,11 @@
 defmodule BeaconWeb.Admin.PageLive.Index do
   use BeaconWeb, :live_view
 
-  alias BeaconWeb.Admin.Hooks
   alias Beacon.Authorization
   alias Beacon.Layouts
   alias Beacon.Pages
   alias Beacon.Pages.Page
+  alias BeaconWeb.Admin.Hooks
 
   on_mount {Hooks.Authorized, {:page_editor, :index}}
 
