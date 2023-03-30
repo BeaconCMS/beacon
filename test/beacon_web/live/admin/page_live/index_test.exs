@@ -3,7 +3,7 @@ defmodule BeaconWeb.Live.Admin.PageLive.IndexTest do
 
   import Beacon.Fixtures
 
-  describe "testing authorization" do
+  describe "authorization" do
     test "Admin can both create and edit pages", %{conn: conn} do
       page_fixture(path: "blog_a", order: 0)
 

@@ -6,6 +6,8 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   alias Beacon.Pages
   alias Beacon.Pages.Page
 
+  on_mount {BeaconWeb.Hooks.Authorized, %Page{}}
+
   defmodule SearchForm do
     use Ecto.Schema
     import Ecto.Changeset
@@ -28,15 +30,11 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def mount(_params, _session, %{assigns: assigns} = socket) do
+  def mount(_params, _session, socket) do
     socket =
-      if Authorization.authorized?(assigns.agent, :index, %Page{}) do
-        socket
-        |> assign(:last_reload_time, nil)
-        |> assign_site_options()
-      else
-        redirect(socket, to: "/")
-      end
+      socket
+      |> assign(:last_reload_time, nil)
+      |> assign_site_options()
 
     {:ok, socket}
   end

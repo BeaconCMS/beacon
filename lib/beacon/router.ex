@@ -208,9 +208,9 @@ defmodule Beacon.Router do
 
   defp get_on_mount_list(on_mounts) do
     raise ArgumentError, """
-    `on_mount` option must be a list.
+    expected `on_mount` option to be a list.
 
-    value: #{inspect(on_mounts)}
+    Got: #{inspect(on_mounts)}
     """
   end
 
