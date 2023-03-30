@@ -9,7 +9,8 @@ defmodule BeaconWeb.Admin.Hooks.AssignAgentTest do
     test "works", %{conn: conn} do
       session =
         conn
-        |> Plug.Test.init_test_session(%{authorization_bootstrap: %{session_id: "admin_session_123"}})
+        |> Phoenix.ConnTest.init_test_session(%{})
+        |> Plug.Conn.put_session(:session_id, "admin_session_123")
         |> get_session()
 
       socket = %Phoenix.LiveView.Socket{endpoint: Endpoint, router: Router}

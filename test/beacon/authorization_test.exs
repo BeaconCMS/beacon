@@ -5,7 +5,7 @@ defmodule Beacon.AuthorizationTest do
 
   describe "get_agent/1" do
     test "returns agent" do
-      assert %{role: :admin} = Authorization.get_agent(%{session_id: "admin_session_123"})
+      assert %{role: :admin} = Authorization.get_agent(%{"session_id" => "admin_session_123"})
     end
   end
 
