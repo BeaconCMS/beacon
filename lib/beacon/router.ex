@@ -289,13 +289,21 @@ defmodule Beacon.Router do
   """
   def beacon_admin_path(socket, path, params \\ %{}) do
     prefix = socket.router.__beacon_admin_prefix__()
-    path = sanitize_path("#{prefix}/#{path}")
+    path = build_path_with_prefix(prefix, path)
     params = for {key, val} <- params, do: {key, val}
 
     Phoenix.VerifiedRoutes.unverified_path(socket, socket.router, path, params)
   end
 
   @doc false
+  def build_path_with_prefix(prefix, "/") do
+    prefix
+  end
+
+  def build_path_with_prefix(prefix, path) do
+    sanitize_path("#{prefix}/#{path}")
+  end
+
   def sanitize_path(path) do
     String.replace(path, "//", "/")
   end

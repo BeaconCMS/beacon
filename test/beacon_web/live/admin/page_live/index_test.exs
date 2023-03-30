@@ -36,7 +36,7 @@ defmodule BeaconWeb.Live.Admin.PageLive.IndexTest do
         |> Phoenix.ConnTest.init_test_session(%{})
         |> Plug.Conn.put_session(:authorization_bootstrap, %{session_id: "other_session_123"})
 
-      assert {:error, {:redirect, %{flash: %{}, to: "/"}}} = live(conn, "/admin/pages")
+      assert {:error, {:redirect, %{flash: %{}, to: "/admin"}}} = live(conn, "/admin/pages")
     end
   end
 end

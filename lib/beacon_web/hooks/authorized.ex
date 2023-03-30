@@ -3,13 +3,12 @@ defmodule BeaconWeb.Hooks.Authorized do
 
   import Phoenix.LiveView
 
-  @redirect_to "/"
-
   def on_mount(%Beacon.Admin.MediaLibrary.Asset{} = context, _params, _session, socket) do
     if Beacon.Authorization.authorized?(socket.assigns.agent, :index, context) do
       {:cont, socket}
     else
-      {:halt, redirect(socket, to: @redirect_to)}
+      redirect_to = Beacon.Router.beacon_admin_path(socket, "/")
+      {:halt, redirect(socket, to: redirect_to)}
     end
   end
 
@@ -17,7 +16,8 @@ defmodule BeaconWeb.Hooks.Authorized do
     if Beacon.Authorization.authorized?(socket.assigns.agent, :index, context) do
       {:cont, socket}
     else
-      {:halt, redirect(socket, to: @redirect_to)}
+      redirect_to = Beacon.Router.beacon_admin_path(socket, "/")
+      {:halt, redirect(socket, to: redirect_to)}
     end
   end
 end
