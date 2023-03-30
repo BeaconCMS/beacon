@@ -2,8 +2,6 @@ defmodule BeaconWeb.Admin.HomeLive.Index do
   use BeaconWeb, :live_view
 
   alias Beacon.Authorization
-  alias Beacon.MediaLibrary.Asset
-  alias Beacon.Pages.Page
 
   @impl true
   def render(assigns) do
@@ -12,11 +10,11 @@ defmodule BeaconWeb.Admin.HomeLive.Index do
       Admin
     </.header>
 
-    <.link :if={Authorization.authorized?(@agent, :index, %Page{})} navigate={beacon_admin_path(@socket, "/pages")}>
+    <.link :if={Authorization.authorized?(@agent, :index, %{mod: :admin})} navigate={beacon_admin_path(@socket, "/pages")}>
       <.button>Pages</.button>
     </.link>
 
-    <.link :if={Authorization.authorized?(@agent, :index, %Asset{})} navigate={beacon_admin_path(@socket, "/media_library")}>
+    <.link :if={Authorization.authorized?(@agent, :index, %{mod: :admin})} navigate={beacon_admin_path(@socket, "/media_library")}>
       <.button>Media Library</.button>
     </.link>
     """
