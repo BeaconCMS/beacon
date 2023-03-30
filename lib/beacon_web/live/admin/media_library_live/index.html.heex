@@ -1,7 +1,7 @@
 <.header>
   Media Library
   <:actions>
-    <.link :if={Authorization.authorized?(@agent, :upload, %Asset{})} patch={beacon_admin_path(@socket, "/media_library/upload")}>
+    <.link :if={Authorization.authorized?(@agent, :upload, @authn_context)} patch={beacon_admin_path(@socket, "/media_library/upload")}>
       <.button>Upload</.button>
     </.link>
   </:actions>
@@ -15,7 +15,11 @@
   <:col :let={asset} label="Name"><%= asset.file_name %></:col>
   <:col :let={asset} label="Type"><%= asset.file_type %></:col>
   <:action :let={asset}>
-    <.link :if={Authorization.authorized?(@agent, :delete, asset)} phx-click={JS.push("delete", value: %{id: asset.id})} data-confirm="Are you sure?">
+    <.link
+      :if={Authorization.authorized?(@agent, :delete, Map.put(@authn_context, :resource, asset))}
+      phx-click={JS.push("delete", value: %{id: asset.id})}
+      data-confirm="Are you sure?"
+    >
       Delete
     </.link>
   </:action>
