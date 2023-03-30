@@ -1,50 +1,36 @@
 defmodule Beacon.Authorization.Behaviour do
   @moduledoc """
-    Provides hooks into Beacon Authorization
+  Provides hooks into Beacon Authorization.
 
+  Currently, we are only protecting `Beacon.Pages.Page` and `Beacon.MediaLibrary.Asset` resources.
 
-    Currently, we are only protecting `Beacon.Pages.Page` and `Beacon.MediaLibrary.Asset` resources.
+  ## Example
 
-    ## Examples
-    an example implmentation might look like:
-    ```
-    def get_agent(%{"session_id" => session_id}}) do
-      Identity.find_by_session_id!(session_id)
-    end
-    ```
+      def get_agent(%{"session_id" => session_id}}) do
+        MyApp.Identity.find_by_session_id!(session_id)
+      end
 
-    ```
-    def authorized?(_, :index, %Page{}), do: true
+      # admin has access to all operations
+      def authorized?(%{role: :admin}, _, _), do: true
 
-    def authorized?(%{role: :admin}, :new, %Page{}), do: true
-    def authorized?(%{role: :editor}, :new, %Page{}), do: true
-    def authorized?(%{role: :fact_checker}, :new, %Page{}), do: false
+      # everyone can access page editor index
+      def authorized?(_, :index, %{mod: :page_editor}), do: true
 
-    def authorized?(%{role: :admin}, :edit, %Page{}), do: true
-    def authorized?(%{role: :editor}, :edit, %Page{}), do: true
-    def authorized?(%{role: :fact_checker}, :edit, %Page{}), do: true
-
-    def authorized?(%{role: :admin}, :delete, %Page{}), do: true
-    def authorized?(%{role: :editor}, :delete, %Page{}), do: false
-    def authorized?(%{role: :fact_checker}, :delete, %Page{}), do: false
-
-    def authorized?(%{role: :admin}, :index, %Asset{}), do: true
-    def authorized?(%{role: :editor}, :index, %Asset{}), do: true
-    def authorized?(%{role: :fact_checker}, :index, %Asset{}), do: false
-
-    def authorized?(%{role: :admin}, :new, %Asset{}), do: true
-    def authorized?(%{role: :editor}, :new, %Asset{}), do: true
-    def authorized?(%{role: :fact_checker}, :new, %Asset{}), do: false
-
-    def authorized?(%{role: :admin}, :upload, %Asset{}), do: true
-    def authorized?(%{role: :editor}, :upload, %Asset{}), do: true
-    def authorized?(%{role: :fact_checker}, :upload, %Asset{}), do: false
-    ```
+      # specific role can't delete a resource in page editor
+      def authorized?(%{role: :fact_checker}, :delete, %{mod: :page_editor}), do: false
   """
 
-  # returns agent
+  @doc """
+  Return the agent assigned by `BeaconWeb.Admin.Hooks.AssignAgent`
+  """
   @callback get_agent(payload :: any()) :: any()
 
-  # operation, agent, context
-  @callback authorized?(agent :: any(), operation :: atom(), context :: any()) :: boolean()
+  @doc """
+  Return `true` to authorize `agent` to perform `operation` in the given `context`,
+  otherwise return `false` to block such operation.
+
+  Note that Admin will either redirect or display a flash message
+  if the operation is not authorized.
+  """
+  @callback authorized?(agent :: any(), operation :: atom(), context :: map()) :: boolean()
 end

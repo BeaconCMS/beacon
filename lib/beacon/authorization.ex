@@ -2,15 +2,9 @@ defmodule Beacon.Authorization do
   @moduledoc false
 
   alias Beacon.Behaviors.Helpers
-  alias Beacon.Registry
 
   @behaviour Beacon.Authorization.Behaviour
 
-  defmodule Error do
-    defexception message: "Error in Beacon.Authorization"
-  end
-
-  @doc false
   def get_agent(data) do
     user_authorization_source_mod = get_authorization_source()
 
@@ -21,9 +15,7 @@ defmodule Beacon.Authorization do
     end
   rescue
     error in FunctionClauseError ->
-      module = __MODULE__
-      trace = __STACKTRACE__
-      Helpers.reraise_function_clause_error(module, error, trace)
+      Helpers.reraise_function_clause_error(error.function, error.arity, __STACKTRACE__, Beacon.AuthorizationError)
 
     error ->
       reraise error, __STACKTRACE__
@@ -35,25 +27,29 @@ defmodule Beacon.Authorization do
     if user_authorization_source_mod && is_atom(user_authorization_source_mod) do
       user_authorization_source_mod.authorized?(agent, operation, context)
     else
-      raise "Authorization source is misconfigured. VALUE: #{user_authorization_source_mod}"
+      raise """
+      authorization source is misconfigured.
+
+      Expected a module implementing Beacon.Authorization.Behaviour callbacks.
+
+      Got: #{inspect(user_authorization_source_mod)}
+      """
     end
   rescue
     error in FunctionClauseError ->
-      module = __MODULE__
-      trace = __STACKTRACE__
-      Helpers.reraise_function_clause_error(module, error, trace)
+      Helpers.reraise_function_clause_error(error.function, error.arity, __STACKTRACE__, Beacon.AuthorizationError)
 
     error ->
       reraise error, __STACKTRACE__
   end
 
   defp get_authorization_source do
-    case Registry.registered_sites() do
+    case Beacon.Registry.registered_sites() do
       [] ->
         Beacon.Authorization.DefaultPolicy
 
       [site | _] ->
-        Registry.config!(site).authorization_source
+        Beacon.Registry.config!(site).authorization_source
     end
   end
 end

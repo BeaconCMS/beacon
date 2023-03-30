@@ -1,8 +1,9 @@
 defmodule Beacon.Behaviors.Helpers do
-  def reraise_function_clause_error(module, error, trace) do
-    args = pop_args_from_stacktrace(trace)
+  @moduledoc false
 
-    function_arity = "#{error.function}/#{error.arity}"
+  def reraise_function_clause_error(function, arity, stacktrace, exception) do
+    args = pop_args_from_stacktrace(stacktrace)
+    function_arity = "#{function}/#{arity}"
 
     error_message = """
     Could not find #{function_arity} that matches the given args: \
@@ -12,7 +13,7 @@ defmodule Beacon.Behaviors.Helpers do
     that matches these args.\
     """
 
-    reraise Module.concat(module, Error), [message: error_message], trace
+    reraise exception, [message: error_message], stacktrace
   end
 
   defp pop_args_from_stacktrace(stacktrace) do

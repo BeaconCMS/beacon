@@ -5,21 +5,21 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   alias Beacon.Admin.MediaLibrary.Asset
   alias Beacon.Authorization
 
+  on_mount {BeaconWeb.Admin.Hooks.Authorized, {:media_library, :index}}
+
   @impl true
-  def mount(_params, _session, %{assigns: assigns} = socket) do
+  def mount(_params, _session, socket) do
     socket =
-      if Authorization.authorized?(assigns.agent, :index, %Asset{}) do
-        assign(socket, assets: list_assets(), search: "")
-      else
-        redirect(socket, to: "/")
-      end
+      socket
+      |> assign(:authn_context, %{mod: :media_library})
+      |> assign(assets: list_assets(), search: "")
 
     {:ok, socket}
   end
 
   @impl true
   def handle_params(params, _url, %{assigns: assigns} = socket) do
-    if Authorization.authorized?(assigns.agent, assigns.live_action, %Asset{}) do
+    if Authorization.authorized?(assigns.agent, assigns.live_action, assigns.authn_context) do
       search = Map.get(params, "search", "")
 
       socket =
@@ -56,7 +56,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
-    if Authorization.authorized?(assigns.agent, :delete, %Asset{}) do
+    if Authorization.authorized?(assigns.agent, :delete, Map.put(assigns.authn_context, :resource_id, id)) do
       asset = MediaLibrary.get_asset!(id)
       {:ok, _} = MediaLibrary.soft_delete_asset(asset)
 
@@ -70,7 +70,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   end
 
   def handle_event("search", %{"search" => search}, %{assigns: assigns} = socket) do
-    if Authorization.authorized?(assigns.agent, :search, %Asset{}) do
+    if Authorization.authorized?(assigns.agent, :search, assigns.authn_context) do
       path = beacon_admin_path(socket, "/media_library", search: search)
       socket = push_patch(socket, to: path)
       {:noreply, socket}

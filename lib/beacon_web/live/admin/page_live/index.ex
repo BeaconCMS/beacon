@@ -5,6 +5,9 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   alias Beacon.Layouts
   alias Beacon.Pages
   alias Beacon.Pages.Page
+  alias BeaconWeb.Admin.Hooks
+
+  on_mount {Hooks.Authorized, {:page_editor, :index}}
 
   defmodule SearchForm do
     use Ecto.Schema
@@ -28,22 +31,19 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def mount(_params, _session, %{assigns: assigns} = socket) do
+  def mount(_params, _session, socket) do
     socket =
-      if Authorization.authorized?(assigns.agent, :index, %Page{}) do
-        socket
-        |> assign(:last_reload_time, nil)
-        |> assign_site_options()
-      else
-        redirect(socket, to: "/")
-      end
+      socket
+      |> assign(:authn_context, %{mod: :page_editor})
+      |> assign(:last_reload_time, nil)
+      |> assign_site_options()
 
     {:ok, socket}
   end
 
   @impl true
   def handle_params(params, _url, %{assigns: assigns} = socket) do
-    if Authorization.authorized?(assigns.agent, assigns.live_action, %Page{}) do
+    if Authorization.authorized?(assigns.agent, assigns.live_action, assigns.authn_context) do
       {:noreply, apply_action(socket, assigns.live_action, params)}
     else
       {:noreply, socket}
@@ -60,7 +60,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
-    if Authorization.authorized?(assigns.agent, :delete, %Page{}) do
+    if Authorization.authorized?(assigns.agent, :delete, Map.put(assigns.authn_context, :resource_id, id)) do
       page = Pages.get_page!(id)
       {:ok, _} = Pages.delete_page(page)
 

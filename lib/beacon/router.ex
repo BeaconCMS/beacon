@@ -199,18 +199,18 @@ defmodule Beacon.Router do
   end
 
   defp get_on_mount_list(on_mounts) when is_list(on_mounts) do
-    if Enum.member?(on_mounts, BeaconWeb.Hooks.AssignAgent) do
+    if Enum.member?(on_mounts, BeaconWeb.Admin.Hooks.AssignAgent) do
       on_mounts
     else
-      on_mounts ++ [BeaconWeb.Hooks.AssignAgent]
+      on_mounts ++ [BeaconWeb.Admin.Hooks.AssignAgent]
     end
   end
 
   defp get_on_mount_list(on_mounts) do
     raise ArgumentError, """
-    `on_mount` option must be a list.
+    expected `on_mount` option to be a list.
 
-    value: #{inspect(on_mounts)}
+    Got: #{inspect(on_mounts)}
     """
   end
 
@@ -289,13 +289,21 @@ defmodule Beacon.Router do
   """
   def beacon_admin_path(socket, path, params \\ %{}) do
     prefix = socket.router.__beacon_admin_prefix__()
-    path = sanitize_path("#{prefix}/#{path}")
+    path = build_path_with_prefix(prefix, path)
     params = for {key, val} <- params, do: {key, val}
 
     Phoenix.VerifiedRoutes.unverified_path(socket, socket.router, path, params)
   end
 
   @doc false
+  def build_path_with_prefix(prefix, "/") do
+    prefix
+  end
+
+  def build_path_with_prefix(prefix, path) do
+    sanitize_path("#{prefix}/#{path}")
+  end
+
   def sanitize_path(path) do
     String.replace(path, "//", "/")
   end
