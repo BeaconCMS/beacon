@@ -75,7 +75,8 @@ defmodule Beacon.Fixtures do
         <h1>my_site#home</h1>
       </main>
       """,
-      skip_reload: true
+      skip_reload: true,
+      status: :published
     })
     |> Pages.create_page!()
   end
