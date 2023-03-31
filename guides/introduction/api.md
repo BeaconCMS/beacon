@@ -7,7 +7,7 @@ HTTP endpoints to integrate with Beacon layouts, pages, assets, and more.
 ```elixir
 use Beacon.Router
 
-scope "/api"
+scope "/api" do
   pipe_through :api
   beacon_api "/beacon"
 end
