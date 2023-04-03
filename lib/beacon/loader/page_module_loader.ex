@@ -35,6 +35,10 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
+  defp store_page(%Page{status: :draft}, _page_module, _component_module) do
+    :skip
+  end
+
   defp store_page(%Page{} = page, page_module, component_module) do
     %{id: page_id, layout_id: layout_id, site: site, path: path, template: template} = page
     file = "site-#{page.site}-page-#{page.path}"

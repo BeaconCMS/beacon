@@ -91,8 +91,8 @@ defmodule Beacon.Pages do
       page_changeset = Page.changeset(attrs)
 
       with {:ok, page} <- Repo.insert(page_changeset),
-           {:ok, _page_version} <- create_version_for_page(page),
-           :ok <- maybe_reload_page(page, skip_reload?) do
+           {:ok, _page_version} <- create_version_for_page(page) do
+        maybe_reload_page(page, skip_reload?)
         page
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -118,6 +118,7 @@ defmodule Beacon.Pages do
   @doc """
   Updates a page and creates a page_version for the previously current page.
   """
+  @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, any()}
   def publish_page(%Page{} = page) do
     operation =
       Repo.transaction(fn ->
@@ -125,7 +126,8 @@ defmodule Beacon.Pages do
           Page.changeset(page, %{
             template: page.pending_template,
             layout_id: page.layout_id,
-            version: page.version + 1
+            version: page.version + 1,
+            status: :published
           })
 
         with {:ok, page} <- Repo.update(page_changeset),
@@ -348,8 +350,8 @@ defmodule Beacon.Pages do
       changeset = PageEvent.changeset(attrs)
 
       with {:ok, page_event} <- Repo.insert(changeset),
-           %{page: page} <- Repo.preload(page_event, :page),
-           :ok <- maybe_reload_page(page, skip_reload?) do
+           %{page: page} <- Repo.preload(page_event, :page) do
+        maybe_reload_page(page, skip_reload?)
         {:ok, page_event}
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -387,8 +389,8 @@ defmodule Beacon.Pages do
       changeset = PageHelper.changeset(attrs)
 
       with {:ok, page_helper} <- Repo.insert(changeset),
-           %{page: page} <- Repo.preload(page_helper, :page),
-           :ok <- maybe_reload_page(page, skip_reload?) do
+           %{page: page} <- Repo.preload(page_helper, :page) do
+        maybe_reload_page(page, skip_reload?)
         {:ok, page_helper}
       else
         {:error, reason} -> Repo.rollback(reason)
