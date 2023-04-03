@@ -118,6 +118,7 @@ defmodule Beacon.Pages do
   @doc """
   Updates a page and creates a page_version for the previously current page.
   """
+  @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, any()}
   def publish_page(%Page{} = page) do
     operation =
       Repo.transaction(fn ->
