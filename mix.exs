@@ -23,7 +23,6 @@ defmodule Beacon.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       mod: {Beacon.Application, []},
@@ -31,11 +30,9 @@ defmodule Beacon.MixProject do
     ]
   end
 
-  # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -60,21 +57,17 @@ defmodule Beacon.MixProject do
     ]
   end
 
-  # Aliases are shortcuts or tasks specific to the current project.
-  # For example, to install project dependencies and perform other setup tasks, run:
-  #
-  #     $ mix setup
-  #
-  # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build", "ecto.setup"],
+      setup: ["deps.get", "assets.setup", "assets.setup.admin", "assets.build", "assets.build.admin", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["esbuild cdn", "esbuild cdn_min", "tailwind admin --minify"]
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing", "cmd --cd assets npm install"],
+      "assets.setup.admin": ["tailwind.install --if-missing", "esbuild.install --if-missing", "cmd --cd assets npm install"],
+      "assets.build": ["esbuild cdn", "esbuild cdn_min"],
+      "assets.build.admin": ["tailwind admin", "cmd --cd assets node build_admin.js"]
     ]
   end
 

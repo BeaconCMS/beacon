@@ -10,9 +10,9 @@ defmodule BeaconWeb.Layouts do
   @external_resource beacon_admin_css_path
 
   # TODO: style nonce
-  def static_asset_path(conn_or_socket, asset) when asset in [:css, :js] do
-    %{assigns: %{__site__: site}} = conn_or_socket
-    prefix = router(conn_or_socket).__beacon_site_prefix__(site)
+  def asset_path(conn, asset) when asset in [:css, :js] do
+    %{assigns: %{__site__: site}} = conn
+    prefix = router(conn).__beacon_site_prefix__(site)
 
     hash =
       cond do
@@ -20,19 +20,15 @@ defmodule BeaconWeb.Layouts do
         asset == :js -> Beacon.RuntimeJS.current_hash()
       end
 
-    Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
+    path = Beacon.Router.sanitize_path("#{prefix}/beacon_assets/#{asset}-#{hash}")
+    Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
   end
 
-  def admin_static_asset_path(conn_or_socket, asset) when asset in [:css, :js] do
-    prefix = router(conn_or_socket).__beacon_admin_prefix__()
-
-    hash =
-      cond do
-        asset == :css -> Beacon.RuntimeCSS.current_hash(:beacon_admin)
-        asset == :js -> Beacon.RuntimeJS.current_hash()
-      end
-
-    Beacon.Router.sanitize_path("#{prefix}/beacon_static/#{asset}-#{hash}")
+  def admin_asset_path(conn, asset) when asset in [:css, :js] do
+    prefix = router(conn).__beacon_admin_prefix__()
+    hash = BeaconWeb.Admin.AssetsController.current_hash(asset)
+    path = Beacon.Router.sanitize_path("#{prefix}/beacon_assets/#{asset}-#{hash}")
+    Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
   end
 
   defp router(%Plug.Conn{private: %{phoenix_router: router}}), do: router

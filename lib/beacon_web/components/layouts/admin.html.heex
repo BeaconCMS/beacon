@@ -8,8 +8,8 @@
     <.live_title suffix=" · Beacon Admin">
       <%= assigns[:page_title] || "Beacon" %>
     </.live_title>
-    <link rel="stylesheet" href={admin_static_asset_path(@conn, :css)} />
-    <script defer src={admin_static_asset_path(@conn, :js)}>
+    <link rel="stylesheet" href={admin_asset_path(@conn, :css)} />
+    <script defer src={admin_asset_path(@conn, :js)}>
     </script>
   </head>
   <body>

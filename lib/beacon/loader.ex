@@ -55,7 +55,6 @@ defmodule Beacon.Loader do
 
   defp load_site_from_db(site) do
     with :ok <- Beacon.RuntimeJS.load(),
-         :ok <- Beacon.RuntimeCSS.load_admin(),
          :ok <- load_runtime_css(site),
          :ok <- load_components(site),
          :ok <- load_layouts(site),

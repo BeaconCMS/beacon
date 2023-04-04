@@ -27,15 +27,14 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
     patterns: [
-      ~r"assets/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"dev/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(controllers|live|components)/.*(ex|heex)$"
     ]
   ],
   watchers: [
-    tailwind: {Tailwind, :install_and_run, [:admin_dev, ~w(--watch)]}
+    tailwind: {Tailwind, :install_and_run, [:admin, ~w(--watch)]},
+    node: ["build_admin.js", "--watch", cd: Path.expand("./assets", __DIR__)]
   ]
 )
 
@@ -72,12 +71,6 @@ defmodule SamplePhoenix.Endpoint do
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-
-  plug Plug.Static,
-    at: "/dev",
-    from: "dev/static",
-    gzip: false,
-    only: ~w(assets fonts images favicon.ico robots.txt)
 
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader

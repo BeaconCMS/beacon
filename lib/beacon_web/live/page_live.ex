@@ -79,7 +79,7 @@ defmodule BeaconWeb.PageLive do
       # |> assign(:page_title, page_title(params, socket.assigns))
       |> push_event("beacon:page-updated", %{
         meta_tags: meta_tags(params, socket.assigns)
-        # runtime_css_path: BeaconWeb.Layouts.static_asset_path(socket, :css)
+        # runtime_css_path: BeaconWeb.Layouts.asset_path(socket, :css)
       })
 
     {:noreply, socket}
