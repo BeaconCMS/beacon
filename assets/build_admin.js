@@ -24,6 +24,7 @@ async function buildEditor() {
   const context = await esbuild.context({
     entryPoints: workerEntryPoints.map((entry) => `./node_modules/monaco-editor/esm/${entry}`),
     bundle: true,
+    minify: true,
     format: 'iife',
     outbase: './node_modules/monaco-editor/esm/',
     outdir: '../priv/static',
@@ -35,7 +36,7 @@ async function buildEditor() {
 }
 
 async function buildBeacon() {
-  const context = await esbuild.context({
+  let opts = {
     entryPoints: ['js/beacon_admin.js'],
     bundle: true,
     format: 'iife',
@@ -44,11 +45,25 @@ async function buildBeacon() {
     loader: {
       '.ttf': 'file',
     },
-  })
+  }
+
+  if (deploy) {
+    opts = {
+      ...opts,
+      minify: true,
+    }
+  }
 
   if (watch) {
+    opts = {
+      ...opts,
+      sourcemap: 'inline',
+    }
+
+    const context = await esbuild.context(opts)
     await context.watch()
   } else {
+    const context = await esbuild.context(opts)
     await context.rebuild()
     await context.dispose()
   }

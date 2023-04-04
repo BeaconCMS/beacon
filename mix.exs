@@ -67,7 +67,7 @@ defmodule Beacon.MixProject do
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing", "cmd --cd assets npm install"],
       "assets.setup.admin": ["tailwind.install --if-missing", "esbuild.install --if-missing", "cmd --cd assets npm install"],
       "assets.build": ["esbuild cdn", "esbuild cdn_min"],
-      "assets.build.admin": ["tailwind admin", "cmd --cd assets node build_admin.js"]
+      "assets.build.admin": ["tailwind admin --minify", "cmd --cd assets node build_admin.js --deploy"]
     ]
   end
 
