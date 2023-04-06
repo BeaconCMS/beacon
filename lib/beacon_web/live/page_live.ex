@@ -23,25 +23,12 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {{_site, path}, {_page_id, _layout_id, template_ast, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
+    {{site, path}, {_page_id, _layout_id, template, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
 
-    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, path_params(path, assigns.__live_path__))
+    # TODO: format
+    format = "heex"
 
-    functions = [
-      {assigns.__beacon_page_module__, [dynamic_helper: 2]},
-      {assigns.__beacon_component_module__, [my_component: 2]}
-      | __ENV__.functions
-    ]
-
-    opts =
-      __ENV__
-      |> Map.from_struct()
-      |> Keyword.new()
-      |> Keyword.put(:functions, functions)
-
-    {result, _bindings} = Code.eval_quoted(template_ast, [assigns: assigns], opts)
-
-    result
+    Beacon.Lifecycle.render_template(site, path, format, template, assigns, __ENV__)
   end
 
   defp lookup_route!(site, path) do
@@ -51,22 +38,6 @@ defmodule BeaconWeb.PageLive do
 
       Make sure a page was created for that path.
       """
-  end
-
-  defp path_params(page_path, path_info) do
-    page_path = String.split(page_path, "/")
-
-    Enum.zip_reduce(page_path, path_info, %{}, fn
-      ":" <> segment, value, acc ->
-        Map.put(acc, segment, value)
-
-      "*" <> segment, value, acc ->
-        position = Enum.find_index(path_info, &(&1 == value))
-        Map.put(acc, segment, Enum.drop(path_info, position))
-
-      _, _, acc ->
-        acc
-    end)
   end
 
   def handle_info(:page_updated, socket) do

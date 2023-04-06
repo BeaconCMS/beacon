@@ -26,6 +26,7 @@ defmodule Beacon.Pages.Page do
     field :meta_tags, {:array, :map}, default: []
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
+    field :format, :string
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -49,7 +50,8 @@ defmodule Beacon.Pages.Page do
       :meta_tags,
       :order,
       :layout_id,
-      :status
+      :status,
+      :format
     ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()

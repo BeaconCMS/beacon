@@ -40,10 +40,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp store_page(%Page{} = page, page_module, component_module) do
-    %{id: page_id, layout_id: layout_id, site: site, path: path, template: template} = page
-    file = "site-#{page.site}-page-#{page.path}"
-    template_ast = Loader.compile_heex_template!(site, file, template)
-    Beacon.Router.add_page(site, path, {page_id, layout_id, template_ast, page_module, component_module})
+    %{id: page_id, layout_id: layout_id, site: site, path: path} = page
+    template = Beacon.Lifecycle.load_template(page)
+    Beacon.Router.add_page(site, path, {page_id, layout_id, template, page_module, component_module})
   end
 
   defp page_assigns(%Page{} = page) do

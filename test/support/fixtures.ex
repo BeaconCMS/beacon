@@ -76,7 +76,8 @@ defmodule Beacon.Fixtures do
       </main>
       """,
       skip_reload: true,
-      status: :published
+      status: :published,
+      format: "heex"
     })
     |> Pages.create_page!()
   end

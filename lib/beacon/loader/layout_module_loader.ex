@@ -28,7 +28,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   defp render_layout(%Beacon.Layouts.Layout{} = layout) do
     file = "site-#{layout.site}-layout-#{layout.title}"
-    ast = Loader.compile_heex_template!(layout.site, file, layout.body)
+    ast = Beacon.Template.HEEx.compile_heex_template!(file, layout.body)
 
     quote do
       def render(unquote(layout.id), var!(assigns)) when is_map(var!(assigns)) do

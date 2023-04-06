@@ -104,17 +104,13 @@ defmodule Beacon do
   defdelegate reload_page(page), to: Beacon.Loader
 
   @doc false
-  def safe_code_check!(site, code) do
-    if Beacon.Config.fetch!(site).safe_code_check do
-      SafeCode.Validator.validate!(code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
-    end
+  def safe_code_check!(_site, _code) do
+    :todo
   end
 
   @doc false
-  def safe_code_heex_check!(site, code) do
-    if Beacon.Config.fetch!(site).safe_code_check do
-      SafeCode.Validator.validate_heex!(code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
-    end
+  def safe_code_heex_check!(_site, _code) do
+    :todo
   end
 
   def default_site_meta_tags do

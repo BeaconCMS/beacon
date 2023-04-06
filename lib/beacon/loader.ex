@@ -185,31 +185,6 @@ defmodule Beacon.Loader do
       reraise e, __STACKTRACE__
   end
 
-  def compile_heex_template!(site, file, template) do
-    Beacon.safe_code_heex_check!(site, template)
-
-    if Code.ensure_loaded?(Phoenix.LiveView.TagEngine) do
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.TagEngine,
-        line: 1,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true,
-        tag_handler: Phoenix.LiveView.HTMLEngine
-      )
-    else
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.HTMLEngine,
-        line: 1,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true
-      )
-    end
-  end
-
   def maybe_import_my_component(_component_module, [] = _functions) do
   end
 
