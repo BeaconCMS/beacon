@@ -2,18 +2,22 @@ defmodule Beacon.Lifecycle do
   @moduledoc """
   Beacon is open for extensibility by allowing users to inject custom steps into its internal lifecycle.
 
-  Currently it supports the following hooks:
-
-    * Page loading - configured with option `t:Beacon.Config.template_formats/0` in `Beacon.Config`
-    * Page rendering - configured with option `t:Beacon.Config.template_formats/0` in `Beacon.Config`
-    * Page publishing - TODO
+  See each function doc for more info and `Beacon.Config` option `:lifecycle` to configure each one.
 
   """
 
-  @doc false
+  @doc """
+  Load a `page` template into ETS.
+
+  Between fetching the page from database and loading it into ETS,
+  you can perform custom steps to transform the template, and these steps
+  are configured by registering a `t:Beacon.Config.template_format/0` in `:lifecycle` option for `Beacon.Config`.
+  """
+  @spec load_template(Beacon.Pages.Page.t()) :: Beacon.Template.t()
   def load_template(page) do
     config = Beacon.Config.fetch!(page.site)
-    do_load_template(page, config.template_formats)
+    template_formats = Keyword.fetch!(config.lifecycle, :template)
+    do_load_template(page, template_formats)
   end
 
   @doc false
@@ -25,11 +29,16 @@ defmodule Beacon.Lifecycle do
     |> execute_steps(:load, page.template, metadata)
   end
 
-  @doc false
+  @doc """
+  Render a `page` template, executed in the `render/2` callback.
+
+  These steps are configured by registering a `t:Beacon.Config.template_format/0` in `t:Beacon.Config.lifecycle/0`.
+  """
   def render_template(opts) do
     site = Keyword.fetch!(opts, :site)
     config = Beacon.Config.fetch!(site)
-    do_render_template(opts, config.template_formats)
+    template_formats = Keyword.fetch!(config.lifecycle, :template)
+    do_render_template(opts, template_formats)
   end
 
   @doc false
@@ -127,5 +136,18 @@ defmodule Beacon.Lifecycle do
       """
 
       reraise Beacon.LoaderError, [message: message], __STACKTRACE__
+  end
+
+  @doc """
+  Run all `:publish_page` steps defined in `t:Beacon.Config.t/0`.
+
+  It's executed after the `page` is updated and a new page version is created but before it's reloaded.
+
+  Give you the opportunity to transform the page or execude side actions before the page becomes public.
+  """
+  @spec publish_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  def publish_page(page) do
+    # TODO execute_steps
+    page
   end
 end

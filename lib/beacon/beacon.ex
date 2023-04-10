@@ -19,6 +19,10 @@ defmodule Beacon do
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
   flexibility to plan your architecture from simple to complex environments.
 
+  ## Options
+
+  Each site in `:sites` may have its own configuration, see all available options at `Beacon.Config.new/1`.
+
   ## Examples
 
       # config.exs or runtime.exs
@@ -41,7 +45,6 @@ defmodule Beacon do
         Supervisor.start_link(children, opts)
       end
 
-  Each site in `:sites` may have its own configuration as described at `Beacon.Config`.
 
   """
   def start_link(opts) when is_list(opts) do

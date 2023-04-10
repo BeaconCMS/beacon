@@ -1,8 +1,6 @@
 defmodule Beacon.Template.LoadMetadata do
   @moduledoc """
   Metadata passed to page loading lifecycle.
-
-  See `t:Beacon.Config.template_formats/0`
   """
 
   defstruct [:site, :path]
@@ -16,8 +14,6 @@ end
 defmodule Beacon.Template.RenderMetadata do
   @moduledoc """
   Metadata passed to page rendering lifecycle.
-
-  See `t:Beacon.Config.template_formats/0`
   """
 
   defstruct [:site, :path, :assigns, :env]

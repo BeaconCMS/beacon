@@ -1,8 +1,9 @@
 defmodule Beacon.Types.Site do
-  @moduledoc false
-
   use Ecto.Type
 
+  @typedoc """
+  Site identifier, eg: `:my_site`
+  """
   @type t :: atom()
 
   def valid?(site) when site in ["", nil, true, false], do: false
