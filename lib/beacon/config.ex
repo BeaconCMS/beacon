@@ -23,6 +23,8 @@ defmodule Beacon.Config do
 
     * `:live_socket_path` (optional) `t:String.t/0` - path of a live socket where Beacon should connect to. Defaults to "/live".
 
+    * `:safe_code_check` (optional) `t:boolean/0` - enable or disable safe Elixir code check by https://github.com/TheFirstAvenger/safe_code
+
     * `:template_formats` (optional) `TODO` - register template formats and its lifecycle.
 
   """
@@ -62,7 +64,7 @@ defmodule Beacon.Config do
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           live_socket_path: String.t(),
-          # safe_code_check: boolean(),
+          safe_code_check: boolean(),
           template_formats: [{identifier :: template_identifier(), description :: String.t(), template_lifecycle :: template_lifecycle()}]
         }
 
@@ -72,6 +74,8 @@ defmodule Beacon.Config do
             css_compiler: Beacon.TailwindCompiler,
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
             live_socket_path: "/live",
+            # TODO: change safe_code_check to true when it's ready to parse complex codes
+            safe_code_check: false,
             template_formats: [
               {
                 "heex",
