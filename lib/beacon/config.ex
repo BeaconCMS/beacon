@@ -2,7 +2,7 @@ defmodule Beacon.Config do
   @moduledoc """
   Configuration for sites.
 
-  Following is a list of options that each site accepts:
+  Each site holds a `%Beacon.Config{}` struct in registry to define its behavior. Following is a summary of each parameter:
 
   ## Options
 
@@ -25,7 +25,7 @@ defmodule Beacon.Config do
 
     * `:safe_code_check` (optional) `t:boolean/0` - enable or disable safe Elixir code check by https://github.com/TheFirstAvenger/safe_code
 
-    * `:template_formats` (optional) `TODO` - register template formats and its lifecycle.
+    * `:template_formats` (optional) `t:template_formats/0` - register template formats and its lifecycle.
 
   """
 
@@ -42,6 +42,37 @@ defmodule Beacon.Config do
   @type css_compiler :: module()
   @type tailwind_config :: Path.t()
 
+  @typedoc """
+  Registered formats to handle templates.
+
+  Beacon provides two formats built-in: HEEx and Markdown.
+
+  ## Example
+
+      template_formats: [
+        {
+          "markdown",
+          "My Custom Markdown",
+          [
+            load: [
+              convert_to_html: fn template, _metadata ->
+                MyEngine.parse(template)
+              end,
+              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
+              compile_heex: &Beacon.Template.HEEx.compile/2
+            ],
+            render: [
+              eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
+            ]
+          ]
+        }
+      ]
+
+  Note that `:load` doesn't necessarily expect the output to be compiled, it can return a binary for example,
+  but `:render` does expect the output to be a `%Phoenix.LiveView.Rendered{}` struct.
+  """
+  @type template_formats :: [{identifier :: template_identifier(), description :: String.t(), lifecycle: template_lifecycle()}]
+
   @type option ::
           {:site, site()}
           | {:data_source, data_source()}
@@ -50,12 +81,24 @@ defmodule Beacon.Config do
           | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, String.t()}
           | {:safe_code_check, boolean()}
+          | {:template_formats, template_formats()}
 
   @typedoc """
-  Stored on the page. TODO
+  The indentifier used internally to fetch templates, for eg: `"heex"`
   """
-  @type template_identifier :: atom()
-  @type template_lifecycle :: any
+  @type template_identifier :: String.t()
+
+  @typedoc """
+  Steps of the template lifecycle. A step may run in either one of the two stages: load or render.
+
+  **Load** is the stage of fetching the template from the database and loading it into ETS. The steps define here run in between those.
+  The formats HEEx and Markdown provded built-in by Beacon will take care of checking if the the template is secure, converting to proper HTML,
+  and compiling it down to a complete AST that can be rendered afterwards.
+
+  **Render** runs in the `render/1` callback of LiveView, it receives the `assigns` plus metadata of the current request to generate
+  a `%Phoenix.LiveView.Rendered{}` struct at the end of the lifecycle.
+  """
+  @type template_lifecycle :: list()
 
   @type t :: %__MODULE__{
           site: site(),

@@ -1,6 +1,13 @@
 defmodule Beacon.Lifecycle do
   @moduledoc """
-  TODO
+  Beacon is open for extensibility by allowing users to inject custom steps into its internal lifecycle.
+
+  Currently it supports the following hooks:
+
+    * Page loading - configured with option `t:Beacon.Config.template_formats/0` in `Beacon.Config`
+    * Page rendering - configured with option `t:Beacon.Config.template_formats/0` in `Beacon.Config`
+    * Page publishing - TODO
+
   """
 
   @doc false
@@ -25,6 +32,7 @@ defmodule Beacon.Lifecycle do
     do_render_template(opts, config.template_formats)
   end
 
+  @doc false
   def do_render_template(opts, template_formats) do
     site = Keyword.fetch!(opts, :site)
     path = Keyword.fetch!(opts, :path)

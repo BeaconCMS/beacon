@@ -1,7 +1,8 @@
 defmodule Beacon.Template.LoadMetadata do
   @moduledoc """
-  Load Stage
-  TODO
+  Metadata passed to page loading lifecycle.
+
+  See `t:Beacon.Config.template_formats/0`
   """
 
   defstruct [:site, :path]
@@ -14,8 +15,9 @@ end
 
 defmodule Beacon.Template.RenderMetadata do
   @moduledoc """
-  Render Stage
-  TODO
+  Metadata passed to page rendering lifecycle.
+
+  See `t:Beacon.Config.template_formats/0`
   """
 
   defstruct [:site, :path, :assigns, :env]
@@ -23,15 +25,14 @@ defmodule Beacon.Template.RenderMetadata do
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           path: String.t(),
-          assigns: Phoenix.LiveView.Socket.assigns() | nil,
-          # TODO: type
-          env: any()
+          assigns: Phoenix.LiveView.Socket.assigns(),
+          env: Macro.Env.t()
         }
 end
 
 defmodule Beacon.Template do
   @typedoc """
-  Compiled template TODO
+  Compiled template.
   """
   @type ast :: Macro.t()
 

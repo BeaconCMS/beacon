@@ -1,10 +1,15 @@
 defmodule Beacon.Template.HEEx do
   @moduledoc """
-  TODO
+  Handle loading and compilation of HEEx templates.
   """
 
   import Beacon.Template, only: [is_ast: 1]
 
+  @doc """
+  Check if the template is safe.
+
+  Perform the check using https://github.com/TheFirstAvenger/safe_code
+  """
   @spec safe_code_check(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
   def safe_code_check(template, metadata) when is_binary(template) do
     # TODO: enable safe code when it's ready to parse complex templates
@@ -24,6 +29,9 @@ defmodule Beacon.Template.HEEx do
       {:halt, %Beacon.LoaderError{message: message}}
   end
 
+  @doc """
+  Compile `template` returning its AST.
+  """
   @spec compile(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:halt, Beacon.Template.ast()}
   def compile(template, metadata) when is_binary(template) do
     file = "site-#{metadata.site}-page-#{metadata.path}"
@@ -43,6 +51,9 @@ defmodule Beacon.Template.HEEx do
       {:halt, %Beacon.LoaderError{message: message}}
   end
 
+  @doc """
+  Compile `template` AST to generate a `%Phoenix.LiveView.Rendered{}` struct.
+  """
   @spec eval_ast(Beacon.Template.t(), Beacon.Template.RenderMetadata.t()) :: {:halt, Phoenix.LiveView.Rendered.t()}
   def eval_ast(template, metadata) when is_ast(template) do
     %{path: path, assigns: assigns, env: env} = metadata
