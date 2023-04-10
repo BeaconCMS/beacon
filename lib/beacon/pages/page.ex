@@ -26,7 +26,7 @@ defmodule Beacon.Pages.Page do
     field :meta_tags, {:array, :map}, default: []
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
-    field :format, :string
+    field :format, :string, default: "heex"
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -62,7 +62,8 @@ defmodule Beacon.Pages.Page do
       :pending_template,
       :pending_layout_id,
       :version,
-      :order
+      :order,
+      :format
     ])
     |> validate_string([:path])
     |> unique_constraint(:id, name: :pages_pkey)

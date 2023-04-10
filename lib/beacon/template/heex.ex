@@ -1,30 +1,49 @@
 defmodule Beacon.Template.HEEx do
+  @moduledoc """
+  TODO
+  """
+
   import Beacon.Template, only: [is_ast: 1]
 
-  @spec safe_code_check(Beacon.Template.t(), Beacon.Template.metadata()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
+  @spec safe_code_check(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
   def safe_code_check(template, metadata) when is_binary(template) do
     # TODO: enable safe code when it's ready to parse complex templates
     # SafeCode.Validator.validate!(template, extra_function_validators: Beacon.Loader.SafeCodeImpl)
     {:cont, template}
   rescue
-    _ -> {:halt, %Beacon.LoaderError{message: "Unsafe template for path #{metadata.path}"}}
+    e ->
+      message = """
+      unsafe template for path #{metadata.path}
+
+      Got:
+
+          #{inspect(e)}
+
+      """
+
+      {:halt, %Beacon.LoaderError{message: message}}
   end
 
-  @spec compile(Beacon.Template.t(), Beacon.Template.metadata()) :: {:halt, Beacon.Template.ast()}
+  @spec compile(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:halt, Beacon.Template.ast()}
   def compile(template, metadata) when is_binary(template) do
     file = "site-#{metadata.site}-page-#{metadata.path}"
     ast = compile_heex_template!(file, template)
     {:halt, ast}
-    # TODO: can compile fail? rescue is needed?
   rescue
-    _ -> {:halt, %Beacon.LoaderError{message: "Failed to compile heex template for path #{metadata.path}"}}
+    e ->
+      message = """
+      failed to compile heex template for path #{metadata.path}
+
+      Got:
+
+          #{inspect(e)}
+
+      """
+
+      {:halt, %Beacon.LoaderError{message: message}}
   end
 
-  # STEPS render template
-  # input: page or markup
-  # :compile_heex           (Beacon)
-  # output: Macro.t | String.t
-  @spec eval_ast(Beacon.Template.t(), Beacon.Template.metadata()) :: {:halt, Phoenix.LiveView.Rendered.t()}
+  @spec eval_ast(Beacon.Template.t(), Beacon.Template.RenderMetadata.t()) :: {:halt, Phoenix.LiveView.Rendered.t()}
   def eval_ast(template, metadata) when is_ast(template) do
     %{path: path, assigns: assigns, env: env} = metadata
 

@@ -37,7 +37,5 @@ defmodule Beacon.Template do
 
   @type t :: String.t() | ast()
 
-  @type metadata :: Beacon.Template.Metadata.t()
-
   defguard is_ast(template) when not is_binary(template)
 end

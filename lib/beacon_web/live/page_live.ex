@@ -28,7 +28,7 @@ defmodule BeaconWeb.PageLive do
     # TODO: format
     format = "heex"
 
-    Beacon.Lifecycle.render_template(site, path, format, template, assigns, __ENV__)
+    Beacon.Lifecycle.render_template(site: site, path: path, format: format, template: template, assigns: assigns, env: __ENV__)
   end
 
   defp lookup_route!(site, path) do
