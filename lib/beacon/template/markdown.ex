@@ -1,51 +1,46 @@
 defmodule Beacon.Template.Markdown do
-  def load(page) do
-    # template =
-    #   page.template # markdown
-    #   |> convert_to_html()
-    #   |> inject_css_classes(@tailwind_classes_mapping)
-    #   |> inject_table_container()
-    #   |> DockYard.Blog.Highlighter.highlight()
+  @moduledoc """
+  GitHub Flavored Markdown
 
-    file = "site-#{page.site}-page-#{page.path}"
-    compile_heex_template!(page.site, file, page.template)
+  Use https://github.com/github/cmark-gfm to convert Markdown to HTML
+  """
 
-    # STEPS load template
-    # input: page or markup
-    # :convert_to_html        (Beacon)
-    # :inject_css_classes     (DY) <- attach
-    # :inject_table_container (DY) <- attach
-    # :apply_syntax_highlight (DY) <- attach
-    # :compile_heex           (Beacon)
-    # output: Macro.t | String.t
-  end
+  # TODO: implement a markdown format that is aware of Phoenix features like link attrs and assigns
 
-  def render do
-  end
+  # TODO: replace cli with C or Rust lib
+  @spec convert_to_html(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
+  def convert_to_html(template, _metadata) do
+    cmark_gfm_bin = find_cmark_gfm_bin!()
 
-  @doc false
-  def compile_heex_template!(site, file, template) do
-    Beacon.safe_code_heex_check!(site, template)
+    random_file_name = Base.encode16(:crypto.strong_rand_bytes(12))
+    random_file_path = Path.join(System.tmp_dir!(), random_file_name)
+    File.write!(random_file_path, template)
 
-    if Code.ensure_loaded?(Phoenix.LiveView.TagEngine) do
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.TagEngine,
-        line: 1,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true,
-        tag_handler: Phoenix.LiveView.HTMLEngine
-      )
+    # credo:disable-for-next-line
+    args = ~w(--unsafe --smart -e table -e autolink -e tasklist --to html) ++ [random_file_path]
+    # credo:disable-for-next-line
+
+    {output, exit_code} = System.cmd(cmark_gfm_bin, args, stderr_to_stdout: true)
+    File.rm(random_file_path)
+
+    if exit_code == 0 do
+      {:cont, output}
     else
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.HTMLEngine,
-        line: 1,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true
-      )
+      message = """
+      failed to convert markdown to html
+
+      Got:
+
+          exit code: #{exit_code}
+          output: #{output}
+
+      """
+
+      {:halt, %Beacon.LoaderError{message: message}}
     end
+  end
+
+  defp find_cmark_gfm_bin! do
+    System.find_executable("cmark-gfm") || raise "here"
   end
 end

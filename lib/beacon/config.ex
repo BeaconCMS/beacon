@@ -73,33 +73,32 @@ defmodule Beacon.Config do
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
             live_socket_path: "/live",
             template_formats: [
-              # register
               {
                 "heex",
                 "HEEx (HTML)",
-                # lifecycle
-                # stage
                 load: [
-                  # named steps
                   safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
                   compile_heex: &Beacon.Template.HEEx.compile/2
                 ],
                 render: [
                   eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
                 ]
+              },
+              {
+                "markdown",
+                "Markdown (GitHub Flavored)",
+                [
+                  load: [
+                    convert_to_html: &Beacon.Template.Markdown.convert_to_html/2,
+                    safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
+                    compile_heex: &Beacon.Template.HEEx.compile/2
+                  ],
+                  render: [
+                    eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
+                  ]
+                ]
               }
-              # {:markdown, "Markdown",
-              #  load: [
-              #    &Beacon.Template.Markdown.convert_to_html/2,
-              #    &Beacon.Template.Markdown.apply_code_syntax_highlight/2,
-              #    &Beacon.Template.HEEx.safe_code_check/2,
-              #    &Beacon.Template.HEEx.compile_heex/2
-              #  ],
-              #  render: [&Beacon.Template.HEEx.render/1]}
             ]
-
-  # TODO: change safe_code_check to true after it gets updated to handle all common scenarios
-  # safe_code_check: false
 
   @doc """
   Build a new `%Beacon.Config{}` instance, used to hold all the configuration for each site.

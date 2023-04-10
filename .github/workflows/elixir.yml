@@ -19,11 +19,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - elixir: '1.12.0'
-            otp: '23'
+          - elixir: "1.12.0"
+            otp: "23"
 
-          - elixir: '1.14.2'
-            otp: '25.1.2'
+          - elixir: "1.14.2"
+            otp: "25.1.2"
 
     runs-on: ubuntu-20.04
 
@@ -66,6 +66,9 @@ jobs:
 
       - run: mix tailwind.install
 
+      - name: install cmark-gfm
+        run: sudo apt-get install -y cmark-gfm
+
       - run: mix test
 
   quality:
@@ -77,8 +80,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - elixir: '1.14.2'
-            otp: '25.1.2'
+          - elixir: "1.14.2"
+            otp: "25.1.2"
 
     runs-on: ubuntu-20.04
 

@@ -143,6 +143,7 @@ seeds = fn ->
           <ul>
             <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
             <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
+            <li><.link navigate="/dev/markdown">Markdown Page</.link></li>
           </ul>
         </div>
 
@@ -222,6 +223,24 @@ seeds = fn ->
     })
 
   Beacon.Pages.publish_page(page_post)
+
+  page_markdown =
+    Beacon.Pages.create_page!(%{
+      path: "markdown",
+      site: "dev",
+      title: "dev markdown",
+      layout_id: layout_id,
+      format: "markdown",
+      template: """
+      # My Markdown Page
+
+      ## Intro
+
+      Back to [Home](/dev/home)
+      """
+    })
+
+  Beacon.Pages.publish_page(page_markdown)
 
   Beacon.Pages.create_page_helper!(%{
     page_id: page_home.id,
