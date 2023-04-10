@@ -32,11 +32,12 @@ defmodule Beacon.Template.HEEx do
   @doc """
   Compile `template` returning its AST.
   """
-  @spec compile(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:halt, Beacon.Template.ast()}
+  @spec compile(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.ast()} | {:halt, Exception.t()}
   def compile(template, metadata) when is_binary(template) do
     file = "site-#{metadata.site}-page-#{metadata.path}"
     ast = compile_heex_template!(file, template)
-    {:halt, ast}
+    # return :cont so others can reuse this step
+    {:cont, ast}
   rescue
     e ->
       message = """
