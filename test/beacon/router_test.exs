@@ -118,7 +118,7 @@ defmodule Beacon.RouterTest do
   describe "lookup" do
     # we don't care about values in this test but we create the same structure
     # see Router.add_page/4
-    @value {nil, nil, nil, nil, nil}
+    @value {nil, nil, nil, nil, nil, nil}
 
     setup do
       [table: :ets.new(:beacon_router_test, [:ordered_set, :protected])]

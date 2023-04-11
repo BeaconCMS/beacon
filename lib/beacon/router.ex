@@ -309,12 +309,12 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def add_page(site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
+  def add_page(site, path, {_page_id, _layout_id, _format, _template, _page_module, _component_module} = metadata) do
     add_page(:beacon_pages, site, path, metadata)
   end
 
   @doc false
-  def add_page(table, site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
+  def add_page(table, site, path, {_page_id, _layout_id, _format, _template, _page_module, _component_module} = metadata) do
     :ets.insert(table, {{site, path}, metadata})
   end
 

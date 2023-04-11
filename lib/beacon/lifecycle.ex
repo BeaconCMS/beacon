@@ -41,12 +41,12 @@ defmodule Beacon.Lifecycle do
   def render_template(opts) do
     site = Keyword.fetch!(opts, :site)
     config = Beacon.Config.fetch!(site)
-    format = Keyword.fetch!(opts, :format)
+    template_format = Keyword.fetch!(opts, :format)
 
     {_, steps} =
       config.lifecycle
       |> Keyword.fetch!(:render_template)
-      |> Enum.find(fn {format, _} -> format == format end) || raise_missing_template_format(format)
+      |> Enum.find(fn {format, _} -> format == template_format end) || raise_missing_template_format(template_format)
 
     do_render_template(opts, steps)
   end
@@ -105,7 +105,7 @@ defmodule Beacon.Lifecycle do
   end
 
   @doc false
-  def do_create_page(page, _steps = []), do: page
+  def do_create_page(page, [] = _steps), do: page
 
   def do_create_page(page, steps) do
     execute_steps(:create_page, steps, page, nil)
@@ -123,7 +123,7 @@ defmodule Beacon.Lifecycle do
   end
 
   @doc false
-  def do_publish_page(page, _steps = []), do: page
+  def do_publish_page(page, [] = _steps), do: page
 
   def do_publish_page(page, steps) do
     execute_steps(:publish_page, steps, page, nil)

@@ -150,9 +150,9 @@ defmodule Beacon.Config do
 
   ## Options
 
-    * `:site` - `t:Beacon.Types.Site.t/0` (required)\n
+    * `:site` - `t:Beacon.Types.Site.t/0` (required)
 
-    * `:data_source` - `t:data_source/0` (optional)\n
+    * `:data_source` - `t:data_source/0` (optional)
 
     * `:authorization_source` - `t:authorization_source/0` (optional).
     Note this config can't be `nil`. Defaults to `Beacon.Authorization.DefaultPolicy`.
@@ -179,7 +179,7 @@ defmodule Beacon.Config do
 
     Note that the default config is merged with your config.
 
-    * `lifecycle` - `t:lifecycle_stages/0` (optional).
+    * `lifecycle` - `t:lifecycle/0` (optional).
     Note that the default config is merged with your config.
 
   ## Example
