@@ -1,6 +1,4 @@
 defmodule Beacon.Types.Site do
-  use Ecto.Type
-
   @typedoc """
   Site identifier, eg: `:my_site`
   """
@@ -17,30 +15,20 @@ defmodule Beacon.Types.Site do
   end
 
   def valid?(_site), do: false
+end
+
+defmodule Beacon.Types.Atom do
+  use Ecto.Type
 
   def type, do: :atom
 
-  def cast(site) when is_binary(site) do
-    {:ok, String.to_atom(site)}
-  end
-
-  def cast(site) when is_atom(site) do
-    {:ok, site}
-  end
-
+  def cast(site) when is_binary(site), do: {:ok, String.to_existing_atom(site)}
+  def cast(site) when is_atom(site), do: {:ok, site}
   def cast(_), do: :error
 
-  def load(site) when is_binary(site) do
-    {:ok, String.to_atom(site)}
-  end
+  def load(site) when is_binary(site), do: {:ok, String.to_existing_atom(site)}
 
-  def dump(site) when is_binary(site) do
-    {:ok, site}
-  end
-
-  def dump(site) when is_atom(site) do
-    {:ok, Atom.to_string(site)}
-  end
-
+  def dump(site) when is_binary(site), do: {:ok, site}
+  def dump(site) when is_atom(site), do: {:ok, Atom.to_string(site)}
   def dump(_), do: :error
 end

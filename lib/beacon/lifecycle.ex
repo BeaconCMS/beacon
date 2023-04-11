@@ -2,47 +2,57 @@ defmodule Beacon.Lifecycle do
   @moduledoc """
   Beacon is open for extensibility by allowing users to inject custom steps into its internal lifecycle.
 
-  See each function doc for more info and `Beacon.Config` option `:lifecycle` to configure each one.
+  You can add or overwrite those steps in `t:Beacon.Config.lifecycle/0`.
 
+  Each one of these functions will be called in specific places inside Beacon's lifecycle,
+  executing the steps defined in the site config.
+
+  See each function doc for more info and also `Beacon.Config`.
   """
 
   @doc """
-  Load a `page` template into ETS.
+  Load a `page` template using the registered format used on the `page`.
 
-  Between fetching the page from database and loading it into ETS,
-  you can perform custom steps to transform the template, and these steps
-  are configured by registering a `t:Beacon.Config.template_format/0` in `:lifecycle` option for `Beacon.Config`.
+  This stage runs after fetching the page from the database and before storing the template into ETS.
   """
   @spec load_template(Beacon.Pages.Page.t()) :: Beacon.Template.t()
   def load_template(page) do
     config = Beacon.Config.fetch!(page.site)
-    template_formats = Keyword.fetch!(config.lifecycle, :template)
-    do_load_template(page, template_formats)
+
+    {_, steps} =
+      config.lifecycle
+      |> Keyword.fetch!(:load_template)
+      |> Enum.find(fn {format, _} -> format == page.format end) || raise_missing_template_format(page.format)
+
+    do_load_template(page, steps)
   end
 
   @doc false
-  def do_load_template(page, template_formats) do
+  def do_load_template(page, steps) do
     metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
-
-    page.format
-    |> fetch_steps!(template_formats, :load)
-    |> execute_steps(:load, page.template, metadata)
+    execute_steps(:load_template, steps, page.template, metadata)
   end
 
   @doc """
-  Render a `page` template, executed in the `render/2` callback.
+  Render a `page` template using the registered format used on the `page`.
 
-  These steps are configured by registering a `t:Beacon.Config.template_format/0` in `t:Beacon.Config.lifecycle/0`.
+  This stage runs in the render callback of the LiveView responsible for displaying the page.
   """
   def render_template(opts) do
     site = Keyword.fetch!(opts, :site)
     config = Beacon.Config.fetch!(site)
-    template_formats = Keyword.fetch!(config.lifecycle, :template)
-    do_render_template(opts, template_formats)
+    format = Keyword.fetch!(opts, :format)
+
+    {_, steps} =
+      config.lifecycle
+      |> Keyword.fetch!(:render_template)
+      |> Enum.find(fn {format, _} -> format == format end) || raise_missing_template_format(format)
+
+    do_render_template(opts, steps)
   end
 
   @doc false
-  def do_render_template(opts, template_formats) do
+  def do_render_template(opts, steps) do
     site = Keyword.fetch!(opts, :site)
     path = Keyword.fetch!(opts, :path)
     format = Keyword.fetch!(opts, :format)
@@ -52,10 +62,21 @@ defmodule Beacon.Lifecycle do
 
     metadata = %Beacon.Template.RenderMetadata{site: site, path: path, assigns: assigns, env: env}
 
-    format
-    |> fetch_steps!(template_formats, :render)
-    |> execute_steps(:render, template, metadata)
+    :render_template
+    |> execute_steps(steps, template, metadata)
     |> check_rendered!(format)
+  end
+
+  defp raise_missing_template_format(format) do
+    raise Beacon.LoaderError, """
+    expected a template registered for the format #{format}, but none was found.
+
+    Make sure that format is properly registered at `:template_formats` in the site config,
+    and `:load_template` and `:render_template` steps are defined.
+
+    See `Beacon.Config` for more info.
+      
+    """
   end
 
   # https://github.com/phoenixframework/phoenix_live_view/blob/27ae991d613ec163f45fc5bfc857e3a66c426af6/lib/phoenix_live_view/utils.ex#L243
@@ -63,7 +84,7 @@ defmodule Beacon.Lifecycle do
 
   defp check_rendered!(other, format) do
     raise Beacon.LoaderError, """
-    expected the stage :render of format #{format} to return a %Phoenix.LiveView.Rendered{} struct
+    expected the stage render_template of format #{format} to return a %Phoenix.LiveView.Rendered{} struct
 
     Got:
 
@@ -72,61 +93,39 @@ defmodule Beacon.Lifecycle do
     """
   end
 
-  defp fetch_steps!(format, available_formats, stage) do
-    case Enum.find(available_formats, fn {identifier, _, _} -> identifier == format end) do
-      {_, _, steps} ->
-        Keyword.fetch!(steps, stage)
-
-      _ ->
-        raise Beacon.LoaderError, """
-        expected a template registered for the format #{format}, but none was found.
-
-        Make sure that format is properly registered at `:template_formats` in the site config,
-        see `Beacon.Config` for more info.
-
-        """
-    end
+  @doc """
+    TODO
+  """
+  @spec create_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  def create_page(page) do
+    # TODO execute_steps
+    page
   end
 
-  defp execute_steps(steps, stage, template, metadata) do
-    Enum.reduce_while(steps, template, fn {step, fun}, acc ->
-      case fun.(acc, metadata) do
-        {:cont, _} = acc ->
-          acc
+  @doc """
+    TODO
+  """
+  @spec publish_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  def publish_page(page) do
+    # TODO execute_steps
+    page
+  end
 
-        {:halt, %{__exception__: true} = e} = _acc ->
-          raise Beacon.LoaderError, """
-          step #{inspect(step)} halted with the following message:
+  defp execute_steps(stage, steps, template, metadata) do
+    Enum.reduce_while(steps, template, fn
+      {step, fun}, acc when is_function(fun, 1) ->
+        reduce_step(step, fun.(acc))
 
-          #{Exception.message(e)}
-
-          """
-
-        {:halt, _} = acc ->
-          acc
-
-        other ->
-          raise Beacon.LoaderError, """
-          expected step #{inspect(step)} to return one of the following:
-
-              {:cont, template}
-              {:halt, template}
-              {:halt, exception}
-
-          Got:
-
-              #{inspect(other)}
-
-          """
-      end
+      {step, fun}, acc when is_function(fun, 2) ->
+        reduce_step(step, fun.(acc, metadata))
     end)
   rescue
     e ->
       message = """
       expected stage #{stage} to define steps returning one of the following:
 
-              {:cont, template}
-              {:halt, template}
+              {:cont, resource}
+              {:halt, resource}
               {:halt, exception}
 
       Got:
@@ -138,16 +137,35 @@ defmodule Beacon.Lifecycle do
       reraise Beacon.LoaderError, [message: message], __STACKTRACE__
   end
 
-  @doc """
-  Run all `:publish_page` steps defined in `t:Beacon.Config.t/0`.
+  defp reduce_step(step, result) do
+    case result do
+      {:cont, _} = acc ->
+        acc
 
-  It's executed after the `page` is updated and a new page version is created but before it's reloaded.
+      {:halt, %{__exception__: true} = e} = _acc ->
+        raise Beacon.LoaderError, """
+        step #{inspect(step)} halted with the following message:
 
-  Give you the opportunity to transform the page or execude side actions before the page becomes public.
-  """
-  @spec publish_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
-  def publish_page(page) do
-    # TODO execute_steps
-    page
+        #{Exception.message(e)}
+
+        """
+
+      {:halt, _} = acc ->
+        acc
+
+      other ->
+        raise Beacon.LoaderError, """
+        expected step #{inspect(step)} to return one of the following:
+
+            {:cont, resource}
+            {:halt, resource}
+            {:halt, exception}
+
+        Got:
+
+            #{inspect(other)}
+
+        """
+    end
   end
 end

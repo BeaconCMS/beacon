@@ -92,6 +92,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
+        Beacon.Lifecycle.create_page(page)
         maybe_reload_page(page, skip_reload?)
         page
       else

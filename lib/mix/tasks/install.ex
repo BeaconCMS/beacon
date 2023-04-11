@@ -19,8 +19,6 @@ defmodule Mix.Tasks.Beacon.Install do
   """
   use Mix.Task
 
-  alias Beacon.Types.Site
-
   @switches [
     site: :string
   ]
@@ -301,7 +299,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
   defp validate_options!(options) do
     cond do
-      !Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
       :default -> options
     end
   end
