@@ -71,7 +71,7 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{__site__: site} = socket.assigns
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
-    {{_site, _path}, {page_id, layout_id, _format, _templat, page_module, component_module}} = lookup_route!(site, path)
+    {{_site, _path}, {page_id, layout_id, _format, _template, page_module, component_module}} = lookup_route!(site, path)
 
     beacon_attrs = %Beacon.BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)}
     Process.put(:__beacon_attrs__, beacon_attrs)

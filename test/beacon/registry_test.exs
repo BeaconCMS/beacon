@@ -15,6 +15,7 @@ defmodule Beacon.RegistryTest do
                data_source: Beacon.BeaconTest.BeaconDataSource,
                authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource,
                live_socket_path: "/custom_live",
+               safe_code_check: false,
                site: :my_site,
                tailwind_config: tailwind_config
              } = Registry.config!(:my_site)

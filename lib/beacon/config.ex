@@ -43,6 +43,8 @@ defmodule Beacon.Config do
 
   Beacon provides two formats built-in, HEEx and Markdown, but you can register your own
   as long as you also implement the lifecyce stages `:load_template` and `:render_template`.
+
+  The description is used on user interfaces as Beacon Admin.
   """
   @type template_formats :: [{format :: atom(), description :: String.t()}]
 
@@ -184,7 +186,7 @@ defmodule Beacon.Config do
 
   ## Example
 
-      Beacon.Config.new(
+      iex> Beacon.Config.new(
         site: :my_site,
         data_source: MyApp.SiteDataSource,
         authorization_source: MyApp.SiteAuthnPolicy,
@@ -200,18 +202,65 @@ defmodule Beacon.Config do
              ]}
           ],
           render_template: [
-            {:custom_format",
+            {:custom_format,
              [
                assigns: fn template, %{assigns: assigns} -> MyEngine.parse_to_html(template, assigns) end,
-               compile: &Beacon.Template.HEEx.compile/2
+               compile: &Beacon.Template.HEEx.compile/2,
                eval: &Beacon.Template.HEEx.eval_ast/2
              ]}
           ],
           publish_page: [
-            notify_admin: fn page -> {:cont, MyApp.send_email(page) end
+            notify_admin: fn page -> {:cont, MyApp.send_email(page)} end
           ]
         ]
       )
+      %Beacon.Config{
+        site: :my_site,
+        data_source: MyApp.SiteDataSource,
+        authorization_source: MyApp.SiteAuthnPolicy,
+        css_compiler: Beacon.TailwindCompiler,
+        tailwind_config: "/my_app/priv/tailwind.config.js.eex",
+        live_socket_path: "/live",
+        safe_code_check: false,
+        template_formats: [
+          heex: "HEEx (HTML)",
+          markdown: "Markdown (GitHub Flavored version)",
+          custom_format: "My Custom Format"
+        ],
+        lifecycle: [
+          load_template: [
+            heex: [
+              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
+              compile_heex: &Beacon.Template.HEEx.compile/2
+            ],
+            markdown: [
+              convert_to_html: &Beacon.Template.Markdown.convert_to_html/2,
+              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
+              compile_heex: &Beacon.Template.HEEx.compile/2
+            ],
+            custom_format: [
+              validate: #Function<41.3316493/2 in :erl_eval.expr/6>
+            ]
+          ],
+          render_template: [
+            heex: [
+              eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
+            ],
+            markdown: [
+              eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
+            ],
+            custom_format: [
+              assigns: #Function<41.3316493/2 in :erl_eval.expr/6>,
+              compile: &Beacon.Template.HEEx.compile/2,
+              eval: &Beacon.Template.HEEx.eval_ast/2
+            ]
+          ],
+          create_page: [],
+          publish_page: [
+            notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
+          ]
+        ]
+      }
 
   """
   @spec new([option]) :: t()
