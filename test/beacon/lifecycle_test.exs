@@ -88,4 +88,18 @@ defmodule Beacon.LifecycleTest do
       end
     end
   end
+
+  test "publish_page" do
+    steps = [
+      notify: fn page ->
+        page = %{page | custom_field: true}
+        send(self(), {:page_published, page})
+        {:cont, page}
+      end
+    ]
+
+    Lifecycle.do_publish_page(%{title: "my page", custom_field: false}, steps)
+
+    assert_receive {:page_published, %{title: "my page", custom_field: true}}
+  end
 end

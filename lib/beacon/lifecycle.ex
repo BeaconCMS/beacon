@@ -94,25 +94,43 @@ defmodule Beacon.Lifecycle do
   end
 
   @doc """
-    TODO
+  Execute all steps for stage `:create_page`.
+
+  It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
   @spec create_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
   def create_page(page) do
-    # TODO execute_steps
-    page
+    config = Beacon.Config.fetch!(page.site)
+    do_create_page(page, Keyword.fetch!(config.lifecycle, :create_page))
+  end
+
+  @doc false
+  def do_create_page(page, _steps = []), do: page
+
+  def do_create_page(page, steps) do
+    execute_steps(:create_page, steps, page, nil)
   end
 
   @doc """
-    TODO
+  Execute all steps for stage `:publish_page`.
+
+  It's executed before the `page` is reloaded.
   """
   @spec publish_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
   def publish_page(page) do
-    # TODO execute_steps
-    page
+    config = Beacon.Config.fetch!(page.site)
+    do_publish_page(page, Keyword.fetch!(config.lifecycle, :publish_page))
   end
 
-  defp execute_steps(stage, steps, template, metadata) do
-    Enum.reduce_while(steps, template, fn
+  @doc false
+  def do_publish_page(page, _steps = []), do: page
+
+  def do_publish_page(page, steps) do
+    execute_steps(:publish_page, steps, page, nil)
+  end
+
+  defp execute_steps(stage, steps, resource, metadata) do
+    Enum.reduce_while(steps, resource, fn
       {step, fun}, acc when is_function(fun, 1) ->
         reduce_step(step, fun.(acc))
 

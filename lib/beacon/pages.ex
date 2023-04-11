@@ -92,7 +92,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
-        Beacon.Lifecycle.create_page(page)
+        page = Beacon.Lifecycle.create_page(page)
         maybe_reload_page(page, skip_reload?)
         page
       else
@@ -141,7 +141,7 @@ defmodule Beacon.Pages do
 
     case operation do
       {:ok, page} ->
-        Beacon.Lifecycle.publish_page(page)
+        page = Beacon.Lifecycle.publish_page(page)
         :ok = Beacon.reload_page(page)
         {:ok, page}
 

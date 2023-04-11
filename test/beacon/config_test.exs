@@ -33,12 +33,14 @@ defmodule Beacon.ConfigTest do
     end
   end
 
-  describe "lifecycle template" do
+  describe "lifecycle" do
     test "preserve default config" do
       assert %{
                lifecycle: [
                  load_template: [{:heex, _}, {:markdown, _}],
-                 render_template: [{:heex, _}, {:markdown, _}]
+                 render_template: [{:heex, _}, {:markdown, _}],
+                 create_page: [],
+                 publish_page: []
                ]
              } = Config.new(lifecycle: [load_template: []])
     end

@@ -227,14 +227,12 @@ defmodule Beacon.Config do
         Keyword.get(opts, :template_formats, [])
       )
 
-    load_template = Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || [])
-    render_template = Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || [])
-
-    lifecycle =
-      opts
-      |> Keyword.get(:lifecycle, [])
-      |> Keyword.put(:render_template, render_template)
-      |> Keyword.put(:load_template, load_template)
+    lifecycle = [
+      load_template: Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || []),
+      render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
+      create_page: get_in(opts, [:lifecycle, :create_page]) || [],
+      publish_page: get_in(opts, [:lifecycle, :publish_page]) || []
+    ]
 
     opts =
       opts
