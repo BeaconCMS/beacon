@@ -16,7 +16,7 @@ defmodule Beacon.Pages.Page do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
-    field :site, Beacon.Types.Site
+    field :site, Beacon.Types.Atom
     field :title, :string
     field :description, :string
     field :version, :integer, default: 1
@@ -26,6 +26,7 @@ defmodule Beacon.Pages.Page do
     field :meta_tags, {:array, :map}, default: []
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
+    field :format, Beacon.Types.Atom, default: :heex
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -49,7 +50,8 @@ defmodule Beacon.Pages.Page do
       :meta_tags,
       :order,
       :layout_id,
-      :status
+      :status,
+      :format
     ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
@@ -60,7 +62,8 @@ defmodule Beacon.Pages.Page do
       :pending_template,
       :pending_layout_id,
       :version,
-      :order
+      :order,
+      :format
     ])
     |> validate_string([:path])
     |> unique_constraint(:id, name: :pages_pkey)

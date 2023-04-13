@@ -27,15 +27,14 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
     patterns: [
-      ~r"assets/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"dev/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(controllers|live|components)/.*(ex|heex)$"
     ]
   ],
   watchers: [
-    tailwind: {Tailwind, :install_and_run, [:admin_dev, ~w(--watch)]}
+    tailwind: {Tailwind, :install_and_run, [:admin, ~w(--watch)]},
+    node: ["build_admin.js", "--watch", cd: Path.expand("./assets", __DIR__)]
   ]
 )
 
@@ -72,12 +71,6 @@ defmodule SamplePhoenix.Endpoint do
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-
-  plug Plug.Static,
-    at: "/dev",
-    from: "dev/static",
-    gzip: false,
-    only: ~w(assets fonts images favicon.ico robots.txt)
 
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader
@@ -150,6 +143,7 @@ seeds = fn ->
           <ul>
             <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
             <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
+            <li><.link navigate="/dev/markdown">Markdown Page</.link></li>
           </ul>
         </div>
 
@@ -229,6 +223,24 @@ seeds = fn ->
     })
 
   Beacon.Pages.publish_page(page_post)
+
+  page_markdown =
+    Beacon.Pages.create_page!(%{
+      path: "markdown",
+      site: "dev",
+      title: "dev markdown",
+      layout_id: layout_id,
+      format: "markdown",
+      template: """
+      # My Markdown Page
+
+      ## Intro
+
+      Back to [Home](/dev/home)
+      """
+    })
+
+  Beacon.Pages.publish_page(page_markdown)
 
   Beacon.Pages.create_page_helper!(%{
     page_id: page_home.id,

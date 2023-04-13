@@ -92,6 +92,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
+        page = Beacon.Lifecycle.create_page(page)
         maybe_reload_page(page, skip_reload?)
         page
       else
@@ -116,7 +117,7 @@ defmodule Beacon.Pages do
   end
 
   @doc """
-  Updates a page and creates a page_version for the previously current page.
+  Publish `page` making it public and creates a new page version for the previously current page.
   """
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, any()}
   def publish_page(%Page{} = page) do
@@ -140,6 +141,7 @@ defmodule Beacon.Pages do
 
     case operation do
       {:ok, page} ->
+        page = Beacon.Lifecycle.publish_page(page)
         :ok = Beacon.reload_page(page)
         {:ok, page}
 

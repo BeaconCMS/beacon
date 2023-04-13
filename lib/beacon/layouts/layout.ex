@@ -16,7 +16,7 @@ defmodule Beacon.Layouts.Layout do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_layouts" do
-    field :site, Beacon.Types.Site
+    field :site, Beacon.Types.Atom
     field :title, :string
     field :body, :string
     field :meta_tags, {:array, :map}, default: []

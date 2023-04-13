@@ -175,4 +175,19 @@ defmodule BeaconWeb.Live.PageLiveTest do
       assert page_title(view) =~ "page_title"
     end
   end
+
+  describe "markdown" do
+    setup [:start_loader]
+
+    test "page template", %{conn: conn} do
+      stylesheet_fixture()
+      layout = layout_fixture()
+      page_fixture(layout_id: layout.id, format: "markdown", template: "# Title")
+      Beacon.reload_site(:my_site)
+
+      {:ok, view, _html} = live(conn, "/home")
+
+      assert has_element?(view, "h1", "Title")
+    end
+  end
 end

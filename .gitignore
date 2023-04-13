@@ -31,6 +31,8 @@ beacon-*.tar
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
 
+# assets
+/assets/node_modules
 # tailwind.install
 /assets/css/app.css
 

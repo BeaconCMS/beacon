@@ -82,8 +82,8 @@ defmodule Beacon.Router do
         {session_name, session_opts} = Beacon.Router.__options__(opts)
 
         live_session session_name, session_opts do
-          get "/beacon_static/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_static_asset, assigns: %{site: opts[:site]}
-          get "/beacon_static/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_static_asset, assigns: %{site: opts[:site]}
+          get "/beacon_assets/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/beacon_assets/js:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
           get "/beacon_assets/:asset", BeaconWeb.MediaLibraryController, :show
           live "/*path", BeaconWeb.PageLive, :path
         end
@@ -158,8 +158,8 @@ defmodule Beacon.Router do
         session_opts = Beacon.Router.__admin_session_opts__(opts)
 
         live_session :beacon_admin, session_opts do
-          get "/beacon_static/css-:md5", BeaconWeb.BeaconStaticController, :css, as: :beacon_admin_static_asset
-          get "/beacon_static/js:md5", BeaconWeb.BeaconStaticController, :js, as: :beacon_admin_static_asset
+          get "/beacon_assets/css-:md5", BeaconWeb.Admin.AssetsController, :css, as: :beacon_admin_asset
+          get "/beacon_assets/js:md5", BeaconWeb.Admin.AssetsController, :js, as: :beacon_admin_asset
 
           live "/", BeaconWeb.Admin.HomeLive.Index, :index
           live "/pages", BeaconWeb.Admin.PageLive.Index, :index
@@ -309,12 +309,12 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def add_page(site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
+  def add_page(site, path, {_page_id, _layout_id, _format, _template, _page_module, _component_module} = metadata) do
     add_page(:beacon_pages, site, path, metadata)
   end
 
   @doc false
-  def add_page(table, site, path, {_page_id, _layout_id, _template_ast, _page_module, _component_module} = metadata) do
+  def add_page(table, site, path, {_page_id, _layout_id, _format, _template, _page_module, _component_module} = metadata) do
     :ets.insert(table, {{site, path}, metadata})
   end
 

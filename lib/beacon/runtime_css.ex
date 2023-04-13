@@ -30,20 +30,6 @@ defmodule Beacon.RuntimeCSS do
     :ok
   end
 
-  @doc false
-  def load_admin do
-    css =
-      :beacon
-      |> Application.app_dir(["priv", "static", "assets", "admin.css"])
-      |> File.read!()
-
-    compressed = :zlib.gzip(css)
-
-    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
-    true = :ets.insert(:beacon_assets, {{:beacon_admin, :css}, {hash, css, compressed}})
-    :ok
-  end
-
   def current_hash(site) do
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
       [[hash]] -> hash
