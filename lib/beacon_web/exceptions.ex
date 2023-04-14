@@ -12,6 +12,10 @@ defmodule Beacon.AuthorizationError do
   defexception message: "Error in Beacon.Authorization"
 end
 
+defmodule Beacon.ParserError do
+  defexception message: "Error parsing template"
+end
+
 defmodule BeaconWeb.NotFoundError do
   defexception [:message, plug_status: 404]
 end

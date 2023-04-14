@@ -36,7 +36,7 @@ defmodule Beacon.Template.Markdown do
 
       """
 
-      {:halt, %Beacon.LoaderError{message: message}}
+      {:halt, %Beacon.ParserError{message: message}}
     end
   end
 

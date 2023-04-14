@@ -35,7 +35,7 @@ defmodule Beacon.LifecycleTest do
     test "halt with exception", %{page: page} do
       steps = [my_step: fn _template, _metadata -> {:halt, %RuntimeError{message: "halt"}} end]
 
-      assert_raise Beacon.LoaderError, ~r/step :my_step halted with the following message.*/, fn ->
+      assert_raise Beacon.LoaderError, ~r/step :my_step halted with exception.*/, fn ->
         Lifecycle.do_load_template(page, steps)
       end
     end
@@ -43,7 +43,7 @@ defmodule Beacon.LifecycleTest do
     test "reraise loader error", %{page: page} do
       steps = [my_step: fn _template, _metadata -> raise "fail" end]
 
-      assert_raise Beacon.LoaderError, ~r/expected stage load_template to define steps.*/, fn ->
+      assert_raise Beacon.LoaderError, ~r/stage load_template failed with exception.*/, fn ->
         Lifecycle.do_load_template(page, steps)
       end
     end

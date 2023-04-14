@@ -75,7 +75,7 @@ defmodule Beacon.Lifecycle do
     and `:load_template` and `:render_template` steps are defined.
 
     See `Beacon.Config` for more info.
-      
+
     """
   end
 
@@ -138,17 +138,14 @@ defmodule Beacon.Lifecycle do
         reduce_step(step, fun.(acc, metadata))
     end)
   rescue
-    e ->
+    exception in Beacon.LoaderError ->
+      reraise exception, __STACKTRACE__
+
+    exception ->
       message = """
-      expected stage #{stage} to define steps returning one of the following:
+      stage #{stage} failed with exception:
 
-              {:cont, resource}
-              {:halt, resource}
-              {:halt, exception}
-
-      Got:
-
-          #{inspect(e)}
+      #{Exception.format(:error, exception)}
 
       """
 
@@ -160,13 +157,15 @@ defmodule Beacon.Lifecycle do
       {:cont, _} = acc ->
         acc
 
-      {:halt, %{__exception__: true} = e} = _acc ->
-        raise Beacon.LoaderError, """
-        step #{inspect(step)} halted with the following message:
+      {:halt, %{__exception__: true} = exception} = _acc ->
+        message = """
+        step #{inspect(step)} halted with exception:
 
-        #{Exception.message(e)}
+        #{Exception.format(:error, exception)}
 
         """
+
+        raise Beacon.LoaderError, message
 
       {:halt, _} = acc ->
         acc

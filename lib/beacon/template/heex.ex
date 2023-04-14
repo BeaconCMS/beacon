@@ -4,6 +4,7 @@ defmodule Beacon.Template.HEEx do
   """
 
   import Beacon.Template, only: [is_ast: 1]
+  require Logger
 
   @doc """
   Check if the template is safe.
@@ -11,22 +12,13 @@ defmodule Beacon.Template.HEEx do
   Perform the check using https://github.com/TheFirstAvenger/safe_code
   """
   @spec safe_code_check(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
-  def safe_code_check(template, metadata) when is_binary(template) do
+  def safe_code_check(template, _metadata) when is_binary(template) do
     # TODO: enable safe code when it's ready to parse complex templates
     # SafeCode.Validator.validate!(template, extra_function_validators: Beacon.Loader.SafeCodeImpl)
     {:cont, template}
   rescue
-    e ->
-      message = """
-      unsafe template for path #{metadata.path}
-
-      Got:
-
-          #{inspect(e)}
-
-      """
-
-      {:halt, %Beacon.LoaderError{message: message}}
+    exception ->
+      {:halt, exception}
   end
 
   @doc """
@@ -36,20 +28,11 @@ defmodule Beacon.Template.HEEx do
   def compile(template, metadata) when is_binary(template) do
     file = "site-#{metadata.site}-page-#{metadata.path}"
     ast = compile_heex_template!(file, template)
-    # return :cont so others can reuse this step
+    # :cont so others can reuse this step
     {:cont, ast}
   rescue
-    e ->
-      message = """
-      failed to compile heex template for path #{metadata.path}
-
-      Got:
-
-          #{inspect(e)}
-
-      """
-
-      {:halt, %Beacon.LoaderError{message: message}}
+    exception ->
+      {:halt, exception}
   end
 
   @doc """
