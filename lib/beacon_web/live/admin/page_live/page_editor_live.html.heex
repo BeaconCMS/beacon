@@ -15,6 +15,7 @@
     <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
     <.input field={{f, :title}} type="text" label="Title" phx-debounce="500" />
     <.input field={{f, :description}} type="textarea" label="Description" phx-debounce="500" />
+    <.input field={{f, :format}} type="select" label="Format" options={template_format_options(f)} />
     <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" phx-debounce="500" input_class="font-mono text-sm" />
     <.input field={{f, :status}} type="text" label="Status" readonly disabled="true" />
 
