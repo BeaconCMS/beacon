@@ -95,5 +95,20 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     end)
   end
 
+  defp template_format_options(f) do
+    site = Ecto.Changeset.get_field(f.source, :site)
+
+    if site do
+      Keyword.new(
+        Beacon.Config.fetch!(site).template_formats,
+        fn {identifier, description} ->
+          {String.to_atom(description), identifier}
+        end
+      )
+    else
+      []
+    end
+  end
+
   defp list_sites, do: Layouts.list_distinct_sites_from_layouts()
 end

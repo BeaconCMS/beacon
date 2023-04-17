@@ -101,6 +101,21 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     end)
   end
 
+  defp template_format_options(f) do
+    site = Ecto.Changeset.get_field(f.source, :site)
+
+    if site do
+      Keyword.new(
+        Beacon.Config.fetch!(site).template_formats,
+        fn {identifier, description} ->
+          {String.to_atom(description), identifier}
+        end
+      )
+    else
+      []
+    end
+  end
+
   defp sort_page_versions(page_versions) do
     Enum.sort_by(page_versions, & &1.version, :desc)
   end
