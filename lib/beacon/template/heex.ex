@@ -79,25 +79,14 @@ defmodule Beacon.Template.HEEx do
 
   @doc false
   def compile_heex_template!(file, template) do
-    if Code.ensure_loaded?(Phoenix.LiveView.TagEngine) do
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.TagEngine,
-        line: 1,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true,
-        tag_handler: Phoenix.LiveView.HTMLEngine
-      )
-    else
-      EEx.compile_string(template,
-        engine: Phoenix.LiveView.HTMLEngine,
-        line: 1,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true
-      )
-    end
+    EEx.compile_string(template,
+      engine: Phoenix.LiveView.TagEngine,
+      line: 1,
+      file: file,
+      caller: __ENV__,
+      source: template,
+      trim: true,
+      tag_handler: Phoenix.LiveView.HTMLEngine
+    )
   end
 end
