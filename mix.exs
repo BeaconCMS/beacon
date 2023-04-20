@@ -47,11 +47,11 @@ defmodule Beacon.MixProject do
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:phoenix_live_view, "~> 0.18"},
+      {:phoenix_live_view, "~> 0.18.18"},
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
-      {:postgrex, ">= 0.0.0"},
+      {:postgrex, "~> 0.16"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:tailwind, "~> 0.1"}
     ]
