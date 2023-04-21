@@ -3,13 +3,13 @@
     <%= @title %>
   </.header>
 
-  <.simple_form :let={f} for={@changeset} id="page-form" phx-target={@myself} phx-change="validate" phx-submit="save">
-    <.input field={{f, :site}} type="select" label="Site" prompt="..." options={list_sites()} />
-    <.input field={{f, :path}} type="text" label="Path" />
-    <.input field={{f, :title}} type="text" label="Title" />
-    <.input field={{f, :format}} type="select" label="Format" options={template_format_options(f)} />
-    <.input field={{f, :template}} type="textarea" label="Template" />
-    <.input field={{f, :layout_id}} type="select" label="Template" prompt="..." options={layouts_to_options(@site_layouts)} />
+  <.simple_form for={@form} id="page-form" phx-target={@myself} phx-change="validate" phx-submit="save">
+    <.input field={@form[:site]} type="select" label="Site" prompt="..." options={list_sites()} />
+    <.input field={@form[:path]} type="text" label="Path" />
+    <.input field={@form[:title]} type="text" label="Title" />
+    <.input field={@form[:format]} type="select" label="Format" options={template_format_options(@form)} />
+    <.input field={@form[:template]} type="textarea" label="Template" />
+    <.input field={@form[:layout_id]} type="select" label="Template" prompt="..." options={layouts_to_options(@site_layouts)} />
 
     <:actions>
       <.button :if={Authorization.authorized?(@agent, @action, @page)} phx-disable-with="Saving...">Save</.button>

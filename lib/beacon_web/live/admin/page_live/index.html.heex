@@ -19,10 +19,10 @@
     <.simple_form :let={f} for={@search_changeset} phx-change="search">
       <div class="flex gap-4 items-center">
         <div class="flex-grow">
-          <.input field={{f, :query}} type="search" autofocus={true} placeholder="Search pages by path or title" />
+          <.input field={f[:query]} type="search" autofocus={true} placeholder="Search by path or title (showing up to 10 results)" />
         </div>
         <div>
-          <.input field={{f, :site}} type="select" options={@site_options} />
+          <.input field={f[:site]} type="select" options={@site_options} />
         </div>
       </div>
     </.simple_form>

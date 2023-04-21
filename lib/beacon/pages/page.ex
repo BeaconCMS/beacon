@@ -80,7 +80,7 @@ defmodule Beacon.Pages.Page do
     # need them to get going on the admin interface for now
     page
     # TODO: only allow path if status = draft
-    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :path])
+    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :path, :format])
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])
     |> remove_all_newlines([:description])

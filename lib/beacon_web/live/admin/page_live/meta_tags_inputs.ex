@@ -47,8 +47,8 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
   defp handle_changes(socket) do
     if changed?(socket, :field) or changed?(socket, :extra_attributes) do
       # Fetch the meta tags from the form field
-      {form, field} = socket.assigns.field
-      meta_tags = Form.input_value(form, field)
+      form_field = socket.assigns.field
+      meta_tags = Form.input_value(form_field.form, form_field.field)
 
       # Aggregate all known meta tag attributes
       attributes = Enum.uniq(socket.assigns.attributes ++ Enum.flat_map(meta_tags, &Map.keys/1) ++ socket.assigns.extra_attributes)
@@ -59,12 +59,12 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
     end
   end
 
-  defp input_name({form, field}, index, attribute) do
-    Form.input_name(form, field) <> "[#{index}][#{attribute}]"
+  defp input_name(form_field, index, attribute) do
+    Form.input_name(form_field.form, form_field.field) <> "[#{index}][#{attribute}]"
   end
 
-  defp input_id({form, field}, index, attribute) do
-    Form.input_id(form, field) <> "_#{index}_#{attribute}"
+  defp input_id(formd_field, index, attribute) do
+    Form.input_id(formd_field.form, formd_field.field) <> "_#{index}_#{attribute}"
   end
 
   # Convert params map %{"0" => %{...}, "1" => %{...}} into a list of maps

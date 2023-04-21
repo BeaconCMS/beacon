@@ -1,5 +1,15 @@
 <div>
   <.header>
+    <:subtitle>
+      <span :if={Ecto.Changeset.get_field(@form.source, :status) == :draft}>
+        <.icon name="hero-pencil-solid" class="ml-1 w-4 h-4" /> Draft (not public)
+      </span>
+
+      <span :if={Ecto.Changeset.get_field(@form.source, :status) == :published}>
+        <.icon name="hero-megaphone" class="ml-1 w-4 h-4" /> Published
+      </span>
+    </:subtitle>
+
     Edit Page
     <:actions>
       <.link navigate={beacon_admin_path(@socket, "/pages")}>
@@ -8,33 +18,31 @@
     </:actions>
   </.header>
 
-  <.simple_form :let={f} for={@changeset} id="page-form" phx-change="validate" phx-submit="save">
-    <.input field={{f, :site}} type="text" label="Site" disabled="true" />
-    <.input :if={Ecto.Changeset.get_field(@changeset, :status) == :draft} field={{f, :path}} type="text" label="Path" />
-    <.input :if={Ecto.Changeset.get_field(@changeset, :status) == :published} field={{f, :path}} type="text" label="Path" readonly disabled="true" />
-    <.input field={{f, :pending_layout_id}} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
-    <.input field={{f, :title}} type="text" label="Title" phx-debounce="500" />
-    <.input field={{f, :description}} type="textarea" label="Description" phx-debounce="500" />
-    <.input field={{f, :format}} type="select" label="Format" options={template_format_options(f)} />
-    <.input field={{f, :pending_template}} type="textarea" label="Template" style="height: 20rem" phx-debounce="500" input_class="font-mono text-sm" />
-    <.input field={{f, :status}} type="text" label="Status" readonly disabled="true" />
+  <.simple_form for={@form} id="page-form" phx-change="validate" phx-submit="save">
+    <.input field={@form[:site]} type="text" label="Site" disabled="true" />
+    <.input :if={Ecto.Changeset.get_field(@form.source, :status) == :draft} field={@form[:path]} type="text" label="Path" />
+    <.input :if={Ecto.Changeset.get_field(@form.source, :status) == :published} field={@form[:path]} type="text" label="Path" readonly disabled="true" />
+    <.input field={@form[:pending_layout_id]} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
+    <.input field={@form[:title]} type="text" label="Title" phx-debounce="500" />
+    <.input field={@form[:description]} type="textarea" label="Description" phx-debounce="500" />
+    <.input field={@form[:format]} type="select" label="Format" options={template_format_options(@form)} />
+    <.input field={@form[:pending_template]} type="textarea" label="Template" phx-debounce="500" rows="20" class="block mb-2 font-mono text-sm" />
 
     <.header>Meta Tags</.header>
-    <.live_component module={MetaTagsInputs} id="meta-tags" field={{f, :meta_tags}} extra_attributes={@extra_meta_attributes} />
-
-    <.input field={:opts} type="checkbox" id="publish" name="publish" value="false" label="Publish" />
+    <.live_component module={MetaTagsInputs} id="meta-tags" field={@form[:meta_tags]} extra_attributes={@extra_meta_attributes} />
 
     <:actions>
-      <.button phx-disable-with="Saving...">Save</.button>
+      <.button type="submit" name="save" phx-disable-with="Saving...">Save</.button>
+      <.button type="submit" name="publish" phx-disable-with="Working...">Save and Publish</.button>
     </:actions>
   </.simple_form>
 </div>
 
 <%= if @new_attribute_modal_visible? do %>
   <.modal id="new-attribute-modal" show={true} on_cancel={JS.push("hide-new-attribute-modal")}>
-    <:title>New meta tag attribute</:title>
+    <.header>New meta tag attribute</.header>
 
-    <.simple_form :let={f} for={:attribute} phx-submit="save-new-attribute">
+    <.simple_form :let={f} for={%{}} as={:attribute} phx-submit="save-new-attribute">
       <div class="flex items-center gap-2">
         <%= for preset <- ~w(http-equiv charset itemprop) do %>
           <.button phx-click={JS.set_attribute({"value", preset}, to: "#attribute_name")}><%= preset %></.button>
@@ -42,14 +50,14 @@
       </div>
 
       <div>
-        <.input type="text" field={{f, :name}} placeholder="Custom" label="Custom attribute" />
+        <.input type="text" field={f[:name]} placeholder="Custom" label="Custom attribute" />
         <.button class="mt-2">Add custom attribute</.button>
       </div>
     </.simple_form>
   </.modal>
 <% end %>
 
-<div class="my-4">
+<div class="mt-20">
   <.header>
     Version History
   </.header>

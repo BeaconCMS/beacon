@@ -13,7 +13,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     socket =
       socket
       |> assign(assigns)
-      |> assign(:changeset, changeset)
+      |> assign_form(changeset)
       |> assign_layouts()
 
     {:ok, socket}
@@ -28,7 +28,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
 
     socket =
       socket
-      |> assign(:changeset, changeset)
+      |> assign_form(changeset)
       |> assign_layouts(page_params)
 
     {:noreply, socket}
@@ -37,19 +37,6 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
   def handle_event("save", %{"page" => page_params}, socket) do
     save_page(socket, socket.assigns.action, page_params)
   end
-
-  # defp save_page(socket, :edit, page_params) do
-  #   case Pages.update_page(socket.assigns.page, page_params) do
-  #     {:ok, _page} ->
-  #       {:noreply,
-  #        socket
-  #        |> put_flash(:info, "Page updated successfully")
-  #        |> push_redirect(to: socket.assigns.return_to)}
-
-  #     {:error, %Ecto.Changeset{} = changeset} ->
-  #       {:noreply, assign(socket, :changeset, changeset)}
-  #   end
-  # end
 
   defp save_page(socket, :new, page_params) do
     case Pages.create_page(page_params) do
@@ -69,7 +56,11 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     end
   end
 
-  defp assign_layouts(%{assigns: %{changeset: changeset}} = socket) do
+  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
+    assign(socket, :form, to_form(changeset))
+  end
+
+  defp assign_layouts(%{assigns: %{form: %{source: changeset}}} = socket) do
     layouts =
       case Ecto.Changeset.get_field(changeset, :site) do
         nil -> []
@@ -95,8 +86,8 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     end)
   end
 
-  defp template_format_options(f) do
-    site = Ecto.Changeset.get_field(f.source, :site)
+  defp template_format_options(form) do
+    site = Ecto.Changeset.get_field(form.source, :site)
 
     if site do
       Keyword.new(

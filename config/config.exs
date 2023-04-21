@@ -25,7 +25,7 @@ config :tailwind,
   version: "3.2.7",
   admin: [
     args: ~w(
-      --config=tailwind.config.js
+      --config=tailwind.config.admin.js
       --input=css/beacon_admin.css
       --output=../priv/static/beacon_admin.css
     ),
