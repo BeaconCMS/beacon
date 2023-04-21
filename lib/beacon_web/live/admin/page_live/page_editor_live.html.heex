@@ -9,7 +9,6 @@
         <.icon name="hero-megaphone" class="ml-1 w-4 h-4" /> Published
       </span>
     </:subtitle>
-
     Edit Page
     <:actions>
       <.link navigate={beacon_admin_path(@socket, "/pages")}>
@@ -21,7 +20,14 @@
   <.simple_form for={@form} id="page-form" phx-change="validate" phx-submit="save">
     <.input field={@form[:site]} type="text" label="Site" disabled="true" />
     <.input :if={Ecto.Changeset.get_field(@form.source, :status) == :draft} field={@form[:path]} type="text" label="Path" />
-    <.input :if={Ecto.Changeset.get_field(@form.source, :status) == :published} field={@form[:path]} type="text" label="Path" readonly disabled="true" />
+    <.input
+      :if={Ecto.Changeset.get_field(@form.source, :status) == :published}
+      field={@form[:path]}
+      type="text"
+      label="Path"
+      readonly
+      disabled="true"
+    />
     <.input field={@form[:pending_layout_id]} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
     <.input field={@form[:title]} type="text" label="Title" phx-debounce="500" />
     <.input field={@form[:description]} type="textarea" label="Description" phx-debounce="500" />
