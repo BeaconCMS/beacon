@@ -41,10 +41,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> Pages.change_page(page_params)
       |> Map.put(:action, :validate)
 
-    {:noreply,
-     socket
-     |> assign_form(changeset)
-     |> assign_site_layotus()}
+    {:noreply, assign_form(socket, changeset)}
   end
 
   def handle_event("copy_version", %{"version" => version_str}, socket) do
@@ -136,7 +133,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   defp assign_site_layotus(socket) do
-    site = :dev
+    site = socket.assigns.page.site
     assign(socket, site_layouts: Layouts.list_layouts_for_site(site))
   end
 

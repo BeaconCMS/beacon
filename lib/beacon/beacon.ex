@@ -83,7 +83,7 @@ defmodule Beacon do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 
-  @tailwind_version "3.2.7"
+  @tailwind_version "3.3.1"
   @doc false
   def tailwind_version, do: @tailwind_version
 
