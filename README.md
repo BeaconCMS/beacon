@@ -30,7 +30,7 @@ Main components:
 
 The file `dev.exs` is a self-contained Phoenix application running Beacon with sample data and code reloading enabled.
 
-Run the following to get a local server:
+Install [cmark-gfm](https://github.com/github/cmark-gfm) and execute the following to get a local server running:
 
 ```sh
 mix setup

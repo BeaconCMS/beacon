@@ -10,29 +10,31 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 2. Install Phoenix v1.7+
 
-```sh
-mix archive.install hex phx_new
-```
+3. Install [cmark-gfm](https://github.com/github/cmark-gfm)
 
-3. Setup a database
+  ```sh
+  mix archive.install hex phx_new
+  ```
 
-4. Generate a new Phoenix application
+4. Setup a database
 
-```sh
-mix phx.new --install my_app
-```
+5. Generate a new Phoenix application
 
-5. Add `:beacon` dependency to `mix.exs`
+  ```sh
+  mix phx.new --install my_app
+  ```
 
-6. Run `mix deps.get`
+6. Add `:beacon` dependency to `mix.exs`
 
-7. Add `:beacon` dependency to `.formatter.exs`
+7. Run `mix deps.get`
 
-8. Run `mix beacon.install --site my_site`
+8. Add `:beacon` dependency to `.formatter.exs`
 
-9. Run `mix setup`
+9. Run `mix beacon.install --site my_site`
 
-10. Run `mix phx.server`
+10. Run `mix setup`
+
+11. Run `mix phx.server`
 
 
 Visit <http://localhost:4000/my_site/home>
@@ -62,6 +64,10 @@ Beacon also requires a minimum Phoenix version to work properly, make sure you h
 ```sh
 mix archive.install hex phx_new
 ```
+
+## cmark-gfm
+
+Is the tool used to convert Markdown to HTML. Install it and make sure the binary `cmark-gfm` is in your env $PATH
 
 ## Database
 
