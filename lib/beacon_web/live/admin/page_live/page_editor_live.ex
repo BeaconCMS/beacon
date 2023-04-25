@@ -140,6 +140,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     change = Ecto.Changeset.get_change(changeset, :extra)
     field = Ecto.Changeset.get_field(changeset, :extra)
 
+    # account for validate_required to display empty fields instead of the field value
     extra =
       if errors && is_nil(change) do
         Map.new(field, fn {k, _v} -> {k, nil} end)

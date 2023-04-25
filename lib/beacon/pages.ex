@@ -150,6 +150,7 @@ defmodule Beacon.Pages do
     end
   end
 
+  # TODO: remove update_page_pending
   def update_page_pending(%Page{} = page, template, layout_id, extra \\ %{}) do
     params =
       Map.merge(extra, %{
