@@ -17,7 +17,8 @@ Supervisor.start_link(
          site: :my_site,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.js.eex"]),
          data_source: Beacon.BeaconTest.BeaconDataSource,
-         live_socket_path: "/custom_live"
+         live_socket_path: "/custom_live",
+         extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField]
        ],
        [
          site: :data_source_test,

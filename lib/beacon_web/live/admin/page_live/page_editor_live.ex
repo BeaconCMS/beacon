@@ -19,6 +19,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> assign(:extra_meta_attributes, [])
       |> assign(:page, page)
       |> assign_form(changeset)
+      |> assign_extra_fields(changeset)
       |> assign_site_layotus()
 
     {:ok, socket}
@@ -34,14 +35,19 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   def handle_event("validate", %{"page" => page_params}, socket) do
+    {extra_params, page_params} = Map.pop(page_params, "extra")
     page_params = MetaTagsInputs.coerce_meta_tag_param(page_params, "meta_tags")
 
     changeset =
       socket.assigns.page
       |> Pages.change_page(page_params)
       |> Map.put(:action, :validate)
+      |> Beacon.PageField.apply_changesets(socket.assigns.page.site, extra_params)
 
-    {:noreply, assign_form(socket, changeset)}
+    {:noreply,
+     socket
+     |> assign_form(changeset)
+     |> assign_extra_fields(changeset)}
   end
 
   def handle_event("copy_version", %{"version" => version_str}, socket) do
@@ -85,14 +91,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     page = socket.assigns.page
     params = MetaTagsInputs.coerce_meta_tag_param(params, "meta_tags")
 
-    update_page_pending = fn page, params ->
-      Pages.update_page_pending(
-        page,
-        params["pending_template"],
-        params["pending_layout_id"],
-        params
-      )
-    end
+    update_page = fn page, params -> Pages.update_page(page, params) end
 
     maybe_publish_page = fn page, publish? ->
       if publish? do
@@ -102,7 +101,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       end
     end
 
-    with {:ok, page} <- update_page_pending.(page, params),
+    with {:ok, page} <- update_page.(page, params),
          {:ok, page} <- maybe_publish_page.(page, publish?) do
       page = Pages.get_page!(page.id, [:versions])
       changeset = Pages.change_page(page)
@@ -118,10 +117,14 @@ defmodule BeaconWeb.Admin.PageEditorLive do
        socket
        |> put_flash(:info, message)
        |> assign(:page, page)
-       |> assign_form(changeset)}
+       |> assign_form(changeset)
+       |> assign_extra_fields(changeset)}
     else
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply,
+         socket
+         |> assign_form(changeset)
+         |> assign_extra_fields(changeset)}
 
       _error ->
         {:noreply, put_flash(socket, :error, "Failed to update page")}
@@ -130,6 +133,22 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     assign(socket, :form, to_form(changeset))
+  end
+
+  defp assign_extra_fields(socket, changeset) do
+    errors = changeset.errors[:extra]
+    change = Ecto.Changeset.get_change(changeset, :extra)
+    field = Ecto.Changeset.get_field(changeset, :extra)
+
+    extra =
+      if errors && is_nil(change) do
+        Map.new(field, fn {k, _v} -> {k, nil} end)
+      else
+        field
+      end
+
+    extra_fields = Beacon.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, extra, errors)
+    assign(socket, :extra_fields, extra_fields)
   end
 
   defp assign_site_layotus(socket) do
@@ -160,5 +179,13 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   defp sort_page_versions(page_versions) do
     Enum.sort_by(page_versions, & &1.version, :desc)
+  end
+
+  defp extra_page_field(mod, field, env) do
+    Phoenix.LiveView.TagEngine.component(
+      &mod.render/1,
+      [field: field],
+      {env.module, env.function, env.file, env.line}
+    )
   end
 end

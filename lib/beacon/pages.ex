@@ -162,6 +162,12 @@ defmodule Beacon.Pages do
     |> Repo.update()
   end
 
+  def update_page(%Page{} = page, params) do
+    page
+    |> Page.update_page_changeset(params)
+    |> Repo.update()
+  end
+
   @doc """
   Deletes a page.
 
@@ -185,15 +191,7 @@ defmodule Beacon.Pages do
     end)
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking page changes.
-
-  ## Examples
-
-      iex> change_page(page)
-      %Ecto.Changeset{data: %Page{}}
-
-  """
+  @doc false
   def change_page(%Page{} = page, attrs \\ %{}) do
     Page.changeset(page, attrs)
   end

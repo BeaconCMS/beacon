@@ -94,6 +94,34 @@ defmodule BeaconDataSource do
   def meta_tags(:dev, %{meta_tags: meta_tags}), do: meta_tags
 end
 
+defmodule BeaconTagsField do
+  use Phoenix.Component
+  import BeaconWeb.CoreComponents
+  import Ecto.Changeset
+
+  @behaviour Beacon.PageField
+
+  @impl true
+  def name, do: :tags
+
+  @impl true
+  def type, do: :string
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <.input type="text" label="Tags" field={@field} />
+    """
+  end
+
+  @impl true
+  def changeset(data, attrs) do
+    data
+    |> cast(attrs, [:tags])
+    |> validate_required([:tags])
+  end
+end
+
 seeds = fn ->
   Beacon.Stylesheets.create_stylesheet!(%{
     site: "dev",
@@ -291,7 +319,7 @@ end
 Task.start(fn ->
   children = [
     {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
-    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource], [site: :other]]},
+    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource, extra_page_fields: [BeaconTagsField]], [site: :other]]},
     SamplePhoenix.Endpoint
   ]
 
