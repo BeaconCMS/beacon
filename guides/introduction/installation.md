@@ -26,6 +26,10 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 6. Add `:beacon` dependency to `mix.exs`
 
+  ```elixir
+  {:beacon, github: "beaconCMS/beacon"}
+  ```
+
 7. Run `mix deps.get`
 
 8. Add `:beacon` dependency to `.formatter.exs`
@@ -37,7 +41,7 @@ We recomment following the guide thoroughly, but if you want a short version or 
 11. Run `mix phx.server`
 
 
-Visit <http://localhost:4000/my_site/home>
+Visit http://localhost:4000/my_site/home to see the page created from seeds or http://localhost:4000/admin to manage your new created site.
 
 ## Elixir 1.14 or later
 
