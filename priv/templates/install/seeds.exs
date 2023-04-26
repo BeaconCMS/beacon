@@ -46,6 +46,7 @@ Components.create_component!(%{
   Pages.create_page!(%{
     path: "home",
     site: "<%= site %>",
+    status: :published,
     layout_id: layout_id,
     template: """
     <main>
@@ -70,6 +71,7 @@ Components.create_component!(%{
 Pages.create_page!(%{
   path: "blog/:blog_slug",
   site: "<%= site %>",
+  status: :published,
   layout_id: layout_id,
   template: """
   <main>

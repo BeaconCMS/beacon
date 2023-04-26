@@ -25,6 +25,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     templates_path = Path.join([File.cwd!(), "priv", "templates"])
 
     bindings = [
+      app_name: "my_test",
       site: "my_test_blog",
       ctx_app: :my_app,
       templates_path: templates_path,
@@ -42,7 +43,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       beacon_data_source: %{
         dest_path: Path.join([support_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
-        module_name: inspect(Module.concat(DummyApp, "BeaconDataSource"))
+        module_name: Module.concat(DummyApp, "BeaconDataSource")
       },
       beacon_config: %{
         config_template_path: Path.join([templates_path, "install", "beacon_config.exs"])
