@@ -40,10 +40,13 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 11. Run `mix phx.server`
 
-
 Visit http://localhost:4000/my_site/home to see the page created from seeds or http://localhost:4000/admin to manage your new created site.
 
-## Elixir 1.14 or later
+## Steps
+
+Detailed instructions:
+
+### Elixir 1.14 or later
 
 The minimum required version to run Beacon is Elixir v1.14. Make sure you have at least that version installed along with Hex:
 
@@ -61,7 +64,7 @@ mix local.hex
 
 If that command fails or Elixir version is outdated, please follow [Elixir Install guide](https://elixir-lang.org/install.html) to set up your environment correctly.
 
-## Phoenix 1.7 or later
+### Phoenix 1.7 or later
 
 Beacon also requires a minimum Phoenix version to work properly, make sure you have the latest `phx_new` archive - the command to generate new Phoenix applications.
 
@@ -69,15 +72,15 @@ Beacon also requires a minimum Phoenix version to work properly, make sure you h
 mix archive.install hex phx_new
 ```
 
-## cmark-gfm
+### cmark-gfm
 
-Is the tool used to convert Markdown to HTML. Install it and make sure the binary `cmark-gfm` is in your env $PATH
+Is the tool used to convert Markdown to HTML. Install it from https://github.com/github/cmark-gfm and make sure the binary `cmark-gfm` is in your env `$PATH`
 
-## Database
+### Database
 
 [PostgresSQL](https://www.postgresql.org) is the default database used by Phoenix and Beacon but it also supports MySQL and SQLServer through [ecto](https://hex.pm/packages/ecto) official adapters. Make sure one of them is up and running in your environment.
 
-## Generating a new application
+### Generating a new application
 
 We'll be using `phx_new` to generate a new application. You can run `mix help phx.new` to show the full documentation with more options, but let's use the default values for our new site:
 
@@ -95,7 +98,7 @@ Beacon supports both.
 
 After it finishes you can open the generated directory: `cd my_app`
 
-## Installing Beacon
+### Installing Beacon
 
 1. Edit `mix.exs` to add `:beacon` as a dependency:
 
@@ -122,11 +125,11 @@ mix deps.get
 
 4. Run `mix compile`
 
-## Configuration and generating your first site
+### Configuration and generating your first site
 
 Beacon requires a couple of changes in your project to get your first site up and running. You can either choose to use the `beacon.install` generator provided by Beacon or make such changes manually:
 
-### Using the generator
+#### Using the generator
 
 Run and follow the instructions:
 
@@ -136,7 +139,7 @@ mix beacon.install --site my_site
 
 For more details please check out the docs: `mix help beacon.install`
 
-### Manually
+#### Manually
 
 1. Include `Beacon.Repo` in your project's `config.exs` file:
 
@@ -151,7 +154,7 @@ For more details please check out the docs: `mix help beacon.install`
       username: "postgres",
       password: "postgres",
       hostname: "localhost",
-      database: "my_app_beacon",
+      database: "db_name_replace_me",
       pool_size: 10
     ```
 
@@ -174,7 +177,7 @@ For more details please check out the docs: `mix help beacon.install`
     end
     ```
 
-4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
+4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call both `beacon_site` and `beacon_admin` in your app router:
 
     ```elixir
     use Beacon.Router
@@ -182,10 +185,11 @@ For more details please check out the docs: `mix help beacon.install`
     scope "/" do
       pipe_through :browser
       beacon_site "/my_site", site: :my_site
+      beacon_admin "/admin"
     end
     ```
 
-Make sure you're not adding `beacon_site` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
+Make sure you're not adding the macros `beacon_site` and `beacon_admin` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
 
 5. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
 
@@ -194,8 +198,8 @@ Make sure you're not adding `beacon_site` into the existing `scope "/", MyAppWeb
     def start(_type, _args) do
       children = [
         # ommited others for brevity
-        {Beacon, sites: [[site: :my_site, data_source: MyApp.BeaconDataSource]]},
-        MyAppWeb.Endpoint
+        MyAppWeb.Endpoint,
+        {Beacon, sites: [[site: :my_site, data_source: MyApp.BeaconDataSource]]}
       ]
 
       opts = [strategy: :one_for_one, name: MyApp.Supervisor]
@@ -255,6 +259,7 @@ For more info on site options, check out `Beacon.start_link/1`.
       Pages.create_page!(%{
         path: "home",
         site: "my_site",
+        status: :published,
         layout_id: layout_id,
         template: """
         <main>
@@ -279,6 +284,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     Pages.create_page!(%{
       path: "blog/:blog_slug",
       site: "my_site",
+      status: :published,
       layout_id: layout_id,
       template: """
       <main>
@@ -315,7 +321,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs", "run priv/repo/beacon_seeds.exs"],
     ```
 
-## Setup database, seeds, and assets:
+### Setup database, seeds, and assets:
 
 Feel free to edit `priv/repo/beacon_seeds.exs` as you wish and run:
 
@@ -323,7 +329,7 @@ Feel free to edit `priv/repo/beacon_seeds.exs` as you wish and run:
 mix setup
 ```
 
-## Visit your new site
+### Visit your new site and admin
 
 Run the Phoenix server:
 
@@ -331,16 +337,18 @@ Run the Phoenix server:
 mix phx.server
 ```
 
-Open <http://localhost:4000/my_site/home> and note:
+Open http://localhost:4000/my_site/home and note:
 
 - The Header and Footer from the layout
 - The list element from the page
 - The three components rendered with the beacon_live_data from your DataSource
 - The zoom in cursor from the stylesheet
 
-Open <http://localhost:4000/my_site/blog/beacon_is_awesome> and note:
+Open http://localhost:4000/my_site/blog/my_first_post and note:
 
 - The Header and Footer from the layout
 - The path params blog slug
 - The live data blog_slug_uppercase
 - The zoom in cursor from the stylesheet
+
+Open http://localhost:4000/admin to manage your new created site.
