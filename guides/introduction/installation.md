@@ -10,11 +10,11 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 2. Install Phoenix v1.7+
 
-3. Install [cmark-gfm](https://github.com/github/cmark-gfm)
-
   ```sh
   mix archive.install hex phx_new
   ```
+
+3. Install [cmark-gfm](https://github.com/github/cmark-gfm)
 
 4. Setup a database
 
