@@ -1,5 +1,9 @@
 # How to contribute
 
+## Issue Tags
+
+The tag [good first issue](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) is recommended for fist time contributors, they are usually small fixes or improvements that don't require too much knowledge of the project. The tag [help wanted](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22good+first+issue%22+) represents issues that would benefit from contributors but may need more knowledge or discussion over the requirements.
+
 ## Improve documentation
 
 We are always looking to improve our documentation. If at some moment you are
@@ -67,7 +71,9 @@ mix test
 ## Running a local app
 
 ```sh
-mix dev
+iex -S mix dev
 ```
 
-Visit http://localhost:4000/dev/home or http://localhost:4000/admin/pages
+Check out https://github.com/BeaconCMS/beacon/blob/main/dev.exs
+
+Visit http://localhost:4000/dev/home or http://localhost:4000/admin
