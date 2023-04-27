@@ -5,7 +5,6 @@ defmodule Beacon.Pages do
 
   import Ecto.Query, warn: false
   alias Beacon.Repo
-
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
@@ -71,6 +70,8 @@ defmodule Beacon.Pages do
 
   """
   def get_page!(id, preloads \\ []), do: Page |> Repo.get!(id) |> Repo.preload(preloads)
+
+  def get_page_by_path(path), do: Repo.get_by(Page, path: path)
 
   @doc """
   Creates a page.
@@ -164,8 +165,25 @@ defmodule Beacon.Pages do
   end
 
   def update_page(%Page{} = page, params) do
+    Repo.transaction(fn ->
+      page
+      |> Page.update_page_changeset(params)
+      |> Repo.update()
+      |> case do
+        {:ok, page} ->
+          Beacon.Lifecycle.update_page(page)
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
+  end
+
+  def put_extra(%Page{} = page, attrs) when is_map(attrs) do
+    attrs = %{"extra" => attrs}
+
     page
-    |> Page.update_page_changeset(params)
+    |> Ecto.Changeset.cast(attrs, [:extra])
     |> Repo.update()
   end
 

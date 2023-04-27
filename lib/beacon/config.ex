@@ -79,6 +79,7 @@ defmodule Beacon.Config do
              ]}
           | {:publish_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
           | {:create_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
+          | {:update_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
 
   @typedoc """
   Add extra fields to pages.
@@ -139,7 +140,8 @@ defmodule Beacon.Config do
               load_template: @default_load_template,
               render_template: @default_render_template,
               publish_page: [],
-              create_page: []
+              create_page: [],
+              update_page: []
             ],
             extra_page_fields: []
 
@@ -266,6 +268,7 @@ defmodule Beacon.Config do
             ]
           ],
           create_page: [],
+          update_page: [],
           publish_page: [
             notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
           ]
@@ -291,6 +294,7 @@ defmodule Beacon.Config do
       load_template: Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || []),
       render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
       create_page: get_in(opts, [:lifecycle, :create_page]) || [],
+      update_page: get_in(opts, [:lifecycle, :update_page]) || [],
       publish_page: get_in(opts, [:lifecycle, :publish_page]) || []
     ]
 

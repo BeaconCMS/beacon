@@ -27,7 +27,7 @@ defmodule Beacon.Pages.Page do
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
     field :format, Beacon.Types.Atom, default: :heex
-    field :extra, :map
+    field :extra, :map, default: %{}
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -52,7 +52,8 @@ defmodule Beacon.Pages.Page do
       :order,
       :layout_id,
       :status,
-      :format
+      :format,
+      :extra
     ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
