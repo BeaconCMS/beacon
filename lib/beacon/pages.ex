@@ -4,11 +4,11 @@ defmodule Beacon.Pages do
   """
 
   import Ecto.Query, warn: false
-  alias Beacon.Repo
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
   alias Beacon.Pages.PageVersion
+  alias Beacon.Repo
 
   @doc """
   Returns the list of pages.
