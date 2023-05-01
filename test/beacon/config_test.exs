@@ -40,6 +40,7 @@ defmodule Beacon.ConfigTest do
                  load_template: [{:heex, _}, {:markdown, _}],
                  render_template: [{:heex, _}, {:markdown, _}],
                  create_page: [],
+                 update_page: [],
                  publish_page: []
                ]
              } = Config.new(lifecycle: [load_template: []])

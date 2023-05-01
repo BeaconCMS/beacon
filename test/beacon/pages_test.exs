@@ -25,4 +25,18 @@ defmodule Beacon.PagesTest do
 
     assert [%{path: ""}, %{path: "blog_a"}, %{path: "blog_b"}] = Pages.list_pages_for_site(:my_site, [:events, :helpers])
   end
+
+  describe "extra" do
+    test "update existing field" do
+      page = page_fixture(extra: %{})
+
+      assert {:ok, %Page{extra: %{"tags" => "foo,bar"}}} = Pages.update_page(page, %{"extra" => %{"tags" => "foo,bar"}})
+    end
+
+    test "skip non-existing field" do
+      page = page_fixture(extra: %{})
+
+      assert {:ok, %Page{extra: %{}}} = Pages.update_page(page, %{"extra" => %{"foo" => "bar"}})
+    end
+  end
 end

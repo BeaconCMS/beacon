@@ -112,6 +112,24 @@ defmodule Beacon.Lifecycle do
   end
 
   @doc """
+  Execute all steps for stage `:update_page`.
+
+  It's executed in the same repo transaction, after the `page` record is saved into the database.
+  """
+  @spec update_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  def update_page(page) do
+    config = Beacon.Config.fetch!(page.site)
+    do_update_page(page, Keyword.fetch!(config.lifecycle, :update_page))
+  end
+
+  @doc false
+  def do_update_page(page, [] = _steps), do: page
+
+  def do_update_page(page, steps) do
+    execute_steps(:update_page, steps, page, nil)
+  end
+
+  @doc """
   Execute all steps for stage `:publish_page`.
 
   It's executed before the `page` is reloaded.

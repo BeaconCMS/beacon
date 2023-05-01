@@ -42,19 +42,19 @@ defmodule Beacon.Config do
   Register formats to handle templates, eg: `[{:heex, "HEEx (HTML)"}]`.
 
   Beacon provides two formats built-in, HEEx and Markdown, but you can register your own
-  as long as you also implement the lifecyce stages `:load_template` and `:render_template`.
+  as long as you also implement the life-cycle stages `:load_template` and `:render_template`.
 
   The description is used on user interfaces as Beacon Admin.
   """
   @type template_formats :: [{format :: atom(), description :: String.t()}]
 
   @typedoc """
-  Attach steps into Beacon's internal lifecycle stages to inject custom functionality.
+  Attach steps into Beacon's internal life-cycle stages to inject custom functionality.
   """
   @type lifecycle :: [lifecycle_stage()]
 
   @typedoc """
-  Lifecycle stages.
+  Life-cycle stages.
   """
   @type lifecycle_stage ::
           {:load_template,
@@ -79,6 +79,12 @@ defmodule Beacon.Config do
              ]}
           | {:publish_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
           | {:create_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
+          | {:update_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
+
+  @typedoc """
+  Add extra fields to pages.
+  """
+  @type extra_page_fields :: [module()]
 
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
@@ -89,7 +95,8 @@ defmodule Beacon.Config do
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
-          lifecycle: lifecycle()
+          lifecycle: lifecycle(),
+          extra_page_fields: extra_page_fields()
         }
 
   @default_load_template [
@@ -133,8 +140,10 @@ defmodule Beacon.Config do
               load_template: @default_load_template,
               render_template: @default_render_template,
               publish_page: [],
-              create_page: []
-            ]
+              create_page: [],
+              update_page: []
+            ],
+            extra_page_fields: []
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -146,6 +155,7 @@ defmodule Beacon.Config do
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
           | {:lifecycle, lifecycle()}
+          | {:extra_page_fields, extra_page_fields()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -183,6 +193,8 @@ defmodule Beacon.Config do
 
     * `lifecycle` - `t:lifecycle/0` (optional).
     Note that the default config is merged with your config.
+
+    * `:extra_page_fields` - `t:extra_page_fields/0` (optional)
 
   ## Example
 
@@ -256,10 +268,12 @@ defmodule Beacon.Config do
             ]
           ],
           create_page: [],
+          update_page: [],
           publish_page: [
             notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
           ]
-        ]
+        ],
+        extra_page_fields: []
       }
 
   """
@@ -280,6 +294,7 @@ defmodule Beacon.Config do
       load_template: Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || []),
       render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
       create_page: get_in(opts, [:lifecycle, :create_page]) || [],
+      update_page: get_in(opts, [:lifecycle, :update_page]) || [],
       publish_page: get_in(opts, [:lifecycle, :publish_page]) || []
     ]
 

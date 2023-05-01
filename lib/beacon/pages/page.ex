@@ -27,6 +27,7 @@ defmodule Beacon.Pages.Page do
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
     field :format, Beacon.Types.Atom, default: :heex
+    field :extra, :map, default: %{}
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -51,7 +52,8 @@ defmodule Beacon.Pages.Page do
       :order,
       :layout_id,
       :status,
-      :format
+      :format,
+      :extra
     ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending()
@@ -85,6 +87,30 @@ defmodule Beacon.Pages.Page do
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
+  end
+
+  # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
+  # need them to get going on the admin interface for now
+  # TODO: only allow path if status = draft
+  @doc false
+  def update_page_changeset(page, attrs) do
+    {extra_attrs, attrs} = Map.pop(attrs, "extra")
+
+    page
+    |> cast(attrs, [
+      :pending_template,
+      :pending_layout_id,
+      :title,
+      :description,
+      :meta_tags,
+      :path,
+      :format
+    ])
+    |> validate_required([:pending_template, :pending_layout_id])
+    |> trim([:pending_template])
+    |> remove_all_newlines([:description])
+    |> remove_empty_meta_attributes(:meta_tags)
+    |> Beacon.PageField.apply_changesets(page.site, extra_attrs)
   end
 
   def put_pending(%Changeset{} = changeset) do
