@@ -136,19 +136,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   defp assign_extra_fields(socket, changeset) do
-    errors = changeset.errors[:extra]
-    change = Ecto.Changeset.get_change(changeset, :extra)
-    field = Ecto.Changeset.get_field(changeset, :extra)
-
-    # account for validate_required to display empty fields instead of the field value
-    extra =
-      if errors && is_nil(change) do
-        Map.new(field, fn {k, _v} -> {k, nil} end)
-      else
-        field
-      end
-
-    extra_fields = Beacon.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, extra, errors)
+    params = Ecto.Changeset.get_field(changeset, :extra)
+    extra_fields = Beacon.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, params, changeset.errors)
     assign(socket, :extra_fields, extra_fields)
   end
 

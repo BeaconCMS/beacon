@@ -19,7 +19,7 @@ defmodule Beacon.BeaconTest.PageFields.TagsField do
   end
 
   @impl true
-  def changeset(data, attrs) do
+  def changeset(data, attrs, _metadata) do
     data
     |> cast(attrs, [:tags])
   end
