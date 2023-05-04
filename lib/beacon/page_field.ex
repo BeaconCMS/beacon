@@ -109,6 +109,10 @@ defmodule Beacon.PageField do
   end
 
   @doc false
+  def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_nil(params) do
+    apply_changesets(page_changeset, site, %{})
+  end
+
   def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_map(params) do
     mods = Beacon.Config.fetch!(site).extra_page_fields
     do_apply_changesets(mods, page_changeset, params)
@@ -116,6 +120,8 @@ defmodule Beacon.PageField do
 
   @doc false
   def do_apply_changesets(mods, page_changeset, params) do
+    params = params || %{}
+
     Enum.reduce(mods, page_changeset, fn mod, page_changeset ->
       name = mod.name()
       params = Map.take(params, ["#{name}"])

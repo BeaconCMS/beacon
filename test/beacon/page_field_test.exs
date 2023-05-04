@@ -50,6 +50,12 @@ defmodule Beacon.PageFieldTest do
                changes: %{extra: %{"tags" => nil}},
                errors: []
              } = PageField.do_apply_changesets([BeaconTest.PageFieldTags], page_changeset, %{})
+
+      assert %Ecto.Changeset{
+               valid?: true,
+               changes: %{extra: %{"tags" => nil}},
+               errors: []
+             } = PageField.do_apply_changesets([BeaconTest.PageFieldTags], page_changeset, nil)
     end
 
     test "invalid params", %{page_changeset: page_changeset} do
