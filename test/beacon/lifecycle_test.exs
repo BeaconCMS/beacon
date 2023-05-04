@@ -21,14 +21,14 @@ defmodule Beacon.LifecycleTest do
         downcase: fn template, _metadata -> {:cont, String.downcase(template)} end
       ]
 
-      assert Lifecycle.do_load_template(page, steps) == "<div>beacon</div>"
+      assert Lifecycle.Template.do_load_template(page, steps) == "<div>beacon</div>"
     end
 
     test "step must return :cont or :halt", %{page: page} do
       steps = [my_step: fn _, _ -> :invalid end]
 
       assert_raise Beacon.LoaderError, ~r/expected step :my_step to return one of the following.*/, fn ->
-        assert Lifecycle.do_load_template(page, steps)
+        assert Lifecycle.Template.do_load_template(page, steps)
       end
     end
 
@@ -36,7 +36,7 @@ defmodule Beacon.LifecycleTest do
       steps = [my_step: fn _template, _metadata -> {:halt, %RuntimeError{message: "halt"}} end]
 
       assert_raise Beacon.LoaderError, ~r/step :my_step halted with exception.*/, fn ->
-        Lifecycle.do_load_template(page, steps)
+        Lifecycle.Template.do_load_template(page, steps)
       end
     end
 
@@ -44,7 +44,7 @@ defmodule Beacon.LifecycleTest do
       steps = [my_step: fn _template, _metadata -> raise "fail" end]
 
       assert_raise Beacon.LoaderError, ~r/stage load_template failed with exception.*/, fn ->
-        Lifecycle.do_load_template(page, steps)
+        Lifecycle.Template.do_load_template(page, steps)
       end
     end
   end
@@ -77,14 +77,14 @@ defmodule Beacon.LifecycleTest do
         end
       ]
 
-      assert %Phoenix.LiveView.Rendered{static: ["<p>Beacon</p>"]} = Lifecycle.do_render_template(opts, steps)
+      assert %Phoenix.LiveView.Rendered{static: ["<p>Beacon</p>"]} = Lifecycle.Template.do_render_template(opts, steps)
     end
 
     test "render must return a Phoenix.LiveView.Rendered struct", %{opts: opts} do
       steps = [assigns: fn template, _metadata -> {:cont, template} end]
 
       assert_raise Beacon.LoaderError, ~r/expected the stage render_template of format test to return.*/, fn ->
-        Lifecycle.do_render_template(opts, steps)
+        Lifecycle.Template.do_render_template(opts, steps)
       end
     end
   end
@@ -98,7 +98,7 @@ defmodule Beacon.LifecycleTest do
       end
     ]
 
-    Lifecycle.do_publish_page(%{title: "my page", custom_field: false}, steps)
+    Lifecycle.Page.do_publish_page(%{title: "my page", custom_field: false}, steps)
 
     assert_receive {:page_published, %{title: "my page", custom_field: true}}
   end
