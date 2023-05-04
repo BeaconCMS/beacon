@@ -9,6 +9,19 @@ defmodule Beacon.Lifecycle do
 
   See each function doc for more info and also `Beacon.Config`.
   """
+  def fetch_steps!(site, task_name) do
+    config = Beacon.Config.fetch!(site)
+    Keyword.fetch!(config.lifecycle, task_name)
+  end
+
+  def fetch_steps!(config, task_name, type) do
+    config
+    |> fetch_steps!(task_name)
+    |> Enum.find(fn {key, _} -> key == type end)
+  end
+
+  def execute_steps(stage, steps, resource, metadata \\ nil)
+  def execute_steps(_stage, [], resource, _metadata), do: resource
 
   def execute_steps(stage, steps, resource, metadata) do
     Enum.reduce_while(steps, resource, fn

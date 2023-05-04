@@ -8,20 +8,14 @@ defmodule Beacon.Lifecycle.Template do
   """
   @spec load_template(Beacon.Pages.Page.t()) :: Beacon.Template.t()
   def load_template(page) do
-    config = Beacon.Config.fetch!(page.site)
+    case fetch_steps!(page.site, :load_template, page.format) do
+      nil ->
+        raise_missing_template_format(page.format)
 
-    {_, steps} =
-      config.lifecycle
-      |> Keyword.fetch!(:load_template)
-      |> Enum.find(fn {format, _} -> format == page.format end) || raise_missing_template_format(page.format)
-
-    do_load_template(page, steps)
-  end
-
-  @doc false
-  def do_load_template(page, steps) do
-    metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
-    execute_steps(:load_template, steps, page.template, metadata)
+      {_, steps} ->
+        metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
+        execute_steps(:load_template, steps, page.template, metadata)
+    end
   end
 
   @doc """
@@ -29,33 +23,27 @@ defmodule Beacon.Lifecycle.Template do
 
   This stage runs in the render callback of the LiveView responsible for displaying the page.
   """
-  def render_template(opts) do
-    site = Keyword.fetch!(opts, :site)
-    config = Beacon.Config.fetch!(site)
-    template_format = Keyword.fetch!(opts, :format)
+  def render_template(site, template, format, opts) do
+    case fetch_steps!(site, :render_template, format) do
+      nil ->
+        raise_missing_template_format(format)
 
-    {_, steps} =
-      config.lifecycle
-      |> Keyword.fetch!(:render_template)
-      |> Enum.find(fn {format, _} -> format == template_format end) || raise_missing_template_format(template_format)
+      {_, steps} ->
+        metadata = build_metadata(site, opts)
 
-    do_render_template(opts, steps)
+        :render_template
+        |> execute_steps(steps, template, metadata)
+        |> check_rendered!(format)
+    end
   end
 
   @doc false
-  def do_render_template(opts, steps) do
-    site = Keyword.fetch!(opts, :site)
+  defp build_metadata(site, opts) do
     path = Keyword.fetch!(opts, :path)
-    format = Keyword.fetch!(opts, :format)
-    template = Keyword.fetch!(opts, :template)
     assigns = Keyword.fetch!(opts, :assigns)
     env = Keyword.fetch!(opts, :env)
 
-    metadata = %Beacon.Template.RenderMetadata{site: site, path: path, assigns: assigns, env: env}
-
-    :render_template
-    |> execute_steps(steps, template, metadata)
-    |> check_rendered!(format)
+    %Beacon.Template.RenderMetadata{site: site, path: path, assigns: assigns, env: env}
   end
 
   defp raise_missing_template_format(format) do

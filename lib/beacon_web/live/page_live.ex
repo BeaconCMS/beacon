@@ -25,7 +25,7 @@ defmodule BeaconWeb.PageLive do
 
   def render(assigns) do
     {{site, path}, {_page_id, _layout_id, format, template, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
-    Lifecycle.Template.render_template(site: site, path: path, format: format, template: template, assigns: assigns, env: __ENV__)
+    Lifecycle.Template.render_template(site, template, format, path: path, assigns: assigns, env: __ENV__)
   end
 
   defp lookup_route!(site, path) do

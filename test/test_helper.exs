@@ -23,6 +23,56 @@ Supervisor.start_link(
        [
          site: :data_source_test,
          data_source: Beacon.BeaconTest.TestDataSource
+       ],
+       [
+         site: :lifecycle_test,
+         lifecycle: [
+           load_template: [
+             {:markdown,
+              [
+                assigns: fn template, _metadata -> {:cont, String.replace(template, "{ title }", "Beacon")} end,
+                downcase: fn template, _metadata -> {:cont, String.downcase(template)} end
+              ]}
+           ],
+           render_template: [
+             {:markdown,
+              [
+                div_to_p: fn template, _metadata -> {:cont, String.replace(template, "div", "p")} end,
+                assigns: fn template, _metadata -> {:cont, String.replace(template, "{ title }", "Beacon")} end,
+                compile: fn template, _metadata ->
+                  ast = Beacon.Template.HEEx.compile_heex_template!("nofile", template)
+                  {:cont, ast}
+                end,
+                eval: fn template, _metadata ->
+                  {rendered, _bindings} = Code.eval_quoted(template, [assigns: %{}], file: "nofile")
+                  {:halt, rendered}
+                end
+              ]}
+           ],
+           create_page: [
+             maybe_create_page: fn _page ->
+               {:cont, :page_created}
+             end
+           ],
+           update_page: [
+             maybe_update_page: fn _page ->
+               {:cont, :page_updated}
+             end
+           ],
+           publish_page: [
+             maybe_publish_page: fn _page ->
+               {:cont, :page_published}
+             end
+           ]
+         ]
+       ],
+       [
+         site: :lifecycle_test_fail,
+         lifecycle: [
+           render_template: [
+             {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}
+           ]
+         ]
        ]
      ],
      authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource},
