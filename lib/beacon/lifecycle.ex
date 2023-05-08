@@ -10,7 +10,6 @@ defmodule Beacon.Lifecycle do
   See each function doc for more info and also `Beacon.Config`.
   """
   alias Beacon.Lifecycle
-  alias Beacon.Types
 
   defstruct name: nil, steps: [], resource: nil, metadata: nil, output: nil
 
@@ -22,31 +21,31 @@ defmodule Beacon.Lifecycle do
           output: term()
         }
 
-  @callback put_metadata(Lifecycle.t(), Types.Site.t(), term()) :: Lifecycle.t()
-  @callback validate_input!(Lifecycle.t(), Beacon.Config.t(), Types.Site.t(), atom()) :: Lifecycle.t()
-  @callback validate_output!(Lifecycle.t(), Types.Site.t(), atom()) :: Lifecycle.t()
+  @callback put_metadata(Lifecycle.t(), Beacon.Config.t(), term()) :: Lifecycle.t()
+  @callback validate_input!(Lifecycle.t(), Beacon.Config.t(), atom()) :: Lifecycle.t()
+  @callback validate_output!(Lifecycle.t(), Beacon.Config.t(), atom()) :: Lifecycle.t()
 
-  @optional_callbacks put_metadata: 3, validate_input!: 4, validate_output!: 3
+  @optional_callbacks put_metadata: 3, validate_input!: 3, validate_output!: 3
 
-  def put_metadata(lifecycle, provider, site, context) do
+  def put_metadata(lifecycle, provider, config, context) do
     if function_exported?(provider, :put_metadata, 3) do
-      provider.put_metadata(lifecycle, site, context)
+      provider.put_metadata(lifecycle, config, context)
     else
       lifecycle
     end
   end
 
-  def validate_input!(lifecycle, provider, config, site, sub_key) do
-    if function_exported?(provider, :validate_input!, 4) do
-      provider.validate_input!(lifecycle, config, site, sub_key)
+  def validate_input!(lifecycle, provider, config, sub_key) do
+    if function_exported?(provider, :validate_input!, 3) do
+      provider.validate_input!(lifecycle, config, sub_key)
     else
       lifecycle
     end
   end
 
-  def validate_output!(lifecycle, provider, site, sub_key) do
+  def validate_output!(lifecycle, provider, config, sub_key) do
     if function_exported?(provider, :validate_output!, 3) do
-      provider.validate_output!(lifecycle, site, sub_key)
+      provider.validate_output!(lifecycle, config, sub_key)
     else
       lifecycle
     end
@@ -61,11 +60,11 @@ defmodule Beacon.Lifecycle do
       name: lifecycle,
       resource: resource
     }
-    |> validate_input!(provider, config, site, sub_key)
-    |> put_metadata(provider, site, context)
+    |> validate_input!(provider, config, sub_key)
+    |> put_metadata(provider, config, context)
     |> put_steps(config, sub_key)
     |> execute_steps()
-    |> validate_output!(provider, site, sub_key)
+    |> validate_output!(provider, config, sub_key)
   end
 
   def put_steps(lifecycle, config, sub_key) do

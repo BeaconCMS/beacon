@@ -3,22 +3,22 @@ defmodule Beacon.Lifecycle.Template do
   @behaviour Beacon.Lifecycle
 
   @impl Lifecycle
-  def put_metadata(%Lifecycle{name: :load_template} = lifecycle, site, context) do
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: context.path}
+  def put_metadata(%Lifecycle{name: :load_template} = lifecycle, site_config, context) do
+    metadata = %Beacon.Template.LoadMetadata{site: site_config.site, path: context.path}
     %{lifecycle | metadata: metadata}
   end
 
-  def put_metadata(%Lifecycle{name: :render_template} = lifecycle, site, context) do
+  def put_metadata(%Lifecycle{name: :render_template} = lifecycle, site_config, context) do
     path = Keyword.fetch!(context, :path)
     assigns = Keyword.fetch!(context, :assigns)
     env = Keyword.fetch!(context, :env)
 
-    metadata = %Beacon.Template.RenderMetadata{site: site, path: path, assigns: assigns, env: env}
+    metadata = %Beacon.Template.RenderMetadata{site: site_config.site, path: path, assigns: assigns, env: env}
     %{lifecycle | metadata: metadata}
   end
 
   @impl Lifecycle
-  def validate_input!(%Lifecycle{name: name} = lifecycle, site_config, site, sub_key) do
+  def validate_input!(%Lifecycle{name: name} = lifecycle, site_config, sub_key) do
     allowed_formats = site_config.template_formats
     format_allowed? = Keyword.has_key?(allowed_formats, sub_key)
 
@@ -31,7 +31,7 @@ defmodule Beacon.Lifecycle.Template do
       lifecycle
     else
       raise Beacon.LoaderError, """
-      For site: #{site}
+      For site: #{site_config.site}
       #{format_allowed_error_text(format_allowed?, sub_key, allowed_formats)}
 
       #{unconfigured_error_text(format_configured?, sub_key)}
