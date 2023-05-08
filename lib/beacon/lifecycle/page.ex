@@ -7,7 +7,7 @@ defmodule Beacon.Lifecycle.Page do
   def validate_output!(%Lifecycle{output: %Pages.Page{}} = lifecycle, _site, _sub_key), do: lifecycle
 
   def validate_output!(lifecycle, _site, _sub_key) do
-    raise Beacon.Lifecycle.OutputError, """
+    raise Beacon.LoaderError, """
     Return output must be of type Beacon.Pages.Page
 
     Output returned for lifecycle: #{lifecycle.name}
