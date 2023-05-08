@@ -1,15 +1,29 @@
 defmodule Beacon.Lifecycle.Page do
-  import Beacon.Lifecycle
+  alias Beacon.Lifecycle
+  alias Beacon.Pages
+  @behaviour Beacon.Lifecycle
+
+  @impl Lifecycle
+  def validate_output!(%Lifecycle{output: %Pages.Page{}} = lifecycle, _site, _sub_key), do: lifecycle
+
+  def validate_output!(lifecycle, _site, _sub_key) do
+    raise Beacon.Lifecycle.OutputError, """
+    Return output must be of type Beacon.Pages.Page
+
+    Output returned for lifecycle: #{lifecycle.name}
+    #{inspect(lifecycle.output)}
+    """
+  end
 
   @doc """
   Execute all steps for stage `:create_page`.
 
   It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
-  @spec create_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  @spec create_page(Pages.Page.t()) :: Pages.Page.t()
   def create_page(page) do
-    steps = fetch_steps!(page.site, :create_page)
-    execute_steps(:create_page, steps, page)
+    lifecycle = Lifecycle.execute(__MODULE__, page.site, :create_page, page)
+    lifecycle.output
   end
 
   @doc """
@@ -17,10 +31,10 @@ defmodule Beacon.Lifecycle.Page do
 
   It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
-  @spec update_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  @spec update_page(Pages.Page.t()) :: Pages.Page.t()
   def update_page(page) do
-    steps = fetch_steps!(page.site, :update_page)
-    execute_steps(:update_page, steps, page)
+    lifecycle = Lifecycle.execute(__MODULE__, page.site, :update_page, page)
+    lifecycle.output
   end
 
   @doc """
@@ -28,9 +42,9 @@ defmodule Beacon.Lifecycle.Page do
 
   It's executed before the `page` is reloaded.
   """
-  @spec publish_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
+  @spec publish_page(Pages.Page.t()) :: Pages.Page.t()
   def publish_page(page) do
-    steps = fetch_steps!(page.site, :publish_page)
-    execute_steps(:publish_page, steps, page)
+    lifecycle = Lifecycle.execute(__MODULE__, page.site, :publish_page, page)
+    lifecycle.output
   end
 end

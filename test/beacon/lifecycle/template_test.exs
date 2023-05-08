@@ -36,7 +36,7 @@ defmodule Beacon.Lifecycle.TemplateTest do
     end
 
     test "render must return a Phoenix.LiveView.Rendered struct", %{template: template, format: format, opts: opts} do
-      assert_raise Beacon.LoaderError, ~r/expected the stage render_template of format markdown to return.*/, fn ->
+      assert_raise Beacon.LoaderError, ~r/Return output must be of type Phoenix.LiveView.Rendered.*/, fn ->
         Lifecycle.Template.render_template(:lifecycle_test_fail, template, format, opts)
       end
     end

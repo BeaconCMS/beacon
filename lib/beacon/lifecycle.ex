@@ -9,35 +9,103 @@ defmodule Beacon.Lifecycle do
 
   See each function doc for more info and also `Beacon.Config`.
   """
-  def fetch_steps!(site, task_name) do
+  alias Beacon.Lifecycle
+  alias Beacon.Types
+
+  defstruct name: nil, steps: [], resource: nil, metadata: nil, output: nil
+
+  @type t :: %__MODULE__{
+          name: atom(),
+          steps: list(),
+          resource: term(),
+          metadata: term(),
+          output: term()
+        }
+
+  @callback put_metadata(Lifecycle.t(), Types.Site.t(), term()) :: Lifecycle.t()
+  @callback validate_input!(Lifecycle.t(), Beacon.Config.t(), Types.Site.t(), atom()) :: Lifecycle.t()
+  @callback validate_output!(Lifecycle.t(), Types.Site.t(), atom()) :: Lifecycle.t()
+
+  @optional_callbacks put_metadata: 3, validate_input!: 4, validate_output!: 3
+
+  def put_metadata(lifecycle, provider, site, context) do
+    if function_exported?(provider, :put_metadata, 3) do
+      provider.put_metadata(lifecycle, site, context)
+    else
+      lifecycle
+    end
+  end
+
+  def validate_input!(lifecycle, provider, config, site, sub_key) do
+    if function_exported?(provider, :validate_input!, 4) do
+      provider.validate_input!(lifecycle, config, site, sub_key)
+    else
+      lifecycle
+    end
+  end
+
+  def validate_output!(lifecycle, provider, site, sub_key) do
+    if function_exported?(provider, :validate_output!, 3) do
+      provider.validate_output!(lifecycle, site, sub_key)
+    else
+      lifecycle
+    end
+  end
+
+  def execute(provider, site, lifecycle, resource, opts \\ []) do
+    sub_key = Keyword.get(opts, :sub_key)
+    context = Keyword.get(opts, :context)
     config = Beacon.Config.fetch!(site)
-    Keyword.fetch!(config.lifecycle, task_name)
+
+    %Lifecycle{
+      name: lifecycle,
+      resource: resource
+    }
+    |> validate_input!(provider, config, site, sub_key)
+    |> put_metadata(provider, site, context)
+    |> put_steps(config, sub_key)
+    |> execute_steps()
+    |> validate_output!(provider, site, sub_key)
   end
 
-  def fetch_steps!(config, task_name, type) do
-    config
-    |> fetch_steps!(task_name)
-    |> Enum.find(fn {key, _} -> key == type end)
+  def put_steps(lifecycle, config, sub_key) do
+    steps_or_config_list = Keyword.fetch!(config.lifecycle, lifecycle.name)
+
+    steps =
+      case sub_key do
+        nil ->
+          steps_or_config_list
+
+        sub_key ->
+          {_, steps} = Enum.find(steps_or_config_list, fn {key, _} -> key == sub_key end)
+          steps
+      end
+
+    %{lifecycle | steps: steps}
   end
 
-  def execute_steps(stage, steps, resource, metadata \\ nil)
-  def execute_steps(_stage, [], resource, _metadata), do: resource
+  def execute_steps(%Lifecycle{steps: [], resource: resource} = lifecycle) do
+    %{lifecycle | output: resource}
+  end
 
-  def execute_steps(stage, steps, resource, metadata) do
-    Enum.reduce_while(steps, resource, fn
-      {step, fun}, acc when is_function(fun, 1) ->
-        reduce_step(step, fun.(acc))
+  def execute_steps(%Lifecycle{steps: steps, name: name, resource: resource, metadata: metadata} = lifecycle) do
+    output =
+      Enum.reduce_while(steps, resource, fn
+        {step, fun}, acc when is_function(fun, 1) ->
+          reduce_step(step, fun.(acc))
 
-      {step, fun}, acc when is_function(fun, 2) ->
-        reduce_step(step, fun.(acc, metadata))
-    end)
+        {step, fun}, acc when is_function(fun, 2) ->
+          reduce_step(step, fun.(acc, metadata))
+      end)
+
+    %{lifecycle | output: output}
   rescue
     exception in Beacon.LoaderError ->
       reraise exception, __STACKTRACE__
 
     exception ->
       message = """
-      stage #{stage} failed with exception:
+      #{name} lifecycle failed with exception:
 
       #{Exception.format(:error, exception)}
 
