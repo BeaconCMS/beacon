@@ -21,35 +21,11 @@ defmodule Beacon.Lifecycle do
           output: term()
         }
 
-  @callback put_metadata(Lifecycle.t(), Beacon.Config.t(), term()) :: Lifecycle.t()
   @callback validate_input!(Lifecycle.t(), Beacon.Config.t(), atom()) :: Lifecycle.t()
+  @callback put_metadata(Lifecycle.t(), Beacon.Config.t(), term()) :: Lifecycle.t()
   @callback validate_output!(Lifecycle.t(), Beacon.Config.t(), atom()) :: Lifecycle.t()
 
-  @optional_callbacks put_metadata: 3, validate_input!: 3, validate_output!: 3
-
-  def put_metadata(lifecycle, provider, config, context) do
-    if function_exported?(provider, :put_metadata, 3) do
-      provider.put_metadata(lifecycle, config, context)
-    else
-      lifecycle
-    end
-  end
-
-  def validate_input!(lifecycle, provider, config, sub_key) do
-    if function_exported?(provider, :validate_input!, 3) do
-      provider.validate_input!(lifecycle, config, sub_key)
-    else
-      lifecycle
-    end
-  end
-
-  def validate_output!(lifecycle, provider, config, sub_key) do
-    if function_exported?(provider, :validate_output!, 3) do
-      provider.validate_output!(lifecycle, config, sub_key)
-    else
-      lifecycle
-    end
-  end
+  @optional_callbacks validate_input!: 3, put_metadata: 3, validate_output!: 3
 
   def execute(provider, site, lifecycle, resource, opts \\ []) do
     sub_key = Keyword.get(opts, :sub_key)
@@ -65,6 +41,30 @@ defmodule Beacon.Lifecycle do
     |> put_steps(config, sub_key)
     |> execute_steps()
     |> validate_output!(provider, config, sub_key)
+  end
+
+  def validate_input!(lifecycle, provider, config, sub_key) do
+    if function_exported?(provider, :validate_input!, 3) do
+      provider.validate_input!(lifecycle, config, sub_key)
+    else
+      lifecycle
+    end
+  end
+
+  def put_metadata(lifecycle, provider, config, context) do
+    if function_exported?(provider, :put_metadata, 3) do
+      provider.put_metadata(lifecycle, config, context)
+    else
+      lifecycle
+    end
+  end
+
+  def validate_output!(lifecycle, provider, config, sub_key) do
+    if function_exported?(provider, :validate_output!, 3) do
+      provider.validate_output!(lifecycle, config, sub_key)
+    else
+      lifecycle
+    end
   end
 
   def put_steps(lifecycle, config, sub_key) do
