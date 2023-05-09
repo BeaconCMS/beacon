@@ -9,159 +9,102 @@ defmodule Beacon.Lifecycle do
 
   See each function doc for more info and also `Beacon.Config`.
   """
+  alias Beacon.Lifecycle
 
-  @doc """
-  Load a `page` template using the registered format used on the `page`.
+  defstruct name: nil, steps: [], resource: nil, metadata: nil, output: nil
 
-  This stage runs after fetching the page from the database and before storing the template into ETS.
-  """
-  @spec load_template(Beacon.Pages.Page.t()) :: Beacon.Template.t()
-  def load_template(page) do
-    config = Beacon.Config.fetch!(page.site)
+  @type t :: %__MODULE__{
+          name: atom(),
+          steps: list(),
+          resource: term(),
+          metadata: term(),
+          output: term()
+        }
 
-    {_, steps} =
-      config.lifecycle
-      |> Keyword.fetch!(:load_template)
-      |> Enum.find(fn {format, _} -> format == page.format end) || raise_missing_template_format(page.format)
+  @callback validate_input!(Lifecycle.t(), Beacon.Config.t(), atom()) :: Lifecycle.t()
+  @callback put_metadata(Lifecycle.t(), Beacon.Config.t(), term()) :: Lifecycle.t()
+  @callback validate_output!(Lifecycle.t(), Beacon.Config.t(), atom()) :: Lifecycle.t()
 
-    do_load_template(page, steps)
-  end
+  @optional_callbacks validate_input!: 3, put_metadata: 3, validate_output!: 3
 
-  @doc false
-  def do_load_template(page, steps) do
-    metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
-    execute_steps(:load_template, steps, page.template, metadata)
-  end
-
-  @doc """
-  Render a `page` template using the registered format used on the `page`.
-
-  This stage runs in the render callback of the LiveView responsible for displaying the page.
-  """
-  def render_template(opts) do
-    site = Keyword.fetch!(opts, :site)
+  def execute(provider, site, lifecycle, resource, opts \\ []) do
+    sub_key = Keyword.get(opts, :sub_key)
+    context = Keyword.get(opts, :context)
     config = Beacon.Config.fetch!(site)
-    template_format = Keyword.fetch!(opts, :format)
 
-    {_, steps} =
-      config.lifecycle
-      |> Keyword.fetch!(:render_template)
-      |> Enum.find(fn {format, _} -> format == template_format end) || raise_missing_template_format(template_format)
-
-    do_render_template(opts, steps)
+    %Lifecycle{
+      name: lifecycle,
+      resource: resource
+    }
+    |> validate_input!(provider, config, sub_key)
+    |> put_metadata(provider, config, context)
+    |> put_steps(config, sub_key)
+    |> execute_steps()
+    |> validate_output!(provider, config, sub_key)
   end
 
-  @doc false
-  def do_render_template(opts, steps) do
-    site = Keyword.fetch!(opts, :site)
-    path = Keyword.fetch!(opts, :path)
-    format = Keyword.fetch!(opts, :format)
-    template = Keyword.fetch!(opts, :template)
-    assigns = Keyword.fetch!(opts, :assigns)
-    env = Keyword.fetch!(opts, :env)
-
-    metadata = %Beacon.Template.RenderMetadata{site: site, path: path, assigns: assigns, env: env}
-
-    :render_template
-    |> execute_steps(steps, template, metadata)
-    |> check_rendered!(format)
+  def validate_input!(lifecycle, provider, config, sub_key) do
+    if function_exported?(provider, :validate_input!, 3) do
+      provider.validate_input!(lifecycle, config, sub_key)
+    else
+      lifecycle
+    end
   end
 
-  defp raise_missing_template_format(format) do
-    raise Beacon.LoaderError, """
-    expected a template registered for the format #{format}, but none was found.
-
-    Make sure that format is properly registered at `:template_formats` in the site config,
-    and `:load_template` and `:render_template` steps are defined.
-
-    See `Beacon.Config` for more info.
-
-    """
+  def put_metadata(lifecycle, provider, config, context) do
+    if function_exported?(provider, :put_metadata, 3) do
+      provider.put_metadata(lifecycle, config, context)
+    else
+      lifecycle
+    end
   end
 
-  # https://github.com/phoenixframework/phoenix_live_view/blob/27ae991d613ec163f45fc5bfc857e3a66c426af6/lib/phoenix_live_view/utils.ex#L243
-  defp check_rendered!(%Phoenix.LiveView.Rendered{} = rendered, _format), do: rendered
-
-  defp check_rendered!(other, format) do
-    raise Beacon.LoaderError, """
-    expected the stage render_template of format #{format} to return a %Phoenix.LiveView.Rendered{} struct
-
-    Got:
-
-        #{inspect(other)}
-
-    """
+  def validate_output!(lifecycle, provider, config, sub_key) do
+    if function_exported?(provider, :validate_output!, 3) do
+      provider.validate_output!(lifecycle, config, sub_key)
+    else
+      lifecycle
+    end
   end
 
-  @doc """
-  Execute all steps for stage `:create_page`.
+  def put_steps(lifecycle, config, sub_key) do
+    steps_or_config_list = Keyword.fetch!(config.lifecycle, lifecycle.name)
 
-  It's executed in the same repo transaction, after the `page` record is saved into the database.
-  """
-  @spec create_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
-  def create_page(page) do
-    config = Beacon.Config.fetch!(page.site)
-    do_create_page(page, Keyword.fetch!(config.lifecycle, :create_page))
+    steps =
+      case sub_key do
+        nil ->
+          steps_or_config_list
+
+        sub_key ->
+          {_, steps} = Enum.find(steps_or_config_list, fn {key, _} -> key == sub_key end)
+          steps
+      end
+
+    %{lifecycle | steps: steps}
   end
 
-  @doc false
-  def do_create_page(page, [] = _steps), do: page
-
-  def do_create_page(page, steps) do
-    execute_steps(:create_page, steps, page, nil)
+  def execute_steps(%Lifecycle{steps: [], resource: resource} = lifecycle) do
+    %{lifecycle | output: resource}
   end
 
-  @doc """
-  Execute all steps for stage `:update_page`.
+  def execute_steps(%Lifecycle{steps: steps, name: name, resource: resource, metadata: metadata} = lifecycle) do
+    output =
+      Enum.reduce_while(steps, resource, fn
+        {step, fun}, acc when is_function(fun, 1) ->
+          reduce_step(step, fun.(acc))
 
-  It's executed in the same repo transaction, after the `page` record is saved into the database.
-  """
-  @spec update_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
-  def update_page(page) do
-    config = Beacon.Config.fetch!(page.site)
-    do_update_page(page, Keyword.fetch!(config.lifecycle, :update_page))
-  end
+        {step, fun}, acc when is_function(fun, 2) ->
+          reduce_step(step, fun.(acc, metadata))
+      end)
 
-  @doc false
-  def do_update_page(page, [] = _steps), do: page
-
-  def do_update_page(page, steps) do
-    execute_steps(:update_page, steps, page, nil)
-  end
-
-  @doc """
-  Execute all steps for stage `:publish_page`.
-
-  It's executed before the `page` is reloaded.
-  """
-  @spec publish_page(Beacon.Pages.Page.t()) :: Beacon.Pages.Page.t()
-  def publish_page(page) do
-    config = Beacon.Config.fetch!(page.site)
-    do_publish_page(page, Keyword.fetch!(config.lifecycle, :publish_page))
-  end
-
-  @doc false
-  def do_publish_page(page, [] = _steps), do: page
-
-  def do_publish_page(page, steps) do
-    execute_steps(:publish_page, steps, page, nil)
-  end
-
-  defp execute_steps(stage, steps, resource, metadata) do
-    Enum.reduce_while(steps, resource, fn
-      {step, fun}, acc when is_function(fun, 1) ->
-        reduce_step(step, fun.(acc))
-
-      {step, fun}, acc when is_function(fun, 2) ->
-        reduce_step(step, fun.(acc, metadata))
-    end)
+    %{lifecycle | output: output}
   rescue
     exception in Beacon.LoaderError ->
       reraise exception, __STACKTRACE__
 
     exception ->
       message = """
-      stage #{stage} failed with exception:
+      #{name} lifecycle failed with exception:
 
       #{Exception.format(:error, exception)}
 

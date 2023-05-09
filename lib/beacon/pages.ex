@@ -4,6 +4,7 @@ defmodule Beacon.Pages do
   """
 
   import Ecto.Query, warn: false
+  alias Beacon.Lifecycle
   alias Beacon.Pages.Page
   alias Beacon.Pages.PageEvent
   alias Beacon.Pages.PageHelper
@@ -93,7 +94,7 @@ defmodule Beacon.Pages do
 
       with {:ok, page} <- Repo.insert(page_changeset),
            {:ok, _page_version} <- create_version_for_page(page) do
-        page = Beacon.Lifecycle.create_page(page)
+        page = Lifecycle.Page.create_page(page)
         maybe_reload_page(page, skip_reload?)
         page
       else
@@ -142,7 +143,7 @@ defmodule Beacon.Pages do
 
     case operation do
       {:ok, page} ->
-        page = Beacon.Lifecycle.publish_page(page)
+        page = Lifecycle.Page.publish_page(page)
         :ok = Beacon.reload_page(page)
         {:ok, page}
 
@@ -171,7 +172,7 @@ defmodule Beacon.Pages do
       |> Repo.update()
       |> case do
         {:ok, page} ->
-          Beacon.Lifecycle.update_page(page)
+          Lifecycle.Page.update_page(page)
 
         {:error, reason} ->
           Repo.rollback(reason)
