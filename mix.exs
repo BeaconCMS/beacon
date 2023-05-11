@@ -44,7 +44,6 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
       {:jason, "~> 1.3"},
-      {:live_monaco_editor, github: "BeaconCMS/live_monaco_editor"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
@@ -54,8 +53,17 @@ defmodule Beacon.MixProject do
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:postgrex, "~> 0.16"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:tailwind, "~> 0.2"}
+      {:tailwind, "~> 0.2"},
+      live_monaco_editor_dep()
     ]
+  end
+
+  defp live_monaco_editor_dep do
+    if path = System.get_env("LIVE_MONACO_EDITOR_PATH") do
+      {:live_monaco_editor, path: path}
+    else
+      {:live_monaco_editor, github: "BeaconCMS/live_monaco_editor"}
+    end
   end
 
   defp aliases do
