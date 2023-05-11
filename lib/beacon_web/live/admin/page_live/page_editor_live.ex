@@ -18,6 +18,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> assign(:new_attribute_modal_visible?, false)
       |> assign(:extra_meta_attributes, [])
       |> assign(:page, page)
+      |> assign(:initial_language, language(page.format))
       |> assign(:pending_template, page.pending_template)
       |> assign_form(changeset)
       |> assign_extra_fields(changeset)
@@ -40,12 +41,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   def handle_event("validate", %{"_target" => ["page", "format"], "page" => %{"format" => format}}, socket) do
-    socket =
-      case format do
-        "heex" -> LiveMonacoEditor.change_language(socket, "html")
-        format -> LiveMonacoEditor.change_language(socket, format)
-      end
-
+    socket = LiveMonacoEditor.change_language(socket, language(format))
     {:noreply, socket}
   end
 
@@ -201,4 +197,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       {env.module, env.function, env.file, env.line}
     )
   end
+
+  defp language("heex" = _format), do: "html"
+  defp language(:heex), do: "html"
+  defp language(format), do: to_string(format)
 end

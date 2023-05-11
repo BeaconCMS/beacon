@@ -56,7 +56,7 @@ defmodule Beacon.Pages.Page do
       :extra
     ])
     |> cast(attrs, [:path], empty_values: [])
-    |> put_pending()
+    |> put_pending_template()
     |> validate_required([
       :site,
       :template,
@@ -113,7 +113,7 @@ defmodule Beacon.Pages.Page do
     |> Beacon.PageField.apply_changesets(page.site, extra_attrs)
   end
 
-  def put_pending(%Changeset{} = changeset) do
+  def put_pending_template(%Changeset{} = changeset) do
     changeset =
       case get_change(changeset, :template) do
         nil -> changeset

@@ -19,8 +19,12 @@ if Mix.env() == :dev do
     version: "0.17.18",
     cdn: esbuild.(~w(./js/beacon.js --bundle --format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
     cdn_min: esbuild.(~w(./js/beacon.js --bundle --format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js)),
-    cdn_admin: esbuild.(~w(./js/beacon_admin.js --bundle --format=iife --target=es2016 --global-name=BeaconAdmin --outfile=../priv/static/beacon_admin.js)),
-    cdn_min_admin: esbuild.(~w(./js/beacon_admin.js --bundle --format=iife --target=es2016 --global-name=BeaconAdmin --minify --outfile=../priv/static/beacon_admin.min.js))
+    cdn_admin:
+      esbuild.(~w(./js/beacon_admin.js --bundle --format=iife --target=es2016 --global-name=BeaconAdmin --outfile=../priv/static/beacon_admin.js)),
+    cdn_min_admin:
+      esbuild.(
+        ~w(./js/beacon_admin.js --bundle --format=iife --target=es2016 --global-name=BeaconAdmin --minify --outfile=../priv/static/beacon_admin.min.js)
+      )
 end
 
 config :tailwind,

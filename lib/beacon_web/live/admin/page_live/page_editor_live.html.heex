@@ -1,4 +1,4 @@
-<div>
+<div class="pb-8 border-b border-gray-900/10">
   <.header>
     <:subtitle>
       <span :if={Ecto.Changeset.get_field(@form.source, :status) == :draft}>
@@ -16,7 +16,9 @@
       </.link>
     </:actions>
   </.header>
+</div>
 
+<div class="pb-8 border-b border-gray-900/10">
   <.simple_form for={@form} id="page-form" phx-change="validate" phx-submit="save">
     <.input field={@form[:site]} type="text" label="Site" disabled="true" />
     <.input :if={Ecto.Changeset.get_field(@form.source, :status) == :draft} field={@form[:path]} type="text" label="Path" />
@@ -37,6 +39,7 @@
       style=""
       class="h-full min-h-[600px] w-full min-w-full"
       value={@pending_template}
+      opts={Map.merge(LiveMonacoEditor.default_opts(), %{"language" => @initial_language})}
     />
 
     <%= for mod <- Beacon.Config.fetch!(@page.site).extra_page_fields do %>
@@ -53,26 +56,24 @@
   </.simple_form>
 </div>
 
-<%= if @new_attribute_modal_visible? do %>
-  <.modal id="new-attribute-modal" show={true} on_cancel={JS.push("hide-new-attribute-modal")}>
-    <.header>New meta tag attribute</.header>
+<.modal :if={@new_attribute_modal_visible?} id="new-attribute-modal" show={true} on_cancel={JS.push("hide-new-attribute-modal")}>
+  <.header>New meta tag attribute</.header>
 
-    <.simple_form :let={f} for={%{}} as={:attribute} phx-submit="save-new-attribute">
-      <div class="flex items-center gap-2">
-        <%= for preset <- ~w(http-equiv charset itemprop) do %>
-          <.button phx-click={JS.set_attribute({"value", preset}, to: "#attribute_name")}><%= preset %></.button>
-        <% end %>
-      </div>
+  <.simple_form :let={f} for={%{}} as={:attribute} phx-submit="save-new-attribute">
+    <div class="flex items-center gap-2">
+      <%= for preset <- ~w(http-equiv charset itemprop) do %>
+        <.button phx-click={JS.set_attribute({"value", preset}, to: "#attribute_name")}><%= preset %></.button>
+      <% end %>
+    </div>
 
-      <div>
-        <.input type="text" field={f[:name]} placeholder="Custom" label="Custom attribute" />
-        <.button class="mt-2">Add custom attribute</.button>
-      </div>
-    </.simple_form>
-  </.modal>
-<% end %>
+    <div>
+      <.input type="text" field={f[:name]} placeholder="Custom" label="Custom attribute" />
+      <.button class="mt-2">Add custom attribute</.button>
+    </div>
+  </.simple_form>
+</.modal>
 
-<div class="mt-20">
+<div class="mt-10">
   <.header>
     Version History
   </.header>
