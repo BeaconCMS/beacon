@@ -32,7 +32,12 @@
     <.input field={@form[:title]} type="text" label="Title" phx-debounce="500" />
     <.input field={@form[:description]} type="textarea" label="Description" phx-debounce="500" />
     <.input field={@form[:format]} type="select" label="Format" options={template_format_options(@form)} />
-    <.input field={@form[:pending_template]} type="textarea" label="Template" phx-debounce="500" rows="20" class="block mb-2 font-mono text-sm" />
+
+    <LiveMonacoEditor.code_editor
+      style=""
+      class="h-full min-h-[600px] w-full min-w-full"
+      value={@pending_template}
+    />
 
     <%= for mod <- Beacon.Config.fetch!(@page.site).extra_page_fields do %>
       <%= extra_page_field(mod, @extra_fields[mod.name()], __ENV__) %>
