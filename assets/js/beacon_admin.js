@@ -4,11 +4,10 @@
 // 1. run `mix assets.build` to distribute updated static assets
 // 2. phoenix js loaded from the host application
 
-import BeaconEditor from './editor'
+import { CodeEditorHook } from "../../deps/live_monaco_editor/priv/static/main.js"
 
-let Hooks = {
-  BeaconEditor: BeaconEditor,
-}
+let Hooks = {}
+Hooks.CodeEditorHook = CodeEditorHook
 
 let socketPath = document.querySelector('html').getAttribute('phx-socket') || '/live'
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute('content')

@@ -34,7 +34,7 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
   ],
   watchers: [
     tailwind: {Tailwind, :install_and_run, [:admin, ~w(--watch)]},
-    node: ["build_admin.js", "--watch", cd: Path.expand("./assets", __DIR__)]
+    esbuild: {Esbuild, :install_and_run, [:cdn_admin, ~w(--sourcemap=inline --watch)]}
   ]
 )
 
@@ -71,6 +71,10 @@ defmodule SamplePhoenix.Endpoint do
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+
+  plug Plug.Static,
+    at: "/live_monaco_editor",
+    from: {:live_monaco_editor, "priv/static"}
 
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader

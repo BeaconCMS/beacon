@@ -44,6 +44,7 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
       {:jason, "~> 1.3"},
+      {:live_monaco_editor, github: "BeaconCMS/live_monaco_editor"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
@@ -59,15 +60,14 @@ defmodule Beacon.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.setup.admin", "assets.build", "assets.build.admin", "ecto.setup"],
+      setup: ["deps.get", "assets.setup", "assets.build", "assets.build.admin", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing", "cmd --cd assets npm install"],
-      "assets.setup.admin": ["tailwind.install --if-missing", "esbuild.install --if-missing", "cmd --cd assets npm install"],
+      "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
       "assets.build": ["esbuild cdn", "esbuild cdn_min"],
-      "assets.build.admin": ["tailwind admin --minify", "cmd --cd assets node build_admin.js --deploy"]
+      "assets.build.admin": ["tailwind admin --minify", "esbuild cdn_admin", "esbuild cdn_min_admin"]
     ]
   end
 
