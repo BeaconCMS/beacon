@@ -18,7 +18,7 @@ Logger.configure(level: :debug)
 Application.put_env(:phoenix, :json_library, Jason)
 
 Application.put_env(:beacon, SamplePhoenix.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),
