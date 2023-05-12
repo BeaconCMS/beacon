@@ -62,7 +62,7 @@ defmodule Beacon.MixProject do
     if path = System.get_env("LIVE_MONACO_EDITOR_PATH") do
       {:live_monaco_editor, path: path}
     else
-      {:live_monaco_editor, github: "BeaconCMS/live_monaco_editor"}
+      {:live_monaco_editor, github: "BeaconCMS/live_monaco_editor", branch: "main"}
     end
   end
 
@@ -74,7 +74,8 @@ defmodule Beacon.MixProject do
       dev: "run --no-halt dev.exs",
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
-      "assets.build": ["esbuild cdn", "esbuild cdn_min"],
+      "assets.build": ["assets.build.core", "assets.build.admin"],
+      "assets.build.core": ["esbuild cdn", "esbuild cdn_min"],
       "assets.build.admin": ["tailwind admin --minify", "esbuild cdn_admin", "esbuild cdn_min_admin"]
     ]
   end

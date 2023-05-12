@@ -4,7 +4,7 @@
 // 1. run `mix assets.build` to distribute updated static assets
 // 2. phoenix js loaded from the host application
 
-import { CodeEditorHook } from "../../deps/live_monaco_editor/priv/static/main"
+import { CodeEditorHook } from "../../deps/live_monaco_editor/priv/static/live_monaco_editor.esm"
 
 let Hooks = {}
 Hooks.CodeEditorHook = CodeEditorHook
