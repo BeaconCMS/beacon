@@ -18,6 +18,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> assign(:new_attribute_modal_visible?, false)
       |> assign(:extra_meta_attributes, [])
       |> assign(:page, page)
+      |> assign(:initial_language, language(page.format))
+      |> assign(:pending_template, page.pending_template)
       |> assign_form(changeset)
       |> assign_extra_fields(changeset)
       |> assign_site_layotus()
@@ -34,6 +36,15 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     save_page(socket, page_params, true)
   end
 
+  def handle_event("validate", %{"_target" => ["live_monaco_editor", "template"]}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("validate", %{"_target" => ["page", "format"], "page" => %{"format" => format}}, socket) do
+    socket = LiveMonacoEditor.change_language(socket, language(format), to: "template")
+    {:noreply, socket}
+  end
+
   def handle_event("validate", %{"page" => page_params}, socket) do
     {extra_params, page_params} = Map.pop(page_params, "extra")
     page_params = MetaTagsInputs.coerce_meta_tag_param(page_params, "meta_tags")
@@ -48,6 +59,10 @@ defmodule BeaconWeb.Admin.PageEditorLive do
      socket
      |> assign_form(changeset)
      |> assign_extra_fields(changeset)}
+  end
+
+  def handle_event("code-editor-lost-focus", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :pending_template, value)}
   end
 
   def handle_event("copy_version", %{"version" => version_str}, socket) do
@@ -89,7 +104,11 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   defp save_page(socket, params, publish?) do
     page = socket.assigns.page
-    params = MetaTagsInputs.coerce_meta_tag_param(params, "meta_tags")
+
+    params =
+      params
+      |> MetaTagsInputs.coerce_meta_tag_param("meta_tags")
+      |> Map.put("pending_template", socket.assigns.pending_template)
 
     update_page = fn page, params -> Pages.update_page(page, params) end
 
@@ -178,4 +197,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       {env.module, env.function, env.file, env.line}
     )
   end
+
+  defp language("heex" = _format), do: "html"
+  defp language(:heex), do: "html"
+  defp language(format), do: to_string(format)
 end

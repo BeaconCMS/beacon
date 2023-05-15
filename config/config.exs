@@ -9,16 +9,22 @@ config :phoenix, :json_library, Jason
 if Mix.env() == :dev do
   esbuild = fn args ->
     [
-      args: ~w(./js/beacon.js --bundle) ++ args,
+      args: args,
       cd: Path.expand("../assets", __DIR__),
       env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
     ]
   end
 
   config :esbuild,
-    version: "0.17.5",
-    cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
-    cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
+    version: "0.17.18",
+    cdn: esbuild.(~w(./js/beacon.js --bundle --format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
+    cdn_min: esbuild.(~w(./js/beacon.js --bundle --format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js)),
+    cdn_admin:
+      esbuild.(~w(./js/beacon_admin.js --bundle --format=iife --target=es2016 --global-name=BeaconAdmin --outfile=../priv/static/beacon_admin.js)),
+    cdn_min_admin:
+      esbuild.(
+        ~w(./js/beacon_admin.js --bundle --format=iife --target=es2016 --global-name=BeaconAdmin --minify --outfile=../priv/static/beacon_admin.min.js)
+      )
 end
 
 config :tailwind,
@@ -32,6 +38,4 @@ config :tailwind,
     cd: Path.expand("../assets", __DIR__)
   ]
 
-# Import environment specific config. This must remain at the bottom
-# of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
