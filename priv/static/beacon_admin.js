@@ -507,8 +507,9 @@ var BeaconAdmin = (() => {
   };
   var loader_default = loader;
   var CodeEditor = class {
-    constructor(el, value, opts) {
+    constructor(el, path, value, opts) {
       this.el = el;
+      this.path = path;
       this.value = value;
       this.opts = opts;
       this.standalone_code_editor = null;
@@ -528,16 +529,21 @@ var BeaconAdmin = (() => {
     }
     dispose() {
       if (this.isMounted()) {
-        this.standalone_code_editor.dispose();
         const model = this.standalone_code_editor.getModel();
         if (model) {
           model.dispose();
         }
+        this.standalone_code_editor.dispose();
       }
     }
     _mountEditor() {
       this.opts.value = this.value;
       loader_default.init().then((monaco) => {
+        let modelUri = monaco.Uri.parse(this.path);
+        let language = this.opts.language;
+        let model = monaco.editor.createModel(this.value, language, modelUri);
+        this.opts.language = void 0;
+        this.opts.model = model;
         this.standalone_code_editor = monaco.editor.create(this.el, this.opts);
         this._onMount.forEach((callback) => callback(monaco));
       });
@@ -547,28 +553,42 @@ var BeaconAdmin = (() => {
   var CodeEditorHook = {
     mounted() {
       const opts = JSON.parse(this.el.dataset.opts);
-      this.codeEditor = new code_editor_default(this.el, this.el.dataset.value, opts);
+      this.codeEditor = new code_editor_default(
+        this.el,
+        this.el.dataset.path,
+        this.el.dataset.value,
+        opts
+      );
       this.codeEditor.onMount((monaco) => {
         this.el.dispatchEvent(
           new CustomEvent("lme:editor_mounted", {
-            detail: { id: this.el.id, hook: this, editor: this.codeEditor },
+            detail: { hook: this, editor: this.codeEditor },
             bubbles: true
           })
         );
-        this.handleEvent("lme:change_language:" + this.el.id, (data) => {
-          const model = this.codeEditor.standalone_code_editor.getModel();
-          if (model.getLanguageId() !== data.mimeTypeOrLanguageId) {
-            monaco.editor.setModelLanguage(model, data.mimeTypeOrLanguageId);
+        this.handleEvent(
+          "lme:change_language:" + this.el.dataset.path,
+          (data) => {
+            const model = this.codeEditor.standalone_code_editor.getModel();
+            if (model.getLanguageId() !== data.mimeTypeOrLanguageId) {
+              monaco.editor.setModelLanguage(model, data.mimeTypeOrLanguageId);
+            }
           }
-        });
-        this.handleEvent("lme:set_value:" + this.el.id, (data) => {
+        );
+        this.handleEvent("lme:set_value:" + this.el.dataset.path, (data) => {
           this.codeEditor.standalone_code_editor.setValue(data.value);
+        });
+        this.el.querySelectorAll("textarea").forEach((textarea) => {
+          textarea.setAttribute(
+            "name",
+            "live_monaco_editor[" + this.el.dataset.path + "]"
+          );
         });
         this.el.removeAttribute("data-value");
         this.el.removeAttribute("data-opts");
       });
       if (!this.codeEditor.isMounted()) {
-        this.codeEditor.mount(this.el.id, this);
+        this.codeEditor.mount();
       }
     },
     destroyed() {

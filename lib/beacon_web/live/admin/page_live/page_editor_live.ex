@@ -36,12 +36,12 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     save_page(socket, page_params, true)
   end
 
-  def handle_event("validate", %{"_target" => ["undefined"]}, socket) do
+  def handle_event("validate", %{"_target" => ["live_monaco_editor", "template"]}, socket) do
     {:noreply, socket}
   end
 
   def handle_event("validate", %{"_target" => ["page", "format"], "page" => %{"format" => format}}, socket) do
-    socket = LiveMonacoEditor.change_language(socket, language(format))
+    socket = LiveMonacoEditor.change_language(socket, language(format), to: "template")
     {:noreply, socket}
   end
 

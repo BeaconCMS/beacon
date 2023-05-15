@@ -36,8 +36,8 @@
     <.input field={@form[:format]} type="select" label="Format" options={template_format_options(@form)} />
 
     <LiveMonacoEditor.code_editor
-      style=""
-      class="h-full min-h-[600px] w-full min-w-full"
+      path="template"
+      style="min-height: 600px; width: 100%;"
       value={@pending_template}
       opts={Map.merge(LiveMonacoEditor.default_opts(), %{"language" => @initial_language})}
     />
