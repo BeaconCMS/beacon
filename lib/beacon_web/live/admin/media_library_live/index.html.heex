@@ -13,7 +13,8 @@
 
 <.table id="assets" rows={@assets}>
   <:col :let={asset} label="Name"><%= asset.file_name %></:col>
-  <:col :let={asset} label="Type"><%= asset.file_type %></:col>
+  <:col :let={asset} label="Type"><%= asset.media_type %></:col>
+  <:col :let={asset} label="Site"><%= asset.site %></:col>
   <:action :let={asset}>
     <.link
       :if={Authorization.authorized?(@agent, :delete, Map.put(@authn_context, :resource, asset))}

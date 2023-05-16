@@ -19,4 +19,10 @@ defmodule Beacon.Admin.MediaLibraryTest do
     assert deleted_at
     assert updated_at == asset.updated_at
   end
+
+  test "upload asset" do
+    metadata = file_metadata_fixture(file_name: "my_file.png")
+
+    assert {:ok, %Asset{}} = MediaLibrary.upload(metadata)
+  end
 end
