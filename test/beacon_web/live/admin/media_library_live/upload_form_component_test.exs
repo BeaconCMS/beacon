@@ -13,12 +13,12 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.UploadFormComponentTest do
           last_modified: 1_594_171_879_000,
           name: "image.jpg",
           content: File.read!("test/support/fixtures/image.jpg"),
-          type: "image/jpg"
+          type: "image/jpeg"
         }
       ])
 
     assert render_upload(asset, "image.jpg") =~ "image.jpg"
 
-    assert [%{file_name: "image.jpg", file_type: "image/jpg"}] = MediaLibrary.list_assets()
+    assert [%{file_name: "image.jpg", media_type: "image/jpeg"}] = MediaLibrary.list_assets()
   end
 end
