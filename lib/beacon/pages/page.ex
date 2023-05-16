@@ -28,6 +28,7 @@ defmodule Beacon.Pages.Page do
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
+    field :raw_schema, {:array, :map}, default: []
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -53,7 +54,8 @@ defmodule Beacon.Pages.Page do
       :layout_id,
       :status,
       :format,
-      :extra
+      :extra,
+      :raw_schema
     ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending_template()
@@ -82,7 +84,7 @@ defmodule Beacon.Pages.Page do
     # need them to get going on the admin interface for now
     page
     # TODO: only allow path if status = draft
-    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :path, :format])
+    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :path, :format, :raw_schema])
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
@@ -104,7 +106,8 @@ defmodule Beacon.Pages.Page do
       :description,
       :meta_tags,
       :path,
-      :format
+      :format,
+      :raw_schema
     ])
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])

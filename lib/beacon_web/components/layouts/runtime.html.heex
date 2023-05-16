@@ -3,6 +3,7 @@
   <head>
     <meta name="csrf-token" content={get_csrf_token()} />
     <%= render_meta_tags(assigns) %>
+    <%= render_schema(assigns) %>
     <.live_title>
       <%= render_page_title(assigns) %>
     </.live_title>

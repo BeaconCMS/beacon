@@ -165,6 +165,14 @@ seeds = fn ->
       meta_tags: [
         %{"property" => "og:title", "content" => "home"}
       ],
+      raw_schema: [
+        %{
+          "@context" => "https://schema.org",
+          "@type" => "Organization",
+          "url" => "https://github.com/BeaconCMS",
+          "logo" => "https://avatars.githubusercontent.com/u/873981"
+        }
+      ],
       template: """
       <main>
         <h1 class="text-violet-500">Dev</h1>

@@ -47,7 +47,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp page_assigns(%Page{} = page) do
-    %{id: id, meta_tags: meta_tags, title: title} = page
+    %{id: id, meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
 
     meta_tags =
       if meta_tags do
@@ -58,7 +58,8 @@ defmodule Beacon.Loader.PageModuleLoader do
       def page_assigns(unquote(id)) do
         %{
           title: unquote(title),
-          meta_tags: unquote(Macro.escape(meta_tags))
+          meta_tags: unquote(Macro.escape(meta_tags)),
+          raw_schema: unquote(Macro.escape(raw_schema))
         }
       end
     end
