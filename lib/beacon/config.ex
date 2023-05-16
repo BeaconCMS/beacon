@@ -377,7 +377,7 @@ defmodule Beacon.Config do
     "#{cat}/*"
   end
 
-  defp validate_allowed_media_types(allowed_media_types) do
+  defp validate_allowed_media_types!(allowed_media_types) do
     Enum.each(allowed_media_types, fn media_type ->
       case String.split(media_type, "/") do
         [_, "*"] ->
