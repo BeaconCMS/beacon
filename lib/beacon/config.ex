@@ -56,7 +56,7 @@ defmodule Beacon.Config do
   @typedoc """
   Register backends and validations for media types. Catchalls are allowed.
   """
-  @type asset :: [{media_type :: String.t(), media_type_config()}]
+  @type assets :: [{media_type :: String.t(), media_type_config()}]
 
   @typedoc """
   Individual media type configs
@@ -113,6 +113,8 @@ defmodule Beacon.Config do
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
+          assets: assets(),
+          allowed_media_types: allowed_media_types(),
           lifecycle: lifecycle(),
           extra_page_fields: extra_page_fields()
         }
@@ -176,7 +178,7 @@ defmodule Beacon.Config do
           | {:live_socket_path, live_socket_path()}
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
-          | {:assets, asset()}
+          | {:assets, assets()}
           | {:allowed_media_types, allowed_media_types()}
           | {:lifecycle, lifecycle()}
           | {:extra_page_fields, extra_page_fields()}
