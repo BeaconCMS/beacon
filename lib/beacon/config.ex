@@ -64,9 +64,7 @@ defmodule Beacon.Config do
   @type media_type_config :: [
           {:backends, list(backend :: module())},
           {:validations, list(validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()))},
-          {:processor,
-           {prossesor_fun ::
-              (File.Stream.t() | binary(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
+          {:processor, {prossesor_fun :: (Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
         ]
 
   @typedoc """
