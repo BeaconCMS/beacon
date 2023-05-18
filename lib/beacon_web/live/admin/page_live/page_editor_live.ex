@@ -20,6 +20,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> assign(:page, page)
       |> assign(:initial_language, language(page.format))
       |> assign(:pending_template, page.pending_template)
+      |> assign(:raw_schema, page.raw_schema)
+      |> assign(:raw_schema_json, Jason.encode!(page.raw_schema, pretty: true))
       |> assign_form(changeset)
       |> assign_extra_fields(changeset)
       |> assign_site_layotus()
@@ -61,8 +63,12 @@ defmodule BeaconWeb.Admin.PageEditorLive do
      |> assign_extra_fields(changeset)}
   end
 
-  def handle_event("code-editor-lost-focus", %{"value" => value}, socket) do
+  def handle_event("template_editor_lost_focus", %{"value" => value}, socket) do
     {:noreply, assign(socket, :pending_template, value)}
+  end
+
+  def handle_event("raw_schema_editor_lost_focus", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :raw_schema, Jason.decode!(value))}
   end
 
   def handle_event("copy_version", %{"version" => version_str}, socket) do
@@ -109,6 +115,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       params
       |> MetaTagsInputs.coerce_meta_tag_param("meta_tags")
       |> Map.put("pending_template", socket.assigns.pending_template)
+      |> Map.put("raw_schema", socket.assigns.raw_schema)
 
     update_page = fn page, params -> Pages.update_page(page, params) end
 

@@ -604,8 +604,9 @@ var BeaconAdmin = (() => {
   window.addEventListener("lme:editor_mounted", (ev) => {
     const hook = ev.detail.hook;
     const editor = ev.detail.editor.standalone_code_editor;
+    const eventName = ev.detail.editor.path + "_editor_lost_focus";
     editor.onDidBlurEditorWidget(() => {
-      hook.pushEvent("code-editor-lost-focus", { value: editor.getValue() });
+      hook.pushEvent(eventName, { value: editor.getValue() });
     });
   });
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
