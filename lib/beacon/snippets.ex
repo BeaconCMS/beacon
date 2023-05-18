@@ -95,9 +95,8 @@ defmodule Beacon.Snippets do
          {:ok, template} <- Solid.render(template, assigns) do
       {:ok, to_string(template)}
     else
-      # TODO: errors
-      {:error, error} -> raise error
-      _ -> raise Beacon.LoaderError
+      # TODO: errors and maybe raise LoaderError
+      error -> error
     end
   end
 end

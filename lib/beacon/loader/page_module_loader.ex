@@ -49,6 +49,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp page_assigns(%Page{} = page) do
     %{id: id, meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
     meta_tags = interpolate_meta_tags(meta_tags, page)
+    raw_schema = interpolate_raw_schema(raw_schema, page)
 
     quote do
       def page_assigns(unquote(id)) do
@@ -76,6 +77,29 @@ defmodule Beacon.Loader.PageModuleLoader do
       {:ok, new_value} -> {key, new_value}
       _ -> {key, value}
     end
+  end
+
+  def interpolate_raw_schema(raw_schema, page) do
+    raw_schema
+    |> List.wrap()
+    |> Enum.map(&interpolate_raw_schema_record(&1, page))
+  end
+
+  defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
+    render = fn key, value, page ->
+      case Beacon.Snippets.render(value, %{page: page}) do
+        {:ok, new_value} -> {key, new_value}
+        _ -> {key, value}
+      end
+    end
+
+    Map.new(schema, fn
+      {key, value} when is_binary(value) ->
+        render.(key, value, page)
+
+      {key, value} when is_map(value) ->
+        {key, interpolate_raw_schema_record(value, page)}
+    end)
   end
 
   # TODO: path_to_args in paths with dynamic segments may be broken

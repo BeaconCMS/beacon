@@ -146,8 +146,7 @@ defmodule Beacon.Fixtures do
       assigns
       |> get_in(["page", "title"])
       |> String.upcase()
-      """,
-      skip_reload: true
+      """
     })
     |> Snippets.create_helper!()
   end

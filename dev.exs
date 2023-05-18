@@ -157,11 +157,10 @@ seeds = fn ->
 
   Beacon.Snippets.create_helper!(%{
     site: "dev",
-    name: "og_description",
+    name: "author_name",
     body: ~S"""
-    assigns
-    |> get_in(["page", "description"])
-    |> String.upcase()
+    author_id =  get_in(assigns, ["page", "extra", "author_id"])
+    "author_#{author_id}"
     """
   })
 
@@ -173,8 +172,18 @@ seeds = fn ->
       description: "page used for development",
       layout_id: layout_id,
       meta_tags: [
-        %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"},
-        %{"property" => "og:description", "content" => "{% helper 'og_description' %}"}
+        %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"}
+      ],
+      raw_schema: [
+        %{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          headline: "{{ page.description }}",
+          author: %{
+            "@type": "Person",
+            name: "{% helper 'author_name' %}"
+          }
+        }
       ],
       extra: %{
         "author_id" => 1
