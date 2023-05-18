@@ -2,8 +2,8 @@ defmodule Beacon.Snippets.Tags.Helper do
   @behaviour Solid.Tag
 
   import NimbleParsec
-  alias Solid.Parser.BaseTag
   alias Solid.Parser.Argument
+  alias Solid.Parser.BaseTag
   alias Solid.Parser.Literal
 
   @impl true
