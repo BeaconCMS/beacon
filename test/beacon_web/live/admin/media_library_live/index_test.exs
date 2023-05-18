@@ -5,15 +5,15 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
   alias Beacon.Repo
 
   test "index", %{conn: conn} do
-    media_library_asset_fixture(file_name: "test_index.jpg")
+    media_library_asset_fixture(file_name: "test_index.webp")
 
     {:ok, _view, html} = live(conn, "/admin/media_library")
 
-    assert html =~ "test_index.jpg"
+    assert html =~ "test_index.webp"
   end
 
   test "soft delete", %{conn: conn} do
-    media_library_asset_fixture(file_name: "test_delete.jpg")
+    media_library_asset_fixture(file_name: "test_delete.webp")
 
     {:ok, view, _html} = live(conn, "/admin/media_library")
 
@@ -22,19 +22,19 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
       |> element("a", "Delete")
       |> render_click()
 
-    refute html =~ "test_delete.jpg"
+    refute html =~ "test_delete.webp"
 
     assert [%Asset{deleted_at: deleted_at}] = Repo.all(Asset)
     assert deleted_at
   end
 
   test "search", %{conn: conn} do
-    media_library_asset_fixture(file_name: "test_search.jpg")
+    media_library_asset_fixture(file_name: "test_search.webp")
 
     {:ok, view, _html} = live(conn, "/admin/media_library")
 
     assert view
            |> element("#search-form")
-           |> render_change(%{search: "ar"}) =~ "test_search.jpg"
+           |> render_change(%{search: "ar"}) =~ "test_search.webp"
   end
 end

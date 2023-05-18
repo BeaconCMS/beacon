@@ -50,10 +50,30 @@ defmodule Beacon.ConfigTest do
   describe "assets" do
     test "sets defaults" do
       assert [
-               {"image/jpeg", [validations: [], backends: [Beacon.Admin.MediaLibrary.Backend.Repo]]},
-               {"image/gif", [validations: [], backends: [Beacon.Admin.MediaLibrary.Backend.Repo]]},
-               {"image/png", [validations: [], backends: [Beacon.Admin.MediaLibrary.Backend.Repo]]},
-               {"image/webp", [validations: [], backends: [Beacon.Admin.MediaLibrary.Backend.Repo]]}
+               {"image/jpeg",
+                [
+                  {:processor, _},
+                  {:validations, []},
+                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                ]},
+               {"image/gif",
+                [
+                  {:processor, _},
+                  {:validations, []},
+                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                ]},
+               {"image/png",
+                [
+                  {:processor, _},
+                  {:validations, []},
+                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                ]},
+               {"image/webp",
+                [
+                  {:processor, _},
+                  {:validations, []},
+                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                ]}
              ] = Config.new([]).assets
     end
   end
@@ -62,7 +82,12 @@ defmodule Beacon.ConfigTest do
     test "retrieves" do
       media_type = "image/jpeg"
       config = Config.new([])
-      assert [validations: [], backends: [Beacon.Admin.MediaLibrary.Backend.Repo]] = Config.config_for_media_type(config, media_type)
+
+      assert [
+               {:processor, _},
+               {:validations, []},
+               {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+             ] = Config.config_for_media_type(config, media_type)
     end
   end
 end

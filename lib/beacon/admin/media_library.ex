@@ -55,14 +55,8 @@ defmodule Beacon.Admin.MediaLibrary do
   end
 
   def upload(metadata) do
-    attrs = %{
-      site: metadata.site,
-      file_name: metadata.name,
-      media_type: metadata.media_type
-    }
-
     %Asset{}
-    |> Asset.upload_changeset(attrs, metadata)
+    |> Asset.upload_changeset(metadata)
     |> Repo.insert()
   end
 

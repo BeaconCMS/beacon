@@ -63,7 +63,8 @@ defmodule Beacon.Config do
   """
   @type media_type_config :: [
           {:backends, list(backend :: module())},
-          {:validations, list(validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.FileMetadata.t() -> Ecto.Changeset.t()))}
+          {:validations, list(validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()))},
+          {:processor, {prossesor_fun :: (Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
         ]
 
   @typedoc """
@@ -379,11 +380,14 @@ defmodule Beacon.Config do
 
   defp validate_allowed_media_types!(allowed_media_types) do
     Enum.each(allowed_media_types, fn media_type ->
-      case String.split(media_type, "/") do
-        [_, "*"] ->
+      case Plug.Conn.Utils.media_type(media_type) do
+        {:ok, _, "*", _} ->
           raise Beacon.LoaderError, """
           Catchall Media Types are not allowed in allowed
           """
+
+        :error ->
+          raise_invalid_media_type(media_type)
 
         _ ->
           media_type
@@ -396,8 +400,8 @@ defmodule Beacon.Config do
       allowed_media_types,
       assigned_assets,
       fn media_type, acc ->
-        if [] == MIME.extensions(media_type) do
-          raise(Beacon.LoaderError, "Unknown Media type: #{media_type}")
+        if :error == Plug.Conn.Utils.media_type(media_type) do
+          raise_invalid_media_type(media_type)
         end
 
         if get_media_type_config(assigned_assets, media_type) do
@@ -407,6 +411,28 @@ defmodule Beacon.Config do
         end
       end
     )
-    |> Enum.map(fn {media_type, config} -> {media_type, Keyword.put_new(config, :validations, [])} end)
+    |> Enum.map(fn
+      {media_type, config} ->
+        config =
+          config
+          |> Keyword.put_new(:validations, [])
+          |> ensure_processor(media_type)
+
+        {media_type, config}
+    end)
+  end
+
+  defp raise_invalid_media_type(media_type) do
+    raise(Beacon.LoaderError, "Unknown Media type: #{media_type}")
+  end
+
+  defp ensure_processor(config, media_type) do
+    processor =
+      case Plug.Conn.Utils.media_type(media_type) do
+        {:ok, "image", _, _} -> &Beacon.Admin.MediaLibrary.Processors.Image.process!/1
+        _ -> &Beacon.Admin.MediaLibrary.Processors.Default.process!/1
+      end
+
+    Keyword.put_new(config, :processor, processor)
   end
 end

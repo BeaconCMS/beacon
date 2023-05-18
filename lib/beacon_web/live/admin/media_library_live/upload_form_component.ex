@@ -2,7 +2,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   use BeaconWeb, :live_component
 
   alias Beacon.Admin.MediaLibrary
-  alias Beacon.Admin.MediaLibrary.FileMetadata
+  alias Beacon.Admin.MediaLibrary.UploadMetadata
   alias Beacon.Authorization
 
   @impl true
@@ -75,7 +75,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
     uploaded_assets =
       consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
         site
-        |> FileMetadata.new(path, entry.client_name, entry.client_type, entry.client_size)
+        |> UploadMetadata.new(path, name: entry.client_name, media_type: entry.client_type, size: entry.client_size)
         |> MediaLibrary.upload()
       end)
 
