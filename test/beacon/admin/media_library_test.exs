@@ -6,10 +6,10 @@ defmodule Beacon.Admin.MediaLibraryTest do
   import Beacon.Fixtures
 
   test "search by file name" do
-    media_library_asset_fixture(file_name: "my_file.png")
-    media_library_asset_fixture(file_name: "other_file.png")
+    media_library_asset_fixture(file_name: "my_file.webp")
+    media_library_asset_fixture(file_name: "other_file.webp")
 
-    assert [%Asset{file_name: "my_file.png"}] = MediaLibrary.search("my")
+    assert [%Asset{file_name: "my_file.webp"}] = MediaLibrary.search("my")
   end
 
   test "soft delete" do
@@ -20,9 +20,9 @@ defmodule Beacon.Admin.MediaLibraryTest do
     assert updated_at == asset.updated_at
   end
 
-  test "upload asset" do
+  test "upload asset, converts to webp by default" do
     metadata = file_metadata_fixture(file_name: "my_file.png")
-
-    assert {:ok, %Asset{}} = MediaLibrary.upload(metadata)
+    Beacon.Config.fetch!(:my_site)
+    assert {:ok, %Asset{file_name: "my_file.webp", media_type: "image/webp"}} = MediaLibrary.upload(metadata)
   end
 end

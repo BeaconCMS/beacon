@@ -24,15 +24,18 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
   end
 
   @doc false
-  def upload_changeset(asset, attrs, metadata) do
+  def upload_changeset(asset, metadata) do
+    metadata = Backend.process!(metadata)
+
+    attrs = %{
+      site: metadata.site,
+      file_name: metadata.name,
+      media_type: metadata.media_type
+    }
+
     asset
     |> cast(attrs, [:site, :file_name, :media_type])
     |> validate_required([:site, :file_name, :media_type])
-    |> send_to_provider(metadata)
-  end
-
-  defp send_to_provider(asset, metadata) do
-    asset
     |> Backend.validate_for_delivery(metadata)
     |> Backend.send_to_providers(metadata)
   end

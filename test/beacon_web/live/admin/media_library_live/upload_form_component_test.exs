@@ -17,8 +17,8 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.UploadFormComponentTest do
         }
       ])
 
-    assert render_upload(asset, "image.jpg") =~ "image.jpg"
+    assert render_upload(asset, "image.jpg") =~ "image.webp"
 
-    assert [%{file_name: "image.jpg", media_type: "image/jpeg"}] = MediaLibrary.list_assets()
+    assert [%{file_name: "image.webp", media_type: "image/webp"}] = MediaLibrary.list_assets()
   end
 end

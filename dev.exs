@@ -284,23 +284,21 @@ seeds = fn ->
   })
 
   metadata =
-    Beacon.Admin.MediaLibrary.FileMetadata.new(
+    Beacon.Admin.MediaLibrary.UploadMetadata.new(
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-      "dockyard_1.png",
-      "image/png",
-      100_000
+      name: "dockyard_1.png",
+      size: 100_000
     )
 
   Beacon.Admin.MediaLibrary.upload(metadata)
 
   metadata =
-    Beacon.Admin.MediaLibrary.FileMetadata.new(
+    Beacon.Admin.MediaLibrary.UploadMetadata.new(
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-      "dockyard_2.png",
-      "image/png",
-      100_000
+      name: "dockyard_2.png",
+      size: 100_000
     )
 
   Beacon.Admin.MediaLibrary.upload(metadata)
