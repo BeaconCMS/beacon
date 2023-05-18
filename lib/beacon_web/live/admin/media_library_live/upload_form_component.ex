@@ -2,6 +2,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   use BeaconWeb, :live_component
 
   alias Beacon.Admin.MediaLibrary
+  alias Beacon.Admin.MediaLibrary.UploadMetadata
   alias Beacon.Authorization
 
   @impl true
@@ -27,6 +28,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
         phx-change="validate"
         phx-submit="save"
       >
+        <.input name="site" type="select" label="Site" options={@sites} value={@site_selected} phx-change="set_site" phx-target={@myself} />
         <.live_file_input upload={@uploads.asset} tabindex="0" />
       </.form>
 
@@ -50,10 +52,15 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
 
   @impl true
   def update(assigns, socket) do
+    sites = Beacon.Registry.registered_sites()
+    site_selected = hd(sites)
+
     {:ok,
      socket
      |> assign(assigns)
      |> assign(:uploaded_assets, [])
+     |> assign(:sites, sites)
+     |> assign(:site_selected, site_selected)
      |> allow_upload(:asset,
        auto_upload: true,
        progress: &handle_progress/3,
@@ -63,14 +70,13 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   end
 
   defp handle_progress(:asset, entry, socket) do
+    site = socket.assigns.site_selected
+
     uploaded_assets =
       consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
-        MediaLibrary.upload(
-          "dev",
-          path,
-          entry.client_name,
-          entry.client_type
-        )
+        site
+        |> UploadMetadata.new(path, name: entry.client_name, media_type: entry.client_type, size: entry.client_size)
+        |> MediaLibrary.upload()
       end)
 
     {:noreply, update(socket, :uploaded_assets, &(&1 ++ uploaded_assets))}
@@ -79,5 +85,10 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   @impl true
   def handle_event("validate", _params, socket) do
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("set_site", %{"site" => site}, socket) when is_binary(site) do
+    {:noreply, assign(socket, :site_selected, site)}
   end
 end

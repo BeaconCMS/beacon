@@ -49,6 +49,25 @@ defmodule Beacon.Config do
   @type template_formats :: [{format :: atom(), description :: String.t()}]
 
   @typedoc """
+  Register specific media types allowed for upload. Catchalls are not allowed.
+  """
+  @type allowed_media_types :: [media_type :: String.t()]
+
+  @typedoc """
+  Register backends and validations for media types. Catchalls are allowed.
+  """
+  @type assets :: [{media_type :: String.t(), media_type_config()}]
+
+  @typedoc """
+  Individual media type configs
+  """
+  @type media_type_config :: [
+          {:backends, list(backend :: module())},
+          {:validations, list(validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()))},
+          {:processor, {prossesor_fun :: (Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
+        ]
+
+  @typedoc """
   Attach steps into Beacon's internal life-cycle stages to inject custom functionality.
   """
   @type lifecycle :: [lifecycle_stage()]
@@ -95,6 +114,8 @@ defmodule Beacon.Config do
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
+          assets: assets(),
+          allowed_media_types: allowed_media_types(),
           lifecycle: lifecycle(),
           extra_page_fields: extra_page_fields()
         }
@@ -124,6 +145,8 @@ defmodule Beacon.Config do
      ]}
   ]
 
+  @default_media_types ["image/jpeg", "image/gif", "image/png", "image/webp"]
+
   defstruct site: nil,
             data_source: nil,
             authorization_source: Beacon.Authorization.DefaultPolicy,
@@ -136,6 +159,8 @@ defmodule Beacon.Config do
               {:heex, "HEEx (HTML)"},
               {:markdown, "Markdown (GitHub Flavored version)"}
             ],
+            assets: [],
+            allowed_media_types: @default_media_types,
             lifecycle: [
               load_template: @default_load_template,
               render_template: @default_render_template,
@@ -154,6 +179,8 @@ defmodule Beacon.Config do
           | {:live_socket_path, live_socket_path()}
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
+          | {:assets, assets()}
+          | {:allowed_media_types, allowed_media_types()}
           | {:lifecycle, lifecycle()}
           | {:extra_page_fields, extra_page_fields()}
 
@@ -239,6 +266,10 @@ defmodule Beacon.Config do
           markdown: "Markdown (GitHub Flavored version)",
           custom_format: "My Custom Format"
         ],
+        media_types: ["image/jpeg", "image/gif", "image/png", "image/webp"],
+        assets:[
+          {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.Repo], validations: [&SomeModule.some_function/2]]},
+        ]
         lifecycle: [
           load_template: [
             heex: [
@@ -298,16 +329,110 @@ defmodule Beacon.Config do
       publish_page: get_in(opts, [:lifecycle, :publish_page]) || []
     ]
 
+    allowed_media_types = Keyword.get(opts, :allowed_media_types, @default_media_types)
+    validate_allowed_media_types!(allowed_media_types)
+
+    assigned_assets = Keyword.get(opts, :assets, [])
+    assets = process_assets_config(allowed_media_types, assigned_assets)
+
     opts =
       opts
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
+      |> Keyword.put(:allowed_media_types, allowed_media_types)
+      |> Keyword.put(:assets, assets)
 
     struct!(__MODULE__, opts)
   end
 
   @spec fetch!(Beacon.Types.Site.t()) :: t()
-  def fetch!(site) do
+  def fetch!(site) when is_atom(site) do
     Registry.config!(site)
+  end
+
+  @spec config_for_media_type(Beacon.Config.t(), String.t()) :: media_type_config()
+  def config_for_media_type(beacon_config, media_type) do
+    case get_media_type_config(beacon_config.assets, media_type) do
+      nil ->
+        raise Beacon.LoaderError, """
+        Expected to find a `media_type()` configuration for `#{media_type}` in `Beacon.Config.assets`.
+
+        You can key that configuration with `#{media_type}` or a catchall like `#{build_generic_media_type(media_type)}`
+        """
+
+      {_, config} ->
+        config
+    end
+  end
+
+  defp get_media_type_config(media_type_configs, media_type) do
+    generic_type = build_generic_media_type(media_type)
+
+    Enum.find(media_type_configs, fn {type, _} ->
+      type == media_type || type == generic_type
+    end)
+  end
+
+  defp build_generic_media_type(media_type) do
+    [cat, _] = String.split(media_type, "/")
+    "#{cat}/*"
+  end
+
+  defp validate_allowed_media_types!(allowed_media_types) do
+    Enum.each(allowed_media_types, fn media_type ->
+      case Plug.Conn.Utils.media_type(media_type) do
+        {:ok, _, "*", _} ->
+          raise Beacon.LoaderError, """
+          Catchall Media Types are not allowed in allowed
+          """
+
+        :error ->
+          raise_invalid_media_type(media_type)
+
+        _ ->
+          media_type
+      end
+    end)
+  end
+
+  defp process_assets_config(allowed_media_types, assigned_assets) do
+    Enum.reduce(
+      allowed_media_types,
+      assigned_assets,
+      fn media_type, acc ->
+        if :error == Plug.Conn.Utils.media_type(media_type) do
+          raise_invalid_media_type(media_type)
+        end
+
+        if get_media_type_config(assigned_assets, media_type) do
+          acc
+        else
+          acc ++ [{media_type, [{:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}]}]
+        end
+      end
+    )
+    |> Enum.map(fn
+      {media_type, config} ->
+        config =
+          config
+          |> Keyword.put_new(:validations, [])
+          |> ensure_processor(media_type)
+
+        {media_type, config}
+    end)
+  end
+
+  defp raise_invalid_media_type(media_type) do
+    raise(Beacon.LoaderError, "Unknown Media type: #{media_type}")
+  end
+
+  defp ensure_processor(config, media_type) do
+    processor =
+      case Plug.Conn.Utils.media_type(media_type) do
+        {:ok, "image", _, _} -> &Beacon.Admin.MediaLibrary.Processors.Image.process!/1
+        _ -> &Beacon.Admin.MediaLibrary.Processors.Default.process!/1
+      end
+
+    Keyword.put_new(config, :processor, processor)
   end
 end

@@ -1,5 +1,6 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Admin.MediaLibrary
+  alias Beacon.Admin.MediaLibrary.UploadMetadata
   alias Beacon.Components
   alias Beacon.Layouts
   alias Beacon.Pages
@@ -152,15 +153,32 @@ defmodule Beacon.Fixtures do
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do
-    attrs =
-      Enum.into(attrs, %{
-        site: "my_site",
-        file_path: Path.join(["test", "support", "fixtures", "image.jpg"]),
-        file_name: "image.jpg",
-        file_type: "image/jpg"
-      })
+    {:ok, asset} =
+      attrs
+      |> file_metadata_fixture()
+      |> MediaLibrary.upload()
 
-    {:ok, asset} = MediaLibrary.upload(attrs.site, attrs.file_path, attrs.file_name, attrs.file_type)
     asset
+  end
+
+  def file_metadata_fixture(attrs \\ %{}) do
+    attrs =
+      attrs
+      |> Enum.into(%{
+        site: :my_site,
+        file_size: 100_000
+      })
+      |> Map.put_new(:file_name, "image.jpg")
+
+    attrs = Map.put_new(attrs, :file_path, path_for(attrs.file_name))
+
+    UploadMetadata.new(attrs.site, attrs.file_path, name: attrs.file_name, size: attrs.file_size)
+  end
+
+  defp path_for(file_name) do
+    ext = Path.extname(file_name)
+    file_name = "image#{ext}"
+
+    Path.join(["test", "support", "fixtures", file_name])
   end
 end

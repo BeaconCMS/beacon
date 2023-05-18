@@ -54,16 +54,9 @@ defmodule Beacon.Admin.MediaLibrary do
     Repo.get_by!(Asset, site: site, name: name)
   end
 
-  def upload(site, file_path, file_name, file_type) do
-    attrs = %{
-      site: site,
-      file_body: File.read!(file_path),
-      file_name: file_name,
-      file_type: file_type
-    }
-
+  def upload(metadata) do
     %Asset{}
-    |> Asset.changeset(attrs)
+    |> Asset.upload_changeset(metadata)
     |> Repo.insert()
   end
 

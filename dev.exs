@@ -306,19 +306,25 @@ seeds = fn ->
     """
   })
 
-  Beacon.Admin.MediaLibrary.upload(
-    "dev",
-    Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-    "dockyard_1.png",
-    "image/png"
-  )
+  metadata =
+    Beacon.Admin.MediaLibrary.UploadMetadata.new(
+      :dev,
+      Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+      name: "dockyard_1.png",
+      size: 100_000
+    )
 
-  Beacon.Admin.MediaLibrary.upload(
-    "dev",
-    Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-    "dockyard_2.jpg",
-    "image/jpg"
-  )
+  Beacon.Admin.MediaLibrary.upload(metadata)
+
+  metadata =
+    Beacon.Admin.MediaLibrary.UploadMetadata.new(
+      :dev,
+      Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
+      name: "dockyard_2.png",
+      size: 100_000
+    )
+
+  Beacon.Admin.MediaLibrary.upload(metadata)
 
   %{id: other_layout_id} =
     Beacon.Layouts.create_layout!(%{
