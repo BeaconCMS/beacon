@@ -67,12 +67,7 @@ defmodule Beacon.Snippets do
   See `render/2` for passing assigns to templates.
   """
   def render(snippet) when is_binary(snippet) do
-    with {:ok, template} <- Solid.parse(snippet, parser: Parser),
-         {:ok, template} <- Solid.render(template, %{}) do
-      {:ok, to_string(template)}
-    else
-      error -> error
-    end
+    do_render(snippet, %{})
   end
 
   @doc """
@@ -91,11 +86,14 @@ defmodule Beacon.Snippets do
 
     assigns = %{"page" => page}
 
+    do_render(snippet, assigns)
+  end
+
+  defp do_render(snippet, assigns) do
     with {:ok, template} <- Solid.parse(snippet, parser: Parser),
          {:ok, template} <- Solid.render(template, assigns) do
       {:ok, to_string(template)}
     else
-      # TODO: errors and maybe raise LoaderError
       error -> error
     end
   end

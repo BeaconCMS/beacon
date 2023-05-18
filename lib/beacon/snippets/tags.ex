@@ -31,9 +31,4 @@ defmodule Beacon.Snippets.Tags.Helper do
 
     {[text: text], context}
   end
-
-  def render(_, _, _) do
-    # TODO: errors
-    {[text: ""], []}
-  end
 end

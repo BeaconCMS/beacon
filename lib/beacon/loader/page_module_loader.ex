@@ -74,12 +74,24 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp interpolate_meta_tag_attribute({key, value}, page) when is_binary(value) do
     case Beacon.Snippets.render(value, %{page: page}) do
-      {:ok, new_value} -> {key, new_value}
-      _ -> {key, value}
+      {:ok, new_value} ->
+        {key, new_value}
+
+      error ->
+        message = """
+        failed to interpolate meta tags
+
+        Got:
+
+          #{inspect(error)}
+
+        """
+
+        raise Beacon.LoaderError, message: message
     end
   end
 
-  def interpolate_raw_schema(raw_schema, page) do
+  defp interpolate_raw_schema(raw_schema, page) do
     raw_schema
     |> List.wrap()
     |> Enum.map(&interpolate_raw_schema_record(&1, page))
@@ -88,8 +100,20 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
     render = fn key, value, page ->
       case Beacon.Snippets.render(value, %{page: page}) do
-        {:ok, new_value} -> {key, new_value}
-        _ -> {key, value}
+        {:ok, new_value} ->
+          {key, new_value}
+
+        error ->
+          message = """
+          failed to interpolate raw schema
+
+          Got:
+
+            #{inspect(error)}
+
+          """
+
+          raise Beacon.LoaderError, message: message
       end
     end
 
