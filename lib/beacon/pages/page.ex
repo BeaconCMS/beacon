@@ -9,8 +9,6 @@ defmodule Beacon.Pages.Page do
   alias Beacon.Pages.PageVersion
   alias Ecto.Changeset
 
-  @meta_tag_interpolation_keys [:title, :description, :path]
-
   @type t :: %__MODULE__{}
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -24,11 +22,11 @@ defmodule Beacon.Pages.Page do
     field :template, :string
     field :pending_template, :string
     field :meta_tags, {:array, :map}, default: []
+    field :raw_schema, {:array, :map}, default: []
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
-    field :raw_schema, {:array, :map}, default: []
 
     belongs_to :layout, Layout
     belongs_to :pending_layout, Layout
@@ -50,12 +48,12 @@ defmodule Beacon.Pages.Page do
       :version,
       :template,
       :meta_tags,
+      :raw_schema,
       :order,
       :layout_id,
       :status,
       :format,
-      :extra,
-      :raw_schema
+      :extra
     ])
     |> cast(attrs, [:path], empty_values: [])
     |> put_pending_template()
@@ -84,7 +82,7 @@ defmodule Beacon.Pages.Page do
     # need them to get going on the admin interface for now
     page
     # TODO: only allow path if status = draft
-    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :path, :format, :raw_schema])
+    |> cast(attrs, [:pending_template, :pending_layout_id, :title, :description, :meta_tags, :raw_schema, :path, :format])
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
@@ -105,9 +103,9 @@ defmodule Beacon.Pages.Page do
       :title,
       :description,
       :meta_tags,
+      :raw_schema,
       :path,
-      :format,
-      :raw_schema
+      :format
     ])
     |> validate_required([:pending_template, :pending_layout_id])
     |> trim([:pending_template])
@@ -177,13 +175,4 @@ defmodule Beacon.Pages.Page do
     |> Enum.reject(fn {_key, value} -> is_nil(value) || String.trim(value) == "" end)
     |> Map.new()
   end
-
-  @doc """
-  Returns the list of Page fields which are available to the end user for interpolating into the values of meta
-  tag attributes.
-
-  The interpolation syntax is to surround the field name with %. For example, to insert the page :title, the user would
-  provide the value "%title%".
-  """
-  def meta_tag_interpolation_keys, do: @meta_tag_interpolation_keys
 end

@@ -42,13 +42,13 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       page_1 =
         page_fixture(
           site: "my_site",
-          path: "1",
+          path: "my/page",
           title: "my first page",
           description: "hello world",
           meta_tags: [
-            %{"property" => "og:title", "content" => "my title is %title%"},
-            %{"property" => "og:description", "content" => "my description is %description%"},
-            %{"property" => "og:url", "content" => "http://example.com/%path%"}
+            %{"property" => "og:title", "content" => "my title is {{ page.title }}"},
+            %{"property" => "og:description", "content" => "my description is {{ page.description }} with title {{ page.title }}"},
+            %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"}
           ]
         )
 
@@ -57,8 +57,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       {:ok, ast} = PageModuleLoader.load_page!(:test, page_1)
 
       assert has_map?(ast, %{"property" => "og:title", "content" => "my title is my first page"})
-      assert has_map?(ast, %{"property" => "og:description", "content" => "my description is hello world"})
-      assert has_map?(ast, %{"property" => "og:url", "content" => "http://example.com/1"})
+      assert has_map?(ast, %{"property" => "og:description", "content" => "my description is hello world with title my first page"})
+      assert has_map?(ast, %{"property" => "og:url", "content" => "http://example.com/my/page"})
     end
   end
 

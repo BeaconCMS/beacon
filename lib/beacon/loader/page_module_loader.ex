@@ -48,11 +48,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp page_assigns(%Page{} = page) do
     %{id: id, meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
-
-    meta_tags =
-      if meta_tags do
-        Enum.map(meta_tags, &interpolate_meta_tag(&1, page))
-      end
+    meta_tags = interpolate_meta_tags(meta_tags, page)
 
     quote do
       def page_assigns(unquote(id)) do
@@ -65,19 +61,21 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  # Replace meta tag attribute value strings like "%title%" with "#{page.title}"
+  def interpolate_meta_tags(meta_tags, page) do
+    meta_tags
+    |> List.wrap()
+    |> Enum.map(&interpolate_meta_tag(&1, page))
+  end
+
   defp interpolate_meta_tag(meta_tag, page) when is_map(meta_tag) do
     Map.new(meta_tag, &interpolate_meta_tag_attribute(&1, page))
   end
 
   defp interpolate_meta_tag_attribute({key, value}, page) when is_binary(value) do
-    new_value =
-      Enum.reduce(Page.meta_tag_interpolation_keys(), value, fn key, value ->
-        page_value = page |> Map.get(key) |> to_string()
-        String.replace(value, "%#{key}%", page_value)
-      end)
-
-    {key, new_value}
+    case Beacon.Snippets.render(value, %{page: page}) do
+      {:ok, new_value} -> {key, new_value}
+      _ -> {key, value}
+    end
   end
 
   # TODO: path_to_args in paths with dynamic segments may be broken

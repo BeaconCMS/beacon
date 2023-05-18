@@ -155,6 +155,16 @@ seeds = fn ->
       """
     })
 
+  Beacon.Snippets.create_helper!(%{
+    site: "dev",
+    name: "og_description",
+    body: ~S"""
+    assigns
+    |> get_in(["page", "description"])
+    |> String.upcase()
+    """
+  })
+
   page_home =
     Beacon.Pages.create_page!(%{
       path: "home",
@@ -163,16 +173,12 @@ seeds = fn ->
       description: "page used for development",
       layout_id: layout_id,
       meta_tags: [
-        %{"property" => "og:title", "content" => "home"}
+        %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"},
+        %{"property" => "og:description", "content" => "{% helper 'og_description' %}"}
       ],
-      raw_schema: [
-        %{
-          "@context" => "https://schema.org",
-          "@type" => "Organization",
-          "url" => "https://github.com/BeaconCMS",
-          "logo" => "https://avatars.githubusercontent.com/u/873981"
-        }
-      ],
+      extra: %{
+        "author_id" => 1
+      },
       template: """
       <main>
         <h1 class="text-violet-500">Dev</h1>

@@ -3,6 +3,7 @@ defmodule Beacon.Fixtures do
   alias Beacon.Components
   alias Beacon.Layouts
   alias Beacon.Pages
+  alias Beacon.Snippets
   alias Beacon.Stylesheets
 
   def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
@@ -129,11 +130,26 @@ defmodule Beacon.Fixtures do
       helper_name: "upcase",
       helper_args: "%{name: name}",
       code: """
-        String.upcase(name)
+      String.upcase(name)
       """,
       skip_reload: true
     })
     |> Pages.create_page_helper!()
+  end
+
+  def snippet_helper_fixture(attrs \\ %{}) do
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      name: "upcase_title",
+      body: """
+      assigns
+      |> get_in(["page", "title"])
+      |> String.upcase()
+      """,
+      skip_reload: true
+    })
+    |> Snippets.create_helper!()
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do

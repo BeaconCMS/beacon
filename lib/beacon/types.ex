@@ -15,6 +15,9 @@ defmodule Beacon.Types.Site do
   end
 
   def valid?(_site), do: false
+
+  def safe_to_atom(site) when is_atom(site), do: site
+  def safe_to_atom(site) when is_binary(site), do: String.to_existing_atom(site)
 end
 
 defmodule Beacon.Types.Atom do
