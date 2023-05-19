@@ -49,6 +49,22 @@
     <.header>Meta Tags</.header>
     <.live_component module={MetaTagsInputs} id="meta-tags" field={@form[:meta_tags]} extra_attributes={@extra_meta_attributes} />
 
+    <.header>Schema</.header>
+    <LiveMonacoEditor.code_editor
+      path="raw_schema"
+      style="min-height: 350px; width: 100%;"
+      value={@raw_schema_json}
+      opts={Map.merge(LiveMonacoEditor.default_opts(), %{"language" => "json"})}
+    />
+    <.link
+      href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data"
+      target="_blank"
+      rel="noopener"
+      class="text-zinc-500 text-sm"
+    >
+      Schema Help
+    </.link>
+
     <:actions>
       <.button type="submit" name="save" phx-disable-with="Saving...">Save</.button>
       <.button type="submit" name="publish" phx-disable-with="Working...">Save and Publish</.button>

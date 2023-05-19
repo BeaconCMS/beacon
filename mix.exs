@@ -45,6 +45,7 @@ defmodule Beacon.MixProject do
       {:heroicons, "~> 0.5"},
       {:image, "~> 0.31"},
       {:jason, "~> 1.3"},
+      {:solid, "~> 0.14"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},

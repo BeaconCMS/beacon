@@ -57,6 +57,7 @@ defmodule Beacon.Loader do
     with :ok <- Beacon.RuntimeJS.load(),
          :ok <- load_runtime_css(site),
          :ok <- load_components(site),
+         :ok <- load_snippet_helpers(site),
          :ok <- load_layouts(site),
          :ok <- load_pages(site),
          :ok <- load_stylesheets(site) do
@@ -80,6 +81,15 @@ defmodule Beacon.Loader do
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
       Beacon.Components.list_components_for_site(site)
+    )
+
+    :ok
+  end
+
+  defp load_snippet_helpers(site) do
+    Beacon.Loader.SnippetModuleLoader.load_helpers(
+      site,
+      Beacon.Snippets.list_helpers_for_site(site)
     )
 
     :ok
@@ -139,6 +149,10 @@ defmodule Beacon.Loader do
 
   def component_module_for_site(site) do
     module_for_site(site, "Component")
+  end
+
+  def snippet_helpers_module_for_site(site) do
+    module_for_site(site, "SnippetHelpers")
   end
 
   def stylesheet_module_for_site(site) do
@@ -219,6 +233,8 @@ defmodule Beacon.Loader do
       with :ok <- load_runtime_css(page.site),
            # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
            :ok <- load_components(page.site),
+           # TODO: load only used snippet helpers
+           :ok <- load_snippet_helpers(page.site),
            :ok <- load_layout(page.layout),
            :ok <- load_page(page),
            :ok <- load_stylesheets(page.site) do

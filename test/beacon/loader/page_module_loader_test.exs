@@ -38,34 +38,95 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   end
 
   describe "page_assigns/1" do
-    test "interpolates the page title, description, and path in meta tags" do
-      page_1 =
+    defp start_loader(_) do
+      start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+      :ok
+    end
+
+    setup [:start_loader]
+
+    test "interpolates meta tag snippets" do
+      snippet_helper_fixture(%{
+        site: "my_site",
+        name: "og_description",
+        body: ~S"""
+        assigns
+        |> get_in(["page", "description"])
+        |> String.upcase()
+        """
+      })
+
+      page =
         page_fixture(
           site: "my_site",
-          path: "1",
+          path: "page/meta-tag",
           title: "my first page",
-          description: "hello world",
+          description: "my test page",
           meta_tags: [
-            %{"property" => "og:title", "content" => "my title is %title%"},
-            %{"property" => "og:description", "content" => "my description is %description%"},
-            %{"property" => "og:url", "content" => "http://example.com/%path%"}
+            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+            %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"}
           ]
         )
 
-      page_1 = Repo.preload(page_1, [:events, :helpers])
+      page = Repo.preload(page, [:events, :helpers])
+      Beacon.reload_page(page)
 
-      {:ok, ast} = PageModuleLoader.load_page!(:test, page_1)
+      {:ok, ast} = PageModuleLoader.load_page!(:my_site, page)
 
-      assert has_map?(ast, %{"property" => "og:title", "content" => "my title is my first page"})
-      assert has_map?(ast, %{"property" => "og:description", "content" => "my description is hello world"})
-      assert has_map?(ast, %{"property" => "og:url", "content" => "http://example.com/1"})
+      assert has_fields?(ast, [{"content", "MY TEST PAGE"}, {"property", "og:description"}])
+      assert has_fields?(ast, [{"content", "http://example.com/page/meta-tag"}, {"property", "og:url"}])
+    end
+
+    test "interpolates raw_schema snippets" do
+      snippet_helper_fixture(%{
+        site: "my_site",
+        name: "author_name",
+        body: ~S"""
+        author_id =  get_in(assigns, ["page", "extra", "author_id"])
+        "author_#{author_id}"
+        """
+      })
+
+      page =
+        page_fixture(
+          site: "my_site",
+          path: "page/raw-schema",
+          title: "my first page",
+          description: "hello world",
+          extra: %{
+            "author_id" => 1
+          },
+          raw_schema: [
+            %{
+              "@context": "https://schema.org",
+              "@type": "BlogPosting",
+              headline: "{{ page.description }}",
+              author: %{
+                "@type": "Person",
+                name: "{% helper 'author_name' %}"
+              }
+            }
+          ]
+        )
+
+      page = Repo.preload(page, [:events, :helpers])
+      Beacon.reload_page(page)
+
+      {:ok, ast} = PageModuleLoader.load_page!(:my_site, page)
+
+      assert has_fields?(ast,
+               "@context": "https://schema.org",
+               "@type": "BlogPosting",
+               author: {:%{}, [], ["@type": "Person", name: "author_1"]},
+               headline: "hello world"
+             )
     end
   end
 
-  defp has_map?(ast, map) do
+  defp has_fields?(ast, match) do
     {_new_ast, present} =
       Macro.prewalk(ast, false, fn
-        {:%{}, _, fields} = node, acc -> {node, acc or map == Map.new(fields)}
+        {:%{}, _, fields} = node, acc -> {node, acc or match == Enum.sort(fields)}
         node, acc -> {node, acc}
       end)
 

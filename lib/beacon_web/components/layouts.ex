@@ -119,6 +119,29 @@ defmodule BeaconWeb.Layouts do
     """
   end
 
+  def render_schema(%{__dynamic_page_id__: page_id, __site__: site} = assigns) do
+    %{raw_schema: raw_schema} =
+      site
+      |> Beacon.Loader.page_module_for_site(page_id)
+      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+
+    is_empty = fn raw_schema ->
+      raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []
+    end
+
+    if is_empty.(raw_schema) do
+      []
+    else
+      assigns = assign(assigns, :raw_schema, Jason.encode!(raw_schema))
+
+      ~H"""
+      <script type="application/ld+json">
+        <%= {:safe, @raw_schema} %>
+      </script>
+      """
+    end
+  end
+
   @doc """
   List of all meta tags, including site, layout, and page.
   """
