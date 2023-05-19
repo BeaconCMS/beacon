@@ -125,13 +125,21 @@ defmodule BeaconWeb.Layouts do
       |> Beacon.Loader.page_module_for_site(page_id)
       |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
 
-    assigns = assign(assigns, :raw_schema, Jason.encode!(raw_schema))
+    is_empty = fn raw_schema ->
+      raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []
+    end
 
-    ~H"""
-    <script type="application/ld+json">
-      <%= {:safe, @raw_schema} %>
-    </script>
-    """
+    if is_empty.(raw_schema) do
+      []
+    else
+      assigns = assign(assigns, :raw_schema, Jason.encode!(raw_schema))
+
+      ~H"""
+      <script type="application/ld+json">
+        <%= {:safe, @raw_schema} %>
+      </script>
+      """
+    end
   end
 
   @doc """
