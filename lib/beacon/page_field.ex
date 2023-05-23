@@ -102,9 +102,13 @@ defmodule Beacon.PageField do
       end)
     end
 
-    Enum.reduce(errors, %{}, fn {:extra, {_msg, fields}}, acc ->
-      field = fields |> merge_fields.() |> Map.new(fn {k, v} -> {k, Enum.reverse(v)} end)
-      Map.merge(acc, field)
+    Enum.reduce(errors, %{}, fn
+      {:extra, {_msg, fields}}, acc ->
+        field = fields |> merge_fields.() |> Map.new(fn {k, v} -> {k, Enum.reverse(v)} end)
+        Map.merge(acc, field)
+
+      _, acc ->
+        acc
     end)
   end
 

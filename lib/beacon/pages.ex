@@ -165,6 +165,7 @@ defmodule Beacon.Pages do
     |> Repo.update()
   end
 
+  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def update_page(%Page{} = page, params) do
     Repo.transaction(fn ->
       page

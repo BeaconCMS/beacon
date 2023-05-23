@@ -20,8 +20,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> assign(:page, page)
       |> assign(:initial_language, language(page.format))
       |> assign(:pending_template, page.pending_template)
-      |> assign(:raw_schema, page.raw_schema)
-      |> assign(:raw_schema_json, Jason.encode!(page.raw_schema, pretty: true))
+      |> assign(:raw_schema, Jason.encode!(page.raw_schema, pretty: true))
       |> assign_form(changeset)
       |> assign_extra_fields(changeset)
       |> assign_site_layotus()
@@ -68,7 +67,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   def handle_event("raw_schema_editor_lost_focus", %{"value" => value}, socket) do
-    {:noreply, assign(socket, :raw_schema, Jason.decode!(value))}
+    {:noreply, assign(socket, :raw_schema, value)}
   end
 
   def handle_event("copy_version", %{"version" => version_str}, socket) do

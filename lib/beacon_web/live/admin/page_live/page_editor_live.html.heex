@@ -53,9 +53,10 @@
     <LiveMonacoEditor.code_editor
       path="raw_schema"
       style="min-height: 350px; width: 100%;"
-      value={@raw_schema_json}
+      value={@raw_schema}
       opts={Map.merge(LiveMonacoEditor.default_opts(), %{"language" => "json"})}
     />
+    <.error :for={msg <- Enum.map(@form[:raw_schema].errors, &BeaconWeb.CoreComponents.translate_error/1)}><%= msg %></.error>
     <.link
       href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data"
       target="_blank"

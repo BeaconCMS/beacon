@@ -103,11 +103,11 @@ defmodule Beacon.Pages.Page do
       :title,
       :description,
       :meta_tags,
-      :raw_schema,
       :path,
       :format
     ])
     |> validate_required([:pending_template, :pending_layout_id])
+    |> validate_raw_schema(attrs["raw_schema"])
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
@@ -124,6 +124,15 @@ defmodule Beacon.Pages.Page do
     case get_change(changeset, :layout_id) do
       nil -> changeset
       layout_id -> put_change(changeset, :pending_layout_id, layout_id)
+    end
+  end
+
+  defp validate_raw_schema(changeset, raw_schema) do
+    raw_schema = if raw_schema in ["", nil], do: "[]", else: raw_schema
+
+    case Jason.decode(raw_schema) do
+      {:ok, raw_schema} -> put_change(changeset, :raw_schema, raw_schema)
+      {:error, _} -> add_error(changeset, :raw_schema, "invalid schema")
     end
   end
 
