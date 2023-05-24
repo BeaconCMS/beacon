@@ -2,8 +2,6 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Beacon.Admin.MediaLibrary.Backend
-
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_assets" do
@@ -24,19 +22,14 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
   end
 
   @doc false
-  def upload_changeset(asset, metadata) do
-    metadata = Backend.process!(metadata)
-
-    attrs = %{
-      site: metadata.site,
-      file_name: metadata.name,
-      media_type: metadata.media_type
-    }
-
+  def upload_changeset(asset, attrs) do
     asset
     |> cast(attrs, [:site, :file_name, :media_type])
     |> validate_required([:site, :file_name, :media_type])
-    |> Backend.validate_for_delivery(metadata)
-    |> Backend.send_to_providers(metadata)
+  end
+
+  @doc false
+  def bare_changeset(asset \\ %__MODULE__{}) do
+    change(asset)
   end
 end

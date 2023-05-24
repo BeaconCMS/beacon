@@ -99,6 +99,11 @@ defmodule Beacon.Config do
           | {:publish_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
           | {:create_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
           | {:update_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
+          | {:upload_asset,
+             [
+               {identifier :: atom(),
+                fun :: (Beacon.Admin.MediaLibrary.Asset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
+             ]}
 
   @typedoc """
   Add extra fields to pages.
@@ -250,7 +255,8 @@ defmodule Beacon.Config do
           ],
           publish_page: [
             notify_admin: fn page -> {:cont, MyApp.send_email(page)} end
-          ]
+          ],
+          update_page: [MyModule.some_function/2],
         ]
       )
       %Beacon.Config{
@@ -302,7 +308,8 @@ defmodule Beacon.Config do
           update_page: [],
           publish_page: [
             notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
-          ]
+          ],
+          upload_asset: [],
         ],
         extra_page_fields: []
       }
@@ -326,7 +333,8 @@ defmodule Beacon.Config do
       render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
       create_page: get_in(opts, [:lifecycle, :create_page]) || [],
       update_page: get_in(opts, [:lifecycle, :update_page]) || [],
-      publish_page: get_in(opts, [:lifecycle, :publish_page]) || []
+      publish_page: get_in(opts, [:lifecycle, :publish_page]) || [],
+      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || []
     ]
 
     allowed_media_types = Keyword.get(opts, :allowed_media_types, @default_media_types)

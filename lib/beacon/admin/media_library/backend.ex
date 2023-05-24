@@ -5,13 +5,13 @@ defmodule Beacon.Admin.MediaLibrary.Backend do
     metadata.config.processor.(metadata)
   end
 
-  @spec validate_for_delivery(Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t()) :: Ecto.Changeset.t()
-  def validate_for_delivery(%Ecto.Changeset{} = changeset, %UploadMetadata{} = metadata) do
-    Enum.reduce(metadata.config.validations, changeset, fn validation, cs -> validation.(cs, metadata) end)
+  @spec validate_for_delivery(Beacon.Admin.MediaLibrary.UploadMetadata.t()) :: Ecto.Changeset.t()
+  def validate_for_delivery(%UploadMetadata{} = metadata) do
+    Enum.reduce(metadata.config.validations, metadata, fn validation, md -> validation.(md) end)
   end
 
-  @spec send_to_providers(Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t()) :: Ecto.Changeset.t()
-  def send_to_providers(%Ecto.Changeset{} = changeset, %UploadMetadata{} = metadata) do
-    Enum.reduce(metadata.config.backends, changeset, fn backend, cs -> backend.send_to_provider(cs, metadata) end)
+  @spec send_to_cdns(Beacon.Admin.MediaLibrary.UploadMetadata.t()) :: Beacon.Admin.MediaLibrary.UploadMetadata.t()
+  def send_to_cdns(%UploadMetadata{} = metadata) do
+    Enum.reduce(metadata.config.backends, metadata, fn backend, md -> backend.send_to_cdn(md) end)
   end
 end

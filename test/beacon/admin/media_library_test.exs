@@ -23,6 +23,6 @@ defmodule Beacon.Admin.MediaLibraryTest do
   test "upload asset, converts to webp by default" do
     metadata = file_metadata_fixture(file_name: "my_file.png")
     Beacon.Config.fetch!(:my_site)
-    assert {:ok, %Asset{file_name: "my_file.webp", media_type: "image/webp"}} = MediaLibrary.upload(metadata)
+    assert %Asset{file_name: "my_file.webp", media_type: "image/webp"} = MediaLibrary.upload(metadata)
   end
 end
