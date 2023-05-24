@@ -5,7 +5,7 @@ defmodule Beacon.Admin.MediaLibrary.Backend do
     metadata.config.processor.(metadata)
   end
 
-  @spec validate_for_delivery(Beacon.Admin.MediaLibrary.UploadMetadata.t()) :: Ecto.Changeset.t()
+  @spec validate_for_delivery(Beacon.Admin.MediaLibrary.UploadMetadata.t()) :: Beacon.Admin.MediaLibrary.UploadMetadata.t()
   def validate_for_delivery(%UploadMetadata{} = metadata) do
     Enum.reduce(metadata.config.validations, metadata, fn validation, md -> validation.(md) end)
   end

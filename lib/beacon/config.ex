@@ -102,7 +102,7 @@ defmodule Beacon.Config do
           | {:upload_asset,
              [
                {identifier :: atom(),
-                fun :: (Beacon.Admin.MediaLibrary.Asset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
+                fun :: (Ecto.Schema.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
              ]}
 
   @typedoc """

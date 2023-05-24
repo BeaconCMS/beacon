@@ -26,7 +26,7 @@ defmodule Beacon.Lifecycle.Asset do
 
   It's executed in the same repo transaction, after the `asset` record is saved into the database.
   """
-  @spec upload_asset(Beacon.Admin.MediaLibrary.UploadMetadata.t(), MediaLibrary.Asset.t()) :: MediaLibrary.Asset.t()
+  @spec upload_asset(Beacon.Admin.MediaLibrary.UploadMetadata.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
   def upload_asset(metadata, asset) do
     lifecycle = Lifecycle.execute(__MODULE__, metadata.site, :upload_asset, asset, context: metadata)
     lifecycle.output
