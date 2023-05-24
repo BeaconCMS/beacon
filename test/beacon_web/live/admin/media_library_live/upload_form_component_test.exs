@@ -21,7 +21,7 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.UploadFormComponentTest do
 
     # site :lifecycle_test is configured to create a copy of uploaded assets
     # see test/test_helper.exs
-    assets =  MediaLibrary.list_assets()
+    assets = MediaLibrary.list_assets()
     assert Enum.any?(assets, fn asset -> asset.file_name == "image.webp" end)
   end
 end
