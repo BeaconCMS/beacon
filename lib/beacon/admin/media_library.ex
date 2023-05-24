@@ -8,7 +8,6 @@ defmodule Beacon.Admin.MediaLibrary do
 
   alias Beacon.Admin.MediaLibrary.Asset
   alias Beacon.Admin.MediaLibrary.Backend
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
   alias Beacon.Lifecycle
 
   @doc """
