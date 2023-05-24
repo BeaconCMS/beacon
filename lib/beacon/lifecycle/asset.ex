@@ -1,6 +1,7 @@
 defmodule Beacon.Lifecycle.Asset do
-  alias Beacon.Lifecycle
   alias Beacon.Admin.MediaLibrary
+  alias Beacon.Lifecycle
+
   @behaviour Beacon.Lifecycle
 
   @impl Lifecycle
