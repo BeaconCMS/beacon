@@ -334,7 +334,7 @@ defmodule Beacon.Config do
       create_page: get_in(opts, [:lifecycle, :create_page]) || [],
       update_page: get_in(opts, [:lifecycle, :update_page]) || [],
       publish_page: get_in(opts, [:lifecycle, :publish_page]) || [],
-      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || []
+      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 
     allowed_media_types = Keyword.get(opts, :allowed_media_types, @default_media_types)

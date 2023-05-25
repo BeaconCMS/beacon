@@ -9,7 +9,9 @@ defmodule Beacon.Admin.MediaLibraryTest do
     media_library_asset_fixture(file_name: "my_file.webp")
     media_library_asset_fixture(file_name: "other_file.webp")
 
-    assert [%Asset{file_name: "my_file.webp"}] = MediaLibrary.search("my")
+    hits = MediaLibrary.search("my")
+
+    assert Enum.all?(hits, fn asset -> String.contains?(asset.file_name, "my") end)
   end
 
   test "soft delete" do

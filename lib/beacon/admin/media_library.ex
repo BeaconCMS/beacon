@@ -78,15 +78,25 @@ defmodule Beacon.Admin.MediaLibrary do
   end
 
   def save_asset(metadata) do
+    metadata
+    |> prep_save_asset()
+    |> Repo.insert()
+  end
+
+  def save_asset!(metadata) do
+    metadata
+    |> prep_save_asset()
+    |> Repo.insert!()
+  end
+
+  defp prep_save_asset(metadata) do
     attrs = %{
       site: metadata.site,
       file_name: metadata.name,
       media_type: metadata.media_type
     }
 
-    metadata.resource
-    |> Asset.upload_changeset(attrs)
-    |> Repo.insert()
+    Asset.upload_changeset(metadata.resource, attrs)
   end
 
   @doc """

@@ -43,7 +43,7 @@ defmodule Beacon.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
-      {:image, "~> 0.31"},
+      {:image, "~> 0.32"},
       {:jason, "~> 1.3"},
       {:solid, "~> 0.14"},
       {:phoenix, "~> 1.7"},
