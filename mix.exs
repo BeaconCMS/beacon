@@ -64,7 +64,7 @@ defmodule Beacon.MixProject do
     if path = System.get_env("LIVE_MONACO_EDITOR_PATH") do
       {:live_monaco_editor, path: path}
     else
-      {:live_monaco_editor, github: "BeaconCMS/live_monaco_editor", branch: "main"}
+      {:live_monaco_editor, "~> 0.1.0"}
     end
   end
 
