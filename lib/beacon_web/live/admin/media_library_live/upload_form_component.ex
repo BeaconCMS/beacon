@@ -74,9 +74,12 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
 
     uploaded_assets =
       consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
-        site
-        |> UploadMetadata.new(path, name: entry.client_name, media_type: entry.client_type, size: entry.client_size)
-        |> MediaLibrary.upload()
+        asset =
+          site
+          |> UploadMetadata.new(path, name: entry.client_name, media_type: entry.client_type, size: entry.client_size)
+          |> MediaLibrary.upload()
+
+        {:ok, asset}
       end)
 
     {:noreply, update(socket, :uploaded_assets, &(&1 ++ uploaded_assets))}

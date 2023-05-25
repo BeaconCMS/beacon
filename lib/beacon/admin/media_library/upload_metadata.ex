@@ -3,7 +3,9 @@ defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
   Metadata passed to page rendering lifecycle.
   """
 
-  defstruct [:site, :config, :allowed_media_types, :path, :name, :media_type, :size, :output]
+  alias Beacon.Admin.MediaLibrary.Asset
+
+  defstruct [:site, :config, :allowed_media_types, :path, :name, :media_type, :size, :output, :resource]
 
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
@@ -13,7 +15,8 @@ defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
           name: String.t() | nil,
           media_type: String.t() | nil,
           size: integer() | nil,
-          output: any() | nil
+          output: any(),
+          resource: Ecto.Changeset.t(%Asset{})
         }
 
   # TODO: https://github.com/BeaconCMS/beacon/pull/239#discussion_r1194160478
@@ -23,6 +26,7 @@ defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
     media_type = Keyword.get(opts, :media_type, media_type_from_name(name))
     size = Keyword.get(opts, :size)
     output = Keyword.get(opts, :output)
+    resource = Keyword.get(opts, :resource, Asset.bare_changeset())
 
     %__MODULE__{
       site: site,
@@ -32,7 +36,8 @@ defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
       name: name,
       media_type: media_type,
       size: size,
-      output: output
+      output: output,
+      resource: resource
     }
   end
 

@@ -153,12 +153,9 @@ defmodule Beacon.Fixtures do
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do
-    {:ok, asset} =
-      attrs
-      |> file_metadata_fixture()
-      |> MediaLibrary.upload()
-
-    asset
+    attrs
+    |> file_metadata_fixture()
+    |> MediaLibrary.upload()
   end
 
   def file_metadata_fixture(attrs \\ %{}) do

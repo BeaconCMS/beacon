@@ -7,6 +7,8 @@ defmodule Beacon.Admin.MediaLibrary do
   alias Beacon.Repo
 
   alias Beacon.Admin.MediaLibrary.Asset
+  alias Beacon.Admin.MediaLibrary.Backend
+  alias Beacon.Lifecycle
 
   @doc """
   Returns the list of assets.
@@ -20,7 +22,8 @@ defmodule Beacon.Admin.MediaLibrary do
   def list_assets do
     Repo.all(
       from asset in Asset,
-        where: is_nil(asset.deleted_at)
+        where: is_nil(asset.deleted_at),
+        order_by: [desc: asset.inserted_at]
     )
   end
 
@@ -55,8 +58,34 @@ defmodule Beacon.Admin.MediaLibrary do
   end
 
   def upload(metadata) do
-    %Asset{}
-    |> Asset.upload_changeset(metadata)
+    with(
+      metadata <- process_metadata(metadata),
+      metadata <- send_to_cdn(metadata),
+      {:ok, asset} <- save_asset(metadata)
+    ) do
+      Lifecycle.Asset.upload_asset(metadata, asset)
+    end
+  end
+
+  def process_metadata(metadata) do
+    Backend.process!(metadata)
+  end
+
+  def send_to_cdn(metadata) do
+    metadata
+    |> Backend.validate_for_delivery()
+    |> Backend.send_to_cdns()
+  end
+
+  def save_asset(metadata) do
+    attrs = %{
+      site: metadata.site,
+      file_name: metadata.name,
+      media_type: metadata.media_type
+    }
+
+    metadata.resource
+    |> Asset.upload_changeset(attrs)
     |> Repo.insert()
   end
 
