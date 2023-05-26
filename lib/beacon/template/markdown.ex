@@ -41,6 +41,12 @@ defmodule Beacon.Template.Markdown do
   end
 
   defp find_cmark_gfm_bin! do
-    System.find_executable("cmark-gfm") || raise "here"
+    message = """
+    failed to find cmark-gfm bin
+
+    make sure it's installed and defined in your $PATH env var
+    """
+
+    System.find_executable("cmark-gfm") || raise message
   end
 end

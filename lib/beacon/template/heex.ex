@@ -50,14 +50,8 @@ defmodule Beacon.Template.HEEx do
       | env.functions
     ]
 
-    opts =
-      env
-      |> Map.from_struct()
-      |> Keyword.new()
-      |> Keyword.put(:functions, functions)
-
-    {rendered, _bindings} = Code.eval_quoted(template, [assigns: assigns], opts)
-
+    env = %{env | functions: functions}
+    {rendered, _bindings} = Code.eval_quoted(template, [assigns: assigns], env)
     {:halt, rendered}
   end
 
