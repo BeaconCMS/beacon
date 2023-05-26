@@ -48,9 +48,16 @@ defmodule Beacon.Loader do
     :ok
   rescue
     e ->
-      reraise Beacon.LoaderError,
-              [message: "Failed to load module #{inspect(module)}, got: #{Exception.message(e)}"],
-              __STACKTRACE__
+      message = """
+      failed to load module #{inspect(module)}
+
+      Got:
+
+        #{Exception.message(e)}"],
+
+      """
+
+      reraise Beacon.LoaderError, [message: message], __STACKTRACE__
   end
 
   defp load_site_from_db(site) do
