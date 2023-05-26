@@ -63,7 +63,7 @@ Supervisor.start_link(
              maybe_publish_page: fn _page ->
                {:cont, %Beacon.Pages.Page{status: :published}}
              end
-           ],
+           ]
          ]
        ],
        [

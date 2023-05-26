@@ -12,6 +12,5 @@ defmodule Beacon.Lifecycle.AssetTest do
 
     assert %Beacon.MediaLibrary.Asset{} = Beacon.MediaLibrary.get_asset(:lifecycle_test, "image.webp")
     assert %Beacon.MediaLibrary.Asset{} = Beacon.MediaLibrary.get_asset(:lifecycle_test, "image-thumb.webp")
-
   end
 end
