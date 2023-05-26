@@ -49,13 +49,13 @@ defmodule Beacon.Loader do
   rescue
     e ->
       message = """
-        failed to load module #{inspect(module)}
+      failed to load module #{inspect(module)}
 
-        Got:
+      Got:
 
-          #{Exception.message(e)}"],
+        #{Exception.message(e)}"],
 
-        """
+      """
 
       reraise Beacon.LoaderError, [message: message], __STACKTRACE__
   end
