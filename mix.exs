@@ -7,7 +7,7 @@ defmodule Beacon.MixProject do
     [
       app: :beacon,
       version: @version,
-      elixir: "~> 1.12",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       name: "Beacon",
       deps: deps(),
