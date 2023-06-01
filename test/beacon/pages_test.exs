@@ -22,7 +22,7 @@ defmodule Beacon.PagesTest do
     test "includes default meta tags" do
       attrs = %{
         path: "home",
-        site: "my_site",
+        site: "default_meta_tags_test",
         layout_id: layout_fixture().id,
         template: """
         <main>

@@ -354,7 +354,7 @@ defmodule Beacon.Config do
     assigned_assets = Keyword.get(opts, :assets, [])
     assets = process_assets_config(allowed_media_types, assigned_assets)
 
-    default_meta_tags = Keyword.get(opts, :default_meta_tags, [%{"name" => "foo_meta_tag"}, %{"name" => "bar_meta_tag"}, %{"name" => "baz_meta_tag"}])
+    default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
 
     opts =
       opts
