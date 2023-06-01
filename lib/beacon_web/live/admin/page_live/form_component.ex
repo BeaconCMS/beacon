@@ -39,7 +39,9 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
   end
 
   defp save_page(socket, :new, page_params) do
-    case Pages.create_page(page_params) do
+    parsed_params = Map.new(page_params, fn {key, value} -> {String.to_existing_atom(key), value} end)
+
+    case Pages.create_page(parsed_params) do
       {:ok, _page} ->
         {:noreply,
          socket
