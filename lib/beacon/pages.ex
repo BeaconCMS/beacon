@@ -89,6 +89,15 @@ defmodule Beacon.Pages do
   def create_page(attrs) do
     skip_reload? = Map.get(attrs, :skip_reload, false)
 
+    default_meta_tags =
+      attrs
+      |> Map.fetch!(:site)
+      |> String.to_existing_atom()
+      |> Beacon.Config.fetch!()
+      |> Map.fetch!(:default_meta_tags)
+
+    attrs = Map.put_new(attrs, :meta_tags, default_meta_tags)
+
     Repo.transaction(fn ->
       page_changeset = Page.changeset(attrs)
 

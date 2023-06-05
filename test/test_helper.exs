@@ -25,6 +25,15 @@ Supervisor.start_link(
          data_source: Beacon.BeaconTest.TestDataSource
        ],
        [
+         site: :default_meta_tags_test,
+         data_source: Beacon.BeaconTest.BeaconDataSource,
+         default_meta_tags: [
+           %{"name" => "foo_meta_tag"},
+           %{"name" => "bar_meta_tag"},
+           %{"name" => "baz_meta_tag"}
+         ]
+       ],
+       [
          site: :lifecycle_test,
          lifecycle: [
            load_template: [

@@ -18,6 +18,26 @@ defmodule Beacon.PagesTest do
     end
   end
 
+  describe "create_page/1" do
+    test "includes default meta tags" do
+      attrs = %{
+        path: "home",
+        site: "default_meta_tags_test",
+        layout_id: layout_fixture().id,
+        template: """
+        <main>
+          <h1>my_site#home</h1>
+        </main>
+        """,
+        format: :heex,
+        skip_reload: true
+      }
+
+      assert {:ok, page} = Pages.create_page(attrs)
+      assert page.meta_tags == [%{"name" => "foo_meta_tag"}, %{"name" => "bar_meta_tag"}, %{"name" => "baz_meta_tag"}]
+    end
+  end
+
   test "list_pages_for_site order" do
     page_fixture(path: "", order: 0)
     page_fixture(path: "blog_a", order: 0)
