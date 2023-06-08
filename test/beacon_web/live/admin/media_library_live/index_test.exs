@@ -1,8 +1,7 @@
 defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
   use BeaconWeb.ConnCase, async: true
   import Beacon.Fixtures
-  alias Beacon.Admin.MediaLibrary.Asset
-  alias Beacon.Repo
+  alias Beacon.Admin.MediaLibrary
 
   test "index", %{conn: conn} do
     media_library_asset_fixture(file_name: "test_index.webp")
@@ -13,19 +12,19 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
   end
 
   test "soft delete", %{conn: conn} do
-    media_library_asset_fixture(file_name: "test_delete.webp")
+    asset = media_library_asset_fixture(file_name: "test_delete.webp")
 
     {:ok, view, _html} = live(conn, "/admin/media_library")
 
     html =
       view
-      |> element("a", "Delete")
+      |> element("tr##{asset.id} a", "Delete")
       |> render_click()
 
     refute html =~ "test_delete.webp"
 
-    assert [%Asset{deleted_at: deleted_at}] = Repo.all(Asset)
-    assert deleted_at
+    deleted_asset = MediaLibrary.get_asset!(asset.id)
+    assert deleted_asset.deleted_at
   end
 
   test "search", %{conn: conn} do

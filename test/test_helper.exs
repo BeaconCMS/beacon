@@ -72,13 +72,6 @@ Supervisor.start_link(
              maybe_publish_page: fn _page ->
                {:cont, %Beacon.Pages.Page{status: :published}}
              end
-           ],
-           upload_asset: [
-             copy_asset: fn asset, metadata ->
-               metadata = %{metadata | name: "image-copy.webp"}
-               Beacon.Admin.MediaLibrary.save_asset(metadata)
-               {:cont, asset}
-             end
            ]
          ]
        ],
