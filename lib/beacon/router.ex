@@ -219,17 +219,16 @@ defmodule Beacon.Router do
   """
   defmacro beacon_api(path) do
     quote bind_quoted: binding() do
-      scope path, BeaconWeb.AdminApi do
+      scope path, BeaconWeb.API do
         import Phoenix.Router, only: [get: 3, post: 3, put: 3]
 
         get "/pages", PageController, :index
         get "/pages/:id", PageController, :show
-        post "/pages", PageController, :create
-        put "/pages/:id", PageController, :update_page_pending
-        post "/pages/:id/publish", PageController, :publish
-
-        get "/layouts", LayoutController, :index
-        get "/layouts/:id", LayoutController, :show
+        # post "/pages", PageController, :create
+        # put "/pages/:id", PageController, :update_page_pending
+        # post "/pages/:id/publish", PageController, :publish
+        # get "/layouts", LayoutController, :index
+        # get "/layouts/:id", LayoutController, :show
       end
     end
   end

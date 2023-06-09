@@ -49,11 +49,15 @@ defmodule SamplePhoenixWeb.Router do
   import Phoenix.LiveView.Router
 
   pipeline :browser do
-    plug :accepts, ["html"]
+    plug :accepts, ["html", "json"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
   end
 
   scope "/" do
@@ -61,6 +65,11 @@ defmodule SamplePhoenixWeb.Router do
     beacon_admin "/admin"
     beacon_site "/dev", site: :dev
     beacon_site "/other", site: :other
+  end
+
+  scope "/" do
+    pipe_through :api
+    beacon_api "/api"
   end
 end
 
