@@ -39,6 +39,7 @@ defmodule Beacon.Router do
     quote do
       @doc false
       def __beacon_sites__, do: unquote(Macro.escape(sites))
+      @doc false
       def __beacon_admin_prefix__, do: unquote(Macro.escape(admin_prefix))
       unquote(prefixes)
     end
@@ -80,6 +81,9 @@ defmodule Beacon.Router do
     quote bind_quoted: binding(), location: :keep do
       scope path, alias: false, as: false do
         {session_name, session_opts} = Beacon.Router.__options__(opts)
+
+        import Phoenix.Router, only: [get: 3, get: 4]
+        import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
         live_session session_name, session_opts do
           get "/beacon_assets/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
