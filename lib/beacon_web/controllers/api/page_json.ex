@@ -1,13 +1,21 @@
-defmodule BeaconWeb.AdminApi.PageJSON do
+defmodule BeaconWeb.API.PageJSON do
+  alias Beacon.Pages.Page
+
+  @doc """
+  Renders a list of pages.
+  """
   def index(%{pages: pages}) do
     %{data: for(page <- pages, do: data(page))}
   end
 
+  @doc """
+  Renders a single page.
+  """
   def show(%{page: page}) do
     %{data: data(page)}
   end
 
-  defp data(page) do
+  defp data(%Page{} = page) do
     %{
       id: page.id,
       layout_id: page.layout_id,
@@ -16,7 +24,9 @@ defmodule BeaconWeb.AdminApi.PageJSON do
       site: page.site,
       template: page.template,
       pending_template: page.pending_template,
-      version: page.version
+      version: page.version,
+      format: page.format,
+      status: page.status
     }
   end
 end

@@ -38,3 +38,4 @@ iex -S mix dev
 ```
 
 Visit any of the routes defined in `dev.exs` as http://localhost:4001/dev/home or http://localhost:4001/admin
+or request resources from the API as http://localhost:4001/api/pages
