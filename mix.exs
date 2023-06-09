@@ -38,18 +38,18 @@ defmodule Beacon.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
-      {:esbuild, "~> 0.4"},
+      {:esbuild, "~> 0.5", only: :dev},
       {:ex_doc, "~> 0.29", only: :docs},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
       {:image, "~> 0.31"},
-      {:jason, "~> 1.3"},
+      {:jason, "~> 1.0"},
       {:solid, "~> 0.14"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:phoenix_live_view, "~> 0.18.18"},
+      {:phoenix_live_view, "~> 0.19"},
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
@@ -64,7 +64,7 @@ defmodule Beacon.MixProject do
     if path = System.get_env("LIVE_MONACO_EDITOR_PATH") do
       {:live_monaco_editor, path: path}
     else
-      {:live_monaco_editor, "~> 0.1.0"}
+      {:live_monaco_editor, "~> 0.1"}
     end
   end
 
