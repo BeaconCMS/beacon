@@ -14,8 +14,8 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.UploadFormComponentTest do
       assert has_element?(view, "h1", "Upload")
 
       view
-        |> element("#site-input")
-        |> render_change(%{site: "s3_site"})
+      |> element("#site-input")
+      |> render_change(%{site: "s3_site"})
 
       asset =
         file_input(view, "#asset-form", :asset, [

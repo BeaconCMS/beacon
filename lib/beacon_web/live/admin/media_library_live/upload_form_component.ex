@@ -28,7 +28,17 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
         phx-change="validate"
         phx-submit="save"
       >
-        <.input id="site-input" field="site" name="site" type="select" label="Site" options={@sites} value={@site_selected} phx-change="set_site" phx-target={@myself} />
+        <.input
+          id="site-input"
+          field="site"
+          name="site"
+          type="select"
+          label="Site"
+          options={@sites}
+          value={@site_selected}
+          phx-change="set_site"
+          phx-target={@myself}
+        />
         <.live_file_input upload={@uploads.asset} tabindex="0" />
       </.form>
 
@@ -70,10 +80,11 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   end
 
   defp handle_progress(:asset, entry, socket) do
-    site = case socket.assigns.site_selected do
-      site when is_binary(site) -> String.to_existing_atom(site)
-      site -> site
-    end
+    site =
+      case socket.assigns.site_selected do
+        site when is_binary(site) -> String.to_existing_atom(site)
+        site -> site
+      end
 
     uploaded_assets =
       consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
