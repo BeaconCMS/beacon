@@ -13,6 +13,7 @@ config :beacon, Beacon.Repo,
 
 config :beacon, ecto_repos: [Beacon.Repo]
 
+# Fake Key Values. We're not putting real creds here.
 config :ex_aws,
   access_key_id: "AKIAIOSFODNN7EXAMPLE",
   secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
