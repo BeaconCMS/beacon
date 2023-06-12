@@ -28,16 +28,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
         phx-change="validate"
         phx-submit="save"
       >
-        <.input
-          id="site-input"
-          name="site"
-          type="select"
-          label="Site"
-          options={@sites}
-          value={@site_selected}
-          phx-change="set_site"
-          phx-target={@myself}
-        />
+        <.input id="site-input" name="site" type="select" label="Site" options={@sites} value={@site_selected} phx-change="set_site" phx-target={@myself} />
         <.live_file_input upload={@uploads.asset} tabindex="0" />
       </.form>
 
