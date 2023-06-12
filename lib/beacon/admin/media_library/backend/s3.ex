@@ -40,14 +40,14 @@ defmodule Beacon.Admin.MediaLibrary.Backend.S3 do
     UploadMetadata.key_for(metadata)
   end
 
-  def bucket() do
+  def bucket do
     case ExAws.Config.new(:s3) do
       %{bucket: bucket} -> bucket
       _ -> raise ArgumentError, message: "Missing :ex_aws, :s3, bucket: \"...\" configuration"
     end
   end
 
-  def list() do
+  def list do
     ExAws.S3.list_objects(bucket()) |> ExAws.request!()
   end
 
@@ -72,5 +72,5 @@ defmodule Beacon.Admin.MediaLibrary.Backend.S3 do
     )
   end
 
-  def backend_key(), do: @backend_key
+  def backend_key, do: @backend_key
 end

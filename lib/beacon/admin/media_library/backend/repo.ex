@@ -34,5 +34,5 @@ defmodule Beacon.Admin.MediaLibrary.Backend.Repo do
     %Beacon.BeaconAttrs{site: asset.site, prefix: ""}
   end
 
-  def backend_key(), do: @backend_key
+  def backend_key, do: @backend_key
 end
