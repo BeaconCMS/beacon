@@ -5,7 +5,7 @@ defmodule Beacon.RegistryTest do
 
   test "registered_sites" do
     registered_sites = Registry.registered_sites()
-    assert Enum.sort(registered_sites) == [:data_source_test, :default_meta_tags_test, :lifecycle_test, :lifecycle_test_fail, :my_site]
+    assert Enum.sort(registered_sites) == [:data_source_test, :default_meta_tags_test, :lifecycle_test, :lifecycle_test_fail, :my_site, :s3_site]
   end
 
   describe "config!" do

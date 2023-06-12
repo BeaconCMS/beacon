@@ -60,7 +60,7 @@ defmodule Beacon.Admin.MediaLibrary do
   def upload(metadata) do
     with(
       metadata <- process_metadata(metadata),
-      metadata <- send_to_cdn(metadata),
+      metadata <- send_to_cdns(metadata),
       {:ok, asset} <- save_asset(metadata)
     ) do
       Lifecycle.Asset.upload_asset(metadata, asset)
@@ -71,7 +71,7 @@ defmodule Beacon.Admin.MediaLibrary do
     Backend.process!(metadata)
   end
 
-  def send_to_cdn(metadata) do
+  def send_to_cdns(metadata) do
     metadata
     |> Backend.validate_for_delivery()
     |> Backend.send_to_cdns()
@@ -137,5 +137,19 @@ defmodule Beacon.Admin.MediaLibrary do
   """
   def change_asset(%Asset{} = asset, attrs \\ %{}) do
     Asset.changeset(asset, attrs)
+  end
+
+  def url_for(asset) do
+    config =
+      asset.site
+      |> Beacon.Config.fetch!()
+      |> Beacon.Config.config_for_media_type(asset.media_type)
+      |> Keyword.fetch!(:backends)
+      |> hd()
+
+    case config do
+      {backend, config} -> backend.url_for(asset, config)
+      backend -> backend.url_for(asset)
+    end
   end
 end
