@@ -30,7 +30,6 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
       >
         <.input
           id="site-input"
-          field="site"
           name="site"
           type="select"
           label="Site"
