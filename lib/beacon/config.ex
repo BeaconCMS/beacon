@@ -62,8 +62,14 @@ defmodule Beacon.Config do
   Individual media type configs
   """
   @type media_type_config :: [
-          {:backends, list(backend :: module())},
-          {:validations, list(validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()))},
+          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})},
+          {:validations,
+           list(
+             validation_fun ::
+               (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
+               | {validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()),
+                  validation_config :: term()}
+           )},
           {:processor, {prossesor_fun :: (Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
         ]
 

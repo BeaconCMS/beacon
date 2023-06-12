@@ -21,6 +21,13 @@ Supervisor.start_link(
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField]
        ],
        [
+         site: :s3_site,
+         assets: [
+           {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
+         ],
+         lifecycle: [upload_asset: []]
+       ],
+       [
          site: :data_source_test,
          data_source: Beacon.BeaconTest.TestDataSource
        ],

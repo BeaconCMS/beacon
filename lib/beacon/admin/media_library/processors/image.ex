@@ -30,7 +30,7 @@ defmodule Beacon.Admin.MediaLibrary.Processors.Image do
   def thumbnail!(%UploadMetadata{} = metadata) do
     metadata
     |> create_thumbnail()
-    |> MediaLibrary.send_to_cdn()
+    |> MediaLibrary.send_to_cdns()
     |> MediaLibrary.save_asset!()
 
     metadata
