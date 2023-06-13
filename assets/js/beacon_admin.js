@@ -19,6 +19,20 @@ window.addEventListener("lme:editor_mounted", (ev) => {
   })
 })
 
+window.addEventListener("phx:beacon:clipcopy", (event) => {
+  if ("clipboard" in navigator) {
+    if (event.target.tagName === "INPUT") {
+      navigator.clipboard.writeText(event.target.value)
+    } else {
+      navigator.clipboard.writeText(event.target.textContent);
+    }
+  } else {
+    alert(
+      "Sorry, your browser does not support clipboard copy.\nThis generally requires a secure origin — either HTTPS or localhost."
+    );
+  }
+});
+
 let socketPath =
   document.querySelector("html").getAttribute("phx-socket") || "/live"
 let csrfToken = document

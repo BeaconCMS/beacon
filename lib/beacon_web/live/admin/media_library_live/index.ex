@@ -54,6 +54,14 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
     |> assign(:asset, %Asset{})
   end
 
+  defp apply_action(socket, :show, %{"id" => id}) do
+    asset = MediaLibrary.get_asset!(id)
+
+    socket
+    |> assign(:page_title, "Upload")
+    |> assign(:asset, asset)
+  end
+
   @impl true
   def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
     if Authorization.authorized?(assigns.agent, :delete, Map.put(assigns.authn_context, :resource_id, id)) do

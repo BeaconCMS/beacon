@@ -3,6 +3,7 @@ defmodule Beacon.Admin.MediaLibrary.Backend.Repo do
 
   alias Beacon.Admin.MediaLibrary.Asset
   alias Beacon.Admin.MediaLibrary.UploadMetadata
+  use Phoenix.VerifiedRoutes, endpoint: SamplePhoenix.Endpoint, router: SamplePhoenixWeb.Router
 
   @backend_key "repo"
 
@@ -26,12 +27,11 @@ defmodule Beacon.Admin.MediaLibrary.Backend.Repo do
   def url_for(asset, _), do: url_for(asset)
 
   def url_for(asset) do
-    beacon_attrs = Process.get(:__beacon_attrs__, default_attrs(asset))
-    Beacon.Router.beacon_asset_path(beacon_attrs, asset.file_name)
+    Beacon.Router.beacon_asset_path(beacon_attrs(asset), asset.file_name)
   end
 
-  defp default_attrs(asset) do
-    %Beacon.BeaconAttrs{site: asset.site, prefix: ""}
+  defp beacon_attrs(asset) do
+    %Beacon.BeaconAttrs{site: asset.site, prefix: asset.site}
   end
 
   def backend_key, do: @backend_key

@@ -167,6 +167,7 @@ defmodule Beacon.Router do
           live "/page_editor/:id", BeaconWeb.Admin.PageEditorLive, :edit
           live "/media_library", BeaconWeb.Admin.MediaLibraryLive.Index, :index
           live "/media_library/upload", BeaconWeb.Admin.MediaLibraryLive.Index, :upload
+          live "/media_library/:id", BeaconWeb.Admin.MediaLibraryLive.Index, :show
         end
       end
     end
