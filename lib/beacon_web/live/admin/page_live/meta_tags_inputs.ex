@@ -71,7 +71,7 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
   def coerce_meta_tag_param(params, field) do
     case Map.fetch(params, field) do
       {:ok, map} ->
-        list = Enum.sort_by(map, fn {key, value} -> String.to_integer(key) end)
+        list = Enum.sort_by(map, fn {key, _value} -> String.to_integer(key) end)
         Map.put(params, field, Keyword.values(list))
 
       :error ->
