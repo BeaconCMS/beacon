@@ -70,8 +70,12 @@ defmodule BeaconWeb.Admin.PageLive.MetaTagsInputs do
   # Convert params map %{"0" => %{...}, "1" => %{...}} into a list of maps
   def coerce_meta_tag_param(params, field) do
     case Map.fetch(params, field) do
-      {:ok, map} -> Map.put(params, field, Map.values(map))
-      :error -> params
+      {:ok, map} ->
+        list = Enum.sort_by(map, fn {key, value} -> String.to_integer(key) end)
+        Map.put(params, field, Keyword.values(list))
+
+      :error ->
+        params
     end
   end
 end
