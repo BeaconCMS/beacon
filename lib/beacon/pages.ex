@@ -1,7 +1,5 @@
 defmodule Beacon.Pages do
-  @moduledoc """
-  The Pages context.
-  """
+  @moduledoc false
 
   import Ecto.Query, warn: false
   alias Beacon.Lifecycle

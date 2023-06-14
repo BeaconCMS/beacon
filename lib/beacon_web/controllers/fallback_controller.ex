@@ -1,9 +1,6 @@
 defmodule BeaconWeb.FallbackController do
-  @moduledoc """
-  Translates controller action results into valid `Plug.Conn` responses.
+  @moduledoc false
 
-  See `Phoenix.Controller.action_fallback/1` for more details.
-  """
   use BeaconWeb, :controller
 
   # This clause handles errors returned by Ecto's insert/update/delete.

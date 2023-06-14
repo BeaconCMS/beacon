@@ -1,4 +1,6 @@
 defmodule Beacon.Lifecycle.Template do
+  @moduledoc false
+
   alias Beacon.Lifecycle
   @behaviour Beacon.Lifecycle
 

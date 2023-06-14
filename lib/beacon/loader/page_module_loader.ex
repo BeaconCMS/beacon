@@ -1,4 +1,6 @@
 defmodule Beacon.Loader.PageModuleLoader do
+  @moduledoc false
+
   require Logger
   alias Beacon.Lifecycle
   alias Beacon.Loader

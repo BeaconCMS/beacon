@@ -1,7 +1,5 @@
 defmodule Beacon.Layouts do
-  @moduledoc """
-  The Layouts context.
-  """
+  @moduledoc false
 
   import Ecto.Query, warn: false
   alias Beacon.Repo
@@ -22,7 +20,7 @@ defmodule Beacon.Layouts do
   end
 
   def list_layouts_for_site(site) do
-    Repo.all(from l in Layout, where: l.site == ^site)
+    Repo.all(from(l in Layout, where: l.site == ^site))
   end
 
   @doc """
@@ -36,7 +34,7 @@ defmodule Beacon.Layouts do
   """
   @spec list_distinct_sites_from_layouts :: list(Beacon.Types.Site.t())
   def list_distinct_sites_from_layouts do
-    Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
+    Repo.all(from(l in Layout, distinct: true, select: l.site, order_by: l.site))
   end
 
   @doc """

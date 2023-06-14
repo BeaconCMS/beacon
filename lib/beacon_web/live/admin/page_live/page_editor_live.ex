@@ -54,7 +54,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       socket.assigns.page
       |> Pages.change_page(page_params)
       |> Map.put(:action, :validate)
-      |> Beacon.PageField.apply_changesets(socket.assigns.page.site, extra_params)
+      |> Beacon.Content.PageField.apply_changesets(socket.assigns.page.site, extra_params)
 
     {:noreply,
      socket
@@ -162,7 +162,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   defp assign_extra_fields(socket, changeset) do
     params = Ecto.Changeset.get_field(changeset, :extra)
-    extra_fields = Beacon.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, params, changeset.errors)
+    extra_fields = Beacon.Content.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, params, changeset.errors)
     assign(socket, :extra_fields, extra_fields)
   end
 

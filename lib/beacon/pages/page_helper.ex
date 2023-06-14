@@ -1,4 +1,6 @@
 defmodule Beacon.Pages.PageHelper do
+  @moduledoc false
+
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -298,8 +298,10 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp validate_options!(options) do
+    site = String.to_atom(options[:site])
+
     cond do
-      !Beacon.Types.Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.")
       :default -> options
     end
   end

@@ -1,4 +1,6 @@
 defmodule Beacon.PubSub do
+  @moduledoc false
+
   require Logger
 
   @pubsub __MODULE__

@@ -1,4 +1,6 @@
 defmodule Beacon.Loader.StylesheetModuleLoader do
+  @moduledoc false
+
   require Logger
 
   alias Beacon.Stylesheets.Stylesheet

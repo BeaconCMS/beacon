@@ -1,4 +1,6 @@
 defmodule BeaconWeb.ErrorHTML do
+  @moduledoc false
+
   use BeaconWeb, :html
 
   # If you want to customize your error pages,

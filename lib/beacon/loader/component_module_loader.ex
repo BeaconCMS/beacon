@@ -1,4 +1,6 @@
 defmodule Beacon.Loader.ComponentModuleLoader do
+  @moduledoc false
+
   require Logger
 
   alias Beacon.Loader

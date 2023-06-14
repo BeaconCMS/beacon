@@ -1,16 +1,14 @@
 defmodule Beacon.Registry do
-  @doc false
+  @moduledoc false
+
   def child_spec(_arg) do
     Registry.child_spec(keys: :unique, name: __MODULE__)
   end
 
-  @doc false
   def via(key), do: {:via, Registry, {__MODULE__, key}}
 
-  @doc false
   def via(key, value), do: {:via, Registry, {__MODULE__, key, value}}
 
-  @doc false
   def config!(site) do
     case lookup({:site, site}) do
       {_pid, config} ->
@@ -24,9 +22,6 @@ defmodule Beacon.Registry do
     end
   end
 
-  @doc """
-  Return a list of all registered sites running in the current instance.
-  """
   def registered_sites do
     match = {{:site, :"$1"}, :_, :_}
     guards = []

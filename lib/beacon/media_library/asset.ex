@@ -1,4 +1,6 @@
 defmodule Beacon.MediaLibrary.Asset do
+  @moduledoc false
+
   use Ecto.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -7,7 +9,7 @@ defmodule Beacon.MediaLibrary.Asset do
     field :file_body, :binary
     field :file_name, :string
     field :media_type, :string
-    field :site, Beacon.Types.Atom
+    field :site, Beacon.Types.Site
     field :deleted_at, :utc_datetime
 
     timestamps()

@@ -1,4 +1,6 @@
 defmodule Beacon.Components.Component do
+  @moduledoc false
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -7,7 +9,7 @@ defmodule Beacon.Components.Component do
   schema "beacon_components" do
     field :body, :string
     field :name, :string
-    field :site, Beacon.Types.Atom
+    field :site, Beacon.Types.Site
 
     timestamps()
   end

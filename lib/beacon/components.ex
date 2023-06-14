@@ -1,7 +1,5 @@
 defmodule Beacon.Components do
-  @moduledoc """
-  The Components context.
-  """
+  @moduledoc false
 
   import Ecto.Query, warn: false
   alias Beacon.Repo

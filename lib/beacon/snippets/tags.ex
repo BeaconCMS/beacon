@@ -1,4 +1,6 @@
 defmodule Beacon.Snippets.Tags.Helper do
+  @moduledoc false
+
   @behaviour Solid.Tag
 
   import NimbleParsec

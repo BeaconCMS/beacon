@@ -1,4 +1,6 @@
 defmodule Beacon.Pages.Page do
+  @moduledoc false
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -14,7 +16,7 @@ defmodule Beacon.Pages.Page do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_pages" do
-    field :site, Beacon.Types.Atom
+    field :site, Beacon.Types.Site
     field :title, :string
     field :description, :string
     field :version, :integer, default: 1
@@ -25,7 +27,7 @@ defmodule Beacon.Pages.Page do
     field :raw_schema, {:array, :map}, default: []
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
-    field :format, Beacon.Types.Atom, default: :heex
+    field :format, Beacon.Types.Site, default: :heex
     field :extra, :map, default: %{}
 
     belongs_to :layout, Layout
@@ -111,7 +113,7 @@ defmodule Beacon.Pages.Page do
     |> trim([:pending_template])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
-    |> Beacon.PageField.apply_changesets(page.site, extra_attrs)
+    |> Beacon.Content.PageField.apply_changesets(page.site, extra_attrs)
   end
 
   def put_pending_template(%Changeset{} = changeset) do

@@ -1,4 +1,6 @@
 defmodule Beacon.Stylesheets.Stylesheet do
+  @moduledoc false
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -7,7 +9,7 @@ defmodule Beacon.Stylesheets.Stylesheet do
   schema "beacon_stylesheets" do
     field :content, :string
     field :name, :string
-    field :site, Beacon.Types.Atom
+    field :site, Beacon.Types.Site
 
     timestamps()
   end
