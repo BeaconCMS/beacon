@@ -100,3 +100,20 @@ Content.publish_layout(layout)
 }
 |> Content.create_page!()
 |> Content.publish_page()
+
+Content.create_page_event!(%{
+  page_id: page_id,
+  event_name: "hello",
+  code: """
+    {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+  """
+})
+
+ComponentCategories.create_component_category!(%{ name: "Navigations" })
+ComponentCategories.create_component_category!(%{ name: "Headers" })
+ComponentCategories.create_component_category!(%{ name: "Sign in" })
+ComponentCategories.create_component_category!(%{ name: "Sign up" })
+ComponentCategories.create_component_category!(%{ name: "Stats" })
+ComponentCategories.create_component_category!(%{ name: "Footers" })
+ComponentCategories.create_component_category!(%{ name: "Basics" })
+ComponentCategories.create_component_category!(%{ name: "Navigation 1" })

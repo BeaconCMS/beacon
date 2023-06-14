@@ -18,6 +18,8 @@ defmodule Beacon.Content do
   alias Beacon.PubSub
   alias Beacon.Repo
   alias Beacon.Types.Site
+  alias Beacon.Components
+  alias Beacon.ComponentCategories
   alias Ecto.Changeset
 
   @doc """
