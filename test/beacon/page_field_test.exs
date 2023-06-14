@@ -2,7 +2,7 @@ defmodule Beacon.PageFieldTest do
   use Beacon.DataCase, async: true
 
   import Beacon.Fixtures
-  alias Beacon.PageField
+  alias Beacon.Content.PageField
 
   @form %Phoenix.HTML.Form{}
 
@@ -11,7 +11,7 @@ defmodule Beacon.PageFieldTest do
     import BeaconWeb.CoreComponents
     import Ecto.Changeset
 
-    @behaviour Beacon.PageField
+    @behaviour Beacon.Content.PageField
 
     @impl true
     def name, do: :tags

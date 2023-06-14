@@ -99,7 +99,7 @@ defmodule BeaconTagsField do
   import BeaconWeb.CoreComponents
   import Ecto.Changeset
 
-  @behaviour Beacon.PageField
+  @behaviour Beacon.Content.PageField
 
   @impl true
   def name, do: :tags
