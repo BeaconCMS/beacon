@@ -3,7 +3,6 @@ defmodule Beacon.Admin.MediaLibrary.Backend.Repo do
 
   alias Beacon.Admin.MediaLibrary.Asset
   alias Beacon.Admin.MediaLibrary.UploadMetadata
-  use Phoenix.VerifiedRoutes, endpoint: SamplePhoenix.Endpoint, router: SamplePhoenixWeb.Router
 
   @backend_key "repo"
 

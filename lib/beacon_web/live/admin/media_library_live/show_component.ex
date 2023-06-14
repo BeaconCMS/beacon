@@ -14,7 +14,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.ShowComponent do
           <li class="flex mb-8">
             <input type="text" id={"url-#{index}"} value={url} class="input w-full border-neutral-200 bg-neutral-100 py-2 border-2 pr-8" />
             <div class="flex">
-              <button phx-click={JS.dispatch("phx:beacon:clipcopy", to: "#url-#{index}")}>
+              <button phx-click={JS.dispatch("beacon_admin:clipcopy", to: "#url-#{index}")}>
                 <.icon name="hero-clipboard-document-check-solid" class="h-5 w-5" />
               </button>
             </div>
