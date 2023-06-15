@@ -6,7 +6,7 @@ defmodule Beacon.Repo.Migrations.CreateComponentDefinitions do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :thumbnail, :string, null: false
-      add :component_category_id, references(:beacon_component_categories, on_delete: :delete_all, type: :binary_id)
+      add :component_category_id, references(:beacon_component_categories, on_delete: :delete_all, type: :binary_id), null: false
 
       timestamps()
     end

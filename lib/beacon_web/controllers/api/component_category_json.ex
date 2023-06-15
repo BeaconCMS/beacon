@@ -8,7 +8,7 @@ defmodule BeaconWeb.API.ComponentCategoryJSON do
         name: "Base",
         items: for(category <- categories, do: category_data(category))
       }],
-      componentDefinitions: definitions
+      componentDefinitions: for(definition <- definitions, do: definition_data(definition))
     }
   end
 
@@ -35,7 +35,7 @@ defmodule BeaconWeb.API.ComponentCategoryJSON do
   defp definition_data(%ComponentDefinition{} = definition) do
     %{
       id: definition.id,
-      category_id: definition.component_category_id,
+      categoryId: definition.component_category_id,
       name: definition.name,
       thumbnail: definition.thumbnail,
     }

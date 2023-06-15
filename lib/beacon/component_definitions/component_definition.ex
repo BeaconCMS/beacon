@@ -19,8 +19,8 @@ defmodule Beacon.ComponentDefinitions.ComponentDefinition do
   @doc false
   def changeset(component_category \\ %ComponentDefinition{}, %{} = attrs) do
     component_category
-    |> cast(attrs, [:name, :thumbnail])
-    |> validate_required([:name, :thumbnail, :component_category])
+    |> cast(attrs, [:name, :thumbnail, :component_category_id])
+    |> validate_required([:name, :thumbnail])
     |> unique_constraint(:id, name: :component_definitions_pkey)
     |> unique_constraint([:name, :thumbnail])
   end
