@@ -2,18 +2,21 @@ defmodule Beacon.Lifecycle.Page do
   @moduledoc false
 
   alias Beacon.Lifecycle
-  alias Beacon.Pages
+  alias Beacon.Content.Page
+
   @behaviour Beacon.Lifecycle
 
   @impl Lifecycle
-  def validate_output!(%Lifecycle{output: %Pages.Page{}} = lifecycle, _config, _sub_key), do: lifecycle
+  def validate_output!(%Lifecycle{output: %Beacon.Content.Page{}} = lifecycle, _config, _sub_key), do: lifecycle
 
   def validate_output!(lifecycle, _config, _sub_key) do
     raise Beacon.LoaderError, """
-    Return output must be of type Beacon.Pages.Page
+    return output for lifecycle #{lifecycle.name} must be of type Beacon.Content.Page
 
-    Output returned for lifecycle: #{lifecycle.name}
-    #{inspect(lifecycle.output)}
+    Got:
+
+      #{inspect(lifecycle.output)}
+
     """
   end
 
@@ -22,7 +25,7 @@ defmodule Beacon.Lifecycle.Page do
 
   It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
-  @spec create_page(Pages.Page.t()) :: Pages.Page.t()
+  @spec create_page(Page.t()) :: Page.t()
   def create_page(page) do
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :create_page, page)
     lifecycle.output
@@ -33,7 +36,7 @@ defmodule Beacon.Lifecycle.Page do
 
   It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
-  @spec update_page(Pages.Page.t()) :: Pages.Page.t()
+  @spec update_page(Page.t()) :: Page.t()
   def update_page(page) do
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :update_page, page)
     lifecycle.output
@@ -44,7 +47,7 @@ defmodule Beacon.Lifecycle.Page do
 
   It's executed before the `page` is reloaded.
   """
-  @spec publish_page(Pages.Page.t()) :: Pages.Page.t()
+  @spec publish_page(Page.t()) :: Page.t()
   def publish_page(page) do
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :publish_page, page)
     lifecycle.output

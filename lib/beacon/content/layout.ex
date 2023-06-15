@@ -39,6 +39,13 @@ defmodule Beacon.Content.Layout do
     timestamps()
   end
 
+  @doc """
+  Current data structure version.
+
+  Bump when schema changes.
+  """
+  def version, do: @version
+
   @doc false
   def changeset(layout, attrs) do
     layout
@@ -46,11 +53,4 @@ defmodule Beacon.Content.Layout do
     # TODO: make stylesheet optional
     |> validate_required([:site, :title, :body, :stylesheet_urls])
   end
-
-  @doc """
-  Current data structure version.
-
-  Bump when schema changes.
-  """
-  def version, do: @version
 end

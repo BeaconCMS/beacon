@@ -141,8 +141,8 @@ seeds = fn ->
     """
   })
 
-  %{id: layout_id} =
-    Beacon.Layouts.create_layout!(%{
+  layout =
+    Beacon.Content.create_layout!(%{
       site: "dev",
       title: "dev",
       meta_tags: [
@@ -154,6 +154,8 @@ seeds = fn ->
       <%= @inner_content %>
       """
     })
+
+  Beacon.Content.publish_layout(layout)
 
   Beacon.Snippets.create_helper!(%{
     site: "dev",
@@ -170,7 +172,7 @@ seeds = fn ->
       site: "dev",
       title: "dev home",
       description: "page used for development",
-      layout_id: layout_id,
+      layout_id: layout.id,
       meta_tags: [
         %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"}
       ],
@@ -228,7 +230,7 @@ seeds = fn ->
       path: "authors/:author_id",
       site: "dev",
       title: "dev author",
-      layout_id: layout_id,
+      layout_id: layout.id,
       template: """
       <main>
         <h1 class="text-violet-500">Authors</h1>
@@ -256,7 +258,7 @@ seeds = fn ->
       path: "posts/*slug",
       site: "dev",
       title: "dev post",
-      layout_id: layout_id,
+      layout_id: layout.id,
       template: """
       <main>
         <h1 class="text-violet-500">Post</h1>
@@ -284,7 +286,7 @@ seeds = fn ->
       path: "markdown",
       site: "dev",
       title: "dev markdown",
-      layout_id: layout_id,
+      layout_id: layout.id,
       format: "markdown",
       template: """
       # My Markdown Page
@@ -326,8 +328,8 @@ seeds = fn ->
 
   Beacon.Admin.MediaLibrary.upload(metadata)
 
-  %{id: other_layout_id} =
-    Beacon.Layouts.create_layout!(%{
+  other_layout =
+    Beacon.Content.create_layout!(%{
       site: "other",
       title: "other",
       stylesheet_urls: [],
@@ -336,11 +338,13 @@ seeds = fn ->
       """
     })
 
+  Beacon.Content.publish_layout(other_layout)
+
   Beacon.Pages.create_page!(%{
     path: "home",
     site: "other",
     title: "other home",
-    layout_id: other_layout_id,
+    layout_id: other_layout.id,
     template: """
     <main>
       <h1 class="text-violet-500">Other</h1>

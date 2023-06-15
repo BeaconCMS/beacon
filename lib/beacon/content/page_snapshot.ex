@@ -1,6 +1,6 @@
-defmodule Beacon.Content.LayoutSnapshot do
+defmodule Beacon.Content.PageSnapshot do
   @moduledoc """
-  Layout snapshots
+  Page snapshots
   """
 
   use Ecto.Schema
@@ -11,21 +11,21 @@ defmodule Beacon.Content.LayoutSnapshot do
           id: Ecto.UUID.t(),
           site: Beacon.Types.Site.t(),
           schema_version: pos_integer(),
-          layout_id: Ecto.UUID.t(),
-          layout: Beacon.Content.Layout.t(),
+          page_id: Ecto.UUID.t(),
+          page: Beacon.Content.Page.t(),
           event_id: Ecto.UUID.t(),
-          event: Beacon.Content.LayoutEvent.t() | nil,
+          event: Beacon.Content.PageEvent.t() | nil,
           inserted_at: NaiveDateTime.t()
         }
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  schema "beacon_layout_snapshots" do
+  schema "beacon_page_snapshots" do
     field :site, Beacon.Types.Site
     field :schema_version, :integer
-    field :layout_id, Ecto.UUID
-    field :layout, Beacon.Types.Binary
-    belongs_to :event, Beacon.Content.LayoutEvent
+    field :page_id, Ecto.UUID
+    field :page, Beacon.Types.Binary
+    belongs_to :event, Beacon.Content.PageEvent
     timestamps updated_at: false
   end
 end

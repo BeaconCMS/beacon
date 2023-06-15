@@ -75,7 +75,7 @@ defmodule Beacon.Fixtures do
 
     attrs
     |> Enum.into(%{
-      path: "home",
+      path: "/home",
       site: "my_site",
       layout_id: layout_id,
       meta_tags: [],
@@ -85,10 +85,9 @@ defmodule Beacon.Fixtures do
       </main>
       """,
       skip_reload: true,
-      status: :published,
       format: :heex
     })
-    |> Pages.create_page!()
+    |> Content.create_page!()
   end
 
   def page_without_meta_fixture(attrs \\ %{}) do

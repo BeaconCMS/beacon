@@ -11,8 +11,11 @@ defmodule Beacon.Content do
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
+  alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
+  alias Beacon.Lifecycle
   alias Beacon.Loader
+  alias Beacon.PubSub
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
@@ -41,9 +44,18 @@ defmodule Beacon.Content do
   """
   @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
   def create_layout(attrs) do
-    %Layout{}
-    |> Layout.changeset(attrs)
-    |> Repo.insert()
+    create = fn attrs ->
+      %Layout{}
+      |> Layout.changeset(attrs)
+      |> Repo.insert()
+    end
+
+    Repo.transact(fn ->
+      with {:ok, layout} <- create.(attrs),
+           {:ok, _event} <- create_layout_event(layout, "created") do
+        {:ok, layout}
+      end
+    end)
   end
 
   @doc """
@@ -78,11 +90,12 @@ defmodule Beacon.Content do
 
   Event + snapshot
   """
+  @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | any()
   def publish_layout(%Layout{} = layout) do
     Repo.transact(fn ->
       with {:ok, event} <- create_layout_event(layout, "published"),
-           {:ok, _snapshot} <- create_layout_snapshot(layout, event),
-           :ok <- Loader.reload_layout(layout) do
+           {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
+        :ok = PubSub.broadcast_layout_published(event)
         {:ok, layout}
       end
     end)
@@ -111,7 +124,7 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> get_layout(site, "9BC60ADB-7ACA-4D97-898E-8EC229A653C2")
+      iex> get_layout(site, "fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
       %Layout{}
 
   """
@@ -154,7 +167,13 @@ defmodule Beacon.Content do
   ## PAGES
 
   @doc """
-  TODO
+  Returns an `%Ecto.Changeset{}` for tracking page changes.
+
+  ## Examples
+
+      iex> change_page(page, %{title: "My Campaign"})
+      %Ecto.Changeset{data: %Page{}}
+
   """
   @spec change_page(Page.t(), map()) :: Ecto.Changeset.t()
   def change_page(%Page{} = page, attrs \\ %{}) do
@@ -217,7 +236,6 @@ defmodule Beacon.Content do
     * `description` - String.t()
     * `template` - String.t()
     * `meta_tags` - list(map()) eg: `[%{"property" => "og:title", "content" => "My New Siste"}]`
-    * `meta_tags` - list(map()) eg: `[%{"property" => "og:title", "content" => "My New Siste"}]`
 
   See `Beacon.Content.Page` for more info.
 
@@ -230,10 +248,38 @@ defmodule Beacon.Content do
   """
   @spec create_page(map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
-    ch = %Page{} |> Page.changeset(attrs)
-    IO.inspect(ch)
+    create = fn attrs ->
+      %Page{}
+      |> Page.changeset(attrs)
+      |> Repo.insert()
+    end
 
-    ch |> Repo.insert()
+    Repo.transact(fn ->
+      with {:ok, page} <- create.(attrs),
+           {:ok, event} <- create_page_event(page, "created") do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
+  Creates a page.
+  """
+  @spec create_page!(map()) :: Page.t()
+  def create_page!(attrs) do
+    case create_page(attrs) do
+      {:ok, page} -> page
+      {:error, changeset} -> raise "failed to create page, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  defp create_page_event(page, event) do
+    attrs = %{"site" => page.site, "page_id" => page.id, "event" => event}
+
+    %PageEvent{}
+    |> Changeset.cast(attrs, [:site, :page_id, :event])
+    |> Changeset.validate_required([:site, :page_id, :event])
+    |> Repo.insert()
   end
 
   @doc """
@@ -245,8 +291,14 @@ defmodule Beacon.Content do
   """
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
-    # TODO
-    {:ok, page}
+    Repo.transact(fn ->
+      with {:ok, event} <- create_page_event(page, "published") do
+        :ok = PubSub.broadcast_page_published(event)
+        # page = Lifecycle.Page.publish_page(page),
+        # :ok <- Loader.reload_page(page) do
+        {:ok, page}
+      end
+    end)
   end
 
   @doc """

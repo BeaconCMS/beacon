@@ -5,6 +5,7 @@ defmodule Beacon.Loader do
 
   use GenServer
   require Logger
+  alias Beacon.PubSub
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
@@ -16,6 +17,10 @@ defmodule Beacon.Loader do
     else
       :ok = load_site_from_db(config.site)
     end
+
+    # TODO: handle event
+    PubSub.subscribe_layout_published()
+    PubSub.subscribe_page_published()
 
     {:ok, config}
   end
@@ -34,7 +39,7 @@ defmodule Beacon.Loader do
     GenServer.call(name(config.site), {:reload_layout, layout}, 60_000)
   end
 
-  def reload_page(%Beacon.Pages.Page{} = page) do
+  def reload_page(%Beacon.Content.Page{} = page) do
     config = Beacon.Config.fetch!(page.site)
     GenServer.call(name(config.site), {:reload_page, page}, 60_000)
   end
@@ -75,7 +80,7 @@ defmodule Beacon.Loader do
          :ok <- load_stylesheets(site) do
       :ok
     else
-      _ -> raise Beacon.LoaderError, message: "Failed to load resources for site #{site}"
+      _ -> raise Beacon.LoaderError, message: "failed to load resources for site #{site}"
     end
   end
 
@@ -183,11 +188,11 @@ defmodule Beacon.Loader do
     e in UndefinedFunctionError ->
       case {failure_count, e} do
         {x, _} when x >= 10 ->
-          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} 10 times.")
+          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} 10 times.")
           reraise e, __STACKTRACE__
 
         {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
-          Logger.debug("Failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time. Retrying.")
+          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time. Retrying.")
 
           :timer.sleep(100 * (failure_count * 2))
 
@@ -235,30 +240,41 @@ defmodule Beacon.Loader do
   end
 
   # TODO: reload layout
-  def handle_call({:reload_layout, _layout}, _from, config) do
-    reply = :ok
+  def handle_call({:reload_layout, layout}, _from, config) do
+    site = layout.site
+
+    reply =
+      with :ok <- load_runtime_css(site),
+           # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
+           :ok <- load_components(site),
+           # TODO: load only used snippet helpers
+           :ok <- load_snippet_helpers(site),
+           :ok <- load_stylesheets(site),
+           :ok <- load_layout(layout) do
+        :ok
+      else
+        _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
+      end
+
     {:reply, reply, config}
   end
 
-  def handle_call({:reload_page, %{status: :draft}}, _from, config) do
-    {:reply, :skip, config}
-  end
-
   def handle_call({:reload_page, page}, _from, config) do
-    page = Beacon.Repo.preload(page, [:layout, :events, :helpers])
+    page = Beacon.Repo.preload(page, [:layout])
+    site = page.site
 
     reply =
-      with :ok <- load_runtime_css(page.site),
+      with :ok <- load_runtime_css(site),
            # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
-           :ok <- load_components(page.site),
+           :ok <- load_components(site),
            # TODO: load only used snippet helpers
-           :ok <- load_snippet_helpers(page.site),
+           :ok <- load_snippet_helpers(site),
            :ok <- load_layout(page.layout),
-           :ok <- load_page(page),
-           :ok <- load_stylesheets(page.site) do
+           :ok <- load_stylesheets(site),
+           :ok <- load_page(page) do
         :ok
       else
-        _ -> raise Beacon.LoaderError, message: "Failed to load resources for page #{page.title} of site #{page.site}"
+        _ -> raise Beacon.LoaderError, message: "failed to load resources for page #{page.title} of site #{page.site}"
       end
 
     {:reply, reply, config}

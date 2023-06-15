@@ -1,28 +1,28 @@
-defmodule Beacon.Content.LayoutEvent do
+defmodule Beacon.Content.PageEvent do
   @moduledoc """
-  Layout events
+  Page events
   """
 
   use Ecto.Schema
-  alias Beacon.Content.Layout
+  alias Beacon.Content.Page
 
   @timestamps_opts type: :utc_datetime_usec
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
           site: Beacon.Types.Site.t(),
-          layout_id: Ecto.UUID.t(),
-          layout: Layout.t(),
+          page_id: Ecto.UUID.t(),
+          page: Page.t(),
           event: String.t(),
           inserted_at: NaiveDateTime.t()
         }
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  schema "beacon_layout_events" do
+  schema "beacon_page_events" do
     field :site, Beacon.Types.Site
-    field :event, Ecto.Enum, values: [:created, :published]
-    belongs_to :layout, Layout
+    field :event, Ecto.Enum, values: [:created, :published, :unpublished]
+    belongs_to :page, Page
     timestamps updated_at: false
   end
 end

@@ -1,25 +1,31 @@
 defmodule Beacon.ContentTest do
-  use Beacon.DataCase, async: true
+  use Beacon.DataCase
   import Beacon.Fixtures
   alias Beacon.Content
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
+  alias Beacon.Content.Page
+  alias Beacon.Content.PageEvent
+  alias Beacon.PubSub
   alias Beacon.Repo
 
-  defp start_loader(_) do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
-    :ok
-  end
-
   describe "layouts" do
-    setup [:start_loader]
+    test "create layout should create a created event" do
+      Content.create_layout!(%{
+        site: "my_site",
+        title: "test",
+        body: "<p>layout</p>"
+      })
+
+      assert %LayoutEvent{event: :created} = Repo.one(LayoutEvent)
+    end
 
     test "publish layout should create a published event" do
       layout = layout_fixture()
 
       assert {:ok, %Layout{}} = Content.publish_layout(layout)
-      assert %LayoutEvent{event: :published} = Repo.one(LayoutEvent)
+      assert [_created, %LayoutEvent{event: :published}] = Repo.all(LayoutEvent)
     end
 
     test "publish layout should create a snapshot" do
@@ -27,6 +33,15 @@ defmodule Beacon.ContentTest do
 
       assert {:ok, %Layout{}} = Content.publish_layout(layout)
       assert %LayoutSnapshot{layout: %Layout{title: "snapshot test"}} = Repo.one(LayoutSnapshot)
+    end
+
+    test "publish layout should broadcast published event" do
+      PubSub.subscribe_layout_published()
+
+      layout = layout_fixture()
+      assert {:ok, %Layout{}} = Content.publish_layout(layout)
+
+      assert_received %LayoutEvent{event: :published}
     end
 
     test "list published layouts" do
@@ -41,5 +56,40 @@ defmodule Beacon.ContentTest do
 
       assert [%Layout{title: "layout_a v2"}] = Content.list_published_layouts(:my_site)
     end
+  end
+
+  describe "pages" do
+    test "create page should create a created event" do
+      layout = layout_fixture()
+
+      Content.create_page!(%{
+        site: "my_site",
+        path: "/",
+        template: "<p>page</p>",
+        layout_id: layout.id
+      })
+
+      assert %PageEvent{event: :created} = Repo.one(PageEvent)
+    end
+
+    test "publish page should create a published event" do
+      page = page_fixture()
+
+      assert {:ok, %Page{}} = Content.publish_page(page)
+      assert [_created, %PageEvent{event: :published}] = Repo.all(PageEvent)
+    end
+
+    # test "publish page should create a snapshot" do
+
+    test "publish page should broadcast published event" do
+      PubSub.subscribe_page_published()
+
+      page = page_fixture()
+      assert {:ok, %Page{}} = Content.publish_page(page)
+
+      assert_received %PageEvent{event: :published}
+    end
+
+    # test "list published pages" do
   end
 end

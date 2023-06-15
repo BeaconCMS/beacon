@@ -23,13 +23,10 @@ defmodule Beacon.Content.Page do
 
   use Ecto.Schema
   import Ecto.Changeset
+  alias Beacon.Content.Layout
+  alias Beacon.Content.Page
 
-  alias Beacon.Layouts.Layout
-  alias Beacon.Pages.Page
-  alias Beacon.Pages.PageEvent
-  alias Beacon.Pages.PageHelper
-  alias Beacon.Pages.PageVersion
-  alias Ecto.Changeset
+  @version 1
 
   @type t :: %__MODULE__{}
 
@@ -49,13 +46,71 @@ defmodule Beacon.Content.Page do
 
     belongs_to :layout, Layout
 
-    has_many :events, PageEvent
-    has_many :helpers, PageHelper
+    embeds_many :events, Event do
+      field :code, :string
+      field :event_name, :string
+    end
 
     timestamps()
   end
 
+  @doc """
+  Current data structure version.
+
+  Bump when schema changes.
+  """
+  def version, do: @version
+
   @doc false
-  def changeset(page \\ %Page{}, %{} = attrs) do
+  def changeset(%Page{} = page, attrs) do
+    page
+    |> cast(attrs, [
+      :site,
+      :path,
+      :title,
+      :description,
+      :template,
+      :meta_tags,
+      :raw_schema,
+      :order,
+      :layout_id,
+      :format,
+      :extra
+    ])
+    |> validate_required([
+      :site,
+      :template,
+      :layout_id,
+      :format
+    ])
+    |> unique_constraint([:path, :site])
+    |> foreign_key_constraint(:layout_id)
+    |> validate_string([:path])
+    |> remove_empty_meta_attributes(:meta_tags)
+  end
+
+  defp validate_string(changeset, fields) do
+    Enum.reduce(fields, changeset, fn field, changeset ->
+      case get_field(changeset, field) do
+        val when is_binary(val) -> changeset
+        _ -> add_error(changeset, field, "Not a string")
+      end
+    end)
+  end
+
+  defp remove_empty_meta_attributes(changeset, field) do
+    update_change(changeset, field, fn
+      meta_tags when is_list(meta_tags) ->
+        Enum.map(meta_tags, &reject_empty_values/1)
+
+      value ->
+        value
+    end)
+  end
+
+  defp reject_empty_values(meta_tag) do
+    meta_tag
+    |> Enum.reject(fn {_key, value} -> is_nil(value) || String.trim(value) == "" end)
+    |> Map.new()
   end
 end
