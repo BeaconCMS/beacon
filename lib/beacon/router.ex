@@ -236,7 +236,7 @@ defmodule Beacon.Router do
 
         get "/pages", PageController, :index
         get "/pages/:id", PageController, :show
-        get "/components", ComponentCategoryController, :index
+        get "/components", ComponentController, :index
         # post "/pages", PageController, :create
         # put "/pages/:id", PageController, :update_page_pending
         # post "/pages/:id/publish", PageController, :publish

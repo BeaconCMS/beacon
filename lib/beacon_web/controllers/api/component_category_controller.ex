@@ -1,4 +1,4 @@
-defmodule BeaconWeb.API.ComponentCategoryController do
+defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
   alias Beacon.ComponentCategories
   alias Beacon.ComponentDefinitions

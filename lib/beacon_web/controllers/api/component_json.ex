@@ -1,4 +1,4 @@
-defmodule BeaconWeb.API.ComponentCategoryJSON do
+defmodule BeaconWeb.API.ComponentJSON do
   alias Beacon.ComponentCategories.ComponentCategory
   alias Beacon.ComponentDefinitions.ComponentDefinition
 
