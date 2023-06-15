@@ -16,6 +16,11 @@
   <:col :let={asset} label="Type"><%= asset.media_type %></:col>
   <:col :let={asset} label="Site"><%= asset.site %></:col>
   <:action :let={asset}>
+    <.link :if={Authorization.authorized?(@agent, :upload, @authn_context)} patch={beacon_admin_path(@socket, "/media_library/#{asset.id}")}>
+      View
+    </.link>
+  </:action>
+  <:action :let={asset}>
     <.link
       :if={Authorization.authorized?(@agent, :delete, Map.put(@authn_context, :resource, asset))}
       phx-click={JS.push("delete", value: %{id: asset.id})}
@@ -30,6 +35,18 @@
   <.live_component
     module={BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent}
     id={@asset.id || :upload}
+    title={@page_title}
+    action={@live_action}
+    asset={@asset}
+    navigate={beacon_admin_path(@socket, "/media_library")}
+    agent={@agent}
+  />
+</.modal>
+
+<.modal :if={@live_action in [:show]} id="asset-modal" show on_cancel={JS.navigate(beacon_admin_path(@socket, "/media_library"))}>
+  <.live_component
+    module={BeaconWeb.Admin.MediaLibraryLive.ShowComponent}
+    id={@asset.id}
     title={@page_title}
     action={@live_action}
     asset={@asset}

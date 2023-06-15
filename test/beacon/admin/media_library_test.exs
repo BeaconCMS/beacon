@@ -38,7 +38,7 @@ defmodule Beacon.Admin.MediaLibraryTest do
     test "upload asset, converts to webp by default, repo store" do
       metadata = file_metadata_fixture(file_name: "image.png", site: :my_site)
       assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata)
-      assert "/beacon_assets/image.webp?site=my_site" = MediaLibrary.url_for(asset)
+      assert "/my_site/beacon_assets/image.webp?site=my_site" = MediaLibrary.url_for(asset)
     end
   end
 end

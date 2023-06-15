@@ -140,16 +140,30 @@ defmodule Beacon.Admin.MediaLibrary do
   end
 
   def url_for(asset) do
-    config =
-      asset.site
-      |> Beacon.Config.fetch!()
-      |> Beacon.Config.config_for_media_type(asset.media_type)
-      |> Keyword.fetch!(:backends)
-      |> hd()
+    asset
+    |> backends_for()
+    |> hd()
+    |> get_url_for(asset)
+  end
 
-    case config do
-      {backend, config} -> backend.url_for(asset, config)
-      backend -> backend.url_for(asset)
-    end
+  def urls_for(asset) do
+    asset
+    |> backends_for()
+    |> Enum.map(&get_url_for(&1, asset))
+  end
+
+  defp backends_for(asset) do
+    asset.site
+    |> Beacon.Config.fetch!()
+    |> Beacon.Config.config_for_media_type(asset.media_type)
+    |> Keyword.fetch!(:backends)
+  end
+
+  defp get_url_for({backend, config}, asset), do: backend.url_for(asset, config)
+  defp get_url_for(backend, asset), do: backend.url_for(asset)
+
+  def is_image?(%{file_name: file_name}) do
+    ext = Path.extname(file_name)
+    Enum.any?([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp"], &(&1 == ext))
   end
 end

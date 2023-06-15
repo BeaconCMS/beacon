@@ -374,7 +374,7 @@ dev_site =
 
     _ ->
       assets = [
-        {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
+        {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3.Signed, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
       ]
 
       Keyword.put(dev_site, :assets, assets)
