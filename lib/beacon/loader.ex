@@ -109,7 +109,7 @@ defmodule Beacon.Loader do
 
   defp load_layouts(site) do
     site
-    |> Beacon.Layouts.list_layouts_for_site()
+    |> Beacon.Content.list_published_layouts()
     |> Enum.map(fn layout ->
       Task.async(fn -> load_layout(layout) end)
     end)

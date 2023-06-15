@@ -14,6 +14,8 @@ defmodule Beacon.Content.Layout do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @version 1
+
   @type t :: %__MODULE__{
           id: String.t(),
           site: Beacon.Types.Site.t(),
@@ -44,4 +46,11 @@ defmodule Beacon.Content.Layout do
     # TODO: make stylesheet optional
     |> validate_required([:site, :title, :body, :stylesheet_urls])
   end
+
+  @doc """
+  Current data structure version.
+
+  Bump when schema changes.
+  """
+  def version, do: @version
 end

@@ -98,11 +98,11 @@ defmodule Beacon.Content do
   end
 
   defp create_layout_snapshot(layout, event) do
-    attrs = %{"site" => layout.site, "layout" => layout, "event_id" => event.id}
+    attrs = %{"site" => layout.site, "schema_version" => Layout.version(), "layout_id" => layout.id, "layout" => layout, "event_id" => event.id}
 
     %LayoutSnapshot{}
-    |> Changeset.cast(attrs, [:site, :layout, :event_id])
-    |> Changeset.validate_required([:site, :layout, :event_id])
+    |> Changeset.cast(attrs, [:site, :schema_version, :layout_id, :layout, :event_id])
+    |> Changeset.validate_required([:site, :schema_version, :layout_id, :layout, :event_id])
     |> Repo.insert()
   end
 
@@ -126,6 +126,29 @@ defmodule Beacon.Content do
   @spec list_layouts(Site.t()) :: [Layout.t()]
   def list_layouts(site) do
     Repo.all(from l in Layout, where: l.site == ^site)
+  end
+
+  @doc """
+  Returns all the latest layout snapshots for `site`.
+
+  Layout is extracted from the latest published `Beacon.Content.LayoutSnapshot`.
+  """
+  @spec list_published_layouts(Site.t()) :: [Layout.t()]
+  def list_published_layouts(site) do
+    Repo.all(
+      from snapshot in LayoutSnapshot,
+        join: event in LayoutEvent,
+        preload: [event: event],
+        where: snapshot.site == ^site,
+        where: event.event == :published,
+        distinct: [asc: snapshot.layout_id],
+        order_by: [desc: snapshot.inserted_at]
+    )
+    |> Enum.map(&extract_snapshot_layout/1)
+  end
+
+  defp extract_snapshot_layout(%{schema_version: 1, layout: %Layout{} = layout}) do
+    layout
   end
 
   ## PAGES
