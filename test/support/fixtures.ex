@@ -2,6 +2,7 @@ defmodule Beacon.Fixtures do
   alias Beacon.Admin.MediaLibrary
   alias Beacon.Admin.MediaLibrary.UploadMetadata
   alias Beacon.Components
+  alias Beacon.Content
   alias Beacon.Layouts
   alias Beacon.Pages
   alias Beacon.Snippets
@@ -51,7 +52,7 @@ defmodule Beacon.Fixtures do
       <footer>Page footer</footer>
       """
     })
-    |> Layouts.create_layout!()
+    |> Content.create_layout!()
   end
 
   def layout_without_meta_fixture(attrs \\ %{}) do

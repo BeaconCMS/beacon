@@ -5,6 +5,10 @@ defmodule Beacon.Types.Atom do
 
   def type, do: :atom
 
+  def cast(:any, site) when is_binary(site), do: {:ok, String.to_existing_atom(site)}
+  def cast(:any, site) when is_atom(site), do: {:ok, site}
+  def cast(:any, _), do: :error
+
   def cast(site) when is_binary(site), do: {:ok, String.to_existing_atom(site)}
   def cast(site) when is_atom(site), do: {:ok, site}
   def cast(_), do: :error

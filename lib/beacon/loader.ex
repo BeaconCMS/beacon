@@ -29,6 +29,11 @@ defmodule Beacon.Loader do
     GenServer.call(name(config.site), {:reload_site, config.site}, 300_000)
   end
 
+  def reload_layout(%Beacon.Content.Layout{} = layout) do
+    config = Beacon.Config.fetch!(layout.site)
+    GenServer.call(name(config.site), {:reload_layout, layout}, 60_000)
+  end
+
   def reload_page(%Beacon.Pages.Page{} = page) do
     config = Beacon.Config.fetch!(page.site)
     GenServer.call(name(config.site), {:reload_page, page}, 60_000)
@@ -227,6 +232,12 @@ defmodule Beacon.Loader do
 
   def handle_call({:reload_site, site}, _from, config) do
     {:reply, load_site_from_db(site), config}
+  end
+
+  # TODO: reload layout
+  def handle_call({:reload_layout, _layout}, _from, config) do
+    reply = :ok
+    {:reply, reply, config}
   end
 
   def handle_call({:reload_page, %{status: :draft}}, _from, config) do
