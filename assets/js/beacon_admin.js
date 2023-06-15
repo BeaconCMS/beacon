@@ -51,7 +51,7 @@ window.addEventListener("beacon_admin:clipcopy", (event) => {
     })
   } else {
     alert(
-      "Sorry, your browser does not support clipboard copy.\nThis generally requires a secure origin \u2014 either HTTPS or localhost."
+      "Sorry, your browser does not support clipboard copy."
     );
   }
 });
