@@ -18,6 +18,13 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.ShowComponent do
                 <.icon name="hero-clipboard-document-check-solid" class="h-5 w-5" />
               </button>
             </div>
+            <div
+              id={"url-#{index}-copy-to-clipboard-result"}
+              class="absolute right-0 -top-10 whitespace-nowrap text-green-500 text-sm font-medium p-3 shadow-md rounded-lg bg-white transition-all duration-300 opacity-0 invisible"
+              phx-update="ignore"
+            >
+              Copied to clipboard
+            </div>
           </li>
         <% end %>
       </ul>

@@ -19,16 +19,39 @@ window.addEventListener("lme:editor_mounted", (ev) => {
   })
 })
 
-window.addEventListener("phx:beacon:clipcopy", (event) => {
+window.addEventListener("beacon_admin:clipcopy", (event) => {
+  const result_id = `${event.target.id}-copy-to-clipboard-result`
+  const el = document.getElementById(result_id);
+
   if ("clipboard" in navigator) {
     if (event.target.tagName === "INPUT") {
-      navigator.clipboard.writeText(event.target.value)
+      txt = event.target.value;
     } else {
-      navigator.clipboard.writeText(event.target.textContent);
+      txt = event.target.textContent;
     }
+
+    navigator.clipboard.writeText(txt).then(() => {
+      el.innerText = 'Copied to clipboard';
+      // Make it visible
+      el.classList.remove('invisible', 'text-red-500', 'opacity-0');
+      // Fade in and translate upwards
+      el.classList.add('text-green-500', 'opacity-100', '-translate-y-2');
+
+      setTimeout(function () {
+        el.classList.remove('text-green-500', 'opacity-100', '-translate-y-2');
+        el.classList.add('invisible', 'text-red-500', 'opacity-0');
+      }, 2000);
+
+    }).catch(() => {
+      el.innerText = 'Could not copy';
+      // Make it visible
+      el.classList.remove('invisible', 'text-green-500', 'opacity-0');
+      // Fade in and translate upwards
+      el.classList.add('text-red-500', 'opacity-100', '-translate-y-2');
+    })
   } else {
     alert(
-      "Sorry, your browser does not support clipboard copy.\nThis generally requires a secure origin — either HTTPS or localhost."
+      "Sorry, your browser does not support clipboard copy.\nThis generally requires a secure origin \u2014 either HTTPS or localhost."
     );
   }
 });
