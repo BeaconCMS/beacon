@@ -1,7 +1,6 @@
 defmodule Beacon.Stylesheets do
   @moduledoc false
 
-
   import Ecto.Query, warn: false
   alias Beacon.Repo
 
