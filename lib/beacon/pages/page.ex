@@ -27,7 +27,7 @@ defmodule Beacon.Pages.Page do
     field :raw_schema, {:array, :map}, default: []
     field :order, :integer, default: 1
     field :status, Ecto.Enum, values: [:draft, :published], default: :draft
-    field :format, Beacon.Types.Site, default: :heex
+    field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
 
     belongs_to :layout, Layout
