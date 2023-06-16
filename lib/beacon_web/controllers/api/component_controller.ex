@@ -20,9 +20,9 @@ defmodule BeaconWeb.API.ComponentController do
   #   render(conn, :show, page: page)
   # end
 
-  def create(conn, %{ classes: classes, definitionId: component_definition_id }) do
-    Logger.info("###### Received classes #{inspect(classes)}")
-    Logger.info("###### Received component_definition_id #{inspect(component_definition_id)}")
+  def create(conn, attrs) do
+    Logger.info("###### Received attrs #{inspect(attrs)}")
+    # Logger.info("###### Received component_definition_id #{inspect(component_definition_id)}")
     render(conn, :show)
   end
 end
