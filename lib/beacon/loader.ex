@@ -19,8 +19,8 @@ defmodule Beacon.Loader do
     end
 
     # TODO: handle event
-    PubSub.subscribe_layout_published()
-    PubSub.subscribe_page_published()
+    PubSub.subscribe_layouts()
+    PubSub.subscribe_pages()
 
     {:ok, config}
   end

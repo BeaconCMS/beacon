@@ -7,6 +7,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
+  alias Beacon.Content.PageSnapshot
   alias Beacon.PubSub
   alias Beacon.Repo
 
@@ -36,7 +37,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "publish layout should broadcast published event" do
-      PubSub.subscribe_layout_published()
+      PubSub.subscribe_layouts()
 
       layout = layout_fixture()
       assert {:ok, %Layout{}} = Content.publish_layout(layout)
@@ -79,10 +80,15 @@ defmodule Beacon.ContentTest do
       assert [_created, %PageEvent{event: :published}] = Repo.all(PageEvent)
     end
 
-    # test "publish page should create a snapshot" do
+    test "publish page should create a snapshot" do
+      page = page_fixture(title: "snapshot test")
+
+      assert {:ok, %Page{}} = Content.publish_page(page)
+      assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
+    end
 
     test "publish page should broadcast published event" do
-      PubSub.subscribe_page_published()
+      PubSub.subscribe_pages()
 
       page = page_fixture()
       assert {:ok, %Page{}} = Content.publish_page(page)

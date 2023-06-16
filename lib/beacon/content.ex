@@ -13,6 +13,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
+  alias Beacon.Content.PageSnapshot
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.PubSub
@@ -95,7 +96,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       with {:ok, event} <- create_layout_event(layout, "published"),
            {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
-        :ok = PubSub.broadcast_layout_published(event)
+        :ok = PubSub.broadcast_layout_event(event)
         {:ok, layout}
       end
     end)
@@ -194,35 +195,6 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  TODO
-  """
-  @spec list_pages(Site.t(), String.t()) :: [Page.t()]
-  def list_pages(site, search_query, opts \\ [])
-
-  def list_pages(site, search_query, opts) when is_atom(site) and is_binary(search_query) do
-    per_page = Keyword.get(opts, :per_page, 20)
-
-    Repo.all(
-      from p in Page,
-        where: p.site == ^site,
-        where: ilike(p.path, ^"%#{search_query}%") or ilike(p.title, ^"%#{search_query}%"),
-        limit: ^per_page,
-        order_by: [asc: p.order, asc: p.path]
-    )
-  end
-
-  def list_pages(site, _search_query, opts) when is_atom(site) do
-    per_page = Keyword.get(opts, :per_page, 20)
-
-    Repo.all(
-      from p in Page,
-        where: p.site == ^site,
-        limit: ^per_page,
-        order_by: [asc: p.order, asc: p.path]
-    )
-  end
-
-  @doc """
   Creates a new page that's not published.
 
   ## Examples
@@ -273,15 +245,6 @@ defmodule Beacon.Content do
     end
   end
 
-  defp create_page_event(page, event) do
-    attrs = %{"site" => page.site, "page_id" => page.id, "event" => event}
-
-    %PageEvent{}
-    |> Changeset.cast(attrs, [:site, :page_id, :event])
-    |> Changeset.validate_required([:site, :page_id, :event])
-    |> Repo.insert()
-  end
-
   @doc """
   Publish `page`.
 
@@ -292,8 +255,9 @@ defmodule Beacon.Content do
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
-      with {:ok, event} <- create_page_event(page, "published") do
-        :ok = PubSub.broadcast_page_published(event)
+      with {:ok, event} <- create_page_event(page, "published"),
+           {:ok, _snapshot} <- create_page_snapshot(page, event) do
+        :ok = PubSub.broadcast_page_event(event)
         # page = Lifecycle.Page.publish_page(page),
         # :ok <- Loader.reload_page(page) do
         {:ok, page}
@@ -301,20 +265,50 @@ defmodule Beacon.Content do
     end)
   end
 
+  defp create_page_event(page, event) do
+    attrs = %{"site" => page.site, "page_id" => page.id, "event" => event}
+
+    %PageEvent{}
+    |> Changeset.cast(attrs, [:site, :page_id, :event])
+    |> Changeset.validate_required([:site, :page_id, :event])
+    |> Repo.insert()
+  end
+
+  defp create_page_snapshot(page, event) do
+    attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
+
+    %PageSnapshot{}
+    |> Changeset.cast(attrs, [:site, :schema_version, :page_id, :page, :event_id])
+    |> Changeset.validate_required([:site, :schema_version, :page_id, :page, :event_id])
+    |> Repo.insert()
+  end
+
   @doc """
-  Pack a page and store it in a binary format to preserve its current shape and data.
-
+  TODO
   """
-  def store_snapshot(_page_id) do
-    # TODO
-    page = %Page{}
-    {:ok, page}
+  @spec list_pages(Site.t(), String.t()) :: [Page.t()]
+  def list_pages(site, search_query, opts \\ [])
+
+  def list_pages(site, search_query, opts) when is_atom(site) and is_binary(search_query) do
+    per_page = Keyword.get(opts, :per_page, 20)
+
+    Repo.all(
+      from p in Page,
+        where: p.site == ^site,
+        where: ilike(p.path, ^"%#{search_query}%") or ilike(p.title, ^"%#{search_query}%"),
+        limit: ^per_page,
+        order_by: [asc: p.order, asc: p.path]
+    )
   end
 
-  @doc false
-  def store_snapshot(page_id, event_id) do
-  end
+  def list_pages(site, _search_query, opts) when is_atom(site) do
+    per_page = Keyword.get(opts, :per_page, 20)
 
-  def fetch_snapshot() do
+    Repo.all(
+      from p in Page,
+        where: p.site == ^site,
+        limit: ^per_page,
+        order_by: [asc: p.order, asc: p.path]
+    )
   end
 end

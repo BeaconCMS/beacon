@@ -7,23 +7,23 @@ defmodule Beacon.PubSub do
 
   @pubsub __MODULE__
 
-  @topic_layout_published "beacon:layout:published"
-  @topic_page_published "beacon:page:published"
+  @topic_layouts "beacon:layouts"
+  @topic_pages "beacon:pages"
 
-  def subscribe_layout_published do
-    Phoenix.PubSub.subscribe(@pubsub, @topic_layout_published)
+  def subscribe_layouts do
+    Phoenix.PubSub.subscribe(@pubsub, @topic_layouts)
   end
 
-  def broadcast_layout_published(%LayoutEvent{} = event) do
-    broadcast(@topic_layout_published, event)
+  def broadcast_layout_event(%LayoutEvent{} = event) do
+    broadcast(@topic_layouts, event)
   end
 
-  def subscribe_page_published do
-    Phoenix.PubSub.subscribe(@pubsub, @topic_page_published)
+  def subscribe_pages do
+    Phoenix.PubSub.subscribe(@pubsub, @topic_pages)
   end
 
-  def broadcast_page_published(%PageEvent{} = event) do
-    broadcast(@topic_page_published, event)
+  def broadcast_page_event(%PageEvent{} = event) do
+    broadcast(@topic_pages, event)
   end
 
   def subscribe_page_update(site, path_info) do
