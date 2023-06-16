@@ -15,14 +15,10 @@ defmodule BeaconWeb.API.ComponentController do
     )
   end
 
-  # def show(conn, %{"id" => id}) do
-  #   page = Pages.get_page!(id)
-  #   render(conn, :show, page: page)
-  # end
-
-  def create(conn, attrs) do
-    Logger.info("###### Received attrs #{inspect(attrs)}")
-    # Logger.info("###### Received component_definition_id #{inspect(component_definition_id)}")
+  @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def create(conn, %{ "definitionId" => component_definition_id, "classes" => classes }) do
+    Logger.info("###### Received component_definition_id #{inspect(component_definition_id)}")
+    Logger.info("###### Received classes #{inspect(classes)}")
     render(conn, :show)
   end
 end
