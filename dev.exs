@@ -83,7 +83,14 @@ defmodule SamplePhoenix.Endpoint do
 
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader
-  plug Plug.RequestId
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
   plug Plug.Session, @session_options
   plug SamplePhoenixWeb.Router
 end
