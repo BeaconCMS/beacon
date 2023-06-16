@@ -12,6 +12,13 @@ defmodule BeaconWeb.API.ComponentJSON do
     }
   end
 
+  def show(%{}) do
+    %{
+      data: "still a WIP"
+    }
+  end
+
+
   # @doc """
   # Renders a list of pages.
   # """

@@ -2,6 +2,7 @@ defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
   alias Beacon.ComponentCategories
   alias Beacon.ComponentDefinitions
+  require Logger
 
   action_fallback BeaconWeb.API.FallbackController
 
@@ -18,4 +19,10 @@ defmodule BeaconWeb.API.ComponentController do
   #   page = Pages.get_page!(id)
   #   render(conn, :show, page: page)
   # end
+
+  def create(conn, %{ classes: classes, definitionId: component_definition_id }) do
+    Logger.info("###### Received classes #{inspect(classes)}")
+    Logger.info("###### Received component_definition_id #{inspect(component_definition_id)}")
+    render(conn, :show)
+  end
 end
