@@ -2,7 +2,7 @@ defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
   alias Beacon.ComponentCategories
   alias Beacon.ComponentDefinitions
-  require Logger
+  # require Logger
 
   action_fallback BeaconWeb.API.FallbackController
 
@@ -16,9 +16,8 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def create(conn, %{ "definitionId" => component_definition_id, "classes" => classes }) do
-    Logger.info("###### Received component_definition_id #{inspect(component_definition_id)}")
-    Logger.info("###### Received classes #{inspect(classes)}")
-    render(conn, :show)
+  def create(conn, %{ "definitionId" => component_definition_id, "classes" => classes}) do
+    definition = ComponentDefinitions.get_component_definition!(component_definition_id)
+    render(conn, :show, definition: definition, classes: classes)
   end
 end

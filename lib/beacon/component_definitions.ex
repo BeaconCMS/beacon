@@ -21,6 +21,22 @@ defmodule Beacon.ComponentDefinitions do
     ComponentDefinition |> Repo.all()
   end
 
+  @doc """
+  Gets a single ComponentDefinition.
+
+  Raises `Ecto.NoResultsError` if the ComponentDefinition does not exist.
+
+  ## Examples
+
+      iex> get_component_definition!(123)
+      %ComponentDefinition{}
+
+      iex> get_component_definition!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_component_definition!(id, preloads \\ []), do: ComponentDefinition |> Repo.get!(id) |> Repo.preload(preloads)
+
 
   @spec create_component_definition(%{optional(:__struct__) => none, optional(atom | binary) => any}) :: any
   @doc """

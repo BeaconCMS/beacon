@@ -21,7 +21,6 @@ defmodule Beacon.ComponentCategories do
     ComponentCategory |> Repo.all()
   end
 
-
   @spec create_component_category(%{optional(:__struct__) => none, optional(atom | binary) => any}) :: any
   @doc """
   Creates a component category.
