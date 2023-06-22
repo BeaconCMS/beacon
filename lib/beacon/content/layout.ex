@@ -47,7 +47,7 @@ defmodule Beacon.Content.Layout do
   def version, do: @version
 
   @doc false
-  def changeset(layout, attrs) do
+  def changeset(%__MODULE__{} = layout, attrs) do
     layout
     |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
     # TODO: make stylesheet optional

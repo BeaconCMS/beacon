@@ -5,7 +5,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.LiveViewTest
   import Beacon.Fixtures
 
-  defp start_loader(_) do
+  setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     :ok
   end
@@ -22,8 +22,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
         ]
       )
 
-    page_home =
-      page_fixture(
+    Beacon.Content.publish_layout(layout)
+
+    _page_home =
+      published_page_fixture(
         layout_id: layout.id,
         path: "home",
         template: """
@@ -47,14 +49,17 @@ defmodule BeaconWeb.Live.PageLiveTest do
           %{"name" => "csrf-token", "content" => "csrf-token-page"},
           %{"name" => "theme-color", "content" => "#3c790a", "media" => "(prefers-color-scheme: dark)"},
           %{"property" => "og:title", "content" => "Beacon"}
+        ],
+        events: [
+          page_event_params()
+        ],
+        helpers: [
+          page_helper_params()
         ]
       )
 
-    page_event_fixture(%{page_id: page_home.id})
-    page_helper_fixture(%{page_id: page_home.id})
-
     _page_without_meta_tags =
-      page_fixture(
+      published_page_fixture(
         layout_id: layout.id,
         path: "without_meta_tags",
         template: """
@@ -70,7 +75,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "meta tags" do
-    setup [:start_loader, :create_page]
+    setup [:create_page]
 
     test "merge layout, page, and site", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
@@ -105,7 +110,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "render" do
-    setup [:start_loader, :create_page]
+    setup [:create_page]
 
     test "a given path", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
@@ -151,41 +156,37 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "page title" do
-    setup [:start_loader]
-
     test "on layout", %{conn: conn} do
       stylesheet_fixture()
-      layout = layout_fixture(title: "layout_title")
-      page_fixture(layout_id: layout.id, title: nil)
-      Beacon.reload_site(:my_site)
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: nil, path: "/layout_title")
+      Beacon.Loader.load_page(page)
 
-      {:ok, view, _html} = live(conn, "/home")
+      {:ok, view, _html} = live(conn, "/layout_title")
 
       assert page_title(view) =~ "layout_title"
     end
 
     test "on page overwrite layout", %{conn: conn} do
       stylesheet_fixture()
-      layout = layout_fixture(title: "layout_title")
-      page_fixture(layout_id: layout.id, title: "page_title")
-      Beacon.reload_site(:my_site)
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: "page_title", path: "/page_title")
+      Beacon.Loader.load_page(page)
 
-      {:ok, view, _html} = live(conn, "/home")
+      {:ok, view, _html} = live(conn, "/page_title")
 
       assert page_title(view) =~ "page_title"
     end
   end
 
   describe "markdown" do
-    setup [:start_loader]
-
     test "page template", %{conn: conn} do
       stylesheet_fixture()
-      layout = layout_fixture()
-      page_fixture(layout_id: layout.id, format: "markdown", template: "# Title")
-      Beacon.reload_site(:my_site)
+      layout = published_layout_fixture()
+      page = published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
+      Beacon.Loader.load_page(page)
 
-      {:ok, view, _html} = live(conn, "/home")
+      {:ok, view, _html} = live(conn, "/markdown")
 
       assert has_element?(view, "h1", "Title")
     end

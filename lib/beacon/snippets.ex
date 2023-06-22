@@ -19,7 +19,7 @@ defmodule Beacon.Snippets do
 
   Helper functions can be created and called to perform operations on the provided assigns:
 
-      iex> page = Beacon.Pages.create_page(%{site: "my_site", extra: %{"author_id": 1}})
+      iex> page = Beacon.Content.create_page(%{site: "my_site", extra: %{"author_id": 1}})
       iex> Beacon.Snippet.create_helper(%{site: "my_site", name: "author_name", body: ~S\"""
       ...> author_id = get_in(assigns, ["page", "extra", "author_id"])
       ...> MyApp.fetch_author_name(author_id)
@@ -75,7 +75,7 @@ defmodule Beacon.Snippets do
 
   Allowed assigns:
 
-    * :page (Beacon.Pages.Page.t())
+    * :page (Beacon.Content.Page.t())
 
   """
   def render(snippet, assigns) when is_binary(snippet) and is_map(assigns) do

@@ -19,6 +19,8 @@ defmodule Beacon.TailwindCompiler do
 
   """
 
+  alias Beacon.Content
+
   @behaviour Beacon.RuntimeCSS
 
   @impl Beacon.RuntimeCSS
@@ -118,7 +120,7 @@ defmodule Beacon.TailwindCompiler do
   defp generate_template_files!(tmp_dir, site) do
     [
       Task.async(fn ->
-        Enum.map(Beacon.Layouts.list_layouts_for_site(site), fn layout ->
+        Enum.map(Content.list_layouts(site), fn layout ->
           layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
           File.write!(layout_path, layout.body)
           layout_path
@@ -132,7 +134,7 @@ defmodule Beacon.TailwindCompiler do
         end)
       end),
       Task.async(fn ->
-        Enum.map(Beacon.Pages.list_pages_for_site(site), fn page ->
+        Enum.map(Content.list_pages(site, per_page: :infinity), fn page ->
           page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
           File.write!(page_path, page.template)
           page_path

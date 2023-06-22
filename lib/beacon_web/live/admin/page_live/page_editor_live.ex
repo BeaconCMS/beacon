@@ -1,16 +1,13 @@
 defmodule BeaconWeb.Admin.PageEditorLive do
   use BeaconWeb, :live_view
 
-  alias Beacon.Layouts
-  alias Beacon.Layouts.Layout
-  alias Beacon.Pages
-
+  alias Beacon.Content
   alias BeaconWeb.Admin.PageLive.MetaTagsInputs
 
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
-    page = Pages.get_page!(id, [:versions])
-    changeset = Pages.change_page(page)
+    page = Content.get_page!(id)
+    changeset = Content.change_page(page)
 
     socket =
       socket
@@ -52,9 +49,9 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
     changeset =
       socket.assigns.page
-      |> Pages.change_page(page_params)
+      |> Content.change_page(page_params)
       |> Map.put(:action, :validate)
-      |> Beacon.Content.PageField.apply_changesets(socket.assigns.page.site, extra_params)
+      |> Content.PageField.apply_changesets(socket.assigns.page.site, extra_params)
 
     {:noreply,
      socket
@@ -68,24 +65,6 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   def handle_event("raw_schema_editor_lost_focus", %{"value" => value}, socket) do
     {:noreply, assign(socket, :raw_schema, value)}
-  end
-
-  def handle_event("copy_version", %{"version" => version_str}, socket) do
-    version = Enum.find(socket.assigns.page.versions, &(&1.version == String.to_integer(version_str)))
-
-    {:ok, page} =
-      Pages.update_page_pending(
-        socket.assigns.page,
-        version.template,
-        socket.assigns.page.layout_id
-      )
-
-    changeset = Pages.change_page(page)
-
-    {:noreply,
-     socket
-     |> assign(:page, page)
-     |> assign_form(changeset)}
   end
 
   def handle_event("show-new-attribute-modal", _, socket) do
@@ -116,11 +95,11 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> Map.put("pending_template", socket.assigns.pending_template)
       |> Map.put("raw_schema", socket.assigns.raw_schema)
 
-    update_page = fn page, params -> Pages.update_page(page, params) end
+    update_page = fn page, params -> Content.update_page(page, params) end
 
     maybe_publish_page = fn page, publish? ->
       if publish? do
-        Pages.publish_page(page)
+        Content.publish_page(page)
       else
         {:ok, page}
       end
@@ -128,8 +107,8 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
     with {:ok, page} <- update_page.(page, params),
          {:ok, page} <- maybe_publish_page.(page, publish?) do
-      page = Pages.get_page!(page.id, [:versions])
-      changeset = Pages.change_page(page)
+      page = Content.get_page!(page.id)
+      changeset = Content.change_page(page)
 
       message =
         if publish? do
@@ -162,17 +141,17 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   defp assign_extra_fields(socket, changeset) do
     params = Ecto.Changeset.get_field(changeset, :extra)
-    extra_fields = Beacon.Content.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, params, changeset.errors)
+    extra_fields = Content.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, params, changeset.errors)
     assign(socket, :extra_fields, extra_fields)
   end
 
   defp assign_site_layotus(socket) do
     site = socket.assigns.page.site
-    assign(socket, site_layouts: Layouts.list_layouts_for_site(site))
+    assign(socket, site_layouts: Content.list_layouts(site))
   end
 
   defp layouts_to_options(layouts) do
-    Enum.map(layouts, fn %Layout{id: id, title: title} ->
+    Enum.map(layouts, fn %Content.Layout{id: id, title: title} ->
       {title, id}
     end)
   end
@@ -190,10 +169,6 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     else
       []
     end
-  end
-
-  defp sort_page_versions(page_versions) do
-    Enum.sort_by(page_versions, & &1.version, :desc)
   end
 
   defp extra_page_field(mod, field, env) do

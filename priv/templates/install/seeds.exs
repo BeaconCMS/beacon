@@ -5,8 +5,7 @@
 #     mix run priv/repo/beacon_seeds.exs
 
 alias Beacon.Components
-alias Beacon.Pages
-alias Beacon.Layouts
+alias Beacon.Content
 alias Beacon.Stylesheets
 
 Stylesheets.create_stylesheet!(%{

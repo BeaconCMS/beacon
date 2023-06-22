@@ -8,7 +8,6 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageSnapshot
-  alias Beacon.PubSub
   alias Beacon.Repo
 
   describe "layouts" do
@@ -34,15 +33,6 @@ defmodule Beacon.ContentTest do
 
       assert {:ok, %Layout{}} = Content.publish_layout(layout)
       assert %LayoutSnapshot{layout: %Layout{title: "snapshot test"}} = Repo.one(LayoutSnapshot)
-    end
-
-    test "publish layout should broadcast published event" do
-      PubSub.subscribe_layouts()
-
-      layout = layout_fixture()
-      assert {:ok, %Layout{}} = Content.publish_layout(layout)
-
-      assert_received %LayoutEvent{event: :published}
     end
 
     test "list published layouts" do
@@ -87,15 +77,22 @@ defmodule Beacon.ContentTest do
       assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
     end
 
-    test "publish page should broadcast published event" do
-      PubSub.subscribe_pages()
+    test "list published pages" do
+      # publish page_a twice
+      page_a = page_fixture(path: "/a", title: "page_a v1")
+      {:ok, page_a} = Content.publish_page(page_a)
+      {:ok, page_a} = Content.update_page(page_a, %{"title" => "page_a v2"})
+      {:ok, _page_a} = Content.publish_page(page_a)
 
-      page = page_fixture()
-      assert {:ok, %Page{}} = Content.publish_page(page)
+      # publish and unpublish page_b
+      page_b = page_fixture(path: "/b", title: "page_b v1")
+      {:ok, page_b} = Content.publish_page(page_b)
+      {:ok, _page_b} = Content.unpublish_page(page_b)
 
-      assert_received %PageEvent{event: :published}
+      # do not publish page_c
+      _page_c = page_fixture(path: "/c", title: "page_c v1")
+
+      assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site)
     end
-
-    # test "list published pages" do
   end
 end

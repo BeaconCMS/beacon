@@ -18,7 +18,7 @@ defmodule BeaconWeb.PageLive do
       |> assign(:beacon, %{site: site})
       |> assign(:__site__, site)
 
-    if connected?(socket), do: :ok = Beacon.PubSub.subscribe_page_update(site, path)
+    if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
     {:ok, socket, layout: {BeaconWeb.Layouts, :dynamic}}
   end
@@ -31,13 +31,13 @@ defmodule BeaconWeb.PageLive do
   defp lookup_route!(site, path) do
     Beacon.Router.lookup_path(site, path) ||
       raise BeaconWeb.NotFoundError, """
-      Route not found for path #{inspect(path)}
+      route not found for path #{inspect(path)}
 
       Make sure a page was created for that path.
       """
   end
 
-  def handle_info(:page_updated, socket) do
+  def handle_info({:page_loaded, _}, socket) do
     # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179
     %{assigns: %{__beacon_page_params__: params}} = socket
 
@@ -50,6 +50,10 @@ defmodule BeaconWeb.PageLive do
         # runtime_css_path: BeaconWeb.Layouts.asset_path(socket, :css)
       })
 
+    {:noreply, socket}
+  end
+
+  def handle_info(_msg, socket) do
     {:noreply, socket}
   end
 

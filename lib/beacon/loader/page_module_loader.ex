@@ -2,15 +2,13 @@ defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
   require Logger
+  alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
-  alias Beacon.Pages.Page
-  alias Beacon.Pages.PageEvent
-  alias Beacon.Pages.PageHelper
 
-  def load_page!(site, page) do
-    component_module = Loader.component_module_for_site(site)
-    page_module = Loader.page_module_for_site(site, page.id)
+  def load_page!(%Content.Page{} = page) do
+    component_module = Loader.component_module_for_site(page.site)
+    page_module = Loader.page_module_for_site(page.site, page.id)
 
     # Group function heads together to avoid compiler warnings
     functions = [
@@ -38,17 +36,13 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  defp store_page(%Page{status: :draft}, _page_module, _component_module) do
-    :skip
-  end
-
-  defp store_page(%Page{} = page, page_module, component_module) do
+  defp store_page(page, page_module, component_module) do
     %{id: page_id, layout_id: layout_id, site: site, path: path} = page
     template = Lifecycle.Template.load_template(page)
     Beacon.Router.add_page(site, path, {page_id, layout_id, page.format, template, page_module, component_module})
   end
 
-  defp page_assigns(%Page{} = page) do
+  defp page_assigns(page) do
     %{id: id, meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
     meta_tags = interpolate_meta_tags(meta_tags, page)
     raw_schema = interpolate_raw_schema(raw_schema, page)
@@ -129,12 +123,12 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   # TODO: path_to_args in paths with dynamic segments may be broken
-  defp handle_event(%Page{site: site, path: path, events: events}) do
-    Enum.map(events, fn %PageEvent{} = event ->
+  defp handle_event(%{site: site, path: path, events: events}) do
+    Enum.map(events, fn event ->
       Beacon.safe_code_check!(site, event.code)
 
       quote do
-        def handle_event(unquote(path_to_args(path, "")), unquote(event.event_name), var!(event_params), var!(socket)) do
+        def handle_event(unquote(path_to_args(path, "")), unquote(event.name), var!(event_params), var!(socket)) do
           unquote(Code.string_to_quoted!(event.code))
         end
       end
@@ -142,14 +136,13 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   # TODO: validate fn name and args
-  def helper(%Page{site: site, helpers: helpers}) do
-    Enum.map(helpers, fn %PageHelper{} = helper ->
+  def helper(%{site: site, helpers: helpers}) do
+    Enum.map(helpers, fn helper ->
       Beacon.safe_code_check!(site, helper.code)
-
-      args = Code.string_to_quoted!(helper.helper_args)
+      args = Code.string_to_quoted!(helper.args)
 
       quote do
-        def unquote(String.to_atom(helper.helper_name))(unquote(args)) do
+        def unquote(String.to_atom(helper.name))(unquote(args)) do
           unquote(Code.string_to_quoted!(helper.code))
         end
       end

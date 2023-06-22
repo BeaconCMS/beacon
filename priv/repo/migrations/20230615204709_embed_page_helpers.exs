@@ -25,6 +25,7 @@ defmodule Beacon.Repo.Migrations.EmbedPageHelpers do
             args: args
           }
 
+          # TODO: group helpers
           execute(fn ->
             repo().query!(
               """

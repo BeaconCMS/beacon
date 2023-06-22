@@ -3,11 +3,12 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   require Logger
 
+  alias Beacon.Content
   alias Beacon.Loader
 
-  def load_layout!(site, layout) do
-    component_module = Loader.component_module_for_site(site)
-    module = Loader.layout_module_for_site(site, layout.id)
+  def load_layout!(%Content.Layout{} = layout) do
+    component_module = Loader.component_module_for_site(layout.site)
+    module = Loader.layout_module_for_site(layout.site, layout.id)
     render_function = render_layout(layout)
     ast = render(module, render_function, component_module)
     :ok = Loader.reload_module!(module, ast)
@@ -26,7 +27,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
     end
   end
 
-  defp render_layout(%Beacon.Layouts.Layout{} = layout) do
+  defp render_layout(layout) do
     file = "site-#{layout.site}-layout-#{layout.title}"
     ast = Beacon.Template.HEEx.compile_heex_template!(file, layout.body)
 

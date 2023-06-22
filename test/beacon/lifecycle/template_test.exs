@@ -5,7 +5,7 @@ defmodule Beacon.Lifecycle.TemplateTest do
 
   describe "load_template" do
     setup do
-      page = %Beacon.Pages.Page{
+      page = %Beacon.Content.Page{
         site: :lifecycle_test,
         path: "/test/lifecycle",
         format: :markdown,

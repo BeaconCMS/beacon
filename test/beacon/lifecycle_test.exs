@@ -5,7 +5,7 @@ defmodule Beacon.LifecycleTest do
 
   describe "execute_steps" do
     setup do
-      page = %Beacon.Pages.Page{
+      page = %Beacon.Content.Page{
         site: :test_lifecycle,
         path: "/test/lifecycle",
         format: :test,

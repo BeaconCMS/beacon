@@ -7,7 +7,7 @@ defmodule Beacon.Repo.Migrations.CreateLayoutEvents do
       add :site, :text, null: false
       add :layout_id, references(:beacon_layouts, on_delete: :delete_all, type: :binary_id), null: false
       add :event, :text, null: false
-      timestamps(updated_at: false)
+      timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
     create constraint(:beacon_layout_events, :event, check: "event = 'created' or event = 'published'")

@@ -1,8 +1,8 @@
 defmodule Beacon.Lifecycle.Page do
   @moduledoc false
 
-  alias Beacon.Lifecycle
   alias Beacon.Content.Page
+  alias Beacon.Lifecycle
 
   @behaviour Beacon.Lifecycle
 

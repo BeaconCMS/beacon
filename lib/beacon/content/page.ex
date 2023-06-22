@@ -47,8 +47,14 @@ defmodule Beacon.Content.Page do
     belongs_to :layout, Layout
 
     embeds_many :events, Event do
+      field :name, :string
       field :code, :string
-      field :event_name, :string
+    end
+
+    embeds_many :helpers, Helper do
+      field :name, :string
+      field :args, :string
+      field :code, :string
     end
 
     timestamps()
@@ -62,7 +68,7 @@ defmodule Beacon.Content.Page do
   def version, do: @version
 
   @doc false
-  def changeset(%Page{} = page, attrs) do
+  def changeset(%__MODULE__{} = page, attrs) do
     page
     |> cast(attrs, [
       :site,
@@ -77,6 +83,8 @@ defmodule Beacon.Content.Page do
       :format,
       :extra
     ])
+    |> cast_embed(:events, with: &events_changeset/2)
+    |> cast_embed(:helpers, with: &helpers_changeset/2)
     |> validate_required([
       :site,
       :template,
@@ -87,6 +95,18 @@ defmodule Beacon.Content.Page do
     |> foreign_key_constraint(:layout_id)
     |> validate_string([:path])
     |> remove_empty_meta_attributes(:meta_tags)
+  end
+
+  defp events_changeset(schema, params) do
+    schema
+    |> cast(params, [:name, :code])
+    |> validate_required([:name, :code])
+  end
+
+  defp helpers_changeset(schema, params) do
+    schema
+    |> cast(params, [:name, :args, :code])
+    |> validate_required([:name, :code])
   end
 
   defp validate_string(changeset, fields) do

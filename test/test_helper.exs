@@ -51,17 +51,17 @@ Supervisor.start_link(
            ],
            create_page: [
              maybe_create_page: fn _page ->
-               {:cont, %Beacon.Pages.Page{template: "<h1>Created</h1>"}}
+               {:cont, %Beacon.Content.Page{template: "<h1>Created</h1>"}}
              end
            ],
            update_page: [
              maybe_update_page: fn _page ->
-               {:cont, %Beacon.Pages.Page{template: "<h1>Updated</h1>"}}
+               {:cont, %Beacon.Content.Page{template: "<h1>Updated</h1>"}}
              end
            ],
            publish_page: [
              maybe_publish_page: fn _page ->
-               {:cont, %Beacon.Pages.Page{status: :published}}
+               {:cont, %Beacon.Content.Page{}}
              end
            ],
            upload_asset: [

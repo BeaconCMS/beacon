@@ -2,7 +2,7 @@ defmodule Beacon.SnippetsTest do
   use Beacon.DataCase
 
   import Beacon.Fixtures
-  alias Beacon.Pages.Page
+  alias Beacon.Content.Page
   alias Beacon.Snippets
 
   test "assigns" do

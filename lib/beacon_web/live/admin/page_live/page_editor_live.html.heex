@@ -89,21 +89,3 @@
     </div>
   </.simple_form>
 </.modal>
-
-<div class="mt-10">
-  <.header>
-    Version History
-  </.header>
-
-  <.table id="page-versions" rows={sort_page_versions(@page.versions)}>
-    <:col :let={page_version} label="Current">
-      <%= if page_version.version == @page.version do %>
-        <b>Current</b>
-      <% end %>
-    </:col>
-    <:col :let={page_version} label="Version"><%= page_version.version %></:col>
-    <:action :let={page_version}>
-      <.button phx-click="copy_version" phx-value-version={page_version.version}>Copy</.button>
-    </:action>
-  </.table>
-</div>

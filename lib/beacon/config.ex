@@ -96,9 +96,9 @@ defmodule Beacon.Config do
                         {:cont, Beacon.Template.t()} | {:halt, Beacon.Template.t()} | {:halt, Exception.t()})}
                 ]}
              ]}
-          | {:publish_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
-          | {:create_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
-          | {:update_page, [{identifier :: atom(), fun :: (Beacon.Pages.Page.t() -> {:cont, Beacon.Pages.Page.t()} | {:halt, Exception.t()})}]}
+          | {:publish_page, [{identifier :: atom(), fun :: (Beacon.Content.Page.t() -> {:cont, Beacon.Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:create_page, [{identifier :: atom(), fun :: (Beacon.Content.Page.t() -> {:cont, Beacon.Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:update_page, [{identifier :: atom(), fun :: (Beacon.Content.Page.t() -> {:cont, Beacon.Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:upload_asset,
              [
                {identifier :: atom(),

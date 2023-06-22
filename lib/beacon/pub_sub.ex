@@ -2,48 +2,73 @@ defmodule Beacon.PubSub do
   @moduledoc false
 
   require Logger
-  alias Beacon.Content.LayoutEvent
-  alias Beacon.Content.PageEvent
+  alias Beacon.Content.Layout
+  alias Beacon.Content.Page
 
   @pubsub __MODULE__
 
-  @topic_layouts "beacon:layouts"
-  @topic_pages "beacon:pages"
+  defp topic_layouts(site), do: "beacon:#{site}:layouts"
 
-  def subscribe_layouts do
-    Phoenix.PubSub.subscribe(@pubsub, @topic_layouts)
+  def subscribe_to_layouts(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_layouts(site))
   end
 
-  def broadcast_layout_event(%LayoutEvent{} = event) do
-    broadcast(@topic_layouts, event)
+  def layout_published(%Layout{} = layout) do
+    layout.site
+    |> topic_layouts()
+    |> broadcast({:layout_published, %{site: layout.site, id: layout.id}})
   end
 
-  def subscribe_pages do
-    Phoenix.PubSub.subscribe(@pubsub, @topic_pages)
+  defp topic_pages(site), do: "beacon:#{site}:pages"
+
+  defp topic_page(site, path) when is_list(path) do
+    path = Enum.join(path, "/")
+    topic_page(site, path)
   end
 
-  def broadcast_page_event(%PageEvent{} = event) do
-    broadcast(@topic_pages, event)
+  defp topic_page(site, path) when is_binary(path) do
+    "beacon:#{site}:pages:#{path}"
   end
 
-  def subscribe_page_update(site, path_info) do
-    path = Enum.join(path_info, "/")
-    subscribe("beacon:page_update:#{site}:#{path}")
+  def subscribe_to_pages(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_pages(site))
   end
 
-  def broadcast_page_update(site, path) do
-    broadcast("beacon:page_update:#{site}:#{path}", :page_updated)
+  def subscribe_to_page(site, path) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_page(site, path))
   end
 
-  def broadcast_page_published(site, page_id) when is_atom(site) and is_binary(page_id) do
-    broadcast("beacon:page_published", %{site: site, page_id: page_id})
+  def page_created(%Page{} = page) do
+    page.site
+    |> topic_pages()
+    |> broadcast({:page_created, page(page)})
   end
 
-  defp broadcast(channel, message) when is_binary(channel) do
-    Phoenix.PubSub.broadcast(@pubsub, channel, message)
+  def page_loaded(%Page{} = page) do
+    page.site
+    |> topic_page(page.path)
+    |> local_broadcast({:page_loaded, page(page)})
   end
 
-  defp subscribe(channel) when is_binary(channel) do
-    Phoenix.PubSub.subscribe(@pubsub, channel)
+  def page_published(%Page{} = page) do
+    page.site
+    |> topic_pages()
+    |> broadcast({:page_published, page(page)})
+  end
+
+  def page_unpublished(%Page{} = page) do
+    page.site
+    |> topic_pages()
+    |> broadcast({:page_unpublished, page(page)})
+  end
+
+  defp page(page), do: %{site: page.site, id: page.id, path: page.path}
+
+  defp broadcast(topic, message) when is_binary(topic) do
+    Phoenix.PubSub.broadcast(@pubsub, topic, message)
+  end
+
+  defp local_broadcast(topic, message) when is_binary(topic) do
+    Phoenix.PubSub.local_broadcast(@pubsub, topic, message)
   end
 end

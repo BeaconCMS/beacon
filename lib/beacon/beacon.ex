@@ -57,7 +57,7 @@ defmodule Beacon do
       Keyword.get(opts, :sites) ||
         Logger.warning("Beacon will be started with no sites configured. See `Beacon.start_link/1` for more info.")
 
-    # TODO: pubsub per site
+    # TODO: pubsub per site?
     # children = [
     #   {Phoenix.PubSub, name: Beacon.PubSub}
     # ]

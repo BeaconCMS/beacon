@@ -2,13 +2,11 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
   use BeaconWeb, :live_component
 
   alias Beacon.Authorization
-  alias Beacon.Layouts
-  alias Beacon.Layouts.Layout
-  alias Beacon.Pages
+  alias Beacon.Content
 
   @impl true
   def update(%{page: page} = assigns, socket) do
-    changeset = Pages.change_page(page)
+    changeset = Content.change_page(page)
 
     socket =
       socket
@@ -23,7 +21,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
   def handle_event("validate", %{"page" => page_params}, socket) do
     changeset =
       socket.assigns.page
-      |> Pages.change_page(page_params)
+      |> Content.change_page(page_params)
       |> Map.put(:action, :validate)
 
     socket =
@@ -39,7 +37,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
   end
 
   defp save_page(socket, :new, page_params) do
-    case Pages.create_page(page_params) do
+    case Content.create_page(page_params) do
       {:ok, _page} ->
         {:noreply,
          socket
@@ -64,7 +62,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     layouts =
       case Ecto.Changeset.get_field(changeset, :site) do
         nil -> []
-        site -> Layouts.list_layouts_for_site(site)
+        site -> Content.list_layouts(site)
       end
 
     assign(socket, :site_layouts, layouts)
@@ -75,13 +73,13 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
   end
 
   defp assign_layouts(socket, %{"site" => site}) do
-    layouts = Layouts.list_layouts_for_site(site)
+    layouts = Content.list_layouts(site)
 
     assign(socket, :site_layouts, layouts)
   end
 
   defp layouts_to_options(layouts) do
-    Enum.map(layouts, fn %Layout{id: id, title: title} ->
+    Enum.map(layouts, fn %Content.Layout{id: id, title: title} ->
       {title, id}
     end)
   end
@@ -101,5 +99,5 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
     end
   end
 
-  defp list_sites, do: Layouts.list_distinct_sites_from_layouts()
+  defp list_sites, do: Content.list_distinct_sites_from_layouts()
 end

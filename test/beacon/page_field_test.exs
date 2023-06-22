@@ -40,7 +40,7 @@ defmodule Beacon.PageFieldTest do
   describe "apply_changesets" do
     setup do
       page = page_fixture()
-      page_changeset = Beacon.Pages.change_page(page)
+      page_changeset = Beacon.Content.change_page(page)
       [page_changeset: page_changeset]
     end
 
@@ -78,7 +78,7 @@ defmodule Beacon.PageFieldTest do
   describe "extra_fields" do
     setup do
       page = page_fixture()
-      page_changeset = Beacon.Pages.change_page(page)
+      page_changeset = Beacon.Content.change_page(page)
       [page_changeset: page_changeset]
     end
 

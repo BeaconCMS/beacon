@@ -217,8 +217,7 @@ For more info on site options, check out `Beacon.start_link/1`.
 
     ```elixir
     alias Beacon.Components
-    alias Beacon.Pages
-    alias Beacon.Layouts
+    alias Beacon.Content
     alias Beacon.Stylesheets
 
     Stylesheets.create_stylesheet!(%{

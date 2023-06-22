@@ -6,7 +6,6 @@ defmodule Beacon.Content do
   """
 
   import Ecto.Query
-  alias Beacon.Repo
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -15,8 +14,8 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
   alias Beacon.Lifecycle
-  alias Beacon.Loader
   alias Beacon.PubSub
+  alias Beacon.Repo
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
@@ -96,7 +95,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       with {:ok, event} <- create_layout_event(layout, "published"),
            {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
-        :ok = PubSub.broadcast_layout_event(event)
+        :ok = PubSub.layout_published(layout)
         {:ok, layout}
       end
     end)
@@ -125,13 +124,17 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> get_layout(site, "fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
+      iex> get_layout("fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
       %Layout{}
 
   """
-  @spec get_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
-  def get_layout(site, id) do
-    Repo.one(from l in Layout, where: l.site == ^site and l.id == ^id)
+  @spec get_layout(Ecto.UUID.t()) :: Layout.t() | nil
+  def get_layout(id) do
+    Repo.get(Layout, id)
+  end
+
+  def get_layout!(id) when is_binary(id) do
+    Repo.get!(Layout, id)
   end
 
   @doc """
@@ -143,27 +146,49 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Returns all the latest layout snapshots for `site`.
+  Returns all published layouts for `site`.
 
-  Layout is extracted from the latest published `Beacon.Content.LayoutSnapshot`.
+  Layouts are extracted from the latest published `Beacon.Content.LayoutSnapshot`.
   """
   @spec list_published_layouts(Site.t()) :: [Layout.t()]
   def list_published_layouts(site) do
     Repo.all(
       from snapshot in LayoutSnapshot,
         join: event in LayoutEvent,
+        on: snapshot.event_id == event.id,
         preload: [event: event],
         where: snapshot.site == ^site,
         where: event.event == :published,
         distinct: [asc: snapshot.layout_id],
         order_by: [desc: snapshot.inserted_at]
     )
-    |> Enum.map(&extract_snapshot_layout/1)
+    |> Enum.map(&extract_layout_snapshot/1)
   end
 
-  defp extract_snapshot_layout(%{schema_version: 1, layout: %Layout{} = layout}) do
+  @doc """
+  Get latest published layout.
+  """
+  @spec get_published_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
+  def get_published_layout(site, layout_id) do
+    Repo.one(
+      from snapshot in LayoutSnapshot,
+        join: event in LayoutEvent,
+        on: snapshot.event_id == event.id,
+        preload: [event: event],
+        where: snapshot.site == ^site,
+        where: event.event == :published,
+        where: event.layout_id == ^layout_id and snapshot.layout_id == ^layout_id,
+        distinct: [asc: snapshot.layout_id],
+        order_by: [desc: snapshot.inserted_at]
+    )
+    |> extract_layout_snapshot()
+  end
+
+  defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
     layout
   end
+
+  defp extract_layout_snapshot(_snapshot), do: nil
 
   ## PAGES
 
@@ -228,7 +253,8 @@ defmodule Beacon.Content do
 
     Repo.transact(fn ->
       with {:ok, page} <- create.(attrs),
-           {:ok, event} <- create_page_event(page, "created") do
+           {:ok, _event} <- create_page_event(page, "created"),
+           %Page{} = page <- Lifecycle.Page.create_page(page) do
         {:ok, page}
       end
     end)
@@ -246,6 +272,31 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Updates a page.
+
+  ## Examples
+
+      iex> update_page(page, %{title: "New Home"})
+      {:ok, %Page{}}
+
+  """
+  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  def update_page(%Page{} = page, attrs) do
+    update = fn page, attrs ->
+      page
+      |> Page.changeset(attrs)
+      |> Repo.update()
+    end
+
+    Repo.transact(fn ->
+      with {:ok, page} <- update.(page, attrs),
+           %Page{} = page <- Lifecycle.Page.update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
   Publish `page`.
 
   A new snapshot is automatically created to store the page data,
@@ -256,10 +307,24 @@ defmodule Beacon.Content do
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
       with {:ok, event} <- create_page_event(page, "published"),
-           {:ok, _snapshot} <- create_page_snapshot(page, event) do
-        :ok = PubSub.broadcast_page_event(event)
-        # page = Lifecycle.Page.publish_page(page),
-        # :ok <- Loader.reload_page(page) do
+           {:ok, _snapshot} <- create_page_snapshot(page, event),
+           %Page{} = page <- Lifecycle.Page.update_page(page) do
+        :ok = PubSub.page_published(page)
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
+  Unpublish `page`.
+
+  """
+  @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def unpublish_page(%Page{} = page) do
+    Repo.transact(fn ->
+      with {:ok, _event} <- create_page_event(page, "unpublished") do
+        # TODO: unload page
+        :ok = PubSub.page_unpublished(page)
         {:ok, page}
       end
     end)
@@ -284,31 +349,117 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  TODO
+  Gets a single page.
+
+  ## Examples
+
+      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
+      %Page{}
+
   """
-  @spec list_pages(Site.t(), String.t()) :: [Page.t()]
-  def list_pages(site, search_query, opts \\ [])
-
-  def list_pages(site, search_query, opts) when is_atom(site) and is_binary(search_query) do
-    per_page = Keyword.get(opts, :per_page, 20)
-
-    Repo.all(
-      from p in Page,
-        where: p.site == ^site,
-        where: ilike(p.path, ^"%#{search_query}%") or ilike(p.title, ^"%#{search_query}%"),
-        limit: ^per_page,
-        order_by: [asc: p.order, asc: p.path]
-    )
+  @spec get_page(Ecto.UUID.t()) :: Page.t() | nil
+  def get_page(id) when is_binary(id) do
+    Repo.get(Page, id)
   end
 
-  def list_pages(site, _search_query, opts) when is_atom(site) do
+  def get_page!(id) when is_binary(id) do
+    Repo.get!(Page, id)
+  end
+
+  @doc """
+  TODO
+  """
+  @spec list_pages(Site.t(), keyword()) :: [Page.t()]
+  def list_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_pages_base()
+    |> query_list_pages_limit(per_page)
+    |> query_list_pages_search(search)
+    |> Repo.all()
+  end
+
+  defp query_list_pages_base(site) do
+    from p in Page,
+      where: p.site == ^site,
+      order_by: [asc: p.order, asc: fragment("length(?)", p.path)]
+  end
+
+  defp query_list_pages_limit(query, limit) when is_integer(limit) do
+    from q in query, limit: ^limit
+  end
+
+  defp query_list_pages_limit(query, :infinity = _limit) do
+    query
+  end
+
+  defp query_list_pages_limit(query, _per_page) do
+    from q in query, limit: 20
+  end
+
+  defp query_list_pages_search(query, search) when is_binary(search) do
+    from q in query,
+      where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%")
+  end
+
+  defp query_list_pages_search(query, _search), do: query
+
+  @doc """
+  Returns all published pages for `site`.
+
+  Unpublished pages are not returned even if it was once published before,
+  only the latest status is valid.
+
+  Pages are extracted from the latest published `Beacon.Content.PageSnapshot`.
+  """
+  @spec list_published_pages(Site.t()) :: [Layout.t()]
+  def list_published_pages(site) do
+    events =
+      from event in PageEvent,
+        where: event.site == ^site,
+        distinct: [asc: event.page_id],
+        order_by: [desc: event.inserted_at]
 
     Repo.all(
-      from p in Page,
-        where: p.site == ^site,
-        limit: ^per_page,
-        order_by: [asc: p.order, asc: p.path]
+      from snapshot in PageSnapshot,
+        join: event in subquery(events),
+        on: snapshot.event_id == event.id,
+        where: snapshot.site == ^site
     )
+    |> Enum.map(&extract_page_snapshot/1)
+  end
+
+  @doc """
+  Get latest published page.
+  """
+  @spec get_published_page(Site.t(), Ecto.UUID.t()) :: Page.t() | nil
+  def get_published_page(site, page_id) do
+    events =
+      from event in PageEvent,
+        where: event.site == ^site,
+        where: event.page_id == ^page_id,
+        distinct: [asc: event.page_id],
+        order_by: [desc: event.inserted_at]
+
+    Repo.one(
+      from snapshot in PageSnapshot,
+        join: event in subquery(events),
+        on: snapshot.event_id == event.id,
+        where: snapshot.site == ^site
+    )
+    |> extract_page_snapshot()
+  end
+
+  defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
+    page
+  end
+
+  defp extract_page_snapshot(_snapshot), do: nil
+
+  @deprecated "to be removed"
+  def list_distinct_sites_from_layouts do
+    Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
   end
 end
