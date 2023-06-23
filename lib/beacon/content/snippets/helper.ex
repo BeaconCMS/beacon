@@ -13,6 +13,8 @@ defmodule Beacon.Content.Snippets.Helper do
 
   use Ecto.Schema
 
+  @type t :: %__MODULE__{}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "beacon_snippet_helpers" do

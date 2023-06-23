@@ -32,7 +32,7 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 7. Run `mix deps.get`
 
-8. Add `:beacon` dependency to `.formatter.exs`
+8. Add `:beacon` dependency to `.formatter.exs` in `:
 
 9. Run `mix beacon.install --site my_site`
 
@@ -216,37 +216,34 @@ For more info on site options, check out `Beacon.start_link/1`.
 6. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
     ```elixir
-    alias Beacon.Components
     alias Beacon.Content
-    alias Beacon.Stylesheets
 
     Content.create_stylesheet!(%{
-      site: "my_site",
+      site: "<%= site %>",
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
     })
 
     Content.create_component!(%{
-      site: "my_site",
+      site: "<%= site %>",
       name: "sample_component",
       body: """
       <li>
-        <%= @val %>
+        <%%= @val %>
       </li>
       """
     })
 
-    %{id: layout_id} =
-      Layouts.create_layout!(%{
-        site: "my_site",
+    layout =
+      Content.create_layout!(%{
+        site: "<%= site %>",
         title: "Sample Home Page",
-        meta_tags: [%{"foo" => "bar"}],
         stylesheet_urls: [],
         body: """
         <header>
           Header
         </header>
-        <%= @inner_content %>
+        <%%= @inner_content %>
 
         <footer>
           Page Footer
@@ -254,62 +251,67 @@ For more info on site options, check out `Beacon.start_link/1`.
         """
       })
 
-    %{id: page_id} =
-      Pages.create_page!(%{
-        path: "home",
-        site: "my_site",
-        layout_id: layout_id,
-        template: """
-        <main>
-          <h2>Some Values:</h2>
-          <ul>
-            <%= for val <- @beacon_live_data[:vals] do %>
-              <%= my_component("sample_component", val: val) %>
-            <% end %>
-          </ul>
+    Content.publish_layout(layout)
 
-          <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-            Name: <%= text_input f, :name %> <%= submit "Hello" %>
-          </.form>
+    %{
+      path: "home",
+      site: "<%= site %>",
+      layout_id: layout.id,
+      template: """
+      <main>
+        <h2>Some Values:</h2>
+        <ul>
+          <%%= for val <- @beacon_live_data[:vals] do %>
+            <%%= my_component("sample_component", val: val) %>
+          <%% end %>
+        </ul>
 
-          <%= if assigns[:message], do: assigns.message %>
+        <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
+          Name: <%%= text_input f, :name %> <%%= submit "Hello" %>
+        </.form>
 
-          <%= dynamic_helper("upcase", "Beacon") %>
-        </main>
-        """
-      })
+        <%%= if assigns[:message], do: assigns.message %>
 
-    Pages.create_page!(%{
+        <%%= dynamic_helper("upcase", "Beacon") %>
+      </main>
+      """,
+      helpers: [
+        %{
+          name: "upcase",
+          args: "name",
+          code: """
+            String.upcase(name)
+          """
+        }
+      ],
+      events: [
+        %{
+          name: "hello",
+          code: """
+            {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+          """
+        }
+      ]
+    }
+    |> Content.create_page!()
+    |> Content.publish_page()
+
+    %{
       path: "blog/:blog_slug",
-      site: "my_site",
-      layout_id: layout_id,
+      site: "<%= site %>",
+      layout_id: layout.id,
       template: """
       <main>
         <h2>A blog</h2>
         <ul>
-          <li>Path Params Blog Slug: <%= @beacon_path_params.blog_slug %></li>
-          <li>Live Data blog_slug_uppercase: <%= @beacon_live_data.blog_slug_uppercase %></li>
+          <li>Path Params Blog Slug: <%%= @beacon_path_params.blog_slug %></li>
+          <li>Live Data blog_slug_uppercase: <%%= @beacon_live_data.blog_slug_uppercase %></li>
         </ul>
       </main>
       """
-    })
-
-    Pages.create_page_event!(%{
-      page_id: page_id,
-      event_name: "hello",
-      code: """
-        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
-
-    Pages.create_page_helper!(%{
-      page_id: page_id,
-      helper_name: "upcase",
-      helper_args: "name",
-      code: """
-        String.upcase(name)
-      """
-    })
+    }
+    |> Content.create_page!()
+    |> Content.publish_page()
     ```
 
 6. Include new seeds in the `ecto.setup` alias in `mix.exs`:

@@ -658,26 +658,31 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> Beacon.Snippet.render("title is {{ page.title }}", %{page: %Page{title: "home"}})
-      "title is home"
+      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %Page{title: "home"}})
+      {:ok, "title is home"}
 
   Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
-  which means that all [filters](https://shopify.github.io/liquid/basics/introduction/#filters) are available for use.
+  which means that all [filters](https://shopify.github.io/liquid/basics/introduction/#filters) are available for use, eg:
 
-      iex> Beacon.Snippet.render "{{ 'title' | capitalize }}"
+      iex> Beacon.Content.render_snippet("{{ 'title' | capitalize }}", assigns)
       {:ok, "Title"}
 
-  Helper functions can be created and called to perform operations on the provided assigns:
+  In situations where the Liquid filters are not enough, you can create helpers
+  to process the template using regular Elixir.
+
+  In the next example a `author_name` is created to simulate a query to fetch the author's name:
 
       iex> page = Beacon.Content.create_page(%{site: "my_site", extra: %{"author_id": 1}})
-      iex> Beacon.Snippet.create_helper(%{site: "my_site", name: "author_name", body: ~S\"""
+      iex> Beacon.Content.create_snippet_helper(%{site: "my_site", name: "author_name", body: ~S\"""
       ...> author_id = get_in(assigns, ["page", "extra", "author_id"])
       ...> MyApp.fetch_author_name(author_id)
       ...> \"""
       iex> Beacon.Snippet.render("Author is {{ helper 'author_name' }}", %{page: page})
       {:ok, "Author is Anon"}
 
-  They can be used in some places:
+  Note that the `:page` assigns is made available as `assigns["page"]` (String.t) due to how Solid works.
+
+  Snipets can be used in:
 
     * Meta Tag value
     * Page Schema (structured Schema.org tags)
@@ -688,7 +693,8 @@ defmodule Beacon.Content do
 
   """
   @doc type: :snippets
-  def render_snippet(template, assigns \\ %{}) when is_binary(template) and is_map(assigns) do
+  @spec render_snippet(String.t(), %{page: Page.t()}) :: {:ok, String.t()} | :error
+  def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
     page =
       assigns.page
       |> Map.from_struct()
@@ -696,11 +702,12 @@ defmodule Beacon.Content do
 
     assigns = %{"page" => page}
 
-    with {:ok, template} <- Solid.parse(template, parser:  Snippets.Parser),
+    with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
          {:ok, template} <- Solid.render(template, assigns) do
       {:ok, to_string(template)}
     else
-      error -> error
+      # TODO: wrap error and return a Beacon exception
+      _error -> :error
     end
   end
 end
