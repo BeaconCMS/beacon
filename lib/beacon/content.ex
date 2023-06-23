@@ -490,7 +490,6 @@ defmodule Beacon.Content do
     )
   end
 
-  @deprecated "to be removed"
   def list_distinct_sites_from_layouts do
     Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
   end
