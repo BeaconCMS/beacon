@@ -88,11 +88,6 @@ defmodule Beacon do
   def tailwind_version, do: @tailwind_version
 
   @doc """
-  Return a list of all registered sites running in the current instance.
-  """
-  def running_sites, do: Beacon.Registry.running_sites()
-
-  @doc """
   Reload all resources for all running sites.
   """
   def reload_all_sites do

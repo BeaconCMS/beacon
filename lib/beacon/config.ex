@@ -6,6 +6,7 @@ defmodule Beacon.Config do
 
   """
 
+  alias Beacon.Content
   alias Beacon.Registry
 
   @typedoc """
@@ -102,9 +103,9 @@ defmodule Beacon.Config do
                         {:cont, Beacon.Template.t()} | {:halt, Beacon.Template.t()} | {:halt, Exception.t()})}
                 ]}
              ]}
-          | {:publish_page, [{identifier :: atom(), fun :: (Beacon.Content.Page.t() -> {:cont, Beacon.Content.Page.t()} | {:halt, Exception.t()})}]}
-          | {:create_page, [{identifier :: atom(), fun :: (Beacon.Content.Page.t() -> {:cont, Beacon.Content.Page.t()} | {:halt, Exception.t()})}]}
-          | {:update_page, [{identifier :: atom(), fun :: (Beacon.Content.Page.t() -> {:cont, Beacon.Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:publish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:create_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:update_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:upload_asset,
              [
                {identifier :: atom(),
@@ -373,6 +374,9 @@ defmodule Beacon.Config do
     struct!(__MODULE__, opts)
   end
 
+  @doc """
+  Returns the `Beacon.Config` for `site`.
+  """
   @spec fetch!(Beacon.Types.Site.t()) :: t()
   def fetch!(site) when is_atom(site) do
     Registry.config!(site)
