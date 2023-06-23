@@ -1,6 +1,20 @@
 defmodule Beacon.Content.PageField do
   @moduledoc ~S"""
-  Add extra fields to pages.
+  Custom page fields for pages.
+
+  Each `Beacon.Content.Page` have a default set of fields that
+  fits most cases for building pages for your sites,
+  but in some cases you need custom data to either help manage
+  those page in Beacon Admin or to display such data.
+
+  For example, you can add a field to store each blog post illustration,
+  or a field to include tags, and so on.
+
+  Each page field will be:
+
+    * stored in the `page.extra` map field
+    * displayed in Beacon Admin
+    * validated when the pages is saved or published
 
   ## Example
 

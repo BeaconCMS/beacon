@@ -1,8 +1,6 @@
 defmodule Beacon.Content do
   @moduledoc """
-  Manage content for sites.
-
-  TODO
+  Content Management for sites.
   """
 
   import Ecto.Query
@@ -207,7 +205,10 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  TODO
+  Validate `page` with the given `params`.
+
+  All `Beacon.Content.PageField` are validated
+
   """
   @spec validate_page(Site.t(), Page.t(), map()) :: Ecto.Changeset.t()
   def validate_page(site, %Page{} = page, params) when is_atom(site) and is_map(params) do
@@ -318,6 +319,8 @@ defmodule Beacon.Content do
   @doc """
   Unpublish `page`.
 
+  Note that page will be removed from your site
+  and it will return error 404 for new requests.
   """
   @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def unpublish_page(%Page{} = page) do
@@ -367,7 +370,13 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  TODO
+  List pages.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search pages by path or title
+
   """
   @spec list_pages(Site.t(), keyword()) :: [Page.t()]
   def list_pages(site, opts \\ []) do
