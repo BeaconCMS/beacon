@@ -108,5 +108,52 @@ defmodule Beacon.ContentTest do
       Content.publish_page(page)
       assert Content.get_page_status(page) == :published
     end
+
+    test "lifecycle after_create_page" do
+      layout = layout_fixture(site: :lifecycle_test)
+
+      Content.create_page!(%{
+        site: "lifecycle_test",
+        path: "/",
+        template: "<p>page</p>",
+        layout_id: layout.id
+      })
+
+      assert_receive :lifecycle_after_create_page
+    end
+
+    test "lifecycle after_update_page" do
+      layout = layout_fixture(site: :lifecycle_test)
+
+      page =
+        Content.create_page!(%{
+          site: "lifecycle_test",
+          path: "/",
+          template: "<p>page</p>",
+          layout_id: layout.id
+        })
+
+      Content.update_page(page, %{template: "<p>page updated</p>"})
+
+      assert_receive :lifecycle_after_create_page
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "lifecycle after_publish_page" do
+      layout = layout_fixture(site: :lifecycle_test)
+
+      page =
+        Content.create_page!(%{
+          site: "lifecycle_test",
+          path: "/",
+          template: "<p>page</p>",
+          layout_id: layout.id
+        })
+
+      Content.publish_page(page)
+
+      assert_receive :lifecycle_after_create_page
+      assert_receive :lifecycle_after_publish_page
+    end
   end
 end

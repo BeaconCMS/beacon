@@ -65,19 +65,22 @@ Supervisor.start_link(
                 end
               ]}
            ],
-           create_page: [
-             maybe_create_page: fn _page ->
-               {:cont, %Beacon.Content.Page{template: "<h1>Created</h1>"}}
+           after_create_page: [
+             maybe_create_page: fn page ->
+                send(self(), :lifecycle_after_create_page)
+               {:cont, page}
              end
            ],
-           update_page: [
-             maybe_update_page: fn _page ->
-               {:cont, %Beacon.Content.Page{template: "<h1>Updated</h1>"}}
+           after_update_page: [
+             maybe_update_page: fn page ->
+                send(self(), :lifecycle_after_update_page)
+               {:cont, page}
              end
            ],
-           publish_page: [
-             maybe_publish_page: fn _page ->
-               {:cont, %Beacon.Content.Page{}}
+           after_publish_page: [
+             maybe_publish_page: fn page ->
+                send(self(), :lifecycle_after_publish_page)
+               {:cont, page}
              end
            ]
          ]

@@ -11,7 +11,7 @@ defmodule Beacon.Lifecycle.Page do
 
   def validate_output!(lifecycle, _config, _sub_key) do
     raise Beacon.LoaderError, """
-    return output for lifecycle #{lifecycle.name} must be of type Beacon.Content.Page
+    returned output for lifecycle #{lifecycle.name} must be of type Beacon.Content.Page
 
     Got:
 
@@ -21,35 +21,31 @@ defmodule Beacon.Lifecycle.Page do
   end
 
   @doc """
-  Execute all steps for stage `:create_page`.
+  Execute all steps for stage `:after_create_page`.
 
   It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
-  @spec create_page(Page.t()) :: Page.t()
-  def create_page(page) do
-    lifecycle = Lifecycle.execute(__MODULE__, page.site, :create_page, page)
-    lifecycle.output
+  @spec after_create_page(Page.t()) :: Page.t()
+  def after_create_page(page) do
+    Lifecycle.execute(__MODULE__, page.site, :after_create_page, page).output
   end
 
   @doc """
-  Execute all steps for stage `:update_page`.
+  Execute all steps for stage `:after_update_page`.
 
   It's executed in the same repo transaction, after the `page` record is saved into the database.
   """
-  @spec update_page(Page.t()) :: Page.t()
-  def update_page(page) do
-    lifecycle = Lifecycle.execute(__MODULE__, page.site, :update_page, page)
-    lifecycle.output
+  @spec after_update_page(Page.t()) :: Page.t()
+  def after_update_page(page) do
+    Lifecycle.execute(__MODULE__, page.site, :after_update_page, page).output
   end
 
   @doc """
-  Execute all steps for stage `:publish_page`.
+  Execute all steps for stage `:after_publish_page`.
 
-  It's executed before the `page` is reloaded.
   """
-  @spec publish_page(Page.t()) :: Page.t()
-  def publish_page(page) do
-    lifecycle = Lifecycle.execute(__MODULE__, page.site, :publish_page, page)
-    lifecycle.output
+  @spec after_publish_page(Page.t()) :: Page.t()
+  def after_publish_page(page) do
+    Lifecycle.execute(__MODULE__, page.site, :after_publish_page, page).output
   end
 end

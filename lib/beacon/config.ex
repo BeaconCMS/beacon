@@ -103,9 +103,9 @@ defmodule Beacon.Config do
                         {:cont, Beacon.Template.t()} | {:halt, Beacon.Template.t()} | {:halt, Exception.t()})}
                 ]}
              ]}
-          | {:publish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
-          | {:create_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
-          | {:update_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:after_create_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:after_update_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:after_publish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:upload_asset,
              [
                {identifier :: atom(),
@@ -182,9 +182,9 @@ defmodule Beacon.Config do
             lifecycle: [
               load_template: @default_load_template,
               render_template: @default_render_template,
-              publish_page: [],
-              create_page: [],
-              update_page: []
+              after_create_page: [],
+              after_update_page: [],
+              after_publish_page: []
             ],
             extra_page_fields: [],
             default_meta_tags: []
@@ -321,9 +321,9 @@ defmodule Beacon.Config do
               eval: &Beacon.Template.HEEx.eval_ast/2
             ]
           ],
-          create_page: [],
-          update_page: [],
-          publish_page: [
+          after_create_page: [],
+          after_update_page: [],
+          after_publish_page: [
             notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
           ],
           upload_asset: [],
@@ -349,9 +349,9 @@ defmodule Beacon.Config do
     lifecycle = [
       load_template: Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || []),
       render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
-      create_page: get_in(opts, [:lifecycle, :create_page]) || [],
-      update_page: get_in(opts, [:lifecycle, :update_page]) || [],
-      publish_page: get_in(opts, [:lifecycle, :publish_page]) || [],
+      after_create_page: get_in(opts, [:lifecycle, :after_create_page]) || [],
+      after_update_page: get_in(opts, [:lifecycle, :after_update_page]) || [],
+      after_publish_page: get_in(opts, [:lifecycle, :after_publish_page]) || [],
       upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 

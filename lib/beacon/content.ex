@@ -254,7 +254,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       with {:ok, page} <- create.(attrs),
            {:ok, _event} <- create_page_event(page, "created"),
-           %Page{} = page <- Lifecycle.Page.create_page(page) do
+           %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
       end
     end)
@@ -290,7 +290,7 @@ defmodule Beacon.Content do
 
     Repo.transact(fn ->
       with {:ok, page} <- update.(page, attrs),
-           %Page{} = page <- Lifecycle.Page.update_page(page) do
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
     end)
@@ -308,7 +308,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       with {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
-           %Page{} = page <- Lifecycle.Page.publish_page(page) do
+           %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
         :ok = PubSub.page_published(page)
         {:ok, page}
       end
