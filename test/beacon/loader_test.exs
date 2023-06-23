@@ -69,7 +69,7 @@ defmodule Beacon.LoaderTest do
       assert html =~ "layout_v1"
       assert html =~ "page_v1"
 
-      Beacon.Repo.update_all(Beacon.Components.Component, set: [body: "<header>component_v2</header>"])
+      Beacon.Repo.update_all(Beacon.Content.Component, set: [body: "<header>component_v2</header>"])
 
       {:ok, layout} =
         Beacon.Content.update_layout(layout, %{

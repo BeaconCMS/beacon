@@ -139,7 +139,7 @@ defmodule Beacon.TailwindCompiler do
         end)
       end),
       Task.async(fn ->
-        Enum.map(Beacon.Components.list_components_for_site(site), fn component ->
+        Enum.map(Beacon.Content.list_components(site), fn component ->
           component_path = Path.join(tmp_dir, "#{site}_component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
           component_path
@@ -163,7 +163,7 @@ defmodule Beacon.TailwindCompiler do
 
     app_css =
       site
-      |> Beacon.Stylesheets.list_stylesheets_for_site()
+      |> Beacon.Content.list_stylesheets()
       |> Enum.map_join(fn stylesheet ->
         ["\n", "/* ", stylesheet.name, " */", "\n", stylesheet.content, "\n"]
       end)

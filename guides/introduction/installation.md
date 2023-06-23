@@ -220,13 +220,13 @@ For more info on site options, check out `Beacon.start_link/1`.
     alias Beacon.Content
     alias Beacon.Stylesheets
 
-    Stylesheets.create_stylesheet!(%{
+    Content.create_stylesheet!(%{
       site: "my_site",
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
     })
 
-    Components.create_component!(%{
+    Content.create_component!(%{
       site: "my_site",
       name: "sample_component",
       body: """

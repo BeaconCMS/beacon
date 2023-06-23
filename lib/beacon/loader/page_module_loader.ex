@@ -69,7 +69,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp interpolate_meta_tag_attribute({key, value}, page) when is_binary(value) do
-    case Beacon.Snippets.render(value, %{page: page}) do
+    case Beacon.Content.render_snippet(value, %{page: page}) do
       {:ok, new_value} ->
         {key, new_value}
 
@@ -95,7 +95,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
     render = fn key, value, page ->
-      case Beacon.Snippets.render(value, %{page: page}) do
+      case Beacon.Content.render_snippet(value, %{page: page}) do
         {:ok, new_value} ->
           {key, new_value}
 

@@ -1,11 +1,7 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Admin.MediaLibrary
   alias Beacon.Admin.MediaLibrary.UploadMetadata
-  alias Beacon.Components
   alias Beacon.Content
-  alias Beacon.Content
-  alias Beacon.Snippets
-  alias Beacon.Stylesheets
 
   def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
   def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
@@ -23,7 +19,7 @@ defmodule Beacon.Fixtures do
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
     })
-    |> Stylesheets.create_stylesheet!()
+    |> Content.create_stylesheet!()
   end
 
   def component_fixture(attrs \\ %{}) do
@@ -35,7 +31,7 @@ defmodule Beacon.Fixtures do
       <span id={"my-component-#{@val}"}><%= @val %></span>
       """
     })
-    |> Components.create_component!()
+    |> Content.create_component!()
   end
 
   def layout_fixture(attrs \\ %{}) do
@@ -121,7 +117,7 @@ defmodule Beacon.Fixtures do
       |> String.upcase()
       """
     })
-    |> Snippets.create_helper!()
+    |> Content.create_snippet_helper!()
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do

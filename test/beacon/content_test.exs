@@ -156,4 +156,37 @@ defmodule Beacon.ContentTest do
       assert_receive :lifecycle_after_publish_page
     end
   end
+
+  describe "snippets" do
+    test "assigns" do
+      assert Content.render_snippet(
+               "page title is {{ page.title }}",
+               %{page: %Page{title: "test"}}
+             ) == {:ok, "page title is test"}
+
+      assert Content.render_snippet(
+               "author.id is {{ page.extra.author.id }}",
+               %{page: %Page{extra: %{"author" => %{"id" => 1}}}}
+             ) == {:ok, "author.id is 1"}
+    end
+
+    test "render helper" do
+      snippet_helper_fixture(
+        site: "my_site",
+        name: "author_name",
+        body:
+          String.trim(~S"""
+          author_id = get_in(assigns, ["page", "extra", "author_id"])
+          "test_#{author_id}"
+          """)
+      )
+
+      Beacon.Loader.load_snippet_helpers(:my_site)
+
+      assert Content.render_snippet(
+               "author name is {% helper 'author_name' %}",
+               %{page: %Page{site: "my_site", extra: %{"author_id" => 1}}}
+             ) == {:ok, "author name is test_1"}
+    end
+  end
 end

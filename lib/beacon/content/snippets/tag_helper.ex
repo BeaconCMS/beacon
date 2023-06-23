@@ -1,4 +1,4 @@
-defmodule Beacon.Snippets.Tags.Helper do
+defmodule Beacon.Content.Snippets.TagHelper do
   @moduledoc false
 
   @behaviour Solid.Tag

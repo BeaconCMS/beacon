@@ -90,7 +90,14 @@ defmodule Beacon.MixProject do
     [
       main: "Beacon",
       source_ref: "v#{@version}",
-      source_url: "https://github.com/BeaconCMS/beacon"
+      source_url: "https://github.com/BeaconCMS/beacon",
+      groups_for_functions: [
+        "Functions: Layouts": &(&1[:type] == :layouts),
+        "Functions: Pages": &(&1[:type] == :pages),
+        "Functions: Stylesheets": &(&1[:type] == :stylesheets),
+        "Functions: Components": &(&1[:type] == :components),
+        "Functions: Snippets": &(&1[:type] == :snippets)
+      ]
     ]
   end
 end

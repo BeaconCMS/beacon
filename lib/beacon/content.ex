@@ -4,6 +4,7 @@ defmodule Beacon.Content do
   """
 
   import Ecto.Query
+  alias Beacon.Content.Component
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -11,6 +12,8 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
+  alias Beacon.Content.Snippets
+  alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
   alias Beacon.PubSub
   alias Beacon.Repo
@@ -26,6 +29,7 @@ defmodule Beacon.Content do
       %Ecto.Changeset{data: %Layout{}}
 
   """
+  @doc type: :layouts
   @spec change_layout(Layout.t(), map()) :: Ecto.Changeset.t()
   def change_layout(%Layout{} = layout, attrs \\ %{}) do
     Layout.changeset(layout, attrs)
@@ -38,8 +42,8 @@ defmodule Beacon.Content do
 
       iex> create_layout(%{title: "Home"})
       {:ok, %Layout{}}
-
   """
+  @doc type: :layouts
   @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
   def create_layout(attrs) do
     create = fn attrs ->
@@ -59,6 +63,7 @@ defmodule Beacon.Content do
   @doc """
   Creates a layout.
   """
+  @doc type: :layouts
   @spec create_layout!(map()) :: Layout.t()
   def create_layout!(attrs) do
     case create_layout(attrs) do
@@ -76,6 +81,7 @@ defmodule Beacon.Content do
       {:ok, %Layout{}}
 
   """
+  @doc type: :layouts
   @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
   def update_layout(%Layout{} = layout, attrs) do
     layout
@@ -88,6 +94,7 @@ defmodule Beacon.Content do
 
   Event + snapshot
   """
+  @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | any()
   def publish_layout(%Layout{} = layout) do
     Repo.transact(fn ->
@@ -126,11 +133,13 @@ defmodule Beacon.Content do
       %Layout{}
 
   """
+  @doc type: :layouts
   @spec get_layout(Ecto.UUID.t()) :: Layout.t() | nil
   def get_layout(id) do
     Repo.get(Layout, id)
   end
 
+  @doc type: :layouts
   def get_layout!(id) when is_binary(id) do
     Repo.get!(Layout, id)
   end
@@ -138,6 +147,7 @@ defmodule Beacon.Content do
   @doc """
   Returns the list of layouts for `site`.
   """
+  @doc type: :layouts
   @spec list_layouts(Site.t()) :: [Layout.t()]
   def list_layouts(site) do
     Repo.all(from l in Layout, where: l.site == ^site)
@@ -148,6 +158,7 @@ defmodule Beacon.Content do
 
   Layouts are extracted from the latest published `Beacon.Content.LayoutSnapshot`.
   """
+  @doc type: :layouts
   @spec list_published_layouts(Site.t()) :: [Layout.t()]
   def list_published_layouts(site) do
     Repo.all(
@@ -166,6 +177,7 @@ defmodule Beacon.Content do
   @doc """
   Get latest published layout.
   """
+  @doc type: :layouts
   @spec get_published_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
   def get_published_layout(site, layout_id) do
     Repo.one(
@@ -199,6 +211,7 @@ defmodule Beacon.Content do
       %Ecto.Changeset{data: %Page{}}
 
   """
+  @doc type: :pages
   @spec change_page(Page.t(), map()) :: Ecto.Changeset.t()
   def change_page(%Page{} = page, attrs \\ %{}) do
     Page.create_changeset(page, attrs)
@@ -210,6 +223,7 @@ defmodule Beacon.Content do
   All `Beacon.Content.PageField` are validated
 
   """
+  @doc type: :pages
   @spec validate_page(Site.t(), Page.t(), map()) :: Ecto.Changeset.t()
   def validate_page(site, %Page{} = page, params) when is_atom(site) and is_map(params) do
     {extra_params, page_params} = Map.pop(params, "extra")
@@ -244,6 +258,7 @@ defmodule Beacon.Content do
   It will insert a `created` event into the page timeline,
   and no snapshot is created.
   """
+  @doc type: :pages
   @spec create_page(map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
     create = fn attrs ->
@@ -264,6 +279,7 @@ defmodule Beacon.Content do
   @doc """
   Creates a page.
   """
+  @doc type: :pages
   @spec create_page!(map()) :: Page.t()
   def create_page!(attrs) do
     case create_page(attrs) do
@@ -281,6 +297,7 @@ defmodule Beacon.Content do
       {:ok, %Page{}}
 
   """
+  @doc type: :pages
   @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def update_page(%Page{} = page, attrs) do
     update = fn page, attrs ->
@@ -304,6 +321,7 @@ defmodule Beacon.Content do
   which is used whenever the site or the page is reloaded. So you
   can keep editing the page as needed without impacting the published page.
   """
+  @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
@@ -322,6 +340,7 @@ defmodule Beacon.Content do
   Note that page will be removed from your site
   and it will return error 404 for new requests.
   """
+  @doc type: :pages
   @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def unpublish_page(%Page{} = page) do
     Repo.transact(fn ->
@@ -360,11 +379,13 @@ defmodule Beacon.Content do
       %Page{}
 
   """
+  @doc type: :pages
   @spec get_page(Ecto.UUID.t()) :: Page.t() | nil
   def get_page(id) when is_binary(id) do
     Repo.get(Page, id)
   end
 
+  @doc type: :pages
   def get_page!(id) when is_binary(id) do
     Repo.get!(Page, id)
   end
@@ -378,6 +399,7 @@ defmodule Beacon.Content do
     * `:query` - search pages by path or title
 
   """
+  @doc type: :pages
   @spec list_pages(Site.t(), keyword()) :: [Page.t()]
   def list_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
@@ -423,6 +445,7 @@ defmodule Beacon.Content do
 
   Pages are extracted from the latest published `Beacon.Content.PageSnapshot`.
   """
+  @doc type: :pages
   @spec list_published_pages(Site.t()) :: [Layout.t()]
   def list_published_pages(site) do
     events =
@@ -443,6 +466,7 @@ defmodule Beacon.Content do
   @doc """
   Get latest published page.
   """
+  @doc type: :pages
   @spec get_published_page(Site.t(), Ecto.UUID.t()) :: Page.t() | nil
   def get_published_page(site, page_id) do
     events =
@@ -478,6 +502,7 @@ defmodule Beacon.Content do
       :published
 
   """
+  @doc type: :pages
   @spec get_page_status(Page.t()) :: Beacon.Content.PageEvent.event()
   def get_page_status(page) do
     Repo.one(
@@ -490,7 +515,192 @@ defmodule Beacon.Content do
     )
   end
 
+  # deprecated: to be removed
+  @doc false
   def list_distinct_sites_from_layouts do
     Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
+  end
+
+  # STYLESHEETS
+
+  @doc """
+  Creates a stylesheet.
+
+  ## Examples
+
+      iex> create_stylesheet(%{field: value})
+      {:ok, %Stylesheet{}}
+
+      iex> create_stylesheet(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @doc type: :stylesheets
+  @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Ecto.Changeset.t()}
+  def create_stylesheet(attrs \\ %{}) do
+    %Stylesheet{}
+    |> Stylesheet.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc type: :stylesheets
+  def create_stylesheet!(attrs \\ %{}) do
+    case create_stylesheet(attrs) do
+      {:ok, stylesheet} -> stylesheet
+      {:error, changeset} -> raise "failed to create stylesheet, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Returns the list of stylesheets for `site`.
+
+  ## Examples
+
+      iex> list_stylesheets()
+      [%Stylesheet{}, ...]
+
+  """
+  @doc type: :stylesheets
+  @spec list_stylesheets(Site.t()) :: [Stylesheet.t()]
+  def list_stylesheets(site) do
+    Repo.all(
+      from s in Stylesheet,
+        where: s.site == ^site
+    )
+  end
+
+  # COMPONENTS
+
+  @doc """
+  Creates a component.
+
+  ## Examples
+
+      iex> create_component(attrs)
+      {:ok, %Component{}}
+
+  """
+  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
+  @doc type: :components
+  def create_component(attrs \\ %{}) do
+    %Component{}
+    |> Component.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc type: :components
+  def create_component!(attrs \\ %{}) do
+    case create_component(attrs) do
+      {:ok, component} -> component
+      {:error, changeset} -> raise "failed to create component: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Returns the list of components for a `site`.
+
+  ## Examples
+
+      iex> list_components()
+      [%Component{}, ...]
+
+  """
+  @doc type: :components
+  @spec list_components(Site.t()) :: [Component.t()]
+  def list_components(site) do
+    Repo.all(from c in Component, where: c.site == ^site)
+  end
+
+  # SNIPPETS
+
+  @doc """
+  Creates a snippet helper
+  """
+  @doc type: :snippets
+  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Ecto.Changeset.t()}
+  def create_snippet_helper(attrs) do
+    %Snippets.Helper{}
+    |> Ecto.Changeset.cast(attrs, [:site, :name, :body])
+    |> Ecto.Changeset.validate_required([:site, :name, :body])
+    |> Ecto.Changeset.unique_constraint([:site, :name])
+    |> Repo.insert()
+  end
+
+  @doc type: :components
+  def create_snippet_helper!(attrs) do
+    case create_snippet_helper(attrs) do
+      {:ok, helper} -> helper
+      {:error, changeset} -> raise "failed to create snippet helper, got: #{inspect(changeset.errors)} "
+    end
+  end
+
+  @doc """
+  Returns the list of snippet helpers for a `site`.
+
+  ## Examples
+
+      iex> list_snippet_helpers()
+      [%SnippetHelper{}, ...]
+
+  """
+  @doc type: :snippets
+  @spec list_snippet_helpers(Site.t()) :: [Snippets.Helper.t()]
+  def list_snippet_helpers(site) do
+    Repo.all(from h in Snippets.Helper, where: h.site == ^site)
+  end
+
+  @doc """
+  Renders a snippet `template` with the given `assigns`.
+
+  Snippets are small pieces of string with interpolated assigns.
+
+  Think of it as small templates.
+
+  ## Examples
+
+      iex> Beacon.Snippet.render("title is {{ page.title }}", %{page: %Page{title: "home"}})
+      "title is home"
+
+  Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
+  which means that all [filters](https://shopify.github.io/liquid/basics/introduction/#filters) are available for use.
+
+      iex> Beacon.Snippet.render "{{ 'title' | capitalize }}"
+      {:ok, "Title"}
+
+  Helper functions can be created and called to perform operations on the provided assigns:
+
+      iex> page = Beacon.Content.create_page(%{site: "my_site", extra: %{"author_id": 1}})
+      iex> Beacon.Snippet.create_helper(%{site: "my_site", name: "author_name", body: ~S\"""
+      ...> author_id = get_in(assigns, ["page", "extra", "author_id"])
+      ...> MyApp.fetch_author_name(author_id)
+      ...> \"""
+      iex> Beacon.Snippet.render("Author is {{ helper 'author_name' }}", %{page: page})
+      {:ok, "Author is Anon"}
+
+  They can be used in some places:
+
+    * Meta Tag value
+    * Page Schema (structured Schema.org tags)
+
+  Allowed assigns:
+
+    * :page (Beacon.Content.Page.t())
+
+  """
+  @doc type: :snippets
+  def render_snippet(template, assigns \\ %{}) when is_binary(template) and is_map(assigns) do
+    page =
+      assigns.page
+      |> Map.from_struct()
+      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+
+    assigns = %{"page" => page}
+
+    with {:ok, template} <- Solid.parse(template, parser:  Snippets.Parser),
+         {:ok, template} <- Solid.render(template, assigns) do
+      {:ok, to_string(template)}
+    else
+      error -> error
+    end
   end
 end

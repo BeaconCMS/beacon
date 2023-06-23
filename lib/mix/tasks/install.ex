@@ -195,7 +195,7 @@ defmodule Mix.Tasks.Beacon.Install do
     seeds_file_content = File.read!(seeds_path)
 
     if Enum.any?(
-         ["Stylesheets.create_stylesheet!", "Components.create_component!", "Layouts.create_layout!", "Pages.create_page!"],
+         ["Content.create_stylesheet!", "Content.create_component!", "Layouts.create_layout!", "Pages.create_page!"],
          &String.contains?(seeds_file_content, &1)
        ) do
       Mix.shell().info([:yellow, "* skip ", :reset, "injecting seeds into ", Path.relative_to_cwd(seeds_path), " (already exists)"])

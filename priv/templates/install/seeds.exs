@@ -8,13 +8,13 @@ alias Beacon.Components
 alias Beacon.Content
 alias Beacon.Stylesheets
 
-Stylesheets.create_stylesheet!(%{
+Content.create_stylesheet!(%{
   site: "<%= site %>",
   name: "sample_stylesheet",
   content: "body {cursor: zoom-in;}"
 })
 
-Components.create_component!(%{
+Content.create_component!(%{
   site: "<%= site %>",
   name: "sample_component",
   body: """

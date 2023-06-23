@@ -1,6 +1,4 @@
-defmodule Beacon.Stylesheets.Stylesheet do
-  @moduledoc false
-
+defmodule Beacon.Content.Stylesheet do
   use Ecto.Schema
   import Ecto.Changeset
 

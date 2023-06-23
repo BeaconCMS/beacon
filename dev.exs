@@ -136,13 +136,13 @@ defmodule BeaconTagsField do
 end
 
 seeds = fn ->
-  Beacon.Stylesheets.create_stylesheet!(%{
+  Beacon.Content.create_stylesheet!(%{
     site: "dev",
     name: "sample_stylesheet",
     content: "body {cursor: zoom-in;}"
   })
 
-  Beacon.Components.create_component!(%{
+  Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
     body: """

@@ -112,16 +112,17 @@ defmodule Beacon.Loader do
   defp load_components(site) do
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
-      Beacon.Components.list_components_for_site(site)
+      Beacon.Content.list_components(site)
     )
 
     :ok
   end
 
-  defp load_snippet_helpers(site) do
+  @doc false
+  def load_snippet_helpers(site) do
     Beacon.Loader.SnippetModuleLoader.load_helpers(
       site,
-      Beacon.Snippets.list_helpers_for_site(site)
+      Beacon.Content.list_snippet_helpers(site)
     )
 
     :ok
@@ -158,7 +159,7 @@ defmodule Beacon.Loader do
   defp load_stylesheets(site) do
     Beacon.Loader.StylesheetModuleLoader.load_stylesheets(
       site,
-      Beacon.Stylesheets.list_stylesheets_for_site(site)
+      Beacon.Content.list_stylesheets(site)
     )
 
     :ok
