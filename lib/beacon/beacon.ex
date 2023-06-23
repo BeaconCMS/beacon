@@ -90,13 +90,13 @@ defmodule Beacon do
   @doc """
   Return a list of all registered sites running in the current instance.
   """
-  def registered_sites, do: Beacon.Registry.registered_sites()
+  def running_sites, do: Beacon.Registry.running_sites()
 
   @doc """
   Reload all resources for all running sites.
   """
   def reload_all_sites do
-    Enum.map(Beacon.Registry.registered_sites(), &reload_site/1)
+    Enum.map(Beacon.Registry.running_sites(), &reload_site/1)
   end
 
   @doc """

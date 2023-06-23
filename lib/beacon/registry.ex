@@ -22,7 +22,7 @@ defmodule Beacon.Registry do
     end
   end
 
-  def registered_sites do
+  def running_sites do
     match = {{:site, :"$1"}, :_, :_}
     guards = []
     body = [:"$1"]
