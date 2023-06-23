@@ -166,7 +166,7 @@ seeds = fn ->
 
   Beacon.Content.publish_layout(layout)
 
-  Beacon.Snippets.create_helper!(%{
+  Beacon.Content.create_snippet_helper!(%{
     site: "dev",
     name: "author_name",
     body: ~S"""
