@@ -2,6 +2,7 @@ defmodule Beacon.Lifecycle.Asset do
   @moduledoc false
 
   alias Beacon.Admin.MediaLibrary
+  alias Beacon.Admin.MediaLibrary.Processors
   alias Beacon.Lifecycle
 
   @behaviour Beacon.Lifecycle
@@ -28,9 +29,16 @@ defmodule Beacon.Lifecycle.Asset do
 
   It's executed in the same repo transaction, after the `asset` record is saved into the database.
   """
-  @spec upload_asset(Beacon.Admin.MediaLibrary.UploadMetadata.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
+  @spec upload_asset(MediaLibrary.UploadMetadata.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
   def upload_asset(metadata, asset) do
     lifecycle = Lifecycle.execute(__MODULE__, metadata.site, :upload_asset, asset, context: metadata)
     lifecycle.output
   end
+
+  def thumbnail(asset, %MediaLibrary.UploadMetadata{media_type: "image/webp"} = metadata) do
+    Processors.Image.thumbnail!(metadata)
+    {:cont, asset}
+  end
+
+  def thumbnail(asset, _metadata), do: {:cont, asset}
 end

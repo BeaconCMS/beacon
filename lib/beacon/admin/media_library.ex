@@ -60,7 +60,7 @@ defmodule Beacon.Admin.MediaLibrary do
   def upload(metadata) do
     with(
       metadata <- process_metadata(metadata),
-      metadata <- send_to_cdn(metadata),
+      metadata <- send_to_cdns(metadata),
       {:ok, asset} <- save_asset(metadata)
     ) do
       Lifecycle.Asset.upload_asset(metadata, asset)
@@ -71,22 +71,32 @@ defmodule Beacon.Admin.MediaLibrary do
     Backend.process!(metadata)
   end
 
-  def send_to_cdn(metadata) do
+  def send_to_cdns(metadata) do
     metadata
     |> Backend.validate_for_delivery()
     |> Backend.send_to_cdns()
   end
 
   def save_asset(metadata) do
+    metadata
+    |> prep_save_asset()
+    |> Repo.insert()
+  end
+
+  def save_asset!(metadata) do
+    metadata
+    |> prep_save_asset()
+    |> Repo.insert!()
+  end
+
+  defp prep_save_asset(metadata) do
     attrs = %{
       site: metadata.site,
       file_name: metadata.name,
       media_type: metadata.media_type
     }
 
-    metadata.resource
-    |> Asset.upload_changeset(attrs)
-    |> Repo.insert()
+    Asset.upload_changeset(metadata.resource, attrs)
   end
 
   @doc """
@@ -127,5 +137,33 @@ defmodule Beacon.Admin.MediaLibrary do
   """
   def change_asset(%Asset{} = asset, attrs \\ %{}) do
     Asset.changeset(asset, attrs)
+  end
+
+  def url_for(asset) do
+    asset
+    |> backends_for()
+    |> hd()
+    |> get_url_for(asset)
+  end
+
+  def urls_for(asset) do
+    asset
+    |> backends_for()
+    |> Enum.map(&get_url_for(&1, asset))
+  end
+
+  defp backends_for(asset) do
+    asset.site
+    |> Beacon.Config.fetch!()
+    |> Beacon.Config.config_for_media_type(asset.media_type)
+    |> Keyword.fetch!(:backends)
+  end
+
+  defp get_url_for({backend, config}, asset), do: backend.url_for(asset, config)
+  defp get_url_for(backend, asset), do: backend.url_for(asset)
+
+  def is_image?(%{file_name: file_name}) do
+    ext = Path.extname(file_name)
+    Enum.any?([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp"], &(&1 == ext))
   end
 end

@@ -21,8 +21,24 @@ Supervisor.start_link(
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField]
        ],
        [
+         site: :s3_site,
+         assets: [
+           {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
+         ],
+         lifecycle: [upload_asset: []]
+       ],
+       [
          site: :data_source_test,
          data_source: Beacon.BeaconTest.TestDataSource
+       ],
+       [
+         site: :default_meta_tags_test,
+         data_source: Beacon.BeaconTest.BeaconDataSource,
+         default_meta_tags: [
+           %{"name" => "foo_meta_tag"},
+           %{"name" => "bar_meta_tag"},
+           %{"name" => "baz_meta_tag"}
+         ]
        ],
        [
          site: :lifecycle_test,
@@ -62,13 +78,6 @@ Supervisor.start_link(
            publish_page: [
              maybe_publish_page: fn _page ->
                {:cont, %Beacon.Content.Page{}}
-             end
-           ],
-           upload_asset: [
-             copy_asset: fn asset, metadata ->
-               metadata = %{metadata | name: "image-copy.webp"}
-               Beacon.Admin.MediaLibrary.save_asset(metadata)
-               {:cont, asset}
              end
            ]
          ]

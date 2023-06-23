@@ -48,6 +48,28 @@ defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
     |> Enum.into(%{})
   end
 
+  def key_for(%{name: name, site: site}) do
+    ext = Path.extname(name)
+
+    basename =
+      name
+      |> Path.basename()
+      |> String.replace_suffix(ext, "")
+      |> clean()
+
+    ext =
+      ext
+      |> String.replace(".", "")
+      |> clean()
+
+    "#{site}/#{basename}.#{ext}"
+  end
+
+  defp clean(str) do
+    dashed = Regex.replace(~r/[[:space:]\.]/u, str, "-")
+    Regex.replace(~r/[^[:alnum:]_-]/u, dashed, "")
+  end
+
   defp media_type_from_name(name) do
     name
     |> Path.extname()

@@ -62,8 +62,14 @@ defmodule Beacon.Config do
   Individual media type configs
   """
   @type media_type_config :: [
-          {:backends, list(backend :: module())},
-          {:validations, list(validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()))},
+          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})},
+          {:validations,
+           list(
+             validation_fun ::
+               (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
+               | {validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()),
+                  validation_config :: term()}
+           )},
           {:processor, {prossesor_fun :: (Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
         ]
 
@@ -110,6 +116,11 @@ defmodule Beacon.Config do
   """
   @type extra_page_fields :: [module()]
 
+  @typedoc """
+  Default meta tags added to new pages.
+  """
+  @type default_meta_tags :: [%{binary() => binary()}]
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           data_source: data_source(),
@@ -122,7 +133,8 @@ defmodule Beacon.Config do
           assets: assets(),
           allowed_media_types: allowed_media_types(),
           lifecycle: lifecycle(),
-          extra_page_fields: extra_page_fields()
+          extra_page_fields: extra_page_fields(),
+          default_meta_tags: default_meta_tags()
         }
 
   @default_load_template [
@@ -173,7 +185,8 @@ defmodule Beacon.Config do
               create_page: [],
               update_page: []
             ],
-            extra_page_fields: []
+            extra_page_fields: [],
+            default_meta_tags: []
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -188,6 +201,7 @@ defmodule Beacon.Config do
           | {:allowed_media_types, allowed_media_types()}
           | {:lifecycle, lifecycle()}
           | {:extra_page_fields, extra_page_fields()}
+          | {:default_meta_tags, default_meta_tags()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -227,6 +241,8 @@ defmodule Beacon.Config do
     Note that the default config is merged with your config.
 
     * `:extra_page_fields` - `t:extra_page_fields/0` (optional)
+
+    * `:default_meta_tags` - `t:default_meta_tags/0` (optional)
 
   ## Example
 
@@ -311,7 +327,8 @@ defmodule Beacon.Config do
           ],
           upload_asset: [],
         ],
-        extra_page_fields: []
+        extra_page_fields: [],
+        default_meta_tags: []
       }
 
   """
@@ -334,7 +351,7 @@ defmodule Beacon.Config do
       create_page: get_in(opts, [:lifecycle, :create_page]) || [],
       update_page: get_in(opts, [:lifecycle, :update_page]) || [],
       publish_page: get_in(opts, [:lifecycle, :publish_page]) || [],
-      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || []
+      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 
     allowed_media_types = Keyword.get(opts, :allowed_media_types, @default_media_types)
@@ -343,12 +360,15 @@ defmodule Beacon.Config do
     assigned_assets = Keyword.get(opts, :assets, [])
     assets = process_assets_config(allowed_media_types, assigned_assets)
 
+    default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
+
     opts =
       opts
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
       |> Keyword.put(:allowed_media_types, allowed_media_types)
       |> Keyword.put(:assets, assets)
+      |> Keyword.put(:default_meta_tags, default_meta_tags)
 
     struct!(__MODULE__, opts)
   end

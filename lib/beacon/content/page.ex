@@ -24,7 +24,6 @@ defmodule Beacon.Content.Page do
   use Ecto.Schema
   import Ecto.Changeset
   alias Beacon.Content.Layout
-  alias Beacon.Content.Page
 
   @version 1
 

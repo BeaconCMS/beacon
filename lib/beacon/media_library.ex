@@ -3,13 +3,18 @@ defmodule Beacon.MediaLibrary do
   @moduledoc """
   MediaLibrary
   """
-
   import Ecto.Query, warn: false
-  alias Beacon.Repo
 
   alias Beacon.MediaLibrary.Asset
+  alias Beacon.Repo
 
   def get_asset(site, name) do
-    Repo.get_by(Asset, site: site, file_name: name)
+    Repo.one(
+      from(a in Asset,
+        where: a.site == ^site,
+        where: a.file_name == ^name,
+        where: is_nil(a.deleted_at)
+      )
+    )
   end
 end

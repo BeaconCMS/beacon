@@ -42,7 +42,7 @@ defmodule Beacon.ConfigTest do
                  create_page: [],
                  update_page: [],
                  publish_page: [],
-                 upload_asset: []
+                 upload_asset: [{:thumbnail, _}]
                ]
              } = Config.new(lifecycle: [load_template: []])
     end

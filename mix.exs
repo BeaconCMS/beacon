@@ -35,15 +35,19 @@ defmodule Beacon.MixProject do
 
   defp deps do
     [
+      {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.5", only: :dev},
       {:ex_doc, "~> 0.29", only: :docs},
+      {:ex_aws, "~> 2.4"},
+      {:ex_aws_s3, "~> 2.4"},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
+      {:hackney, "~> 1.16", only: [:dev, :test]},
       {:heroicons, "~> 0.5"},
-      {:image, "~> 0.31"},
+      {:image, "~> 0.32"},
       {:jason, "~> 1.0"},
       {:solid, "~> 0.14"},
       {:phoenix, "~> 1.7"},

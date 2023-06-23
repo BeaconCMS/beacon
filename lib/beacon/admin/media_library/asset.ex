@@ -10,6 +10,7 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
     field :media_type, :string
     field :site, Beacon.Types.Site
     field :deleted_at, :utc_datetime
+    field :keys, :map, default: %{}
 
     timestamps()
   end
@@ -31,5 +32,15 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
   @doc false
   def bare_changeset(asset \\ %__MODULE__{}) do
     change(asset)
+  end
+
+  @doc false
+  def keys_changeset(asset, key, value) do
+    keys =
+      asset
+      |> get_field(:keys)
+      |> Map.put(key, value)
+
+    cast(asset, %{keys: keys}, [:keys])
   end
 end

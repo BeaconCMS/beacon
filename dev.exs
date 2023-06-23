@@ -49,11 +49,15 @@ defmodule SamplePhoenixWeb.Router do
   import Phoenix.LiveView.Router
 
   pipeline :browser do
-    plug :accepts, ["html"]
+    plug :accepts, ["html", "json"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
   end
 
   scope "/" do
@@ -61,6 +65,11 @@ defmodule SamplePhoenixWeb.Router do
     beacon_admin "/admin"
     beacon_site "/dev", site: :dev
     beacon_site "/other", site: :other
+  end
+
+  scope "/" do
+    pipe_through :api
+    beacon_api "/api"
   end
 end
 
@@ -353,10 +362,36 @@ seeds = fn ->
   })
 end
 
+dev_site = [
+  site: :dev,
+  data_source: BeaconDataSource,
+  extra_page_fields: [BeaconTagsField]
+]
+
+s3_bucket = System.get_env("S3_BUCKET")
+Application.put_env(:ex_aws, :s3, bucket: s3_bucket)
+
+dev_site =
+  case s3_bucket do
+    nil ->
+      dev_site
+
+    _ ->
+      assets = [
+        {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3.Signed, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
+      ]
+
+      Keyword.put(dev_site, :assets, assets)
+  end
+
 Task.start(fn ->
   children = [
     {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
-    {Beacon, sites: [[site: :dev, data_source: BeaconDataSource, extra_page_fields: [BeaconTagsField]], [site: :other]]},
+    {Beacon,
+     sites: [
+       dev_site,
+       [site: :other]
+     ]},
     SamplePhoenix.Endpoint
   ]
 
