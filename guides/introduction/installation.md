@@ -258,7 +258,6 @@ For more info on site options, check out `Beacon.start_link/1`.
       Pages.create_page!(%{
         path: "home",
         site: "my_site",
-        status: :published,
         layout_id: layout_id,
         template: """
         <main>
@@ -283,7 +282,6 @@ For more info on site options, check out `Beacon.start_link/1`.
     Pages.create_page!(%{
       path: "blog/:blog_slug",
       site: "my_site",
-      status: :published,
       layout_id: layout_id,
       template: """
       <main>
