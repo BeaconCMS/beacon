@@ -203,7 +203,7 @@ defmodule Beacon.Content do
   """
   @spec change_page(Page.t(), map()) :: Ecto.Changeset.t()
   def change_page(%Page{} = page, attrs \\ %{}) do
-    Page.changeset(page, attrs)
+    Page.create_changeset(page, attrs)
   end
 
   @doc """
@@ -247,7 +247,7 @@ defmodule Beacon.Content do
   def create_page(attrs) when is_map(attrs) do
     create = fn attrs ->
       %Page{}
-      |> Page.changeset(attrs)
+      |> Page.create_changeset(attrs)
       |> Repo.insert()
     end
 
@@ -284,7 +284,7 @@ defmodule Beacon.Content do
   def update_page(%Page{} = page, attrs) do
     update = fn page, attrs ->
       page
-      |> Page.changeset(attrs)
+      |> Page.update_changeset(attrs)
       |> Repo.update()
     end
 
@@ -308,7 +308,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       with {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
-           %Page{} = page <- Lifecycle.Page.update_page(page) do
+           %Page{} = page <- Lifecycle.Page.publish_page(page) do
         :ok = PubSub.page_published(page)
         {:ok, page}
       end
@@ -457,6 +457,29 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(_snapshot), do: nil
+
+  @doc """
+  Returns the latest status for a page.
+
+  The status is the event fetched from `Beacon.Content.PageEvent`
+
+  ## Examples
+
+      iex> get_page_status(page)
+      :published
+
+  """
+  @spec get_page_status(Page.t()) :: Beacon.Content.PageEvent.event()
+  def get_page_status(page) do
+    Repo.one(
+      from event in PageEvent,
+        select: event.event,
+        where: event.site == ^page.site,
+        where: event.page_id == ^page.id,
+        distinct: [asc: event.page_id],
+        order_by: [desc: event.inserted_at]
+    )
+  end
 
   @deprecated "to be removed"
   def list_distinct_sites_from_layouts do

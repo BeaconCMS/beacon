@@ -94,5 +94,19 @@ defmodule Beacon.ContentTest do
 
       assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site)
     end
+
+    test "get_page_status" do
+      page = page_fixture()
+      assert Content.get_page_status(page) == :created
+
+      Content.publish_page(page)
+      assert Content.get_page_status(page) == :published
+
+      Content.unpublish_page(page)
+      assert Content.get_page_status(page) == :unpublished
+
+      Content.publish_page(page)
+      assert Content.get_page_status(page) == :published
+    end
   end
 end

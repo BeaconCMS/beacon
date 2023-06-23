@@ -1,11 +1,11 @@
 <div class="pb-8 border-b border-gray-900/10">
   <.header>
     <:subtitle>
-      <span :if={Ecto.Changeset.get_field(@form.source, :status) == :draft}>
+      <span :if={@page_status == :created}>
         <.icon name="hero-pencil-solid" class="ml-1 w-4 h-4" /> Draft (not public)
       </span>
 
-      <span :if={Ecto.Changeset.get_field(@form.source, :status) == :published}>
+      <span :if={@page_status == :published}>
         <.icon name="hero-megaphone" class="ml-1 w-4 h-4" /> Published
       </span>
     </:subtitle>
@@ -21,16 +21,9 @@
 <div class="pb-8 border-b border-gray-900/10">
   <.simple_form for={@form} id="page-form" phx-change="validate" phx-submit="save">
     <.input field={@form[:site]} type="text" label="Site" disabled="true" />
-    <.input :if={Ecto.Changeset.get_field(@form.source, :status) == :draft} field={@form[:path]} type="text" label="Path" />
-    <.input
-      :if={Ecto.Changeset.get_field(@form.source, :status) == :published}
-      field={@form[:path]}
-      type="text"
-      label="Path"
-      readonly
-      disabled="true"
-    />
-    <.input field={@form[:pending_layout_id]} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
+    <.input :if={@page_status == :created} field={@form[:path]} type="text" label="Path" />
+    <.input :if={@page_status == :published} field={@form[:path]} type="text" label="Path" readonly disabled="true" />
+    <.input field={@form[:layout_id]} type="select" options={layouts_to_options(@site_layouts)} label="Layout" />
     <.input field={@form[:title]} type="text" label="Title" phx-debounce="500" />
     <.input field={@form[:description]} type="textarea" label="Description" phx-debounce="500" />
     <.input field={@form[:format]} type="select" label="Format" options={template_format_options(@form)} />
@@ -38,7 +31,7 @@
     <LiveMonacoEditor.code_editor
       path="template"
       style="min-height: 600px; width: 100%;"
-      value={@pending_template}
+      value={@template}
       opts={Map.merge(LiveMonacoEditor.default_opts(), %{"language" => @initial_language})}
     />
 

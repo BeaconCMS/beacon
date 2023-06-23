@@ -16,10 +16,11 @@ defmodule BeaconWeb.Admin.PageEditorLive do
       |> assign(:extra_meta_attributes, [])
       |> assign(:page, page)
       |> assign(:initial_language, language(page.format))
-      |> assign(:pending_template, page.pending_template)
+      |> assign(:template, page.template)
       |> assign(:raw_schema, Jason.encode!(page.raw_schema, pretty: true))
       |> assign_form(changeset)
       |> assign_extra_fields(changeset)
+      |> assign_page_status(page)
       |> assign_site_layotus()
 
     {:ok, socket}
@@ -27,14 +28,14 @@ defmodule BeaconWeb.Admin.PageEditorLive do
 
   @impl Phoenix.LiveView
   def handle_event("save", %{"page" => page_params, "save" => ""}, socket) do
-    save_page(socket, page_params, false)
+    save_page(socket, page_params)
   end
 
   def handle_event("save", %{"page" => page_params, "publish" => ""}, socket) do
-    save_page(socket, page_params, true)
+    save_and_publish_page(socket, page_params)
   end
 
-  def handle_event("validate", %{"_target" => ["live_monaco_editor", "template"]}, socket) do
+  def handle_event("validate", %{"_target" => ["live_monaco_editor", _]}, socket) do
     {:noreply, socket}
   end
 
@@ -60,7 +61,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   def handle_event("template_editor_lost_focus", %{"value" => value}, socket) do
-    {:noreply, assign(socket, :pending_template, value)}
+    {:noreply, assign(socket, :template, value)}
   end
 
   def handle_event("raw_schema_editor_lost_focus", %{"value" => value}, socket) do
@@ -86,52 +87,57 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     {:noreply, assign(socket, extra_meta_attributes: attributes, new_attribute_modal_visible?: false)}
   end
 
-  defp save_page(socket, params, publish?) do
+  defp save_page(socket, params) do
+    case do_save_page(socket, params) do
+      {:ok, {socket, _page}} ->
+        {:noreply, put_flash(socket, :info, "Page updated successfully")}
+
+      {:error, {socket, _page}} ->
+        {:noreply, put_flash(socket, :info, "Failed to updated page")}
+    end
+  end
+
+  defp save_and_publish_page(socket, params) do
+    with {:ok, {socket, page}} <- do_save_page(socket, params),
+         {:ok, _page} <- Content.publish_page(page) do
+      {:noreply,
+       socket
+       |> assign_page_status(page)
+       |> put_flash(:info, "Page published successfully")}
+    else
+      _ ->
+        {:noreply, put_flash(socket, :info, "Failed to publish page")}
+    end
+  end
+
+  defp do_save_page(socket, params) do
     page = socket.assigns.page
 
     params =
       params
       |> MetaTagsInputs.coerce_meta_tag_param("meta_tags")
-      |> Map.put("pending_template", socket.assigns.pending_template)
+      |> Map.put("template", socket.assigns.template)
       |> Map.put("raw_schema", socket.assigns.raw_schema)
 
-    update_page = fn page, params -> Content.update_page(page, params) end
+    case Content.update_page(page, params) do
+      {:ok, page} ->
+        changeset = Content.change_page(page)
 
-    maybe_publish_page = fn page, publish? ->
-      if publish? do
-        Content.publish_page(page)
-      else
-        {:ok, page}
-      end
-    end
+        socket =
+          socket
+          |> assign(:page, page)
+          |> assign_form(changeset)
+          |> assign_extra_fields(changeset)
 
-    with {:ok, page} <- update_page.(page, params),
-         {:ok, page} <- maybe_publish_page.(page, publish?) do
-      page = Content.get_page!(page.id)
-      changeset = Content.change_page(page)
+        {:ok, {socket, page}}
 
-      message =
-        if publish? do
-          "Page published successfully"
-        else
-          "Page updated successfully"
-        end
-
-      {:noreply,
-       socket
-       |> put_flash(:info, message)
-       |> assign(:page, page)
-       |> assign_form(changeset)
-       |> assign_extra_fields(changeset)}
-    else
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply,
-         socket
-         |> assign_form(changeset)
-         |> assign_extra_fields(changeset)}
+        socket =
+          socket
+          |> assign_form(changeset)
+          |> assign_extra_fields(changeset)
 
-      _error ->
-        {:noreply, put_flash(socket, :error, "Failed to update page")}
+        {:error, {socket, page}}
     end
   end
 
@@ -143,6 +149,10 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     params = Ecto.Changeset.get_field(changeset, :extra)
     extra_fields = Content.PageField.extra_fields(socket.assigns.page.site, socket.assigns.form, params, changeset.errors)
     assign(socket, :extra_fields, extra_fields)
+  end
+
+  defp assign_page_status(socket, page) do
+    assign(socket, :page_status, Content.get_page_status(page))
   end
 
   defp assign_site_layotus(socket) do
