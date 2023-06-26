@@ -156,10 +156,10 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec get_layout_by(Site.t(), keyword()) :: Layout.t() | nil
-  def get_layout_by(site, clauses) when is_atom(site) and is_list(clauses) do
+  @spec get_layout_by(Site.t(), keyword(), keyword()) :: Layout.t() | nil
+  def get_layout_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Layout, clauses)
+    Repo.get_by(Layout, clauses, opts)
   end
 
   @doc """
@@ -426,10 +426,10 @@ defmodule Beacon.Content do
 
   """
   @doc type: :page
-  @spec get_page_by(Site.t(), keyword()) :: Page.t() | nil
-  def get_page_by(site, clauses) when is_atom(site) and is_list(clauses) do
+  @spec get_page_by(Site.t(), keyword(), keyword()) :: Page.t() | nil
+  def get_page_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Page, clauses)
+    Repo.get_by(Page, clauses, opts)
   end
 
   @doc """
@@ -627,10 +627,10 @@ defmodule Beacon.Content do
 
   """
   @doc type: :stylesheets
-  @spec get_stylesheet_by(Site.t(), keyword()) :: Stylesheet.t() | nil
-  def get_stylesheet_by(site, clauses) when is_atom(site) and is_list(clauses) do
+  @spec get_stylesheet_by(Site.t(), keyword(), keyword()) :: Stylesheet.t() | nil
+  def get_stylesheet_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Stylesheet, clauses)
+    Repo.get_by(Stylesheet, clauses, opts)
   end
 
   @doc """
@@ -702,10 +702,10 @@ defmodule Beacon.Content do
 
   """
   @doc type: :components
-  @spec get_component_by(Site.t(), keyword()) :: Component.t() | nil
-  def get_component_by(site, clauses) when is_atom(site) and is_list(clauses) do
+  @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
+  def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Component, clauses)
+    Repo.get_by(Component, clauses, opts)
   end
 
   @doc """
