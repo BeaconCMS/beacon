@@ -71,7 +71,6 @@ defmodule Beacon.Content.Page do
     page
     |> cast(attrs, [
       :site,
-      :path,
       :title,
       :description,
       :template,
@@ -82,6 +81,7 @@ defmodule Beacon.Content.Page do
       :format,
       :extra
     ])
+    |> cast(attrs, [:path], empty_values: [])
     |> cast_embed(:events, with: &events_changeset/2)
     |> cast_embed(:helpers, with: &helpers_changeset/2)
     |> validate_required([

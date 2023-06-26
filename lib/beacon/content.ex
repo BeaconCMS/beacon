@@ -106,7 +106,8 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp create_layout_event(layout, event) do
+  @doc false
+  def create_layout_event(layout, event) do
     attrs = %{"site" => layout.site, "layout_id" => layout.id, "event" => event}
 
     %LayoutEvent{}
@@ -115,7 +116,8 @@ defmodule Beacon.Content do
     |> Repo.insert()
   end
 
-  defp create_layout_snapshot(layout, event) do
+  @doc false
+  def create_layout_snapshot(layout, event) do
     attrs = %{"site" => layout.site, "schema_version" => Layout.version(), "layout_id" => layout.id, "layout" => layout, "event_id" => event.id}
 
     %LayoutSnapshot{}
@@ -199,6 +201,12 @@ defmodule Beacon.Content do
   end
 
   defp extract_layout_snapshot(_snapshot), do: nil
+
+  # deprecated: to be removed
+  @doc false
+  def list_distinct_sites_from_layouts do
+    Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
+  end
 
   ## PAGES
 
@@ -352,7 +360,8 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp create_page_event(page, event) do
+  @doc false
+  def create_page_event(page, event) do
     attrs = %{"site" => page.site, "page_id" => page.id, "event" => event}
 
     %PageEvent{}
@@ -361,7 +370,8 @@ defmodule Beacon.Content do
     |> Repo.insert()
   end
 
-  defp create_page_snapshot(page, event) do
+  @doc false
+  def create_page_snapshot(page, event) do
     attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
 
     %PageSnapshot{}
@@ -515,10 +525,17 @@ defmodule Beacon.Content do
     )
   end
 
-  # deprecated: to be removed
-  @doc false
-  def list_distinct_sites_from_layouts do
-    Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
+  @doc """
+
+  """
+  @doc type: :pages
+  @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  def put_page_extra(%Page{} = page, attrs) when is_map(attrs) do
+    attrs = %{"extra" => attrs}
+
+    page
+    |> Ecto.Changeset.cast(attrs, [:extra])
+    |> Repo.update()
   end
 
   # STYLESHEETS
@@ -549,6 +566,23 @@ defmodule Beacon.Content do
       {:ok, stylesheet} -> stylesheet
       {:error, changeset} -> raise "failed to create stylesheet, got: #{inspect(changeset.errors)}"
     end
+  end
+
+  @doc """
+  Updates a stylesheet.
+
+  ## Examples
+
+      iex> update_stylesheet(stylesheet, %{name: new_value})
+      {:ok, %Stylesheet{}}
+
+  """
+  @doc type: :stylesheets
+  @spec update_stylesheet(Stylesheet.t(), map()) :: {:ok, Stylesheet.t()} | {:error, Ecto.Changeset.t()}
+  def update_stylesheet(%Stylesheet{} = stylesheet, attrs) do
+    stylesheet
+    |> Stylesheet.changeset(attrs)
+    |> Repo.update()
   end
 
   @doc """
@@ -597,6 +631,20 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Updates a component.
+
+      iex> update_component(component, %{name: "new_component"})
+      {:ok, %Component{}}
+
+  """
+  @doc type: :components
+  def update_component(%Component{} = component, attrs) do
+    component
+    |> Component.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Returns the list of components for a `site`.
 
   ## Examples
@@ -626,7 +674,7 @@ defmodule Beacon.Content do
     |> Repo.insert()
   end
 
-  @doc type: :components
+  @doc type: :snippets
   def create_snippet_helper!(attrs) do
     case create_snippet_helper(attrs) do
       {:ok, helper} -> helper
