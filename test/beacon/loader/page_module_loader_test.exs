@@ -49,9 +49,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         """
       })
 
+      layout = published_layout_fixture()
+
       page =
-        page_fixture(
+        published_page_fixture(
           site: "my_site",
+          layout_id: layout.id,
           path: "page/meta-tag",
           title: "my first page",
           description: "my test page",
@@ -79,9 +82,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         """
       })
 
+      layout = published_layout_fixture()
+
       page =
         published_page_fixture(
           site: "my_site",
+          layout_id: layout.id,
           path: "page/raw-schema",
           title: "my first page",
           description: "hello world",

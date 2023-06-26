@@ -2,6 +2,7 @@ defmodule Beacon.LoaderTest do
   use BeaconWeb.ConnCase, async: false
 
   import Beacon.Fixtures
+  alias Beacon.Content
   alias Beacon.Loader
 
   setup_all do
@@ -22,7 +23,7 @@ defmodule Beacon.LoaderTest do
     end
   end
 
-  describe "resources loading" do
+  describe "page loading" do
     defp create_page(_) do
       stylesheet_fixture()
 
@@ -34,12 +35,13 @@ defmodule Beacon.LoaderTest do
           """
         )
 
-      component_fixture(
-        name: "component_loader_test",
-        body: """
-        <header>component_v1</header>
-        """
-      )
+      component =
+        component_fixture(
+          name: "component_loader_test",
+          body: """
+          <header>component_v1</header>
+          """
+        )
 
       page =
         page_fixture(
@@ -53,36 +55,43 @@ defmodule Beacon.LoaderTest do
           """
         )
 
-      Beacon.Content.publish_layout(layout)
-      Beacon.Content.publish_page(page)
+      Content.publish_layout(layout)
+      Content.publish_page(page)
 
       Beacon.reload_site(:my_site)
 
-      [layout: layout, page: page]
+      [layout: layout, page: page, component: component]
     end
 
     setup [:create_page]
 
-    test "reload page and dependencies", %{conn: conn, layout: layout, page: page} do
+    test "load page and dependencies", %{conn: conn, layout: layout, page: page, component: component} do
       {:ok, _view, html} = live(conn, "/loader_test")
       assert html =~ "component_v1"
       assert html =~ "layout_v1"
       assert html =~ "page_v1"
 
-      Beacon.Repo.update_all(Beacon.Content.Component, set: [body: "<header>component_v2</header>"])
+      Content.update_component(component, %{body: "<header>component_v2</header>"})
 
       {:ok, layout} =
-        Beacon.Content.update_layout(layout, %{
+        Content.update_layout(layout, %{
           body: """
           <header>layout_v2</header>
           <%= @inner_content %>
           """
         })
 
-      {:ok, _layout} = Beacon.Content.publish_layout(layout)
+      Content.publish_layout(layout)
+
+      Content.update_layout(layout, %{
+        body: """
+        <header>layout_v3_unpublished</header>
+        <%= @inner_content %>
+        """
+      })
 
       {:ok, page} =
-        Beacon.Content.update_page(page, %{
+        Content.update_page(page, %{
           template: """
           <main>
             <div>page_v2</div>
@@ -91,7 +100,7 @@ defmodule Beacon.LoaderTest do
           """
         })
 
-      {:ok, page} = Beacon.Content.publish_page(page)
+      {:ok, page} = Content.publish_page(page)
 
       Beacon.Loader.load_page(page)
 
@@ -101,11 +110,11 @@ defmodule Beacon.LoaderTest do
       assert html =~ "page_v2"
     end
 
-    test "unload", %{page: page} do
+    test "unload page", %{page: page} do
       module = Beacon.Loader.page_module_for_site(page.site, page.id)
       assert Keyword.has_key?(module.__info__(:functions), :page_assigns)
 
-      Beacon.Loader.unload_page(page)
+      Beacon.Loader.do_unload_page(page)
 
       assert_raise UndefinedFunctionError, fn ->
         module.__info__(:functions)

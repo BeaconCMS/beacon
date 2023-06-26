@@ -359,6 +359,38 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Publish multiple `pages`.
+
+  Similar to `publish_page/1` but defers loading dependent resources
+  as late as possible making the process faster.
+
+  """
+  @doc type: :pages
+  @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
+  def publish_pages(pages) when is_list(pages) do
+    publish = fn page ->
+      Repo.transact(fn ->
+        with {:ok, event} <- create_page_event(page, "published"),
+             {:ok, _snapshot} <- create_page_snapshot(page, event) do
+          {:ok, page}
+        end
+      end)
+    end
+
+    pages =
+      pages
+      |> Enum.map(&publish.(&1))
+      |> Enum.map(fn
+        {:ok, %Page{} = page} -> Lifecycle.Page.after_publish_page(page)
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    :ok = PubSub.pages_published(pages)
+    {:ok, pages}
+  end
+
+  @doc """
   Unpublish `page`.
 
   Note that page will be removed from your site

@@ -128,7 +128,7 @@ defmodule Beacon.Content.PageField do
 
   @doc false
   def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_nil(params) do
-    apply_changesets(page_changeset, site, %{})
+    page_changeset
   end
 
   def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_map(params) do
