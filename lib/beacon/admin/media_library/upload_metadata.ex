@@ -66,8 +66,9 @@ defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
   end
 
   defp clean(str) do
-    dashed = Regex.replace(~r/[[:space:]\.]/u, str, "-")
-    Regex.replace(~r/[^[:alnum:]_-]/u, dashed, "")
+    downcased = String.downcase(str)
+    dashed = Regex.replace(~r/[[:space:]\._]/u, downcased, "-")
+    Regex.replace(~r/[^[:alnum:]-]/u, dashed, "")
   end
 
   defp media_type_from_name(name) do
