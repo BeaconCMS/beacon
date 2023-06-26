@@ -1,7 +1,7 @@
 defmodule Beacon.Repo.Migrations.CreateBeaconPageHelpers do
   use Ecto.Migration
 
-  def change do
+  def up do
     create table(:beacon_page_helpers, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :code, :text, null: false
@@ -14,5 +14,8 @@ defmodule Beacon.Repo.Migrations.CreateBeaconPageHelpers do
     end
 
     create index(:beacon_page_helpers, [:page_id])
+  end
+
+  def down do
   end
 end

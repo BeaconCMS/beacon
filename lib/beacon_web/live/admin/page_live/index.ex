@@ -2,9 +2,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   use BeaconWeb, :live_view
 
   alias Beacon.Authorization
-  alias Beacon.Layouts
-  alias Beacon.Pages
-  alias Beacon.Pages.Page
+  alias Beacon.Content
   alias BeaconWeb.Admin.Hooks
 
   on_mount {Hooks.Authorized, {:page_editor, :index}}
@@ -16,7 +14,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
     @primary_key false
     embedded_schema do
       field :query, :string, default: ""
-      field :site, Beacon.Types.Atom
+      field :site, Beacon.Types.Site
     end
 
     def changeset(form \\ %__MODULE__{}, params \\ %{}) do
@@ -59,18 +57,6 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
-    if Authorization.authorized?(assigns.agent, :delete, Map.put(assigns.authn_context, :resource_id, id)) do
-      page = Pages.get_page!(id)
-      {:ok, _} = Pages.delete_page(page)
-
-      {:noreply, assign_pages(socket)}
-    else
-      {:noreply, socket}
-    end
-  end
-
-  @impl true
   def handle_event("search", %{"search_form" => params}, socket) do
     query_params = URI.encode_query(params)
     {:noreply, push_patch(socket, to: beacon_admin_path(socket, "/pages?#{query_params}"), replace: true)}
@@ -79,13 +65,13 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     socket
     |> assign(:page_title, "Edit Page")
-    |> assign(:page, Pages.get_page!(id))
+    |> assign(:page, Content.get_page!(id))
   end
 
   defp apply_action(socket, :new, _params) do
     socket
     |> assign(:page_title, "New Page")
-    |> assign(:page, %Page{})
+    |> assign(:page, %Content.Page{})
   end
 
   defp apply_action(socket, :index, params) do
@@ -101,7 +87,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
     pages =
       case SearchForm.apply_search_action(socket.assigns.search_changeset) do
         {:ok, %SearchForm{} = search_form} ->
-          Pages.search_for_site_pages(search_form.site, search_form.query)
+          Content.list_pages(search_form.site, query: search_form.query)
 
         {:error, _changeset} ->
           []
@@ -112,7 +98,7 @@ defmodule BeaconWeb.Admin.PageLive.Index do
 
   # Set options for the site select input
   defp assign_site_options(socket) do
-    assign(socket, :site_options, Layouts.list_distinct_sites_from_layouts())
+    assign(socket, :site_options, Content.list_distinct_sites_from_layouts())
   end
 
   # Cast search form params

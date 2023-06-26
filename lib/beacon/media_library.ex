@@ -1,5 +1,7 @@
 defmodule Beacon.MediaLibrary do
+  # TODO: docs
   @moduledoc """
+  MediaLibrary
   """
   import Ecto.Query, warn: false
 

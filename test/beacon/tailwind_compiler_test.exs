@@ -42,7 +42,7 @@ defmodule Beacon.TailwindCompilerTest do
   describe "compile/2" do
     setup [:create_page]
 
-    test "includes classes from custom content" do
+    test "includes classes from all resources" do
       capture_io(fn ->
         assert {:ok, output} = TailwindCompiler.compile(:my_site)
 

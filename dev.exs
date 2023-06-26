@@ -108,7 +108,7 @@ defmodule BeaconTagsField do
   import BeaconWeb.CoreComponents
   import Ecto.Changeset
 
-  @behaviour Beacon.PageField
+  @behaviour Beacon.Content.PageField
 
   @impl true
   def name, do: :tags
@@ -136,13 +136,13 @@ defmodule BeaconTagsField do
 end
 
 seeds = fn ->
-  Beacon.Stylesheets.create_stylesheet!(%{
+  Beacon.Content.create_stylesheet!(%{
     site: "dev",
     name: "sample_stylesheet",
     content: "body {cursor: zoom-in;}"
   })
 
-  Beacon.Components.create_component!(%{
+  Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
     body: """
@@ -150,8 +150,8 @@ seeds = fn ->
     """
   })
 
-  %{id: layout_id} =
-    Beacon.Layouts.create_layout!(%{
+  layout =
+    Beacon.Content.create_layout!(%{
       site: "dev",
       title: "dev",
       meta_tags: [
@@ -164,7 +164,9 @@ seeds = fn ->
       """
     })
 
-  Beacon.Snippets.create_helper!(%{
+  Beacon.Content.publish_layout(layout)
+
+  Beacon.Content.create_snippet_helper!(%{
     site: "dev",
     name: "author_name",
     body: ~S"""
@@ -174,12 +176,12 @@ seeds = fn ->
   })
 
   page_home =
-    Beacon.Pages.create_page!(%{
+    Beacon.Content.create_page!(%{
       path: "home",
       site: "dev",
       title: "dev home",
       description: "page used for development",
-      layout_id: layout_id,
+      layout_id: layout.id,
       meta_tags: [
         %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"}
       ],
@@ -227,17 +229,26 @@ seeds = fn ->
           <%= dynamic_helper("upcase", %{name: "beacon"}) %>
         </div>
       </main>
-      """
+      """,
+      helpers: [
+        %{
+          name: "upcase",
+          args: "%{name: name}",
+          code: """
+            String.upcase(name)
+          """
+        }
+      ]
     })
 
-  Beacon.Pages.publish_page(page_home)
+  Beacon.Content.publish_page(page_home)
 
   page_author =
-    Beacon.Pages.create_page!(%{
+    Beacon.Content.create_page!(%{
       path: "authors/:author_id",
       site: "dev",
       title: "dev author",
-      layout_id: layout_id,
+      layout_id: layout.id,
       template: """
       <main>
         <h1 class="text-violet-500">Authors</h1>
@@ -258,14 +269,14 @@ seeds = fn ->
       """
     })
 
-  Beacon.Pages.publish_page(page_author)
+  Beacon.Content.publish_page(page_author)
 
   page_post =
-    Beacon.Pages.create_page!(%{
+    Beacon.Content.create_page!(%{
       path: "posts/*slug",
       site: "dev",
       title: "dev post",
-      layout_id: layout_id,
+      layout_id: layout.id,
       template: """
       <main>
         <h1 class="text-violet-500">Post</h1>
@@ -286,14 +297,14 @@ seeds = fn ->
       """
     })
 
-  Beacon.Pages.publish_page(page_post)
+  Beacon.Content.publish_page(page_post)
 
   page_markdown =
-    Beacon.Pages.create_page!(%{
+    Beacon.Content.create_page!(%{
       path: "markdown",
       site: "dev",
       title: "dev markdown",
-      layout_id: layout_id,
+      layout_id: layout.id,
       format: "markdown",
       template: """
       # My Markdown Page
@@ -304,16 +315,7 @@ seeds = fn ->
       """
     })
 
-  Beacon.Pages.publish_page(page_markdown)
-
-  Beacon.Pages.create_page_helper!(%{
-    page_id: page_home.id,
-    helper_name: "upcase",
-    helper_args: "%{name: name}",
-    code: """
-      String.upcase(name)
-    """
-  })
+  Beacon.Content.publish_page(page_markdown)
 
   metadata =
     Beacon.Admin.MediaLibrary.UploadMetadata.new(
@@ -335,8 +337,8 @@ seeds = fn ->
 
   Beacon.Admin.MediaLibrary.upload(metadata)
 
-  %{id: other_layout_id} =
-    Beacon.Layouts.create_layout!(%{
+  other_layout =
+    Beacon.Content.create_layout!(%{
       site: "other",
       title: "other",
       stylesheet_urls: [],
@@ -345,11 +347,13 @@ seeds = fn ->
       """
     })
 
-  Beacon.Pages.create_page!(%{
+  Beacon.Content.publish_layout(other_layout)
+
+  Beacon.Content.create_page!(%{
     path: "home",
     site: "other",
     title: "other home",
-    layout_id: other_layout_id,
+    layout_id: other_layout.id,
     template: """
     <main>
       <h1 class="text-violet-500">Other</h1>

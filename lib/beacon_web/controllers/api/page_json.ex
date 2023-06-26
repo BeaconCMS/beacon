@@ -1,5 +1,5 @@
 defmodule BeaconWeb.API.PageJSON do
-  alias Beacon.Pages.Page
+  alias Beacon.Content.Page
 
   @doc """
   Renders a list of pages.
@@ -19,14 +19,10 @@ defmodule BeaconWeb.API.PageJSON do
     %{
       id: page.id,
       layout_id: page.layout_id,
-      pending_layout_id: page.pending_layout_id,
       path: page.path,
       site: page.site,
       template: page.template,
-      pending_template: page.pending_template,
-      version: page.version,
-      format: page.format,
-      status: page.status
+      format: page.format
     }
   end
 end

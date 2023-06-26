@@ -44,7 +44,7 @@ defmodule Beacon.Authorization do
   end
 
   defp get_authorization_source do
-    case Beacon.Registry.registered_sites() do
+    case Beacon.Registry.running_sites() do
       [] ->
         Beacon.Authorization.DefaultPolicy
 

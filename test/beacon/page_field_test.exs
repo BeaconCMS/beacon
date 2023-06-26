@@ -2,7 +2,7 @@ defmodule Beacon.PageFieldTest do
   use Beacon.DataCase, async: true
 
   import Beacon.Fixtures
-  alias Beacon.PageField
+  alias Beacon.Content.PageField
 
   @form %Phoenix.HTML.Form{}
 
@@ -11,7 +11,7 @@ defmodule Beacon.PageFieldTest do
     import BeaconWeb.CoreComponents
     import Ecto.Changeset
 
-    @behaviour Beacon.PageField
+    @behaviour Beacon.Content.PageField
 
     @impl true
     def name, do: :tags
@@ -40,7 +40,7 @@ defmodule Beacon.PageFieldTest do
   describe "apply_changesets" do
     setup do
       page = page_fixture()
-      page_changeset = Beacon.Pages.change_page(page)
+      page_changeset = Beacon.Content.change_page(page)
       [page_changeset: page_changeset]
     end
 
@@ -78,7 +78,7 @@ defmodule Beacon.PageFieldTest do
   describe "extra_fields" do
     setup do
       page = page_fixture()
-      page_changeset = Beacon.Pages.change_page(page)
+      page_changeset = Beacon.Content.change_page(page)
       [page_changeset: page_changeset]
     end
 

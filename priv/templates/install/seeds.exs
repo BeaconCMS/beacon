@@ -4,18 +4,15 @@
 #
 #     mix run priv/repo/beacon_seeds.exs
 
-alias Beacon.Components
-alias Beacon.Pages
-alias Beacon.Layouts
-alias Beacon.Stylesheets
+alias Beacon.Content
 
-Stylesheets.create_stylesheet!(%{
+Content.create_stylesheet!(%{
   site: "<%= site %>",
   name: "sample_stylesheet",
   content: "body {cursor: zoom-in;}"
 })
 
-Components.create_component!(%{
+Content.create_component!(%{
   site: "<%= site %>",
   name: "sample_component",
   body: """
@@ -25,8 +22,8 @@ Components.create_component!(%{
   """
 })
 
-%{id: layout_id} =
-  Layouts.create_layout!(%{
+layout =
+  Content.create_layout!(%{
     site: "<%= site %>",
     title: "Sample Home Page",
     stylesheet_urls: [],
@@ -42,37 +39,55 @@ Components.create_component!(%{
     """
   })
 
-%{id: page_id} =
-  Pages.create_page!(%{
-    path: "home",
-    site: "<%= site %>",
-    status: :published,
-    layout_id: layout_id,
-    template: """
-    <main>
-      <h2>Some Values:</h2>
-      <ul>
-        <%%= for val <- @beacon_live_data[:vals] do %>
-          <%%= my_component("sample_component", val: val) %>
-        <%% end %>
-      </ul>
+Content.publish_layout(layout)
 
-      <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-        Name: <%%= text_input f, :name %> <%%= submit "Hello" %>
-      </.form>
+%{
+  path: "home",
+  site: "<%= site %>",
+  layout_id: layout.id,
+  template: """
+  <main>
+    <h2>Some Values:</h2>
+    <ul>
+      <%%= for val <- @beacon_live_data[:vals] do %>
+        <%%= my_component("sample_component", val: val) %>
+      <%% end %>
+    </ul>
 
-      <%%= if assigns[:message], do: assigns.message %>
+    <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
+      Name: <%%= text_input f, :name %> <%%= submit "Hello" %>
+    </.form>
 
-      <%%= dynamic_helper("upcase", "Beacon") %>
-    </main>
-    """
-  })
+    <%%= if assigns[:message], do: assigns.message %>
 
-Pages.create_page!(%{
+    <%%= dynamic_helper("upcase", "Beacon") %>
+  </main>
+  """,
+  helpers: [
+    %{
+      name: "upcase",
+      args: "name",
+      code: """
+        String.upcase(name)
+      """
+    }
+  ],
+  events: [
+    %{
+      name: "hello",
+      code: """
+        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+      """
+    }
+  ]
+}
+|> Content.create_page!()
+|> Content.publish_page()
+
+%{
   path: "blog/:blog_slug",
   site: "<%= site %>",
-  status: :published,
-  layout_id: layout_id,
+  layout_id: layout.id,
   template: """
   <main>
     <h2>A blog</h2>
@@ -82,21 +97,6 @@ Pages.create_page!(%{
     </ul>
   </main>
   """
-})
-
-Pages.create_page_event!(%{
-  page_id: page_id,
-  event_name: "hello",
-  code: """
-    {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-  """
-})
-
-Pages.create_page_helper!(%{
-  page_id: page_id,
-  helper_name: "upcase",
-  helper_args: "name",
-  code: """
-    String.upcase(name)
-  """
-})
+}
+|> Content.create_page!()
+|> Content.publish_page()

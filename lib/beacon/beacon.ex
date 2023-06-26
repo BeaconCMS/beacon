@@ -57,7 +57,7 @@ defmodule Beacon do
       Keyword.get(opts, :sites) ||
         Logger.warning("Beacon will be started with no sites configured. See `Beacon.start_link/1` for more info.")
 
-    # TODO: pubsub per site
+    # TODO: pubsub per site?
     # children = [
     #   {Phoenix.PubSub, name: Beacon.PubSub}
     # ]
@@ -91,7 +91,7 @@ defmodule Beacon do
   Reload all resources for all running sites.
   """
   def reload_all_sites do
-    Enum.map(Beacon.Registry.registered_sites(), &reload_site/1)
+    Enum.map(Beacon.Registry.running_sites(), &reload_site/1)
   end
 
   @doc """
@@ -99,12 +99,6 @@ defmodule Beacon do
   """
   @spec reload_site(Beacon.Types.Site.t()) :: :ok
   defdelegate reload_site(site), to: Beacon.Loader
-
-  @doc """
-  Reload `page` and its dependencies.
-  """
-  @spec reload_page(Beacon.Pages.Page.t()) :: :ok
-  defdelegate reload_page(page), to: Beacon.Loader
 
   @doc false
   def safe_code_check!(site, code) do

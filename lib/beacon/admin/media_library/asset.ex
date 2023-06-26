@@ -8,7 +8,7 @@ defmodule Beacon.Admin.MediaLibrary.Asset do
     field :file_body, :binary
     field :file_name, :string
     field :media_type, :string
-    field :site, Beacon.Types.Atom
+    field :site, Beacon.Types.Site
     field :deleted_at, :utc_datetime
     field :keys, :map, default: %{}
 

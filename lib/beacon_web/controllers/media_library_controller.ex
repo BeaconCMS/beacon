@@ -1,4 +1,6 @@
 defmodule BeaconWeb.MediaLibraryController do
+  @moduledoc false
+
   use BeaconWeb, :controller
 
   alias Beacon.MediaLibrary

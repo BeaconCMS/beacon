@@ -52,7 +52,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
 
   @impl true
   def update(assigns, socket) do
-    sites = Beacon.Registry.registered_sites()
+    sites = Beacon.Registry.running_sites()
     site_selected = hd(sites)
 
     {:ok,

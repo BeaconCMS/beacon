@@ -1,4 +1,10 @@
 defmodule Beacon.Registry do
+  @moduledoc """
+  Site process storage.
+
+  Each site `Beacon.Config` is stored in this registry.
+  """
+
   @doc false
   def child_spec(_arg) do
     Registry.child_spec(keys: :unique, name: __MODULE__)
@@ -25,9 +31,10 @@ defmodule Beacon.Registry do
   end
 
   @doc """
-  Return a list of all registered sites running in the current instance.
+  Return a list of all running sites in the current node.
   """
-  def registered_sites do
+  @spec running_sites() :: [Beacon.Types.Site.t()]
+  def running_sites do
     match = {{:site, :"$1"}, :_, :_}
     guards = []
     body = [:"$1"]

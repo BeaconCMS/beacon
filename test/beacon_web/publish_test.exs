@@ -4,7 +4,7 @@ defmodule BeaconWeb.PublishTest do
   # import Phoenix.ConnTest
   # import Phoenix.LiveViewTest
   import Beacon.Fixtures
-  alias Beacon.Pages
+  alias Beacon.Content
 
   defp start_loader(_) do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
@@ -13,73 +13,43 @@ defmodule BeaconWeb.PublishTest do
 
   defp create_page(_) do
     stylesheet_fixture()
-
-    layout = layout_fixture()
-
-    page =
-      page_fixture(
-        layout_id: layout.id,
-        path: "publish_test",
-        template: """
-        <main>
-          <h1 class="text-red-500">title</h1>
-        </main>
-        """
-      )
+    layout = published_layout_fixture()
+    page = page_fixture(layout_id: layout.id, path: "publish_test")
 
     Beacon.reload_site(:my_site)
 
-    [page: page]
+    [layout: layout, page: page]
   end
 
-  describe "publish" do
+  describe "publish layout" do
     setup [:start_loader, :create_page]
 
-    test "receive event", %{page: page} do
-      Beacon.PubSub.subscribe_page_update(page.site, [page.path])
+    test "receive layout_published event", %{layout: %{id: id} = layout} do
+      Beacon.PubSub.subscribe_to_layouts(layout.site)
+      Content.publish_layout(layout)
 
-      params = %{
-        "pending_template" => ~s|<main><h1 class="text-blue-100">title</h1></main>|,
-        "pending_layout_id" => page.layout_id
-      }
+      assert_receive {:layout_published, layout}
+      assert %{site: :my_site, id: ^id} = layout
+    end
+  end
 
-      assert {:ok, page} =
-               Pages.update_page_pending(
-                 page,
-                 params["pending_template"],
-                 params["pending_layout_id"],
-                 params
-               )
+  describe "publish page" do
+    setup [:start_loader, :create_page]
 
-      assert {:ok, _page} = Pages.publish_page(page)
+    test "receive page_published event", %{page: %{id: id} = page} do
+      Beacon.PubSub.subscribe_to_pages(page.site)
+      Content.publish_page(page)
 
-      assert_receive :page_updated
+      assert_receive {:page_published, page}
+      assert %{site: :my_site, path: "publish_test", id: ^id} = page
     end
 
-    # TODO: https://github.com/BeaconCMS/beacon/issues/179
-    # test "update template", %{conn: conn, page: page} do
-    #   {:ok, view, html} = live(conn, "/publish_test")
-    #
-    #   assert html =~ ~s|<h1 class="text-red-500">title</h1>|
-    #
-    #   params = %{
-    #     "pending_template" => ~s|<main><h1 class="text-blue-100">title</h1></main>|,
-    #     "pending_layout_id" => page.layout_id
-    #   }
-    #
-    #   assert {:ok, page} =
-    #            Pages.update_page_pending(
-    #              page,
-    #              params["pending_template"],
-    #              params["pending_layout_id"],
-    #              params
-    #            )
-    #
-    #   assert {:ok, _page} = Pages.publish_page(page)
-    #
-    #   html = render(view)
-    #
-    #   assert html =~ ~s|<h1 class="text-blue-100">title</h1>|
-    # end
+    test "receive page_loaded event", %{page: %{id: id} = page} do
+      Beacon.PubSub.subscribe_to_page(page.site, [page.path])
+      Content.publish_page(page)
+
+      assert_receive {:page_loaded, page}
+      assert %{site: :my_site, path: "publish_test", id: ^id} = page
+    end
   end
 end

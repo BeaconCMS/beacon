@@ -2,7 +2,7 @@ defmodule Beacon.Authorization.Behaviour do
   @moduledoc """
   Provides hooks into Beacon Authorization.
 
-  Currently, we are only protecting `Beacon.Pages.Page` and `Beacon.MediaLibrary.Asset` resources.
+  Currently, we are only protecting `Beacon.Content.Page` and `Beacon.MediaLibrary.Asset` resources.
 
   ## Example
 

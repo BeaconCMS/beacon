@@ -3,24 +3,17 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
   import Beacon.Fixtures
   alias Beacon.Loader.PageModuleLoader
-  alias Beacon.Repo
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
-      page_1 = page_fixture(site: "my_site", path: "1")
-      page_2 = page_fixture(site: "my_site", path: "2")
+      page_1 = page_fixture(site: "my_site", path: "1", helpers: [page_helper_params(name: "page_1_upcase")])
+      page_2 = page_fixture(site: "my_site", path: "2", helpers: [page_helper_params(name: "page_2_upcase")])
 
-      page_helper_fixture(page_id: page_1.id, helper_name: "page_1_upcase")
-      page_helper_fixture(page_id: page_2.id, helper_name: "page_2_upcase")
-
-      page_1 = Repo.preload(page_1, [:events, :helpers])
-      page_2 = Repo.preload(page_2, [:events, :helpers])
-
-      {:ok, ast} = PageModuleLoader.load_page!(:test, page_1)
+      {:ok, ast} = PageModuleLoader.load_page!(page_1)
       assert has_function?(ast, :page_1_upcase)
       assert has_function?(ast, :dynamic_helper)
 
-      {:ok, ast} = PageModuleLoader.load_page!(:test, page_2)
+      {:ok, ast} = PageModuleLoader.load_page!(page_2)
       assert has_function?(ast, :page_2_upcase)
       assert has_function?(ast, :dynamic_helper)
     end
@@ -56,9 +49,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         """
       })
 
+      layout = published_layout_fixture()
+
       page =
-        page_fixture(
+        published_page_fixture(
           site: "my_site",
+          layout_id: layout.id,
           path: "page/meta-tag",
           title: "my first page",
           description: "my test page",
@@ -68,10 +64,9 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
           ]
         )
 
-      page = Repo.preload(page, [:events, :helpers])
-      Beacon.reload_page(page)
+      Beacon.Loader.load_page(page)
 
-      {:ok, ast} = PageModuleLoader.load_page!(:my_site, page)
+      {:ok, ast} = PageModuleLoader.load_page!(page)
 
       assert has_fields?(ast, [{"content", "MY TEST PAGE"}, {"property", "og:description"}])
       assert has_fields?(ast, [{"content", "http://example.com/page/meta-tag"}, {"property", "og:url"}])
@@ -87,9 +82,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         """
       })
 
+      layout = published_layout_fixture()
+
       page =
-        page_fixture(
+        published_page_fixture(
           site: "my_site",
+          layout_id: layout.id,
           path: "page/raw-schema",
           title: "my first page",
           description: "hello world",
@@ -109,10 +107,9 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
           ]
         )
 
-      page = Repo.preload(page, [:events, :helpers])
-      Beacon.reload_page(page)
+      Beacon.Loader.load_page(page)
 
-      {:ok, ast} = PageModuleLoader.load_page!(:my_site, page)
+      {:ok, ast} = PageModuleLoader.load_page!(page)
 
       assert has_fields?(ast,
                "@context": "https://schema.org",

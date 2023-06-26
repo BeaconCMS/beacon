@@ -1,11 +1,7 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Admin.MediaLibrary
   alias Beacon.Admin.MediaLibrary.UploadMetadata
-  alias Beacon.Components
-  alias Beacon.Layouts
-  alias Beacon.Pages
-  alias Beacon.Snippets
-  alias Beacon.Stylesheets
+  alias Beacon.Content
 
   def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
   def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
@@ -23,7 +19,7 @@ defmodule Beacon.Fixtures do
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
     })
-    |> Stylesheets.create_stylesheet!()
+    |> Content.create_stylesheet!()
   end
 
   def component_fixture(attrs \\ %{}) do
@@ -35,7 +31,7 @@ defmodule Beacon.Fixtures do
       <span id={"my-component-#{@val}"}><%= @val %></span>
       """
     })
-    |> Components.create_component!()
+    |> Content.create_component!()
   end
 
   def layout_fixture(attrs \\ %{}) do
@@ -51,22 +47,16 @@ defmodule Beacon.Fixtures do
       <footer>Page footer</footer>
       """
     })
-    |> Layouts.create_layout!()
+    |> Content.create_layout!()
   end
 
-  def layout_without_meta_fixture(attrs \\ %{}) do
-    attrs
-    |> Enum.into(%{
-      site: "my_site",
-      title: "Sample Home Page",
-      stylesheet_urls: [],
-      body: """
-      <header>Page header</header>
-      <%= @inner_content %>
-      <footer>Page footer</footer>
-      """
-    })
-    |> Layouts.create_layout!()
+  def published_layout_fixture(attrs \\ %{}) do
+    {:ok, layout} =
+      attrs
+      |> layout_fixture()
+      |> Content.publish_layout()
+
+    layout
   end
 
   def page_fixture(attrs \\ %{}) do
@@ -74,7 +64,7 @@ defmodule Beacon.Fixtures do
 
     attrs
     |> Enum.into(%{
-      path: "home",
+      path: "/home",
       site: "my_site",
       layout_id: layout_id,
       meta_tags: [],
@@ -83,59 +73,37 @@ defmodule Beacon.Fixtures do
         <h1>my_site#home</h1>
       </main>
       """,
-      skip_reload: true,
-      status: :published,
       format: :heex
     })
-    |> Pages.create_page!()
+    |> Content.create_page!()
   end
 
-  def page_without_meta_fixture(attrs \\ %{}) do
-    layout_id = get_lazy(attrs, :layout_id, fn -> layout_fixture().id end)
+  def published_page_fixture(attrs \\ %{}) do
+    {:ok, page} =
+      attrs
+      |> page_fixture()
+      |> Content.publish_page()
 
-    attrs
-    |> Enum.into(%{
-      path: "home",
-      site: "my_site",
-      layout_id: layout_id,
-      template: """
-      <main>
-        <h1>my_site#home</h1>
-      </main>
-      """
-    })
-    |> Pages.create_page!()
+    page
   end
 
-  def page_event_fixture(attrs \\ %{}) do
-    page_id = get_lazy(attrs, :page_id, fn -> page_fixture().id end)
-
-    attrs
-    |> Enum.into(%{
-      page_id: page_id,
-      event_name: "hello",
+  def page_event_params(attrs \\ %{}) do
+    Enum.into(attrs, %{
+      name: "hello",
       code: """
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """,
-      skip_reload: true
+      """
     })
-    |> Pages.create_page_event!()
   end
 
-  def page_helper_fixture(attrs \\ %{}) do
-    page_id = get_lazy(attrs, :page_id, fn -> page_fixture().id end)
-
-    attrs
-    |> Enum.into(%{
-      page_id: page_id,
-      helper_name: "upcase",
-      helper_args: "%{name: name}",
+  def page_helper_params(attrs \\ %{}) do
+    Enum.into(attrs, %{
+      name: "upcase",
+      args: "%{name: name}",
       code: """
       String.upcase(name)
-      """,
-      skip_reload: true
+      """
     })
-    |> Pages.create_page_helper!()
   end
 
   def snippet_helper_fixture(attrs \\ %{}) do
@@ -149,7 +117,7 @@ defmodule Beacon.Fixtures do
       |> String.upcase()
       """
     })
-    |> Snippets.create_helper!()
+    |> Content.create_snippet_helper!()
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do

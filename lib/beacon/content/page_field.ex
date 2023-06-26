@@ -1,6 +1,20 @@
-defmodule Beacon.PageField do
+defmodule Beacon.Content.PageField do
   @moduledoc ~S"""
-  Add extra fields to pages.
+  Custom page fields for pages.
+
+  Each `Beacon.Content.Page` have a default set of fields that
+  fits most cases for building pages for your sites,
+  but in some cases you need custom data to either help manage
+  those page in Beacon Admin or to display such data.
+
+  For example, you can add a field to store each blog post illustration,
+  or a field to include tags, and so on.
+
+  Each page field will be:
+
+    * stored in the `page.extra` map field
+    * displayed in Beacon Admin
+    * validated when the pages is saved or published
 
   ## Example
 
@@ -9,7 +23,7 @@ defmodule Beacon.PageField do
         import BeaconWeb.CoreComponents
         import Ecto.Changeset
 
-        @behaviour Beacon.PageField
+        @behaviour Beacon.Content.PageField
 
         @impl true
         def name, do: :tags
@@ -114,7 +128,7 @@ defmodule Beacon.PageField do
 
   @doc false
   def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_nil(params) do
-    apply_changesets(page_changeset, site, %{})
+    page_changeset
   end
 
   def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_map(params) do

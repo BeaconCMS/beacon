@@ -20,6 +20,7 @@ defmodule Beacon.TailwindCompiler do
   """
 
   require Logger
+  alias Beacon.Content
 
   @behaviour Beacon.RuntimeCSS
 
@@ -131,21 +132,21 @@ defmodule Beacon.TailwindCompiler do
   defp generate_template_files!(tmp_dir, site) do
     [
       Task.async(fn ->
-        Enum.map(Beacon.Layouts.list_layouts_for_site(site), fn layout ->
+        Enum.map(Content.list_layouts(site), fn layout ->
           layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
           File.write!(layout_path, layout.body)
           layout_path
         end)
       end),
       Task.async(fn ->
-        Enum.map(Beacon.Components.list_components_for_site(site), fn component ->
+        Enum.map(Beacon.Content.list_components(site), fn component ->
           component_path = Path.join(tmp_dir, "#{site}_component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
           component_path
         end)
       end),
       Task.async(fn ->
-        Enum.map(Beacon.Pages.list_pages_for_site(site), fn page ->
+        Enum.map(Content.list_pages(site, per_page: :infinity), fn page ->
           page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
           File.write!(page_path, page.template)
           page_path
@@ -162,7 +163,7 @@ defmodule Beacon.TailwindCompiler do
 
     app_css =
       site
-      |> Beacon.Stylesheets.list_stylesheets_for_site()
+      |> Beacon.Content.list_stylesheets()
       |> Enum.map_join(fn stylesheet ->
         ["\n", "/* ", stylesheet.name, " */", "\n", stylesheet.content, "\n"]
       end)

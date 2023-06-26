@@ -5,10 +5,7 @@ defmodule Beacon.RuntimeCSS do
 
   @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
 
-  @doc """
-  Compiles the site CSS through tailwind-cli
-  """
-  @spec compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
+  @doc false
   def compile(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.compile(site)
   end
@@ -30,6 +27,7 @@ defmodule Beacon.RuntimeCSS do
     :ok
   end
 
+  @doc false
   def current_hash(site) do
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
       [[hash]] -> hash

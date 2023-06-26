@@ -1,7 +1,7 @@
 defmodule Beacon.BeaconTest.BeaconAuthorizationSource do
   @behaviour Beacon.Authorization.Behaviour
 
-  alias Beacon.Pages.Page
+  alias Beacon.Content.Page
 
   def get_agent(%{"session_id" => "admin_session_123"}) do
     %{role: :admin, session_id: "admin_session_123"}
