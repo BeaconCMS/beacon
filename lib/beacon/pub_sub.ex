@@ -58,17 +58,17 @@ defmodule Beacon.PubSub do
 
   def pages_published(pages) when is_list(pages) do
     messages =
-    pages
-    |> Enum.group_by(& &1.site)
-    |> Enum.each(fn {site, pages} ->
-      pages = Enum.map(pages, &page/1)
+      pages
+      |> Enum.group_by(& &1.site)
+      |> Enum.map(fn {site, pages} ->
+        pages = Enum.map(pages, &page/1)
 
-      site
-      |> topic_pages()
-      |> broadcast({:pages_published, site, pages})
-    end)
+        site
+        |> topic_pages()
+        |> broadcast({:pages_published, site, pages})
+      end)
 
-    if Enum.all?(messages, & &1 == :ok), do: :ok, else: :error
+    if Enum.all?(messages, &(&1 == :ok)), do: :ok, else: :error
   end
 
   def page_unpublished(%Page{} = page) do

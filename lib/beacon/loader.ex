@@ -288,8 +288,6 @@ defmodule Beacon.Loader do
     :ok = load_runtime_css(site)
 
     for page <- pages do
-      dbg(page.path)
-
       site
       |> Content.get_published_page(page.id)
       |> do_load_page()
