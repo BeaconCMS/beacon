@@ -3,7 +3,7 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
 
   require Logger
 
-  alias Beacon.Content.Stylesheet
+  alias Beacon.Content
 
   def load_stylesheets(_site, [] = _stylesheets) do
     :skip
@@ -41,7 +41,7 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
     """
   end
 
-  defp render_stylesheet(%Stylesheet{name: name, content: content}) do
+  defp render_stylesheet(%Content.Stylesheet{name: name, content: content}) do
     """
     /* #{name} */
 

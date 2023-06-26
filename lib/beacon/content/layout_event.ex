@@ -1,6 +1,15 @@
 defmodule Beacon.Content.LayoutEvent do
   @moduledoc """
   Layout events
+
+  > #### Do not create or edit layout events manually {: .warning}
+  >
+  > Use the public functions in `Beacon.Content` instead.
+  > The functions in that module guarantee that all dependencies
+  > are created correctly and all processes are updated.
+  > Manipulating data manually will most likely result
+  > in inconsistent behavior and crashes.
+
   """
 
   use Ecto.Schema

@@ -3,7 +3,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
   require Logger
 
-  alias Beacon.Content.Component
+  alias Beacon.Content
   alias Beacon.Loader
 
   def load_components(_site, [] = _components) do
@@ -31,7 +31,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     end
   end
 
-  defp render_component(%Component{site: site, name: name, body: body}) do
+  defp render_component(%Content.Component{site: site, name: name, body: body}) do
     file = "site-#{site}-component-#{name}"
     ast = Beacon.Template.HEEx.compile_heex_template!(file, body)
 

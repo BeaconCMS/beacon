@@ -21,7 +21,6 @@ defmodule Beacon.Loader do
       :ok = load_site_from_db(config.site)
     end
 
-    # TODO: handle event
     PubSub.subscribe_to_layouts(config.site)
     PubSub.subscribe_to_pages(config.site)
 

@@ -270,10 +270,9 @@ defmodule Beacon.Config do
                eval: &Beacon.Template.HEEx.eval_ast/2
              ]}
           ],
-          publish_page: [
+          after_publish_page: [
             notify_admin: fn page -> {:cont, MyApp.send_email(page)} end
-          ],
-          update_page: [MyModule.some_function/2],
+          ]
         ]
       )
       %Beacon.Config{
