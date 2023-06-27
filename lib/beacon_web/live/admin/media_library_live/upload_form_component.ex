@@ -55,38 +55,44 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
     sites = Beacon.Registry.running_sites()
     site_selected = hd(sites)
 
-    {:ok,
-     socket
-     |> assign(assigns)
-     |> assign(:uploaded_assets, [])
-     |> assign(:sites, sites)
-     |> assign(:site_selected, site_selected)
-     |> allow_upload(:asset,
-       auto_upload: true,
-       progress: &handle_progress/3,
-       accept: ~w(.jpg .jpeg .png),
-       max_entries: 10
-     )}
+    socket =
+      socket
+      |> assign(assigns)
+      |> assign(:uploaded_assets, [])
+      |> assign(:sites, sites)
+      |> assign(:site_selected, site_selected)
+      |> allow_upload(:asset,
+        auto_upload: true,
+        progress: &handle_progress/3,
+        accept: accepted_extensions(site_selected),
+        max_entries: 1
+      )
+
+    {:ok, socket}
   end
 
   defp handle_progress(:asset, entry, socket) do
-    site =
-      case socket.assigns.site_selected do
-        site when is_binary(site) -> String.to_existing_atom(site)
-        site -> site
-      end
+    if entry.done? do
+      site =
+        case socket.assigns.site_selected do
+          site when is_binary(site) -> String.to_existing_atom(site)
+          site -> site
+        end
 
-    uploaded_assets =
-      consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
-        asset =
-          site
-          |> UploadMetadata.new(path, name: entry.client_name, media_type: entry.client_type, size: entry.client_size)
-          |> MediaLibrary.upload()
+      uploaded_assets =
+        consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
+          asset =
+            site
+            |> UploadMetadata.new(path, name: entry.client_name, media_type: entry.client_type, size: entry.client_size)
+            |> MediaLibrary.upload()
 
-        {:ok, asset}
-      end)
+          {:ok, asset}
+        end)
 
-    {:noreply, update(socket, :uploaded_assets, &(&1 ++ uploaded_assets))}
+      {:noreply, update(socket, :uploaded_assets, &(&1 ++ uploaded_assets))}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -96,6 +102,24 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
 
   @impl true
   def handle_event("set_site", %{"site" => site}, socket) when is_binary(site) do
-    {:noreply, assign(socket, :site_selected, site)}
+    socket =
+      socket
+      |> assign(:site_selected, site)
+      |> allow_upload(:asset,
+        auto_upload: true,
+        progress: &handle_progress/3,
+        accept: accepted_extensions(site),
+        max_entries: 1
+      )
+
+    {:noreply, socket}
+  end
+
+  defp accepted_extensions(site) when is_binary(site) do
+    accepted_extensions(String.to_existing_atom(site))
+  end
+
+  defp accepted_extensions(site) do
+    Beacon.Config.fetch!(site).allowed_media_types
   end
 end
