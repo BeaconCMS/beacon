@@ -2,7 +2,6 @@
 # https://github.com/hexpm/hexpm/blob/main/lib/hexpm_web/controllers/controller_helpers.ex
 defmodule BeaconWeb.Cache do
   import Plug.Conn
-  import Phoenix.Controller
 
   @max_cache_age 60
 
