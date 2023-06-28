@@ -43,7 +43,7 @@ defmodule Beacon.Admin.MediaLibrary.Processors.Image do
     output =
       metadata.output
       |> Image.open!()
-      |> Image.thumbnail!(@thumbnail_size)
+      |> Image.thumbnail!(@thumbnail_size, crop: :attention)
       |> Image.write!(:memory, suffix: ext)
 
     name = append_to_filename(metadata.name, "thumb")
