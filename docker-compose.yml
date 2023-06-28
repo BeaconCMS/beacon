@@ -1,0 +1,9 @@
+version: "3.9" # optional since v1.27.0
+services:
+  db:
+    image: postgres:13.1
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres

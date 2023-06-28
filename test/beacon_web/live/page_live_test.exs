@@ -167,6 +167,20 @@ defmodule BeaconWeb.Live.PageLiveTest do
       assert page_title(view) =~ "layout_title"
     end
 
+    test "on layout (without stylesheet)", %{conn: conn} do
+      # ensure no stylesheets are present
+      assert Beacon.Repo.all(Beacon.Content.Stylesheet) == []
+
+      # same test as above, as a sanity check
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: nil, path: "/layout_title")
+      Beacon.Loader.load_page(page)
+
+      {:ok, view, _html} = live(conn, "/layout_title")
+
+      assert page_title(view) =~ "layout_title"
+    end
+
     test "on page overwrite layout", %{conn: conn} do
       stylesheet_fixture()
       layout = published_layout_fixture(title: "layout_title")
