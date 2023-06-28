@@ -29,20 +29,24 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
         phx-submit="save"
       >
         <.input id="site-input" name="site" type="select" label="Site" options={@sites} value={@site_selected} phx-change="set_site" phx-target={@myself} />
-        <.live_file_input upload={@uploads.asset} tabindex="0" />
+        <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10" phx-drop-target={@uploads.asset.ref}>
+          <.live_file_input upload={@uploads.asset} tabindex="0" />
+        </div>
+        <%= for entry <- @uploads.asset.entries do %>
+          <%= for err <- upload_errors(@uploads.asset, entry) do %>
+            <p class="text-red-600">
+              <%= entry.client_name %>
+              <%= Phoenix.Naming.humanize(err) %>
+            </p>
+          <% end %>
+          <.button phx-click="cancel-upload" phx-value-ref={entry.ref}>Cancel</.button>
+        <% end %>
       </.form>
 
-      <%= for entry <- @uploads.asset.entries do %>
-        <%= for err <- upload_errors(@uploads.asset, entry) do %>
-          <p class="text-red-600">
-            <%= entry.client_name %>
-            <%= Phoenix.Naming.humanize(err) %>
-          </p>
-        <% end %>
-      <% end %>
-
       <div :if={@uploaded_assets != []}>
+        <h3>Successfully uploaded</h3>
         <%= for asset <- @uploaded_assets do %>
+          <img :if={is_image?(asset)} src={url_for(asset)} class="mb-8" />
           <p class="text-green-600"><%= asset.file_name %></p>
         <% end %>
       </div>
@@ -115,11 +119,24 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :asset, ref)}
+  end
+
   defp accepted_extensions(site) when is_binary(site) do
     accepted_extensions(String.to_existing_atom(site))
   end
 
   defp accepted_extensions(site) do
     Beacon.Config.fetch!(site).allowed_media_types
+  end
+
+  defp is_image?(asset) do
+    MediaLibrary.is_image?(asset)
+  end
+
+  defp url_for(asset) do
+    MediaLibrary.url_for(asset)
   end
 end
