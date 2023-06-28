@@ -49,7 +49,7 @@ defmodule BeaconWeb.Cache do
     end
   end
 
-  defp put_etag(conn, nil) do
+  defp put_etag(conn, "") do
     conn
   end
 
