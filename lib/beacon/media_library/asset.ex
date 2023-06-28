@@ -2,6 +2,7 @@ defmodule Beacon.MediaLibrary.Asset do
   @moduledoc false
 
   use Ecto.Schema
+  @derive BeaconWeb.Cache.Stale
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
