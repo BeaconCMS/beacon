@@ -524,7 +524,7 @@ defmodule Beacon.Content do
   def list_published_pages(site) do
     events =
       from event in PageEvent,
-        where: event.site == ^site,
+        where: event.site == ^site and event.event == :published,
         distinct: [asc: event.page_id],
         order_by: [desc: event.inserted_at]
 
