@@ -1,5 +1,6 @@
-# Extracted code from
-# https://github.com/hexpm/hexpm/blob/main/lib/hexpm_web/controllers/controller_helpers.ex
+# Copied and modified from https://github.com/hexpm/hexpm/blob/d5b4e3864e219dd8b2cca34570dbe60257bcc547/lib/hexpm_web/controllers/controller_helpers.ex
+# Originally licensed under Apache 2.0 available at https://www.apache.org/licenses/LICENSE-2.0
+
 defmodule BeaconWeb.Cache do
   import Plug.Conn
 
