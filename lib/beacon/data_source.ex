@@ -48,7 +48,7 @@ defmodule Beacon.DataSource do
       stacktrace = __STACKTRACE__
 
       error_message = """
-      Exception caught during execution of page_title/2 for site #{inspect(site)}:
+      Exception caught during execution of page_title/2 for site #{inspect(site)}
 
       #{Exception.format(:error, error)}.
       """

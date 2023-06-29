@@ -40,7 +40,7 @@ defmodule Beacon.DataSourceTest do
   describe "page_title/5" do
     test "re-raises if an exception is raised from mod.page_title/2" do
       error_message = """
-      Exception caught during execution of page_title/2 for site :data_source_test:
+      Exception caught during execution of page_title/2 for site :data_source_test
 
       ** (ArgumentError) invalid params received.
       """
