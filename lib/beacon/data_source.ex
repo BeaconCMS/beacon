@@ -44,7 +44,16 @@ defmodule Beacon.DataSource do
       page_title
     end
   rescue
-    _error -> page_title
+    error ->
+      stacktrace = __STACKTRACE__
+
+      error_message = """
+      Exception caught during execution of page_title/2 for site #{inspect(site)}
+
+      #{Exception.format(:error, error)}.
+      """
+
+      reraise Beacon.DataSourceError, [message: error_message], stacktrace
   end
 
   def meta_tags(site, path, params, live_data, meta_tags) do
