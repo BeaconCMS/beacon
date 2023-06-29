@@ -50,7 +50,6 @@ defmodule Beacon.Content.Layout do
   def changeset(%__MODULE__{} = layout, attrs) do
     layout
     |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
-    # TODO: make stylesheet optional
-    |> validate_required([:site, :title, :body, :stylesheet_urls])
+    |> validate_required([:site, :title, :body])
   end
 end
