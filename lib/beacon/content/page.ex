@@ -83,11 +83,12 @@ defmodule Beacon.Content.Page do
     |> cast_embed(:helpers, with: &helpers_changeset/2)
     |> validate_required([
       :site,
+      :path,
       :template,
       :layout_id,
       :format
     ])
-    |> unique_constraint([:path, :site])
+    |> unique_constraint([:path, :site], name: "beacon_pages_path_site_index", error_key: :path)
     |> foreign_key_constraint(:layout_id)
     |> validate_string([:path])
     |> remove_empty_meta_attributes(:meta_tags)
@@ -107,10 +108,17 @@ defmodule Beacon.Content.Page do
       :title,
       :description,
       :meta_tags,
-      :path,
       :format
     ])
-    |> validate_required([:template, :layout_id])
+    |> cast(attrs, [:path], empty_values: [])
+    |> unique_constraint([:path, :site], name: "beacon_pages_path_site_index", error_key: :path)
+    |> validate_required([
+      :site,
+      :path,
+      :template,
+      :layout_id,
+      :format
+    ])
     |> validate_raw_schema(attrs["raw_schema"])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)

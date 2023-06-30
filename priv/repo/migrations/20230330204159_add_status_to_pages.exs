@@ -13,7 +13,7 @@ defmodule Beacon.Repo.Migrations.AddStatusToPages do
 
   def down do
     alter table(:beacon_pages) do
-      remove :status
+      remove_if_exists :status, :string
     end
   end
 end

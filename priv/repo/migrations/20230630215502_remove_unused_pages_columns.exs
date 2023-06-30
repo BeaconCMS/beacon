@@ -3,9 +3,10 @@ defmodule Beacon.Repo.Migrations.RemoveUnusedPagesColumns do
 
   def up do
     alter table("beacon_pages") do
-      remove :pending_layout_id
-      remove :pending_template
-      remove :version
+      remove_if_exists :pending_layout_id, :binary_id
+      remove_if_exists :pending_template, :text
+      remove_if_exists :version, :integer
+      remove_if_exists :status, :string
     end
   end
 

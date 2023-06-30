@@ -49,8 +49,7 @@ defmodule BeaconWeb.Admin.PageLive.FormComponent do
       {:error, %Ecto.Changeset{} = changeset} ->
         socket =
           socket
-          |> assign(:changeset, changeset)
-          |> assign(:errors, changeset.errors)
+          |> assign_form(changeset)
 
         {:noreply, socket}
     end
