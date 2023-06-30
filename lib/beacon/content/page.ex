@@ -88,7 +88,7 @@ defmodule Beacon.Content.Page do
       :layout_id,
       :format
     ])
-    |> unique_constraint([:path, :site], name: "beacon_pages_path_site_index", error_key: :path)
+    |> unique_constraint([:path, :site])
     |> foreign_key_constraint(:layout_id)
     |> validate_string([:path])
     |> remove_empty_meta_attributes(:meta_tags)
@@ -111,7 +111,7 @@ defmodule Beacon.Content.Page do
       :format
     ])
     |> cast(attrs, [:path], empty_values: [])
-    |> unique_constraint([:path, :site], name: "beacon_pages_path_site_index", error_key: :path)
+    |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
       :path,
