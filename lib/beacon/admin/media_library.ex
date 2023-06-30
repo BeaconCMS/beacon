@@ -112,12 +112,10 @@ defmodule Beacon.Admin.MediaLibrary do
 
   """
   def soft_delete_asset(%Asset{} = asset) do
-    now = DateTime.truncate(DateTime.utc_now(), :second)
-
     update =
       Repo.update_all(
         from(asset in Asset, where: asset.id == ^asset.id),
-        set: [deleted_at: now]
+        set: [deleted_at: DateTime.utc_now()]
       )
 
     case update do

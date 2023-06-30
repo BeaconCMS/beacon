@@ -11,12 +11,10 @@ defmodule Beacon.Content.Snippets.Helper do
   > in inconsistent behavior and crashes.
   """
 
-  use Ecto.Schema
+  use Beacon.Schema
 
   @type t :: %__MODULE__{}
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_snippet_helpers" do
     field :site, Beacon.Types.Site
     field :name, :string

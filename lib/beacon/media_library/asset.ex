@@ -1,11 +1,9 @@
 defmodule Beacon.MediaLibrary.Asset do
   @moduledoc false
 
-  use Ecto.Schema
+  use Beacon.Schema
   @derive BeaconWeb.Cache.Stale
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_assets" do
     field :file_body, :binary
     field :file_name, :string
