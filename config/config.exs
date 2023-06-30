@@ -6,6 +6,8 @@ config :beacon, :generators, binary_id: true
 
 config :phoenix, :json_library, Jason
 
+config :beacon, Beacon.Repo, migration_timestamps: [type: :utc_datetime_usec]
+
 if Mix.env() == :dev do
   esbuild = fn args ->
     [

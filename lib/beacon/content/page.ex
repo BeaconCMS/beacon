@@ -21,16 +21,13 @@ defmodule Beacon.Content.Page do
   > in inconsistent behavior and crashes.
   """
 
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Beacon.Schema
   alias Beacon.Content
 
   @version 1
 
   @type t :: %__MODULE__{}
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_pages" do
     field :site, Beacon.Types.Site
     field :path, :string

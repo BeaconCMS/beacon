@@ -11,13 +11,10 @@ defmodule Beacon.Content.Component do
   > in inconsistent behavior and crashes.
   """
 
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Beacon.Schema
 
   @type t :: %__MODULE__{}
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_components" do
     field :body, :string
     field :name, :string

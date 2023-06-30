@@ -11,8 +11,7 @@ defmodule Beacon.Content.Layout do
   > in inconsistent behavior and crashes.
   """
 
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Beacon.Schema
 
   @version 1
 
@@ -23,12 +22,10 @@ defmodule Beacon.Content.Layout do
           body: String.t(),
           meta_tags: [map()],
           stylesheet_urls: [String.t()],
-          inserted_at: NaiveDateTime.t(),
-          updated_at: NaiveDateTime.t()
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
         }
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_layouts" do
     field :site, Beacon.Types.Site
     field :title, :string

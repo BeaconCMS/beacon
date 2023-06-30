@@ -1,9 +1,8 @@
 defmodule Beacon.Admin.MediaLibrary.Asset do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Beacon.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
+  @type t :: %__MODULE__{}
+
   schema "beacon_assets" do
     field :file_body, :binary
     field :file_name, :string

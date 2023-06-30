@@ -12,13 +12,10 @@ defmodule Beacon.Content.Stylesheet do
 
   """
 
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Beacon.Schema
 
   @type t :: %__MODULE__{}
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_stylesheets" do
     field :content, :string
     field :name, :string

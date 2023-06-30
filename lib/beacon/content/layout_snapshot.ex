@@ -12,9 +12,7 @@ defmodule Beacon.Content.LayoutSnapshot do
 
   """
 
-  use Ecto.Schema
-
-  @timestamps_opts type: :utc_datetime_usec
+  use Beacon.Schema
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
@@ -24,11 +22,9 @@ defmodule Beacon.Content.LayoutSnapshot do
           layout: Beacon.Content.Layout.t(),
           event_id: Ecto.UUID.t(),
           event: Beacon.Content.LayoutEvent.t() | nil,
-          inserted_at: NaiveDateTime.t()
+          inserted_at: DateTime.t()
         }
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_key_type :binary_id
   schema "beacon_layout_snapshots" do
     field :site, Beacon.Types.Site
     field :schema_version, :integer
