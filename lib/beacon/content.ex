@@ -524,9 +524,9 @@ defmodule Beacon.Content do
   def list_published_pages(site) do
     events =
       from event in PageEvent,
-        where: event.site == ^site and event.event == :published,
+        where: event.site == ^site,
         distinct: [asc: event.page_id],
-        order_by: [desc: event.inserted_at]
+        order_by: fragment("inserted_at desc, case when event = 'published' then 0 else 1 end")
 
     Repo.all(
       from snapshot in PageSnapshot,

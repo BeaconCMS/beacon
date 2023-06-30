@@ -77,7 +77,7 @@ defmodule Beacon.ContentTest do
       assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
     end
 
-    test "list published pages" do
+    test "list_published_pages" do
       # publish page_a twice
       page_a = page_fixture(path: "/a", title: "page_a v1")
       {:ok, page_a} = Content.publish_page(page_a)
@@ -93,6 +93,20 @@ defmodule Beacon.ContentTest do
       _page_c = page_fixture(path: "/c", title: "page_c v1")
 
       assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site)
+    end
+
+    test "list_published_pages with same inserted_at missing usec" do
+      page = page_fixture(path: "/d", title: "page v1")
+      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+
+      assert Content.list_published_pages(:my_site) == []
+
+      {:ok, _page} = Content.publish_page(page)
+      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+
+      assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
     end
 
     test "get_page_status" do
