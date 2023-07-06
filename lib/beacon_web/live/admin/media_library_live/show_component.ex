@@ -1,7 +1,7 @@
 defmodule BeaconWeb.Admin.MediaLibraryLive.ShowComponent do
   use BeaconWeb, :live_component
 
-  alias Beacon.Admin.MediaLibrary
+  alias Beacon.MediaLibrary
 
   @impl true
   def render(assigns) do

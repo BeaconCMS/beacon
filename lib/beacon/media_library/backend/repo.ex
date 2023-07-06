@@ -1,8 +1,8 @@
-defmodule Beacon.Admin.MediaLibrary.Backend.Repo do
+defmodule Beacon.MediaLibrary.Backend.Repo do
   import Ecto.Changeset
 
-  alias Beacon.Admin.MediaLibrary.Asset
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
+  alias Beacon.MediaLibrary.Asset
+  alias Beacon.MediaLibrary.UploadMetadata
 
   @backend_key "repo"
 

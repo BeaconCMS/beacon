@@ -1,7 +1,7 @@
-defmodule Beacon.Admin.MediaLibrary.UploadMetadataTest do
+defmodule Beacon.MediaLibrary.UploadMetadataTest do
   use Beacon.DataCase, async: true
 
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
+  alias Beacon.MediaLibrary.UploadMetadata
 
   describe "key_for" do
     test "downcases" do

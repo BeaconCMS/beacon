@@ -1,9 +1,9 @@
-defmodule Beacon.Admin.MediaLibrary.UploadMetadata do
+defmodule Beacon.MediaLibrary.UploadMetadata do
   @moduledoc """
   Metadata passed to page rendering lifecycle.
   """
 
-  alias Beacon.Admin.MediaLibrary.Asset
+  alias Beacon.MediaLibrary.Asset
 
   defstruct [:site, :config, :allowed_media_types, :path, :name, :media_type, :size, :output, :resource]
 

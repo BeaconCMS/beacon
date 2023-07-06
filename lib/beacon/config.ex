@@ -67,11 +67,10 @@ defmodule Beacon.Config do
           {:validations,
            list(
              validation_fun ::
-               (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
-               | {validation_fun :: (Ecto.Changeset.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()),
-                  validation_config :: term()}
+               (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
+               | {validation_fun :: (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()), validation_config :: term()}
            )},
-          {:processor, {prossesor_fun :: (Beacon.Admin.MediaLibrary.UploadMetadata.t() -> Beacon.Admin.MediaLibrary.UploadMetadata.t()), any()}}
+          {:processor, {prossesor_fun :: (Beacon.MediaLibrary.UploadMetadata.t() -> Beacon.MediaLibrary.UploadMetadata.t()), any()}}
         ]
 
   @typedoc """
@@ -108,8 +107,7 @@ defmodule Beacon.Config do
           | {:after_publish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:upload_asset,
              [
-               {identifier :: atom(),
-                fun :: (Ecto.Schema.t(), Beacon.Admin.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
+               {identifier :: atom(), fun :: (Ecto.Schema.t(), Beacon.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
              ]}
 
   @typedoc """
@@ -290,7 +288,7 @@ defmodule Beacon.Config do
         ],
         media_types: ["image/jpeg", "image/gif", "image/png", "image/webp"],
         assets:[
-          {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.Repo], validations: [&SomeModule.some_function/2]]},
+          {"image/*", [backends: [Beacon.MediaLibrary.Backend.Repo], validations: [&SomeModule.some_function/2]]},
         ]
         lifecycle: [
           load_template: [
@@ -438,7 +436,7 @@ defmodule Beacon.Config do
         if get_media_type_config(assigned_assets, media_type) do
           acc
         else
-          acc ++ [{media_type, [{:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}]}]
+          acc ++ [{media_type, [{:backends, [Beacon.MediaLibrary.Backend.Repo]}]}]
         end
       end
     )
@@ -460,8 +458,8 @@ defmodule Beacon.Config do
   defp ensure_processor(config, media_type) do
     processor =
       case Plug.Conn.Utils.media_type(media_type) do
-        {:ok, "image", _, _} -> &Beacon.Admin.MediaLibrary.Processors.Image.process!/1
-        _ -> &Beacon.Admin.MediaLibrary.Processors.Default.process!/1
+        {:ok, "image", _, _} -> &Beacon.MediaLibrary.Processors.Image.process!/1
+        _ -> &Beacon.MediaLibrary.Processors.Default.process!/1
       end
 
     Keyword.put_new(config, :processor, processor)

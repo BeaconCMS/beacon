@@ -1,9 +1,9 @@
 defmodule Beacon.Lifecycle.Asset do
   @moduledoc false
 
-  alias Beacon.Admin.MediaLibrary
-  alias Beacon.Admin.MediaLibrary.Processors
   alias Beacon.Lifecycle
+  alias Beacon.MediaLibrary
+  alias Beacon.MediaLibrary.Processors
 
   @behaviour Beacon.Lifecycle
 

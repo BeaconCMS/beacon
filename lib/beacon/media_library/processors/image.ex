@@ -1,6 +1,6 @@
-defmodule Beacon.Admin.MediaLibrary.Processors.Image do
-  alias Beacon.Admin.MediaLibrary
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
+defmodule Beacon.MediaLibrary.Processors.Image do
+  alias Beacon.MediaLibrary
+  alias Beacon.MediaLibrary.UploadMetadata
 
   @thumbnail_size 200
 

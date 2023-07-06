@@ -1,6 +1,6 @@
-defmodule Beacon.Admin.MediaLibrary.Backend.S3 do
-  alias Beacon.Admin.MediaLibrary.Asset
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
+defmodule Beacon.MediaLibrary.Backend.S3 do
+  alias Beacon.MediaLibrary.Asset
+  alias Beacon.MediaLibrary.UploadMetadata
 
   @backend_key "s3"
   @s3_buffer_size 5 * 1024 * 1024

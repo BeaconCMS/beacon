@@ -216,7 +216,7 @@ seeds = fn ->
         <%= my_component("sample_component", val: 1) %>
 
         <div>
-          <BeaconWeb.Components.image name="dockyard_1.png" width="200px" />
+          <BeaconWeb.Components.image name="dockyard_1.webp" width="200px" />
         </div>
 
         <div>
@@ -318,24 +318,24 @@ seeds = fn ->
   Beacon.Content.publish_page(page_markdown)
 
   metadata =
-    Beacon.Admin.MediaLibrary.UploadMetadata.new(
+    Beacon.MediaLibrary.UploadMetadata.new(
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
       name: "dockyard_1.png",
       size: 100_000
     )
 
-  Beacon.Admin.MediaLibrary.upload(metadata)
+  Beacon.MediaLibrary.upload(metadata)
 
   metadata =
-    Beacon.Admin.MediaLibrary.UploadMetadata.new(
+    Beacon.MediaLibrary.UploadMetadata.new(
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
       name: "dockyard_2.png",
       size: 100_000
     )
 
-  Beacon.Admin.MediaLibrary.upload(metadata)
+  Beacon.MediaLibrary.upload(metadata)
 
   other_layout =
     Beacon.Content.create_layout!(%{
@@ -378,7 +378,7 @@ dev_site =
 
     _ ->
       assets = [
-        {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3.Unsigned, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
+        {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3.Unsigned, Beacon.MediaLibrary.Backend.Repo], validations: []]}
       ]
 
       Keyword.put(dev_site, :assets, assets)

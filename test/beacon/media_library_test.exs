@@ -1,8 +1,8 @@
-defmodule Beacon.Admin.MediaLibraryTest do
+defmodule Beacon.MediaLibraryTest do
   use Beacon.DataCase, async: false
 
-  alias Beacon.Admin.MediaLibrary
-  alias Beacon.Admin.MediaLibrary.Asset
+  alias Beacon.MediaLibrary
+  alias Beacon.MediaLibrary.Asset
 
   import Beacon.Fixtures
   import Beacon.Support.BypassHelpers
@@ -19,7 +19,7 @@ defmodule Beacon.Admin.MediaLibraryTest do
   test "soft delete" do
     asset = media_library_asset_fixture(file_name: "my_file.png")
 
-    assert {:ok, %Asset{deleted_at: deleted_at, updated_at: updated_at}} = MediaLibrary.soft_delete_asset(asset)
+    assert {:ok, %Asset{deleted_at: deleted_at, updated_at: updated_at}} = MediaLibrary.soft_delete(asset)
     assert deleted_at
     assert updated_at == asset.updated_at
   end

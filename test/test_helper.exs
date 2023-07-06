@@ -23,7 +23,7 @@ Supervisor.start_link(
        [
          site: :s3_site,
          assets: [
-           {"image/*", [backends: [Beacon.Admin.MediaLibrary.Backend.S3, Beacon.Admin.MediaLibrary.Backend.Repo], validations: []]}
+           {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3, Beacon.MediaLibrary.Backend.Repo], validations: []]}
          ],
          lifecycle: [upload_asset: []]
        ],

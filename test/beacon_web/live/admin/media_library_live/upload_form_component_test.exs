@@ -1,7 +1,6 @@
-defmodule BeaconWeb.Live.Admin.MediaLibraryLive.UploadFormComponentTest do
+defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponentTest do
   use BeaconWeb.ConnCase, async: true
-  alias Beacon.Admin.MediaLibrary
-
+  alias Beacon.MediaLibrary
   import Beacon.Support.BypassHelpers
 
   describe "uploads" do
