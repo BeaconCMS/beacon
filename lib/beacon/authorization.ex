@@ -5,11 +5,22 @@ defmodule Beacon.Authorization do
 
   @behaviour Beacon.Authorization.Behaviour
 
-  def get_agent(data) do
-    user_authorization_source_mod = get_authorization_source()
+  def get_agent(site, data) when is_atom(site) do
+    authorization_source = get_authorization_source(site)
+    do_get_agent(authorization_source, data)
+  end
 
-    if user_authorization_source_mod && is_atom(user_authorization_source_mod) do
-      user_authorization_source_mod.get_agent(data)
+  @deprecated "Use Beacon.Authorization.get_agent/2 instead"
+  def get_agent(data) do
+    user_authorization_source = get_authorization_source()
+    do_get_agent(user_authorization_source, data)
+  end
+
+  defp do_get_agent(nil = _authorization_source, _data), do: nil
+
+  defp do_get_agent(authorization_source, data) do
+    if Beacon.Loader.exported?(authorization_source, :get_agent, 1) do
+      authorization_source.get_agent(data)
     else
       nil
     end
@@ -21,18 +32,27 @@ defmodule Beacon.Authorization do
       reraise error, __STACKTRACE__
   end
 
-  def authorized?(agent, operation, context) do
-    user_authorization_source_mod = get_authorization_source()
+  def authorized?(site, agent, operation, context) do
+    authorization_source = get_authorization_source(site)
+    do_authorized?(authorization_source, agent, operation, context)
+  end
 
-    if user_authorization_source_mod && is_atom(user_authorization_source_mod) do
-      user_authorization_source_mod.authorized?(agent, operation, context)
+  @deprecated "Use Beacon.Authorization.authorized?/4 instead"
+  def authorized?(agent, operation, context) do
+    authorization_source = get_authorization_source()
+    do_authorized?(authorization_source, agent, operation, context)
+  end
+
+  defp do_authorized?(authorization_source, agent, operation, context) do
+    if Beacon.Loader.exported?(authorization_source, :authorized?, 3) do
+      authorization_source.authorized?(agent, operation, context)
     else
       raise """
       authorization source is misconfigured.
 
       Expected a module implementing Beacon.Authorization.Behaviour callbacks.
 
-      Got: #{inspect(user_authorization_source_mod)}
+      Got: #{inspect(authorization_source)}
       """
     end
   rescue
@@ -41,6 +61,10 @@ defmodule Beacon.Authorization do
 
     error ->
       reraise error, __STACKTRACE__
+  end
+
+  defp get_authorization_source(site) do
+    Beacon.Registry.config!(site).authorization_source
   end
 
   defp get_authorization_source do

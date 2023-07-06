@@ -337,4 +337,10 @@ defmodule Beacon.Loader do
     Beacon.Router.del_page(page.site, page.path)
     :ok
   end
+
+  @doc false
+  # https://github.com/phoenixframework/phoenix_live_view/blob/8fedc6927fd937fe381553715e723754b3596a97/lib/phoenix_live_view/channel.ex#L435-L437
+  def exported?(m, f, a) do
+    function_exported?(m, f, a) || (Code.ensure_loaded?(m) && function_exported?(m, f, a))
+  end
 end
