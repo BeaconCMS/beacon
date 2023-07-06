@@ -50,6 +50,19 @@ defmodule Beacon.ContentTest do
   end
 
   describe "pages" do
+    # TODO: require paths starting with / which will make this test fail
+    test "create page with empty path" do
+      layout = layout_fixture()
+
+      assert {:ok, %Page{path: ""}} =
+               Content.create_page(%{
+                 site: "my_site",
+                 path: "",
+                 template: "<p>page</p>",
+                 layout_id: layout.id
+               })
+    end
+
     test "create page should create a created event" do
       layout = layout_fixture()
 

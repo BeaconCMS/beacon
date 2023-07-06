@@ -81,16 +81,15 @@ defmodule Beacon.Content.Page do
     |> cast(attrs, [:path], empty_values: [])
     |> cast_embed(:events, with: &events_changeset/2)
     |> cast_embed(:helpers, with: &helpers_changeset/2)
+    |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
-      :path,
       :template,
       :layout_id,
       :format
     ])
-    |> unique_constraint([:path, :site])
-    |> foreign_key_constraint(:layout_id)
     |> validate_string([:path])
+    |> foreign_key_constraint(:layout_id)
     |> remove_empty_meta_attributes(:meta_tags)
   end
 
@@ -114,11 +113,11 @@ defmodule Beacon.Content.Page do
     |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
-      :path,
       :template,
       :layout_id,
       :format
     ])
+    |> validate_string([:path])
     |> validate_raw_schema(attrs["raw_schema"])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
