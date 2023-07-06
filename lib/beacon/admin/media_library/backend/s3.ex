@@ -8,26 +8,8 @@ defmodule Beacon.Admin.MediaLibrary.Backend.S3 do
   def send_to_cdn(metadata, config \\ []) do
     key = key_for(metadata)
 
-    chunker = fn bin, acc ->
-      acc_size = IO.iodata_length(acc)
-
-      if IO.iodata_length(bin) + acc_size >= @s3_buffer_size do
-        size = @s3_buffer_size - acc_size
-        <<chunk::binary-size(size), rest::binary>> = bin
-        {:cont, IO.iodata_to_binary([acc, chunk]), [rest]}
-      else
-        {:cont, [acc, bin]}
-      end
-    end
-
-    final = fn
-      [] -> {:cont, []}
-      acc -> {:cont, IO.iodata_to_binary(acc), []}
-    end
-
     StringIO.open(metadata.output, [], fn pid ->
-      IO.binstream(pid, :line)
-      |> Stream.chunk_while([], chunker, final)
+      IO.binstream(pid, @s3_buffer_size)
       |> ExAws.S3.upload(bucket(), key)
       |> ExAws.request!(config)
     end)
