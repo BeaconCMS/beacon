@@ -8,7 +8,8 @@ defmodule BeaconWeb.MediaLibraryController do
 
   def show(conn, %{"asset" => asset_name}) do
     with %{params: %{"site" => site}} <- fetch_query_params(conn),
-         %Asset{file_body: file_body, media_type: media_type} = asset <- MediaLibrary.get_asset(site, asset_name) do
+         site = String.to_existing_atom(site),
+         %Asset{file_body: file_body, media_type: media_type} = asset <- MediaLibrary.get_asset_by(site, file_name: asset_name) do
       BeaconWeb.Cache.when_stale(conn, asset, fn conn ->
         conn
         |> put_resp_header("content-type", "#{media_type}; charset=utf-8")

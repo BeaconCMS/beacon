@@ -1,5 +1,5 @@
-defmodule Beacon.Admin.MediaLibrary.Processors.Default do
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
+defmodule Beacon.MediaLibrary.Processors.Default do
+  alias Beacon.MediaLibrary.UploadMetadata
 
   def process!(%UploadMetadata{} = metadata) do
     ext = Path.extname(metadata.name)

@@ -55,25 +55,25 @@ defmodule Beacon.ConfigTest do
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
                 ]},
                {"image/gif",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
                 ]},
                {"image/png",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
                 ]},
                {"image/webp",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
                 ]}
              ] = Config.new([]).assets
     end
@@ -87,7 +87,7 @@ defmodule Beacon.ConfigTest do
       assert [
                {:processor, _},
                {:validations, []},
-               {:backends, [Beacon.Admin.MediaLibrary.Backend.Repo]}
+               {:backends, [Beacon.MediaLibrary.Backend.Repo]}
              ] = Config.config_for_media_type(config, media_type)
     end
   end

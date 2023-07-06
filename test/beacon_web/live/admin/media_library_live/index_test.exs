@@ -1,7 +1,7 @@
-defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
+defmodule BeaconWeb.Admin.MediaLibraryLive.IndexTest do
   use BeaconWeb.ConnCase, async: true
   import Beacon.Fixtures
-  alias Beacon.Admin.MediaLibrary
+  alias Beacon.MediaLibrary
 
   test "index", %{conn: conn} do
     media_library_asset_fixture(file_name: "test_index.webp")
@@ -23,7 +23,7 @@ defmodule BeaconWeb.Live.Admin.MediaLibraryLive.IndexTest do
 
     refute html =~ "test_delete.webp"
 
-    deleted_asset = MediaLibrary.get_asset!(asset.id)
+    deleted_asset = Beacon.Repo.get!(MediaLibrary.Asset, asset.id)
     assert deleted_asset.deleted_at
   end
 

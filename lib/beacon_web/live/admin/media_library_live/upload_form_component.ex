@@ -1,9 +1,9 @@
 defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   use BeaconWeb, :live_component
 
-  alias Beacon.Admin.MediaLibrary
-  alias Beacon.Admin.MediaLibrary.UploadMetadata
   alias Beacon.Authorization
+  alias Beacon.MediaLibrary
+  alias Beacon.MediaLibrary.UploadMetadata
 
   @impl true
   def render(assigns) do

@@ -1,9 +1,9 @@
 defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   use BeaconWeb, :live_view
 
-  alias Beacon.Admin.MediaLibrary
-  alias Beacon.Admin.MediaLibrary.Asset
   alias Beacon.Authorization
+  alias Beacon.MediaLibrary
+  alias Beacon.MediaLibrary.Asset
 
   on_mount {BeaconWeb.Admin.Hooks.Authorized, {:media_library, :index}}
 
@@ -55,7 +55,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   end
 
   defp apply_action(socket, :show, %{"id" => id}) do
-    asset = MediaLibrary.get_asset!(id)
+    asset = MediaLibrary.get_asset_by(id: id)
 
     socket
     |> assign(:page_title, "Upload")
@@ -65,8 +65,8 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   @impl true
   def handle_event("delete", %{"id" => id}, %{assigns: assigns} = socket) do
     if Authorization.authorized?(assigns.agent, :delete, Map.put(assigns.authn_context, :resource_id, id)) do
-      asset = MediaLibrary.get_asset!(id)
-      {:ok, _} = MediaLibrary.soft_delete_asset(asset)
+      asset = MediaLibrary.get_asset_by(id: id)
+      {:ok, _} = MediaLibrary.soft_delete(asset)
 
       path = beacon_admin_path(socket, "/media_library", search: socket.assigns.search)
       socket = push_patch(socket, to: path)
