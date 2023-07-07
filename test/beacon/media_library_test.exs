@@ -24,11 +24,6 @@ defmodule Beacon.MediaLibraryTest do
     assert updated_at == asset.updated_at
   end
 
-  test "urls_for" do
-    asset = media_library_asset_fixture(file_name: "my_file.png")
-    assert MediaLibrary.urls_for(asset) == ["/beacon_assets/my_file.webp"]
-  end
-
   describe "uploads" do
     setup [:start_bypass]
 

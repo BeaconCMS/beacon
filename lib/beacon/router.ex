@@ -269,8 +269,7 @@ defmodule Beacon.Router do
   """
   @spec beacon_asset_path(Beacon.Types.Site.t(), Path.t()) :: String.t()
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    router = Beacon.Config.fetch!(site).router
-    scoped_prefix = router.__beacon_scoped_prefix_for_site__(site)
+    scoped_prefix = Beacon.Config.fetch!(site).router.__beacon_scoped_prefix_for_site__(site)
     sanitize_path("#{scoped_prefix}/beacon_assets/#{file_name}")
   end
 
