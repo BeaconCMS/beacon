@@ -199,7 +199,7 @@ Make sure you're not adding the macros `beacon_site` and `beacon_admin` into the
       children = [
         # ommited others for brevity
         MyAppWeb.Endpoint,
-        {Beacon, sites: [[site: :my_site, data_source: MyApp.BeaconDataSource]]}
+        {Beacon, sites: [[site: :my_site, router: MyAppWeb.Router, data_source: MyApp.BeaconDataSource]]}
       ]
 
       opts = [strategy: :one_for_one, name: MyApp.Supervisor]

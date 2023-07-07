@@ -10,6 +10,11 @@ defmodule Beacon.Config do
   alias Beacon.Registry
 
   @typedoc """
+  Host application router
+  """
+  @type router :: module()
+
+  @typedoc """
   A module that implements `Beacon.DataSource.Behaviour`, used to provide `@assigns` to pages.
   """
   @type data_source :: module() | nil
@@ -122,6 +127,7 @@ defmodule Beacon.Config do
 
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
+          router: router(),
           data_source: data_source(),
           authorization_source: authorization_source(),
           css_compiler: css_compiler(),
@@ -164,6 +170,7 @@ defmodule Beacon.Config do
   @default_media_types ["image/jpeg", "image/gif", "image/png", "image/webp"]
 
   defstruct site: nil,
+            router: nil,
             data_source: nil,
             authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.TailwindCompiler,
@@ -189,6 +196,7 @@ defmodule Beacon.Config do
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
+          | {:router, router()}
           | {:data_source, data_source()}
           | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
@@ -208,6 +216,8 @@ defmodule Beacon.Config do
   ## Options
 
     * `:site` - `t:Beacon.Types.Site.t/0` (required)
+
+    * `:router` - `t:router/0` (required)
 
     * `:data_source` - `t:data_source/0` (optional)
 
@@ -247,6 +257,7 @@ defmodule Beacon.Config do
 
       iex> Beacon.Config.new(
         site: :my_site,
+        router: MyApp.Router,
         data_source: MyApp.SiteDataSource,
         authorization_source: MyApp.SiteAuthnPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
@@ -275,6 +286,7 @@ defmodule Beacon.Config do
       )
       %Beacon.Config{
         site: :my_site,
+        router: MyApp.Router,
         data_source: MyApp.SiteDataSource,
         authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.TailwindCompiler,
@@ -333,6 +345,9 @@ defmodule Beacon.Config do
   @spec new([option]) :: t()
   def new(opts) do
     # TODO: validate opts
+
+    opts[:site] || raise "missing required option :site"
+    opts[:router] || raise "missing required option :router"
 
     template_formats =
       Keyword.merge(

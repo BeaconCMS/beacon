@@ -27,10 +27,13 @@ defmodule Beacon.Router do
     sites = Module.get_attribute(env.module, :beacon_sites)
 
     prefixes =
-      for {site, prefix} <- sites do
+      for {site, scoped_prefix} <- sites do
         quote do
           @doc false
-          def __beacon_site_prefix__(unquote(site)), do: unquote(prefix)
+          def __beacon_scoped_prefix_for_site__(unquote(site)), do: unquote(scoped_prefix)
+
+          @doc false
+          def __beacon_site_for_scoped_prefix__(unquote(scoped_prefix)), do: unquote(site)
         end
       end
 
@@ -77,9 +80,9 @@ defmodule Beacon.Router do
     * `:site` (required) `t:Beacon.Config.site/0` - register your site with a unique name,
       note that has to be the same name used for configuration, see `Beacon.Config` for more info.
   """
-  defmacro beacon_site(path, opts) do
+  defmacro beacon_site(prefix, opts) do
     quote bind_quoted: binding(), location: :keep do
-      scope path, alias: false, as: false do
+      scope prefix, alias: false, as: false do
         {session_name, session_opts} = Beacon.Router.__options__(opts)
 
         import Phoenix.Router, only: [get: 3, get: 4]
@@ -88,12 +91,12 @@ defmodule Beacon.Router do
         live_session session_name, session_opts do
           get "/beacon_assets/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
           get "/beacon_assets/js:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/beacon_assets/:asset", BeaconWeb.MediaLibraryController, :show
+          get "/beacon_assets/:file_name", BeaconWeb.MediaLibraryController, :show
           live "/*path", BeaconWeb.PageLive, :path
         end
       end
 
-      @beacon_sites {opts[:site], Phoenix.Router.scoped_path(__MODULE__, path)}
+      @beacon_sites {opts[:site], Phoenix.Router.scoped_path(__MODULE__, prefix)}
     end
   end
 
@@ -249,24 +252,25 @@ defmodule Beacon.Router do
       end
 
       iex> beacon_asset_path(beacon_attrs, "logo.jpg")
-      "/beacon_assets/log.jpg?site=my_site"
+      "/beacon_assets/logo.jpg
 
 
       scope "/parent" do
         scope "/nested" do
-          beacon_site "/my_site", site: :my_site
+          beacon_site "/sales", site: :stats
         end
       end
 
       iex> beacon_asset_path(beacon_attrs, "logo.jpg")
-      "/parent/nested/my_site/beacon_assets/logo.jpg?site=my_site"
+      "/parent/nested/sales/beacon_assets/logo.jpg
 
   Note that `@beacon_attrs` assign is injected and available in pages automatically.
   """
-  @spec beacon_asset_path(Beacon.BeaconAttrs.t(), Path.t()) :: String.t()
-  def beacon_asset_path(%Beacon.BeaconAttrs{} = attrs, file_name) do
-    %{site: site, prefix: prefix} = attrs
-    sanitize_path("/#{prefix}/beacon_assets/#{file_name}?site=#{site}")
+  @spec beacon_asset_path(Beacon.Types.Site.t(), Path.t()) :: String.t()
+  def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
+    router = Beacon.Config.fetch!(site).router
+    scoped_prefix = router.__beacon_scoped_prefix_for_site__(site)
+    sanitize_path("#{scoped_prefix}/beacon_assets/#{file_name}")
   end
 
   @doc """

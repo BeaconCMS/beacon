@@ -6,18 +6,30 @@ defmodule BeaconWeb.MediaLibraryController do
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Asset
 
-  def show(conn, %{"asset" => asset_name}) do
-    with %{params: %{"site" => site}} <- fetch_query_params(conn),
-         site = String.to_existing_atom(site),
-         %Asset{file_body: file_body, media_type: media_type} = asset <- MediaLibrary.get_asset_by(site, file_name: asset_name) do
-      BeaconWeb.Cache.when_stale(conn, asset, fn conn ->
-        conn
-        |> put_resp_header("content-type", "#{media_type}; charset=utf-8")
-        |> BeaconWeb.Cache.asset_cache(:public)
-        |> send_resp(200, file_body)
-      end)
-    else
-      _ -> raise BeaconWeb.NotFoundError, "asset #{inspect(asset_name)} not found"
+  def show(%Plug.Conn{private: %{phoenix_router: router}} = conn, %{"file_name" => file_name}) do
+    site =
+      case String.split(conn.request_path, "/beacon_assets") do
+        ["" | _] -> router.__beacon_site_for_scoped_prefix__("/")
+        [scoped_prefix | _] -> router.__beacon_site_for_scoped_prefix__(scoped_prefix)
+      end
+
+    site || raise BeaconWeb.NotFoundError, "failed to serve asset #{file_name}"
+
+    case MediaLibrary.get_asset_by(site, file_name: file_name) do
+      %Asset{} = asset ->
+        BeaconWeb.Cache.when_stale(conn, asset, fn conn ->
+          conn
+          |> put_resp_header("content-type", "#{asset.media_type}; charset=utf-8")
+          |> BeaconWeb.Cache.asset_cache(:public)
+          |> send_resp(200, asset.file_body)
+        end)
+
+      _ ->
+        raise BeaconWeb.NotFoundError, "asset #{inspect(file_name)} not found"
     end
+  end
+
+  def show(_conn, _params) do
+    raise BeaconWeb.NotFoundError, "failed to serve asset"
   end
 end
