@@ -82,6 +82,7 @@ defmodule Beacon.Router do
   """
   defmacro beacon_site(prefix, opts) do
     quote bind_quoted: binding(), location: :keep do
+      # TODO: raise on duplicated sites defined on the same prefix
       scope prefix, alias: false, as: false do
         {session_name, session_opts} = Beacon.Router.__options__(opts)
 
