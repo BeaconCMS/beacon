@@ -18,10 +18,10 @@ defmodule BeaconWeb.Components do
   attr :rest, :global
 
   def image(assigns) do
-    assigns = Map.put(assigns, :beacon_attrs, Process.get(:__beacon_attrs__))
+    assigns = Map.put(assigns, :beacon_site, Process.get(:__beacon_site__))
 
     ~H"""
-    <img src={beacon_asset_path(@beacon_attrs, @name)} class={@class} {@rest} />
+    <img src={beacon_asset_path(@beacon_site, @name)} class={@class} {@rest} />
     """
   end
 end

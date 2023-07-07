@@ -78,14 +78,12 @@ defmodule BeaconWeb.PageLive do
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
     {{_site, _path}, {page_id, layout_id, _format, _template, page_module, component_module}} = lookup_route!(site, path)
 
-    beacon_attrs = %Beacon.BeaconAttrs{site: site, prefix: socket.router.__beacon_site_prefix__(site)}
-    Process.put(:__beacon_attrs__, beacon_attrs)
+    Process.put(:__beacon_site__, site)
 
     socket =
       socket
       |> assign(:beacon, %{site: site})
       |> assign(:beacon_live_data, live_data)
-      |> assign(:beacon_attrs, beacon_attrs)
       |> assign(:__live_path__, path)
       |> assign(:__page_updated_at, DateTime.utc_now())
       |> assign(:__dynamic_layout_id__, layout_id)

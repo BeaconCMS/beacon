@@ -12,7 +12,7 @@ defmodule BeaconWeb.Layouts do
   # TODO: style nonce
   def asset_path(conn, asset) when asset in [:css, :js] do
     %{assigns: %{__site__: site}} = conn
-    prefix = router(conn).__beacon_site_prefix__(site)
+    prefix = router(conn).__beacon_scoped_prefix_for_site__(site)
 
     hash =
       cond do

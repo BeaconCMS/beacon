@@ -28,7 +28,7 @@ defmodule Beacon do
       # config.exs or runtime.exs
       config :my_app, Beacon,
         sites: [
-          [site: :my_site, data_source: MyApp.BeaconDataSource]
+          [site: :my_site, router: MyAppWeb.Router, data_source: MyApp.BeaconDataSource]
         ],
         authorization_source: MyApp.AuthorizationPolicy
 

@@ -99,22 +99,6 @@ defmodule Beacon.RouterTest do
     end
   end
 
-  describe "beacon_asset_path" do
-    import Beacon.Router, only: [beacon_asset_path: 2]
-
-    test "plain route" do
-      attrs = %Beacon.BeaconAttrs{site: :site, prefix: ""}
-
-      assert beacon_asset_path(attrs, "file.jpg") == "/beacon_assets/file.jpg?site=site"
-    end
-
-    test "nested route" do
-      attrs = %Beacon.BeaconAttrs{site: :site, prefix: "parent/nested"}
-
-      assert beacon_asset_path(attrs, "file.jpg") == "/parent/nested/beacon_assets/file.jpg?site=site"
-    end
-  end
-
   describe "lookup" do
     # we don't care about values in this test but we create the same structure
     # see Router.add_page/4

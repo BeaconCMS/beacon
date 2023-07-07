@@ -364,6 +364,7 @@ end
 
 dev_site = [
   site: :dev,
+  router: SamplePhoenixWeb.Router,
   data_source: BeaconDataSource,
   extra_page_fields: [BeaconTagsField]
 ]
@@ -390,7 +391,7 @@ Task.start(fn ->
     {Beacon,
      sites: [
        dev_site,
-       [site: :other]
+       [site: :other, router: SamplePhoenixWeb.Router]
      ]},
     SamplePhoenix.Endpoint
   ]

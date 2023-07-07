@@ -15,6 +15,7 @@ Supervisor.start_link(
      sites: [
        [
          site: :my_site,
+         router: Beacon.BeaconTest.Router,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.js.eex"]),
          data_source: Beacon.BeaconTest.BeaconDataSource,
          live_socket_path: "/custom_live",
@@ -22,6 +23,7 @@ Supervisor.start_link(
        ],
        [
          site: :s3_site,
+         router: Beacon.BeaconTest.Router,
          assets: [
            {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3, Beacon.MediaLibrary.Backend.Repo], validations: []]}
          ],
@@ -29,10 +31,12 @@ Supervisor.start_link(
        ],
        [
          site: :data_source_test,
+         router: Beacon.BeaconTest.Router,
          data_source: Beacon.BeaconTest.TestDataSource
        ],
        [
          site: :default_meta_tags_test,
+         router: Beacon.BeaconTest.Router,
          data_source: Beacon.BeaconTest.BeaconDataSource,
          default_meta_tags: [
            %{"name" => "foo_meta_tag"},
@@ -42,6 +46,7 @@ Supervisor.start_link(
        ],
        [
          site: :lifecycle_test,
+         router: Beacon.BeaconTest.Router,
          lifecycle: [
            load_template: [
              {:markdown,
@@ -87,6 +92,7 @@ Supervisor.start_link(
        ],
        [
          site: :lifecycle_test_fail,
+         router: Beacon.BeaconTest.Router,
          lifecycle: [
            render_template: [
              {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}
