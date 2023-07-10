@@ -31,9 +31,6 @@ defmodule Beacon.Router do
         quote do
           @doc false
           def __beacon_scoped_prefix_for_site__(unquote(site)), do: unquote(scoped_prefix)
-
-          @doc false
-          def __beacon_site_for_scoped_prefix__(unquote(scoped_prefix)), do: unquote(site)
         end
       end
 
@@ -81,14 +78,16 @@ defmodule Beacon.Router do
       note that has to be the same name used for configuration, see `Beacon.Config` for more info.
   """
   defmacro beacon_site(prefix, opts) do
+    # TODO: raise on duplicated sites defined on the same prefix
     quote bind_quoted: binding(), location: :keep do
-      # TODO: raise on duplicated sites defined on the same prefix
+      import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
+      import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
+
+      {site, session_name, session_opts} = Beacon.Router.__options__(opts)
+
+      get "/beacon_assets/#{site}/:file_name", BeaconWeb.MediaLibraryController, :show
+
       scope prefix, alias: false, as: false do
-        {session_name, session_opts} = Beacon.Router.__options__(opts)
-
-        import Phoenix.Router, only: [get: 3, get: 4]
-        import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
-
         live_session session_name, session_opts do
           get "/beacon_assets/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
           get "/beacon_assets/js:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
@@ -110,6 +109,9 @@ defmodule Beacon.Router do
         site == :beacon_admin ->
           raise ArgumentError, ":beacon_admin is a reserved site name."
 
+        site == :beacon_assets ->
+          raise ArgumentError, ":beacon_assets is a reserved site name."
+
         site && is_atom(opts[:site]) ->
           opts[:site]
 
@@ -118,6 +120,7 @@ defmodule Beacon.Router do
       end
 
     {
+      site,
       # TODO: sanitize and format session name
       String.to_atom("beacon_#{site}"),
       [
@@ -244,33 +247,31 @@ defmodule Beacon.Router do
 
   # TODO: secure cross site assets
   @doc """
-  Router helper to resolve asset path for sites.
+  Router helper to generate the asset path.
 
-  ## Examples
+  ## Example
 
-      scope "/" do
-        beacon_site "/", site: :my_site
-      end
+      iex> beacon_asset_path(:my_site_com, "logo.jpg")
+      "/beacon_assets/my_site_com/logo.jpg"
 
-      iex> beacon_asset_path(beacon_attrs, "logo.jpg")
-      "/beacon_assets/logo.jpg
-
-
-      scope "/parent" do
-        scope "/nested" do
-          beacon_site "/sales", site: :stats
-        end
-      end
-
-      iex> beacon_asset_path(beacon_attrs, "logo.jpg")
-      "/parent/nested/sales/beacon_assets/logo.jpg
-
-  Note that `@beacon_attrs` assign is injected and available in pages automatically.
   """
   @spec beacon_asset_path(Beacon.Types.Site.t(), Path.t()) :: String.t()
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    scoped_prefix = Beacon.Config.fetch!(site).router.__beacon_scoped_prefix_for_site__(site)
-    sanitize_path("#{scoped_prefix}/beacon_assets/#{file_name}")
+    sanitize_path("/beacon_assets/#{site}/#{file_name}")
+  end
+
+  @doc """
+  Router helper to generate the asset url.
+
+  ## Example
+
+      iex> beacon_asset_url(:my_site_com, "logo.jpg")
+      "https://site.com/beacon_assets/my_site_com/logo.jpg"
+
+  """
+  @spec beacon_asset_url(Beacon.Types.Site.t(), Path.t()) :: String.t()
+  def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
+    Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
   end
 
   @doc """

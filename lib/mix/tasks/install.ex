@@ -172,12 +172,12 @@ defmodule Mix.Tasks.Beacon.Install do
     else
       site = bindings[:site]
       data_source = bindings |> get_in([:beacon_data_source, :module_name]) |> inspect()
-      router = bindings |> get_in([:router, :module_name]) |> inspect()
+      endpoint = bindings |> get_in([:endpoint, :module_name]) |> inspect()
 
       new_application_file_content =
         application_file_content
         |> String.replace(".Endpoint\n", ".Endpoint,\n")
-        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, router: #{router}, data_source: #{data_source}]]}\n]")
+        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, endpoint: #{endpoint}, data_source: #{data_source}]]}\n]")
 
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(application_file)])
       File.write!(application_file, new_application_file_content)
@@ -266,10 +266,12 @@ defmodule Mix.Tasks.Beacon.Install do
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
         module_name: Module.concat(base_module, "BeaconDataSource")
       },
+      endpoint: %{
+        module_name: Module.concat(web_module, "Endpoint")
+      },
       router: %{
         path: Path.join([root, web_path, "router.ex"]),
-        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"]),
-        module_name: Module.concat(web_module, "Router")
+        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
       },
       application: %{
         path: Path.join([root, lib_path, "application.ex"])

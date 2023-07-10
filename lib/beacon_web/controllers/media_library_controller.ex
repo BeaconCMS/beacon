@@ -6,11 +6,11 @@ defmodule BeaconWeb.MediaLibraryController do
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Asset
 
-  def show(%Plug.Conn{private: %{phoenix_router: router}} = conn, %{"file_name" => file_name}) do
+  def show(conn, %{"file_name" => file_name}) do
     site =
-      case String.split(conn.request_path, "/beacon_assets") do
-        ["" | _] -> router.__beacon_site_for_scoped_prefix__("/")
-        [scoped_prefix | _] -> router.__beacon_site_for_scoped_prefix__(scoped_prefix)
+      case conn.path_info do
+        ["beacon_assets", site | _] -> String.to_existing_atom(site)
+        _ -> nil
       end
 
     site || raise BeaconWeb.NotFoundError, "failed to serve asset #{file_name}"
