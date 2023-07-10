@@ -4,11 +4,12 @@ defmodule Beacon.RouterTest do
   alias Beacon.Router
 
   test "live_session name" do
-    assert {:beacon_test, _} = Router.__options__(site: :test)
+    assert {:test, :beacon_test, _} = Router.__options__(site: :test)
   end
 
   test "session opts" do
     assert {
+             :test,
              _,
              [{:session, %{"beacon_site" => :test}}, {:root_layout, {BeaconWeb.Layouts, :runtime}}]
            } = Router.__options__(site: :test)

@@ -26,7 +26,7 @@ defmodule Beacon.MediaLibrary.Backend.Repo do
   def url_for(asset, _), do: url_for(asset)
 
   def url_for(asset) do
-    Beacon.Router.beacon_asset_path(asset.site, asset.file_name)
+    Beacon.Router.beacon_asset_url(asset.site, asset.file_name)
   end
 
   def backend_key, do: @backend_key

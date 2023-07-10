@@ -33,10 +33,12 @@ defmodule Mix.Tasks.Beacon.InstallTest do
         path: Path.join([support_path, "seeds.exs"]),
         template_path: Path.join([templates_path, "install", "seeds.exs"])
       },
+      endpoint: %{
+        module_name: Module.concat(DummyAppWeb, "Endpoint")
+      },
       router: %{
         path: Path.join([support_path, "dummy_router"]),
-        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"]),
-        module_name: Module.concat(DummyAppWeb, "Router")
+        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
       },
       application: %{
         path: Path.join([support_path, "dummy_application"])
@@ -297,7 +299,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
         Install.maybe_inject_beacon_supervisor(bindings)
 
         assert File.read!(application_file_path) =~
-                 ~r/{Beacon, sites: \[\[site: :my_test_blog, router: DummyAppWeb.Router, data_source: DummyApp.BeaconDataSource\]\]}\n.*\]/
+                 ~r/{Beacon, sites: \[\[site: :my_test_blog, endpoint: DummyAppWeb.Endpoint, data_source: DummyApp.BeaconDataSource\]\]}\n.*\]/
       end)
     end
   end
