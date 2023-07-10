@@ -23,7 +23,7 @@ defmodule Beacon.Content do
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
 
-  ## Examples
+  ## Example
 
       iex> change_layout(layout, %{title: "New Home"})
       %Ecto.Changeset{data: %Layout{}}
@@ -38,10 +38,11 @@ defmodule Beacon.Content do
   @doc """
   Creates a layout.
 
-  ## Examples
+  ## Example
 
       iex> create_layout(%{title: "Home"})
       {:ok, %Layout{}}
+
   """
   @doc type: :layouts
   @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
@@ -75,7 +76,7 @@ defmodule Beacon.Content do
   @doc """
   Updates a layout.
 
-  ## Examples
+  ## Example
 
       iex> update_layout(layout, %{title: "New Home"})
       {:ok, %Layout{}}
@@ -106,6 +107,14 @@ defmodule Beacon.Content do
     end)
   end
 
+  @doc type: :layouts
+  @spec publish_layout(Ecto.UUID.t()) :: {:ok, Layout.t()} | any()
+  def publish_layout(id) when is_binary(id) do
+    id
+    |> get_layout()
+    |> publish_layout()
+  end
+
   @doc false
   def create_layout_event(layout, event) do
     attrs = %{"site" => layout.site, "layout_id" => layout.id, "event" => event}
@@ -129,7 +138,7 @@ defmodule Beacon.Content do
   @doc """
   Gets a single layout.
 
-  ## Examples
+  ## Example
 
       iex> get_layout("fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
       %Layout{}
@@ -149,7 +158,7 @@ defmodule Beacon.Content do
   @doc """
   Gets a single layout by `clauses`.
 
-  ## Examples
+  ## Example
 
       iex> get_layout_by(site, title: "blog")
       %Layout{}
@@ -163,13 +172,38 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Returns the list of layouts for `site`.
+  List layouts.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search layouts by title.
+
   """
   @doc type: :layouts
-  @spec list_layouts(Site.t()) :: [Layout.t()]
-  def list_layouts(site) do
-    Repo.all(from l in Layout, where: l.site == ^site)
+  @spec list_layouts(Site.t(), keyword()) :: [Layout.t()]
+  def list_layouts(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_layouts_base()
+    |> query_list_layouts_limit(per_page)
+    |> query_list_layouts_search(search)
+    |> Repo.all()
   end
+
+  defp query_list_layouts_base(site) do
+    from l in Layout,
+      where: l.site == ^site,
+      order_by: [asc: l.title]
+  end
+
+  defp query_list_layouts_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_layouts_limit(query, :infinity = _limit), do: query
+  defp query_list_layouts_limit(query, _per_page), do: from(q in query, limit: 20)
+  defp query_list_layouts_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.title, ^"%#{search}%"))
+  defp query_list_layouts_search(query, _search), do: query
 
   @doc """
   Returns all published layouts for `site`.
@@ -229,7 +263,7 @@ defmodule Beacon.Content do
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking page changes.
 
-  ## Examples
+  ## Example
 
       iex> change_page(page, %{title: "My Campaign"})
       %Ecto.Changeset{data: %Page{}}
@@ -248,22 +282,23 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec validate_page(Site.t(), Page.t(), map()) :: Ecto.Changeset.t()
-  def validate_page(site, %Page{} = page, params) when is_atom(site) and is_map(params) do
+  @spec validate_page(Page.t(), map()) :: Ecto.Changeset.t()
+  def validate_page(%Page{} = page, params) when is_map(params) do
     {extra_params, page_params} = Map.pop(params, "extra")
 
     page
     |> change_page(page_params)
     |> Map.put(:action, :validate)
-    |> PageField.apply_changesets(site, extra_params)
+    |> PageField.apply_changesets(page.site, extra_params)
   end
 
   @doc """
   Creates a new page that's not published.
 
-  ## Examples
+  ## Example
 
       iex> create_page(%{"title" => "My New Page"})
+      {:ok, %Page{}}
 
   `attrs` may contain the following string keys:
 
@@ -315,7 +350,7 @@ defmodule Beacon.Content do
   @doc """
   Updates a page.
 
-  ## Examples
+  ## Example
 
       iex> update_page(page, %{title: "New Home"})
       {:ok, %Page{}}
@@ -356,6 +391,14 @@ defmodule Beacon.Content do
         {:ok, page}
       end
     end)
+  end
+
+  @doc type: :pages
+  @spec publish_page(Ecto.UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def publish_page(id) when is_binary(id) do
+    id
+    |> get_page()
+    |> publish_page()
   end
 
   @doc """
@@ -431,7 +474,7 @@ defmodule Beacon.Content do
   @doc """
   Gets a single page.
 
-  ## Examples
+  ## Example
 
       iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
@@ -451,7 +494,7 @@ defmodule Beacon.Content do
   @doc """
   Gets a single page by `clauses`.
 
-  ## Examples
+  ## Example
 
       iex> get_page_by(site, path: "contact")
       %Page{}
@@ -492,22 +535,12 @@ defmodule Beacon.Content do
       order_by: [asc: p.order, asc: fragment("length(?)", p.path)]
   end
 
-  defp query_list_pages_limit(query, limit) when is_integer(limit) do
-    from q in query, limit: ^limit
-  end
+  defp query_list_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_pages_limit(query, :infinity = _limit), do: query
+  defp query_list_pages_limit(query, _per_page), do: from(q in query, limit: 20)
 
-  defp query_list_pages_limit(query, :infinity = _limit) do
-    query
-  end
-
-  defp query_list_pages_limit(query, _per_page) do
-    from q in query, limit: 20
-  end
-
-  defp query_list_pages_search(query, search) when is_binary(search) do
-    from q in query,
-      where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%")
-  end
+  defp query_list_pages_search(query, search) when is_binary(search),
+    do: from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))
 
   defp query_list_pages_search(query, _search), do: query
 
@@ -570,7 +603,7 @@ defmodule Beacon.Content do
 
   The status is the event fetched from `Beacon.Content.PageEvent`
 
-  ## Examples
+  ## Example
 
       iex> get_page_status(page)
       :published
@@ -607,13 +640,10 @@ defmodule Beacon.Content do
   @doc """
   Creates a stylesheet.
 
-  ## Examples
+  ## Example
 
       iex> create_stylesheet(%{field: value})
       {:ok, %Stylesheet{}}
-
-      iex> create_stylesheet(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
 
   """
   @doc type: :stylesheets
@@ -635,7 +665,7 @@ defmodule Beacon.Content do
   @doc """
   Updates a stylesheet.
 
-  ## Examples
+  ## Example
 
       iex> update_stylesheet(stylesheet, %{name: new_value})
       {:ok, %Stylesheet{}}
@@ -652,7 +682,7 @@ defmodule Beacon.Content do
   @doc """
   Gets a single stylesheet by `clauses`.
 
-  ## Examples
+  ## Example
 
       iex> get_stylesheet_by(site, name: "main")
       %Stylesheet{}
@@ -668,7 +698,7 @@ defmodule Beacon.Content do
   @doc """
   Returns the list of stylesheets for `site`.
 
-  ## Examples
+  ## Example
 
       iex> list_stylesheets()
       [%Stylesheet{}, ...]
@@ -688,7 +718,7 @@ defmodule Beacon.Content do
   @doc """
   Creates a component.
 
-  ## Examples
+  ## Example
 
       iex> create_component(attrs)
       {:ok, %Component{}}
@@ -727,7 +757,7 @@ defmodule Beacon.Content do
   @doc """
   Gets a single component by `clauses`.
 
-  ## Examples
+  ## Example
 
       iex> get_component_by(site, name: "header")
       %Component{}
@@ -743,7 +773,7 @@ defmodule Beacon.Content do
   @doc """
   Returns the list of components for a `site`.
 
-  ## Examples
+  ## Example
 
       iex> list_components()
       [%Component{}, ...]
@@ -781,7 +811,7 @@ defmodule Beacon.Content do
   @doc """
   Returns the list of snippet helpers for a `site`.
 
-  ## Examples
+  ## Example
 
       iex> list_snippet_helpers()
       [%SnippetHelper{}, ...]
