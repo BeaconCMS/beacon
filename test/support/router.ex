@@ -14,6 +14,5 @@ defmodule Beacon.BeaconTest.Router do
     pipe_through :browser
     beacon_admin "/admin"
     beacon_site "/", site: :my_site
-    # beacon_site "/two", site: :two
   end
 end
