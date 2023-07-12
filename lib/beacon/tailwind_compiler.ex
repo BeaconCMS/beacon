@@ -132,7 +132,7 @@ defmodule Beacon.TailwindCompiler do
   defp generate_template_files!(tmp_dir, site) do
     [
       Task.async(fn ->
-        Enum.map(Content.list_layouts(site), fn layout ->
+        Enum.map(Content.list_layouts(site, per_page: :infinity), fn layout ->
           layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
           File.write!(layout_path, layout.body)
           layout_path
