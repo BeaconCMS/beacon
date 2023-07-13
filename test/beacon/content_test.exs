@@ -122,18 +122,18 @@ defmodule Beacon.ContentTest do
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
     end
 
-    test "get_page_status" do
+    test "get_page_latest_event" do
       page = page_fixture()
-      assert Content.get_page_status(page) == :created
+      assert %PageEvent{event: :created} = Content.get_page_latest_event(page)
 
       Content.publish_page(page)
-      assert Content.get_page_status(page) == :published
+      assert %PageEvent{event: :published} = Content.get_page_latest_event(page)
 
       Content.unpublish_page(page)
-      assert Content.get_page_status(page) == :unpublished
+      assert %PageEvent{event: :unpublished} = Content.get_page_latest_event(page)
 
       Content.publish_page(page)
-      assert Content.get_page_status(page) == :published
+      assert %PageEvent{event: :published} = Content.get_page_latest_event(page)
     end
 
     test "lifecycle after_create_page" do

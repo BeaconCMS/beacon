@@ -508,6 +508,28 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns the latest page event.
+
+  Useful to find the status of a page.
+
+  ## Example
+
+      iex> get_page_latest_event(page_id)
+      %PageEvent{event: :published}
+
+  """
+  @doc type: :page
+  @spec get_page_latest_event(Page.t()) :: PageEvent.t() | nil
+  def get_page_latest_event(%Page{} = page) do
+    Repo.one(
+      from event in PageEvent,
+        where: event.site == ^page.site and event.page_id == ^page.id,
+        limit: 1,
+        order_by: [desc: event.inserted_at]
+    )
+  end
+
+  @doc """
   List pages.
 
   ## Options
@@ -597,30 +619,6 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(_snapshot), do: nil
-
-  @doc """
-  Returns the latest status for a page.
-
-  The status is the event fetched from `Beacon.Content.PageEvent`
-
-  ## Example
-
-      iex> get_page_status(page)
-      :published
-
-  """
-  @doc type: :pages
-  @spec get_page_status(Page.t()) :: Beacon.Content.PageEvent.event()
-  def get_page_status(page) do
-    Repo.one(
-      from event in PageEvent,
-        select: event.event,
-        where: event.site == ^page.site,
-        where: event.page_id == ^page.id,
-        distinct: [asc: event.page_id],
-        order_by: [desc: event.inserted_at]
-    )
-  end
 
   @doc """
 
