@@ -152,7 +152,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   end
 
   defp assign_page_status(socket, page) do
-    status = Content.get_page_latest_event(page)
+    status = Content.get_latest_page_event(page.site, page.id)
     assign(socket, :page_status, status.event)
   end
 

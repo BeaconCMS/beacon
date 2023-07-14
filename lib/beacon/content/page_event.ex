@@ -33,6 +33,7 @@ defmodule Beacon.Content.PageEvent do
     field :site, Beacon.Types.Site
     field :event, Ecto.Enum, values: [:created, :published, :unpublished]
     belongs_to :page, Page
+    has_one :snapshot, Beacon.Content.PageSnapshot, foreign_key: :event_id
     timestamps updated_at: false
   end
 end

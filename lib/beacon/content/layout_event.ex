@@ -28,6 +28,7 @@ defmodule Beacon.Content.LayoutEvent do
     field :site, Beacon.Types.Site
     field :event, Ecto.Enum, values: [:created, :published]
     belongs_to :layout, Layout
+    has_one :snapshot, Beacon.Content.LayoutSnapshot, foreign_key: :event_id
     timestamps updated_at: false
   end
 end
