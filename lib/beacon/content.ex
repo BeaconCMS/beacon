@@ -172,6 +172,53 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns all layout events with associated snapshot if available.
+
+  ## Example
+
+      iex> list_layout_events(:my_site, layout_id)
+      [
+        %LayoutEvent{event: :created, snapshot: nil},
+        %LayoutEvent{event: :published, snapshot: %LayoutSnapshot{}}
+      ]
+
+  """
+  @doc type: :layouts
+  @spec list_layout_events(Site.t(), Ecto.UUID.t()) :: [LayoutEvent.t()]
+  def list_layout_events(site, layout_id) when is_atom(site) and is_binary(layout_id) do
+    Repo.all(
+      from event in LayoutEvent,
+        left_join: snapshot in LayoutSnapshot,
+        on: snapshot.event_id == event.id,
+        where: event.site == ^site and event.layout_id == ^layout_id,
+        preload: [snapshot: snapshot],
+        order_by: [desc: event.inserted_at]
+    )
+  end
+
+  @doc """
+  Returns the latest layout event.
+
+  Useful to find the status of a layout.
+
+  ## Example
+
+      iex> get_latest_layout_event(:my_site, layout_id)
+      %LayoutEvent{event: :published}
+
+  """
+  @doc type: :layouts
+  @spec get_latest_layout_event(Site.t(), Ecto.UUID.t()) :: LayoutEvent.t() | nil
+  def get_latest_layout_event(site, layout_id) when is_atom(site) and is_binary(layout_id) do
+    Repo.one(
+      from event in LayoutEvent,
+        where: event.site == ^site and event.layout_id == ^layout_id,
+        limit: 1,
+        order_by: [desc: event.inserted_at]
+    )
+  end
+
+  @doc """
   List layouts.
 
   ## Options
@@ -500,11 +547,36 @@ defmodule Beacon.Content do
       %Page{}
 
   """
-  @doc type: :page
+  @doc type: :pages
   @spec get_page_by(Site.t(), keyword(), keyword()) :: Page.t() | nil
   def get_page_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
     Repo.get_by(Page, clauses, opts)
+  end
+
+  @doc """
+  Returns all page events with associated snapshot if available.
+
+  ## Example
+
+      iex> list_page_events(:my_site, page_id)
+      [
+        %PageEvent{event: :created, snapshot: nil},
+        %PageEvent{event: :published, snapshot: %PageSnapshot{}}
+      ]
+
+  """
+  @doc type: :page
+  @spec list_page_events(Site.t(), Ecto.UUID.t()) :: [PageEvent.t()]
+  def list_page_events(site, page_id) when is_atom(site) and is_binary(page_id) do
+    Repo.all(
+      from event in PageEvent,
+        left_join: snapshot in PageSnapshot,
+        on: snapshot.event_id == event.id,
+        where: event.site == ^site and event.page_id == ^page_id,
+        preload: [snapshot: snapshot],
+        order_by: [desc: event.inserted_at]
+    )
   end
 
   @doc """
@@ -514,16 +586,16 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_page_latest_event(page_id)
+      iex> get_latest_page_event(:my_site, page_id)
       %PageEvent{event: :published}
 
   """
-  @doc type: :page
-  @spec get_page_latest_event(Page.t()) :: PageEvent.t() | nil
-  def get_page_latest_event(%Page{} = page) do
+  @doc type: :pages
+  @spec get_latest_page_event(Site.t(), Ecto.UUID.t()) :: PageEvent.t() | nil
+  def get_latest_page_event(site, page_id) when is_atom(site) and is_binary(page_id) do
     Repo.one(
       from event in PageEvent,
-        where: event.site == ^page.site and event.page_id == ^page.id,
+        where: event.site == ^site and event.page_id == ^page_id,
         limit: 1,
         order_by: [desc: event.inserted_at]
     )

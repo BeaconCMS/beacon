@@ -47,6 +47,24 @@ defmodule Beacon.ContentTest do
 
       assert [%Layout{title: "layout_a v2"}] = Content.list_published_layouts(:my_site)
     end
+
+    test "list_layout_events" do
+      layout = layout_fixture()
+      Content.publish_layout(layout)
+
+      assert [
+               %LayoutEvent{event: :published, snapshot: %LayoutSnapshot{}},
+               %LayoutEvent{event: :created, snapshot: nil}
+             ] = Content.list_layout_events(layout.site, layout.id)
+    end
+
+    test "get_latest_layout_event" do
+      layout = layout_fixture()
+      assert %LayoutEvent{event: :created} = Content.get_latest_layout_event(layout.site, layout.id)
+
+      Content.publish_layout(layout)
+      assert %LayoutEvent{event: :published} = Content.get_latest_layout_event(layout.site, layout.id)
+    end
   end
 
   describe "pages" do
@@ -122,18 +140,30 @@ defmodule Beacon.ContentTest do
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
     end
 
-    test "get_page_latest_event" do
+    test "list_page_events" do
       page = page_fixture()
-      assert %PageEvent{event: :created} = Content.get_page_latest_event(page)
+      Content.publish_page(page)
+      Content.unpublish_page(page)
+
+      assert [
+               %PageEvent{event: :unpublished, snapshot: nil},
+               %PageEvent{event: :published, snapshot: %PageSnapshot{}},
+               %PageEvent{event: :created, snapshot: nil}
+             ] = Content.list_page_events(page.site, page.id)
+    end
+
+    test "get_latest_page_event" do
+      page = page_fixture()
+      assert %PageEvent{event: :created} = Content.get_latest_page_event(page.site, page.id)
 
       Content.publish_page(page)
-      assert %PageEvent{event: :published} = Content.get_page_latest_event(page)
+      assert %PageEvent{event: :published} = Content.get_latest_page_event(page.site, page.id)
 
       Content.unpublish_page(page)
-      assert %PageEvent{event: :unpublished} = Content.get_page_latest_event(page)
+      assert %PageEvent{event: :unpublished} = Content.get_latest_page_event(page.site, page.id)
 
       Content.publish_page(page)
-      assert %PageEvent{event: :published} = Content.get_page_latest_event(page)
+      assert %PageEvent{event: :published} = Content.get_latest_page_event(page.site, page.id)
     end
 
     test "lifecycle after_create_page" do
