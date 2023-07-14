@@ -28,14 +28,23 @@ Main components:
 
 ## Local Development
 
-The file `dev.exs` is a self-contained Phoenix application running Beacon with sample data and code reloading enabled.
+The file `dev.exs` is a self-contained Phoenix application running Beacon with sample data and code reloading enabled. Follow these steps to get a site up and running:
 
-Install [cmark-gfm](https://github.com/github/cmark-gfm) and execute the following to get a local server running:
+1. Install [cmark-gfm](https://github.com/github/cmark-gfm)
+
+2. Install dependencies
 
 ```sh
 mix setup
-iex -S mix dev
 ```
 
-Visit any of the routes defined in `dev.exs` as http://localhost:4001/dev/home or http://localhost:4001/admin
+3. Execute the dev script:
+
+```sh
+iex --sname core -S mix dev
+```
+
+Not that running a named node isn't required unless you're running Beacon LiveAdmin too.
+
+Finally, visit any of the routes defined in `dev.exs` as http://localhost:4001/dev/home or http://localhost:4001/admin
 or request resources from the API as http://localhost:4001/api/pages
