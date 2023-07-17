@@ -2,6 +2,15 @@ defmodule BeaconWeb.API.ComponentJSON do
   alias Beacon.Content.ComponentCategory
   alias Beacon.Content.ComponentDefinition
   require Logger
+
+  @tag_for_name %{
+    "title" => "h1",
+    "paragraph" => "p",
+    "link" => "a",
+    "button" => "button",
+    "aside" => "aside",
+  }
+
   def index(%{component_categories: categories, component_definitions: definitions}) do
     %{
       menuCategories: [%{
@@ -11,17 +20,16 @@ defmodule BeaconWeb.API.ComponentJSON do
       componentDefinitions: for(definition <- definitions, do: definition_data(definition))
     }
   end
-  def show(%{definition: definition, classes: classes}) do
+  def show(%{definition: definition, attributes: attributes}) do
     component = %{
       id: "made-up-id",
       definitionId: definition.id,
-      classes: classes,
-      href: nil,
+      attributes: attributes,
       slot: nil,
       content: [],
       renderedHtml: ""
     }
-    Map.merge(component, render_component_definition(definition, component))
+    Map.merge(component, %{renderedHtml: render_component(definition.blueprint, component), content: [] })
   end
 
   # @doc """
@@ -54,92 +62,28 @@ defmodule BeaconWeb.API.ComponentJSON do
     }
   end
 
-  defp render_component_definition(definition, data) do
-    html = """
-    <div>
-      <h1>This is a test</h1>
-      <p class="text-blue-500">This is a paragraph</p>
-    </div>
+  defp render_component(blueprint, data) when is_binary(blueprint), do: blueprint
+  defp render_component(%{"name" => name, "attributes" => attributes, "content" => content}, data) do
+    tag = @tag_for_name[name]
+    render_component(%{ "tag" => tag, "attributes" => attributes, "content" => content}, data)
+  end
+  defp render_component(%{"tag" => tag, "attributes" => attributes, "content" => content}, data) do
     """
-    %{
-      renderedHtml: html,
-      content: []
-    }
+    <#{tag} #{render_attrs(attributes)}>
+      #{content |> Enum.map(fn entry -> render_component(entry, data) end) |> Enum.join}
+    </#{tag}>
+    """
+  end
+
+  defp render_attrs(attributes) do
+    attributes |> Enum.map(fn {key, val} -> render_attr(key, val) end) |> Enum.join(" ")
+  end
+
+  defp render_attr(key, val) when is_list(val) do
+    "#{key}=\"#{val |> Enum.join(" ")}\""
+  end
+
+  defp render_attr(key, val) do
+    "#{key}=\"#{val}\""
   end
 end
-
-
-
-# comp.content ||= [
-#   {
-#     id: `title-${comp.id}`,
-#     definitionId: ComponentDefinitionId.title,
-#     classes: ['text-blue-500', 'text-xl'],
-#     content: [`I am the component ${comp.definitionId}`],
-#     renderedHtml: null
-#   },
-#   {
-#     id: `paragraph-${comp.id}`,
-#     definitionId: ComponentDefinitionId.paragraph,
-#     classes: ['text-md'],
-#     slot: true,
-#     content: [
-#       {
-#         id: `link-1-${comp.id}`,
-#         definitionId: ComponentDefinitionId.link,
-#         classes: ['px-2', 'font-bold'],
-#         href: '/product',
-#         content: ['Product'],
-#         renderedHtml: null
-#       },
-#       {
-#         id: `link-2-${comp.id}`,
-#         definitionId: ComponentDefinitionId.link,
-#         classes: ['px-2', 'font-bold'],
-#         href: '/pricing',
-#         content: ['Pricing'],
-#         renderedHtml: null
-#       },
-#       {
-#         id: `link-3-${comp.id}`,
-#         definitionId: ComponentDefinitionId.link,
-#         classes: ['px-2', 'font-bold'],
-#         href: '/about-us',
-#         content: ['About us'],
-#         renderedHtml: null
-#       }
-#     ],
-#     renderedHtml: null
-#   },
-#   {
-#     id: `aside-${comp.id}`,
-#     definitionId: ComponentDefinitionId.aside,
-#     classes: ['bg-gray-200'],
-#     content: [
-#       'This is some sample html',
-#       {
-#         id: `button-1-${comp.id}`,
-#         definitionId: ComponentDefinitionId.button,
-#         classes: ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
-#         content: ['Sign in'],
-#         renderedHtml: null
-#       },
-#       ' and ',
-#       {
-#         id: `button-2-${comp.id}`,
-#         definitionId: ComponentDefinitionId.button,
-#         classes: ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
-#         content: ['Sign up'],
-#         renderedHtml: null
-#       },
-#       ' for you to play with'
-#     ],
-#     renderedHtml: null
-#   }
-# ];
-
-# let html = `<div data-id=${comp.id} data-root="true">${
-#   comp.content ? comp.content.map((contentEntry) => {
-#     return typeof contentEntry === 'string' ? contentEntry : renderers[contentEntry.definitionId](contentEntry)
-#   }).join('') : ''
-# }</div>`;

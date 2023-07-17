@@ -145,77 +145,77 @@ end
 defmodule ComponentDefinitionHelpers do
   def create_definition(tag, attributes, content) do
     %{
-      tag: tag,
-      attributes: attributes,
-      content: content
+      "tag" => tag,
+      "attributes" => attributes,
+      "content" => content
     }
   end
 
   def default_definition do
     %{
-      tag: "div",
-      attributes: %{},
-      content: [
+      "tag" => "div",
+      "attributes" => %{},
+      "content" => [
         %{
-          name: "title",
-          attributes: %{
-            class: ["text-blue-500", "text-xl"],
+          "name" => "title",
+          "attributes" => %{
+            "class" => ["text-blue-500", "text-xl"],
           },
-          content: ["I am the component header"],
+          "content" => ["I am the component header"],
         },
         %{
-          name: "paragraph",
-          attributes: %{
-            class: ["text-md"],
+          "name" => "paragraph",
+          "attributes" => %{
+            "class" => ["text-md"],
           },
-          content: [
+          "content" => [
             %{
-              name: "link",
-              attributes: %{
-                class: ["px-2", "font-bold"],
-                href: "/product",
+              "name" => "link",
+              "attributes" => %{
+                "class" => ["px-2", "font-bold"],
+                "href" => "/product",
               },
-              content: ["Product"],
+              "content" => ["Product"],
             },
             %{
-              name: "link",
-              attributes: %{
-                class: ["px-2", "font-bold"],
-                href: "/pricing",
+              "name" => "link",
+              "attributes" => %{
+                "class" => ["px-2", "font-bold"],
+                "href" => "/pricing",
               },
-              content: ["Pricing"],
+              "content" => ["Pricing"],
             },
             %{
-              name: "link",
-              attributes: %{
-                class: ["px-2", "font-bold"],
-                href: "/about-us",
+              "name" => "link",
+              "attributes" => %{
+                "class" => ["px-2", "font-bold"],
+                "href" => "/about-us",
               },
-              content: ["About us"],
+              "content" => ["About us"],
             }
           ],
         },
         %{
-          name: "aside",
-          attributes: %{
-            class: ["bg-gray-200"],
+          "name" => "aside",
+          "attributes" => %{
+            "class" => ["bg-gray-200"],
           },
-          content: [
+          "content" => [
             "This is some sample html",
             %{
-              name: "button",
-              attributes: %{
-                class: ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
+              "name" => "button",
+              "attributes" => %{
+                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
               },
-              content: ["Sign in"],
+              "content" => ["Sign in"],
             },
             " and ",
             %{
-              name: "button",
-              attributes: %{
-                class: ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
+              "name" => "button",
+              "attributes" => %{
+                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
               },
-              content: ["Sign up"],
+              "content" => ["Sign up"],
             },
             " for you to play with"
           ],

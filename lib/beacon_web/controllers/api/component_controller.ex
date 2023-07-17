@@ -16,8 +16,8 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def create(conn, %{ "definitionId" => component_definition_id, "classes" => classes}) do
+  def create(conn, %{ "definitionId" => component_definition_id, "attributes" => attributes}) do
     definition = ComponentDefinitions.get_component_definition!(component_definition_id)
-    render(conn, :show, definition: definition, classes: classes)
+    render(conn, :show, definition: definition, attributes: attributes)
   end
 end
