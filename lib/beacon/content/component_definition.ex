@@ -11,6 +11,7 @@ defmodule Beacon.Content.ComponentDefinition do
   schema "beacon_component_definitions" do
     field :name, :string
     field :thumbnail, :string
+    field :blueprint, :map
     belongs_to :component_category, ComponentCategory
 
     timestamps()
@@ -19,8 +20,8 @@ defmodule Beacon.Content.ComponentDefinition do
   @doc false
   def changeset(component_category \\ %ComponentDefinition{}, %{} = attrs) do
     component_category
-    |> cast(attrs, [:name, :thumbnail, :component_category_id])
-    |> validate_required([:name, :thumbnail])
+    |> cast(attrs, [:name, :thumbnail, :component_category_id, :blueprint])
+    |> validate_required([:name, :thumbnail, :blueprint])
     |> unique_constraint(:id, name: :component_definitions_pkey)
     |> unique_constraint([:name, :thumbnail])
   end

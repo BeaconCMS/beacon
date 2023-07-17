@@ -50,6 +50,7 @@ defmodule BeaconWeb.API.ComponentJSON do
       categoryId: definition.component_category_id,
       name: definition.name,
       thumbnail: definition.thumbnail,
+      blueprint: definition.blueprint
     }
   end
 
