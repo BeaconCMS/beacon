@@ -4,7 +4,7 @@ defmodule Beacon.ComponentDefinitions do
   """
 
   import Ecto.Query, warn: false
-  alias Beacon.ComponentDefinitions.ComponentDefinition
+  alias Beacon.Content.ComponentDefinition
 
   alias Beacon.Repo
 

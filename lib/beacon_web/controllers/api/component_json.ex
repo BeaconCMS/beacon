@@ -1,6 +1,6 @@
 defmodule BeaconWeb.API.ComponentJSON do
-  alias Beacon.ComponentCategories.ComponentCategory
-  alias Beacon.ComponentDefinitions.ComponentDefinition
+  alias Beacon.Content.ComponentCategory
+  alias Beacon.Content.ComponentDefinition
   require Logger
   def index(%{component_categories: categories, component_definitions: definitions}) do
     %{
@@ -11,16 +11,6 @@ defmodule BeaconWeb.API.ComponentJSON do
       componentDefinitions: for(definition <- definitions, do: definition_data(definition))
     }
   end
-
-#   let autoincrementId = 1;
-# export function _renderComponent(component: Component) {
-#   component.id ||= String(autoincrementId++);
-#   let renderedHtml = renderers[component.definitionId](component);
-#   return {
-#     ...component,
-#     renderedHtml
-#   }
-
   def show(%{definition: definition, classes: classes}) do
     component = %{
       id: "made-up-id",

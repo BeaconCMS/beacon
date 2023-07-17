@@ -1,8 +1,8 @@
-defmodule Beacon.ComponentDefinitions.ComponentDefinition do
+defmodule Beacon.Content.ComponentDefinition do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Beacon.ComponentDefinitions.ComponentDefinition
+  alias Beacon.Content.ComponentDefinition
 
   @type t :: %__MODULE__{}
 
@@ -11,7 +11,7 @@ defmodule Beacon.ComponentDefinitions.ComponentDefinition do
   schema "beacon_component_definitions" do
     field :name, :string
     field :thumbnail, :string
-    belongs_to :component_category, Beacon.ComponentCategories.ComponentCategory
+    belongs_to :component_category, ComponentCategory
 
     timestamps()
   end

@@ -1,8 +1,8 @@
-defmodule Beacon.ComponentCategories.ComponentCategory do
+defmodule Beacon.Content.ComponentCategory do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Beacon.ComponentCategories.ComponentCategory
+  alias Beacon.Content.ComponentCategory
 
   @type t :: %__MODULE__{}
 
