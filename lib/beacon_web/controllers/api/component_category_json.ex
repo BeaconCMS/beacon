@@ -1,5 +1,6 @@
 defmodule BeaconWeb.API.ComponentCategoryJSON do
   alias Beacon.ComponentCategories.ComponentCategory
+  alias Beacon.ComponentDefinitions.ComponentDefinition
 
   def index(%{component_categories: categories, component_definitions: definitions}) do
     %{
@@ -25,6 +26,18 @@ defmodule BeaconWeb.API.ComponentCategoryJSON do
     %{
       id: category.id,
       name: category.name,
+    }
+  end
+
+  # @doc """
+  # Renders a single component definition.
+  # """
+  defp definition_data(%ComponentDefinition{} = definition) do
+    %{
+      id: definition.id,
+      category_id: definition.component_category_id,
+      name: definition.name,
+      thumbnail: definition.thumbnail,
     }
   end
 end

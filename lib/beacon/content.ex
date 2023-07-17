@@ -20,6 +20,7 @@ defmodule Beacon.Content do
   alias Beacon.Types.Site
   alias Beacon.Components
   alias Beacon.ComponentCategories
+  alias Beacon.ComponentDefinitions
   alias Ecto.Changeset
 
   @doc """
