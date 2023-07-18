@@ -1,15 +1,7 @@
 defmodule BeaconWeb.API.ComponentJSON do
   alias Beacon.Content.ComponentCategory
   alias Beacon.Content.ComponentDefinition
-  require Logger
-
-  @tag_for_name %{
-    "title" => "h1",
-    "paragraph" => "p",
-    "link" => "a",
-    "button" => "button",
-    "aside" => "aside",
-  }
+  alias Ecto.UUID
 
   def index(%{component_categories: categories, component_definitions: definitions}) do
     %{
@@ -20,16 +12,15 @@ defmodule BeaconWeb.API.ComponentJSON do
       componentDefinitions: for(definition <- definitions, do: definition_data(definition))
     }
   end
-  def show(%{definition: definition, attributes: attributes}) do
-    component = %{
-      id: "made-up-id",
-      definitionId: definition.id,
+
+  def show(%{component: component}) do
+    %{ "tag" => tag, "content" => content, "attributes" => attributes } = component
+    %{
+      tag: tag,
+      content: content,
       attributes: attributes,
-      slot: nil,
-      content: [],
-      renderedHtml: ""
+      renderedHtml: render_node(component)
     }
-    Map.merge(component, %{renderedHtml: render_component(definition.blueprint, component), content: [] })
   end
 
   # @doc """
@@ -62,15 +53,11 @@ defmodule BeaconWeb.API.ComponentJSON do
     }
   end
 
-  defp render_component(blueprint, data) when is_binary(blueprint), do: blueprint
-  defp render_component(%{"name" => name, "attributes" => attributes, "content" => content}, data) do
-    tag = @tag_for_name[name]
-    render_component(%{ "tag" => tag, "attributes" => attributes, "content" => content}, data)
-  end
-  defp render_component(%{"tag" => tag, "attributes" => attributes, "content" => content}, data) do
+  defp render_node(node) when is_binary(node), do: node
+  defp render_node(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     """
     <#{tag}#{render_attrs(attributes)}>
-      #{content |> Enum.map(fn entry -> render_component(entry, data) end) |> Enum.join}
+      #{content |> Enum.map(&render_node(&1)) |> Enum.join}
     </#{tag}>
     """
   end
@@ -81,11 +68,7 @@ defmodule BeaconWeb.API.ComponentJSON do
     " " <> str
   end
 
-  defp render_attr(key, val) when is_list(val) do
-    "#{key}=\"#{val |> Enum.join(" ")}\""
-  end
-
-  defp render_attr(key, val) do
-    "#{key}=\"#{val}\""
-  end
+  defp render_attr(key, val) when is_list(val), do: "#{key}=\"#{val |> Enum.join(" ")}\""
+  defp render_attr("id", val), do: "data-id=\"#{val}\""
+  defp render_attr(key, val), do: "#{key}=\"#{val}\""
 end
