@@ -198,7 +198,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
     errors = form.source.errors
 
     message =
-      case Enum.find(errors, fn {k, v} -> k == :template end) do
+      case Enum.find(errors, fn {k, _v} -> k == :template end) do
         {:template, {message, _}} -> message
         _ -> nil
       end
