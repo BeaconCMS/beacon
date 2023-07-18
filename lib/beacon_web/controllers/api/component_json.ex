@@ -69,14 +69,16 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
   defp render_component(%{"tag" => tag, "attributes" => attributes, "content" => content}, data) do
     """
-    <#{tag} #{render_attrs(attributes)}>
+    <#{tag}#{render_attrs(attributes)}>
       #{content |> Enum.map(fn entry -> render_component(entry, data) end) |> Enum.join}
     </#{tag}>
     """
   end
 
+  defp render_attrs(attributes) when attributes == %{}, do: ""
   defp render_attrs(attributes) do
-    attributes |> Enum.map(fn {key, val} -> render_attr(key, val) end) |> Enum.join(" ")
+    str = attributes |> Enum.map(fn {key, val} -> render_attr(key, val) end) |> Enum.join(" ")
+    " " <> str
   end
 
   defp render_attr(key, val) when is_list(val) do
