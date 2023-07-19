@@ -22,7 +22,9 @@ defmodule BeaconWeb.API.PageJSON do
       path: page.path,
       site: page.site,
       template: page.template,
-      format: page.format
+      format: page.format,
+      components: page.components
+        |> Enum.map(&BeaconWeb.API.ComponentJSON.show(%{ component: &1 }))
     }
   end
 end

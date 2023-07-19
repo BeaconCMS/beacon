@@ -25,11 +25,20 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def create(conn, %{ "definitionId" => component_definition_id, "attributes" => attributes}) do
+  def create(conn, %{ "definitionId" => component_definition_id, "pageId" => page_id, "attributes" => attributes}) do
     definition = ComponentDefinitions.get_component_definition!(component_definition_id)
     component_data = build_component(definition.blueprint)
-    component_instance = ComponentInstances.create_component_instance!(%{data: component_data})
+    component_instance = ComponentInstances.create_component_instance!(%{data: component_data, page_id: page_id})
     render(conn, :show, component: component_instance)
+  end
+
+  @spec update(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def update(conn, data) do
+    Logger.debug("Data received by the create action is")
+    Logger.debug(data)
+    # component_data = build_component(definition.blueprint)
+    # component_instance = ComponentInstances.create_component_instance!(%{data: component_data})
+    # render(conn, :show, component: component_instance)
   end
 
   defp build_component(entry) when is_binary(entry), do: entry

@@ -6,6 +6,8 @@ defmodule Beacon.Repo.Migrations.CreateComponentInstances do
       add :id, :binary_id, primary_key: true
       add :data, :map, default: %{}
 
+      add :page_id, references(:beacon_pages, type: :binary_id)
+
       timestamps()
     end
   end

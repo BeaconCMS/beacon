@@ -1,9 +1,14 @@
 defmodule BeaconWeb.API.PageController do
   use BeaconWeb, :controller
-
+  alias Beacon.Repo
   alias Beacon.Content
 
   action_fallback BeaconWeb.API.FallbackController
+
+  def index(conn, _params) do
+    pages = Content.list_pages("dev") |> Repo.preload(:components)
+    render(conn, :index, pages: pages)
+  end
 
   def show(conn, %{"id" => id}) do
     page = Content.get_page!(id)

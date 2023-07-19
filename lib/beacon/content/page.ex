@@ -1,6 +1,6 @@
 defmodule Beacon.Content.Page do
   @moduledoc """
-  Pages are the central piece of content in Beacon used to render templates with meta tags, components, and other resources.
+  Pages are the central piece of content in Beacon used to render templates with meta tags, ss, and other resources.
 
   Pages are rendered as a LiveView handled by Beacon.
 
@@ -41,6 +41,7 @@ defmodule Beacon.Content.Page do
     field :extra, :map, default: %{}
 
     belongs_to :layout, Content.Layout
+    has_many :components, Content.ComponentInstance
 
     embeds_many :events, Event do
       field :name, :string
