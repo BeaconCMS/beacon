@@ -93,7 +93,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
         {:noreply, put_flash(socket, :info, "Page updated successfully")}
 
       {:error, {socket, _page}} ->
-        {:noreply, put_flash(socket, :info, "Failed to updated page")}
+        {:noreply, put_flash(socket, :error, "Failed to update page")}
     end
   end
 
@@ -106,7 +106,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
        |> put_flash(:info, "Page published successfully")}
     else
       _ ->
-        {:noreply, put_flash(socket, :info, "Failed to publish page")}
+        {:noreply, put_flash(socket, :error, "Failed to publish page")}
     end
   end
 
@@ -193,4 +193,24 @@ defmodule BeaconWeb.Admin.PageEditorLive do
   defp language("heex" = _format), do: "html"
   defp language(:heex), do: "html"
   defp language(format), do: to_string(format)
+
+  defp template_error(form) do
+    errors = form.source.errors
+
+    message =
+      case Enum.find(errors, fn {k, _v} -> k == :template end) do
+        {:template, {message, _}} -> message
+        _ -> nil
+      end
+
+    assigns = %{message: message}
+
+    ~H"""
+    <code>
+      <pre>
+    <.error :if={@message}><%= @message %></.error>
+    </pre>
+    </code>
+    """
+  end
 end

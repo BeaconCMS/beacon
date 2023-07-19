@@ -20,6 +20,45 @@ defmodule Beacon.Content do
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
+  defp validate_page_template(changeset) do
+    format = Changeset.get_field(changeset, :format)
+    template = Changeset.get_field(changeset, :template)
+    do_validate_page_template(changeset, format, template)
+  end
+
+  defp do_validate_page_template(changeset, :heex = _format, template) when is_binary(template) do
+    site = Changeset.get_field(changeset, :site)
+    path = Changeset.get_field(changeset, :path)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    case Beacon.Template.HEEx.compile(template, metadata) do
+      {:cont, _ast} ->
+        {:ok, changeset}
+
+      {:halt, %{description: description}} ->
+        {:error, Changeset.add_error(changeset, :template, description)}
+
+      {:halt, _} ->
+        {:error, Changeset.add_error(changeset, :template, "invalid template")}
+    end
+  end
+
+  defp do_validate_page_template(changeset, :markdown = _format, template) when is_binary(template) do
+    site = Changeset.get_field(changeset, :site)
+    path = Changeset.get_field(changeset, :path)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+      {:cont, _template} ->
+        {:ok, changeset}
+
+      {:halt, %{message: message}} ->
+        {:error, Changeset.add_error(changeset, :template, message)}
+    end
+  end
+
+  defp do_validate_page_template(changeset, _format, _template), do: {:ok, changeset}
+
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
 
@@ -330,13 +369,20 @@ defmodule Beacon.Content do
   """
   @doc type: :pages
   @spec validate_page(Page.t(), map()) :: Ecto.Changeset.t()
-  def validate_page(%Page{} = page, params) when is_map(params) do
-    {extra_params, page_params} = Map.pop(params, "extra")
+  def validate_page(%Page{} = page, attrs) when is_map(attrs) do
+    {extra_attrs, page_attrs} = Map.pop(attrs, "extra")
 
-    page
-    |> change_page(page_params)
-    |> Map.put(:action, :validate)
-    |> PageField.apply_changesets(page.site, extra_params)
+    changeset =
+      page
+      |> change_page(page_attrs)
+      |> Map.put(:action, :validate)
+
+    site = Ecto.Changeset.get_field(changeset, :site)
+
+    case validate_page_template(changeset) do
+      {:ok, changeset} -> PageField.apply_changesets(changeset, site, extra_attrs)
+      {:error, changeset} -> changeset
+    end
   end
 
   @doc """
@@ -367,14 +413,11 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec create_page(map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
-    create = fn attrs ->
-      %Page{}
-      |> Page.create_changeset(attrs)
-      |> Repo.insert()
-    end
-
     Repo.transact(fn ->
-      with {:ok, page} <- create.(attrs),
+      changeset = Page.create_changeset(%Page{}, attrs)
+
+      with {:ok, _} <- validate_page_template(changeset),
+           {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
@@ -406,14 +449,11 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def update_page(%Page{} = page, attrs) do
-    update = fn page, attrs ->
-      page
-      |> Page.update_changeset(attrs)
-      |> Repo.update()
-    end
-
     Repo.transact(fn ->
-      with {:ok, page} <- update.(page, attrs),
+      changeset = Page.update_changeset(page, attrs)
+
+      with {:ok, _} <- validate_page_template(changeset),
+           {:ok, page} <- Repo.update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -431,7 +471,10 @@ defmodule Beacon.Content do
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
-      with {:ok, event} <- create_page_event(page, "published"),
+      changeset = change_page(page, %{"site" => page.site, "path" => page.path, "format" => page.format, "template" => page.template})
+
+      with {:ok, _} <- validate_page_template(changeset),
+           {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
         :ok = PubSub.page_published(page)

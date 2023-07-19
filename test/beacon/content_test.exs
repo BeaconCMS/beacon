@@ -68,6 +68,34 @@ defmodule Beacon.ContentTest do
   end
 
   describe "pages" do
+    test "validate invalid template" do
+      layout = layout_fixture()
+
+      assert %Ecto.Changeset{errors: [template: {error, []}], valid?: false} =
+               Content.validate_page(%Page{}, %{
+                 "site" => "my_site",
+                 "path" => "/",
+                 "template" => "<div>invalid</span>",
+                 "layout_id" => layout.id
+               })
+
+      assert error =~ "unmatched closing tag"
+    end
+
+    test "create page should validate invalid templates" do
+      layout = layout_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+               Content.create_page(%{
+                 "site" => "my_site",
+                 "path" => "/",
+                 "template" => "<div>invalid</span>",
+                 "layout_id" => layout.id
+               })
+
+      assert error =~ "unmatched closing tag"
+    end
+
     # TODO: require paths starting with / which will make this test fail
     test "create page with empty path" do
       layout = layout_fixture()
@@ -92,6 +120,26 @@ defmodule Beacon.ContentTest do
       })
 
       assert %PageEvent{event: :created} = Repo.one(PageEvent)
+    end
+
+    test "update page should validate invalid templates" do
+      page = page_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+               Content.update_page(page, %{"template" => "<div>invalid</span>"})
+
+      assert error =~ "unmatched closing tag"
+    end
+
+    test "publish page should validate invalid templates" do
+      page = page_fixture()
+
+      # simulate an invalid template
+      Repo.update_all(Page, set: [template: "<div>invalid</span>"])
+      page = Repo.reload!(page)
+
+      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} = Content.publish_page(page)
+      assert error =~ "unmatched closing tag"
     end
 
     test "publish page should create a published event" do
