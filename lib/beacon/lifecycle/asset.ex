@@ -36,9 +36,16 @@ defmodule Beacon.Lifecycle.Asset do
   end
 
   def thumbnail(asset, %MediaLibrary.UploadMetadata{media_type: "image/webp"} = metadata) do
-    Processors.Image.thumbnail!(metadata)
+    Processors.Image.thumbnail!(asset, metadata)
     {:cont, asset}
   end
 
   def thumbnail(asset, _metadata), do: {:cont, asset}
+
+  def variant_480w(asset, %MediaLibrary.UploadMetadata{media_type: "image/webp"} = metadata) do
+    Processors.Image.variant_480w!(asset, metadata)
+    {:cont, asset}
+  end
+
+  def variant_480w(asset, _metadata), do: {:cont, asset}
 end

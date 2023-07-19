@@ -90,4 +90,8 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.Index do
   defp list_assets do
     MediaLibrary.list_assets()
   end
+
+  defp source_for(asset) do
+    MediaLibrary.url_for(asset)
+  end
 end

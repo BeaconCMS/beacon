@@ -91,7 +91,12 @@ end
 defmodule BeaconDataSource do
   @behaviour Beacon.DataSource.Behaviour
 
-  def live_data(:dev, ["home"], _params), do: %{year: Date.utc_today().year}
+  def live_data(:dev, ["home"], _params) do
+    [img1] = Beacon.MediaLibrary.search(:dev, "dockyard_1")
+
+    %{year: Date.utc_today().year, img1: img1}
+  end
+
   def live_data(_, _, _), do: %{}
 
   def page_title(:dev, %{page_title: page_title}), do: String.upcase(page_title)
@@ -175,6 +180,26 @@ seeds = fn ->
     """
   })
 
+  metadata =
+    Beacon.MediaLibrary.UploadMetadata.new(
+      :dev,
+      Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
+      name: "dockyard_1.png",
+      size: 196_000
+    )
+
+  img1 = Beacon.MediaLibrary.upload(metadata)
+
+  metadata =
+    Beacon.MediaLibrary.UploadMetadata.new(
+      :dev,
+      Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
+      name: "dockyard_2.png",
+      size: 196_000
+    )
+
+  img2 = Beacon.MediaLibrary.upload(metadata)
+
   page_home =
     Beacon.Content.create_page!(%{
       path: "home",
@@ -216,7 +241,7 @@ seeds = fn ->
         <%= my_component("sample_component", val: 1) %>
 
         <div>
-          <BeaconWeb.Components.image name="dockyard_1.webp" width="200px" />
+          <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
         </div>
 
         <div>
@@ -317,26 +342,6 @@ seeds = fn ->
 
   Beacon.Content.publish_page(page_markdown)
 
-  metadata =
-    Beacon.MediaLibrary.UploadMetadata.new(
-      :dev,
-      Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-      name: "dockyard_1.png",
-      size: 100_000
-    )
-
-  Beacon.MediaLibrary.upload(metadata)
-
-  metadata =
-    Beacon.MediaLibrary.UploadMetadata.new(
-      :dev,
-      Path.join(:code.priv_dir(:beacon), "assets/dockyard.png"),
-      name: "dockyard_2.png",
-      size: 100_000
-    )
-
-  Beacon.MediaLibrary.upload(metadata)
-
   other_layout =
     Beacon.Content.create_layout!(%{
       site: "other",
@@ -366,7 +371,8 @@ dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
   data_source: BeaconDataSource,
-  extra_page_fields: [BeaconTagsField]
+  extra_page_fields: [BeaconTagsField],
+  lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]]
 ]
 
 s3_bucket = System.get_env("S3_BUCKET")
