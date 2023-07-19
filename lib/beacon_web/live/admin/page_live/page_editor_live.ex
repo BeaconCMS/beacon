@@ -93,7 +93,7 @@ defmodule BeaconWeb.Admin.PageEditorLive do
         {:noreply, put_flash(socket, :info, "Page updated successfully")}
 
       {:error, {socket, _page}} ->
-        {:noreply, put_flash(socket, :error, "Failed to updated page")}
+        {:noreply, put_flash(socket, :error, "Failed to update page")}
     end
   end
 
