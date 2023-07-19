@@ -14,12 +14,12 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
 
   def show(%{component: component}) do
-    %{ "tag" => tag, "content" => content, "attributes" => attributes } = component
+    %{ "tag" => tag, "content" => content, "attributes" => attributes } = component.data
     %{
       tag: tag,
       content: content,
       attributes: attributes,
-      renderedHtml: render_node(component)
+      renderedHtml: render_node(component.data)
     }
   end
 
@@ -28,7 +28,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   # """
   # def index(%{pages: pages}) do
   #   %{data: for(page <- pages, do: data(page))}
-  # end
+    # end
 
   # @doc """
   # Renders a single component category.

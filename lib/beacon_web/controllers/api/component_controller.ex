@@ -1,7 +1,9 @@
 defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
+  require Logger
   alias Beacon.ComponentCategories
   alias Beacon.ComponentDefinitions
+  alias Beacon.ComponentInstances
   alias Ecto.UUID
 
   @tag_for_name %{
@@ -25,8 +27,9 @@ defmodule BeaconWeb.API.ComponentController do
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
   def create(conn, %{ "definitionId" => component_definition_id, "attributes" => attributes}) do
     definition = ComponentDefinitions.get_component_definition!(component_definition_id)
-    component = build_component(definition.blueprint)
-    render(conn, :show, component: component)
+    component_data = build_component(definition.blueprint)
+    component_instance = ComponentInstances.create_component_instance!(%{data: component_data})
+    render(conn, :show, component: component_instance)
   end
 
   defp build_component(entry) when is_binary(entry), do: entry
