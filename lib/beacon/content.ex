@@ -44,7 +44,11 @@ defmodule Beacon.Content do
   end
 
   defp do_validate_page_template(changeset, :markdown = _format, template) when is_binary(template) do
-    case Beacon.Template.Markdown.convert_to_html(template, %{}) do
+    site = Changeset.get_field(changeset, :site)
+    path = Changeset.get_field(changeset, :path)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
       {:cont, _template} ->
         {:ok, changeset}
 
