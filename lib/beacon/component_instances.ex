@@ -63,4 +63,10 @@ defmodule Beacon.ComponentInstances do
       {:error, changeset} -> raise "Failed to create component instance: #{inspect(changeset.errors)}"
     end
   end
+
+  def update_component_instance_data(component_instance, data) do
+    component_instance
+    |> ComponentInstance.changeset(%{ data: data })
+    |> Repo.update()
+  end
 end

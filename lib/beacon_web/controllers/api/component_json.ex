@@ -18,7 +18,7 @@ defmodule BeaconWeb.API.ComponentJSON do
     %{
       tag: tag,
       content: content,
-      attributes: attributes,
+      attributes: Map.put(attributes, "id", component.id),
       renderedHtml: render_node(component.data)
     }
   end

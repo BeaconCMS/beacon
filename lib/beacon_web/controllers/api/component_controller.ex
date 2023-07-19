@@ -33,12 +33,14 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec update(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def update(conn, data) do
-    Logger.debug("Data received by the create action is")
-    Logger.debug(data)
-    # component_data = build_component(definition.blueprint)
-    # component_instance = ComponentInstances.create_component_instance!(%{data: component_data})
-    # render(conn, :show, component: component_instance)
+  def update(conn, map = %{ "id" => id }) do
+    data = Map.delete(map, "id")
+    case ComponentInstances.get_component_instance!(id) |> ComponentInstances.update_component_instance_data(data) do
+      { :ok, component_instance } ->
+        render(conn, :show, component: component_instance)
+      { :error, changeset } ->
+        json(conn, changeset.errors)
+    end
   end
 
   defp build_component(entry) when is_binary(entry), do: entry
