@@ -3,10 +3,9 @@ defmodule Beacon.Content do
   Content Management for sites.
   """
 
-  import Ecto.Query
-  alias Beacon.Components
   alias Beacon.ComponentCategories
   alias Beacon.ComponentDefinitions
+  alias Beacon.Components
   alias Beacon.Content.Component
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -22,6 +21,7 @@ defmodule Beacon.Content do
   alias Beacon.Repo
   alias Beacon.Types.Site
   alias Ecto.Changeset
+  import Ecto.Query
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
