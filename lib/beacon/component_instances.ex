@@ -37,7 +37,6 @@ defmodule Beacon.ComponentInstances do
   """
   def get_component_instance!(id, preloads \\ []), do: ComponentInstance |> Repo.get!(id) |> Repo.preload(preloads)
 
-
   @spec create_component_instance(%{optional(:__struct__) => none, optional(atom | binary) => any}) :: any
   @doc """
   Creates a component instance.
@@ -66,7 +65,7 @@ defmodule Beacon.ComponentInstances do
 
   def update_component_instance_data(component_instance, data) do
     component_instance
-    |> ComponentInstance.changeset(%{ data: data })
+    |> ComponentInstance.changeset(%{data: data})
     |> Repo.update()
   end
 end

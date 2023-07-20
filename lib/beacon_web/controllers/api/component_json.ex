@@ -5,22 +5,25 @@ defmodule BeaconWeb.API.ComponentJSON do
 
   def index(%{component_categories: categories, component_definitions: definitions}) do
     %{
-      menuCategories: [%{
-        name: "Base",
-        items: for(category <- categories, do: category_data(category))
-      }],
+      menuCategories: [
+        %{
+          name: "Base",
+          items: for(category <- categories, do: category_data(category))
+        }
+      ],
       componentDefinitions: for(definition <- definitions, do: definition_data(definition))
     }
   end
 
   def show(%{component: component}) do
-    %{ "tag" => tag, "content" => content, "attributes" => attributes } = component.data
+    %{"tag" => tag, "content" => content, "attributes" => attributes} = component.data
     attributes = Map.put(attributes, "id", component.id)
+
     %{
       tag: tag,
       content: content,
       attributes: attributes,
-      renderedHtml: render_node(%{ "tag" => tag, "content" => content, "attributes" => attributes })
+      renderedHtml: render_node(%{"tag" => tag, "content" => content, "attributes" => attributes})
     }
   end
 
@@ -29,7 +32,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   # """
   # def index(%{pages: pages}) do
   #   %{data: for(page <- pages, do: data(page))}
-    # end
+  # end
 
   # @doc """
   # Renders a single component category.
@@ -37,7 +40,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   defp category_data(%ComponentCategory{} = category) do
     %{
       id: category.id,
-      name: category.name,
+      name: category.name
     }
   end
 
@@ -55,15 +58,17 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
 
   defp render_node(node) when is_binary(node), do: node
+
   defp render_node(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     """
     <#{tag}#{render_attrs(attributes)}>
-      #{content |> Enum.map(&render_node(&1)) |> Enum.join}
+      #{content |> Enum.map(&render_node(&1)) |> Enum.join()}
     </#{tag}>
     """
   end
 
   defp render_attrs(attributes) when attributes == %{}, do: ""
+
   defp render_attrs(attributes) do
     str = attributes |> Enum.map(fn {key, val} -> render_attr(key, val) end) |> Enum.join(" ")
     " " <> str

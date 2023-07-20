@@ -154,75 +154,75 @@ defmodule ComponentDefinitionHelpers do
   def default_definition do
     %{
       "tag" => "div",
-      "attributes" => %{ "root" => true },
+      "attributes" => %{"root" => true},
       "content" => [
         %{
           "name" => "title",
           "attributes" => %{
             "class" => ["text-blue-500", "text-xl"],
-            "slot" => true,
+            "slot" => true
           },
-          "content" => ["I am the component header"],
+          "content" => ["I am the component header"]
         },
         %{
           "name" => "paragraph",
           "attributes" => %{
             "class" => ["text-md"],
-            "slot" => true,
+            "slot" => true
           },
           "content" => [
             %{
               "name" => "link",
               "attributes" => %{
                 "class" => ["px-2", "font-bold"],
-                "href" => "/product",
+                "href" => "/product"
               },
-              "content" => ["Product"],
+              "content" => ["Product"]
             },
             %{
               "name" => "link",
               "attributes" => %{
                 "class" => ["px-2", "font-bold"],
-                "href" => "/pricing",
+                "href" => "/pricing"
               },
-              "content" => ["Pricing"],
+              "content" => ["Pricing"]
             },
             %{
               "name" => "link",
               "attributes" => %{
                 "class" => ["px-2", "font-bold"],
-                "href" => "/about-us",
+                "href" => "/about-us"
               },
-              "content" => ["About us"],
+              "content" => ["About us"]
             }
-          ],
+          ]
         },
         %{
           "name" => "aside",
           "attributes" => %{
             "class" => ["bg-gray-200"],
-            "slot" => true,
+            "slot" => true
           },
           "content" => [
             "This is some sample html",
             %{
               "name" => "button",
               "attributes" => %{
-                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
+                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"]
               },
-              "content" => ["Sign in"],
+              "content" => ["Sign in"]
             },
             " and ",
             %{
               "name" => "button",
               "attributes" => %{
-                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"],
+                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"]
               },
-              "content" => ["Sign up"],
+              "content" => ["Sign up"]
             },
             " for you to play with"
-          ],
-        },
+          ]
+        }
       ]
     }
   end
@@ -454,14 +454,13 @@ seeds = fn ->
     """
   })
 
-
-  navigations = Beacon.ComponentCategories.create_component_category!(%{ name: "Navigations" })
-  headers = Beacon.ComponentCategories.create_component_category!(%{ name: "Headers" })
-  sign_ins = Beacon.ComponentCategories.create_component_category!(%{ name: "Sign in" })
-  sign_ups = Beacon.ComponentCategories.create_component_category!(%{ name: "Sign up" })
-  stats = Beacon.ComponentCategories.create_component_category!(%{ name: "Stats" })
-  footers = Beacon.ComponentCategories.create_component_category!(%{ name: "Footers" })
-  basics = Beacon.ComponentCategories.create_component_category!(%{ name: "Basics" })
+  navigations = Beacon.ComponentCategories.create_component_category!(%{name: "Navigations"})
+  headers = Beacon.ComponentCategories.create_component_category!(%{name: "Headers"})
+  sign_ins = Beacon.ComponentCategories.create_component_category!(%{name: "Sign in"})
+  sign_ups = Beacon.ComponentCategories.create_component_category!(%{name: "Sign up"})
+  stats = Beacon.ComponentCategories.create_component_category!(%{name: "Stats"})
+  footers = Beacon.ComponentCategories.create_component_category!(%{name: "Footers"})
+  basics = Beacon.ComponentCategories.create_component_category!(%{name: "Basics"})
 
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 1",
@@ -469,156 +468,182 @@ seeds = fn ->
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: navigations.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: navigations.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/03_e244675766.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: navigations.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 4",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/04_64390b9975.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: navigations.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Header 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: headers.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Header 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: headers.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Header 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: headers.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Sign Up 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: sign_ups.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Sign Up 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: sign_ups.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Sign Up 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: sign_ups.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Stats 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: stats.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Stats 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: stats.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Stats 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: stats.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Footer 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: footers.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Footer 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: footers.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Footer 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: footers.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Footer 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: stats.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Footer 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: stats.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Footer 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: stats.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Sign In 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: sign_ins.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Sign In 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: sign_ins.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Sign In 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
     blueprint: ComponentDefinitionHelpers.default_definition(),
     component_category_id: sign_ins.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Title",
     thumbnail: "/component_thumbnails/title.jpg",
     blueprint: ComponentDefinitionHelpers.create_definition("header", %{}, ["I'm a sample title"]),
     component_category_id: basics.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Button",
     thumbnail: "/component_thumbnails/button.jpg",
     blueprint: ComponentDefinitionHelpers.create_definition("button", %{}, ["I'm a sample button"]),
     component_category_id: basics.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Link",
     thumbnail: "/component_thumbnails/link.jpg",
     blueprint: ComponentDefinitionHelpers.create_definition("a", %{href: "#"}, ["I'm a sample link"]),
     component_category_id: basics.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Paragraph",
     thumbnail: "/component_thumbnails/paragraph.jpg",
     blueprint: ComponentDefinitionHelpers.create_definition("p", %{}, ["I'm a sample paragraph"]),
     component_category_id: basics.id
   })
+
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Aside",
     thumbnail: "/component_thumbnails/aside.jpg",

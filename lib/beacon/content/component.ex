@@ -1,4 +1,4 @@
-  defmodule Beacon.Content.Component do
+defmodule Beacon.Content.Component do
   @moduledoc """
   Components
 
