@@ -235,7 +235,7 @@ defmodule ComponentDefinitionHelpers do
         %{
           "tag" => "div",
           "attributes" => %{
-            "class" => ["flex", "items-center", "justify-between", "px-8", "py-5", "bg-white"]
+            "class" => ["flex", "justify-between", "px-8", "py-5", "bg-white"]
           },
           "content" => [
             %{
@@ -323,6 +323,125 @@ defmodule ComponentDefinitionHelpers do
                     },
                   ]
                 },
+                %{
+                  "name" => "button",
+                  "attributes" => %{
+                    "class" => ["text-white", "px-2", "py-1", "block", "w-full", "md:w-auto", "text-lg", "text-gray-900", "font-medium", "overflow-hidden", "rounded-10", "bg-blue-500", "rounded"]
+                  },
+                  "content" => ["Start Free Trial"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  end
+
+  def nav_2 do
+    %{
+      "tag" => "nav",
+      "attributes" => %{},
+      "content" => [
+        %{
+          "tag" => "div",
+          "attributes" => %{
+            "class" => ["flex", "justify-between", "px-8", "py-5", "bg-white"]
+          },
+          "content" => [
+            %{
+              "tag" => "div",
+              "attributes" => %{
+                "class" => ["w-auto", "mr-14"]
+              },
+              "content" => [
+                %{
+                  "name" => "link",
+                  "attributes" => %{ "href" => "#" },
+                  "content" => [
+                    %{
+                      "tag" => "img",
+                      "attributes" => %{ "src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" },
+                      "content" => []
+                    }
+                  ]
+                }
+              ]
+            },
+            %{
+              "tag" => "div",
+              "attributes" => %{
+                "class" => ["w-auto", "flex", "flex-wrap", "items-center"]
+              },
+              "content" => [
+                %{
+                  "tag" => "ul",
+                  "attributes" => %{
+                    "class" => ["flex", "items-center", "mr-10"]
+                  },
+                  "content" => [
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Features"]
+                        }
+                      ]
+                    },
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Solutions"]
+                        }
+                      ]
+                    },
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Resources"]
+                        }
+                      ]
+                    },
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Pricing"]
+                        }
+                      ]
+                    },
+                  ]
+                }
+              ]
+            },
+            %{
+              "tag" => "div",
+              "attributes" => %{
+                "class" => ["w-auto", "flex", "flex-wrap", "items-center"]
+              },
+              "content" => [
                 %{
                   "name" => "button",
                   "attributes" => %{
@@ -583,7 +702,7 @@ seeds = fn ->
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
-    blueprint: ComponentDefinitionHelpers.nav_1(),
+    blueprint: ComponentDefinitionHelpers.nav_2(),
     component_category_id: navigations.id
   })
 
