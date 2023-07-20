@@ -15,11 +15,12 @@ defmodule BeaconWeb.API.ComponentJSON do
 
   def show(%{component: component}) do
     %{ "tag" => tag, "content" => content, "attributes" => attributes } = component.data
+    attributes = Map.put(attributes, "id", component.id)
     %{
       tag: tag,
       content: content,
-      attributes: Map.put(attributes, "id", component.id),
-      renderedHtml: render_node(component.data)
+      attributes: attributes,
+      renderedHtml: render_node(%{ "tag" => tag, "content" => content, "attributes" => attributes })
     }
   end
 
@@ -72,5 +73,6 @@ defmodule BeaconWeb.API.ComponentJSON do
   defp render_attr("id", val), do: "data-id=\"#{val}\""
   defp render_attr("slot", false), do: ""
   defp render_attr("slot", val), do: "data-slot"
+  defp render_attr("root", _), do: "data-root"
   defp render_attr(key, val), do: "#{key}=\"#{val}\""
 end

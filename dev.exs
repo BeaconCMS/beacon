@@ -154,7 +154,7 @@ defmodule ComponentDefinitionHelpers do
   def default_definition do
     %{
       "tag" => "div",
-      "attributes" => %{},
+      "attributes" => %{ "root" => true },
       "content" => [
         %{
           "name" => "title",

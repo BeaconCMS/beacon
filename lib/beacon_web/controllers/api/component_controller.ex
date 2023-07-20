@@ -31,6 +31,11 @@ defmodule BeaconWeb.API.ComponentController do
     component_instance = ComponentInstances.create_component_instance!(%{data: component_data, page_id: page_id})
     render(conn, :show, component: component_instance)
   end
+  def create(conn, %{ "definitionId" => component_definition_id, "attributes" => attributes}) do
+    definition = ComponentDefinitions.get_component_definition!(component_definition_id)
+    component_data = build_component(definition.blueprint)
+    render(conn, :show, component: %{ id: UUID.generate(), data: component_data })
+  end
 
   @spec update(Plug.Conn.t(), map) :: Plug.Conn.t()
   def update(conn, map = %{ "id" => id }) do
