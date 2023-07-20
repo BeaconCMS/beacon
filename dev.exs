@@ -226,6 +226,117 @@ defmodule ComponentDefinitionHelpers do
       ]
     }
   end
+
+  def nav_1 do
+    %{
+      "tag" => "nav",
+      "attributes" => %{},
+      "content" => [
+        %{
+          "tag" => "div",
+          "attributes" => %{
+            "class" => ["flex", "items-center", "justify-between", "px-8", "py-5", "bg-white"]
+          },
+          "content" => [
+            %{
+              "tag" => "div",
+              "attributes" => %{
+                "class" => ["w-auto", "mr-14"]
+              },
+              "content" => [
+                %{
+                  "name" => "link",
+                  "attributes" => %{ "href" => "#" },
+                  "content" => [
+                    %{
+                      "tag" => "img",
+                      "attributes" => %{ "src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" },
+                      "content" => []
+                    }
+                  ]
+                }
+              ]
+            },
+            %{
+              "tag" => "div",
+              "attributes" => %{
+                "class" => ["w-auto", "flex", "flex-wrap", "items-center"]
+              },
+              "content" => [
+                %{
+                  "tag" => "ul",
+                  "attributes" => %{
+                    "class" => ["flex", "items-center", "mr-10"]
+                  },
+                  "content" => [
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Features"]
+                        }
+                      ]
+                    },
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Solutions"]
+                        }
+                      ]
+                    },
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Resources"]
+                        }
+                      ]
+                    },
+                    %{
+                      "tag" => "li",
+                      "attributes" => %{
+                        "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
+                      },
+                      "content" => [
+                        %{
+                          "name" => "link",
+                          "attributes" => %{ "href" => "#" },
+                          "content" => ["Pricing"]
+                        }
+                      ]
+                    },
+                  ]
+                },
+                %{
+                  "name" => "button",
+                  "attributes" => %{
+                    "class" => ["text-white", "px-2", "py-1", "block", "w-full", "md:w-auto", "text-lg", "text-gray-900", "font-medium", "overflow-hidden", "rounded-10", "bg-blue-500", "rounded"]
+                  },
+                  "content" => ["Start Free Trial"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  end
 end
 
 seeds = fn ->
@@ -465,28 +576,28 @@ seeds = fn ->
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/01_2be7c9d07f.png",
-    blueprint: ComponentDefinitionHelpers.default_definition(),
+    blueprint: ComponentDefinitionHelpers.nav_1(),
     component_category_id: navigations.id
   })
 
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 2",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
-    blueprint: ComponentDefinitionHelpers.default_definition(),
+    blueprint: ComponentDefinitionHelpers.nav_1(),
     component_category_id: navigations.id
   })
 
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 3",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/03_e244675766.png",
-    blueprint: ComponentDefinitionHelpers.default_definition(),
+    blueprint: ComponentDefinitionHelpers.nav_1(),
     component_category_id: navigations.id
   })
 
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Navigation 4",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/04_64390b9975.png",
-    blueprint: ComponentDefinitionHelpers.default_definition(),
+    blueprint: ComponentDefinitionHelpers.nav_1(),
     component_category_id: navigations.id
   })
 
