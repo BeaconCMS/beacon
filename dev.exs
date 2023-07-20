@@ -246,11 +246,11 @@ defmodule ComponentDefinitionHelpers do
               "content" => [
                 %{
                   "name" => "link",
-                  "attributes" => %{ "href" => "#" },
+                  "attributes" => %{"href" => "#"},
                   "content" => [
                     %{
                       "tag" => "img",
-                      "attributes" => %{ "src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" },
+                      "attributes" => %{"src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"},
                       "content" => []
                     }
                   ]
@@ -277,7 +277,7 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Features"]
                         }
                       ]
@@ -290,7 +290,7 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Solutions"]
                         }
                       ]
@@ -303,7 +303,7 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Resources"]
                         }
                       ]
@@ -316,17 +316,31 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Pricing"]
                         }
                       ]
-                    },
+                    }
                   ]
                 },
                 %{
                   "name" => "button",
                   "attributes" => %{
-                    "class" => ["text-white", "px-2", "py-1", "block", "w-full", "md:w-auto", "text-lg", "text-gray-900", "font-medium", "overflow-hidden", "rounded-10", "bg-blue-500", "rounded"]
+                    "class" => [
+                      "text-white",
+                      "px-2",
+                      "py-1",
+                      "block",
+                      "w-full",
+                      "md:w-auto",
+                      "text-lg",
+                      "text-gray-900",
+                      "font-medium",
+                      "overflow-hidden",
+                      "rounded-10",
+                      "bg-blue-500",
+                      "rounded"
+                    ]
                   },
                   "content" => ["Start Free Trial"]
                 }
@@ -357,11 +371,11 @@ defmodule ComponentDefinitionHelpers do
               "content" => [
                 %{
                   "name" => "link",
-                  "attributes" => %{ "href" => "#" },
+                  "attributes" => %{"href" => "#"},
                   "content" => [
                     %{
                       "tag" => "img",
-                      "attributes" => %{ "src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" },
+                      "attributes" => %{"src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"},
                       "content" => []
                     }
                   ]
@@ -388,7 +402,7 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Features"]
                         }
                       ]
@@ -401,7 +415,7 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Solutions"]
                         }
                       ]
@@ -414,7 +428,7 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Resources"]
                         }
                       ]
@@ -427,11 +441,11 @@ defmodule ComponentDefinitionHelpers do
                       "content" => [
                         %{
                           "name" => "link",
-                          "attributes" => %{ "href" => "#" },
+                          "attributes" => %{"href" => "#"},
                           "content" => ["Pricing"]
                         }
                       ]
-                    },
+                    }
                   ]
                 }
               ]
@@ -445,7 +459,21 @@ defmodule ComponentDefinitionHelpers do
                 %{
                   "name" => "button",
                   "attributes" => %{
-                    "class" => ["text-white", "px-2", "py-1", "block", "w-full", "md:w-auto", "text-lg", "text-gray-900", "font-medium", "overflow-hidden", "rounded-10", "bg-blue-500", "rounded"]
+                    "class" => [
+                      "text-white",
+                      "px-2",
+                      "py-1",
+                      "block",
+                      "w-full",
+                      "md:w-auto",
+                      "text-lg",
+                      "text-gray-900",
+                      "font-medium",
+                      "overflow-hidden",
+                      "rounded-10",
+                      "bg-blue-500",
+                      "rounded"
+                    ]
                   },
                   "content" => ["Start Free Trial"]
                 }
