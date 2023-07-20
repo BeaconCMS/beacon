@@ -40,7 +40,7 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec update(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def update(conn, map = %{"id" => id}) do
+  def update(conn, %{"id" => id} = map) do
     data = Map.delete(map, "id")
 
     case ComponentInstances.get_component_instance!(id) |> ComponentInstances.update_component_instance_data(data) do

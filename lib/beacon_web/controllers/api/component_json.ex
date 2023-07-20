@@ -62,7 +62,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   defp render_node(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     """
     <#{tag}#{render_attrs(attributes)}>
-      #{content |> Enum.map(&render_node(&1)) |> Enum.join()}
+      #{content |> Enum.map_join(&render_node(&1))}
     </#{tag}>
     """
   end
@@ -70,7 +70,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   defp render_attrs(attributes) when attributes == %{}, do: ""
 
   defp render_attrs(attributes) do
-    str = attributes |> Enum.map(fn {key, val} -> render_attr(key, val) end) |> Enum.join(" ")
+    str = attributes |> Enum.map_join(" ", fn {key, val} -> render_attr(key, val) end) |> Enum.join()
     " " <> str
   end
 
