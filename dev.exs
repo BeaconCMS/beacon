@@ -160,6 +160,7 @@ defmodule ComponentDefinitionHelpers do
           "name" => "title",
           "attributes" => %{
             "class" => ["text-blue-500", "text-xl"],
+            "slot" => true,
           },
           "content" => ["I am the component header"],
         },
@@ -167,6 +168,7 @@ defmodule ComponentDefinitionHelpers do
           "name" => "paragraph",
           "attributes" => %{
             "class" => ["text-md"],
+            "slot" => true,
           },
           "content" => [
             %{
@@ -199,6 +201,7 @@ defmodule ComponentDefinitionHelpers do
           "name" => "aside",
           "attributes" => %{
             "class" => ["bg-gray-200"],
+            "slot" => true,
           },
           "content" => [
             "This is some sample html",
