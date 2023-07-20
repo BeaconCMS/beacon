@@ -17,7 +17,7 @@ defmodule Beacon.ComponentInstances do
       [%ComponentInstance{}, ...]
 
   """
-  def list_component_instances() do
+  def list_component_instances do
     ComponentInstance |> Repo.all()
   end
 

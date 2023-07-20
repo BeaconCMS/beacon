@@ -17,7 +17,7 @@ defmodule Beacon.ComponentCategories do
       [%ComponentCategories{}, ...]
 
   """
-  def list_component_categories() do
+  def list_component_categories do
     ComponentCategory |> Repo.all()
   end
 

@@ -17,7 +17,7 @@ defmodule Beacon.ComponentDefinitions do
       [%ComponentDefinitions{}, ...]
 
   """
-  def list_component_definitions() do
+  def list_component_definitions do
     ComponentDefinition |> Repo.all()
   end
 
