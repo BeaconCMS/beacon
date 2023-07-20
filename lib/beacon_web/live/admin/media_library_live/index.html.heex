@@ -12,6 +12,7 @@
 </form>
 
 <.table id="assets" rows={@assets} row_id={fn asset -> asset.id end}>
+  <:col :let={asset} label=""><.thumbnail source={source_for(asset.thumbnail)} /></:col>
   <:col :let={asset} label="Name"><%= asset.file_name %></:col>
   <:col :let={asset} label="Type"><%= asset.media_type %></:col>
   <:col :let={asset} label="Site"><%= asset.site %></:col>

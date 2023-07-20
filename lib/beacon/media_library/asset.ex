@@ -23,6 +23,19 @@ defmodule Beacon.MediaLibrary.Asset do
     field :site, Beacon.Types.Site
     field :deleted_at, :utc_datetime
     field :keys, :map, default: %{}
+    field :usage_tag, :string
+
+    belongs_to :source, Beacon.MediaLibrary.Asset
+
+    has_many :assets, Beacon.MediaLibrary.Asset,
+      foreign_key: :source_id,
+      on_delete: :delete_all,
+      where: [usage_tag: {:not, nil}]
+
+    has_one :thumbnail, Beacon.MediaLibrary.Asset,
+      foreign_key: :source_id,
+      on_delete: :delete_all,
+      where: [usage_tag: "thumbnail"]
 
     timestamps()
   end

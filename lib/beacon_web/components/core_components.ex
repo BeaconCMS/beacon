@@ -618,4 +618,12 @@ defmodule BeaconWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  attr :source, :string, default: nil
+
+  def thumbnail(assigns) do
+    ~H"""
+    <image src={@source} width="50" height="50" />
+    """
+  end
 end
