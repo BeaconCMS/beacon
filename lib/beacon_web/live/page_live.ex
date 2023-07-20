@@ -108,4 +108,7 @@ defmodule BeaconWeb.PageLive do
   defp meta_tags(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
     Beacon.DataSource.meta_tags(site, path, params, live_data, BeaconWeb.Layouts.meta_tags(assigns))
   end
+
+  @doc false
+  def make_env, do: __ENV__
 end
