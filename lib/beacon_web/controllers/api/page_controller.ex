@@ -1,7 +1,7 @@
 defmodule BeaconWeb.API.PageController do
   use BeaconWeb, :controller
-  alias Beacon.Repo
   alias Beacon.Content
+  alias Beacon.Repo
 
   action_fallback BeaconWeb.API.FallbackController
 
