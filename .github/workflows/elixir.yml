@@ -21,10 +21,11 @@ jobs:
         include:
           - elixir: "1.13.0"
             otp: "23"
-            rebar3_version: '3.22.0'
+            rebar3_version: '3.15.2'
 
-          # - elixir: "1.15.1"
-          #   otp: "26"
+          - elixir: "1.15.1"
+            otp: "26"
+            rebar3_version: '3.22.0'
 
     runs-on: ubuntu-20.04
 
@@ -85,6 +86,7 @@ jobs:
         include:
           - elixir: "1.15.1"
             otp: "26"
+            rebar3_version: '3.22.0'
 
     runs-on: ubuntu-20.04
 
