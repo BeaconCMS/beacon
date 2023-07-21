@@ -24,6 +24,7 @@ jobs:
 
           - elixir: "1.15.1"
             otp: "26"
+            rebar3_version: '3.22.0'
 
     runs-on: ubuntu-20.04
 
@@ -61,8 +62,7 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
 
-      - shell: bash
-        run: mix local.rebar --force --if-missing
+      - run: mix local.rebar --force --if-missing
 
       - run: mix do deps.get, deps.compile
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -109,8 +109,7 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
 
-      - shell: bash
-        run: mix local.rebar --force --if-missing
+      - run: mix local.rebar --force --if-missing
 
       - run: mix do deps.get, deps.compile
         if: steps.cache-deps.outputs.cache-hit != 'true'
