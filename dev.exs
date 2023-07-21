@@ -484,6 +484,548 @@ defmodule ComponentDefinitionHelpers do
       ]
     }
   end
+
+  def header_1 do
+    %{
+      "attributes" => %{"class" => ["pt-28", "pb-32", "bg-gray-50", "overflow-hidden"]},
+      "content" => [
+        %{
+          "attributes" => %{"class" => ["container", "mx-auto", "px-4"]},
+          "content" => [
+            %{
+              "attributes" => %{"class" => ["max-w-xl"]},
+              "content" => [
+                %{
+                  "attributes" => %{"class" => ["inline-block", "mb-3", "text-gray-600", "text-base"]},
+                  "content" => ["Flexible Pricing Plan"],
+                  "tag" => "span"
+                },
+                %{
+                  "attributes" => %{
+                    "class" => ["mb-16", "font-heading", "font-bold", "text-6xl", "sm:text-7xl",
+                      "text-gray-900"]
+                  },
+                  "content" => ["Everything you need to launch a website"],
+                  "tag" => "h2"
+                }
+              ],
+              "tag" => "div"
+            },
+            %{
+              "attributes" => %{"class" => ["flex", "flex-wrap"]},
+              "content" => [
+                %{
+                  "attributes" => %{"class" => ["w-full", "md:w-1/3"]},
+                  "content" => [
+                    %{
+                      "attributes" => %{
+                        "class" => ["pt-8", "px-11", "xl:px-20", "pb-10", "bg-transparent",
+                          "border-b", "md:border-b-0", "md:border-r", "border-gray-200", "rounded-10"]
+                      },
+                      "content" => [
+                        %{
+                          "attributes" => %{
+                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg",
+                              "text-gray-900"]
+                          },
+                          "content" => ["Basic"],
+                          "tag" => "h3"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["mb-5", "text-gray-600", "text-sm"]},
+                          "content" => ["Best for freelancers"],
+                          "tag" => "p"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["mb-9", "flex"]},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold",
+                                  "text-lg", "text-gray-900"]
+                              },
+                              "content" => ["$"],
+                              "tag" => "span"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["font-heading", "font-semibold", "text-6xl",
+                                  "sm:text-7xl", "text-gray-900"]
+                              },
+                              "content" => ["29"],
+                              "tag" => "span"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["font-heading", "font-semibold", "self-end"]
+                              },
+                              "content" => ["/ m"],
+                              "tag" => "span"
+                            }
+                          ],
+                          "tag" => "div"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["p-1"]},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["group", "relative", "mb-9", "p-px", "w-full",
+                                  "font-heading", "font-semibold", "text-xs", "text-gray-900",
+                                  "bg-gradient-green", "uppercase", "tracking-px", "overflow-hidden",
+                                  "rounded-md"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{
+                                    "class" => ["absolute", "top-0", "left-0", "transform",
+                                      "-translate-y-full", "group-hover:-translate-y-0", "h-full",
+                                      "w-full", "bg-gradient-green", "transition", "ease-in-out",
+                                      "duration-500"]
+                                  },
+                                  "content" => [],
+                                  "tag" => "div"
+                                },
+                                %{
+                                  "attributes" => %{
+                                    "class" => ["p-4", "bg-gray-50", "overflow-hidden", "rounded-md"]
+                                  },
+                                  "content" => [
+                                    %{
+                                      "attributes" => %{"class" => ["relative", "z-10"]},
+                                      "content" => ["Join now"],
+                                      "tag" => "p"
+                                    }
+                                  ],
+                                  "tag" => "div"
+                                }
+                              ],
+                              "tag" => "button"
+                            }
+                          ],
+                          "tag" => "div"
+                        },
+                        %{
+                          "attributes" => %{},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.0.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{
+                                  "attributes" => %{},
+                                  "content" => ["100GB Cloud Storage"],
+                                  "tag" => "p"
+                                }
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.1.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{
+                                  "attributes" => %{},
+                                  "content" => ["10 Email Connection"],
+                                  "tag" => "p"
+                                }
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "font-medium",
+                                  "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.2.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
+                              ],
+                              "tag" => "li"
+                            }
+                          ],
+                          "tag" => "ul"
+                        }
+                      ],
+                      "tag" => "div"
+                    }
+                  ],
+                  "tag" => "div"
+                },
+                %{
+                  "attributes" => %{"class" => ["w-full", "md:w-1/3"]},
+                  "content" => [
+                    %{
+                      "attributes" => %{
+                        "class" => ["pt-8", "px-11", "xl:px-20", "pb-10", "bg-transparent",
+                          "rounded-10"]
+                      },
+                      "content" => [
+                        %{
+                          "attributes" => %{
+                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg",
+                              "text-gray-900"]
+                          },
+                          "content" => ["Premium"],
+                          "tag" => "h3"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["mb-5", "text-gray-600", "text-sm"]},
+                          "content" => ["Best for small agency"],
+                          "tag" => "p"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["mb-9", "flex"]},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold",
+                                  "text-lg", "text-gray-900"]
+                              },
+                              "content" => ["$"],
+                              "tag" => "span"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["font-heading", "font-semibold", "text-6xl",
+                                  "sm:text-7xl", "text-gray-900"]
+                              },
+                              "content" => ["99"],
+                              "tag" => "span"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["font-heading", "font-semibold", "self-end"]
+                              },
+                              "content" => ["/ m"],
+                              "tag" => "span"
+                            }
+                          ],
+                          "tag" => "div"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["p-1"]},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["group", "relative", "mb-9", "p-px", "w-full",
+                                  "font-heading", "font-semibold", "text-xs", "text-gray-900",
+                                  "bg-gradient-green", "uppercase", "tracking-px", "overflow-hidden",
+                                  "rounded-md"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{
+                                    "class" => ["absolute", "top-0", "left-0", "transform",
+                                      "-translate-y-full", "group-hover:-translate-y-0", "h-full",
+                                      "w-full", "bg-gradient-green", "transition", "ease-in-out",
+                                      "duration-500"]
+                                  },
+                                  "content" => [],
+                                  "tag" => "div"
+                                },
+                                %{
+                                  "attributes" => %{
+                                    "class" => ["p-4", "bg-gray-50", "overflow-hidden", "rounded-md"]
+                                  },
+                                  "content" => [
+                                    %{
+                                      "attributes" => %{"class" => ["relative", "z-10"]},
+                                      "content" => ["Join now"],
+                                      "tag" => "p"
+                                    }
+                                  ],
+                                  "tag" => "div"
+                                }
+                              ],
+                              "tag" => "button"
+                            }
+                          ],
+                          "tag" => "div"
+                        },
+                        %{
+                          "attributes" => %{},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.0.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{
+                                  "attributes" => %{},
+                                  "content" => ["500GB Cloud Storage"],
+                                  "tag" => "p"
+                                }
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.1.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{
+                                  "attributes" => %{},
+                                  "content" => ["50 Email Connection"],
+                                  "tag" => "p"
+                                }
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.2.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "font-medium",
+                                  "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.3.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{"attributes" => %{}, "content" => ["Premium Support"], "tag" => "p"}
+                              ],
+                              "tag" => "li"
+                            }
+                          ],
+                          "tag" => "ul"
+                        }
+                      ],
+                      "tag" => "div"
+                    }
+                  ],
+                  "tag" => "div"
+                },
+                %{
+                  "attributes" => %{"class" => ["w-full", "md:w-1/3"]},
+                  "content" => [
+                    %{
+                      "attributes" => %{
+                        "class" => ["relative", "pt-8", "px-11", "pb-10", "bg-white", "rounded-10",
+                          "shadow-8xl"]
+                      },
+                      "content" => [
+                        %{
+                          "attributes" => %{
+                            "class" => ["absolute", "right-2", "top-2", "font-heading", "px-2.5",
+                              "py-1", "text-xs", "max-w-max", "bg-gray-100", "uppercase",
+                              "tracking-px", "rounded-full", "text-gray-900"]
+                          },
+                          "content" => ["Popular choice"],
+                          "tag" => "p"
+                        },
+                        %{
+                          "attributes" => %{
+                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg",
+                              "text-gray-900"]
+                          },
+                          "content" => ["Enterprise"],
+                          "tag" => "h3"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["mb-5", "text-gray-600", "text-sm"]},
+                          "content" => ["Best for large agency"],
+                          "tag" => "p"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["mb-9", "flex"]},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold",
+                                  "text-lg", "text-gray-900"]
+                              },
+                              "content" => ["$"],
+                              "tag" => "span"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["font-heading", "font-semibold", "text-6xl",
+                                  "sm:text-7xl", "text-gray-900"]
+                              },
+                              "content" => ["199"],
+                              "tag" => "span"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["font-heading", "font-semibold", "self-end"]
+                              },
+                              "content" => ["/ m"],
+                              "tag" => "span"
+                            }
+                          ],
+                          "tag" => "div"
+                        },
+                        %{
+                          "attributes" => %{"class" => ["group", "relative", "mb-9"]},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["absolute", "top-0", "left-0", "w-full", "h-full",
+                                  "bg-gradient-green", "opacity-0", "group-hover:opacity-50", "p-1",
+                                  "rounded-lg", "transition", "ease-out", "duration-300"]
+                              },
+                              "content" => [],
+                              "tag" => "div"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["p-1", "w-full", "font-heading", "font-semibold",
+                                  "text-xs", "text-gray-900", "uppercase", "tracking-px",
+                                  "overflow-hidden", "rounded-md"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{
+                                    "class" => ["relative", "z-10", "p-4", "bg-gradient-green",
+                                      "overflow-hidden", "rounded-md"]
+                                  },
+                                  "content" => [
+                                    %{"attributes" => %{}, "content" => ["Join now"], "tag" => "p"}
+                                  ],
+                                  "tag" => "div"
+                                }
+                              ],
+                              "tag" => "button"
+                            }
+                          ],
+                          "tag" => "div"
+                        },
+                        %{
+                          "attributes" => %{},
+                          "content" => [
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.0.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{
+                                  "attributes" => %{},
+                                  "content" => ["2TB Cloud Storage"],
+                                  "tag" => "p"
+                                }
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.1.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{
+                                  "attributes" => %{},
+                                  "content" => ["Unlimited Email Connection"],
+                                  "tag" => "p"
+                                }
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "mb-3",
+                                  "font-medium", "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.2.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
+                              ],
+                              "tag" => "li"
+                            },
+                            %{
+                              "attributes" => %{
+                                "class" => ["flex", "items-center", "font-heading", "font-medium",
+                                  "text-base", "text-gray-900"]
+                              },
+                              "content" => [
+                                %{
+                                  "attributes" => %{"class" => ["mr-2.5"]},
+                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.3.0.0\"></path>"],
+                                  "tag" => "svg"
+                                },
+                                %{"attributes" => %{}, "content" => ["Premium Support"], "tag" => "p"}
+                              ],
+                              "tag" => "li"
+                            }
+                          ],
+                          "tag" => "ul"
+                        }
+                      ],
+                      "tag" => "div"
+                    }
+                  ],
+                  "tag" => "div"
+                }
+              ],
+              "tag" => "div"
+            }
+          ],
+          "tag" => "div"
+        }
+      ],
+      "tag" => "section"
+    }
+  end
 end
 
 seeds = fn ->
@@ -751,7 +1293,7 @@ seeds = fn ->
   Beacon.ComponentDefinitions.create_component_definition!(%{
     name: "Header 1",
     thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-    blueprint: ComponentDefinitionHelpers.default_definition(),
+    blueprint: ComponentDefinitionHelpers.header_1(),
     component_category_id: headers.id
   })
 
