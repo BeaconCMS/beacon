@@ -6,7 +6,7 @@ defmodule BeaconWeb.API.PageController do
   action_fallback BeaconWeb.API.FallbackController
 
   def index(conn, _params) do
-    pages = Content.list_pages("dev") |> Repo.preload(:components)
+    pages = Content.list_pages(:dev) |> Repo.preload(:components)
     render(conn, :index, pages: pages)
   end
 
