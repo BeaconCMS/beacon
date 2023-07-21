@@ -54,6 +54,7 @@ defmodule BeaconWeb.API.ComponentController do
 
   defp build_component(entry) when is_binary(entry), do: entry
   defp build_component(%{"tag" => "raw", "attributes" => _, "content" => content}), do: content
+
   defp build_component(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     attributes = attributes |> Map.put("id", UUID.generate())
     content = content |> Enum.map(&build_component(&1))

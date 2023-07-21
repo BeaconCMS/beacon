@@ -58,7 +58,9 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
 
   defp render_node(node) when is_binary(node), do: node
-  defp render_node(%{ "tag" => "raw", "content" => content }), do: content # Special case to just output content as HTML
+  # Special case to just output content as HTML
+  defp render_node(%{"tag" => "raw", "content" => content}), do: content
+
   defp render_node(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     """
     <#{tag}#{render_attrs(attributes)}>

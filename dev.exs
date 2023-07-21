@@ -502,8 +502,7 @@ defmodule ComponentDefinitionHelpers do
                 },
                 %{
                   "attributes" => %{
-                    "class" => ["mb-16", "font-heading", "font-bold", "text-6xl", "sm:text-7xl",
-                      "text-gray-900"]
+                    "class" => ["mb-16", "font-heading", "font-bold", "text-6xl", "sm:text-7xl", "text-gray-900"]
                   },
                   "content" => ["Everything you need to launch a website"],
                   "tag" => "h2"
@@ -519,14 +518,23 @@ defmodule ComponentDefinitionHelpers do
                   "content" => [
                     %{
                       "attributes" => %{
-                        "class" => ["pt-8", "px-11", "xl:px-20", "pb-10", "bg-transparent",
-                          "border-b", "md:border-b-0", "md:border-r", "border-gray-200", "rounded-10"]
+                        "class" => [
+                          "pt-8",
+                          "px-11",
+                          "xl:px-20",
+                          "pb-10",
+                          "bg-transparent",
+                          "border-b",
+                          "md:border-b-0",
+                          "md:border-r",
+                          "border-gray-200",
+                          "rounded-10"
+                        ]
                       },
                       "content" => [
                         %{
                           "attributes" => %{
-                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg",
-                              "text-gray-900"]
+                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
                           },
                           "content" => ["Basic"],
                           "tag" => "h3"
@@ -541,16 +549,14 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold",
-                                  "text-lg", "text-gray-900"]
+                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
                               },
                               "content" => ["$"],
                               "tag" => "span"
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["font-heading", "font-semibold", "text-6xl",
-                                  "sm:text-7xl", "text-gray-900"]
+                                "class" => ["font-heading", "font-semibold", "text-6xl", "sm:text-7xl", "text-gray-900"]
                               },
                               "content" => ["29"],
                               "tag" => "span"
@@ -570,18 +576,40 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["group", "relative", "mb-9", "p-px", "w-full",
-                                  "font-heading", "font-semibold", "text-xs", "text-gray-900",
-                                  "bg-gradient-green", "uppercase", "tracking-px", "overflow-hidden",
-                                  "rounded-md"]
+                                "class" => [
+                                  "group",
+                                  "relative",
+                                  "mb-9",
+                                  "p-px",
+                                  "w-full",
+                                  "font-heading",
+                                  "font-semibold",
+                                  "text-xs",
+                                  "text-gray-900",
+                                  "bg-gradient-green",
+                                  "uppercase",
+                                  "tracking-px",
+                                  "overflow-hidden",
+                                  "rounded-md"
+                                ]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{
-                                    "class" => ["absolute", "top-0", "left-0", "transform",
-                                      "-translate-y-full", "group-hover:-translate-y-0", "h-full",
-                                      "w-full", "bg-gradient-green", "transition", "ease-in-out",
-                                      "duration-500"]
+                                    "class" => [
+                                      "absolute",
+                                      "top-0",
+                                      "left-0",
+                                      "transform",
+                                      "-translate-y-full",
+                                      "group-hover:-translate-y-0",
+                                      "h-full",
+                                      "w-full",
+                                      "bg-gradient-green",
+                                      "transition",
+                                      "ease-in-out",
+                                      "duration-500"
+                                    ]
                                   },
                                   "content" => [],
                                   "tag" => "div"
@@ -610,13 +638,14 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.0.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.0.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{
@@ -629,13 +658,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.1.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.1.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{
@@ -648,13 +678,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "font-medium",
-                                  "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.2.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.2.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
@@ -675,14 +706,12 @@ defmodule ComponentDefinitionHelpers do
                   "content" => [
                     %{
                       "attributes" => %{
-                        "class" => ["pt-8", "px-11", "xl:px-20", "pb-10", "bg-transparent",
-                          "rounded-10"]
+                        "class" => ["pt-8", "px-11", "xl:px-20", "pb-10", "bg-transparent", "rounded-10"]
                       },
                       "content" => [
                         %{
                           "attributes" => %{
-                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg",
-                              "text-gray-900"]
+                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
                           },
                           "content" => ["Premium"],
                           "tag" => "h3"
@@ -697,16 +726,14 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold",
-                                  "text-lg", "text-gray-900"]
+                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
                               },
                               "content" => ["$"],
                               "tag" => "span"
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["font-heading", "font-semibold", "text-6xl",
-                                  "sm:text-7xl", "text-gray-900"]
+                                "class" => ["font-heading", "font-semibold", "text-6xl", "sm:text-7xl", "text-gray-900"]
                               },
                               "content" => ["99"],
                               "tag" => "span"
@@ -726,18 +753,40 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["group", "relative", "mb-9", "p-px", "w-full",
-                                  "font-heading", "font-semibold", "text-xs", "text-gray-900",
-                                  "bg-gradient-green", "uppercase", "tracking-px", "overflow-hidden",
-                                  "rounded-md"]
+                                "class" => [
+                                  "group",
+                                  "relative",
+                                  "mb-9",
+                                  "p-px",
+                                  "w-full",
+                                  "font-heading",
+                                  "font-semibold",
+                                  "text-xs",
+                                  "text-gray-900",
+                                  "bg-gradient-green",
+                                  "uppercase",
+                                  "tracking-px",
+                                  "overflow-hidden",
+                                  "rounded-md"
+                                ]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{
-                                    "class" => ["absolute", "top-0", "left-0", "transform",
-                                      "-translate-y-full", "group-hover:-translate-y-0", "h-full",
-                                      "w-full", "bg-gradient-green", "transition", "ease-in-out",
-                                      "duration-500"]
+                                    "class" => [
+                                      "absolute",
+                                      "top-0",
+                                      "left-0",
+                                      "transform",
+                                      "-translate-y-full",
+                                      "group-hover:-translate-y-0",
+                                      "h-full",
+                                      "w-full",
+                                      "bg-gradient-green",
+                                      "transition",
+                                      "ease-in-out",
+                                      "duration-500"
+                                    ]
                                   },
                                   "content" => [],
                                   "tag" => "div"
@@ -766,13 +815,14 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.0.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.0.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{
@@ -785,13 +835,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.1.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.1.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{
@@ -804,13 +855,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.2.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.2.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
@@ -819,13 +871,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "font-medium",
-                                  "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.3.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.3.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{"attributes" => %{}, "content" => ["Premium Support"], "tag" => "p"}
@@ -846,23 +899,33 @@ defmodule ComponentDefinitionHelpers do
                   "content" => [
                     %{
                       "attributes" => %{
-                        "class" => ["relative", "pt-8", "px-11", "pb-10", "bg-white", "rounded-10",
-                          "shadow-8xl"]
+                        "class" => ["relative", "pt-8", "px-11", "pb-10", "bg-white", "rounded-10", "shadow-8xl"]
                       },
                       "content" => [
                         %{
                           "attributes" => %{
-                            "class" => ["absolute", "right-2", "top-2", "font-heading", "px-2.5",
-                              "py-1", "text-xs", "max-w-max", "bg-gray-100", "uppercase",
-                              "tracking-px", "rounded-full", "text-gray-900"]
+                            "class" => [
+                              "absolute",
+                              "right-2",
+                              "top-2",
+                              "font-heading",
+                              "px-2.5",
+                              "py-1",
+                              "text-xs",
+                              "max-w-max",
+                              "bg-gray-100",
+                              "uppercase",
+                              "tracking-px",
+                              "rounded-full",
+                              "text-gray-900"
+                            ]
                           },
                           "content" => ["Popular choice"],
                           "tag" => "p"
                         },
                         %{
                           "attributes" => %{
-                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg",
-                              "text-gray-900"]
+                            "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
                           },
                           "content" => ["Enterprise"],
                           "tag" => "h3"
@@ -877,16 +940,14 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold",
-                                  "text-lg", "text-gray-900"]
+                                "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
                               },
                               "content" => ["$"],
                               "tag" => "span"
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["font-heading", "font-semibold", "text-6xl",
-                                  "sm:text-7xl", "text-gray-900"]
+                                "class" => ["font-heading", "font-semibold", "text-6xl", "sm:text-7xl", "text-gray-900"]
                               },
                               "content" => ["199"],
                               "tag" => "span"
@@ -906,24 +967,44 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["absolute", "top-0", "left-0", "w-full", "h-full",
-                                  "bg-gradient-green", "opacity-0", "group-hover:opacity-50", "p-1",
-                                  "rounded-lg", "transition", "ease-out", "duration-300"]
+                                "class" => [
+                                  "absolute",
+                                  "top-0",
+                                  "left-0",
+                                  "w-full",
+                                  "h-full",
+                                  "bg-gradient-green",
+                                  "opacity-0",
+                                  "group-hover:opacity-50",
+                                  "p-1",
+                                  "rounded-lg",
+                                  "transition",
+                                  "ease-out",
+                                  "duration-300"
+                                ]
                               },
                               "content" => [],
                               "tag" => "div"
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["p-1", "w-full", "font-heading", "font-semibold",
-                                  "text-xs", "text-gray-900", "uppercase", "tracking-px",
-                                  "overflow-hidden", "rounded-md"]
+                                "class" => [
+                                  "p-1",
+                                  "w-full",
+                                  "font-heading",
+                                  "font-semibold",
+                                  "text-xs",
+                                  "text-gray-900",
+                                  "uppercase",
+                                  "tracking-px",
+                                  "overflow-hidden",
+                                  "rounded-md"
+                                ]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{
-                                    "class" => ["relative", "z-10", "p-4", "bg-gradient-green",
-                                      "overflow-hidden", "rounded-md"]
+                                    "class" => ["relative", "z-10", "p-4", "bg-gradient-green", "overflow-hidden", "rounded-md"]
                                   },
                                   "content" => [
                                     %{"attributes" => %{}, "content" => ["Join now"], "tag" => "p"}
@@ -941,13 +1022,14 @@ defmodule ComponentDefinitionHelpers do
                           "content" => [
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.0.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.0.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{
@@ -960,13 +1042,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.1.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.1.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{
@@ -979,13 +1062,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "mb-3",
-                                  "font-medium", "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.2.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.2.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
@@ -994,13 +1078,14 @@ defmodule ComponentDefinitionHelpers do
                             },
                             %{
                               "attributes" => %{
-                                "class" => ["flex", "items-center", "font-heading", "font-medium",
-                                  "text-base", "text-gray-900"]
+                                "class" => ["flex", "items-center", "font-heading", "font-medium", "text-base", "text-gray-900"]
                               },
                               "content" => [
                                 %{
                                   "attributes" => %{"class" => ["mr-2.5"]},
-                                  "content" => ["<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.3.0.0\"></path>"],
+                                  "content" => [
+                                    "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.3.0.0\"></path>"
+                                  ],
                                   "tag" => "svg"
                                 },
                                 %{"attributes" => %{}, "content" => ["Premium Support"], "tag" => "p"}
