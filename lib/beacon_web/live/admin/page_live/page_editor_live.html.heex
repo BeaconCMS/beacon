@@ -34,6 +34,7 @@
       value={@template}
       opts={Map.merge(LiveMonacoEditor.default_opts(), %{"language" => @initial_language})}
     />
+    <%= template_error(@form) %>
 
     <%= for mod <- Beacon.Config.fetch!(@page.site).extra_page_fields do %>
       <%= extra_page_field(mod, @extra_fields[mod.name()], __ENV__) %>

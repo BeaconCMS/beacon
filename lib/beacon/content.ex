@@ -20,6 +20,45 @@ defmodule Beacon.Content do
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
+  defp validate_page_template(changeset) do
+    format = Changeset.get_field(changeset, :format)
+    template = Changeset.get_field(changeset, :template)
+    do_validate_page_template(changeset, format, template)
+  end
+
+  defp do_validate_page_template(changeset, :heex = _format, template) when is_binary(template) do
+    site = Changeset.get_field(changeset, :site)
+    path = Changeset.get_field(changeset, :path)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    case Beacon.Template.HEEx.compile(template, metadata) do
+      {:cont, _ast} ->
+        {:ok, changeset}
+
+      {:halt, %{description: description}} ->
+        {:error, Changeset.add_error(changeset, :template, description)}
+
+      {:halt, _} ->
+        {:error, Changeset.add_error(changeset, :template, "invalid template")}
+    end
+  end
+
+  defp do_validate_page_template(changeset, :markdown = _format, template) when is_binary(template) do
+    site = Changeset.get_field(changeset, :site)
+    path = Changeset.get_field(changeset, :path)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+      {:cont, _template} ->
+        {:ok, changeset}
+
+      {:halt, %{message: message}} ->
+        {:error, Changeset.add_error(changeset, :template, message)}
+    end
+  end
+
+  defp do_validate_page_template(changeset, _format, _template), do: {:ok, changeset}
+
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
 
@@ -172,6 +211,53 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns all layout events with associated snapshot if available.
+
+  ## Example
+
+      iex> list_layout_events(:my_site, layout_id)
+      [
+        %LayoutEvent{event: :created, snapshot: nil},
+        %LayoutEvent{event: :published, snapshot: %LayoutSnapshot{}}
+      ]
+
+  """
+  @doc type: :layouts
+  @spec list_layout_events(Site.t(), Ecto.UUID.t()) :: [LayoutEvent.t()]
+  def list_layout_events(site, layout_id) when is_atom(site) and is_binary(layout_id) do
+    Repo.all(
+      from event in LayoutEvent,
+        left_join: snapshot in LayoutSnapshot,
+        on: snapshot.event_id == event.id,
+        where: event.site == ^site and event.layout_id == ^layout_id,
+        preload: [snapshot: snapshot],
+        order_by: [desc: event.inserted_at]
+    )
+  end
+
+  @doc """
+  Returns the latest layout event.
+
+  Useful to find the status of a layout.
+
+  ## Example
+
+      iex> get_latest_layout_event(:my_site, layout_id)
+      %LayoutEvent{event: :published}
+
+  """
+  @doc type: :layouts
+  @spec get_latest_layout_event(Site.t(), Ecto.UUID.t()) :: LayoutEvent.t() | nil
+  def get_latest_layout_event(site, layout_id) when is_atom(site) and is_binary(layout_id) do
+    Repo.one(
+      from event in LayoutEvent,
+        where: event.site == ^site and event.layout_id == ^layout_id,
+        limit: 1,
+        order_by: [desc: event.inserted_at]
+    )
+  end
+
+  @doc """
   List layouts.
 
   ## Options
@@ -283,13 +369,20 @@ defmodule Beacon.Content do
   """
   @doc type: :pages
   @spec validate_page(Page.t(), map()) :: Ecto.Changeset.t()
-  def validate_page(%Page{} = page, params) when is_map(params) do
-    {extra_params, page_params} = Map.pop(params, "extra")
+  def validate_page(%Page{} = page, attrs) when is_map(attrs) do
+    {extra_attrs, page_attrs} = Map.pop(attrs, "extra")
 
-    page
-    |> change_page(page_params)
-    |> Map.put(:action, :validate)
-    |> PageField.apply_changesets(page.site, extra_params)
+    changeset =
+      page
+      |> change_page(page_attrs)
+      |> Map.put(:action, :validate)
+
+    site = Ecto.Changeset.get_field(changeset, :site)
+
+    case validate_page_template(changeset) do
+      {:ok, changeset} -> PageField.apply_changesets(changeset, site, extra_attrs)
+      {:error, changeset} -> changeset
+    end
   end
 
   @doc """
@@ -320,14 +413,11 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec create_page(map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
-    create = fn attrs ->
-      %Page{}
-      |> Page.create_changeset(attrs)
-      |> Repo.insert()
-    end
-
     Repo.transact(fn ->
-      with {:ok, page} <- create.(attrs),
+      changeset = Page.create_changeset(%Page{}, attrs)
+
+      with {:ok, _} <- validate_page_template(changeset),
+           {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
@@ -359,14 +449,11 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def update_page(%Page{} = page, attrs) do
-    update = fn page, attrs ->
-      page
-      |> Page.update_changeset(attrs)
-      |> Repo.update()
-    end
-
     Repo.transact(fn ->
-      with {:ok, page} <- update.(page, attrs),
+      changeset = Page.update_changeset(page, attrs)
+
+      with {:ok, _} <- validate_page_template(changeset),
+           {:ok, page} <- Repo.update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -384,7 +471,10 @@ defmodule Beacon.Content do
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
-      with {:ok, event} <- create_page_event(page, "published"),
+      changeset = change_page(page, %{"site" => page.site, "path" => page.path, "format" => page.format, "template" => page.template})
+
+      with {:ok, _} <- validate_page_template(changeset),
+           {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
         :ok = PubSub.page_published(page)
@@ -500,11 +590,36 @@ defmodule Beacon.Content do
       %Page{}
 
   """
-  @doc type: :page
+  @doc type: :pages
   @spec get_page_by(Site.t(), keyword(), keyword()) :: Page.t() | nil
   def get_page_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
     Repo.get_by(Page, clauses, opts)
+  end
+
+  @doc """
+  Returns all page events with associated snapshot if available.
+
+  ## Example
+
+      iex> list_page_events(:my_site, page_id)
+      [
+        %PageEvent{event: :created, snapshot: nil},
+        %PageEvent{event: :published, snapshot: %PageSnapshot{}}
+      ]
+
+  """
+  @doc type: :page
+  @spec list_page_events(Site.t(), Ecto.UUID.t()) :: [PageEvent.t()]
+  def list_page_events(site, page_id) when is_atom(site) and is_binary(page_id) do
+    Repo.all(
+      from event in PageEvent,
+        left_join: snapshot in PageSnapshot,
+        on: snapshot.event_id == event.id,
+        where: event.site == ^site and event.page_id == ^page_id,
+        preload: [snapshot: snapshot],
+        order_by: [desc: event.inserted_at]
+    )
   end
 
   @doc """
@@ -514,16 +629,16 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_page_latest_event(page_id)
+      iex> get_latest_page_event(:my_site, page_id)
       %PageEvent{event: :published}
 
   """
-  @doc type: :page
-  @spec get_page_latest_event(Page.t()) :: PageEvent.t() | nil
-  def get_page_latest_event(%Page{} = page) do
+  @doc type: :pages
+  @spec get_latest_page_event(Site.t(), Ecto.UUID.t()) :: PageEvent.t() | nil
+  def get_latest_page_event(site, page_id) when is_atom(site) and is_binary(page_id) do
     Repo.one(
       from event in PageEvent,
-        where: event.site == ^page.site and event.page_id == ^page.id,
+        where: event.site == ^site and event.page_id == ^page_id,
         limit: 1,
         order_by: [desc: event.inserted_at]
     )

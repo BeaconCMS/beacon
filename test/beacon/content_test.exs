@@ -47,9 +47,55 @@ defmodule Beacon.ContentTest do
 
       assert [%Layout{title: "layout_a v2"}] = Content.list_published_layouts(:my_site)
     end
+
+    test "list_layout_events" do
+      layout = layout_fixture()
+      Content.publish_layout(layout)
+
+      assert [
+               %LayoutEvent{event: :published, snapshot: %LayoutSnapshot{}},
+               %LayoutEvent{event: :created, snapshot: nil}
+             ] = Content.list_layout_events(layout.site, layout.id)
+    end
+
+    test "get_latest_layout_event" do
+      layout = layout_fixture()
+      assert %LayoutEvent{event: :created} = Content.get_latest_layout_event(layout.site, layout.id)
+
+      Content.publish_layout(layout)
+      assert %LayoutEvent{event: :published} = Content.get_latest_layout_event(layout.site, layout.id)
+    end
   end
 
   describe "pages" do
+    test "validate invalid template" do
+      layout = layout_fixture()
+
+      assert %Ecto.Changeset{errors: [template: {error, []}], valid?: false} =
+               Content.validate_page(%Page{}, %{
+                 "site" => "my_site",
+                 "path" => "/",
+                 "template" => "<div>invalid</span>",
+                 "layout_id" => layout.id
+               })
+
+      assert error =~ "unmatched closing tag"
+    end
+
+    test "create page should validate invalid templates" do
+      layout = layout_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+               Content.create_page(%{
+                 "site" => "my_site",
+                 "path" => "/",
+                 "template" => "<div>invalid</span>",
+                 "layout_id" => layout.id
+               })
+
+      assert error =~ "unmatched closing tag"
+    end
+
     # TODO: require paths starting with / which will make this test fail
     test "create page with empty path" do
       layout = layout_fixture()
@@ -74,6 +120,26 @@ defmodule Beacon.ContentTest do
       })
 
       assert %PageEvent{event: :created} = Repo.one(PageEvent)
+    end
+
+    test "update page should validate invalid templates" do
+      page = page_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+               Content.update_page(page, %{"template" => "<div>invalid</span>"})
+
+      assert error =~ "unmatched closing tag"
+    end
+
+    test "publish page should validate invalid templates" do
+      page = page_fixture()
+
+      # simulate an invalid template
+      Repo.update_all(Page, set: [template: "<div>invalid</span>"])
+      page = Repo.reload!(page)
+
+      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} = Content.publish_page(page)
+      assert error =~ "unmatched closing tag"
     end
 
     test "publish page should create a published event" do
@@ -122,18 +188,30 @@ defmodule Beacon.ContentTest do
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
     end
 
-    test "get_page_latest_event" do
+    test "list_page_events" do
       page = page_fixture()
-      assert %PageEvent{event: :created} = Content.get_page_latest_event(page)
+      Content.publish_page(page)
+      Content.unpublish_page(page)
+
+      assert [
+               %PageEvent{event: :unpublished, snapshot: nil},
+               %PageEvent{event: :published, snapshot: %PageSnapshot{}},
+               %PageEvent{event: :created, snapshot: nil}
+             ] = Content.list_page_events(page.site, page.id)
+    end
+
+    test "get_latest_page_event" do
+      page = page_fixture()
+      assert %PageEvent{event: :created} = Content.get_latest_page_event(page.site, page.id)
 
       Content.publish_page(page)
-      assert %PageEvent{event: :published} = Content.get_page_latest_event(page)
+      assert %PageEvent{event: :published} = Content.get_latest_page_event(page.site, page.id)
 
       Content.unpublish_page(page)
-      assert %PageEvent{event: :unpublished} = Content.get_page_latest_event(page)
+      assert %PageEvent{event: :unpublished} = Content.get_latest_page_event(page.site, page.id)
 
       Content.publish_page(page)
-      assert %PageEvent{event: :published} = Content.get_page_latest_event(page)
+      assert %PageEvent{event: :published} = Content.get_latest_page_event(page.site, page.id)
     end
 
     test "lifecycle after_create_page" do

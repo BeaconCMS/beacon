@@ -8,11 +8,21 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.ShowComponent do
     ~H"""
     <div>
       <.header class="mb-8"><%= @asset.file_name %></.header>
-      <img :if={@is_image?} src={@url} class="mb-8" />
+      <BeaconWeb.Components.image_set :if={@is_image?} asset={@asset} class="mb-8" />
       <ul>
-        <%= for {url, index} <- @urls do %>
-          <li class="flex mb-8">
-            <input type="text" id={"url-#{index}"} value={url} class="input w-full border-neutral-200 bg-neutral-100 py-2 border-2 pr-8" />
+        <%= for {{key, url}, index} <- @urls do %>
+          <li class="flex m-8">
+            <div class="w-full">
+              <label class="block text-sm font-semibold leading-6 text-zinc-800 capitalize">
+                <%= key %>
+              </label>
+              <input
+                type="text"
+                id={"url-#{index}"}
+                value={url}
+                class="flex  mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6"
+              />
+            </div>
             <div class="flex">
               <button phx-click={JS.dispatch("beacon_admin:clipcopy", to: "#url-#{index}")}>
                 <.icon name="hero-clipboard-document-check-solid" class="h-5 w-5" />

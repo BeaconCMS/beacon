@@ -47,7 +47,7 @@ defmodule Beacon.MediaLibrary do
     }
 
     metadata.resource
-    |> cast(attrs, [:site, :file_name, :media_type])
+    |> cast(attrs, [:site, :file_name, :media_type, :usage_tag])
     |> validate_required([:site, :file_name, :media_type])
   end
 
@@ -66,17 +66,63 @@ defmodule Beacon.MediaLibrary do
     |> validate_required([:site, :file_name, :media_type, :file_body])
   end
 
+  def change_derivation(change, attrs \\ %{}) do
+    change
+    |> cast(attrs, [:usage_tag, :source_id])
+    |> validate_required([:usage_tag, :source_id])
+  end
+
+  def url_for(nil), do: nil
+
   def url_for(asset) do
-    asset
-    |> backends_for()
-    |> hd()
-    |> get_url_for(asset)
+    {_, url} =
+      asset
+      |> backends_for()
+      |> hd()
+      |> get_url_for(asset)
+
+    url
+  end
+
+  def url_for(nil, _), do: nil
+
+  def url_for(asset, backend_key) do
+    {_, url} =
+      asset
+      |> backends_for()
+      |> Enum.find(fn backend ->
+        backend.backend_key() == backend_key
+      end)
+      |> get_url_for(asset)
+
+    url
   end
 
   def urls_for(asset) do
     asset
     |> backends_for()
     |> Enum.map(&get_url_for(&1, asset))
+  end
+
+  def srcset_for_image(asset, sources) do
+    asset = Repo.preload(asset, :assets)
+
+    asset.assets
+    |> filter_sources(sources)
+    |> build_srcset()
+  end
+
+  defp filter_sources(assets, sources) do
+    Enum.filter(
+      assets,
+      fn asset ->
+        Enum.any?(sources, fn source -> asset.usage_tag == source end)
+      end
+    )
+  end
+
+  defp build_srcset(assets) do
+    Enum.map(assets, fn asset -> "#{url_for(asset)} #{asset.usage_tag}" end)
   end
 
   defp backends_for(asset) do
@@ -86,8 +132,10 @@ defmodule Beacon.MediaLibrary do
     |> Keyword.fetch!(:backends)
   end
 
-  defp get_url_for({backend, config}, asset), do: backend.url_for(asset, config)
-  defp get_url_for(backend, asset), do: backend.url_for(asset)
+  defp get_url_for({backend, config}, asset),
+    do: {backend.backend_key(), backend.url_for(asset, config)}
+
+  defp get_url_for(backend, asset), do: {backend.backend_key(), backend.url_for(asset)}
 
   def is_image?(%{file_name: file_name}) do
     ext = Path.extname(file_name)
@@ -134,19 +182,25 @@ defmodule Beacon.MediaLibrary do
   @spec list_assets(Site.t()) :: [Asset.t()]
   def list_assets(site) do
     Repo.all(
-      from asset in Asset,
+      from(asset in Asset,
         where: asset.site == ^site,
         where: is_nil(asset.deleted_at),
-        order_by: [desc: asset.inserted_at]
+        where: is_nil(asset.source_id),
+        order_by: [desc: asset.inserted_at],
+        preload: [:thumbnail]
+      )
     )
   end
 
   @deprecated "Use list_assets/1 instead."
   def list_assets do
     Repo.all(
-      from asset in Asset,
+      from(asset in Asset,
         where: is_nil(asset.deleted_at),
-        order_by: [desc: asset.inserted_at]
+        where: is_nil(asset.source_id),
+        order_by: [desc: asset.inserted_at],
+        preload: [:thumbnail]
+      )
     )
   end
 
@@ -156,8 +210,11 @@ defmodule Beacon.MediaLibrary do
     query = "%#{query}%"
 
     Repo.all(
-      from asset in Asset,
-        where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query)
+      from(asset in Asset,
+        where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query),
+        where: is_nil(asset.source_id),
+        preload: [:thumbnail]
+      )
     )
   end
 
@@ -170,9 +227,12 @@ defmodule Beacon.MediaLibrary do
     query = "%#{query}%"
 
     Repo.all(
-      from asset in Asset,
+      from(asset in Asset,
         where: asset.site == ^site,
-        where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query)
+        where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query),
+        where: is_nil(asset.source_id),
+        preload: [:thumbnail]
+      )
     )
   end
 

@@ -27,18 +27,17 @@ defmodule Beacon.MediaLibrary.Processors.Image do
     String.replace_trailing(name, ext, target_file_type)
   end
 
-  def thumbnail!(%UploadMetadata{} = metadata) do
+  def thumbnail!(asset, %UploadMetadata{} = metadata) do
     metadata
-    |> create_thumbnail()
+    |> create_thumbnail(asset)
     |> MediaLibrary.send_to_cdns()
     |> MediaLibrary.save_asset!()
 
     metadata
   end
 
-  def create_thumbnail(metadata) do
-    name = append_to_filename(metadata.name, "thumb")
-    ext = Path.extname(name)
+  def create_thumbnail(metadata, asset) do
+    ext = Path.extname(metadata.name)
 
     output =
       metadata.output
@@ -46,13 +45,47 @@ defmodule Beacon.MediaLibrary.Processors.Image do
       |> Image.thumbnail!(@thumbnail_size, crop: :attention)
       |> Image.write!(:memory, suffix: ext)
 
+    resource = MediaLibrary.change_derivation(metadata.resource, %{"usage_tag" => "thumbnail", "source_id" => asset.id})
     name = append_to_filename(metadata.name, "thumb")
     size = byte_size(output)
-    %{metadata | output: output, name: name, size: size}
+    %{metadata | output: output, name: name, size: size, resource: resource}
   end
 
   defp append_to_filename(name, tag) do
     ext = Path.extname(name)
     String.replace_trailing(name, ext, "-#{tag}#{ext}")
+  end
+
+  def variant_480w!(asset, %UploadMetadata{} = metadata) do
+    metadata
+    |> create_480w(asset)
+    |> MediaLibrary.send_to_cdns()
+    |> MediaLibrary.save_asset!()
+
+    metadata
+  end
+
+  def create_480w(metadata, asset) do
+    ext = Path.extname(metadata.name)
+
+    image = Image.open!(metadata.output)
+    width = Image.width(image)
+
+    scale =
+      cond do
+        width == 400 -> 1
+        width > 400 -> 400 / width
+        width < 400 -> width / 400
+      end
+
+    output =
+      image
+      |> Image.resize!(scale)
+      |> Image.write!(:memory, suffix: ext)
+
+    resource = MediaLibrary.change_derivation(metadata.resource, %{"usage_tag" => "480w", "source_id" => asset.id})
+    name = append_to_filename(metadata.name, "480w")
+    size = byte_size(output)
+    %{metadata | output: output, name: name, size: size, resource: resource}
   end
 end
