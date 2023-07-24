@@ -61,7 +61,7 @@ defmodule BeaconWeb.API.ComponentController do
 
   defp build_component(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     attributes =  Map.put(attributes, "id", UUID.generate())
-    content = content |> Enum.map(&build_component(&1))
+    content = Enum.map(content, &build_component/1)
     %{"tag" => tag, "attributes" => attributes, "content" => content}
   end
 
