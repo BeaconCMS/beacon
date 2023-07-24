@@ -76,7 +76,7 @@ defmodule BeaconWeb.API.ComponentJSON do
     " " <> str
   end
 
-  defp render_attr(key, val) when is_list(val), do: "#{key}=\"#{val |> Enum.join(" ")}\""
+  defp render_attr(key, val) when is_list(val), do: "#{key}=\"#{Enum.join(val, " ")}\""
   defp render_attr("id", val), do: "data-id=\"#{val}\""
   defp render_attr("slot", false), do: ""
   defp render_attr("slot", _), do: "data-slot"
