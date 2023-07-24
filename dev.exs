@@ -143,975 +143,6 @@ defmodule BeaconTagsField do
 end
 
 defmodule ComponentDefinitionHelpers do
-  def create_definition(tag, attributes, content) do
-    %{
-      "tag" => tag,
-      "attributes" => attributes,
-      "content" => content
-    }
-  end
-
-  def default_definition do
-    %{
-      "tag" => "div",
-      "attributes" => %{"root" => true},
-      "content" => [
-        %{
-          "name" => "title",
-          "attributes" => %{
-            "class" => ["text-blue-500", "text-xl"],
-            "slot" => true
-          },
-          "content" => ["I am the component header"]
-        },
-        %{
-          "name" => "paragraph",
-          "attributes" => %{
-            "class" => ["text-md"],
-            "slot" => true
-          },
-          "content" => [
-            %{
-              "name" => "link",
-              "attributes" => %{
-                "class" => ["px-2", "font-bold"],
-                "href" => "/product"
-              },
-              "content" => ["Product"]
-            },
-            %{
-              "name" => "link",
-              "attributes" => %{
-                "class" => ["px-2", "font-bold"],
-                "href" => "/pricing"
-              },
-              "content" => ["Pricing"]
-            },
-            %{
-              "name" => "link",
-              "attributes" => %{
-                "class" => ["px-2", "font-bold"],
-                "href" => "/about-us"
-              },
-              "content" => ["About us"]
-            }
-          ]
-        },
-        %{
-          "name" => "aside",
-          "attributes" => %{
-            "class" => ["bg-gray-200"],
-            "slot" => true
-          },
-          "content" => [
-            "This is some sample html",
-            %{
-              "name" => "button",
-              "attributes" => %{
-                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"]
-              },
-              "content" => ["Sign in"]
-            },
-            " and ",
-            %{
-              "name" => "button",
-              "attributes" => %{
-                "class" => ["bg-blue-500", "hover:bg-blue-700", "text-white", "font-bold", "py-2", "px-4", "rounded", "mx-2"]
-              },
-              "content" => ["Sign up"]
-            },
-            " for you to play with"
-          ]
-        }
-      ]
-    }
-  end
-
-  # def nav_1 do
-  #   %{
-  #     "tag" => "nav",
-  #     "attributes" => %{},
-  #     "content" => [
-  #       %{
-  #         "tag" => "div",
-  #         "attributes" => %{
-  #           "class" => ["flex", "justify-between", "px-8", "py-5", "bg-white"]
-  #         },
-  #         "content" => [
-  #           %{
-  #             "tag" => "div",
-  #             "attributes" => %{
-  #               "class" => ["w-auto", "mr-14"]
-  #             },
-  #             "content" => [
-  #               %{
-  #                 "name" => "link",
-  #                 "attributes" => %{"href" => "#"},
-  #                 "content" => [
-  #                   %{
-  #                     "tag" => "img",
-  #                     "attributes" => %{"src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"},
-  #                     "content" => []
-  #                   }
-  #                 ]
-  #               }
-  #             ]
-  #           },
-  #           %{
-  #             "tag" => "div",
-  #             "attributes" => %{
-  #               "class" => ["w-auto", "flex", "flex-wrap", "items-center"]
-  #             },
-  #             "content" => [
-  #               %{
-  #                 "tag" => "ul",
-  #                 "attributes" => %{
-  #                   "class" => ["flex", "items-center", "mr-10"]
-  #                 },
-  #                 "content" => [
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Features"]
-  #                       }
-  #                     ]
-  #                   },
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Solutions"]
-  #                       }
-  #                     ]
-  #                   },
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Resources"]
-  #                       }
-  #                     ]
-  #                   },
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Pricing"]
-  #                       }
-  #                     ]
-  #                   }
-  #                 ]
-  #               },
-  #               %{
-  #                 "name" => "button",
-  #                 "attributes" => %{
-  #                   "class" => [
-  #                     "text-white",
-  #                     "px-2",
-  #                     "py-1",
-  #                     "block",
-  #                     "w-full",
-  #                     "md:w-auto",
-  #                     "text-lg",
-  #                     "text-gray-900",
-  #                     "font-medium",
-  #                     "overflow-hidden",
-  #                     "rounded-10",
-  #                     "bg-blue-500",
-  #                     "rounded"
-  #                   ]
-  #                 },
-  #                 "content" => ["Start Free Trial"]
-  #               }
-  #             ]
-  #           }
-  #         ]
-  #       }
-  #     ]
-  #   }
-  # end
-
-  # def nav_2 do
-  #   %{
-  #     "tag" => "nav",
-  #     "attributes" => %{},
-  #     "content" => [
-  #       %{
-  #         "tag" => "div",
-  #         "attributes" => %{
-  #           "class" => ["flex", "justify-between", "px-8", "py-5", "bg-white"]
-  #         },
-  #         "content" => [
-  #           %{
-  #             "tag" => "div",
-  #             "attributes" => %{
-  #               "class" => ["w-auto", "mr-14"]
-  #             },
-  #             "content" => [
-  #               %{
-  #                 "name" => "link",
-  #                 "attributes" => %{"href" => "#"},
-  #                 "content" => [
-  #                   %{
-  #                     "tag" => "img",
-  #                     "attributes" => %{"src" => "https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"},
-  #                     "content" => []
-  #                   }
-  #                 ]
-  #               }
-  #             ]
-  #           },
-  #           %{
-  #             "tag" => "div",
-  #             "attributes" => %{
-  #               "class" => ["w-auto", "flex", "flex-wrap", "items-center"]
-  #             },
-  #             "content" => [
-  #               %{
-  #                 "tag" => "ul",
-  #                 "attributes" => %{
-  #                   "class" => ["flex", "items-center", "mr-10"]
-  #                 },
-  #                 "content" => [
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Features"]
-  #                       }
-  #                     ]
-  #                   },
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Solutions"]
-  #                       }
-  #                     ]
-  #                   },
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Resources"]
-  #                       }
-  #                     ]
-  #                   },
-  #                   %{
-  #                     "tag" => "li",
-  #                     "attributes" => %{
-  #                       "class" => ["mr-9", "text-gray-900", "hover:text-gray-700", "text-lg"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "name" => "link",
-  #                         "attributes" => %{"href" => "#"},
-  #                         "content" => ["Pricing"]
-  #                       }
-  #                     ]
-  #                   }
-  #                 ]
-  #               }
-  #             ]
-  #           },
-  #           %{
-  #             "tag" => "div",
-  #             "attributes" => %{
-  #               "class" => ["w-auto", "flex", "flex-wrap", "items-center"]
-  #             },
-  #             "content" => [
-  #               %{
-  #                 "name" => "button",
-  #                 "attributes" => %{
-  #                   "class" => [
-  #                     "text-white",
-  #                     "px-2",
-  #                     "py-1",
-  #                     "block",
-  #                     "w-full",
-  #                     "md:w-auto",
-  #                     "text-lg",
-  #                     "text-gray-900",
-  #                     "font-medium",
-  #                     "overflow-hidden",
-  #                     "rounded-10",
-  #                     "bg-blue-500",
-  #                     "rounded"
-  #                   ]
-  #                 },
-  #                 "content" => ["Start Free Trial"]
-  #               }
-  #             ]
-  #           }
-  #         ]
-  #       }
-  #     ]
-  #   }
-  # end
-
-  # def header_1 do
-  #   %{
-  #     "attributes" => %{"class" => ["pt-28", "pb-32", "bg-gray-50", "overflow-hidden"]},
-  #     "content" => [
-  #       %{
-  #         "attributes" => %{"class" => ["container", "mx-auto", "px-4"]},
-  #         "content" => [
-  #           %{
-  #             "attributes" => %{"class" => ["max-w-xl"]},
-  #             "content" => [
-  #               %{
-  #                 "attributes" => %{"class" => ["inline-block", "mb-3", "text-gray-600", "text-base"]},
-  #                 "content" => ["Flexible Pricing Plan"],
-  #                 "tag" => "span"
-  #               },
-  #               %{
-  #                 "attributes" => %{
-  #                   "class" => ["mb-16", "font-heading", "font-bold", "text-6xl", "sm:text-7xl", "text-gray-900"]
-  #                 },
-  #                 "content" => ["Everything you need to launch a website"],
-  #                 "tag" => "h2"
-  #               }
-  #             ],
-  #             "tag" => "div"
-  #           },
-  #           %{
-  #             "attributes" => %{"class" => ["flex", "flex-wrap"]},
-  #             "content" => [
-  #               %{
-  #                 "attributes" => %{"class" => ["w-full", "md:w-1/3"]},
-  #                 "content" => [
-  #                   %{
-  #                     "attributes" => %{
-  #                       "class" => [
-  #                         "pt-8",
-  #                         "px-11",
-  #                         "xl:px-20",
-  #                         "pb-10",
-  #                         "bg-transparent",
-  #                         "border-b",
-  #                         "md:border-b-0",
-  #                         "md:border-r",
-  #                         "border-gray-200",
-  #                         "rounded-10"
-  #                       ]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "attributes" => %{
-  #                           "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
-  #                         },
-  #                         "content" => ["Basic"],
-  #                         "tag" => "h3"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["mb-5", "text-gray-600", "text-sm"]},
-  #                         "content" => ["Best for freelancers"],
-  #                         "tag" => "p"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["mb-9", "flex"]},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
-  #                             },
-  #                             "content" => ["$"],
-  #                             "tag" => "span"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["font-heading", "font-semibold", "text-6xl", "sm:text-7xl", "text-gray-900"]
-  #                             },
-  #                             "content" => ["29"],
-  #                             "tag" => "span"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["font-heading", "font-semibold", "self-end"]
-  #                             },
-  #                             "content" => ["/ m"],
-  #                             "tag" => "span"
-  #                           }
-  #                         ],
-  #                         "tag" => "div"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["p-1"]},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => [
-  #                                 "group",
-  #                                 "relative",
-  #                                 "mb-9",
-  #                                 "p-px",
-  #                                 "w-full",
-  #                                 "font-heading",
-  #                                 "font-semibold",
-  #                                 "text-xs",
-  #                                 "text-gray-900",
-  #                                 "bg-gradient-green",
-  #                                 "uppercase",
-  #                                 "tracking-px",
-  #                                 "overflow-hidden",
-  #                                 "rounded-md"
-  #                               ]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{
-  #                                   "class" => [
-  #                                     "absolute",
-  #                                     "top-0",
-  #                                     "left-0",
-  #                                     "transform",
-  #                                     "-translate-y-full",
-  #                                     "group-hover:-translate-y-0",
-  #                                     "h-full",
-  #                                     "w-full",
-  #                                     "bg-gradient-green",
-  #                                     "transition",
-  #                                     "ease-in-out",
-  #                                     "duration-500"
-  #                                   ]
-  #                                 },
-  #                                 "content" => [],
-  #                                 "tag" => "div"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{
-  #                                   "class" => ["p-4", "bg-gray-50", "overflow-hidden", "rounded-md"]
-  #                                 },
-  #                                 "content" => [
-  #                                   %{
-  #                                     "attributes" => %{"class" => ["relative", "z-10"]},
-  #                                     "content" => ["Join now"],
-  #                                     "tag" => "p"
-  #                                   }
-  #                                 ],
-  #                                 "tag" => "div"
-  #                               }
-  #                             ],
-  #                             "tag" => "button"
-  #                           }
-  #                         ],
-  #                         "tag" => "div"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.0.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{},
-  #                                 "content" => ["100GB Cloud Storage"],
-  #                                 "tag" => "p"
-  #                               }
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.1.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{},
-  #                                 "content" => ["10 Email Connection"],
-  #                                 "tag" => "p"
-  #                               }
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.0.0.4.2.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
-  #                             ],
-  #                             "tag" => "li"
-  #                           }
-  #                         ],
-  #                         "tag" => "ul"
-  #                       }
-  #                     ],
-  #                     "tag" => "div"
-  #                   }
-  #                 ],
-  #                 "tag" => "div"
-  #               },
-  #               %{
-  #                 "attributes" => %{"class" => ["w-full", "md:w-1/3"]},
-  #                 "content" => [
-  #                   %{
-  #                     "attributes" => %{
-  #                       "class" => ["pt-8", "px-11", "xl:px-20", "pb-10", "bg-transparent", "rounded-10"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "attributes" => %{
-  #                           "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
-  #                         },
-  #                         "content" => ["Premium"],
-  #                         "tag" => "h3"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["mb-5", "text-gray-600", "text-sm"]},
-  #                         "content" => ["Best for small agency"],
-  #                         "tag" => "p"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["mb-9", "flex"]},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
-  #                             },
-  #                             "content" => ["$"],
-  #                             "tag" => "span"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["font-heading", "font-semibold", "text-6xl", "sm:text-7xl", "text-gray-900"]
-  #                             },
-  #                             "content" => ["99"],
-  #                             "tag" => "span"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["font-heading", "font-semibold", "self-end"]
-  #                             },
-  #                             "content" => ["/ m"],
-  #                             "tag" => "span"
-  #                           }
-  #                         ],
-  #                         "tag" => "div"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["p-1"]},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => [
-  #                                 "group",
-  #                                 "relative",
-  #                                 "mb-9",
-  #                                 "p-px",
-  #                                 "w-full",
-  #                                 "font-heading",
-  #                                 "font-semibold",
-  #                                 "text-xs",
-  #                                 "text-gray-900",
-  #                                 "bg-gradient-green",
-  #                                 "uppercase",
-  #                                 "tracking-px",
-  #                                 "overflow-hidden",
-  #                                 "rounded-md"
-  #                               ]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{
-  #                                   "class" => [
-  #                                     "absolute",
-  #                                     "top-0",
-  #                                     "left-0",
-  #                                     "transform",
-  #                                     "-translate-y-full",
-  #                                     "group-hover:-translate-y-0",
-  #                                     "h-full",
-  #                                     "w-full",
-  #                                     "bg-gradient-green",
-  #                                     "transition",
-  #                                     "ease-in-out",
-  #                                     "duration-500"
-  #                                   ]
-  #                                 },
-  #                                 "content" => [],
-  #                                 "tag" => "div"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{
-  #                                   "class" => ["p-4", "bg-gray-50", "overflow-hidden", "rounded-md"]
-  #                                 },
-  #                                 "content" => [
-  #                                   %{
-  #                                     "attributes" => %{"class" => ["relative", "z-10"]},
-  #                                     "content" => ["Join now"],
-  #                                     "tag" => "p"
-  #                                   }
-  #                                 ],
-  #                                 "tag" => "div"
-  #                               }
-  #                             ],
-  #                             "tag" => "button"
-  #                           }
-  #                         ],
-  #                         "tag" => "div"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.0.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{},
-  #                                 "content" => ["500GB Cloud Storage"],
-  #                                 "tag" => "p"
-  #                               }
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.1.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{},
-  #                                 "content" => ["50 Email Connection"],
-  #                                 "tag" => "p"
-  #                               }
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.2.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.1.0.4.3.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{"attributes" => %{}, "content" => ["Premium Support"], "tag" => "p"}
-  #                             ],
-  #                             "tag" => "li"
-  #                           }
-  #                         ],
-  #                         "tag" => "ul"
-  #                       }
-  #                     ],
-  #                     "tag" => "div"
-  #                   }
-  #                 ],
-  #                 "tag" => "div"
-  #               },
-  #               %{
-  #                 "attributes" => %{"class" => ["w-full", "md:w-1/3"]},
-  #                 "content" => [
-  #                   %{
-  #                     "attributes" => %{
-  #                       "class" => ["relative", "pt-8", "px-11", "pb-10", "bg-white", "rounded-10", "shadow-8xl"]
-  #                     },
-  #                     "content" => [
-  #                       %{
-  #                         "attributes" => %{
-  #                           "class" => [
-  #                             "absolute",
-  #                             "right-2",
-  #                             "top-2",
-  #                             "font-heading",
-  #                             "px-2.5",
-  #                             "py-1",
-  #                             "text-xs",
-  #                             "max-w-max",
-  #                             "bg-gray-100",
-  #                             "uppercase",
-  #                             "tracking-px",
-  #                             "rounded-full",
-  #                             "text-gray-900"
-  #                           ]
-  #                         },
-  #                         "content" => ["Popular choice"],
-  #                         "tag" => "p"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{
-  #                           "class" => ["mb-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
-  #                         },
-  #                         "content" => ["Enterprise"],
-  #                         "tag" => "h3"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["mb-5", "text-gray-600", "text-sm"]},
-  #                         "content" => ["Best for large agency"],
-  #                         "tag" => "p"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["mb-9", "flex"]},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["mr-1", "mt-0.5", "font-heading", "font-semibold", "text-lg", "text-gray-900"]
-  #                             },
-  #                             "content" => ["$"],
-  #                             "tag" => "span"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["font-heading", "font-semibold", "text-6xl", "sm:text-7xl", "text-gray-900"]
-  #                             },
-  #                             "content" => ["199"],
-  #                             "tag" => "span"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["font-heading", "font-semibold", "self-end"]
-  #                             },
-  #                             "content" => ["/ m"],
-  #                             "tag" => "span"
-  #                           }
-  #                         ],
-  #                         "tag" => "div"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{"class" => ["group", "relative", "mb-9"]},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => [
-  #                                 "absolute",
-  #                                 "top-0",
-  #                                 "left-0",
-  #                                 "w-full",
-  #                                 "h-full",
-  #                                 "bg-gradient-green",
-  #                                 "opacity-0",
-  #                                 "group-hover:opacity-50",
-  #                                 "p-1",
-  #                                 "rounded-lg",
-  #                                 "transition",
-  #                                 "ease-out",
-  #                                 "duration-300"
-  #                               ]
-  #                             },
-  #                             "content" => [],
-  #                             "tag" => "div"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => [
-  #                                 "p-1",
-  #                                 "w-full",
-  #                                 "font-heading",
-  #                                 "font-semibold",
-  #                                 "text-xs",
-  #                                 "text-gray-900",
-  #                                 "uppercase",
-  #                                 "tracking-px",
-  #                                 "overflow-hidden",
-  #                                 "rounded-md"
-  #                               ]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{
-  #                                   "class" => ["relative", "z-10", "p-4", "bg-gradient-green", "overflow-hidden", "rounded-md"]
-  #                                 },
-  #                                 "content" => [
-  #                                   %{"attributes" => %{}, "content" => ["Join now"], "tag" => "p"}
-  #                                 ],
-  #                                 "tag" => "div"
-  #                               }
-  #                             ],
-  #                             "tag" => "button"
-  #                           }
-  #                         ],
-  #                         "tag" => "div"
-  #                       },
-  #                       %{
-  #                         "attributes" => %{},
-  #                         "content" => [
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.0.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{},
-  #                                 "content" => ["2TB Cloud Storage"],
-  #                                 "tag" => "p"
-  #                               }
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.1.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{
-  #                                 "attributes" => %{},
-  #                                 "content" => ["Unlimited Email Connection"],
-  #                                 "tag" => "p"
-  #                               }
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "mb-3", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.2.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{"attributes" => %{}, "content" => ["Daily Analytics"], "tag" => "p"}
-  #                             ],
-  #                             "tag" => "li"
-  #                           },
-  #                           %{
-  #                             "attributes" => %{
-  #                               "class" => ["flex", "items-center", "font-heading", "font-medium", "text-base", "text-gray-900"]
-  #                             },
-  #                             "content" => [
-  #                               %{
-  #                                 "attributes" => %{"class" => ["mr-2.5"]},
-  #                                 "content" => [
-  #                                   "<path d=\"M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669\" stroke=\"#A1A1AA\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-path=\"0.0.1.2.0.5.3.0.0\"></path>"
-  #                                 ],
-  #                                 "tag" => "svg"
-  #                               },
-  #                               %{"attributes" => %{}, "content" => ["Premium Support"], "tag" => "p"}
-  #                             ],
-  #                             "tag" => "li"
-  #                           }
-  #                         ],
-  #                         "tag" => "ul"
-  #                       }
-  #                     ],
-  #                     "tag" => "div"
-  #                   }
-  #                 ],
-  #                 "tag" => "div"
-  #               }
-  #             ],
-  #             "tag" => "div"
-  #           }
-  #         ],
-  #         "tag" => "div"
-  #       }
-  #     ],
-  #     "tag" => "section"
-  #   }
-  # end
-
   def default_definition do
     """
     <div>Default definition for components</div>
@@ -1120,17 +151,285 @@ defmodule ComponentDefinitionHelpers do
 
   def nav_1 do
     """
-    <p>This is the nav 1</p>
+    <nav>
+      <div class="flex justify-between px-8 py-5 bg-white">
+        <div class="w-auto mr-14">
+          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" class=""></a>
+        </div>
+        <div class="w-auto flex flex-wrap items-center">
+          <ul class="flex items-center mr-10">
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Features</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Solutions</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Resources</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Pricing</a>
+            </li>
+          </ul>
+          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+            Start Free Trial
+          </button>
+        </div>
+      </div>
+    </nav>
     """
   end
   def nav_2 do
     """
-    <p>This is the nav 2</p>
+    <nav>
+      <div class="flex justify-between px-8 py-5 bg-white">
+        <div class="w-auto mr-14">
+          <a href="#">
+            <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg">
+          </a>
+        </div>
+        <div class="w-auto flex flex-wrap items-center outline-dashed outline-2 outline-cyan-500">
+          <ul class="flex items-center mr-10">
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Features</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Solutions</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Resources</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Pricing</a>
+            </li>
+          </ul>
+        </div>
+        <div class="w-auto flex flex-wrap items-center">
+          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+            Start Free Trial
+          </button>
+        </div>
+      </div>
+    </nav>
     """
   end
   def header_1 do
     """
-    <p>This is the header 1</p>
+    <div class="container mx-auto px-4">
+    <div class="max-w-xl outline-dashed outline-2 outline-cyan-500">
+    <span class="inline-block mb-3 text-gray-600 text-base">
+    Flexible Pricing Plan
+  </span>
+  <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
+    Everything you need to launch a website
+  </h2>
+
+  </div>
+  <div class="flex flex-wrap">
+    <div class="w-full md:w-1/3">
+    <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
+    <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+    Basic
+  </h3>
+  <p class="mb-5 text-gray-600 text-sm">
+    Best for freelancers
+  </p>
+  <div class="mb-9 flex">
+    <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
+  <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
+  <span class="font-heading font-semibold self-end">/ m</span>
+
+  </div>
+  <div class="p-1">
+    <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+    <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+
+  </div>
+  <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+    <p class="relative z-10">
+    Join now
+  </p>
+  </div>
+  </button>
+  </div>
+  <ul>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.0.0.0"></path>
+  </svg>
+  <p>
+    100GB Cloud Storage
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.1.0.0"></path>
+  </svg>
+  <p>
+    10 Email Connection
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.2.0.0"></path>
+  </svg>
+  <p>
+    Daily Analytics
+  </p>
+  </li>
+  </ul>
+  </div>
+
+  </div>
+  <div class="w-full md:w-1/3">
+    <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
+    <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+    Premium
+  </h3>
+  <p class="mb-5 text-gray-600 text-sm">
+    Best for small agency
+  </p>
+  <div class="mb-9 flex">
+    <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+    $
+  </span>
+  <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+    99
+  </span>
+  <span class="font-heading font-semibold self-end">
+    / m
+  </span>
+  </div>
+  <div class="p-1">
+    <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+    <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+
+  </div>
+  <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+    <p class="relative z-10">Join now</p>
+
+  </div>
+  </button>
+  </div>
+  <ul>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.0.0.0"></path>
+  </svg>
+  <p>
+    500GB Cloud Storage
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.1.0.0"></path>
+  </svg>
+  <p>
+    50 Email Connection
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.2.0.0"></path>
+  </svg>
+  <p>
+    Daily Analytics
+  </p>
+  </li>
+  <li class="flex items-center font-heading font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.3.0.0"></path>
+  </svg>
+  <p>
+    Premium Support
+  </p>
+  </li>
+  </ul>
+  </div>
+  </div>
+  <div class="w-full md:w-1/3">
+    <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
+    <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
+    Popular choice
+  </p>
+  <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+    Enterprise
+  </h3>
+  <p class="mb-5 text-gray-600 text-sm">
+    Best for large agency
+  </p>
+  <div class="mb-9 flex">
+    <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+    $
+  </span>
+  <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+    199
+  </span>
+  <span class="font-heading font-semibold self-end">
+    / m
+  </span>
+
+  </div>
+  <div class="group relative mb-9">
+    <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
+
+  </div>
+  <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
+    <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
+    <p>
+    Join now
+  </p>
+
+  </div>
+
+  </button>
+
+  </div>
+  <ul>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.0.0.0"></path>
+  </svg>
+  <p>
+    2TB Cloud Storage
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.1.0.0"></path>
+  </svg>
+  <p>
+    Unlimited Email Connection
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.2.0.0"></path>
+  </svg>
+  <p>
+    Daily Analytics
+  </p>
+
+  </li>
+  <li class="flex items-center font-heading font-medium text-base text-gray-900">
+    <svg class="mr-2.5">
+    <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.3.0.0"></path>
+  </svg>
+  <p>
+    Premium Support
+  </p>
+  </li>
+  </ul>
+  </div>
+  </div>
+  </div>
+  </div>
     """
   end
 end

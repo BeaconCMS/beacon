@@ -13,7 +13,8 @@ defmodule Beacon.BlueprintConverter do
   defp convert_attr({"class", value}) do
     { "class", value |> String.split(" ") }
   end
-  defp convert_attr({"href", value}), do: {"href",value}
+  defp convert_attr({"href", value}), do: {"href", value}
+  defp convert_attr({"src", value}), do: {"src", value}
   defp convert_attr(_), do: nil
   defp convert_attrs(attrs) do
       attrs
