@@ -12,7 +12,7 @@ defmodule Beacon.Content.ComponentDefinition do
     field :name, :string
     field :thumbnail, :string
     field :blueprint, :string
-    belongs_to :component_category, ComponentCategory
+    field : component_category, Ecto.Enum, values: [:header, :sign_in, :sign_up, :stats, :footer, :basic]
 
     timestamps()
   end
