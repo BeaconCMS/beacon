@@ -35,7 +35,11 @@ defmodule Beacon.ComponentDefinitions do
       ** (Ecto.NoResultsError)
 
   """
-  def get_component_definition!(id, preloads \\ []), do: ComponentDefinition |> Repo.get!(id) |> Repo.preload(preloads)
+  def get_component_definition!(id, preloads \\ []) do
+    ComponentDefinition
+    |> Repo.get!(id)
+    |> Repo.preload(preloads)
+  end
 
   @spec create_component_definition(%{optional(:__struct__) => none, optional(atom | binary) => any}) :: any
   @doc """
