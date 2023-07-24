@@ -5,13 +5,13 @@ defmodule Beacon.BlueprintConverter do
     case Floki.parse_document(html_string) do
       { :ok, data } ->
         reshape(data)
-      { _, error} ->
+      { _, _error} ->
         raise("Error parsing blueprint")
     end
   end
 
   defp convert_attr({"class", value}) do
-    { "class", value |> String.split(" ") }
+    { "class", String.split(value, " ") }
   end
   defp convert_attr({"href", value}), do: {"href", value}
   defp convert_attr({"src", value}), do: {"src", value}
