@@ -45,7 +45,9 @@ defmodule BeaconWeb.API.ComponentController do
   def update(conn, %{"id" => id} = map) do
     data = Map.delete(map, "id")
 
-    case ComponentInstances.get_component_instance!(id) |> ComponentInstances.update_component_instance_data(data) do
+    instance = ComponentInstances.get_component_instance!(id)
+    
+    case ComponentInstances.update_component_instance_data(instance, data) do
       {:ok, component_instance} ->
         render(conn, :show, component: component_instance)
 
