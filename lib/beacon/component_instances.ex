@@ -35,7 +35,11 @@ defmodule Beacon.ComponentInstances do
       ** (Ecto.NoResultsError)
 
   """
-  def get_component_instance!(id, preloads \\ []), do: ComponentInstance |> Repo.get!(id) |> Repo.preload(preloads)
+  def get_component_instance!(id, preloads \\ []) do
+    ComponentInstance
+    |> Repo.get!(id)
+    |> Repo.preload(preloads)
+  end
 
   @spec create_component_instance(%{optional(:__struct__) => none, optional(atom | binary) => any}) :: any
   @doc """
