@@ -3,7 +3,7 @@ defmodule Beacon.Repo.Migrations.AddBlueprintToComponentDefinitions do
 
   def change do
     alter table(:beacon_component_definitions) do
-      add :blueprint, :map, default: %{}
+      add :blueprint, :text
     end
   end
 end

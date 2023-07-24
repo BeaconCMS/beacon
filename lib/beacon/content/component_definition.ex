@@ -11,7 +11,7 @@ defmodule Beacon.Content.ComponentDefinition do
   schema "beacon_component_definitions" do
     field :name, :string
     field :thumbnail, :string
-    field :blueprint, :map
+    field :blueprint, :string
     belongs_to :component_category, ComponentCategory
 
     timestamps()

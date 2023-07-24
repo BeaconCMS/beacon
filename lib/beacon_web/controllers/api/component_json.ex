@@ -1,7 +1,6 @@
 defmodule BeaconWeb.API.ComponentJSON do
   alias Beacon.Content.ComponentCategory
   alias Beacon.Content.ComponentDefinition
-  alias Ecto.UUID
 
   def index(%{component_categories: categories, component_definitions: definitions}) do
     %{
