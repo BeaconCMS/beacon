@@ -13,9 +13,7 @@ defmodule Beacon.BlueprintConverter do
   defp convert_attr({"class", value}) do
     { "class", String.split(value, " ") }
   end
-  defp convert_attr({"href", value}), do: {"href", value}
-  defp convert_attr({"src", value}), do: {"src", value}
-  defp convert_attr(_), do: nil
+  defp convert_attr({key, value}), do: {key, value}
   defp convert_attrs(attrs) do
       attrs
         |> Enum.map(&convert_attr(&1))
