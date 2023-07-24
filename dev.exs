@@ -154,7 +154,7 @@ defmodule ComponentDefinitionHelpers do
     <nav>
       <div class="flex justify-between px-8 py-5 bg-white">
         <div class="w-auto mr-14">
-          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" class=""></a>
+          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"></a>
         </div>
         <div class="w-auto flex flex-wrap items-center">
           <ul class="flex items-center mr-10">

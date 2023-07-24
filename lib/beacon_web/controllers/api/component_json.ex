@@ -16,7 +16,9 @@ defmodule BeaconWeb.API.ComponentJSON do
 
   def show(%{component: component}) do
     %{"tag" => tag, "content" => content, "attributes" => attributes} = component.data
-    attributes = Map.put(attributes, "id", component.id)
+    attributes = attributes
+    |> Map.put("id", component.id)
+    |> Map.put("root", true)
 
     %{
       tag: tag,
