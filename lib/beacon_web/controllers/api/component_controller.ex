@@ -1,10 +1,12 @@
 defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
-  require Logger
+  
   alias Beacon.ComponentCategories
   alias Beacon.ComponentDefinitions
   alias Beacon.ComponentInstances
   alias Ecto.UUID
+  
+  require Logger
 
   @tag_for_name %{
     "title" => "h1",
