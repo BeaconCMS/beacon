@@ -72,7 +72,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   defp render_attrs(attributes) when attributes == %{}, do: ""
 
   defp render_attrs(attributes) do
-    str = attributes |> Enum.map_join(" ", fn {key, val} -> render_attr(key, val) end)
+    str = Enum.map_join(attributes, " ", fn {key, val} -> render_attr(key, val) end)
     " " <> str
   end
 
