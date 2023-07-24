@@ -29,8 +29,8 @@ defmodule Beacon.BlueprintConverter do
       %{ "tag" => tag, "attributes" => new_attrs, "content" => reshape(content) }
   end
 
-  def reshape([data]) when is_binary(data), do: [data]
-  def reshape(data) do
+  defp reshape([data]) when is_binary(data), do: [data]
+  defp reshape(data) do
     data
     |> Enum.map(&convert_node(&1))
   end
