@@ -34,7 +34,7 @@ defmodule Beacon.MixProject do
 
   defp deps do
     [
-      {:brotli, "~> 0.3.1"},
+      {:brotli, "~> 0.3.2"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
