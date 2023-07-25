@@ -20,11 +20,11 @@ defmodule Beacon.Content.Page do
   > Manipulating data manually will most likely result
   > in inconsistent behavior and crashes.
   """
-
   use Beacon.Schema
+
   alias Beacon.Content
 
-  @version 1
+  @version 2
 
   @type t :: %__MODULE__{}
 
@@ -41,6 +41,8 @@ defmodule Beacon.Content.Page do
     field :extra, :map, default: %{}
 
     belongs_to :layout, Content.Layout
+
+    has_many :variants, Content.PageVariant
 
     embeds_many :events, Event do
       field :name, :string

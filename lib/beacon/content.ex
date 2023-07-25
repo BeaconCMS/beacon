@@ -12,6 +12,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
+  alias Beacon.Content.PageVariant
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
@@ -730,6 +731,10 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
+    Repo.preload(page, :variants, force: true)
+  end
+
+  defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
   end
 
@@ -996,5 +1001,19 @@ defmodule Beacon.Content do
       # TODO: wrap error and return a Beacon exception
       _error -> :error
     end
+  end
+
+  # PAGE VARIANTS
+
+  @doc """
+  Creates a new page variant.
+  """
+  @doc type: :page_variants
+  @spec create_page_variant(%{page_id: Ecto.UUID.t(), name: binary(), template: binary(), weight: integer()}) ::
+          {:ok, PageVariant.t()} | {:error, Changeset.t()}
+  def create_page_variant(attrs) do
+    %PageVariant{}
+    |> PageVariant.create_changeset(attrs)
+    |> Repo.insert()
   end
 end
