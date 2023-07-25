@@ -3,9 +3,6 @@ defmodule Beacon.Content do
   Content Management for sites.
   """
 
-  alias Beacon.ComponentCategories
-  alias Beacon.ComponentDefinitions
-  alias Beacon.Components
   alias Beacon.Content.Component
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent

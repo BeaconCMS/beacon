@@ -1,10 +1,8 @@
 defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
 
-  alias Beacon.BlueprintConverter
-  alias Beacon.ComponentCategories
-  alias Beacon.ComponentDefinitions
-  alias Beacon.ComponentInstances
+  alias Beacon.Content
+  # alias Beacon.BlueprintConverter
   alias Ecto.UUID
 
   require Logger
@@ -19,44 +17,41 @@ defmodule BeaconWeb.API.ComponentController do
   action_fallback BeaconWeb.API.FallbackController
 
   def index(conn, _params) do
-    component_categories = ComponentCategories.list_component_categories()
-    component_definitions = ComponentDefinitions.list_component_definitions()
-
-    render(conn, :index,
-      component_categories: component_categories,
-      component_definitions: component_definitions
-    )
+    component_definitions = Content.list_components(:dev)
+    Logger.debug("component_definitions")
+    Logger.debug(component_definitions)
+    render(conn, :index, component_definitions: component_definitions)
   end
 
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
   def create(conn, %{"definitionId" => component_definition_id, "pageId" => page_id, "attributes" => attributes}) do
-    definition = ComponentDefinitions.get_component_definition!(component_definition_id)
-    [parsed_template] = BlueprintConverter.parse_html(definition.blueprint)
-    component_data = build_component(parsed_template)
-    component_instance = ComponentInstances.create_component_instance!(%{data: component_data, page_id: page_id})
+    # definition = ComponentDefinitions.get_component_definition!(component_definition_id)
+    # [parsed_template] = BlueprintConverter.parse_html(definition.blueprint)
+    # component_data = build_component(parsed_template)
+    component_instance = %{} # ComponentInstances.create_component_instance!(%{data: component_data, page_id: page_id})
     render(conn, :show, component: component_instance)
   end
 
   def create(conn, %{"definitionId" => component_definition_id, "attributes" => attributes}) do
-    definition = ComponentDefinitions.get_component_definition!(component_definition_id)
-    [parsed_template] = BlueprintConverter.parse_html(definition.blueprint)
-    component_data = build_component(parsed_template)
-    render(conn, :show, component: %{id: UUID.generate(), data: component_data})
+    # definition = ComponentDefinitions.get_component_definition!(component_definition_id)
+    # [parsed_template] = BlueprintConverter.parse_html(definition.blueprint)
+    # component_data = build_component(parsed_template)
+    # render(conn, :show, component: %{id: UUID.generate(), data: component_data})
   end
 
   @spec update(Plug.Conn.t(), map) :: Plug.Conn.t()
   def update(conn, %{"id" => id} = map) do
-    data = Map.delete(map, "id")
+    # data = Map.delete(map, "id")
 
-    instance = ComponentInstances.get_component_instance!(id)
+    # instance = ComponentInstances.get_component_instance!(id)
 
-    case ComponentInstances.update_component_instance_data(instance, data) do
-      {:ok, component_instance} ->
-        render(conn, :show, component: component_instance)
+    # case ComponentInstances.update_component_instance_data(instance, data) do
+    #   {:ok, component_instance} ->
+    #     render(conn, :show, component: component_instance)
 
-      {:error, changeset} ->
-        json(conn, changeset.errors)
-    end
+    #   {:error, changeset} ->
+    #     json(conn, changeset.errors)
+    # end
   end
 
   defp build_component(entry) when is_binary(entry), do: entry

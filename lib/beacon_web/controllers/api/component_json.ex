@@ -1,13 +1,11 @@
 defmodule BeaconWeb.API.ComponentJSON do
-  alias Beacon.Content.ComponentCategory
-  alias Beacon.Content.ComponentDefinition
-
-  def index(%{component_categories: categories, component_definitions: definitions}) do
+  alias Beacon.Content.Component
+  def index(%{component_definitions: definitions}) do
     %{
       menuCategories: [
         %{
           name: "Base",
-          items: for(category <- categories, do: category_data(category))
+          items: for(category <- Component.categories(), do: %{ id: category, name: category })
         }
       ],
       componentDefinitions: for(definition <- definitions, do: definition_data(definition))
@@ -28,33 +26,23 @@ defmodule BeaconWeb.API.ComponentJSON do
     }
   end
 
-  # @doc """
-  # Renders a list of pages.
-  # """
-  # def index(%{pages: pages}) do
-  #   %{data: for(page <- pages, do: data(page))}
-  # end
-
-  # @doc """
-  # Renders a single component category.
-  # """
-  defp category_data(%ComponentCategory{} = category) do
-    %{
-      id: category.id,
-      name: category.name
-    }
-  end
+  # # @doc """
+  # # Renders a list of pages.
+  # # """
+  # # def index(%{pages: pages}) do
+  # #   %{data: for(page <- pages, do: data(page))}
+  # # end
 
   # @doc """
   # Renders a single component definition.
   # """
-  defp definition_data(%ComponentDefinition{} = definition) do
+  defp definition_data(%Component{} = definition) do
     %{
       id: definition.id,
-      categoryId: definition.component_category_id,
+      category: definition.category,
       name: definition.name,
       thumbnail: definition.thumbnail,
-      blueprint: definition.blueprint
+      blueprint: definition.body
     }
   end
 
