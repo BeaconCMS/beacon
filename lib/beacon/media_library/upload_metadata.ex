@@ -5,12 +5,12 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
 
   alias Beacon.MediaLibrary.Asset
 
-  defstruct [:site, :config, :allowed_media_types, :path, :name, :media_type, :size, :output, :resource]
+  defstruct [:site, :config, :allowed_media_accept_types, :path, :name, :media_type, :size, :output, :resource]
 
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           config: Beacon.Config.media_type_config() | nil,
-          allowed_media_types: list(),
+          allowed_media_accept_types: list(),
           path: String.t() | nil,
           name: String.t() | nil,
           media_type: String.t() | nil,
@@ -31,7 +31,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
     %__MODULE__{
       site: site,
       config: config_for_media_type(config, media_type),
-      allowed_media_types: config.allowed_media_types,
+      allowed_media_accept_types: config.allowed_media_accept_types,
       path: path,
       name: name,
       media_type: media_type,
