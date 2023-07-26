@@ -24,7 +24,11 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {{site, path}, {_page_id, _layout_id, format, template, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
+    {{site, path}, {_page_id, _layout_id, format, templates, _page_module, _component_module}} =
+      lookup_route!(assigns.__site__, assigns.__live_path__)
+
+    template = choose_template(templates)
+
     Lifecycle.Template.render_template(site, template, format, path: path, assigns: assigns, env: __ENV__)
   end
 
@@ -35,6 +39,21 @@ defmodule BeaconWeb.PageLive do
 
       Make sure a page was created for that path.
       """
+  end
+
+  defp choose_template(templates) do
+    %{primary: primary_template, variants: variants} = templates
+    n = Enum.random(1..100)
+
+    variants
+    |> Enum.reduce(n, fn
+      %{weight: weight, template: template}, acc when weight > acc -> template
+      %{weight: weight}, acc -> acc - weight
+    end)
+    |> case do
+      n when is_integer(n) -> primary_template
+      template when is_binary(template) -> template
+    end
   end
 
   def handle_info({:page_loaded, _}, socket) do
