@@ -45,16 +45,12 @@ defmodule BeaconWeb.PageLive do
     %{primary: primary_template, variants: variants} = templates
     n = Enum.random(1..100)
 
-    variants
-    |> Enum.reduce(n, fn
-      %{weight: weight, template: template}, acc when weight > acc -> template
-      %{weight: weight}, acc -> acc - weight
-    end)
-    |> case do
-      n when is_integer(n) -> primary_template
-      template when is_binary(template) -> template
-    end
+    choose_template(variants, n, primary_template)
   end
+
+  defp choose_template([], _, primary), do: primary
+  defp choose_template([%{weight: weight, template: template} | _], n, _) when weight >= n, do: template
+  defp choose_template([%{weight: weight} | variants], n, primary), do: choose_template(variants, n - weight, primary)
 
   def handle_info({:page_loaded, _}, socket) do
     # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179

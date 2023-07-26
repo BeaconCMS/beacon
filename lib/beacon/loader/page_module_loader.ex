@@ -1,10 +1,12 @@
 defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
-  require Logger
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
+  alias Beacon.Repo
+
+  require Logger
 
   def load_page!(%Content.Page{} = page) do
     component_module = Loader.component_module_for_site(page.site)
