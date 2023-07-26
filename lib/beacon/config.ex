@@ -460,7 +460,7 @@ defmodule Beacon.Config do
   defp validate_accept_extension(<<46, _rest::binary>> = media_type), do: media_type
 
   # catchall
-  defp validate_accept_extension(media_type), do: raise("`#{media_type}` does not appear to be a media type, extensions must begin with a `.`")
+  defp validate_accept_extension(media_type), do: raise Beacon.LoaderError, "`#{media_type}` does not appear to be a media type, extensions must begin with a `.`"
 
   defp process_assets_config(allowed_media_accept_types, assigned_assets) do
     Enum.reduce(
