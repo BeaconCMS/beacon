@@ -502,7 +502,7 @@ defmodule Beacon.Config do
       media_type = MIME.type(extension)
       ensure_backend(configs, media_type)
     else
-      raise """
+      raise Beacon.LoaderError, """
       No known media type for: #{extension}
       """
     end
