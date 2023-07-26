@@ -21,6 +21,12 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
 
   # TODO: https://github.com/BeaconCMS/beacon/pull/239#discussion_r1194160478
   def new(site, path, opts \\ []) do
+    opts =
+      Keyword.reject(opts, fn
+        {_, ""} -> true
+        _ -> false
+      end)
+
     config = Beacon.Config.fetch!(site)
     name = Keyword.get(opts, :name, Path.basename(path))
     media_type = Keyword.get(opts, :media_type, media_type_from_name(name))
