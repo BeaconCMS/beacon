@@ -10,6 +10,16 @@ defmodule Beacon.BlueprintConverter do
     end
   end
 
+  def generate_html(id, json_ast) do
+    %{"tag" => tag, "content" => content, "attributes" => attributes} = json_ast
+    attributes =
+      attributes
+      |> Map.put("id", id)
+      |> Map.put("root", true)
+
+    render_node(%{"tag" => tag, "content" => content, "attributes" => attributes})
+  end
+
   defp convert_attr({"class", value}) do
     { "class", String.split(value, " ") }
   end
@@ -34,4 +44,30 @@ defmodule Beacon.BlueprintConverter do
     data
     |> Enum.map(&convert_node(&1))
   end
+
+  defp render_node(node) when is_binary(node), do: node
+  # Special case to just output content as HTML
+  defp render_node(%{"tag" => "raw", "content" => content}), do: content
+
+  defp render_node(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
+    """
+    <#{tag}#{render_attrs(attributes)}>
+      #{content |> Enum.map_join(&render_node(&1))}
+    </#{tag}>
+    """
+  end
+
+  defp render_attrs(attributes) when attributes == %{}, do: ""
+
+  defp render_attrs(attributes) do
+    str = Enum.map_join(attributes, " ", fn {key, val} -> render_attr(key, val) end)
+    " " <> str
+  end
+
+  defp render_attr(key, val) when is_list(val), do: "#{key}=\"#{Enum.join(val, " ")}\""
+  defp render_attr("id", val), do: "data-id=\"#{val}\""
+  defp render_attr("slot", false), do: ""
+  defp render_attr("slot", _), do: "data-slot"
+  defp render_attr("root", _), do: "data-root"
+  defp render_attr(key, val), do: "#{key}=\"#{val}\""
 end

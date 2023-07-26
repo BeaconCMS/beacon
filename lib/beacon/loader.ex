@@ -465,11 +465,6 @@ defmodule Beacon.Loader do
     components =
       component_attrs
       |> Enum.map(fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
-    # components = for attrs <- component_attrs do
-    #   Logger.debug("### About to create the component for #{site}")
-    #   Logger.debug("### About to create the component for #{site} with #{Map.put(attrs, :site, site)}")
-    #   Content.create_component!(Map.put(attrs, :site, site))
-    # end
     Logger.debug("### Components have been created ->")
     Logger.debug(components)
     :ok
