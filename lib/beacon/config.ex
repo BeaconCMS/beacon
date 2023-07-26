@@ -57,7 +57,7 @@ defmodule Beacon.Config do
   @typedoc """
   Register specific media types allowed for upload. Catchalls are not allowed.
   """
-  @type allowed_media_types :: [media_type :: String.t()]
+  @type allowed_media_accept_types :: [media_type :: String.t()]
 
   @typedoc """
   Register backends and validations for media types. Catchalls are allowed.
@@ -136,7 +136,7 @@ defmodule Beacon.Config do
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
           assets: assets(),
-          allowed_media_types: allowed_media_types(),
+          allowed_media_accept_types: allowed_media_accept_types(),
           lifecycle: lifecycle(),
           extra_page_fields: extra_page_fields(),
           default_meta_tags: default_meta_tags()
@@ -167,7 +167,7 @@ defmodule Beacon.Config do
      ]}
   ]
 
-  @default_media_types ["image/jpeg", "image/gif", "image/png", "image/webp"]
+  @default_media_types ["image/jpeg", "image/gif", "image/png", "image/webp", ".pdf"]
 
   defstruct site: nil,
             endpoint: nil,
@@ -183,7 +183,7 @@ defmodule Beacon.Config do
               {:markdown, "Markdown (GitHub Flavored version)"}
             ],
             assets: [],
-            allowed_media_types: @default_media_types,
+            allowed_media_accept_types: @default_media_types,
             lifecycle: [
               load_template: @default_load_template,
               render_template: @default_render_template,
@@ -205,7 +205,7 @@ defmodule Beacon.Config do
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
           | {:assets, assets()}
-          | {:allowed_media_types, allowed_media_types()}
+          | {:allowed_media_accept_types, allowed_media_accept_types()}
           | {:lifecycle, lifecycle()}
           | {:extra_page_fields, extra_page_fields()}
           | {:default_meta_tags, default_meta_tags()}
@@ -367,11 +367,11 @@ defmodule Beacon.Config do
       upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 
-    allowed_media_types = Keyword.get(opts, :allowed_media_types, @default_media_types)
-    validate_allowed_media_types!(allowed_media_types)
+    allowed_media_accept_types = Keyword.get(opts, :allowed_media_accept_types, @default_media_types)
+    validate_allowed_media_accept_types!(allowed_media_accept_types)
 
     assigned_assets = Keyword.get(opts, :assets, [])
-    assets = process_assets_config(allowed_media_types, assigned_assets)
+    assets = process_assets_config(allowed_media_accept_types, assigned_assets)
 
     default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
 
@@ -379,7 +379,7 @@ defmodule Beacon.Config do
       opts
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
-      |> Keyword.put(:allowed_media_types, allowed_media_types)
+      |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)
       |> Keyword.put(:assets, assets)
       |> Keyword.put(:default_meta_tags, default_meta_tags)
 
@@ -422,36 +422,56 @@ defmodule Beacon.Config do
     "#{cat}/*"
   end
 
-  defp validate_allowed_media_types!(allowed_media_types) do
-    Enum.each(allowed_media_types, fn media_type ->
-      case Plug.Conn.Utils.media_type(media_type) do
-        {:ok, _, "*", _} ->
-          raise Beacon.LoaderError, """
-          Catchall Media Types are not allowed in allowed
-          """
-
-        :error ->
-          raise_invalid_media_type(media_type)
-
-        _ ->
-          media_type
-      end
+  defp validate_allowed_media_accept_types!(allowed_media_accept_types) do
+    Enum.each(allowed_media_accept_types, fn media_type ->
+      validate_media_accept_type(media_type)
     end)
   end
 
-  defp process_assets_config(allowed_media_types, assigned_assets) do
-    Enum.reduce(
-      allowed_media_types,
-      assigned_assets,
-      fn media_type, acc ->
-        if :error == Plug.Conn.Utils.media_type(media_type) do
-          raise_invalid_media_type(media_type)
+  defp validate_media_accept_type(media_type) do
+    if String.contains?(media_type, "/") do
+      do_validate_media_accept_type(media_type)
+    else
+      validate_accept_extension(media_type)
+    end
+  end
+
+  defp do_validate_media_accept_type(media_type) do
+    case Plug.Conn.Utils.media_type(media_type) do
+      {:ok, category, "*", _} ->
+        if Enum.member?(["image", "audio", "video"], category) do
+          media_type
+        else
+          raise Beacon.LoaderError, """
+          Catchall Media Types are only allowed for `image`, `audio`, `video` media types.
+          Media Type: #{media_type}
+          """
         end
 
-        if get_media_type_config(assigned_assets, media_type) do
-          acc
+      :error ->
+        raise_invalid_media_type(media_type)
+
+      _ ->
+        media_type
+    end
+  end
+
+  # .some_ext (not checking for valid extension)
+  defp validate_accept_extension(<<46, _rest::binary>> = media_type), do: media_type
+
+  # catchall
+  defp validate_accept_extension(media_type),
+    do: raise(Beacon.LoaderError, "`#{media_type}` does not appear to be a media type, extensions must begin with a `.`")
+
+  defp process_assets_config(allowed_media_accept_types, assigned_assets) do
+    Enum.reduce(
+      allowed_media_accept_types,
+      assigned_assets,
+      fn media_type, acc ->
+        if String.contains?(media_type, "/") do
+          ensure_backend(acc, media_type)
         else
-          acc ++ [{media_type, [{:backends, [Beacon.MediaLibrary.Backend.Repo]}]}]
+          ensure_backend_for_extension(acc, media_type)
         end
       end
     )
@@ -465,6 +485,32 @@ defmodule Beacon.Config do
         {media_type, config}
     end)
   end
+
+  defp ensure_backend(configs, media_type) do
+    if :error == Plug.Conn.Utils.media_type(media_type) do
+      raise_invalid_media_type(media_type)
+    end
+
+    if get_media_type_config(configs, media_type) do
+      configs
+    else
+      configs ++ [{media_type, [{:backends, [Beacon.MediaLibrary.Backend.Repo]}]}]
+    end
+  end
+
+  defp ensure_backend_for_extension(configs, <<46, extension::binary>>) do
+    if MIME.has_type?(extension) do
+      media_type = MIME.type(extension)
+      ensure_backend(configs, media_type)
+    else
+      raise Beacon.LoaderError, """
+      No known media type for: #{extension}
+      """
+    end
+  end
+
+  defp ensure_backend_for_extension(_configs, extension_without_leading_dot),
+    do: raise(Beacon.LoaderError, "`#{extension_without_leading_dot}` does not appear to be a media type, extensions must begin with a `.`")
 
   defp raise_invalid_media_type(media_type) do
     raise(Beacon.LoaderError, "Unknown Media type: #{media_type}")
