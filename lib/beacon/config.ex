@@ -509,7 +509,7 @@ defmodule Beacon.Config do
   end
 
   defp ensure_backend_for_extension(_configs, extension_without_leading_dot),
-    do: raise("`#{extension_without_leading_dot}` does not appear to be a media type, extensions must begin with a `.`")
+    do: raise Beacon.LoaderError, "`#{extension_without_leading_dot}` does not appear to be a media type, extensions must begin with a `.`"
 
   defp raise_invalid_media_type(media_type) do
     raise(Beacon.LoaderError, "Unknown Media type: #{media_type}")
