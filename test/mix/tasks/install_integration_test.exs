@@ -1,9 +1,11 @@
 Code.require_file("../../support/mix_helper.exs", __DIR__)
 
-defmodule Mix.Tasks.Beacon.InstallTest do
+defmodule Mix.Tasks.Beacon.InstallIntegrationTest do
   use ExUnit.Case
 
   import Beacon.MixHelper
+
+  alias Mix.Tasks.Beacon.Install
 
   @config_path "config/config.exs"
   @dev_path "config/dev.exs"
@@ -28,7 +30,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       File.write!(@application_path, sample_application())
       File.write!(@router_path, sample_router())
 
-      Mix.Tasks.Beacon.Install.run(["--site", "my_site"])
+      Install.run(["--site", "my_site"])
 
       assert File.read!(@config_path) ==
                """
@@ -404,7 +406,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
   test "raises with no site option" do
     Mix.Project.in_project(:my_app, ".", fn _module ->
       assert_raise Mix.Error, fn ->
-        Mix.Tasks.Beacon.Install.run([])
+        Install.run([])
       end
     end)
   end
@@ -412,7 +414,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
   test "raises with invalid site option" do
     Mix.Project.in_project(:my_app, ".", fn _module ->
       assert_raise Mix.Error, fn ->
-        Mix.Tasks.Beacon.Install.run(["--site", "my@site!"])
+        Install.run(["--site", "my@site!"])
       end
     end)
   end
