@@ -73,7 +73,7 @@ defmodule Beacon.Loader do
               <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg">
             </a>
           </div>
-          <div class="w-auto flex flex-wrap items-center outline-dashed outline-2 outline-cyan-500">
+          <div class="w-auto flex flex-wrap items-center">
             <ul class="flex items-center mr-10">
               <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
                 <a href="#">Features</a>
@@ -99,7 +99,7 @@ defmodule Beacon.Loader do
     """
     header_1 = """
       <div class="container mx-auto px-4">
-      <div class="max-w-xl outline-dashed outline-2 outline-cyan-500">
+      <div class="max-w-xl">
       <span class="inline-block mb-3 text-gray-600 text-base">
       Flexible Pricing Plan
     </span>

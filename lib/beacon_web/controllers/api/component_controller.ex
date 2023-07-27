@@ -22,7 +22,7 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def create(conn, %{"definitionId" => component_definition_id, "pageId" => page_id, "attributes" => attributes}) do
+  def create(conn, %{"definitionId" => component_definition_id, "pageId" => page_id}) do
     definition = Content.get_component_by(:dev, id: component_definition_id)
     page = Content.get_page!(page_id)
     [parsed_template] = BlueprintConverter.parse_html(definition.body)
