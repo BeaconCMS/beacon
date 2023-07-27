@@ -41,12 +41,8 @@ defmodule BeaconWeb.PageLive do
       """
   end
 
-  defp choose_template(templates) do
-    %{primary: primary_template, variants: variants} = templates
-    n = Enum.random(1..100)
-
-    choose_template(variants, n, primary_template)
-  end
+  defp choose_template(%{primary: primary, variants: []}), do: primary
+  defp choose_template(%{primary: primary, variants: variants}), do: choose_template(variants, Enum.random(1..100), primary)
 
   defp choose_template([], _, primary), do: primary
   defp choose_template([%{weight: weight, template: template} | _], n, _) when weight >= n, do: template

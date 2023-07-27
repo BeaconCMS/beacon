@@ -55,6 +55,12 @@ defmodule Beacon.Content.Page do
       field :code, :string
     end
 
+    embeds_many :variants, Variant do
+      field :name, :string
+      field :weight, :integer
+      field :template, :string
+    end
+
     timestamps()
   end
 

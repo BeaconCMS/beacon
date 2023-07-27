@@ -12,7 +12,6 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
-  alias Beacon.Content.PageVariant
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
@@ -731,7 +730,7 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
-    Repo.preload(page, :variants, force: true)
+    Map.put(page, :variants, [])
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
@@ -1010,10 +1009,14 @@ defmodule Beacon.Content do
   """
   @doc type: :page_variants
   @spec create_page_variant(%{page_id: Ecto.UUID.t(), name: binary(), template: binary(), weight: integer()}) ::
-          {:ok, PageVariant.t()} | {:error, Changeset.t()}
+          {:ok, Page.t()} | {:error, Changeset.t()}
   def create_page_variant(attrs) do
-    %PageVariant{}
-    |> PageVariant.create_changeset(attrs)
-    |> Repo.insert()
+    page = Repo.get!(Page, attrs.page_id)
+    new_variant = %Variant{name: attrs.name, template: attrs.template, weight: attrs.weight}
+
+    page
+    |> Changeset.change()
+    |> Changeset.put_embed(:variants, page.variants ++ [new_variant])
+    |> Repo.update()
   end
 end
