@@ -166,4 +166,15 @@ defmodule Beacon.Content.PageField do
       end
     end)
   end
+
+  def render_field(mod, field, env) do
+    rendered =
+      Phoenix.LiveView.TagEngine.component(
+        &mod.render/1,
+        [field: field],
+        {env.module, env.function, env.file, env.line}
+      )
+
+    Phoenix.HTML.Safe.to_iodata(rendered)
+  end
 end
