@@ -29,8 +29,7 @@ defmodule Beacon.RuntimeCSS do
         :ok
 
       error ->
-        raise "failed to compress css: #{inspect(error)}"
-        :error
+        raise Beacon.LoaderError, "failed to compress css: #{inspect(error)}"
     end
   end
 

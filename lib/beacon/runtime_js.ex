@@ -50,8 +50,7 @@ defmodule Beacon.RuntimeJS do
         :ok
 
       error ->
-        raise "failed to compress js: #{inspect(error)}"
-        :error
+        raise Beacon.LoaderError, "failed to compress js: #{inspect(error)}"
     end
   end
 
