@@ -44,7 +44,7 @@ mix setup
 iex --sname core -S mix dev
 ```
 
-Not that running a named node isn't required unless you're running Beacon LiveAdmin too.
+Note that running a named node isn't required unless you're running Beacon LiveAdmin too.
 
 Finally, visit any of the routes defined in `dev.exs` as http://localhost:4001/dev/home or http://localhost:4001/admin
 or request resources from the API as http://localhost:4001/api/pages

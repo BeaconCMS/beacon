@@ -72,7 +72,7 @@ defmodule Beacon.ContentTest do
       layout = layout_fixture()
 
       assert %Ecto.Changeset{errors: [template: {error, []}], valid?: false} =
-               Content.validate_page(%Page{}, %{
+               Content.validate_page(:my_site, %Page{}, %{
                  "site" => "my_site",
                  "path" => "/",
                  "template" => "<div>invalid</span>",

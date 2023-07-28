@@ -368,16 +368,14 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec validate_page(Page.t(), map()) :: Ecto.Changeset.t()
-  def validate_page(%Page{} = page, attrs) when is_map(attrs) do
+  @spec validate_page(Site.t(), Page.t(), map()) :: Ecto.Changeset.t()
+  def validate_page(site, %Page{} = page, attrs) when is_map(attrs) do
     {extra_attrs, page_attrs} = Map.pop(attrs, "extra")
 
     changeset =
       page
       |> change_page(page_attrs)
       |> Map.put(:action, :validate)
-
-    site = Ecto.Changeset.get_field(changeset, :site)
 
     case validate_page_template(changeset) do
       {:ok, changeset} -> PageField.apply_changesets(changeset, site, extra_attrs)

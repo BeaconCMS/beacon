@@ -129,7 +129,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
   end
 
   defp accepted_extensions(site) do
-    Beacon.Config.fetch!(site).allowed_media_types
+    Beacon.Config.fetch!(site).allowed_media_accept_types
   end
 
   defp is_image?(asset) do

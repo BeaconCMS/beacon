@@ -74,6 +74,12 @@ defmodule Beacon.ConfigTest do
                   {:processor, _},
                   {:validations, []},
                   {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+                ]},
+               {"application/pdf",
+                [
+                  {:processor, _},
+                  {:validations, []},
+                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
                 ]}
              ] = Config.new(site: :site, endpoint: :endpoint).assets
     end
