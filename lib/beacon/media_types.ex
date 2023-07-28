@@ -1,11 +1,11 @@
 defmodule Beacon.MediaTypes do
   @moduledoc """
-    #{__MODULE__} serves as a context to encapsulate business logic
-    around media types that is not handled by the MIME library.
+  #{__MODULE__} serves as a context to encapsulate business logic
+  around media types that is not handled by the MIME library.
 
-    Primary concerns:
+  Primary concerns:
     - Convenience functions
-    - Functions to handle edge cases between the browser and elxir
+    - Functions to handle edge cases between the browser and Elixir
   """
 
   @doc """
