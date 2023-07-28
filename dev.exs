@@ -397,8 +397,8 @@ Task.start(fn ->
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
-  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
-  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
+  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
+  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
   seeds.()
 

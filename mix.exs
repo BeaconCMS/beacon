@@ -76,7 +76,7 @@ defmodule Beacon.MixProject do
       setup: ["deps.get", "assets.setup", "assets.build", "assets.build.admin", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      dev: "run --no-halt dev.exs",
+      dev: ["ecto.reset", "run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
       "assets.build": ["assets.build.core", "assets.build.admin"],
