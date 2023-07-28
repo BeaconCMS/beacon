@@ -27,11 +27,7 @@ defmodule BeaconWeb.API.ComponentController do
     page = Content.get_page!(page_id)
     [parsed_template] = BlueprintConverter.parse_html(definition.body)
     component_data = build_component(parsed_template)
-    Logger.debug("page")
-    Logger.debug(page)
     rendered_html = BlueprintConverter.generate_html(UUID.generate(), component_data)
-    Logger.debug("rendered_html")
-    Logger.debug(rendered_html)
     {:ok, page } = Content.update_page(page, %{ template: page.template <> rendered_html })
     render(conn, :show, page: page)
   end

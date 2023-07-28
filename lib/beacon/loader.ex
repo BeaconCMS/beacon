@@ -23,9 +23,7 @@ defmodule Beacon.Loader do
     if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
       :skip
     else
-      Logger.debug("#### About to populate components")
       with :ok <- populate_components(config.site) do
-        Logger.debug("#### About to load the site from DB")
         :ok = load_site_from_db(config.site)
       end
     end
@@ -116,8 +114,6 @@ defmodule Beacon.Loader do
   # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
   defp load_components(site) do
     components = Beacon.Content.list_components(site)
-    Logger.debug("##### Loaded components!!")
-    Logger.debug(components)
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
       components
