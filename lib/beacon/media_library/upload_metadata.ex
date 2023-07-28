@@ -4,6 +4,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
   """
 
   alias Beacon.MediaLibrary.Asset
+  alias Beacon.MediaTypes
 
   defstruct [:site, :config, :allowed_media_accept_types, :path, :name, :media_type, :size, :output, :resource]
 
@@ -29,7 +30,12 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
 
     config = Beacon.Config.fetch!(site)
     name = Keyword.get(opts, :name, Path.basename(path))
-    media_type = Keyword.get(opts, :media_type, media_type_from_name(name))
+
+    media_type =
+      opts
+      |> Keyword.get(:media_type, media_type_from_name(name))
+      |> MediaTypes.normalize()
+
     size = Keyword.get(opts, :size)
     output = Keyword.get(opts, :output)
     resource = Keyword.get(opts, :resource, Asset.bare_changeset())
