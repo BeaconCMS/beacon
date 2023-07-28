@@ -5,8 +5,6 @@ defmodule BeaconWeb.API.ComponentController do
   alias Beacon.BlueprintConverter
   alias Ecto.UUID
 
-  require Logger
-
   @tag_for_name %{
     "title" => "h1",
     "paragraph" => "p",
