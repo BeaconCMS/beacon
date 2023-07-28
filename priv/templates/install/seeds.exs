@@ -100,3 +100,11 @@ Content.publish_layout(layout)
 }
 |> Content.create_page!()
 |> Content.publish_page()
+
+Content.create_page_event!(%{
+  page_id: page_id,
+  event_name: "hello",
+  code: """
+    {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+  """
+})

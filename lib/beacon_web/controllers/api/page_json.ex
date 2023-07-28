@@ -22,7 +22,8 @@ defmodule BeaconWeb.API.PageJSON do
       path: page.path,
       site: page.site,
       template: page.template,
-      format: page.format
+      format: page.format,
+      components: []
     }
   end
 end

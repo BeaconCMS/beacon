@@ -23,13 +23,22 @@ defmodule Beacon.Loader do
     if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
       :skip
     else
-      :ok = load_site_from_db(config.site)
+      with :ok <- populate_components(config.site) do
+        :ok = load_site_from_db(config.site)
+      end
     end
 
     PubSub.subscribe_to_layouts(config.site)
     PubSub.subscribe_to_pages(config.site)
 
     {:ok, config}
+  end
+
+  defp populate_components(site) do
+    Content.blueprint_components()
+    |> Enum.each(fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+
+    :ok
   end
 
   defp load_site_from_db(site) do

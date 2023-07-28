@@ -29,7 +29,8 @@ defmodule Beacon.Fixtures do
       name: "sample_component",
       body: ~S"""
       <span id={"my-component-#{@val}"}><%= @val %></span>
-      """
+      """,
+      category: "other"
     })
     |> Content.create_component!()
   end
