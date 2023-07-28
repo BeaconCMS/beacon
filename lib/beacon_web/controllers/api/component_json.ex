@@ -3,7 +3,7 @@ defmodule BeaconWeb.API.ComponentJSON do
 
   def index(%{component_definitions: definitions}) do
     %{
-      menu_categories: [
+      menuCategories: [
         %{
           name: "Base",
           items: for(category <- Component.categories(), do: %{id: category, name: category})

@@ -149,6 +149,15 @@ seeds = fn ->
     content: "body {cursor: zoom-in;}"
   })
 
+  Beacon.Content.create_component!(%{
+    site: "dev",
+    name: "sample_component",
+    body: """
+    <%= @val %>
+    """,
+    category: "other"
+  })
+
   layout =
     Beacon.Content.create_layout!(%{
       site: "dev",
