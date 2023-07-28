@@ -1,5 +1,5 @@
 defmodule Beacon.Content.Component do
-  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic]
+  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
   def categories, do: @categories
 
   @moduledoc """
