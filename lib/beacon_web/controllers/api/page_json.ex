@@ -24,6 +24,6 @@ defmodule BeaconWeb.API.PageJSON do
       template: page.template,
       format: page.format,
       components: []
-      }
+    }
   end
 end

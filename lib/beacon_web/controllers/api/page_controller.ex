@@ -9,6 +9,7 @@ defmodule BeaconWeb.API.PageController do
     pages =
       :dev
       |> Content.list_pages()
+
     render(conn, :index, pages: pages)
   end
 

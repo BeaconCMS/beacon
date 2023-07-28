@@ -984,6 +984,7 @@ defmodule Beacon.Content do
         </div>
       </nav>
     """
+
     nav_2 = """
       <nav>
         <div class="flex justify-between px-8 py-5 bg-white">
@@ -1016,6 +1017,7 @@ defmodule Beacon.Content do
         </div>
       </nav>
     """
+
     header_1 = """
       <div class="container mx-auto px-4">
       <div class="max-w-xl">
@@ -1233,6 +1235,7 @@ defmodule Beacon.Content do
     </div>
     </div>
     """
+
     [
       %{
         name: "Navigation 1",

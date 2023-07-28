@@ -1,11 +1,12 @@
 defmodule BeaconWeb.API.ComponentJSON do
   alias Beacon.Content.Component
+
   def index(%{component_definitions: definitions}) do
     %{
       menuCategories: [
         %{
           name: "Base",
-          items: for(category <- Component.categories(), do: %{ id: category, name: category })
+          items: for(category <- Component.categories(), do: %{id: category, name: category})
         }
       ],
       componentDefinitions: for(definition <- definitions, do: definition_data(definition))

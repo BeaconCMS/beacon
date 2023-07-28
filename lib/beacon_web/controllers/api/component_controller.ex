@@ -26,7 +26,7 @@ defmodule BeaconWeb.API.ComponentController do
     [parsed_template] = BlueprintConverter.parse_html(definition.body)
     component_data = build_component(parsed_template)
     rendered_html = BlueprintConverter.generate_html(UUID.generate(), component_data)
-    {:ok, page } = Content.update_page(page, %{ template: page.template <> rendered_html })
+    {:ok, page} = Content.update_page(page, %{template: page.template <> rendered_html})
     render(conn, :show, page: page)
   end
 
@@ -42,8 +42,10 @@ defmodule BeaconWeb.API.ComponentController do
   defp build_component(%{"tag" => "raw", "attributes" => _, "content" => content}), do: content
 
   defp build_component(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
-    attributes =  attributes
-    |> Map.put("id", UUID.generate())
+    attributes =
+      attributes
+      |> Map.put("id", UUID.generate())
+
     content = Enum.map(content, &build_component/1)
     %{"tag" => tag, "attributes" => attributes, "content" => content}
   end

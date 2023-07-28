@@ -36,7 +36,8 @@ defmodule Beacon.Loader do
 
   defp populate_components(site) do
     Content.blueprint_components()
-      |> Enum.map(fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+    |> Enum.map(fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+
     :ok
   end
 
@@ -114,6 +115,7 @@ defmodule Beacon.Loader do
   # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
   defp load_components(site) do
     components = Beacon.Content.list_components(site)
+
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
       components
