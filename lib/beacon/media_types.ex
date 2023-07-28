@@ -9,9 +9,9 @@ defmodule Beacon.MediaTypes do
   """
 
   @doc """
-    Browsers' media types are often out of date,
-    returning and empty string or a deprecated media type
-    which the elixir MIME library no longer supports.
+  Browsers' media types are often out of date,
+  returning an empty string or a deprecated media type
+  which the Elixir MIME library no longer supports.
   """
   def normalize(""), do: nil
 
