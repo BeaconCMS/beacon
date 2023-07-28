@@ -1,15 +1,11 @@
 defmodule BeaconWeb.API.PageController do
   use BeaconWeb, :controller
   alias Beacon.Content
-  alias Beacon.Repo
 
   action_fallback BeaconWeb.API.FallbackController
 
   def index(conn, _params) do
-    pages =
-      :dev
-      |> Content.list_pages()
-
+    pages = Content.list_pages(:dev)
     render(conn, :index, pages: pages)
   end
 

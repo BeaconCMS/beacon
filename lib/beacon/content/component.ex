@@ -1,7 +1,4 @@
 defmodule Beacon.Content.Component do
-  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
-  def categories, do: @categories
-
   @moduledoc """
   Components
 
@@ -15,6 +12,8 @@ defmodule Beacon.Content.Component do
   """
 
   use Beacon.Schema
+
+  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
 
   @type t :: %__MODULE__{}
 
@@ -34,4 +33,6 @@ defmodule Beacon.Content.Component do
     |> cast(attrs, [:site, :name, :thumbnail, :body, :category])
     |> validate_required([:site, :name, :body, :category])
   end
+
+  def categories, do: @categories
 end
