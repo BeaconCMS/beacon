@@ -83,8 +83,7 @@ defmodule BeaconWeb.Admin.MediaLibraryLive.UploadFormComponent do
           site -> site
         end
 
-      media_type =
-        uploaded_assets =
+      uploaded_assets =
         consume_uploaded_entries(socket, :asset, fn %{path: path}, _entry ->
           asset =
             site
