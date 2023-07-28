@@ -36,7 +36,7 @@ defmodule Beacon.Loader do
 
   defp populate_components(site) do
     Content.blueprint_components()
-    |> Enum.map(fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+    |> Enum.each(fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
 
     :ok
   end

@@ -1,8 +1,8 @@
 defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
 
-  alias Beacon.Content
   alias Beacon.BlueprintConverter
+  alias Beacon.Content
   alias Ecto.UUID
 
   @tag_for_name %{
