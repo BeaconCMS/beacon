@@ -4,7 +4,6 @@ defmodule Beacon.Loader.PageModuleLoader do
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
-  alias Beacon.Repo
 
   require Logger
 

@@ -42,8 +42,6 @@ defmodule Beacon.Content.Page do
 
     belongs_to :layout, Content.Layout
 
-    has_many :variants, Content.PageVariant
-
     embeds_many :events, Event do
       field :name, :string
       field :code, :string
@@ -89,6 +87,7 @@ defmodule Beacon.Content.Page do
     |> cast(attrs, [:path], empty_values: [])
     |> cast_embed(:events, with: &events_changeset/2)
     |> cast_embed(:helpers, with: &helpers_changeset/2)
+    |> cast_embed(:variants, with: &variants_changeset/2)
     |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
@@ -142,6 +141,12 @@ defmodule Beacon.Content.Page do
     schema
     |> cast(params, [:name, :args, :code])
     |> validate_required([:name, :code])
+  end
+
+  defp variants_changeset(schema, params) do
+    schema
+    |> cast(params, [:name, :template, :weight])
+    |> validate_required([:name, :template, :weight])
   end
 
   defp validate_string(changeset, fields) do

@@ -1010,7 +1010,7 @@ defmodule Beacon.Content do
           {:ok, Page.t()} | {:error, Changeset.t()}
   def create_page_variant(attrs) do
     page = Repo.get!(Page, attrs.page_id)
-    new_variant = %Variant{name: attrs.name, template: attrs.template, weight: attrs.weight}
+    new_variant = %{name: attrs.name, template: attrs.template, weight: attrs.weight}
 
     page
     |> Changeset.change()
