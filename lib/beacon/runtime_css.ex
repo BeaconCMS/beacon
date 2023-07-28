@@ -21,10 +21,17 @@ defmodule Beacon.RuntimeCSS do
   @doc false
   def load(site) do
     {:ok, css} = compile(site)
-    compressed = :zlib.gzip(css)
-    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
-    true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})
-    :ok
+
+    case :brotli.encode(css) do
+      {:ok, compressed} ->
+        hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
+        true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})
+        :ok
+
+      error ->
+        raise "failed to compress css: #{inspect(error)}"
+        :error
+    end
   end
 
   @doc false
