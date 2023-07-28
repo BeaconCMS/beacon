@@ -273,14 +273,17 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     setup :write_application_file
 
     test "does not inject if it already exists", %{bindings: bindings} do
-      output =
-        capture_io(fn ->
-          Install.maybe_inject_beacon_supervisor(bindings)
-          Install.maybe_inject_beacon_supervisor(bindings)
-        end)
+      application_file_path = get_in(bindings, [:application, :path])
 
-      assert output =~ ~r/injecting beacon supervisor into.*dummy_application/
-      assert output =~ ~r/skip.*injecting beacon supervisor/
+      capture_io(fn ->
+        Install.maybe_inject_beacon_supervisor(bindings)
+
+        file_content = File.read!(application_file_path)
+
+        Install.maybe_inject_beacon_supervisor(bindings)
+
+        assert File.read!(application_file_path) == file_content
+      end)
     end
 
     test "append comma after endpoint", %{bindings: bindings} do
