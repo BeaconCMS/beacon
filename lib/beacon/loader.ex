@@ -114,11 +114,9 @@ defmodule Beacon.Loader do
 
   # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
   defp load_components(site) do
-    components = Beacon.Content.list_components(site)
-
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
-      components
+      Beacon.Content.list_components(site)
     )
 
     :ok
