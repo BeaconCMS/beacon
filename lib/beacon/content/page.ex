@@ -53,7 +53,7 @@ defmodule Beacon.Content.Page do
       field :code, :string
     end
 
-    embeds_many :variants, Variant do
+    embeds_many :variants, Variant, on_replace: :delete do
       field :name, :string
       field :weight, :integer
       field :template, :string

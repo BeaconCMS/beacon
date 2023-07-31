@@ -1017,4 +1017,17 @@ defmodule Beacon.Content do
     |> Changeset.put_embed(:variants, page.variants ++ [new_variant])
     |> Repo.update()
   end
+
+  @doc """
+  Updates a page's list of variants.
+  """
+  @doc type: :page_variants
+  @spec update_page_variants(Page.t(), [map()]) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def update_page_variants(page, variants) do
+    page
+    |> Changeset.change()
+    |> Changeset.put_embed(:variants, variants)
+    |> IO.inspect()
+    |> Repo.update(force: true)
+  end
 end
