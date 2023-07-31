@@ -1,4 +1,6 @@
 defmodule Beacon.BlueprintConverter do
+  @moduledoc false
+
   require Floki
 
   def parse_html(html_string) do

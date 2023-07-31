@@ -1,4 +1,6 @@
 defmodule BeaconWeb.API.PageJSON do
+  @moduledoc false
+
   alias Beacon.Content.Page
 
   @doc """

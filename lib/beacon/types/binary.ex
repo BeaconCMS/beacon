@@ -1,5 +1,9 @@
 defmodule Beacon.Types.Binary do
-  @moduledoc false
+  @moduledoc """
+  Store Elixir terms into the database as binary.
+
+  Used to store and load layout and page snapshots.
+  """
 
   use Ecto.Type
 

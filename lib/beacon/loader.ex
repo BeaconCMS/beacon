@@ -1,6 +1,15 @@
 defmodule Beacon.Loader do
   @moduledoc """
-  Resources loading
+  Loader is the process resposible for loading, unloading, and reloading all resources for each site.
+
+  At start it will load all `Beacon.Content.blueprint_components/0` and existing resources stored
+  in the database like layouts, pages, snippets, etc.
+
+  When a resource is changed, for example when a page is published, it will recompile the
+  modules and updated the data in ETS to make the updated resource live.
+
+  And deleting a resource will unload it from memory.
+
   """
 
   use GenServer
@@ -34,6 +43,7 @@ defmodule Beacon.Loader do
     {:ok, config}
   end
 
+  # TODO: skip if components already exists
   defp populate_components(site) do
     Enum.each(Content.blueprint_components(), fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
     :ok
@@ -56,8 +66,7 @@ defmodule Beacon.Loader do
   @doc """
   Reload all resources of `site`.
 
-  Note that it may leave the site unresponsive
-  until it finishes loading all resources.
+  Note that it may leave the site unresponsive until it finishes loading all resources.
   """
   @spec reload_site(Beacon.Types.Site.t()) :: :ok
   def reload_site(site) when is_atom(site) do
@@ -317,6 +326,7 @@ defmodule Beacon.Loader do
     {:noreply, state}
   end
 
+  @doc false
   def do_load_page(page) when is_nil(page), do: nil
 
   def do_load_page(page) do

@@ -92,7 +92,7 @@ defmodule BeaconWeb.Layouts do
   @doc """
   Render all page, layout, and site meta tags.
 
-  See `Beacon.default_site_meta_tags/0` for a list of default meta tags
+  See `default_site_meta_tags/0` for a list of default meta tags
   that are included in all pages.
   """
 
@@ -151,7 +151,7 @@ defmodule BeaconWeb.Layouts do
 
     (page_meta_tags ++ layout_meta_tags)
     |> Enum.reject(&(&1["name"] == "csrf-token"))
-    |> Kernel.++(Beacon.default_site_meta_tags())
+    |> Kernel.++(Beacon.Content.default_site_meta_tags())
   end
 
   defp page_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do

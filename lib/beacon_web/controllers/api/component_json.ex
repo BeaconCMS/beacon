@@ -1,4 +1,6 @@
 defmodule BeaconWeb.API.ComponentJSON do
+  @moduledoc false
+
   alias Beacon.Content.Component
 
   def index(%{component_definitions: definitions}) do

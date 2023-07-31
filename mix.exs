@@ -91,6 +91,78 @@ defmodule Beacon.MixProject do
       main: "Beacon",
       source_ref: "v#{@version}",
       source_url: "https://github.com/BeaconCMS/beacon",
+      groups_for_modules: [
+        Content: [
+          Beacon.Content,
+          Beacon.Content.Component,
+          Beacon.Content.Layout,
+          Beacon.Content.LayoutEvent,
+          Beacon.Content.LayoutSnapshot,
+          Beacon.Content.Page,
+          Beacon.Content.Page.Event,
+          Beacon.Content.Page.Helper,
+          Beacon.Content.PageEvent,
+          Beacon.Content.PageSnapshot,
+          Beacon.Content.Stylesheet,
+          Beacon.Content.Snippets.Helper,
+          Beacon.Template,
+          Beacon.Template.HEEx,
+          Beacon.Template.Markdown,
+          Beacon.DataSource.Behaviour
+        ],
+        "Media Library": [
+          Beacon.MediaLibrary,
+          Beacon.MediaLibrary.Asset,
+          Beacon.MediaLibrary.Backend,
+          Beacon.MediaLibrary.Backend.Repo,
+          Beacon.MediaLibrary.Backend.S3,
+          Beacon.MediaLibrary.Backend.S3.Signed,
+          Beacon.MediaLibrary.Backend.S3.Unsigned,
+          Beacon.MediaTypes,
+          Beacon.MediaLibrary.Processors.Default,
+          Beacon.MediaLibrary.Processors.Image,
+          Beacon.MediaLibrary.UploadMetadata
+        ],
+        "Authn and Authz": [
+          Beacon.Authorization.Behaviour,
+          Beacon.Authorization.DefaultPolicy
+        ],
+        Web: [
+          BeaconWeb.PageLive,
+          BeaconWeb.Components
+        ],
+        "RESTful API": [
+          BeaconWeb.API.PageController,
+          BeaconWeb.API.ComponentController
+        ],
+        Extensibility: [
+          Beacon.Config,
+          Beacon.Lifecycle,
+          Beacon.Content.PageField,
+          Beacon.Template.LoadMetadata,
+          Beacon.Template.RenderMetadata
+        ],
+        Execution: [
+          Beacon.Router,
+          Beacon.Loader,
+          Beacon.Registry,
+          Beacon.RuntimeCSS,
+          Beacon.RuntimeJS,
+          Beacon.TailwindCompiler
+        ],
+        Types: [
+          Beacon.Types.Atom,
+          Beacon.Types.Binary,
+          Beacon.Types.Site
+        ],
+        Exceptions: [
+          Beacon.LoaderError,
+          Beacon.DataSourceError,
+          Beacon.AuthorizationError,
+          Beacon.ParserError,
+          BeaconWeb.NotFoundError
+        ]
+      ],
       groups_for_functions: [
         "Functions: Layouts": &(&1[:type] == :layouts),
         "Functions: Pages": &(&1[:type] == :pages),

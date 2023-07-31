@@ -2,6 +2,8 @@
 # Originally licensed under Apache 2.0 available at https://www.apache.org/licenses/LICENSE-2.0
 
 defprotocol BeaconWeb.Cache.Stale do
+  @moduledoc false
+
   def etag(schema)
   def last_modified(schema)
 end

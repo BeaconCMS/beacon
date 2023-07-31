@@ -1,6 +1,27 @@
 defmodule Beacon.Content do
   @moduledoc """
-  Content Management for sites.
+  The building blocks for composing web pages: Layouts, Pages, Components, Stylesheets, and Snippets.
+
+  ## Templates
+
+  Layout and Pages work together as pages require a layout to display its content,
+  the minimal template for a layout that can exist is the following:
+
+  ```heex
+  <%= @inner_content %>
+  ```
+
+  And pages templates can be written in [HEEx](https://hexdocs.pm/phoenix_live_view/assigns-eex.html)
+  or [Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) formats.
+
+  ## Meta Tags
+
+  Meta Tags can are defined in 3 levels:
+
+    * Site - fixed meta tags displayed on all pages, see `default_site_meta_tags/0`
+    * Layouts - applies to all pages used by the template.
+    * Page - only applies to the specific page.
+
   """
 
   alias Beacon.Content.Component
@@ -19,6 +40,20 @@ defmodule Beacon.Content do
   alias Beacon.Types.Site
   alias Ecto.Changeset
   import Ecto.Query
+
+  @doc """
+  Returns the list of meta tags that are applied to all pages by default.
+
+  These meta tags can be overwriten or extended on a Layout or Page level.
+  """
+  @spec default_site_meta_tags() :: [map()]
+  def default_site_meta_tags do
+    [
+      %{"charset" => "utf-8"},
+      %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
+      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
+    ]
+  end
 
   defp validate_page_template(changeset) do
     format = Changeset.get_field(changeset, :format)
@@ -607,7 +642,7 @@ defmodule Beacon.Content do
       ]
 
   """
-  @doc type: :page
+  @doc type: :pages
   @spec list_page_events(Site.t(), Ecto.UUID.t()) :: [PageEvent.t()]
   def list_page_events(site, page_id) when is_atom(site) and is_binary(page_id) do
     Repo.all(
@@ -827,175 +862,12 @@ defmodule Beacon.Content do
   # COMPONENTS
 
   @doc """
-  Creates a component.
+  Returns the list of components that are loaded into new sites.
 
-  ## Example
-
-      iex> create_component(attrs)
-      {:ok, %Component{}}
-
+  Those include basic elements like buttons and links as sample components like header and navbars.
   """
-  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
+  @spec blueprint_components() :: [map()]
   @doc type: :components
-  def create_component(attrs \\ %{}) do
-    %Component{}
-    |> Component.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc type: :components
-  def create_component!(attrs \\ %{}) do
-    case create_component(attrs) do
-      {:ok, component} -> component
-      {:error, changeset} -> raise "failed to create component: #{inspect(changeset.errors)}"
-    end
-  end
-
-  @doc """
-  Updates a component.
-
-      iex> update_component(component, %{name: "new_component"})
-      {:ok, %Component{}}
-
-  """
-  @doc type: :components
-  def update_component(%Component{} = component, attrs) do
-    component
-    |> Component.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Gets a single component by `clauses`.
-
-  ## Example
-
-      iex> get_component_by(site, name: "header")
-      %Component{}
-
-  """
-  @doc type: :components
-  @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
-  def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
-    clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Component, clauses, opts)
-  end
-
-  @doc """
-  Returns the list of components for a `site`.
-
-  ## Example
-
-      iex> list_components()
-      [%Component{}, ...]
-
-  """
-  @doc type: :components
-  @spec list_components(Site.t()) :: [Component.t()]
-  def list_components(site) do
-    Repo.all(from c in Component, where: c.site == ^site)
-  end
-
-  # SNIPPETS
-
-  @doc """
-  Creates a snippet helper
-  """
-  @doc type: :snippets
-  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Ecto.Changeset.t()}
-  def create_snippet_helper(attrs) do
-    %Snippets.Helper{}
-    |> Ecto.Changeset.cast(attrs, [:site, :name, :body])
-    |> Ecto.Changeset.validate_required([:site, :name, :body])
-    |> Ecto.Changeset.unique_constraint([:site, :name])
-    |> Repo.insert()
-  end
-
-  @doc type: :snippets
-  def create_snippet_helper!(attrs) do
-    case create_snippet_helper(attrs) do
-      {:ok, helper} -> helper
-      {:error, changeset} -> raise "failed to create snippet helper, got: #{inspect(changeset.errors)} "
-    end
-  end
-
-  @doc """
-  Returns the list of snippet helpers for a `site`.
-
-  ## Example
-
-      iex> list_snippet_helpers()
-      [%SnippetHelper{}, ...]
-
-  """
-  @doc type: :snippets
-  @spec list_snippet_helpers(Site.t()) :: [Snippets.Helper.t()]
-  def list_snippet_helpers(site) do
-    Repo.all(from h in Snippets.Helper, where: h.site == ^site)
-  end
-
-  @doc """
-  Renders a snippet `template` with the given `assigns`.
-
-  Snippets are small pieces of string with interpolated assigns.
-
-  Think of it as small templates.
-
-  ## Examples
-
-      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %Page{title: "home"}})
-      {:ok, "title is home"}
-
-  Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
-  which means that all [filters](https://shopify.github.io/liquid/basics/introduction/#filters) are available for use, eg:
-
-      iex> Beacon.Content.render_snippet("{{ 'title' | capitalize }}", assigns)
-      {:ok, "Title"}
-
-  In situations where the Liquid filters are not enough, you can create helpers
-  to process the template using regular Elixir.
-
-  In the next example a `author_name` is created to simulate a query to fetch the author's name:
-
-      iex> page = Beacon.Content.create_page(%{site: "my_site", extra: %{"author_id": 1}})
-      iex> Beacon.Content.create_snippet_helper(%{site: "my_site", name: "author_name", body: ~S\"""
-      ...> author_id = get_in(assigns, ["page", "extra", "author_id"])
-      ...> MyApp.fetch_author_name(author_id)
-      ...> \"""
-      iex> Beacon.Snippet.render("Author is {{ helper 'author_name' }}", %{page: page})
-      {:ok, "Author is Anon"}
-
-  Note that the `:page` assigns is made available as `assigns["page"]` (String.t) due to how Solid works.
-
-  Snipets can be used in:
-
-    * Meta Tag value
-    * Page Schema (structured Schema.org tags)
-
-  Allowed assigns:
-
-    * :page (Beacon.Content.Page.t())
-
-  """
-  @doc type: :snippets
-  @spec render_snippet(String.t(), %{page: Page.t()}) :: {:ok, String.t()} | :error
-  def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
-    page =
-      assigns.page
-      |> Map.from_struct()
-      |> Map.new(fn {k, v} -> {to_string(k), v} end)
-
-    assigns = %{"page" => page}
-
-    with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
-         {:ok, template} <- Solid.render(template, assigns) do
-      {:ok, to_string(template)}
-    else
-      # TODO: wrap error and return a Beacon exception
-      _error -> :error
-    end
-  end
-
   def blueprint_components do
     nav_1 = """
       <nav>
@@ -1423,5 +1295,175 @@ defmodule Beacon.Content do
         category: :basic
       }
     ]
+  end
+
+  @doc """
+  Creates a component.
+
+  ## Example
+
+      iex> create_component(attrs)
+      {:ok, %Component{}}
+
+  """
+  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
+  @doc type: :components
+  def create_component(attrs \\ %{}) do
+    %Component{}
+    |> Component.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc type: :components
+  def create_component!(attrs \\ %{}) do
+    case create_component(attrs) do
+      {:ok, component} -> component
+      {:error, changeset} -> raise "failed to create component: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Updates a component.
+
+      iex> update_component(component, %{name: "new_component"})
+      {:ok, %Component{}}
+
+  """
+  @doc type: :components
+  def update_component(%Component{} = component, attrs) do
+    component
+    |> Component.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets a single component by `clauses`.
+
+  ## Example
+
+      iex> get_component_by(site, name: "header")
+      %Component{}
+
+  """
+  @doc type: :components
+  @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
+  def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    clauses = Keyword.put(clauses, :site, site)
+    Repo.get_by(Component, clauses, opts)
+  end
+
+  @doc """
+  Returns the list of components for a `site`.
+
+  ## Example
+
+      iex> list_components()
+      [%Component{}, ...]
+
+  """
+  @doc type: :components
+  @spec list_components(Site.t()) :: [Component.t()]
+  def list_components(site) do
+    Repo.all(from c in Component, where: c.site == ^site)
+  end
+
+  # SNIPPETS
+
+  @doc """
+  Creates a snippet helper
+  """
+  @doc type: :snippets
+  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Ecto.Changeset.t()}
+  def create_snippet_helper(attrs) do
+    %Snippets.Helper{}
+    |> Ecto.Changeset.cast(attrs, [:site, :name, :body])
+    |> Ecto.Changeset.validate_required([:site, :name, :body])
+    |> Ecto.Changeset.unique_constraint([:site, :name])
+    |> Repo.insert()
+  end
+
+  @doc type: :snippets
+  def create_snippet_helper!(attrs) do
+    case create_snippet_helper(attrs) do
+      {:ok, helper} -> helper
+      {:error, changeset} -> raise "failed to create snippet helper, got: #{inspect(changeset.errors)} "
+    end
+  end
+
+  @doc """
+  Returns the list of snippet helpers for a `site`.
+
+  ## Example
+
+      iex> list_snippet_helpers()
+      [%SnippetHelper{}, ...]
+
+  """
+  @doc type: :snippets
+  @spec list_snippet_helpers(Site.t()) :: [Snippets.Helper.t()]
+  def list_snippet_helpers(site) do
+    Repo.all(from h in Snippets.Helper, where: h.site == ^site)
+  end
+
+  @doc """
+  Renders a snippet `template` with the given `assigns`.
+
+  Snippets are small pieces of string with interpolated assigns.
+
+  Think of it as small templates.
+
+  ## Examples
+
+      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %Page{title: "home"}})
+      {:ok, "title is home"}
+
+  Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
+  which means that all [filters](https://shopify.github.io/liquid/basics/introduction/#filters) are available for use, eg:
+
+      iex> Beacon.Content.render_snippet("{{ 'title' | capitalize }}", assigns)
+      {:ok, "Title"}
+
+  In situations where the Liquid filters are not enough, you can create helpers
+  to process the template using regular Elixir.
+
+  In the next example a `author_name` is created to simulate a query to fetch the author's name:
+
+      iex> page = Beacon.Content.create_page(%{site: "my_site", extra: %{"author_id": 1}})
+      iex> Beacon.Content.create_snippet_helper(%{site: "my_site", name: "author_name", body: ~S\"""
+      ...> author_id = get_in(assigns, ["page", "extra", "author_id"])
+      ...> MyApp.fetch_author_name(author_id)
+      ...> \"""
+      iex> Beacon.Snippet.render("Author is {{ helper 'author_name' }}", %{page: page})
+      {:ok, "Author is Anon"}
+
+  Note that the `:page` assigns is made available as `assigns["page"]` (String.t) due to how Solid works.
+
+  Snipets can be used in:
+
+    * Meta Tag value
+    * Page Schema (structured Schema.org tags)
+
+  Allowed assigns:
+
+    * :page (Beacon.Content.Page.t())
+
+  """
+  @doc type: :snippets
+  @spec render_snippet(String.t(), %{page: Page.t()}) :: {:ok, String.t()} | :error
+  def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
+    page =
+      assigns.page
+      |> Map.from_struct()
+      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+
+    assigns = %{"page" => page}
+
+    with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
+         {:ok, template} <- Solid.render(template, assigns) do
+      {:ok, to_string(template)}
+    else
+      # TODO: wrap error and return a Beacon exception
+      _error -> :error
+    end
   end
 end
