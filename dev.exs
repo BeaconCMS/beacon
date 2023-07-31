@@ -418,7 +418,8 @@ Task.start(fn ->
 
   seeds.()
 
-  Beacon.reload_all_sites()
+  :ok = Beacon.reload_site(:dev)
+  :ok = Beacon.reload_site(:other)
 
   Process.sleep(:infinity)
 end)

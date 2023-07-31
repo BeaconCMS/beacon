@@ -2,7 +2,6 @@
   <.header :if={@live_action in [:index]}>
     Listing Pages
     <:actions>
-      <.button phx-click="reload_pages" class="ml-2">Reload Pages</.button>
       <.link :if={Authorization.authorized?(@agent, :new, @authn_context)} patch={beacon_admin_path(@socket, "/pages/new")}>
         <.button>New Page</.button>
       </.link>
