@@ -48,5 +48,29 @@ defmodule Beacon.Content.Layout do
     layout
     |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
     |> validate_required([:site, :title, :body])
+    |> validate_body()
   end
+
+  defp validate_body(changeset) do
+    site = Changeset.get_field(changeset, :site)
+    body = Changeset.get_field(changeset, :body, "")
+    do_validate_body(changeset, site, body)
+  end
+
+  defp do_validate_body(changeset, site, body) when is_atom(site) and is_binary(body) do
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: ""}
+
+    case Beacon.Template.HEEx.compile(body, metadata) do
+      {:cont, _ast} ->
+        changeset
+
+      {:halt, %{description: description}} ->
+        add_error(changeset, :body, "invalid", compilation_error: description)
+
+      {:halt, _} ->
+        add_error(changeset, :body, "invalid")
+    end
+  end
+
+  defp do_validate_body(changeset, _site, _body), do: changeset
 end

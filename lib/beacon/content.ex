@@ -55,45 +55,6 @@ defmodule Beacon.Content do
     ]
   end
 
-  defp validate_page_template(changeset) do
-    format = Changeset.get_field(changeset, :format)
-    template = Changeset.get_field(changeset, :template)
-    do_validate_page_template(changeset, format, template)
-  end
-
-  defp do_validate_page_template(changeset, :heex = _format, template) when is_binary(template) do
-    site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path)
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-
-    case Beacon.Template.HEEx.compile(template, metadata) do
-      {:cont, _ast} ->
-        {:ok, changeset}
-
-      {:halt, %{description: description}} ->
-        {:error, Changeset.add_error(changeset, :template, description)}
-
-      {:halt, _} ->
-        {:error, Changeset.add_error(changeset, :template, "invalid template")}
-    end
-  end
-
-  defp do_validate_page_template(changeset, :markdown = _format, template) when is_binary(template) do
-    site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path)
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-
-    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
-      {:cont, _template} ->
-        {:ok, changeset}
-
-      {:halt, %{message: message}} ->
-        {:error, Changeset.add_error(changeset, :template, message)}
-    end
-  end
-
-  defp do_validate_page_template(changeset, _format, _template), do: {:ok, changeset}
-
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
 
@@ -412,10 +373,7 @@ defmodule Beacon.Content do
       |> change_page(page_attrs)
       |> Map.put(:action, :validate)
 
-    case validate_page_template(changeset) do
-      {:ok, changeset} -> PageField.apply_changesets(changeset, site, extra_attrs)
-      {:error, changeset} -> changeset
-    end
+    PageField.apply_changesets(changeset, site, extra_attrs)
   end
 
   @doc """
@@ -449,8 +407,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       changeset = Page.create_changeset(%Page{}, attrs)
 
-      with {:ok, _} <- validate_page_template(changeset),
-           {:ok, page} <- Repo.insert(changeset),
+      with {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
@@ -485,8 +442,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       changeset = Page.update_changeset(page, attrs)
 
-      with {:ok, _} <- validate_page_template(changeset),
-           {:ok, page} <- Repo.update(changeset),
+      with {:ok, page} <- Repo.update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -504,10 +460,7 @@ defmodule Beacon.Content do
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
-      changeset = change_page(page, %{"site" => page.site, "path" => page.path, "format" => page.format, "template" => page.template})
-
-      with {:ok, _} <- validate_page_template(changeset),
-           {:ok, event} <- create_page_event(page, "published"),
+      with {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
         :ok = PubSub.page_published(page)

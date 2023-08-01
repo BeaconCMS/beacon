@@ -91,6 +91,7 @@ defmodule Beacon.Content.Page do
     |> validate_string([:path])
     |> foreign_key_constraint(:layout_id)
     |> remove_empty_meta_attributes(:meta_tags)
+    |> validate_template()
   end
 
   # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
@@ -121,6 +122,7 @@ defmodule Beacon.Content.Page do
     |> validate_raw_schema(attrs["raw_schema"])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
+    |> validate_template()
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
   end
 
@@ -184,4 +186,40 @@ defmodule Beacon.Content.Page do
       {:error, _} -> add_error(changeset, :raw_schema, "invalid schema")
     end
   end
+
+  defp validate_template(changeset) do
+    site = Changeset.get_field(changeset, :site)
+    path = Changeset.get_field(changeset, :path, "")
+    format = Changeset.get_field(changeset, :format)
+    template = Changeset.get_field(changeset, :template, "")
+    do_validate_template(changeset, site, path, format, template)
+  end
+
+  defp do_validate_template(changeset, site, path, format, template) when is_atom(site) and is_atom(format) and is_binary(template) do
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    result =
+      case format do
+        :heex -> Beacon.Template.HEEx.compile(template, metadata)
+        :markdown -> Beacon.Template.Markdown.convert_to_html(template, metadata)
+        # TODO: execute template validation for custom engines provived by users
+        _ -> {:cont, :skip}
+      end
+
+    case result do
+      {:cont, _} ->
+        changeset
+
+      {:halt, %{description: description}} ->
+        add_error(changeset, :template, "invalid", compilation_error: description)
+
+      {:halt, %{message: message}} ->
+        add_error(changeset, :template, "invalid", compilation_error: message)
+
+      {:halt, _} ->
+        add_error(changeset, :template, "invalid")
+    end
+  end
+
+  defp do_validate_template(changeset, _site, _path, _format, _template), do: changeset
 end
