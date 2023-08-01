@@ -58,8 +58,9 @@ defmodule SamplePhoenixWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
-    plug Accent.Plug.Request, default_case: Accent.Case.Snake
-    plug Accent.Plug.Response, default_case: Accent.Case.Camel, json_codec: Jason
+    plug BeaconWeb.API.Plug
+    # plug Accent.Plug.Request, default_case: Accent.Case.Snake
+    # plug Accent.Plug.Response, default_case: Accent.Case.Camel, json_codec: Jason
   end
 
   scope "/" do
