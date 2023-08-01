@@ -12,6 +12,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
+  alias Beacon.Content.PageVariant
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
@@ -562,16 +563,23 @@ defmodule Beacon.Content do
   @doc """
   Gets a single page.
 
-  ## Example
+  A list of preloads may be passed as a second argument.
+
+  ## Examples
 
       iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
 
+      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", [:layout])
+      %Page{layout: %Layout{}}
+
   """
   @doc type: :pages
   @spec get_page(Ecto.UUID.t()) :: Page.t() | nil
-  def get_page(id) when is_binary(id) do
-    Repo.get(Page, id)
+  def get_page(id, preloads \\ []) when is_binary(id) do
+    Page
+    |> Repo.get(id)
+    |> Repo.preload(preloads)
   end
 
   @doc type: :pages
@@ -728,7 +736,7 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
-    Map.put(page, :variants, [])
+    Repo.preload(page, :variants, force: true)
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
@@ -1003,31 +1011,34 @@ defmodule Beacon.Content do
   # PAGE VARIANTS
 
   @doc """
-  Creates a new page variant.
+  Creates a new page variant and returns the page with updated variants association.
   """
   @doc type: :page_variants
-  @spec create_page_variant(%{page_id: Ecto.UUID.t(), name: binary(), template: binary(), weight: integer()}) ::
+  @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}) ::
           {:ok, Page.t()} | {:error, Changeset.t()}
-  def create_page_variant(attrs) do
-    page = Repo.get!(Page, attrs.page_id)
-    new_variant = %{name: attrs.name, template: attrs.template, weight: attrs.weight}
-
+  def create_variant_for_page(page, attrs) do
     page
-    |> Changeset.change()
-    |> Changeset.put_embed(:variants, page.variants ++ [new_variant])
-    |> Repo.update()
+    |> Ecto.build_assoc(:variants)
+    |> PageVariant.changeset(attrs)
+    |> Repo.insert()
+    |> case do
+      {:ok, %PageVariant{}} -> {:ok, Repo.preload(page, :variants, force: true)}
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 
   @doc """
-  Updates a page's list of variants.
+  Updates a page variant and returns the page with updated variants association.
   """
   @doc type: :page_variants
-  @spec update_page_variants(Page.t(), [map()]) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def update_page_variants(page, variants) do
-    page
-    |> Changeset.change()
-    |> Changeset.put_embed(:variants, variants)
-    |> IO.inspect()
-    |> Repo.update(force: true)
+  @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def update_variant_for_page(page, variant, attrs) do
+    variant
+    |> PageVariant.changeset(attrs)
+    |> Repo.update()
+    |> case do
+      {:ok, %PageVariant{}} -> {:ok, Repo.preload(page, :variants, force: true)}
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 end

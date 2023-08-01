@@ -49,7 +49,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp load_variants(page) do
-    for variant <- page.variants do
+    %{variants: variants} = Beacon.Repo.preload(page, :variants)
+
+    for variant <- variants do
       %{
         weight: variant.weight,
         template: Lifecycle.Template.load_template(%{page | template: variant.template})
