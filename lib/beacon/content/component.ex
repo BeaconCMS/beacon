@@ -22,7 +22,7 @@ defmodule Beacon.Content.Component do
     field :name, :string
     field :thumbnail, :string
     field :site, Beacon.Types.Site
-    field :category, Ecto.Enum, values: @categories
+    field :category, Ecto.Enum, values: @categories, default: :other
 
     timestamps()
   end
