@@ -20,7 +20,7 @@ defmodule BeaconWeb.API.ComponentController do
   end
 
   @spec create(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def create(conn, %{"definitionId" => component_definition_id, "pageId" => page_id}) do
+  def create(conn, %{"definition_id" => component_definition_id, "page_id" => page_id}) do
     definition = Content.get_component_by(:dev, id: component_definition_id)
     page = Content.get_page!(page_id)
     [parsed_template] = BlueprintConverter.parse_html(definition.body)
@@ -30,12 +30,12 @@ defmodule BeaconWeb.API.ComponentController do
     render(conn, :show, page: page)
   end
 
-  def create(conn, %{"definitionId" => component_definition_id}) do
+  def create(conn, %{"definition_id" => component_definition_id}) do
     definition = Content.get_component_by(:dev, id: component_definition_id)
     [parsed_template] = BlueprintConverter.parse_html(definition.body)
     component_data = build_component(parsed_template)
     rendered_html = BlueprintConverter.generate_html(UUID.generate(), component_data)
-    render(conn, :show, renderedHtml: rendered_html)
+    render(conn, :show, rendered_html: rendered_html)
   end
 
   defp build_component(entry) when is_binary(entry), do: entry

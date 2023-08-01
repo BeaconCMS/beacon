@@ -5,25 +5,25 @@ defmodule BeaconWeb.API.ComponentJSON do
 
   def index(%{component_definitions: definitions}) do
     %{
-      menuCategories: [
+      menu_categories: [
         %{
           name: "Base",
           items: for(category <- Component.categories(), do: %{id: category, name: category})
         }
       ],
-      componentDefinitions: for(definition <- definitions, do: definition_data(definition))
+      component_definitions: for(definition <- definitions, do: definition_data(definition))
     }
   end
 
   def show(%{page: page}) do
     %{
-      renderedHtml: page.template
+      rendered_html: page.template
     }
   end
 
-  def show(%{renderedHtml: rendered_html}) do
+  def show(%{rendered_html: rendered_html}) do
     %{
-      renderedHtml: rendered_html
+      rendered_html: rendered_html
     }
   end
 

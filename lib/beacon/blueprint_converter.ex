@@ -58,6 +58,10 @@ defmodule Beacon.BlueprintConverter do
   # Special case to just output content as HTML
   defp render_node(%{"tag" => "raw", "content" => content}), do: content
 
+  defp render_node(%{"tag" => "img", "attributes" => attributes}) do
+    "<img#{render_attrs(attributes)}/>"
+  end
+
   defp render_node(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
     """
     <#{tag}#{render_attrs(attributes)}>

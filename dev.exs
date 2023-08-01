@@ -58,6 +58,7 @@ defmodule SamplePhoenixWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug BeaconWeb.API.Plug
   end
 
   scope "/" do
