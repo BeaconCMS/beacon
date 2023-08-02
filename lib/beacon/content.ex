@@ -73,6 +73,18 @@ defmodule Beacon.Content do
     end
   end
 
+  defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
+    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+      {:cont, _template} ->
+        {:ok, changeset}
+
+      {:halt, %{message: message}} ->
+        {:error, Changeset.add_error(changeset, :template, message)}
+    end
+  end
+
+  defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
+
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
 
@@ -86,18 +98,6 @@ defmodule Beacon.Content do
       %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
     ]
   end
-
-  defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
-      {:cont, _template} ->
-        {:ok, changeset}
-
-      {:halt, %{message: message}} ->
-        {:error, Changeset.add_error(changeset, :template, message)}
-    end
-  end
-
-  defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
