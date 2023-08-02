@@ -24,14 +24,22 @@ defmodule Beacon.Content do
   defp validate_page_template(changeset) do
     format = Changeset.get_field(changeset, :format)
     template = Changeset.get_field(changeset, :template)
-    do_validate_page_template(changeset, format, template)
-  end
-
-  defp do_validate_page_template(changeset, :heex = _format, template) when is_binary(template) do
     site = Changeset.get_field(changeset, :site)
     path = Changeset.get_field(changeset, :path)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
 
+    do_validate_template(changeset, format, template, metadata)
+  end
+
+  defp validate_variant_template(changeset, page) do
+    %{format: format, site: site, path: path} = page
+    template = Changeset.get_field(changeset, :template)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    do_validate_template(changeset, format, template, metadata)
+  end
+
+  defp do_validate_template(changeset, :heex = _format, template, metadata) when is_binary(template) do
     case Beacon.Template.HEEx.compile(template, metadata) do
       {:cont, _ast} ->
         {:ok, changeset}
@@ -44,11 +52,7 @@ defmodule Beacon.Content do
     end
   end
 
-  defp do_validate_page_template(changeset, :markdown = _format, template) when is_binary(template) do
-    site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path)
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-
+  defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
     case Beacon.Template.Markdown.convert_to_html(template, metadata) do
       {:cont, _template} ->
         {:ok, changeset}
@@ -58,7 +62,7 @@ defmodule Beacon.Content do
     end
   end
 
-  defp do_validate_page_template(changeset, _format, _template), do: {:ok, changeset}
+  defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
@@ -552,6 +556,7 @@ defmodule Beacon.Content do
 
   @doc false
   def create_page_snapshot(page, event) do
+    page = Repo.preload(page, :variants)
     attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
 
     %PageSnapshot{}
@@ -1032,14 +1037,18 @@ defmodule Beacon.Content do
   @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}) ::
           {:ok, Page.t()} | {:error, Changeset.t()}
   def create_variant_for_page(page, attrs) do
-    page
-    |> Ecto.build_assoc(:variants)
-    |> PageVariant.changeset(attrs)
-    |> Repo.insert()
-    |> case do
-      {:ok, %PageVariant{}} -> {:ok, Repo.preload(page, :variants, force: true)}
-      {:error, changeset} -> {:error, changeset}
-    end
+    changeset =
+      page
+      |> Ecto.build_assoc(:variants)
+      |> PageVariant.changeset(attrs)
+
+    Repo.transact(fn ->
+      with {:ok, %PageVariant{}} <- Repo.insert(changeset),
+           %Page{} = page <- Repo.preload(page, :variants, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
   end
 
   @doc """
@@ -1048,12 +1057,15 @@ defmodule Beacon.Content do
   @doc type: :page_variants
   @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_variant_for_page(page, variant, attrs) do
-    variant
-    |> PageVariant.changeset(attrs)
-    |> Repo.update()
-    |> case do
-      {:ok, %PageVariant{}} -> {:ok, Repo.preload(page, :variants, force: true)}
-      {:error, changeset} -> {:error, changeset}
-    end
+    changeset = PageVariant.changeset(variant, attrs)
+
+    Repo.transact(fn ->
+      with {:ok, _} <- validate_variant_template(changeset, page),
+           {:ok, %PageVariant{}} <- Repo.update(changeset),
+           %Page{} = page <- Repo.preload(page, :variants, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
   end
 end

@@ -1,7 +1,9 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Content
+  alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
+  alias Beacon.Repo
 
   def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
   def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
@@ -146,4 +148,30 @@ defmodule Beacon.Fixtures do
 
     Path.join(["test", "support", "fixtures", file_name])
   end
+
+  def page_variant_fixture(attrs \\ %{})
+
+  def page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: page_variant_fixture(page, attrs)
+
+  def page_variant_fixture(%{page_id: page_id} = attrs) do
+    page_id
+    |> Content.get_page!()
+    |> page_variant_fixture(attrs)
+  end
+
+  defp page_variant_fixture(page, attrs) do
+    full_attrs = %{
+      name: attrs[:name] || "Variant #{System.unique_integer([:positive])}",
+      weight: attrs[:weight] || Enum.random(1..10),
+      template: attrs[:template] || template_for(page)
+    }
+
+    page
+    |> Ecto.build_assoc(:variants)
+    |> PageVariant.changeset(full_attrs)
+    |> Repo.insert!()
+  end
+
+  defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
+  defp template_for(%{format: :markdown} = _page), do: "# My site"
 end

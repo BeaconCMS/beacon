@@ -36,5 +36,6 @@ defmodule Beacon.Content.PageVariant do
     page
     |> cast(attrs, fields)
     |> validate_required(fields)
+    |> validate_number(:weight, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
   end
 end
