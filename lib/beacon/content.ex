@@ -1,9 +1,29 @@
 defmodule Beacon.Content do
   @moduledoc """
-  Content Management for sites.
+  The building blocks for composing web pages: Layouts, Pages, Components, Stylesheets, and Snippets.
+
+  ## Templates
+
+  Layout and Pages work together as pages require a layout to display its content,
+  the minimal template for a layout that can exist is the following:
+
+  ```heex
+  <%= @inner_content %>
+  ```
+
+  And pages templates can be written in [HEEx](https://hexdocs.pm/phoenix_live_view/assigns-eex.html)
+  or [Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) formats.
+
+  ## Meta Tags
+
+  Meta Tags can are defined in 3 levels:
+
+    * Site - fixed meta tags displayed on all pages, see `default_site_meta_tags/0`
+    * Layouts - applies to all pages used by the template.
+    * Page - only applies to the specific page.
+
   """
 
-  import Ecto.Query
   alias Beacon.Content.Component
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -20,6 +40,7 @@ defmodule Beacon.Content do
   alias Beacon.Repo
   alias Beacon.Types.Site
   alias Ecto.Changeset
+  import Ecto.Query
 
   defp validate_page_template(changeset) do
     format = Changeset.get_field(changeset, :format)
@@ -50,6 +71,20 @@ defmodule Beacon.Content do
       {:halt, _} ->
         {:error, Changeset.add_error(changeset, :template, "invalid template")}
     end
+  end
+
+  @doc """
+  Returns the list of meta tags that are applied to all pages by default.
+
+  These meta tags can be overwriten or extended on a Layout or Page level.
+  """
+  @spec default_site_meta_tags() :: [map()]
+  def default_site_meta_tags do
+    [
+      %{"charset" => "utf-8"},
+      %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
+      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
+    ]
   end
 
   defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
@@ -382,10 +417,7 @@ defmodule Beacon.Content do
       |> change_page(page_attrs)
       |> Map.put(:action, :validate)
 
-    case validate_page_template(changeset) do
-      {:ok, changeset} -> PageField.apply_changesets(changeset, site, extra_attrs)
-      {:error, changeset} -> changeset
-    end
+    PageField.apply_changesets(changeset, site, extra_attrs)
   end
 
   @doc """
@@ -419,8 +451,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       changeset = Page.create_changeset(%Page{}, attrs)
 
-      with {:ok, _} <- validate_page_template(changeset),
-           {:ok, page} <- Repo.insert(changeset),
+      with {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
@@ -455,8 +486,7 @@ defmodule Beacon.Content do
     Repo.transact(fn ->
       changeset = Page.update_changeset(page, attrs)
 
-      with {:ok, _} <- validate_page_template(changeset),
-           {:ok, page} <- Repo.update(changeset),
+      with {:ok, page} <- Repo.update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -474,10 +504,7 @@ defmodule Beacon.Content do
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def publish_page(%Page{} = page) do
     Repo.transact(fn ->
-      changeset = change_page(page, %{"site" => page.site, "path" => page.path, "format" => page.format, "template" => page.template})
-
-      with {:ok, _} <- validate_page_template(changeset),
-           {:ok, event} <- create_page_event(page, "published"),
+      with {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
         :ok = PubSub.page_published(page)
@@ -620,7 +647,7 @@ defmodule Beacon.Content do
       ]
 
   """
-  @doc type: :page
+  @doc type: :pages
   @spec list_page_events(Site.t(), Ecto.UUID.t()) :: [PageEvent.t()]
   def list_page_events(site, page_id) when is_atom(site) and is_binary(page_id) do
     Repo.all(
@@ -842,6 +869,442 @@ defmodule Beacon.Content do
   end
 
   # COMPONENTS
+
+  @doc """
+  Returns the list of components that are loaded into new sites.
+
+  Those include basic elements like buttons and links as sample components like header and navbars.
+  """
+  @spec blueprint_components() :: [map()]
+  @doc type: :components
+  def blueprint_components do
+    nav_1 = """
+      <nav>
+        <div class="flex justify-between px-8 py-5 bg-white">
+          <div class="w-auto mr-14">
+            <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"></a>
+          </div>
+          <div class="w-auto flex flex-wrap items-center">
+            <ul class="flex items-center mr-10">
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Features</a>
+              </li>
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Solutions</a>
+              </li>
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Resources</a>
+              </li>
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Pricing</a>
+              </li>
+            </ul>
+            <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+              Start Free Trial
+            </button>
+          </div>
+        </div>
+      </nav>
+    """
+
+    nav_2 = """
+      <nav>
+        <div class="flex justify-between px-8 py-5 bg-white">
+          <div class="w-auto mr-14">
+            <a href="#">
+              <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg">
+            </a>
+          </div>
+          <div class="w-auto flex flex-wrap items-center">
+            <ul class="flex items-center mr-10">
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Features</a>
+              </li>
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Solutions</a>
+              </li>
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Resources</a>
+              </li>
+              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+                <a href="#">Pricing</a>
+              </li>
+            </ul>
+          </div>
+          <div class="w-auto flex flex-wrap items-center">
+            <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+              Start Free Trial
+            </button>
+          </div>
+        </div>
+      </nav>
+    """
+
+    header_1 = """
+      <div class="container mx-auto px-4">
+      <div class="max-w-xl">
+      <span class="inline-block mb-3 text-gray-600 text-base">
+      Flexible Pricing Plan
+    </span>
+    <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
+      Everything you need to launch a website
+    </h2>
+
+    </div>
+    <div class="flex flex-wrap">
+      <div class="w-full md:w-1/3">
+      <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
+      <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+      Basic
+    </h3>
+    <p class="mb-5 text-gray-600 text-sm">
+      Best for freelancers
+    </p>
+    <div class="mb-9 flex">
+      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
+    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
+    <span class="font-heading font-semibold self-end">/ m</span>
+
+    </div>
+    <div class="p-1">
+      <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+      <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+
+    </div>
+    <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+      <p class="relative z-10">
+      Join now
+    </p>
+    </div>
+    </button>
+    </div>
+    <ul>
+      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.0.0.0"></path>
+    </svg>
+    <p>
+      100GB Cloud Storage
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.1.0.0"></path>
+    </svg>
+    <p>
+      10 Email Connection
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.2.0.0"></path>
+    </svg>
+    <p>
+      Daily Analytics
+    </p>
+    </li>
+    </ul>
+    </div>
+
+    </div>
+    <div class="w-full md:w-1/3">
+      <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
+      <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+      Premium
+    </h3>
+    <p class="mb-5 text-gray-600 text-sm">
+      Best for small agency
+    </p>
+    <div class="mb-9 flex">
+      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+      $
+    </span>
+    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+      99
+    </span>
+    <span class="font-heading font-semibold self-end">
+      / m
+    </span>
+    </div>
+    <div class="p-1">
+      <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+      <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+
+    </div>
+    <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+      <p class="relative z-10">Join now</p>
+
+    </div>
+    </button>
+    </div>
+    <ul>
+      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.0.0.0"></path>
+    </svg>
+    <p>
+      500GB Cloud Storage
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.1.0.0"></path>
+    </svg>
+    <p>
+      50 Email Connection
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.2.0.0"></path>
+    </svg>
+    <p>
+      Daily Analytics
+    </p>
+    </li>
+    <li class="flex items-center font-heading font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.3.0.0"></path>
+    </svg>
+    <p>
+      Premium Support
+    </p>
+    </li>
+    </ul>
+    </div>
+    </div>
+    <div class="w-full md:w-1/3">
+      <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
+      <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
+      Popular choice
+    </p>
+    <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+      Enterprise
+    </h3>
+    <p class="mb-5 text-gray-600 text-sm">
+      Best for large agency
+    </p>
+    <div class="mb-9 flex">
+      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+      $
+    </span>
+    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+      199
+    </span>
+    <span class="font-heading font-semibold self-end">
+      / m
+    </span>
+
+    </div>
+    <div class="group relative mb-9">
+      <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
+
+    </div>
+    <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
+      <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
+      <p>
+      Join now
+    </p>
+
+    </div>
+
+    </button>
+
+    </div>
+    <ul>
+      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.0.0.0"></path>
+    </svg>
+    <p>
+      2TB Cloud Storage
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.1.0.0"></path>
+    </svg>
+    <p>
+      Unlimited Email Connection
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.2.0.0"></path>
+    </svg>
+    <p>
+      Daily Analytics
+    </p>
+
+    </li>
+    <li class="flex items-center font-heading font-medium text-base text-gray-900">
+      <svg class="mr-2.5">
+      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.3.0.0"></path>
+    </svg>
+    <p>
+      Premium Support
+    </p>
+    </li>
+    </ul>
+    </div>
+    </div>
+    </div>
+    </div>
+    """
+
+    [
+      %{
+        name: "Navigation 1",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/01_2be7c9d07f.png",
+        body: nav_1,
+        category: :nav
+      },
+      %{
+        name: "Navigation 2",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
+        body: nav_2,
+        category: :nav
+      },
+      %{
+        name: "Navigation 3",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/03_e244675766.png",
+        body: nav_1,
+        category: :nav
+      },
+      %{
+        name: "Navigation 4",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/04_64390b9975.png",
+        body: nav_1,
+        category: :nav
+      },
+      %{
+        name: "Header 1",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
+        body: header_1,
+        category: :header
+      },
+      %{
+        name: "Header 2",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
+        body: "<div>Default definition for components</div>",
+        category: :header
+      },
+      %{
+        name: "Header 3",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
+        body: "<div>Default definition for components</div>",
+        category: :header
+      },
+      %{
+        name: "Sign Up 1",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
+        body: "<div>Default definition for components</div>",
+        category: :sign_up
+      },
+      %{
+        name: "Sign Up 2",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
+        body: "<div>Default definition for components</div>",
+        category: :sign_up
+      },
+      %{
+        name: "Sign Up 3",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
+        body: "<div>Default definition for components</div>",
+        category: :sign_up
+      },
+      %{
+        name: "Stats 1",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
+        body: "<div>Default definition for components</div>",
+        category: :stats
+      },
+      %{
+        name: "Stats 2",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
+        body: "<div>Default definition for components</div>",
+        category: :stats
+      },
+      %{
+        name: "Stats 3",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
+        body: "<div>Default definition for components</div>",
+        category: :stats
+      },
+      %{
+        name: "Footer 1",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
+        body: "<div>Default definition for components</div>",
+        category: :footer
+      },
+      %{
+        name: "Footer 2",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
+        body: "<div>Default definition for components</div>",
+        category: :footer
+      },
+      %{
+        name: "Footer 3",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
+        body: "<div>Default definition for components</div>",
+        category: :footer
+      },
+      %{
+        name: "Sign In 1",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
+        body: "<div>Default definition for components</div>",
+        category: :sign_in
+      },
+      %{
+        name: "Sign In 2",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
+        body: "<div>Default definition for components</div>",
+        category: :sign_in
+      },
+      %{
+        name: "Sign In 3",
+        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
+        body: "<div>Default definition for components</div>",
+        category: :sign_in
+      },
+      %{
+        name: "Title",
+        thumbnail: "/component_thumbnails/title.jpg",
+        body: "<header>I'm a sample title</header>",
+        category: :basic
+      },
+      %{
+        name: "Button",
+        thumbnail: "/component_thumbnails/button.jpg",
+        body: "<button>I'm a sample button</button>",
+        category: :basic
+      },
+      %{
+        name: "Link",
+        thumbnail: "/component_thumbnails/link.jpg",
+        body: "<a href=\"#\">I'm a sample link</a>",
+        category: :basic
+      },
+      %{
+        name: "Paragraph",
+        thumbnail: "/component_thumbnails/paragraph.jpg",
+        body: "<p>I'm a sample paragraph</p>",
+        category: :basic
+      },
+      %{
+        name: "Aside",
+        thumbnail: "/component_thumbnails/aside.jpg",
+        body: "<aside>I'm a sample aside</aside>",
+        category: :basic
+      }
+    ]
+  end
 
   @doc """
   Creates a component.

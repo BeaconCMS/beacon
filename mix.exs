@@ -34,6 +34,8 @@ defmodule Beacon.MixProject do
 
   defp deps do
     [
+      {:accent, "~> 1.1"},
+      {:brotli, "~> 0.3.2"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
@@ -42,7 +44,7 @@ defmodule Beacon.MixProject do
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
-      {:floki, ">= 0.30.0", only: :test},
+      {:floki, ">= 0.30.0"},
       {:gettext, "~> 0.20"},
       {:hackney, "~> 1.16", only: [:dev, :test]},
       {:heroicons, "~> 0.5"},
@@ -76,7 +78,7 @@ defmodule Beacon.MixProject do
       setup: ["deps.get", "assets.setup", "assets.build", "assets.build.admin", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      dev: "run --no-halt dev.exs",
+      dev: ["ecto.reset", "run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
       "assets.build": ["assets.build.core", "assets.build.admin"],
@@ -90,6 +92,78 @@ defmodule Beacon.MixProject do
       main: "Beacon",
       source_ref: "v#{@version}",
       source_url: "https://github.com/BeaconCMS/beacon",
+      groups_for_modules: [
+        Content: [
+          Beacon.Content,
+          Beacon.Content.Component,
+          Beacon.Content.Layout,
+          Beacon.Content.LayoutEvent,
+          Beacon.Content.LayoutSnapshot,
+          Beacon.Content.Page,
+          Beacon.Content.Page.Event,
+          Beacon.Content.Page.Helper,
+          Beacon.Content.PageEvent,
+          Beacon.Content.PageSnapshot,
+          Beacon.Content.Stylesheet,
+          Beacon.Content.Snippets.Helper,
+          Beacon.Template,
+          Beacon.Template.HEEx,
+          Beacon.Template.Markdown,
+          Beacon.DataSource.Behaviour
+        ],
+        "Media Library": [
+          Beacon.MediaLibrary,
+          Beacon.MediaLibrary.Asset,
+          Beacon.MediaLibrary.Backend,
+          Beacon.MediaLibrary.Backend.Repo,
+          Beacon.MediaLibrary.Backend.S3,
+          Beacon.MediaLibrary.Backend.S3.Signed,
+          Beacon.MediaLibrary.Backend.S3.Unsigned,
+          Beacon.MediaTypes,
+          Beacon.MediaLibrary.Processors.Default,
+          Beacon.MediaLibrary.Processors.Image,
+          Beacon.MediaLibrary.UploadMetadata
+        ],
+        "Authn and Authz": [
+          Beacon.Authorization.Behaviour,
+          Beacon.Authorization.DefaultPolicy
+        ],
+        Web: [
+          BeaconWeb.PageLive,
+          BeaconWeb.Components
+        ],
+        "RESTful API": [
+          BeaconWeb.API.PageController,
+          BeaconWeb.API.ComponentController
+        ],
+        Extensibility: [
+          Beacon.Config,
+          Beacon.Lifecycle,
+          Beacon.Content.PageField,
+          Beacon.Template.LoadMetadata,
+          Beacon.Template.RenderMetadata
+        ],
+        Execution: [
+          Beacon.Router,
+          Beacon.Loader,
+          Beacon.Registry,
+          Beacon.RuntimeCSS,
+          Beacon.RuntimeJS,
+          Beacon.TailwindCompiler
+        ],
+        Types: [
+          Beacon.Types.Atom,
+          Beacon.Types.Binary,
+          Beacon.Types.Site
+        ],
+        Exceptions: [
+          Beacon.LoaderError,
+          Beacon.DataSourceError,
+          Beacon.AuthorizationError,
+          Beacon.ParserError,
+          BeaconWeb.NotFoundError
+        ]
+      ],
       groups_for_functions: [
         "Functions: Layouts": &(&1[:type] == :layouts),
         "Functions: Pages": &(&1[:type] == :pages),

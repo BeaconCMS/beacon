@@ -49,14 +49,6 @@ defmodule BeaconWeb.Admin.PageLive.Index do
   end
 
   @impl true
-  def handle_event("reload_pages", _, socket) do
-    start = :os.system_time(:millisecond)
-    Beacon.reload_all_sites()
-
-    {:noreply, assign(socket, :last_reload_time, :os.system_time(:millisecond) - start)}
-  end
-
-  @impl true
   def handle_event("search", %{"search_form" => params}, socket) do
     query_params = URI.encode_query(params)
     {:noreply, push_patch(socket, to: beacon_admin_path(socket, "/pages?#{query_params}"), replace: true)}

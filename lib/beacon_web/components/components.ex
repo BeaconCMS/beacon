@@ -6,6 +6,13 @@ defmodule BeaconWeb.Components do
   use Phoenix.Component
   import Beacon.Router, only: [beacon_asset_path: 2]
 
+  @doc false
+  def render(fun, assigns, env) do
+    fun
+    |> Phoenix.LiveView.TagEngine.component(assigns, env)
+    |> Phoenix.HTML.Safe.to_iodata()
+  end
+
   @doc """
   Renders a image previously uploaded in Admin Media Library.
 

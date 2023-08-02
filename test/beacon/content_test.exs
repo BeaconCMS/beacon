@@ -68,13 +68,20 @@ defmodule Beacon.ContentTest do
       Content.publish_layout(layout)
       assert %LayoutEvent{event: :published} = Content.get_latest_layout_event(layout.site, layout.id)
     end
+
+    test "validate body heex" do
+      assert %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]} =
+               Layout.changeset(%Layout{}, %{site: :test, title: "test", body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
   end
 
   describe "pages" do
     test "validate invalid template" do
       layout = layout_fixture()
 
-      assert %Ecto.Changeset{errors: [template: {error, []}], valid?: false} =
+      assert %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false} =
                Content.validate_page(:my_site, %Page{}, %{
                  "site" => "my_site",
                  "path" => "/",
@@ -82,13 +89,29 @@ defmodule Beacon.ContentTest do
                  "layout_id" => layout.id
                })
 
-      assert error =~ "unmatched closing tag"
+      assert compilation_error =~ "unmatched closing tag"
+    end
+
+    test "validate template heex on create" do
+      assert %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]} =
+               Page.create_changeset(%Page{}, %{site: :test, format: :heex, path: "/test", layout_id: Ecto.UUID.generate(), template: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "validate template heex on update" do
+      page = page_fixture(format: :heex)
+
+      assert %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]} =
+               Page.update_changeset(page, %{template: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
     end
 
     test "create page should validate invalid templates" do
       layout = layout_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false}} =
                Content.create_page(%{
                  "site" => "my_site",
                  "path" => "/",
@@ -96,7 +119,7 @@ defmodule Beacon.ContentTest do
                  "layout_id" => layout.id
                })
 
-      assert error =~ "unmatched closing tag"
+      assert compilation_error =~ "unmatched closing tag"
     end
 
     # TODO: require paths starting with / which will make this test fail
@@ -128,21 +151,10 @@ defmodule Beacon.ContentTest do
     test "update page should validate invalid templates" do
       page = page_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false}} =
                Content.update_page(page, %{"template" => "<div>invalid</span>"})
 
-      assert error =~ "unmatched closing tag"
-    end
-
-    test "publish page should validate invalid templates" do
-      page = page_fixture()
-
-      # simulate an invalid template
-      Repo.update_all(Page, set: [template: "<div>invalid</span>"])
-      page = Repo.reload!(page)
-
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} = Content.publish_page(page)
-      assert error =~ "unmatched closing tag"
+      assert compilation_error =~ "unmatched closing tag"
     end
 
     test "publish page should create a published event" do

@@ -32,11 +32,14 @@ The file `dev.exs` is a self-contained Phoenix application running Beacon with s
 
 1. Install [cmark-gfm](https://github.com/github/cmark-gfm)
 
-2. Install dependencies
+2. Install dependencies, build assets, and run database setup:
 
 ```sh
 mix setup
 ```
+
+If deps compilation fails, make sure your environment has the compilers installed.
+On Ubuntu look for the `build_essential` package, on macOS install utilities with `xcode-select --install`
 
 3. Execute the dev script:
 

@@ -1,5 +1,7 @@
 defmodule Beacon.Types.Atom do
-  @moduledoc false
+  @moduledoc """
+  Convert between atom and string.
+  """
 
   use Ecto.Type
 

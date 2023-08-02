@@ -58,6 +58,7 @@ defmodule SamplePhoenixWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug BeaconWeb.API.Plug
   end
 
   scope "/" do
@@ -83,7 +84,14 @@ defmodule SamplePhoenix.Endpoint do
 
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader
-  plug Plug.RequestId
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
   plug Plug.Session, @session_options
   plug SamplePhoenixWeb.Router
 end
@@ -152,7 +160,8 @@ seeds = fn ->
     name: "sample_component",
     body: """
     <%= @val %>
-    """
+    """,
+    category: "other"
   })
 
   layout =
@@ -404,12 +413,14 @@ Task.start(fn ->
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
-  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
-  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
+  # TODO: revert this change and remove ecto.reset from mix dev alias
+  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
+  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
   seeds.()
 
-  Beacon.reload_all_sites()
+  :ok = Beacon.reload_site(:dev)
+  :ok = Beacon.reload_site(:other)
 
   Process.sleep(:infinity)
 end)
