@@ -1011,6 +1011,21 @@ defmodule Beacon.Content do
   # PAGE VARIANTS
 
   @doc """
+  Returns an `%Ecto.Changeset{}` for tracking variant changes.
+
+  ## Example
+
+      iex> change_page_variant(page_variant, %{name: "Variant A"})
+      %Ecto.Changeset{data: %PageVariant{}}
+
+  """
+  @doc type: :page_variants
+  @spec change_page_variant(PageVariant.t(), map()) :: Ecto.Changeset.t()
+  def change_page_variant(%PageVariant{} = page, attrs \\ %{}) do
+    PageVariant.changeset(page, attrs)
+  end
+
+  @doc """
   Creates a new page variant and returns the page with updated variants association.
   """
   @doc type: :page_variants
