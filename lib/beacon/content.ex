@@ -23,6 +23,7 @@ defmodule Beacon.Content do
     * Page - only applies to the specific page.
 
   """
+  import Ecto.Query
 
   alias Beacon.Content.Component
   alias Beacon.Content.Layout
@@ -40,50 +41,6 @@ defmodule Beacon.Content do
   alias Beacon.Repo
   alias Beacon.Types.Site
   alias Ecto.Changeset
-  import Ecto.Query
-
-  defp validate_page_template(changeset) do
-    format = Changeset.get_field(changeset, :format)
-    template = Changeset.get_field(changeset, :template)
-    site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path)
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-
-    do_validate_template(changeset, format, template, metadata)
-  end
-
-  defp validate_variant_template(changeset, page) do
-    %{format: format, site: site, path: path} = page
-    template = Changeset.get_field(changeset, :template)
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-
-    do_validate_template(changeset, format, template, metadata)
-  end
-
-  defp do_validate_template(changeset, :heex = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.HEEx.compile(template, metadata) do
-      {:cont, _ast} ->
-        {:ok, changeset}
-
-      {:halt, %{description: description}} ->
-        {:error, Changeset.add_error(changeset, :template, "invalid", compilation_error: description)}
-
-      {:halt, _} ->
-        {:error, Changeset.add_error(changeset, :template, "invalid template")}
-    end
-  end
-
-  defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
-      {:cont, _template} ->
-        {:ok, changeset}
-
-      {:halt, %{message: message}} ->
-        {:error, Changeset.add_error(changeset, :template, message)}
-    end
-  end
-
-  defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
 
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
@@ -1531,4 +1488,37 @@ defmodule Beacon.Content do
       end
     end)
   end
+
+  defp validate_variant_template(changeset, page) do
+    %{format: format, site: site, path: path} = page
+    template = Changeset.get_field(changeset, :template)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    do_validate_template(changeset, format, template, metadata)
+  end
+
+  defp do_validate_template(changeset, :heex = _format, template, metadata) when is_binary(template) do
+    case Beacon.Template.HEEx.compile(template, metadata) do
+      {:cont, _ast} ->
+        {:ok, changeset}
+
+      {:halt, %{description: description}} ->
+        {:error, Changeset.add_error(changeset, :template, "invalid", compilation_error: description)}
+
+      {:halt, _} ->
+        {:error, Changeset.add_error(changeset, :template, "invalid template")}
+    end
+  end
+
+  defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
+    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+      {:cont, _template} ->
+        {:ok, changeset}
+
+      {:halt, %{message: message}} ->
+        {:error, Changeset.add_error(changeset, :template, message)}
+    end
+  end
+
+  defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
 end

@@ -334,7 +334,8 @@ defmodule Beacon.ContentTest do
       variant = page_variant_fixture(%{page: page})
       attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
 
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} = Content.update_variant_for_page(page, variant, attrs)
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.update_variant_for_page(page, variant, attrs)
 
       assert error =~ "unmatched closing tag"
     end
