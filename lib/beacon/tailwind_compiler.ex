@@ -90,6 +90,19 @@ defmodule Beacon.TailwindCompiler do
   # Note that `:cd` is the root dir for regular and umbrella projects so the paths have to be defined accordingly.
   # https://github.com/phoenixframework/tailwind/blob/8cf9810474bf37c1b1dd821503d756885534d2ba/lib/tailwind.ex#L192
   def run(profile, extra_args) when is_atom(profile) and is_list(extra_args) do
+    if Tailwind.bin_version() == :error do
+      message = """
+      tailwind-cli binary not found or the installation is invalid.
+
+      Execute the following command to install the binary used to compile CSS:
+
+          mix tailwind.install
+
+      """
+
+      raise Beacon.LoaderError, message
+    end
+
     config = Tailwind.config_for!(profile)
     args = config[:args] || []
 
