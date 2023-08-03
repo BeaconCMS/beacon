@@ -564,8 +564,8 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec get_page(Ecto.UUID.t()) :: Page.t() | nil
-  def get_page(id, preloads \\ []) when is_binary(id) do
+  @spec get_page(Ecto.UUID.t(), list()) :: Page.t() | nil
+  def get_page(id, preloads \\ []) when is_binary(id) and is_list(preloads) do
     Page
     |> Repo.get(id)
     |> Repo.preload(preloads)
@@ -1480,7 +1480,7 @@ defmodule Beacon.Content do
     changeset = PageVariant.changeset(variant, attrs)
 
     Repo.transact(fn ->
-      with {:ok, _} <- validate_variant_template(changeset, page),
+      with {:ok, ^changeset} <- validate_variant_template(changeset, page),
            {:ok, %PageVariant{}} <- Repo.update(changeset),
            %Page{} = page <- Repo.preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -1520,5 +1520,6 @@ defmodule Beacon.Content do
     end
   end
 
+  # TODO: expose template validation to custom template formats defined by users
   defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
 end

@@ -41,12 +41,12 @@ defmodule BeaconWeb.PageLive do
       """
   end
 
-  defp choose_template(%{primary: primary, variants: []}), do: primary
-  defp choose_template(%{primary: primary, variants: variants}), do: choose_template(variants, Enum.random(1..100), primary)
+  defp choose_template([primary]), do: primary
+  defp choose_template([primary | variants]), do: choose_template(variants, Enum.random(1..100), primary)
 
   defp choose_template([], _, primary), do: primary
-  defp choose_template([%{weight: weight, template: template} | _], n, _) when weight >= n, do: template
-  defp choose_template([%{weight: weight} | variants], n, primary), do: choose_template(variants, n - weight, primary)
+  defp choose_template([{weight, template} | _], n, _) when weight >= n, do: template
+  defp choose_template([{weight, _} | variants], n, primary), do: choose_template(variants, n - weight, primary)
 
   def handle_info({:page_loaded, _}, socket) do
     # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179
