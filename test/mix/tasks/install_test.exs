@@ -75,35 +75,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     end
   end
 
-  test "creates seeds file", %{bindings: bindings} do
-    dest_file = random_file_name(get_in(bindings, [:seeds, :path]))
-    bindings = put_in(bindings, [:seeds, :path], dest_file)
-
-    seeds_content = EEx.eval_file(get_in(bindings, [:seeds, :template_path]), bindings) |> String.trim_leading()
-
-    capture_io(fn ->
-      Install.maybe_create_beacon_seeds(bindings)
-
-      assert File.exists?(dest_file)
-      assert File.read!(dest_file) == seeds_content
-    end)
-  end
-
-  test "does not create beacon seeds twice", %{bindings: bindings} do
-    dest_file = random_file_name(get_in(bindings, [:seeds, :path]))
-    bindings = put_in(bindings, [:seeds, :path], dest_file)
-
-    capture_io(fn ->
-      Install.maybe_create_beacon_seeds(bindings)
-
-      file_content = File.read!(dest_file)
-
-      Install.maybe_create_beacon_seeds(bindings)
-
-      assert file_content == File.read!(dest_file)
-    end)
-  end
-
   test "adds router content to its file", %{bindings: bindings} do
     dest_file = random_file_name(get_in(bindings, [:router, :path]))
     bindings = put_in(bindings, [:router, :path], dest_file)
@@ -212,33 +183,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     end)
   end
 
-  test "creates beacon data source file", %{bindings: bindings} do
-    dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
-    random_path = random_file_name(dest_path, false)
-    template_path = get_in(bindings, [:beacon_data_source, :template_path])
-
-    bindings = put_in(bindings, [:beacon_data_source, :dest_path], random_path)
-    file_content = EEx.eval_file(template_path, bindings)
-
-    capture_io(fn ->
-      Install.maybe_create_beacon_data_source_file(bindings)
-
-      assert File.read!(random_path) == file_content
-    end)
-  end
-
-  test "does not create a new file if it already exists", %{bindings: bindings} do
-    dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
-    random_path = random_file_name(dest_path)
-    bindings = put_in(bindings, [:beacon_data_source, :dest_path], random_path)
-
-    capture_io(fn ->
-      Install.maybe_create_beacon_data_source_file(bindings)
-
-      assert "" == File.read!(random_path)
-    end)
-  end
-
   describe "maybe_inject_beacon_supervisor" do
     def write_application_file(%{bindings: bindings}) do
       application_file_template = ~S"""
@@ -299,7 +243,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
         Install.maybe_inject_beacon_supervisor(bindings)
 
         assert File.read!(application_file_path) =~
-                 ~r/{Beacon, sites: \[\[site: :my_test_blog, endpoint: DummyAppWeb.Endpoint, data_source: DummyApp.BeaconDataSource\]\]}\n.*\]/
+                 ~r/{Beacon, sites: \[\[site: :my_test_blog, endpoint: DummyAppWeb.Endpoint\]\]}\n.*\]/
       end)
     end
   end
