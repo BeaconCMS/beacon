@@ -66,7 +66,7 @@ defmodule Beacon.Content do
         {:ok, changeset}
 
       {:halt, %{description: description}} ->
-        {:error, Changeset.add_error(changeset, :template, description)}
+        {:error, Changeset.add_error(changeset, :template, "invalid", compilation_error: description)}
 
       {:halt, _} ->
         {:error, Changeset.add_error(changeset, :template, "invalid template")}
