@@ -1,10 +1,11 @@
 defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
-  require Logger
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
+
+  require Logger
 
   def load_page!(%Content.Page{} = page) do
     component_module = Loader.component_module_for_site(page.site)
@@ -37,9 +38,20 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp store_page(page, page_module, component_module) do
-    %{id: page_id, layout_id: layout_id, site: site, path: path} = page
-    template = Lifecycle.Template.load_template(page)
-    Beacon.Router.add_page(site, path, {page_id, layout_id, page.format, template, page_module, component_module})
+    %{id: page_id, layout_id: layout_id, format: format, site: site, path: path} = page
+
+    # [primary_template, {weight_variant_1, template_variant_1}, {...}, ...]
+    templates = [Lifecycle.Template.load_template(page) | load_variants(page)]
+
+    Beacon.Router.add_page(site, path, {page_id, layout_id, format, templates, page_module, component_module})
+  end
+
+  defp load_variants(page) do
+    %{variants: variants} = Beacon.Repo.preload(page, :variants)
+
+    for variant <- variants do
+      {variant.weight, Lifecycle.Template.load_template(%{page | template: variant.template})}
+    end
   end
 
   defp page_assigns(page) do

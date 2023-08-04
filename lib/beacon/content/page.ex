@@ -20,11 +20,11 @@ defmodule Beacon.Content.Page do
   > Manipulating data manually will most likely result
   > in inconsistent behavior and crashes.
   """
-
   use Beacon.Schema
+
   alias Beacon.Content
 
-  @version 1
+  @version 2
 
   @type t :: %__MODULE__{}
 
@@ -41,6 +41,8 @@ defmodule Beacon.Content.Page do
     field :extra, :map, default: %{}
 
     belongs_to :layout, Content.Layout
+
+    has_many :variants, Content.PageVariant
 
     embeds_many :events, Event do
       field :name, :string
@@ -198,15 +200,7 @@ defmodule Beacon.Content.Page do
   defp do_validate_template(changeset, site, path, format, template) when is_atom(site) and is_atom(format) and is_binary(template) do
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
 
-    result =
-      case format do
-        :heex -> Beacon.Template.HEEx.compile(template, metadata)
-        :markdown -> Beacon.Template.Markdown.convert_to_html(template, metadata)
-        # TODO: execute template validation for custom engines provived by users
-        _ -> {:cont, :skip}
-      end
-
-    case result do
+    case validate_with_format(format, template, metadata) do
       {:cont, _} ->
         changeset
 
@@ -222,4 +216,13 @@ defmodule Beacon.Content.Page do
   end
 
   defp do_validate_template(changeset, _site, _path, _format, _template), do: changeset
+
+  defp validate_with_format(format, template, metadata) do
+    case format do
+      :heex -> Beacon.Template.HEEx.compile(template, metadata)
+      :markdown -> Beacon.Template.Markdown.convert_to_html(template, metadata)
+      # TODO: execute template validation for custom engines provived by users
+      _ -> {:cont, :skip}
+    end
+  end
 end

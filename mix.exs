@@ -167,6 +167,7 @@ defmodule Beacon.MixProject do
       groups_for_functions: [
         "Functions: Layouts": &(&1[:type] == :layouts),
         "Functions: Pages": &(&1[:type] == :pages),
+        "Functions: Page Variants": &(&1[:type] == :page_variants),
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets)

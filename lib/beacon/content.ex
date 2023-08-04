@@ -23,6 +23,7 @@ defmodule Beacon.Content do
     * Page - only applies to the specific page.
 
   """
+  import Ecto.Query
 
   alias Beacon.Content.Component
   alias Beacon.Content.Layout
@@ -32,6 +33,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
+  alias Beacon.Content.PageVariant
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
@@ -39,7 +41,6 @@ defmodule Beacon.Content do
   alias Beacon.Repo
   alias Beacon.Types.Site
   alias Ecto.Changeset
-  import Ecto.Query
 
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
@@ -539,6 +540,7 @@ defmodule Beacon.Content do
 
   @doc false
   def create_page_snapshot(page, event) do
+    page = Repo.preload(page, :variants)
     attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
 
     %PageSnapshot{}
@@ -550,16 +552,23 @@ defmodule Beacon.Content do
   @doc """
   Gets a single page.
 
-  ## Example
+  A list of preloads may be passed as a second argument.
+
+  ## Examples
 
       iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
 
+      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", [:layout])
+      %Page{layout: %Layout{}}
+
   """
   @doc type: :pages
-  @spec get_page(Ecto.UUID.t()) :: Page.t() | nil
-  def get_page(id) when is_binary(id) do
-    Repo.get(Page, id)
+  @spec get_page(Ecto.UUID.t(), list()) :: Page.t() | nil
+  def get_page(id, preloads \\ []) when is_binary(id) and is_list(preloads) do
+    Page
+    |> Repo.get(id)
+    |> Repo.preload(preloads)
   end
 
   @doc type: :pages
@@ -716,6 +725,10 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
+    Repo.preload(page, :variants, force: true)
+  end
+
+  defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
   end
 
@@ -1445,4 +1458,94 @@ defmodule Beacon.Content do
       _error -> :error
     end
   end
+
+  # PAGE VARIANTS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking variant changes.
+
+  ## Example
+
+      iex> change_page_variant(page_variant, %{name: "Variant A"})
+      %Ecto.Changeset{data: %PageVariant{}}
+
+  """
+  @doc type: :page_variants
+  @spec change_page_variant(PageVariant.t(), map()) :: Ecto.Changeset.t()
+  def change_page_variant(%PageVariant{} = page, attrs \\ %{}) do
+    PageVariant.changeset(page, attrs)
+  end
+
+  @doc """
+  Creates a new page variant and returns the page with updated variants association.
+  """
+  @doc type: :page_variants
+  @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}) ::
+          {:ok, Page.t()} | {:error, Changeset.t()}
+  def create_variant_for_page(page, attrs) do
+    changeset =
+      page
+      |> Ecto.build_assoc(:variants)
+      |> PageVariant.changeset(attrs)
+
+    Repo.transact(fn ->
+      with {:ok, %PageVariant{}} <- Repo.insert(changeset),
+           %Page{} = page <- Repo.preload(page, :variants, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
+  Updates a page variant and returns the page with updated variants association.
+  """
+  @doc type: :page_variants
+  @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def update_variant_for_page(page, variant, attrs) do
+    changeset = PageVariant.changeset(variant, attrs)
+
+    Repo.transact(fn ->
+      with {:ok, ^changeset} <- validate_variant_template(changeset, page),
+           {:ok, %PageVariant{}} <- Repo.update(changeset),
+           %Page{} = page <- Repo.preload(page, :variants, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  defp validate_variant_template(changeset, page) do
+    %{format: format, site: site, path: path} = page
+    template = Changeset.get_field(changeset, :template)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
+
+    do_validate_template(changeset, format, template, metadata)
+  end
+
+  defp do_validate_template(changeset, :heex = _format, template, metadata) when is_binary(template) do
+    case Beacon.Template.HEEx.compile(template, metadata) do
+      {:cont, _ast} ->
+        {:ok, changeset}
+
+      {:halt, %{description: description}} ->
+        {:error, Changeset.add_error(changeset, :template, "invalid", compilation_error: description)}
+
+      {:halt, _} ->
+        {:error, Changeset.add_error(changeset, :template, "invalid template")}
+    end
+  end
+
+  defp do_validate_template(changeset, :markdown = _format, template, metadata) when is_binary(template) do
+    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+      {:cont, _template} ->
+        {:ok, changeset}
+
+      {:halt, %{message: message}} ->
+        {:error, Changeset.add_error(changeset, :template, message)}
+    end
+  end
+
+  # TODO: expose template validation to custom template formats defined by users
+  defp do_validate_template(changeset, _format, _template, _metadata), do: {:ok, changeset}
 end

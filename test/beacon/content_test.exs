@@ -1,6 +1,8 @@
 defmodule Beacon.ContentTest do
   use Beacon.DataCase
+
   import Beacon.Fixtures
+
   alias Beacon.Content
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -8,6 +10,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageSnapshot
+  alias Beacon.Content.PageVariant
   alias Beacon.Repo
 
   describe "layouts" do
@@ -304,6 +307,37 @@ defmodule Beacon.ContentTest do
                "author name is {% helper 'author_name' %}",
                %{page: %Page{site: "my_site", extra: %{"author_id" => 1}}}
              ) == {:ok, "author name is test_1"}
+    end
+  end
+
+  describe "variants" do
+    test "update variant OK" do
+      page = page_fixture(%{format: :heex})
+      variant = page_variant_fixture(%{page: page})
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>changed</div>"}
+
+      assert {:ok, %Page{variants: [updated_variant]}} = Content.update_variant_for_page(page, variant, attrs)
+      assert %PageVariant{name: "Changed Name", weight: 99, template: "<div>changed</div>"} = updated_variant
+    end
+
+    test "update triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      variant = page_variant_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.update_variant_for_page(page, variant, %{name: "Changed"})
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "update variant should validate invalid templates" do
+      page = page_fixture(%{format: :heex})
+      variant = page_variant_fixture(%{page: page})
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.update_variant_for_page(page, variant, attrs)
+
+      assert error =~ "unmatched closing tag"
     end
   end
 end
