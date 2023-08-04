@@ -1251,6 +1251,28 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns a list of all existing component categories.
+  """
+  @doc type: :components
+  @spec component_categories() :: [atom()]
+  def component_categories, do: Component.categories()
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking component changes.
+
+  ## Example
+
+      iex> change_component(component, %{name: "Header"})
+      %Ecto.Changeset{data: %Component{}}
+
+  """
+  @doc type: :components
+  @spec change_component(Component.t(), map()) :: Ecto.Changeset.t()
+  def change_component(%Component{} = component, attrs \\ %{}) do
+    Component.changeset(component, attrs)
+  end
+
+  @doc """
   Creates a component.
 
   ## Example
@@ -1317,7 +1339,11 @@ defmodule Beacon.Content do
   @doc type: :components
   @spec list_components(Site.t()) :: [Component.t()]
   def list_components(site) do
-    Repo.all(from c in Component, where: c.site == ^site)
+    Repo.all(
+      from c in Component,
+        where: c.site == ^site,
+        order_by: c.name
+    )
   end
 
   # SNIPPETS
