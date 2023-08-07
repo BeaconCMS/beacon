@@ -92,8 +92,7 @@ defmodule Beacon.ContentTest do
       {1, nil} = Repo.update_all(Layout, set: [body: "<div"])
       layout = Repo.reload(layout)
 
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.publish_layout(layout)
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} = Content.publish_layout(layout)
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -125,8 +124,7 @@ defmodule Beacon.ContentTest do
       {1, nil} = Repo.update_all(Page, set: [template: "<div"])
       page = Repo.reload(page)
 
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.publish_page(page)
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} = Content.publish_page(page)
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -320,6 +318,23 @@ defmodule Beacon.ContentTest do
   end
 
   describe "variants" do
+    test "create variant OK" do
+      page = page_fixture(%{format: :heex})
+      attrs = %{name: "Foo", weight: 3, template: "<div>Bar</div>"}
+
+      assert {:ok, %Page{variants: [variant]}} = Content.create_variant_for_page(page, attrs)
+      assert %PageVariant{name: "Foo", weight: 3, template: "<div>Bar</div>"} = variant
+    end
+
+    test "create triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      attrs = %{name: "Foo", weight: 3, template: "<div>Bar</div>"}
+
+      {:ok, %Page{}} = Content.create_variant_for_page(page, attrs)
+
+      assert_receive :lifecycle_after_update_page
+    end
+
     test "update variant OK" do
       page = page_fixture(%{format: :heex})
       variant = page_variant_fixture(%{page: page})
@@ -347,6 +362,24 @@ defmodule Beacon.ContentTest do
                Content.update_variant_for_page(page, variant, attrs)
 
       assert error =~ "unmatched closing tag"
+    end
+
+    test "delete variant OK" do
+      page = page_fixture(%{format: :heex})
+      variant_1 = page_variant_fixture(%{page: page})
+      variant_2 = page_variant_fixture(%{page: page})
+
+      assert {:ok, %Page{variants: [^variant_2]}} = Content.delete_variant_from_page(page, variant_1)
+      assert {:ok, %Page{variants: []}} = Content.delete_variant_from_page(page, variant_2)
+    end
+
+    test "delete triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      variant = page_variant_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.delete_variant_from_page(page, variant)
+
+      assert_receive :lifecycle_after_update_page
     end
   end
 
