@@ -8,12 +8,6 @@ defmodule Beacon.Fixtures do
   defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
   defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
 
-  def conn_admin(conn) do
-    conn
-    |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:session_id, "admin_session_123")
-  end
-
   def stylesheet_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
