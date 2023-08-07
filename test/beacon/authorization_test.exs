@@ -5,14 +5,14 @@ defmodule Beacon.AuthorizationTest do
 
   describe "get_agent/1" do
     test "returns agent" do
-      assert %{role: :admin} = Authorization.get_agent(%{"session_id" => "admin_session_123"})
+      assert %{role: :admin} = Authorization.get_agent(:my_site, %{"session_id" => "admin_session_123"})
     end
   end
 
   describe "authorized?/3" do
     test "returns boolean" do
-      refute Authorization.authorized?(%{role: :editor}, :upload, %{})
-      assert Authorization.authorized?(%{role: :admin}, :upload, %{})
+      refute Authorization.authorized?(:my_site, %{role: :editor}, :upload, %{})
+      assert Authorization.authorized?(:my_site, %{role: :admin}, :upload, %{})
     end
   end
 end

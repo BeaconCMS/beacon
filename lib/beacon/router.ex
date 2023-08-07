@@ -33,7 +33,6 @@ defmodule Beacon.Router do
         end
       end
 
-
     quote do
       @doc false
       def __beacon_sites__, do: unquote(Macro.escape(sites))

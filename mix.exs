@@ -75,15 +75,13 @@ defmodule Beacon.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build", "assets.build.admin", "ecto.setup"],
+      setup: ["deps.get", "assets.setup", "assets.build", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       dev: ["ecto.reset", "run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
-      "assets.build": ["assets.build.core", "assets.build.admin"],
-      "assets.build.core": ["esbuild cdn", "esbuild cdn_min"],
-      "assets.build.admin": ["tailwind admin --minify", "esbuild cdn_admin", "esbuild cdn_min_admin"]
+      "assets.build": ["esbuild cdn", "esbuild cdn_min"]
     ]
   end
 
