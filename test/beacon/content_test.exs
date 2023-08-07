@@ -69,57 +69,66 @@ defmodule Beacon.ContentTest do
       assert %LayoutEvent{event: :published} = Content.get_latest_layout_event(layout.site, layout.id)
     end
 
-    test "validate body heex" do
-      assert %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]} =
-               Layout.changeset(%Layout{}, %{site: :test, title: "test", body: "<div"})
+    test "validate body heex on create" do
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_layout(%{site: :test, title: "test", body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "validate body heex on update" do
+      layout = layout_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_layout(layout, %{body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "validate body heex on publish" do
+      layout = layout_fixture()
+
+      # simulate incorrect data inserted manually
+      {1, nil} = Repo.update_all(Layout, set: [body: "<div"])
+      layout = Repo.reload(layout)
+
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.publish_layout(layout)
 
       assert compilation_error =~ "expected closing `>`"
     end
   end
 
   describe "pages" do
-    test "validate invalid template" do
+    test "validate template heex on create" do
       layout = layout_fixture()
 
-      assert %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false} =
-               Content.validate_page(:my_site, %Page{}, %{
-                 "site" => "my_site",
-                 "path" => "/",
-                 "template" => "<div>invalid</span>",
-                 "layout_id" => layout.id
-               })
-
-      assert compilation_error =~ "unmatched closing tag"
-    end
-
-    test "validate template heex on create" do
-      assert %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]} =
-               Page.create_changeset(%Page{}, %{site: :test, format: :heex, path: "/test", layout_id: Ecto.UUID.generate(), template: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_page(%{site: :test, path: "/", layout_id: layout.id, template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
 
     test "validate template heex on update" do
-      page = page_fixture(format: :heex)
+      page = page_fixture()
 
-      assert %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]} =
-               Page.update_changeset(page, %{template: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_page(page, %{template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
 
-    test "create page should validate invalid templates" do
-      layout = layout_fixture()
+    test "validate template heex on publish" do
+      page = page_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false}} =
-               Content.create_page(%{
-                 "site" => "my_site",
-                 "path" => "/",
-                 "template" => "<div>invalid</span>",
-                 "layout_id" => layout.id
-               })
+      # simulate incorrect data inserted manually
+      {1, nil} = Repo.update_all(Page, set: [template: "<div"])
+      page = Repo.reload(page)
 
-      assert compilation_error =~ "unmatched closing tag"
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.publish_page(page)
+
+      assert compilation_error =~ "expected closing `>`"
     end
 
     # TODO: require paths starting with / which will make this test fail
