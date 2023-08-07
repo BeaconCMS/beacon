@@ -5,8 +5,8 @@ defmodule Beacon.Fixtures do
   alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.Repo
 
-  def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
-  def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
+  defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
+  defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
 
   def conn_admin(conn) do
     conn
