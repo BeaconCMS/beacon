@@ -1572,4 +1572,17 @@ defmodule Beacon.Content do
 
   # TODO: expose template validation to custom template formats defined by users
   defp do_validate_template(changeset, _field, _format, _template, _metadata), do: {:ok, changeset}
+
+  @doc """
+  Deletes a page variant and returns the page with updated variants association.
+  """
+  @doc type: :page_variants
+  @spec delete_variant_from_page(Page.t(), PageVariant.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def delete_variant_from_page(page, variant) do
+    with {:ok, %PageVariant{}} <- Repo.delete(variant),
+         %Page{} = page <- Repo.preload(page, :variants, force: true),
+         %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+      {:ok, page}
+    end
+  end
 end
