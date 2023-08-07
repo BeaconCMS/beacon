@@ -1540,7 +1540,7 @@ defmodule Beacon.Content do
     changeset = PageVariant.changeset(variant, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_variant_template(changeset, page),
+      with {:ok, ^changeset} <- validate_variant(changeset, page),
            {:ok, %PageVariant{}} <- Repo.update(changeset),
            %Page{} = page <- Repo.preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -1549,11 +1549,48 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp validate_variant_template(changeset, page) do
+  defp validate_variant(changeset, page) do
     %{format: format, site: site, path: path} = page
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-    do_validate_template(changeset, :template, format, template, metadata)
+
+    case do_validate_template(changeset, :template, format, template, metadata) do
+      {:ok, changeset} ->
+        do_validate_weights(changeset, page)
+
+      {:error, changeset} ->
+        {_, updated_changeset} = do_validate_weights(changeset, page)
+        {:error, updated_changeset}
+    end
+  end
+
+  defp do_validate_weights(changeset, page) do
+    %{id: changed_variant_id} = changeset.data
+
+    total_weights =
+      Enum.reduce(page.variants, 0, fn
+        %{id: ^changed_variant_id} = variant, acc -> acc + (changeset.changes[:weight] || variant.weight)
+        variant, acc -> acc + variant.weight
+      end)
+
+    if total_weights > 100 do
+      {:error, Changeset.add_error(changeset, :weight, "total weights cannot exceed 100")}
+    else
+      {:ok, changeset}
+    end
+  end
+
+  @doc """
+  Deletes a page variant and returns the page with updated variants association.
+  """
+  @doc type: :page_variants
+  @spec delete_variant_from_page(Page.t(), PageVariant.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def delete_variant_from_page(page, variant) do
+    with {:ok, %PageVariant{}} <- Repo.delete(variant),
+         %Page{} = page <- Repo.preload(page, :variants, force: true),
+         %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+      {:ok, page}
+    end
   end
 
   ## Utils
@@ -1583,17 +1620,4 @@ defmodule Beacon.Content do
 
   # TODO: expose template validation to custom template formats defined by users
   defp do_validate_template(changeset, _field, _format, _template, _metadata), do: {:ok, changeset}
-
-  @doc """
-  Deletes a page variant and returns the page with updated variants association.
-  """
-  @doc type: :page_variants
-  @spec delete_variant_from_page(Page.t(), PageVariant.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def delete_variant_from_page(page, variant) do
-    with {:ok, %PageVariant{}} <- Repo.delete(variant),
-         %Page{} = page <- Repo.preload(page, :variants, force: true),
-         %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-      {:ok, page}
-    end
-  end
 end
