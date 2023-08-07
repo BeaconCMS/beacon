@@ -1320,9 +1320,11 @@ defmodule Beacon.Content do
   @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
   @doc type: :components
   def create_component(attrs \\ %{}) do
-    %Component{}
-    |> Component.changeset(attrs)
-    |> Repo.insert()
+    changeset = Component.changeset(%Component{}, attrs)
+
+    with {:ok, ^changeset} <- validate_component_body(changeset) do
+      Repo.insert(changeset)
+    end
   end
 
   @doc type: :components
@@ -1342,9 +1344,18 @@ defmodule Beacon.Content do
   """
   @doc type: :components
   def update_component(%Component{} = component, attrs) do
-    component
-    |> Component.changeset(attrs)
-    |> Repo.update()
+    changeset = Component.changeset(component, attrs)
+
+    with {:ok, ^changeset} <- validate_component_body(changeset) do
+      Repo.update(changeset)
+    end
+  end
+
+  defp validate_component_body(changeset) do
+    site = Changeset.get_field(changeset, :site)
+    body = Changeset.get_field(changeset, :body)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
+    do_validate_template(changeset, :body, :heex, body, metadata)
   end
 
   @doc """
