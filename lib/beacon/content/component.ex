@@ -18,11 +18,11 @@ defmodule Beacon.Content.Component do
   @type t :: %__MODULE__{}
 
   schema "beacon_components" do
-    field :body, :string
-    field :name, :string
-    field :thumbnail, :string
     field :site, Beacon.Types.Site
+    field :name, :string
+    field :body, :string
     field :category, Ecto.Enum, values: @categories, default: :other
+    field :thumbnail, :string
 
     timestamps()
   end
@@ -30,7 +30,7 @@ defmodule Beacon.Content.Component do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:site, :name, :thumbnail, :body, :category])
+    |> cast(attrs, [:site, :name, :body, :category, :thumbnail])
     |> validate_required([:site, :name, :body, :category])
   end
 
