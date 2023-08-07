@@ -1550,7 +1550,7 @@ defmodule Beacon.Content do
   end
 
   defp validate_variant(changeset, page) do
-    %{format: format, site: site, path: path} = page
+    %{format: format, site: site, path: path} = page = Repo.preload(page, :variants)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
 
