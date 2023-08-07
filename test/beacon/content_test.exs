@@ -349,4 +349,22 @@ defmodule Beacon.ContentTest do
       assert error =~ "unmatched closing tag"
     end
   end
+
+  describe "components" do
+    test "validate template heex on create" do
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_component(%{site: :test, name: "test", body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "validate template heex on update" do
+      component = component_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_component(component, %{body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+  end
 end
