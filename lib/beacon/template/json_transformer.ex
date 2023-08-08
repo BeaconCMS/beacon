@@ -1,48 +1,49 @@
 defmodule Beacon.Template.HEEx.JsonTransformer do
-  # Transforms the AST returned by Beacon.Template.HEEx.Tokenizer.parse into a
-  # more json-friendly array of maps, one that can be serialized and sent over the wire
-  # to any client that uses a JSON api.
-  # It aims to retain all the information we need to reconstruct back the original
-  # template from it.
-  #
-  # From an AST like:
-  # ```elixir
-  # [
-  #   {:tag_block, "section", [],
-  #    [
-  #      {:text, "\n  ", %{newlines: 1}},
-  #      {:tag_block, "p", [], [{:eex, "user.name", %{column: 6, line: 2, opt: '='}}], %{mode: :block}},
-  #      {:text, "\n  ", %{newlines: 1}},
-  #      {:eex_block, "if true do",
-  #       [
-  #         {[{:text, " ", %{newlines: 0}}, {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}}], "else"},
-  #         {[{:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}}], "end"}
-  #       ]},
-  #      {:text, "\n", %{newlines: 1}}
-  #    ], %{mode: :block}}
-  # ]
-  # ```
-  # it will generate a result like this:
-  # [
-  #   %{
-  #     tag: "section",
-  #     content: [
-  #       "\n  ",
-  #       %{tag: "p", content: [%{tag: :eex, content: "user.name", attrs: %{}}], attrs: %{}},
-  #       "\n  ",
-  #       %{
-  #         tag: "eex_block",
-  #         arg: "if true do",
-  #         blocks: [
-  #           %{key: "else", content: [" ", %{tag: "p", content: ["this"], attrs: %{}}]},
-  #           %{key: "end", content: [%{tag: "p", content: ["that"], attrs: %{}}]}
-  #         ]
-  #       },
-  #       "\n"
-  #     ],
-  #     attrs: %{}
-  #   }
-  # ]
+  @moduledoc """
+  Transforms the AST returned by Beacon.Template.HEEx.Tokenizer.parse into a
+  more json-friendly array of maps, one that can be serialized and sent over the wire
+  to any client that uses a JSON api.
+  It aims to retain all the information we need to reconstruct back the original
+  template from it.
+
+  From an AST like:
+  ```elixir
+  [
+    {:tag_block, "section", [],
+     [
+       {:text, "\n  ", %{newlines: 1}},
+       {:tag_block, "p", [], [{:eex, "user.name", %{column: 6, line: 2, opt: '='}}], %{mode: :block}},
+       {:text, "\n  ", %{newlines: 1}},
+       {:eex_block, "if true do",
+        [
+          {[{:text, " ", %{newlines: 0}}, {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}}], "else"},
+          {[{:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}}], "end"}
+        ]},
+       {:text, "\n", %{newlines: 1}}
+     ], %{mode: :block}}
+  ]
+  ```
+  it will generate a result like this:
+  [
+    %{
+      tag: "section",
+      content: [
+        "\n  ",
+        %{tag: "p", content: [%{tag: :eex, content: "user.name", attrs: %{}}], attrs: %{}},
+        "\n  ",
+        %{
+          tag: "eex_block",
+          arg: "if true do",
+          blocks: [
+            %{key: "else", content: [" ", %{tag: "p", content: ["this"], attrs: %{}}]},
+            %{key: "end", content: [%{tag: "p", content: ["that"], attrs: %{}}]}
+          ]
+        },
+        "\n"
+      ],
+      attrs: %{}
+    }
+  ]"""
   def transform(ast) do
     _transform(ast, [])
   end
