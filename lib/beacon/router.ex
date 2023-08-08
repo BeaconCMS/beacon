@@ -101,11 +101,8 @@ defmodule Beacon.Router do
 
     site =
       cond do
-        String.starts_with?(Atom.to_string(site), "beacon") ->
-          raise ArgumentError, "#{site} is a reserved site name."
-
-        String.starts_with?(Atom.to_string(site), "__beacon") ->
-          raise ArgumentError, "#{site} is a reserved site name."
+        String.starts_with?(Atom.to_string(site), ["beacon", "__beacon"]) ->
+          raise ArgumentError, ":site can not start with beacon or __beacon, got: #{site}"
 
         site && is_atom(opts[:site]) ->
           opts[:site]
