@@ -434,7 +434,11 @@ defmodule Beacon.Config do
 
   def config_for_media_type(non_config, _) do
     raise Beacon.LoaderError, """
-    Expected #{non_config} to be of type `Beacon.Config()`
+    expected config to be of type `t:Beacon.Config.t/0`
+    
+      Got:
+      
+      #{inspect(non_config)}
     """
   end
 
