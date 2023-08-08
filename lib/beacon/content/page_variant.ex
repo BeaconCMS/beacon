@@ -34,7 +34,7 @@ defmodule Beacon.Content.PageVariant do
           updated_at: DateTime.t()
         }
 
-  schema "page_variants" do
+  schema "beacon_page_variants" do
     field :name, :string
     field :weight, :integer
     field :template, :string
