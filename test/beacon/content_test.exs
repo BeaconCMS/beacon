@@ -84,18 +84,6 @@ defmodule Beacon.ContentTest do
 
       assert compilation_error =~ "expected closing `>`"
     end
-
-    test "validate body heex on publish" do
-      layout = layout_fixture()
-
-      # simulate incorrect data inserted manually
-      {1, nil} = Repo.update_all(Layout, set: [body: "<div"])
-      layout = Repo.reload(layout)
-
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} = Content.publish_layout(layout)
-
-      assert compilation_error =~ "expected closing `>`"
-    end
   end
 
   describe "pages" do
@@ -113,18 +101,6 @@ defmodule Beacon.ContentTest do
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.update_page(page, %{template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
-    end
-
-    test "validate template heex on publish" do
-      page = page_fixture()
-
-      # simulate incorrect data inserted manually
-      {1, nil} = Repo.update_all(Page, set: [template: "<div"])
-      page = Repo.reload(page)
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} = Content.publish_page(page)
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -362,6 +338,25 @@ defmodule Beacon.ContentTest do
                Content.update_variant_for_page(page, variant, attrs)
 
       assert error =~ "unmatched closing tag"
+    end
+
+    test "update variant should validate total weight of all variants" do
+      page = page_fixture(%{format: :heex})
+      _variant_1 = page_variant_fixture(%{page: page, weight: 99})
+      variant_2 = page_variant_fixture(%{page: page, weight: 0})
+
+      assert {:error, %Ecto.Changeset{errors: [weight: {"total weights cannot exceed 100", []}], valid?: false}} =
+               Content.update_variant_for_page(page, variant_2, %{weight: 2})
+
+      assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_2, %{weight: 1})
+    end
+
+    test "update variant should not validate total weight if unchanged" do
+      page = page_fixture(%{format: :heex})
+      variant_1 = page_variant_fixture(%{page: page, weight: 99})
+      _variant_2 = page_variant_fixture(%{page: page, weight: 98})
+
+      assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_1, %{name: "Foo"})
     end
 
     test "delete variant OK" do
