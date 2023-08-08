@@ -155,9 +155,9 @@ defmodule Beacon.Content do
 
   defp validate_layout_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body)
+    template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :body, :heex, body, metadata)
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   @doc false
