@@ -37,8 +37,8 @@ defmodule Beacon.Repo.Migrations.MigratePagesEventsSnapshots do
       {:ok, result} ->
         Enum.map(result.rows, fn row ->
           %{site: site, format: format} = repo().load(%{site: :string, format: :string}, {result.columns, row})
-          String.to_atom(site)
-          String.to_atom(format)
+          _ = String.to_atom(site)
+          _ = String.to_atom(format)
         end)
 
       _ ->
