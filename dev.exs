@@ -168,7 +168,7 @@ seeds = fn ->
         %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
       stylesheet_urls: [],
-      body: """
+      template: """
       <%= @inner_content %>
       """
     })
@@ -351,7 +351,7 @@ seeds = fn ->
       site: "other",
       title: "other",
       stylesheet_urls: [],
-      body: """
+      template: """
       <%= @inner_content %>
       """
     })

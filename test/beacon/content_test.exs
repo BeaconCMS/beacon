@@ -18,7 +18,7 @@ defmodule Beacon.ContentTest do
       Content.create_layout!(%{
         site: "my_site",
         title: "test",
-        body: "<p>layout</p>"
+        template: "<p>layout</p>"
       })
 
       assert %LayoutEvent{event: :created} = Repo.one(LayoutEvent)
