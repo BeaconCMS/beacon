@@ -43,7 +43,8 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
       ],
       attrs: %{}
     }
-  ]"""
+  ]
+  """
   def transform(ast) do
     _transform(ast, [])
   end
