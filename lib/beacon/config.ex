@@ -425,9 +425,13 @@ defmodule Beacon.Config do
       {_, config} ->
         config
 
-      _config ->
+      config ->
         raise Beacon.LoaderError, """
-        Expected to find a `media_type()` configuration for `#{media_type}` in `Beacon.Config.assets` to be of type `media_type_config()`.
+        expected to find a `t:media_type/0` configuration for `#{media_type}` in `Beacon.Config.assets` to be of type `t:media_type_config/0`
+        
+          Got:
+          
+          #{inspect(config)}
         """
     end
   end
