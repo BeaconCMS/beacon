@@ -158,7 +158,7 @@ defmodule Beacon.MediaLibrary.AssetField do
     asset_changeset
   end
 
-  def apply_changesets(%Ecto.Changeset{} = asset_changeset, metadata) do
+  def apply_changesets(%Ecto.Changeset{} = asset_changeset, %{site: site} = metadata) when is_atom(site) do
     field_configs = Beacon.Config.fetch!(metadata.site).extra_asset_fields
     mods = get_extra_fields_for_media_type(field_configs, metadata.media_type)
     do_apply_changesets(mods, asset_changeset, metadata.extra)
