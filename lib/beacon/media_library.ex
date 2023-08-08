@@ -49,6 +49,7 @@ defmodule Beacon.MediaLibrary do
     metadata.resource
     |> cast(attrs, [:site, :file_name, :media_type, :usage_tag])
     |> validate_required([:site, :file_name, :media_type])
+    |> Beacon.MediaLibrary.AssetField.apply_changesets(metadata)
   end
 
   @doc """

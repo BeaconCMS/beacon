@@ -39,7 +39,7 @@ defmodule Beacon.Content.PageField do
         end
 
         @impl true
-        def changeset(data, attrs) do
+        def changeset(data, attrs, _metadata) do
           data
           |> cast(attrs, [:tags])
           |> validate_required([:tags])
