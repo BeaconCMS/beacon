@@ -412,7 +412,7 @@ defmodule Beacon.Config do
     Registry.config!(site)
   end
 
-  @spec config_for_media_type(Beacon.Config.t(), media_type :: String.t()) :: list()
+  @spec config_for_media_type(Beacon.Config.t(), media_type :: String.t()) :: media_type_config()
   def config_for_media_type(%Beacon.Config{} = beacon_config, media_type) do
     case get_media_type_config(beacon_config.assets, media_type) do
       nil ->
