@@ -3,7 +3,7 @@ defmodule Beacon.Repo.Migrations.AddExtraToAssets do
 
   def change do
     alter table(:beacon_assets) do
-      add :extra, :map, default: %{}
+      add :extra, :map, default: %{}, null: false
     end
   end
 end
