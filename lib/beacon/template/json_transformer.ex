@@ -26,22 +26,22 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
   it will generate a result like this:
   [
     %{
-      tag: "section",
-      content: [
+      "tag" => "section",
+      "content" => [
         "\n  ",
-        %{tag: "p", content: [%{tag: :eex, content: "user.name", attrs: %{}}], attrs: %{}},
+        %{"tag" => "p", "content" => [%{tag: :eex, "content" => "user.name", "attrs" => %{}}], "attrs" => %{}},
         "\n  ",
         %{
-          tag: "eex_block",
-          arg: "if true do",
-          blocks: [
-            %{key: "else", content: [" ", %{tag: "p", content: ["this"], attrs: %{}}]},
-            %{key: "end", content: [%{tag: "p", content: ["that"], attrs: %{}}]}
+          "tag" => "eex_block",
+          "arg" => "if true do",
+          "blocks" => [
+            %{"key" => "else", "content" => [" ", %{"tag" => "p", "content" => ["this"], "attrs" => %{}}]},
+            %{"key" => "end", "content" => [%{"tag" => "p", "content" => ["that"], "attrs" => %{}}]}
           ]
         },
         "\n"
       ],
-      attrs: %{}
+      "attrs" => %{}
     }
   ]
   """
@@ -50,46 +50,60 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
   end
 
   defp _transform([head], acc) do
-    [transform_entry(head) | acc]
+    case transform_entry(head) do
+      nil ->
+        acc
+      entry ->
+        [entry | acc]
+    end
   end
 
   defp _transform([head | tail], acc) do
-    [transform_entry(head) | _transform(tail, acc)]
+    case transform_entry(head) do
+      nil ->
+        _transform(tail, acc)
+      entry ->
+        [entry | _transform(tail, acc)]
+    end
   end
 
   defp _transform([], acc), do: acc
 
-  defp transform_entry({:text, str, _}), do: str
+  # Strips blank text nodes and insignificant whitespace before or after text.
+  defp transform_entry({:text, str, _}) do
+    str = String.trim(str)
+    if str != "", do: str
+  end
 
   defp transform_entry({:eex, str, _}) do
     %{
-      tag: "eex",
-      attrs: %{},
-      content: str
+      "tag" => "eex",
+      "attrs" => %{},
+      "content" => str
     }
   end
 
   defp transform_entry({:eex_block, arg, content_ast}) do
     %{
-      tag: "eex_block",
-      arg: arg,
-      blocks: Enum.map(content_ast, &transform_block/1)
+      "tag" => "eex_block",
+      "arg" => arg,
+      "blocks" => Enum.map(content_ast, &transform_block/1)
     }
   end
 
   defp transform_entry({:tag_block, tag, attrs, content_ast, _}) do
     %{
-      tag: tag,
-      attrs: transform_attrs(attrs),
-      content: transform(content_ast)
+      "tag" => tag,
+      "attrs" => transform_attrs(attrs),
+      "content" => transform(content_ast)
     }
   end
 
   defp transform_entry({:tag_self_close, tag, attrs}) do
     %{
-      tag: tag,
-      attrs: transform_attrs(attrs, true),
-      content: []
+      "tag" => tag,
+      "attrs" => transform_attrs(attrs, true),
+      "content" => []
     }
   end
 
@@ -122,8 +136,8 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
 
   defp transform_block({content_ast, key}) do
     %{
-      key: key,
-      content: transform(content_ast)
+      "key" => key,
+      "content" => transform(content_ast)
     }
   end
 end

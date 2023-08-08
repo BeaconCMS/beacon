@@ -4,6 +4,7 @@
 defmodule Beacon.Template.HEEx.Tokenizer do
   alias Phoenix.LiveView.Tokenizer
 
+
   defguard is_tag_open(tag_type)
            when tag_type in [:slot, :remote_component, :local_component, :tag]
 

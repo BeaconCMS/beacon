@@ -49,28 +49,24 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
     assert JsonTransformer.transform(tokenization) ==
              [
                %{
-                 attrs: %{},
-                 content: [
-                   "\n  ",
-                   %{attrs: %{}, content: [%{attrs: %{}, content: "user.name", tag: "eex"}], tag: "p"},
-                   "\n  ",
+                 "attrs" => %{},
+                 "content" => [
+                   %{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => "user.name", "tag" => "eex"}], tag: "p"},
                    %{
-                     arg: "if true do",
-                     blocks: [
-                       %{content: [" ", %{attrs: %{}, content: ["this"], tag: "p"}], key: "else"},
-                       %{content: [%{attrs: %{}, content: ["that"], tag: "p"}], key: "end"}
+                     "arg" => "if true do",
+                     "blocks" => [
+                       %{"content" => [" ", %{"attrs" => %{}, "content" => ["this"], "tag" => "p"}], "key" => "else"},
+                       %{"content" => [%{"attrs" => %{}, "content" => ["that"], "tag" => "p"}], "key" => "end"}
                      ],
-                     tag: "eex_block"
+                     "tag" => "eex_block"
                    },
-                   "\n"
                  ],
-                 tag: "section"
+                 "tag" => "section"
                },
-               "\n",
                %{
-                 tag: "BeaconWeb.Components.image_set",
-                 attrs: %{"self_close" => true, "asset" => "{@beacon_live_data[:img1]}", "sources" => "{[\"480w\"]}", "width" => "200px"},
-                 content: []
+                 "tag" => "BeaconWeb.Components.image_set",
+                 "attrs" => %{"self_close" => true, "asset" => "{@beacon_live_data[:img1]}", "sources" => "{[\"480w\"]}", "width" => "200px"},
+                 "content" => []
                }
              ]
   end

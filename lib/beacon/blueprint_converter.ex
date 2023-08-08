@@ -13,13 +13,10 @@ defmodule Beacon.BlueprintConverter do
     end
   end
 
-  def generate_html(id, json_ast) do
+  def generate_html(json_ast) do
     %{"tag" => tag, "content" => content, "attributes" => attributes} = json_ast
 
-    attributes =
-      attributes
-      |> Map.put("id", id)
-      |> Map.put("root", true)
+    attributes = Map.put(attributes, "root", true)
 
     render_node(%{"tag" => tag, "content" => content, "attributes" => attributes})
   end
@@ -78,7 +75,7 @@ defmodule Beacon.BlueprintConverter do
   end
 
   defp render_attr(key, val) when is_list(val), do: "#{key}=\"#{Enum.join(val, " ")}\""
-  defp render_attr("id", val), do: "data-id=\"#{val}\""
+  # defp render_attr("id", val), do: "data-id=\"#{val}\""
   defp render_attr("slot", false), do: ""
   defp render_attr("slot", _), do: "data-slot"
   defp render_attr("root", _), do: "data-root"
