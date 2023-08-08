@@ -74,6 +74,4 @@ mix test
 iex -S mix dev
 ```
 
-Check out https://github.com/BeaconCMS/beacon/blob/main/dev.exs
-
-Visit http://localhost:4000/dev/home or http://localhost:4000/admin
+Check out https://github.com/BeaconCMS/beacon/blob/main/dev.exs and visit http://localhost:4000/dev/home

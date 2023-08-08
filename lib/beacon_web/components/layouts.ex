@@ -6,9 +6,6 @@ defmodule BeaconWeb.Layouts do
 
   embed_templates "layouts/*"
 
-  beacon_admin_css_path = Path.join(__DIR__, "../../../priv/static/assets/admin.css")
-  @external_resource beacon_admin_css_path
-
   # TODO: style nonce
   def asset_path(conn, asset) when asset in [:css, :js] do
     %{assigns: %{__site__: site}} = conn
@@ -20,13 +17,6 @@ defmodule BeaconWeb.Layouts do
         asset == :js -> Beacon.RuntimeJS.current_hash()
       end
 
-    path = Beacon.Router.sanitize_path("#{prefix}/beacon_assets/#{asset}-#{hash}")
-    Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
-  end
-
-  def admin_asset_path(conn, asset) when asset in [:css, :js] do
-    prefix = router(conn).__beacon_admin_prefix__()
-    hash = BeaconWeb.Admin.AssetsController.current_hash(asset)
     path = Beacon.Router.sanitize_path("#{prefix}/beacon_assets/#{asset}-#{hash}")
     Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
   end

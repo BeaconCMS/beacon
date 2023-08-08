@@ -11,7 +11,7 @@ defmodule Beacon.MediaLibraryTest do
     media_library_asset_fixture(file_name: "my_file.webp")
     media_library_asset_fixture(file_name: "other_file.webp")
 
-    hits = MediaLibrary.search("my")
+    hits = MediaLibrary.search(:my_site, "my")
 
     assert Enum.all?(hits, fn asset -> String.contains?(asset.file_name, "my") end)
   end
