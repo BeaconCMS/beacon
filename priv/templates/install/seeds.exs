@@ -27,7 +27,7 @@ layout =
     site: "<%= site %>",
     title: "Sample Home Page",
     stylesheet_urls: [],
-    body: """
+    template: """
     <header>
       Header
     </header>

@@ -38,7 +38,7 @@ defmodule Beacon.Fixtures do
       title: "Sample Home Page",
       meta_tags: [],
       stylesheet_urls: [],
-      body: """
+      template: """
       <header>Page header</header>
       <%= @inner_content %>
       <footer>Page footer</footer>

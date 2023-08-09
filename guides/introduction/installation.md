@@ -238,7 +238,7 @@ For more info on site options, check out `Beacon.start_link/1`.
         site: "<%= site %>",
         title: "Sample Home Page",
         stylesheet_urls: [],
-        body: """
+        template: """
         <header>
           Header
         </header>

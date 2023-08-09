@@ -19,7 +19,7 @@ defmodule Beacon.Content.Layout do
           id: String.t(),
           site: Beacon.Types.Site.t(),
           title: String.t(),
-          body: String.t(),
+          template: String.t(),
           meta_tags: [map()],
           stylesheet_urls: [String.t()],
           inserted_at: DateTime.t(),
@@ -29,7 +29,7 @@ defmodule Beacon.Content.Layout do
   schema "beacon_layouts" do
     field :site, Beacon.Types.Site
     field :title, :string
-    field :body, :string
+    field :template, :string
     field :meta_tags, {:array, :map}, default: []
     field :stylesheet_urls, {:array, :string}, default: []
 
@@ -46,7 +46,7 @@ defmodule Beacon.Content.Layout do
   @doc false
   def changeset(%__MODULE__{} = layout, attrs) do
     layout
-    |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
-    |> validate_required([:site, :title, :body])
+    |> cast(attrs, [:site, :title, :template, :meta_tags, :stylesheet_urls])
+    |> validate_required([:site, :title, :template])
   end
 end
