@@ -4,6 +4,30 @@ defmodule Beacon.Repo.Migrations.MigrateLayoutsEventsSnapshots do
   alias Beacon.Content
   alias Beacon.Repo
 
+  def up do
+    load_atoms()
+
+    for layout <- fetch_all_layouts() do
+      {:ok, event} = Content.create_layout_event(layout, "created")
+      update_inserted_at(event, layout.inserted_at)
+
+      {:ok, event} = Content.create_layout_event(layout, "published")
+      update_inserted_at(event, layout.updated_at)
+
+      {:ok, snapshot} = Content.create_layout_snapshot(layout, event)
+      update_inserted_at(snapshot, layout.updated_at)
+    end
+  end
+
+  def down do
+    query = """
+    TRUNCATE beacon_layout_events;
+    TRUNCATE beacon_layout_snapshots;
+    """
+
+    repo().query(query, [])
+  end
+
   defp load_atoms do
     query = """
     SELECT DISTINCT site FROM beacon_layouts
@@ -13,7 +37,7 @@ defmodule Beacon.Repo.Migrations.MigrateLayoutsEventsSnapshots do
       {:ok, result} ->
         Enum.map(result.rows, fn row ->
           %{site: site} = repo().load(%{site: :string}, {result.columns, row})
-          String.to_atom(site)
+          _ = String.to_atom(site)
         end)
 
       _ ->
@@ -21,28 +45,29 @@ defmodule Beacon.Repo.Migrations.MigrateLayoutsEventsSnapshots do
     end
   end
 
-  defp update_inserted_at(%schema{id: id}, inserted_at) do
-    query = from s in schema, where: s.id == ^id
-    Repo.update_all(query, set: [inserted_at: inserted_at])
-  end
+  defp fetch_all_layouts do
+    query = """
+    SELECT * FROM beacon_layouts
+    """
 
-  def up do
-    load_atoms()
+    schema = %{
+      site: :string,
+      title: :string,
+      body: :string,
+      meta_tags: :map,
+      stylesheet_urls: :array,
+      inserted_at: :datetime_usec,
+      updated_at: :datetime_usec
+    }
 
-    for layout <- Repo.all(Content.Layout) do
-      {:ok, event} = Content.create_layout_event(layout, "created")
-      update_inserted_at(event, layout.inserted_at)
-
-      {:ok, event} = Content.create_layout_event(layout, "published")
-      update_inserted_at(event, layout.inserted_at)
-
-      {:ok, snapshot} = Content.create_layout_snapshot(layout, event)
-      update_inserted_at(snapshot, layout.inserted_at)
+    case repo().query(query, []) do
+      {:ok, result} -> Enum.map(result.rows, &repo().load(schema, {result.columns, &1}))
+      _ -> []
     end
   end
 
-  def down do
-    Repo.delete_all(Content.LayoutEvent)
-    Repo.delete_all(Content.LayoutSnapshot)
+  defp update_inserted_at(%schema{id: id}, inserted_at) do
+    query = from s in schema, where: s.id == ^id
+    Repo.update_all(query, set: [inserted_at: inserted_at])
   end
 end

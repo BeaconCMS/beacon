@@ -86,7 +86,7 @@ defmodule Beacon.Content do
     changeset = Layout.changeset(%Layout{}, attrs)
 
     Repo.transact(fn ->
-      with {:ok, changeset} <- validate_layout_body(changeset),
+      with {:ok, changeset} <- validate_layout_template(changeset),
            {:ok, layout} <- Repo.insert(changeset),
            {:ok, _event} <- create_layout_event(layout, "created") do
         {:ok, layout}
@@ -120,7 +120,7 @@ defmodule Beacon.Content do
   def update_layout(%Layout{} = layout, attrs) do
     changeset = Layout.changeset(layout, attrs)
 
-    with {:ok, changeset} <- validate_layout_body(changeset) do
+    with {:ok, changeset} <- validate_layout_template(changeset) do
       Repo.update(changeset)
     end
   end
@@ -136,7 +136,7 @@ defmodule Beacon.Content do
     changeset = Layout.changeset(layout, %{})
 
     Repo.transact(fn ->
-      with {:ok, _changeset} <- validate_layout_body(changeset),
+      with {:ok, _changeset} <- validate_layout_template(changeset),
            {:ok, event} <- create_layout_event(layout, "published"),
            {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
         :ok = PubSub.layout_published(layout)
@@ -153,12 +153,12 @@ defmodule Beacon.Content do
     |> publish_layout()
   end
 
-  defp validate_layout_body(changeset) do
+  defp validate_layout_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body)
+    template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
 
-    case do_validate_template(changeset, :body, :heex, body, metadata) do
+    case do_validate_template(changeset, :template, :heex, template, metadata) do
       %Changeset{errors: []} = changeset -> {:ok, changeset}
       %Changeset{} = changeset -> {:error, changeset}
     end
@@ -343,6 +343,11 @@ defmodule Beacon.Content do
   end
 
   defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
+    {body, layout} = Map.pop(layout, :body)
+    Map.put(layout, :template, body)
+  end
+
+  defp extract_layout_snapshot(%{schema_version: 2, layout: %Layout{} = layout}) do
     layout
   end
 
@@ -756,7 +761,9 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
-    Repo.preload(page, :variants, force: true)
+    page
+    |> Repo.reload()
+    |> Repo.preload(:variants, force: true)
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do

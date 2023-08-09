@@ -5,14 +5,8 @@ defmodule Beacon.Fixtures do
   alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.Repo
 
-  def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
-  def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
-
-  def conn_admin(conn) do
-    conn
-    |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:session_id, "admin_session_123")
-  end
+  defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
+  defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
 
   def stylesheet_fixture(attrs \\ %{}) do
     attrs
@@ -44,7 +38,7 @@ defmodule Beacon.Fixtures do
       title: "Sample Home Page",
       meta_tags: [],
       stylesheet_urls: [],
-      body: """
+      template: """
       <header>Page header</header>
       <%= @inner_content %>
       <footer>Page footer</footer>

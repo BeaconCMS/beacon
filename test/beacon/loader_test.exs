@@ -29,7 +29,7 @@ defmodule Beacon.LoaderTest do
 
       layout =
         layout_fixture(
-          body: """
+          template: """
           <header>layout_v1</header>
           <%= @inner_content %>
           """
@@ -75,7 +75,7 @@ defmodule Beacon.LoaderTest do
 
       {:ok, layout} =
         Content.update_layout(layout, %{
-          body: """
+          template: """
           <header>layout_v2</header>
           <%= @inner_content %>
           """
@@ -84,7 +84,7 @@ defmodule Beacon.LoaderTest do
       Content.publish_layout(layout)
 
       Content.update_layout(layout, %{
-        body: """
+        template: """
         <header>layout_v3_unpublished</header>
         <%= @inner_content %>
         """

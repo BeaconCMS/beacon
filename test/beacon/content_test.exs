@@ -18,7 +18,7 @@ defmodule Beacon.ContentTest do
       Content.create_layout!(%{
         site: "my_site",
         title: "test",
-        body: "<p>layout</p>"
+        template: "<p>layout</p>"
       })
 
       assert %LayoutEvent{event: :created} = Repo.one(LayoutEvent)
@@ -70,8 +70,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate body heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_layout(%{site: :test, title: "test", body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_layout(%{site: :test, title: "test", template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -79,8 +79,8 @@ defmodule Beacon.ContentTest do
     test "validate body heex on update" do
       layout = layout_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_layout(layout, %{body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_layout(layout, %{template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end

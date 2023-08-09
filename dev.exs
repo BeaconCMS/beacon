@@ -31,10 +31,6 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(controllers|live|components)/.*(ex|heex)$"
     ]
-  ],
-  watchers: [
-    tailwind: {Tailwind, :install_and_run, [:admin, ~w(--watch)]},
-    esbuild: {Esbuild, :install_and_run, [:cdn_admin, ~w(--sourcemap=inline --watch)]}
   ]
 )
 
@@ -63,7 +59,6 @@ defmodule SamplePhoenixWeb.Router do
 
   scope "/" do
     pipe_through :browser
-    beacon_admin "/admin"
     beacon_site "/dev", site: :dev
     beacon_site "/other", site: :other
   end
@@ -173,7 +168,7 @@ seeds = fn ->
         %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
       stylesheet_urls: [],
-      body: """
+      template: """
       <%= @inner_content %>
       """
     })
@@ -356,7 +351,7 @@ seeds = fn ->
       site: "other",
       title: "other",
       stylesheet_urls: [],
-      body: """
+      template: """
       <%= @inner_content %>
       """
     })
