@@ -412,6 +412,14 @@ defmodule Beacon.Config do
     Registry.config!(site)
   end
 
+  @doc """
+  Returns a `t:media_type_config/0` which contains the configuration for backends, processors and validations.
+
+  ## Example
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> jpeg_config = config_for_media_type(beacon_config, "image/jpeg")
+  """
   @spec config_for_media_type(Beacon.Config.t(), media_type :: String.t()) :: media_type_config()
   def config_for_media_type(%Beacon.Config{} = beacon_config, media_type) do
     case get_media_type_config(beacon_config.assets, media_type) do
@@ -428,9 +436,9 @@ defmodule Beacon.Config do
       config ->
         raise Beacon.LoaderError, """
         expected to find a `t:media_type/0` configuration for `#{media_type}` in `Beacon.Config.assets` to be of type `t:media_type_config/0`
-        
+
           Got:
-          
+
           #{inspect(config)}
         """
     end
@@ -439,9 +447,9 @@ defmodule Beacon.Config do
   def config_for_media_type(non_config, _) do
     raise Beacon.LoaderError, """
     expected config to be of type `t:Beacon.Config.t/0`
-    
+
       Got:
-      
+
       #{inspect(non_config)}
     """
   end
