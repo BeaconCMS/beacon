@@ -26,7 +26,6 @@ layout =
   Content.create_layout!(%{
     site: "<%= site %>",
     title: "Sample Home Page",
-    stylesheet_urls: [],
     template: """
     <header>
       Header

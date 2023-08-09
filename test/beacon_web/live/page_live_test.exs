@@ -19,6 +19,16 @@ defmodule BeaconWeb.Live.PageLiveTest do
       layout_fixture(
         meta_tags: [
           %{"http-equiv" => "refresh", "content" => "300"}
+        ],
+        resource_links: [
+          %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
+          %{
+            "rel" => "preload",
+            "href" => "font.woff2",
+            "as" => "font",
+            "type" => "font/woff2",
+            "crossorigin" => "anonymous"
+          }
         ]
       )
 
@@ -106,6 +116,17 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     test "render without meta tags", %{conn: conn} do
       assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
+    end
+  end
+
+  describe "resource links" do
+    setup [:create_page]
+
+    test "render layout resource links on page head", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/home")
+
+      assert html =~ ~S|<link href="print.css" media="print" rel="stylesheet"/>|
+      assert html =~ ~S|<link as="font" crossorigin="anonymous" href="font.woff2" rel="preload" type="font/woff2"/>|
     end
   end
 
