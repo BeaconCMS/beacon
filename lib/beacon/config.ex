@@ -68,14 +68,14 @@ defmodule Beacon.Config do
   Individual media type configs
   """
   @type media_type_config :: [
-          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})},
+          {:processor, processor_fun :: (Beacon.MediaLibrary.UploadMetadata.t() -> Beacon.MediaLibrary.UploadMetadata.t())},
           {:validations,
            list(
              validation_fun ::
                (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
                | {validation_fun :: (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()), validation_config :: term()}
            )},
-          {:processor, {prossesor_fun :: (Beacon.MediaLibrary.UploadMetadata.t() -> Beacon.MediaLibrary.UploadMetadata.t()), any()}}
+          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})}
         ]
 
   @typedoc """
@@ -419,8 +419,9 @@ defmodule Beacon.Config do
 
       iex> beacon_config = Beacon.Config.fetch!(:some_site)
       iex> jpeg_config = config_for_media_type(beacon_config, "image/jpeg")
+
   """
-  @spec config_for_media_type(Beacon.Config.t(), media_type :: String.t()) :: media_type_config()
+  @spec config_for_media_type(t(), String.t()) :: media_type_config()
   def config_for_media_type(%Beacon.Config{} = beacon_config, media_type) do
     case get_media_type_config(beacon_config.assets, media_type) do
       nil ->
