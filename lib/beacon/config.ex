@@ -412,10 +412,6 @@ defmodule Beacon.Config do
     Registry.config!(site)
   end
 
-  # Dialyzer does not understand this function's return value, probably because
-  # it doesn't understand intentionally raising errors
-  @dialyzer {:no_contracts, config_for_media_type: 2}
-
   @doc """
   Returns a `t:media_type_config/0` which contains the configuration for backends, processors and validations.
 
@@ -459,8 +455,11 @@ defmodule Beacon.Config do
     """
   end
 
-  @spec get_media_type_config(media_type_configs() | extra_asset_fields(), media_type :: String.t()) ::
-          media_type_config() | extra_asset_field() | nil
+  # Dialyzer doesn't like how we "overload" this function by accepting two different types
+  @dialyzer {:no_contracts, get_media_type_config: 2}
+
+  @spec get_media_type_config(media_type_configs(), String.t()) :: media_type_config() | nil
+  @spec get_media_type_config(extra_asset_fields(), String.t()) :: extra_asset_field() | nil
   def get_media_type_config(configs, media_type) do
     generic_type = build_generic_media_type(media_type)
 
