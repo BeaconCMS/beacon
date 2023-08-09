@@ -412,6 +412,10 @@ defmodule Beacon.Config do
     Registry.config!(site)
   end
 
+  # Dialyzer does not understand this function's return value, probably because
+  # it doesn't understand intentionally raising errors
+  @dialyzer {:no_contracts, config_for_media_type: 2}
+
   @doc """
   Returns a `t:media_type_config/0` which contains the configuration for backends, processors and validations.
 
