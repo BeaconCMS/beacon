@@ -7,8 +7,9 @@ defmodule Beacon.Repo.Migrations.AddResourceLinksToLayouts do
     end
 
     for layout_id <- layout_ids() do
-      links = stylesheet_links_for_layout(layout_id)
-      update_layout_links(layout_id, links)
+      layout_id
+      |> stylesheet_links_for_layout()
+      |> update_layout_links(layout_id)
     end
 
      alter table(:beacon_layouts) do
@@ -57,7 +58,7 @@ defmodule Beacon.Repo.Migrations.AddResourceLinksToLayouts do
     end
   end
 
-  defp update_layout_links(layout_id, links) do
+  defp update_layout_links(links, layout_id) do
     execute(fn ->
       repo().query!(
         """
