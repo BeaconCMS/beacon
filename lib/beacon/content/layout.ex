@@ -13,7 +13,7 @@ defmodule Beacon.Content.Layout do
 
   use Beacon.Schema
 
-  @version 1
+  @version 2
 
   @type t :: %__MODULE__{
           id: String.t(),

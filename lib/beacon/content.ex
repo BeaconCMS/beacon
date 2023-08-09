@@ -339,6 +339,11 @@ defmodule Beacon.Content do
   end
 
   defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
+    {body, layout} = Map.pop(layout, :body)
+    Map.put(layout, :template, body)
+  end
+
+  defp extract_layout_snapshot(%{schema_version: 2, layout: %Layout{} = layout}) do
     layout
   end
 
@@ -748,7 +753,9 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
-    Repo.preload(page, :variants, force: true)
+    page
+    |> Repo.reload()
+    |> Repo.preload(:variants, force: true)
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
