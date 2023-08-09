@@ -86,7 +86,7 @@ defmodule Beacon.Content do
     changeset = Layout.changeset(%Layout{}, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_layout_template(changeset),
+      with {:ok, changeset} <- validate_layout_template(changeset),
            {:ok, layout} <- Repo.insert(changeset),
            {:ok, _event} <- create_layout_event(layout, "created") do
         {:ok, layout}
@@ -120,7 +120,7 @@ defmodule Beacon.Content do
   def update_layout(%Layout{} = layout, attrs) do
     changeset = Layout.changeset(layout, attrs)
 
-    with {:ok, ^changeset} <- validate_layout_template(changeset) do
+    with {:ok, changeset} <- validate_layout_template(changeset) do
       Repo.update(changeset)
     end
   end
@@ -136,7 +136,7 @@ defmodule Beacon.Content do
     changeset = Layout.changeset(layout, %{})
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_layout_template(changeset),
+      with {:ok, _changeset} <- validate_layout_template(changeset),
            {:ok, event} <- create_layout_event(layout, "published"),
            {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
         :ok = PubSub.layout_published(layout)
@@ -157,7 +157,11 @@ defmodule Beacon.Content do
     site = Changeset.get_field(changeset, :site)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :template, :heex, template, metadata)
+
+    case do_validate_template(changeset, :template, :heex, template, metadata) do
+      %Changeset{errors: []} = changeset -> {:ok, changeset}
+      %Changeset{} = changeset -> {:error, changeset}
+    end
   end
 
   @doc false
@@ -422,7 +426,7 @@ defmodule Beacon.Content do
     changeset = Page.create_changeset(%Page{}, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_page_template(changeset),
+      with {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
@@ -458,7 +462,7 @@ defmodule Beacon.Content do
     changeset = Page.update_changeset(page, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_page_template(changeset),
+      with {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- Repo.update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
@@ -479,7 +483,7 @@ defmodule Beacon.Content do
     changeset = Page.update_changeset(page, %{})
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_page_template(changeset),
+      with {:ok, _changeset} <- validate_page_template(changeset),
            {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
@@ -535,7 +539,11 @@ defmodule Beacon.Content do
     format = Changeset.get_field(changeset, :format)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-    do_validate_template(changeset, :template, format, template, metadata)
+
+    case do_validate_template(changeset, :template, format, template, metadata) do
+      %Changeset{errors: []} = changeset -> {:ok, changeset}
+      %Changeset{} = changeset -> {:error, changeset}
+    end
   end
 
   @doc """
@@ -1327,11 +1335,10 @@ defmodule Beacon.Content do
   @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
   @doc type: :components
   def create_component(attrs \\ %{}) do
-    changeset = Component.changeset(%Component{}, attrs)
-
-    with {:ok, ^changeset} <- validate_component_body(changeset) do
-      Repo.insert(changeset)
-    end
+    %Component{}
+    |> Component.changeset(attrs)
+    |> validate_component_body()
+    |> Repo.insert()
   end
 
   @doc type: :components
@@ -1350,12 +1357,12 @@ defmodule Beacon.Content do
 
   """
   @doc type: :components
+  @spec update_component(Component.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   def update_component(%Component{} = component, attrs) do
-    changeset = Component.changeset(component, attrs)
-
-    with {:ok, ^changeset} <- validate_component_body(changeset) do
-      Repo.update(changeset)
-    end
+    component
+    |> Component.changeset(attrs)
+    |> validate_component_body()
+    |> Repo.update()
   end
 
   defp validate_component_body(changeset) do
@@ -1544,11 +1551,13 @@ defmodule Beacon.Content do
   @doc type: :page_variants
   @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_variant_for_page(page, variant, attrs) do
-    changeset = PageVariant.changeset(variant, attrs)
+    changeset =
+      variant
+      |> PageVariant.changeset(attrs)
+      |> validate_variant(page)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_variant_template(changeset, page),
-           {:ok, %PageVariant{}} <- Repo.update(changeset),
+      with {:ok, %PageVariant{}} <- Repo.update(changeset),
            %Page{} = page <- Repo.preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
@@ -1556,40 +1565,33 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp validate_variant_template(changeset, page) do
-    %{format: format, site: site, path: path} = page
+  defp validate_variant(changeset, page) do
+    %{format: format, site: site, path: path} = page = Repo.preload(page, :variants)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-    do_validate_template(changeset, :template, format, template, metadata)
+
+    changeset
+    |> do_validate_weights(page)
+    |> do_validate_template(:template, format, template, metadata)
   end
 
-  ## Utils
+  defp do_validate_weights(changeset, page) do
+    Changeset.validate_change(changeset, :weight, fn :weight, changed_weight ->
+      %{id: changed_variant_id} = changeset.data
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.HEEx.compile(template, metadata) do
-      {:cont, _ast} ->
-        {:ok, changeset}
+      total_weights =
+        Enum.reduce(page.variants, 0, fn
+          %{id: ^changed_variant_id}, acc -> acc + changed_weight
+          variant, acc -> acc + variant.weight
+        end)
 
-      {:halt, %{description: description}} ->
-        {:error, Changeset.add_error(changeset, field, "invalid", compilation_error: description)}
-
-      {:halt, _} ->
-        {:error, Changeset.add_error(changeset, field, "invalid")}
-    end
+      if total_weights > 100 do
+        [weight: "total weights cannot exceed 100"]
+      else
+        []
+      end
+    end)
   end
-
-  defp do_validate_template(changeset, field, :markdown = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
-      {:cont, _template} ->
-        {:ok, changeset}
-
-      {:halt, %{message: message}} ->
-        {:error, Changeset.add_error(changeset, field, message)}
-    end
-  end
-
-  # TODO: expose template validation to custom template formats defined by users
-  defp do_validate_template(changeset, _field, _format, _template, _metadata), do: {:ok, changeset}
 
   @doc """
   Deletes a page variant and returns the page with updated variants association.
@@ -1603,4 +1605,28 @@ defmodule Beacon.Content do
       {:ok, page}
     end
   end
+
+  ## Utils
+
+  defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      case Beacon.Template.HEEx.compile(template, metadata) do
+        {:cont, _ast} -> []
+        {:halt, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:halt, _} -> [{field, "invalid"}]
+      end
+    end)
+  end
+
+  defp do_validate_template(changeset, field, :markdown = _format, template, metadata) when is_binary(template) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+        {:cont, _template} -> []
+        {:halt, %{message: message}} -> [{field, message}]
+      end
+    end)
+  end
+
+  # TODO: expose template validation to custom template formats defined by users
+  defp do_validate_template(changeset, _field, _format, _template, _metadata), do: changeset
 end
