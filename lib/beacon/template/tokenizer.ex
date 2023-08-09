@@ -1,9 +1,8 @@
-# https://github.com/phoenixframework/phoenix_live_view/blob/d0e46f5430d113269b8903a8b45b025d77532429/lib/phoenix_live_view/html_formatter.ex
+# DO NOT CHANGE THIS FILE
+# It a copy from https://github.com/phoenixframework/phoenix_live_view/blob/d0e46f5430d113269b8903a8b45b025d77532429/lib/phoenix_live_view/html_formatter.ex
 
 defmodule Beacon.Template.HEEx.Tokenizer do
-  alias Phoenix.LiveView.HTMLAlgebra
   alias Phoenix.LiveView.Tokenizer
-  alias Phoenix.LiveView.Tokenizer.ParseError
 
   defguard is_tag_open(tag_type)
            when tag_type in [:slot, :remote_component, :local_component, :tag]
@@ -16,9 +15,6 @@ defmodule Beacon.Template.HEEx.Tokenizer do
   @inline_components ~w(.link)
 
   @inline_elements @inline_tags ++ @inline_components
-
-  # Default line length to be used in case nothing is specified in the `.formatter.exs` options.
-  @default_line_length 98
 
   def tokenize(source) do
     newlines = :binary.matches(source, ["\r\n", "\n"])
