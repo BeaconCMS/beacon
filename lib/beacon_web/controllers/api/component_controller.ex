@@ -1,7 +1,6 @@
 defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
 
-  alias Beacon.BlueprintConverter
   alias Beacon.Content
 
   @tag_for_name %{
@@ -22,19 +21,13 @@ defmodule BeaconWeb.API.ComponentController do
   def create(conn, %{"definition_id" => component_definition_id, "page_id" => page_id}) do
     definition = Content.get_component_by(:dev, id: component_definition_id)
     page = Content.get_page!(page_id)
-    [parsed_template] = BlueprintConverter.parse_html(definition.body)
-    component_data = build_component(parsed_template)
-    rendered_html = BlueprintConverter.generate_html(component_data)
-    {:ok, page} = Content.update_page(page, %{template: page.template <> rendered_html})
+    {:ok, page} = Content.update_page(page, %{template: page.template <> definition.body})
     render(conn, :show, page: page)
   end
 
   def create(conn, %{"definition_id" => component_definition_id}) do
     definition = Content.get_component_by(:dev, id: component_definition_id)
-    [parsed_template] = BlueprintConverter.parse_html(definition.body)
-    component_data = build_component(parsed_template)
-    rendered_html = BlueprintConverter.generate_html(component_data)
-    render(conn, :show, rendered_html: rendered_html)
+    render(conn, :show, rendered_html: definition.body)
   end
 
   defp build_component(entry) when is_binary(entry), do: entry
