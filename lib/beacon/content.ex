@@ -1457,15 +1457,11 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.update()
-    |> case do
-      {:ok, component} ->
-        :ok = PubSub.component_updated(component)
-        {:ok, component}
-
-      error ->
-        error
-    end
+    |> tap(&maybe_reload_component/1)
   end
+  
+  def maybe_update_component({:ok, component}), do: PubSub.component_updated(component)
+  def maybe_update_component({:error, _component}), do: :noop
 
   defp validate_component_body(changeset) do
     site = Changeset.get_field(changeset, :site)
