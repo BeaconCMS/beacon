@@ -8,13 +8,14 @@ defmodule Beacon.Content.PageVariant do
     * `:weight` - the percentage of page renders which should use this template (0 - 100)
     * `:template` - the template which should be rendered whenever this variant is used
 
-  > #### Do not create or edit pages manually {: .warning}
+  > #### Do not create or edit page variants manually {: .warning}
   >
   > Use the public functions in `Beacon.Content` instead.
   > The functions in that module guarantee that all dependencies
   > are created correctly and all processes are updated.
   > Manipulating data manually will most likely result
   > in inconsistent behavior and crashes.
+
   """
   use Beacon.Schema
 
@@ -45,10 +46,10 @@ defmodule Beacon.Content.PageVariant do
   end
 
   @doc false
-  def changeset(%__MODULE__{} = page, attrs) do
+  def changeset(%__MODULE__{} = variant, attrs) do
     fields = ~w(name weight template)a
 
-    page
+    variant
     |> cast(attrs, fields)
     |> validate_required(fields)
     |> validate_number(:weight, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)

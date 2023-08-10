@@ -24,7 +24,7 @@ defmodule Beacon.Content.Page do
 
   alias Beacon.Content
 
-  @version 2
+  @version 3
 
   @type t :: %__MODULE__{}
 
@@ -43,6 +43,7 @@ defmodule Beacon.Content.Page do
     belongs_to :layout, Content.Layout
 
     has_many :variants, Content.PageVariant
+    has_many :event_handlers, Content.PageEventHandler
 
     embeds_many :events, Event do
       field :name, :string

@@ -31,6 +31,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
+  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
@@ -66,7 +67,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec change_layout(Layout.t(), map()) :: Ecto.Changeset.t()
+  @spec change_layout(Layout.t(), map()) :: Changeset.t()
   def change_layout(%Layout{} = layout, attrs \\ %{}) do
     Layout.changeset(layout, attrs)
   end
@@ -81,7 +82,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
   def create_layout(attrs) do
     changeset = Layout.changeset(%Layout{}, attrs)
 
@@ -116,7 +117,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
   def update_layout(%Layout{} = layout, attrs) do
     changeset = Layout.changeset(layout, attrs)
 
@@ -395,7 +396,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec change_page(Page.t(), map()) :: Ecto.Changeset.t()
+  @spec change_page(Page.t(), map()) :: Changeset.t()
   def change_page(%Page{} = page, attrs \\ %{}) do
     Page.create_changeset(page, attrs)
   end
@@ -407,7 +408,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec validate_page(Site.t(), Page.t(), map()) :: Ecto.Changeset.t()
+  @spec validate_page(Site.t(), Page.t(), map()) :: Changeset.t()
   def validate_page(site, %Page{} = page, attrs) when is_map(attrs) do
     {extra_attrs, page_attrs} = Map.pop(attrs, "extra")
 
@@ -445,7 +446,7 @@ defmodule Beacon.Content do
   and no snapshot is created.
   """
   @doc type: :pages
-  @spec create_page(map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_page(map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
     changeset = Page.create_changeset(%Page{}, attrs)
 
@@ -481,7 +482,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_page(%Page{} = page, attrs) do
     changeset = Page.update_changeset(page, attrs)
 
@@ -600,7 +601,7 @@ defmodule Beacon.Content do
 
   @doc false
   def create_page_snapshot(page, event) do
-    page = Repo.preload(page, :variants)
+    page = Repo.preload(page, [:variants, :event_handlers])
     attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
 
     %PageSnapshot{}
@@ -787,10 +788,16 @@ defmodule Beacon.Content do
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
     page
     |> Repo.reload()
-    |> Repo.preload(:variants, force: true)
+    |> Repo.preload([:variants, :event_handlers], force: true)
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
+    page
+    |> Repo.reload()
+    |> Repo.preload(:event_handlers, force: true)
+  end
+
+  defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page}) do
     page
   end
 
@@ -800,12 +807,12 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def put_page_extra(%Page{} = page, attrs) when is_map(attrs) do
     attrs = %{"extra" => attrs}
 
     page
-    |> Ecto.Changeset.cast(attrs, [:extra])
+    |> Changeset.cast(attrs, [:extra])
     |> Repo.update()
   end
 
@@ -821,7 +828,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :stylesheets
-  @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
   def create_stylesheet(attrs \\ %{}) do
     %Stylesheet{}
     |> Stylesheet.changeset(attrs)
@@ -846,7 +853,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :stylesheets
-  @spec update_stylesheet(Stylesheet.t(), map()) :: {:ok, Stylesheet.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_stylesheet(Stylesheet.t(), map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
   def update_stylesheet(%Stylesheet{} = stylesheet, attrs) do
     stylesheet
     |> Stylesheet.changeset(attrs)
@@ -1412,7 +1419,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :components
-  @spec change_component(Component.t(), map()) :: Ecto.Changeset.t()
+  @spec change_component(Component.t(), map()) :: Changeset.t()
   def change_component(%Component{} = component, attrs \\ %{}) do
     Component.changeset(component, attrs)
   end
@@ -1426,7 +1433,7 @@ defmodule Beacon.Content do
       {:ok, %Component{}}
 
   """
-  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   @doc type: :components
   def create_component(attrs \\ %{}) do
     %Component{}
@@ -1507,12 +1514,12 @@ defmodule Beacon.Content do
   Creates a snippet helper
   """
   @doc type: :snippets
-  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Changeset.t()}
   def create_snippet_helper(attrs) do
     %Snippets.Helper{}
-    |> Ecto.Changeset.cast(attrs, [:site, :name, :body])
-    |> Ecto.Changeset.validate_required([:site, :name, :body])
-    |> Ecto.Changeset.unique_constraint([:site, :name])
+    |> Changeset.cast(attrs, [:site, :name, :body])
+    |> Changeset.validate_required([:site, :name, :body])
+    |> Changeset.unique_constraint([:site, :name])
     |> Repo.insert()
   end
 
@@ -1601,6 +1608,60 @@ defmodule Beacon.Content do
     end
   end
 
+  # PAGE EVENT HANDLERS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking event handler changes.
+
+  ## Example
+
+      iex> change_page_event_handler(page_event_handler, %{name: "form-submit"})
+      %Ecto.Changeset{data: %PageEventHandler{}}
+
+  """
+  @doc type: :page_event_handlers
+  @spec change_page_event_handler(PageEventHandler.t(), map()) :: Changeset.t()
+  def change_page_event_handler(%PageEventHandler{} = event_handler, attrs \\ %{}) do
+    PageEventHandler.changeset(event_handler, attrs)
+  end
+
+  @doc """
+  Creates a new page event handler and returns the page with updated `:event_handlers` association.
+  """
+  @doc type: :page_event_handlers
+  @spec create_event_handler_for_page(Page.t(), %{name: binary(), code: binary()}) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def create_event_handler_for_page(page, attrs) do
+    changeset =
+      page
+      |> Ecto.build_assoc(:event_handlers)
+      |> PageEventHandler.changeset(attrs)
+
+    Repo.transact(fn ->
+      with {:ok, %PageEventHandler{}} <- Repo.insert(changeset),
+           %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
+  Updates a page event handler and returns the page with updated `:event_handlers` association.
+  """
+  @doc type: :page_event_handlers
+  @spec update_event_handler_for_page(Page.t(), PageEventHandler.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def update_event_handler_for_page(page, event_handler, attrs) do
+    changeset = PageEventHandler.changeset(event_handler, attrs)
+
+    Repo.transact(fn ->
+      with {:ok, %PageEventHandler{}} <- Repo.update(changeset),
+           %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
   # PAGE VARIANTS
 
   @doc """
@@ -1613,13 +1674,13 @@ defmodule Beacon.Content do
 
   """
   @doc type: :page_variants
-  @spec change_page_variant(PageVariant.t(), map()) :: Ecto.Changeset.t()
-  def change_page_variant(%PageVariant{} = page, attrs \\ %{}) do
-    PageVariant.changeset(page, attrs)
+  @spec change_page_variant(PageVariant.t(), map()) :: Changeset.t()
+  def change_page_variant(%PageVariant{} = variant, attrs \\ %{}) do
+    PageVariant.changeset(variant, attrs)
   end
 
   @doc """
-  Creates a new page variant and returns the page with updated variants association.
+  Creates a new page variant and returns the page with updated `:variants` association.
   """
   @doc type: :page_variants
   @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}) ::
@@ -1640,7 +1701,7 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Updates a page variant and returns the page with updated variants association.
+  Updates a page variant and returns the page with updated `:variants` association.
   """
   @doc type: :page_variants
   @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
