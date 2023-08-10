@@ -43,9 +43,15 @@ defmodule Beacon.Loader do
     {:ok, config}
   end
 
-  # TODO: skip if components already exists
   defp populate_components(site) do
-    Enum.each(Content.blueprint_components(), fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+    for attrs <- Content.blueprint_components() do
+      unless Content.get_component_by(site, name: attrs.name) do
+        attrs
+        |> Map.put(:site, site)
+        |> Content.create_component!()
+      end
+    end
+
     :ok
   end
 
