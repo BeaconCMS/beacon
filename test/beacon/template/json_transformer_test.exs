@@ -3,7 +3,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
 
   alias Beacon.Template.HEEx.JsonTransformer
 
-  test "tokenizes a complex template" do
+  test "transforms a complex tokenization" do
     tokenization = [
       {
         :tag_block,
@@ -51,11 +51,11 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
                %{
                  "attrs" => %{},
                  "content" => [
-                   %{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => "user.name", "tag" => "eex"}], tag: "p"},
+                   %{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => "user.name", "tag" => "eex"}], "tag" => "p"},
                    %{
                      "arg" => "if true do",
                      "blocks" => [
-                       %{"content" => [" ", %{"attrs" => %{}, "content" => ["this"], "tag" => "p"}], "key" => "else"},
+                       %{"content" => [%{"attrs" => %{}, "content" => ["this"], "tag" => "p"}], "key" => "else"},
                        %{"content" => [%{"attrs" => %{}, "content" => ["that"], "tag" => "p"}], "key" => "end"}
                      ],
                      "tag" => "eex_block"
@@ -90,16 +90,16 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
     assert JsonTransformer.transform(tokenization) ==
              [
                %{
-                 tag: "eex_block",
-                 arg: "case @status do",
-                 blocks: [
-                   %{key: ":completed ->", content: ["\n"]},
+                 "tag" => "eex_block",
+                 "arg" => "case @status do",
+                 "blocks" => [
+                   %{"key" => ":completed ->", "content" => []},
                    %{
-                     key: ":pending ->",
-                     content: [" ", %{tag: "span", content: ["Completed"], attrs: %{"class" => "text-lg"}}, "\n"]
+                     "key" => ":pending ->",
+                     "content" => [%{"tag" => "span", "content" => ["Completed"], "attrs" => %{"class" => "text-lg"}}]
                    },
-                   %{key: "_ ->", content: ["Pending\n"]},
-                   %{key: "end", content: ["Undefined\n"]}
+                   %{"key" => "_ ->", "content" => ["Pending"]},
+                   %{"key" => "end", "content" => ["Undefined"]}
                  ]
                }
              ]
