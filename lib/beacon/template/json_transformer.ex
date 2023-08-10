@@ -53,6 +53,7 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     case transform_entry(head) do
       nil ->
         acc
+
       entry ->
         [entry | acc]
     end
@@ -62,6 +63,7 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     case transform_entry(head) do
       nil ->
         _transform(tail, acc)
+
       entry ->
         [entry | _transform(tail, acc)]
     end

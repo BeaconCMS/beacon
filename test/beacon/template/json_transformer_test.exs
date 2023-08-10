@@ -59,7 +59,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
                        %{"content" => [%{"attrs" => %{}, "content" => ["that"], "tag" => "p"}], "key" => "end"}
                      ],
                      "tag" => "eex_block"
-                   },
+                   }
                  ],
                  "tag" => "section"
                },

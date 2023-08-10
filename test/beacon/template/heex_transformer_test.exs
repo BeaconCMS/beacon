@@ -32,13 +32,14 @@ defmodule Beacon.Template.HEEx.HeexTransformerTest do
     ]
 
     heex_code = Phoenix.LiveView.HTMLFormatter.format(HeexTransformer.transform(tokenization), heex_line_length: 100)
+
     assert heex_code == """
-    <button class="big" disabled>click me</button>
-    <.link patch="/dev/authors/1-author">Author (patch)</.link>
-    <%= my_component("sample_component", val: 1) %>
-    <div>
-      <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
-    </div>
-    """
+           <button class="big" disabled>click me</button>
+           <.link patch="/dev/authors/1-author">Author (patch)</.link>
+           <%= my_component("sample_component", val: 1) %>
+           <div>
+             <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
+           </div>
+           """
   end
 end

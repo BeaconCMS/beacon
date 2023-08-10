@@ -24,9 +24,9 @@ defmodule BeaconWeb.API.ComponentJSON do
     json_ast = Beacon.Template.HEEx.JsonTransformer.transform(ast)
 
     %{
-      data: %{ ast: json_ast }
+      data: %{ast: json_ast}
     }
-    end
+  end
 
   # @doc """
   # Renders a single component definition.

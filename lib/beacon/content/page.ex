@@ -104,11 +104,12 @@ defmodule Beacon.Content.Page do
     {extra_attrs, attrs} = Map.pop(attrs, "extra")
     {ast, attrs} = Map.pop(attrs, "ast")
 
-    attrs = if !is_nil(ast) do
-      Map.put(attrs, :template, HeexTransformer.transform(ast))
-    else
-      attrs
-    end
+    attrs =
+      if !is_nil(ast) do
+        Map.put(attrs, :template, HeexTransformer.transform(ast))
+      else
+        attrs
+      end
 
     page
     |> cast(attrs, [
