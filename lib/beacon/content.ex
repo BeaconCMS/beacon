@@ -898,282 +898,352 @@ defmodule Beacon.Content do
   @doc type: :components
   def blueprint_components do
     nav_1 = """
-      <nav>
-        <div class="flex justify-between px-8 py-5 bg-white">
-          <div class="w-auto mr-14">
-            <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"></a>
-          </div>
-          <div class="w-auto flex flex-wrap items-center">
-            <ul class="flex items-center mr-10">
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Features</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Solutions</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Resources</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Pricing</a>
-              </li>
-            </ul>
-            <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-              Start Free Trial
-            </button>
-          </div>
+    <nav>
+      <div class="flex justify-between px-8 py-5 bg-white">
+        <div class="w-auto mr-14">
+          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" /></a>
         </div>
-      </nav>
+        <div class="w-auto flex flex-wrap items-center">
+          <ul class="flex items-center mr-10">
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Features</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Solutions</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Resources</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Pricing</a>
+            </li>
+          </ul>
+          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+            Start Free Trial
+          </button>
+        </div>
+      </div>
+    </nav>
     """
 
     nav_2 = """
-      <nav>
-        <div class="flex justify-between px-8 py-5 bg-white">
-          <div class="w-auto mr-14">
-            <a href="#">
-              <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg">
-            </a>
-          </div>
-          <div class="w-auto flex flex-wrap items-center">
-            <ul class="flex items-center mr-10">
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Features</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Solutions</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Resources</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Pricing</a>
-              </li>
-            </ul>
-          </div>
-          <div class="w-auto flex flex-wrap items-center">
-            <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-              Start Free Trial
-            </button>
-          </div>
+    <nav>
+      <div class="flex justify-between px-8 py-5 bg-white">
+        <div class="w-auto mr-14">
+          <a href="#">
+            <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" />
+          </a>
         </div>
-      </nav>
+        <div class="w-auto flex flex-wrap items-center">
+          <ul class="flex items-center mr-10">
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Features</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Solutions</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Resources</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Pricing</a>
+            </li>
+          </ul>
+        </div>
+        <div class="w-auto flex flex-wrap items-center">
+          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+            Start Free Trial
+          </button>
+        </div>
+      </div>
+    </nav>
     """
 
     header_1 = """
-      <div class="container mx-auto px-4">
+    <div class="container mx-auto px-4">
       <div class="max-w-xl">
-      <span class="inline-block mb-3 text-gray-600 text-base">
-      Flexible Pricing Plan
-    </span>
-    <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
-      Everything you need to launch a website
-    </h2>
-
-    </div>
-    <div class="flex flex-wrap">
-      <div class="w-full md:w-1/3">
-      <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
-      <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-      Basic
-    </h3>
-    <p class="mb-5 text-gray-600 text-sm">
-      Best for freelancers
-    </p>
-    <div class="mb-9 flex">
-      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
-    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
-    <span class="font-heading font-semibold self-end">/ m</span>
-
-    </div>
-    <div class="p-1">
-      <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-      <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-
-    </div>
-    <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-      <p class="relative z-10">
-      Join now
-    </p>
-    </div>
-    </button>
-    </div>
-    <ul>
-      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.0.0.0"></path>
-    </svg>
-    <p>
-      100GB Cloud Storage
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.1.0.0"></path>
-    </svg>
-    <p>
-      10 Email Connection
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.2.0.0"></path>
-    </svg>
-    <p>
-      Daily Analytics
-    </p>
-    </li>
-    </ul>
-    </div>
-
-    </div>
-    <div class="w-full md:w-1/3">
-      <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
-      <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-      Premium
-    </h3>
-    <p class="mb-5 text-gray-600 text-sm">
-      Best for small agency
-    </p>
-    <div class="mb-9 flex">
-      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-      $
-    </span>
-    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-      99
-    </span>
-    <span class="font-heading font-semibold self-end">
-      / m
-    </span>
-    </div>
-    <div class="p-1">
-      <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-      <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-
-    </div>
-    <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-      <p class="relative z-10">Join now</p>
-
-    </div>
-    </button>
-    </div>
-    <ul>
-      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.0.0.0"></path>
-    </svg>
-    <p>
-      500GB Cloud Storage
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.1.0.0"></path>
-    </svg>
-    <p>
-      50 Email Connection
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.2.0.0"></path>
-    </svg>
-    <p>
-      Daily Analytics
-    </p>
-    </li>
-    <li class="flex items-center font-heading font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.3.0.0"></path>
-    </svg>
-    <p>
-      Premium Support
-    </p>
-    </li>
-    </ul>
-    </div>
-    </div>
-    <div class="w-full md:w-1/3">
-      <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
-      <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
-      Popular choice
-    </p>
-    <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-      Enterprise
-    </h3>
-    <p class="mb-5 text-gray-600 text-sm">
-      Best for large agency
-    </p>
-    <div class="mb-9 flex">
-      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-      $
-    </span>
-    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-      199
-    </span>
-    <span class="font-heading font-semibold self-end">
-      / m
-    </span>
-
-    </div>
-    <div class="group relative mb-9">
-      <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
-
-    </div>
-    <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
-      <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
-      <p>
-      Join now
-    </p>
-
-    </div>
-
-    </button>
-
-    </div>
-    <ul>
-      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.0.0.0"></path>
-    </svg>
-    <p>
-      2TB Cloud Storage
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.1.0.0"></path>
-    </svg>
-    <p>
-      Unlimited Email Connection
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.2.0.0"></path>
-    </svg>
-    <p>
-      Daily Analytics
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.3.0.0"></path>
-    </svg>
-    <p>
-      Premium Support
-    </p>
-    </li>
-    </ul>
-    </div>
-    </div>
-    </div>
+        <span class="inline-block mb-3 text-gray-600 text-base">
+          Flexible Pricing Plan
+        </span>
+        <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
+          Everything you need to launch a website
+        </h2>
+      </div>
+      <div class="flex flex-wrap">
+        <div class="w-full md:w-1/3">
+          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
+            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+              Basic
+            </h3>
+            <p class="mb-5 text-gray-600 text-sm">
+              Best for freelancers
+            </p>
+            <div class="mb-9 flex">
+              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
+              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
+              <span class="font-heading font-semibold self-end">/ m</span>
+            </div>
+            <div class="p-1">
+              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+                </div>
+                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+                  <p class="relative z-10">
+                    Join now
+                  </p>
+                </div>
+              </button>
+            </div>
+            <ul>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.0.0.4.0.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  100GB Cloud Storage
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.0.0.4.1.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  10 Email Connection
+                </p>
+              </li>
+              <li class="flex items-center font-heading font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.0.0.4.2.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Daily Analytics
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="w-full md:w-1/3">
+          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
+            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+              Premium
+            </h3>
+            <p class="mb-5 text-gray-600 text-sm">
+              Best for small agency
+            </p>
+            <div class="mb-9 flex">
+              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+                $
+              </span>
+              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+                99
+              </span>
+              <span class="font-heading font-semibold self-end">
+                / m
+              </span>
+            </div>
+            <div class="p-1">
+              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+                </div>
+                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+                  <p class="relative z-10">Join now</p>
+                </div>
+              </button>
+            </div>
+            <ul>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.0.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  500GB Cloud Storage
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.1.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  50 Email Connection
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.2.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Daily Analytics
+                </p>
+              </li>
+              <li class="flex items-center font-heading font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.3.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Premium Support
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="w-full md:w-1/3">
+          <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
+            <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
+              Popular choice
+            </p>
+            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+              Enterprise
+            </h3>
+            <p class="mb-5 text-gray-600 text-sm">
+              Best for large agency
+            </p>
+            <div class="mb-9 flex">
+              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+                $
+              </span>
+              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+                199
+              </span>
+              <span class="font-heading font-semibold self-end">
+                / m
+              </span>
+            </div>
+            <div class="group relative mb-9">
+              <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
+              </div>
+              <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
+                <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
+                  <p>
+                    Join now
+                  </p>
+                </div>
+              </button>
+            </div>
+            <ul>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.0.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  2TB Cloud Storage
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.1.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Unlimited Email Connection
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.2.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Daily Analytics
+                </p>
+              </li>
+              <li class="flex items-center font-heading font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.3.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Premium Support
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
     """
 
