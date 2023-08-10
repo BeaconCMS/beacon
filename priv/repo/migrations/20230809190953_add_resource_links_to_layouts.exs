@@ -26,8 +26,7 @@ defmodule Beacon.Repo.Migrations.AddResourceLinksToLayouts do
       {:ok, result} ->
         for row <- result.rows do
           %{id: id} = repo().load(%{id: :binary_id}, {result.columns, row})
-          {:ok, id} = Ecto.UUID.dump(id)
-          id
+          Ecto.UUID.dump!(id)
         end
 
       _ ->
