@@ -46,7 +46,7 @@ defmodule Beacon.Loader do
 
   defp populate_components(site) do
     for attrs <- Content.blueprint_components() do
-      case Content.list_components_by_name(site, attrs.nam) do
+      case Content.list_components_by_name(site, attrs.name) do
         [] ->
           attrs
           |> Map.put(:site, site)
