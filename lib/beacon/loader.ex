@@ -324,13 +324,12 @@ defmodule Beacon.Loader do
 
   def handle_info({:component_updated, component}, state) do
     :ok = load_components(component.site)
-    Beacon.PubSub.component_loaded(component)
+    :ok = Beacon.PubSub.component_loaded(component)
     {:noreply, state}
   end
 
   @doc false
-  def handle_info(msg, state) do
-    Logger.warning("unhandled message: #{inspect(msg)}")
+  def handle_info(_msg, state) do
     {:noreply, state}
   end
 
