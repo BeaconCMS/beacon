@@ -343,15 +343,39 @@ defmodule Beacon.Content do
   end
 
   defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
-    {body, layout} = Map.pop(layout, :body)
-    Map.put(layout, :template, body)
+    layout
+    |> convert_body_to_template()
+    |> convert_stylesheet_urls_to_resource_links()
   end
 
   defp extract_layout_snapshot(%{schema_version: 2, layout: %Layout{} = layout}) do
+    convert_stylesheet_urls_to_resource_links(layout)
+  end
+
+  defp extract_layout_snapshot(%{schema_version: 3, layout: %Layout{} = layout}) do
     layout
   end
 
   defp extract_layout_snapshot(_snapshot), do: nil
+
+  defp convert_body_to_template(layout) do
+    {body, layout} = Map.pop(layout, :body)
+    Map.put(layout, :template, body)
+  end
+
+  defp convert_stylesheet_urls_to_resource_links(layout) do
+    {stylesheet_urls, layout} = Map.pop(layout, :stylesheet_urls)
+
+    resource_links =
+      Enum.map(stylesheet_urls, fn url ->
+        %{
+          rel: "stylesheet",
+          href: url
+        }
+      end)
+
+    Map.put(layout, :resource_links, resource_links)
+  end
 
   # deprecated: to be removed
   @doc false

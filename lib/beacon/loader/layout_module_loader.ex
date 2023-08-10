@@ -40,7 +40,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
         %{
           title: unquote(layout.title),
           meta_tags: unquote(Macro.escape(layout.meta_tags)),
-          stylesheet_urls: unquote(layout.stylesheet_urls)
+          resource_links: unquote(Macro.escape(layout.resource_links))
         }
       end
     end

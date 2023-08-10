@@ -167,7 +167,10 @@ seeds = fn ->
         %{"name" => "layout-meta-tag-one", "content" => "value"},
         %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
-      stylesheet_urls: [],
+      resource_links: [
+        %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
+        %{"rel" => "stylesheet", "href" => "alternative.css"}
+      ],
       template: """
       <%= @inner_content %>
       """
@@ -350,7 +353,6 @@ seeds = fn ->
     Beacon.Content.create_layout!(%{
       site: "other",
       title: "other",
-      stylesheet_urls: [],
       template: """
       <%= @inner_content %>
       """

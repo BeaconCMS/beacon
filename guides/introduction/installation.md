@@ -237,7 +237,6 @@ For more info on site options, check out `Beacon.start_link/1`.
       Content.create_layout!(%{
         site: "<%= site %>",
         title: "Sample Home Page",
-        stylesheet_urls: [],
         template: """
         <header>
           Header
