@@ -1457,6 +1457,14 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.update()
+    |> case do
+      {:ok, component} ->
+        :ok = PubSub.component_updated(component)
+        {:ok, component}
+
+      error ->
+        error
+    end
   end
 
   defp validate_component_body(changeset) do

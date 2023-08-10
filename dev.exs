@@ -245,7 +245,9 @@ seeds = fn ->
           </ul>
         </div>
 
-        <%= my_component("sample_component", val: 1) %>
+        <div>
+          Sample component: <%= my_component("sample_component", val: 1) %>
+        </div>
 
         <div>
           <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
