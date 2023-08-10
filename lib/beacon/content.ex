@@ -1483,6 +1483,24 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  List components by `name`.
+
+  ## Example
+
+      iex> list_components_by_name(site, "header")
+      [%Component{name: "header"}]
+
+  """
+  @doc type: :components
+  @spec list_components_by_name(Site.t(), String.t()) :: [Component.t()]
+  def list_components_by_name(site, name) when is_atom(site) and is_binary(name) do
+    Repo.all(
+      from c in Component,
+        where: c.site == ^site and c.name == ^name
+    )
+  end
+
+  @doc """
   Returns the list of components for a `site`.
 
   ## Example

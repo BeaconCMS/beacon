@@ -45,10 +45,14 @@ defmodule Beacon.Loader do
 
   defp populate_components(site) do
     for attrs <- Content.blueprint_components() do
-      unless Content.get_component_by(site, name: attrs.name) do
-        attrs
-        |> Map.put(:site, site)
-        |> Content.create_component!()
+      case Content.list_components_by_name(site, attrs.nam) do
+        [] ->
+          attrs
+          |> Map.put(:site, site)
+          |> Content.create_component!()
+
+        _ ->
+          :skip
       end
     end
 
