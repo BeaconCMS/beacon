@@ -39,6 +39,7 @@ defmodule Beacon.Loader do
 
     PubSub.subscribe_to_layouts(config.site)
     PubSub.subscribe_to_pages(config.site)
+    PubSub.subscribe_to_components(config.site)
 
     {:ok, config}
   end
@@ -328,6 +329,12 @@ defmodule Beacon.Loader do
     |> Content.get_published_page(id)
     |> do_unload_page()
 
+    {:noreply, state}
+  end
+
+  def handle_info({:component_updated, component}, state) do
+    :ok = load_components(component.site)
+    :ok = Beacon.PubSub.component_loaded(component)
     {:noreply, state}
   end
 
