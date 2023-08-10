@@ -29,7 +29,7 @@ defmodule Beacon.Template.HEEx.HeexTransformer do
   defp transform_node(str) when is_binary(str), do: str
 
   defp transform_attrs(attrs) do
-    Enum.map(attrs, &transform_attr/1) |> Enum.join(" ")
+    Enum.map_join(attrs, " ", &transform_attr/1)
   end
 
   defp transform_attr({key, true}) do
