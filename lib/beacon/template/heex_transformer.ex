@@ -1,13 +1,14 @@
 defmodule Beacon.Template.HEEx.HeexTransformer do
   def transform(ast) do
-    :erlang.iolist_to_binary(_transform(ast))
+    ast
+    |> _transform()
+    |> :erlang.iolist_to_binary()
   end
 
   defp _transform([str]) when is_binary(str), do: str
 
   defp _transform(ast) do
-    ast
-    |> Enum.map(&transform_node/1)
+    Enum.map(ast, &transform_node/1)
   end
 
   defp transform_node(%{"tag" => "eex", "attrs" => _attrs, "content" => content}) do

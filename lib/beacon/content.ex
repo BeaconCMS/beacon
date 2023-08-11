@@ -39,6 +39,7 @@ defmodule Beacon.Content do
   alias Beacon.Lifecycle
   alias Beacon.PubSub
   alias Beacon.Repo
+  alias Beacon.Template.HEEx.HeexTransformer
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
@@ -483,6 +484,15 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
   def update_page(%Page{} = page, attrs) do
+    {ast, attrs} = Map.pop(attrs, "ast")
+
+    attrs =
+      if is_nil(ast) do
+        attrs
+      else
+        Map.put(attrs, :template, HeexTransformer.transform(ast))
+      end
+
     changeset = Page.update_changeset(page, attrs)
 
     Repo.transact(fn ->
