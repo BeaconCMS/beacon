@@ -11,7 +11,7 @@ config :beacon, Beacon.Repo, migration_timestamps: [type: :utc_datetime_usec]
 if Mix.env() == :dev do
   esbuild = fn args ->
     [
-      args: args,
+      args: ~w(./js/beacon.js --bundle) ++ args,
       cd: Path.expand("../assets", __DIR__),
       env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
     ]
@@ -19,8 +19,8 @@ if Mix.env() == :dev do
 
   config :esbuild,
     version: "0.17.18",
-    cdn: esbuild.(~w(./js/beacon.js --bundle --format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
-    cdn_min: esbuild.(~w(./js/beacon.js --bundle --format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
+    cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
+    cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
 end
 
 import_config "#{config_env()}.exs"
