@@ -36,7 +36,7 @@ defmodule Beacon.Template.HEEx.HeexTransformer do
     [key]
   end
 
-  # Matches attributes which values is wrapped in {} (expressions)
+  # Matches attributes whose values are wrapped in `{` and `}` (eex expressions)
   defp transform_attr({key, s}) when binary_part(s, 0, 1) == "{" and binary_part(s, byte_size(s) - 1, 1) == "}" do
     [key, "=", s]
   end
