@@ -85,15 +85,6 @@ defmodule Beacon.Fixtures do
     page
   end
 
-  def page_event_params(attrs \\ %{}) do
-    Enum.into(attrs, %{
-      name: "hello",
-      code: """
-        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
-  end
-
   def page_helper_params(attrs \\ %{}) do
     Enum.into(attrs, %{
       name: "upcase",

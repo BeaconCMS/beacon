@@ -77,7 +77,6 @@ defmodule Beacon.Content.Page do
       :extra
     ])
     |> cast(attrs, [:path], empty_values: [])
-    |> cast_embed(:events, with: &events_changeset/2)
     |> cast_embed(:helpers, with: &helpers_changeset/2)
     |> unique_constraint([:path, :site])
     |> validate_required([
@@ -120,12 +119,6 @@ defmodule Beacon.Content.Page do
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
-  end
-
-  defp events_changeset(schema, params) do
-    schema
-    |> cast(params, [:name, :code])
-    |> validate_required([:name, :code])
   end
 
   defp helpers_changeset(schema, params) do

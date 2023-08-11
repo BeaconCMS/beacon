@@ -34,7 +34,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     Beacon.Content.publish_layout(layout)
 
-    _page_home =
+    page_home =
       published_page_fixture(
         layout_id: layout.id,
         path: "home",
@@ -60,13 +60,19 @@ defmodule BeaconWeb.Live.PageLiveTest do
           %{"name" => "theme-color", "content" => "#3c790a", "media" => "(prefers-color-scheme: dark)"},
           %{"property" => "og:title", "content" => "Beacon"}
         ],
-        events: [
-          page_event_params()
-        ],
         helpers: [
           page_helper_params()
         ]
       )
+
+    _page_home_form_submit_handler =
+      page_event_handler_fixture(%{
+        page: page_home,
+        name: "hello",
+        code: """
+        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+        """
+      })
 
     _page_without_meta_tags =
       published_page_fixture(

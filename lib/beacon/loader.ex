@@ -11,11 +11,13 @@ defmodule Beacon.Loader do
   And deleting a resource will unload it from memory.
 
   """
-
   use GenServer
-  require Logger
+
   alias Beacon.Content
   alias Beacon.PubSub
+  alias Beacon.Repo
+
+  require Logger
 
   @doc false
   def start_link(config) do
@@ -76,6 +78,7 @@ defmodule Beacon.Loader do
 
   @doc false
   def load_page(%Content.Page{} = page) do
+    page = Repo.preload(page, :event_handlers)
     config = Beacon.Config.fetch!(page.site)
     GenServer.call(name(config.site), {:load_page, page}, 60_000)
   end
