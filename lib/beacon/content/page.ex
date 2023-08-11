@@ -23,6 +23,7 @@ defmodule Beacon.Content.Page do
   use Beacon.Schema
 
   alias Beacon.Content
+  alias Beacon.Template.HEEx.HeexTransformer
 
   @version 3
 
@@ -94,8 +95,16 @@ defmodule Beacon.Content.Page do
   # need them to get going on the admin interface for now
   # TODO: only allow path if status = draft
   @doc false
-  def update_changeset(page, attrs) do
+  def update_changeset(page, attrs \\ %{}) do
     {extra_attrs, attrs} = Map.pop(attrs, "extra")
+    {ast, attrs} = Map.pop(attrs, "ast")
+
+    attrs =
+      if is_nil(ast) do
+        attrs
+      else
+        Map.put(attrs, :template, HeexTransformer.transform(ast))
+      end
 
     page
     |> cast(attrs, [
