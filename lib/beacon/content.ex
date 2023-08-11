@@ -1515,23 +1515,38 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Returns the list of components for a `site`.
+  List components.
 
-  ## Example
+  ## Options
 
-      iex> list_components()
-      [%Component{}, ...]
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search components by title.
 
   """
   @doc type: :components
-  @spec list_components(Site.t()) :: [Component.t()]
-  def list_components(site) do
-    Repo.all(
-      from c in Component,
-        where: c.site == ^site,
-        order_by: c.name
-    )
+  @spec list_components(Site.t(), keyword()) :: [Component.t()]
+  def list_components(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_components_base()
+    |> query_list_components_limit(per_page)
+    |> query_list_components_search(search)
+    |> Repo.all()
   end
+
+  defp query_list_components_base(site) do
+    from c in Component,
+      where: c.site == ^site,
+      order_by: [asc: c.name]
+  end
+
+  defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_components_limit(query, :infinity = _limit), do: query
+  defp query_list_components_limit(query, _per_page), do: from(q in query, limit: 20)
+  defp query_list_components_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.name, ^"%#{search}%"))
+  defp query_list_components_search(query, _search), do: query
 
   # SNIPPETS
 
