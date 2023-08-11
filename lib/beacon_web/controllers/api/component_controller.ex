@@ -29,16 +29,4 @@ defmodule BeaconWeb.API.ComponentController do
     definition = Content.get_component_by(:dev, id: component_definition_id)
     render(conn, :show, rendered_html: definition.body)
   end
-
-  defp build_component(entry) when is_binary(entry), do: entry
-  defp build_component(%{"tag" => "raw", "attributes" => _, "content" => content}), do: content
-
-  defp build_component(%{"tag" => tag, "attributes" => attributes, "content" => content}) do
-    content = Enum.map(content, &build_component/1)
-    %{"tag" => tag, "attributes" => attributes, "content" => content}
-  end
-
-  defp build_component(%{"name" => name, "attributes" => attributes, "content" => content}) do
-    build_component(%{"tag" => @tag_for_name[name], "attributes" => attributes, "content" => content})
-  end
 end
