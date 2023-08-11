@@ -3,13 +3,6 @@ defmodule BeaconWeb.API.ComponentController do
 
   alias Beacon.Content
 
-  @tag_for_name %{
-    "title" => "h1",
-    "paragraph" => "p",
-    "link" => "a",
-    "button" => "button",
-    "aside" => "aside"
-  }
   action_fallback BeaconWeb.API.FallbackController
 
   def index(conn, _params) do
