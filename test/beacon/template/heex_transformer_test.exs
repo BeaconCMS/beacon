@@ -28,7 +28,14 @@ defmodule Beacon.Template.HEEx.HeexTransformerTest do
 
     heex_code = HeexTransformer.transform(json_ast)
 
-    assert heex_code ==
-             ~s|<button class=\"big\" disabled>click me</button><.link patch=\"/dev/authors/1-author\">Author (patch)</.link><%= my_component(\n  \"sample_component\",\n  val: 1\n) %>\n<div>\n  <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={[\"480w\"]} width=\"200px\" />\n</div>\n|
+    assert heex_code == """
+    <button class="big" disabled>click me</button><.link patch="/dev/authors/1-author\">Author (patch)</.link><%= my_component(
+      "sample_component",
+      val: 1
+    ) %>
+    <div>
+      <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
+    </div>
+    """
   end
 end

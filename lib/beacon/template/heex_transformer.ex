@@ -3,6 +3,7 @@ defmodule Beacon.Template.HEEx.HeexTransformer do
     ast
     |> _transform()
     |> :erlang.iolist_to_binary()
+    |> Phoenix.LiveView.HTMLFormatter.format(heex_line_length: 100)
   end
 
   defp _transform([str]) when is_binary(str), do: str
