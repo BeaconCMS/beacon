@@ -41,13 +41,24 @@ defmodule Beacon.Loader do
 
     PubSub.subscribe_to_layouts(config.site)
     PubSub.subscribe_to_pages(config.site)
+    PubSub.subscribe_to_components(config.site)
 
     {:ok, config}
   end
 
-  # TODO: skip if components already exists
   defp populate_components(site) do
-    Enum.each(Content.blueprint_components(), fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+    for attrs <- Content.blueprint_components() do
+      case Content.list_components_by_name(site, attrs.name) do
+        [] ->
+          attrs
+          |> Map.put(:site, site)
+          |> Content.create_component!()
+
+        _ ->
+          :skip
+      end
+    end
+
     :ok
   end
 
@@ -321,6 +332,12 @@ defmodule Beacon.Loader do
     |> Content.get_published_page(id)
     |> do_unload_page()
 
+    {:noreply, state}
+  end
+
+  def handle_info({:component_updated, component}, state) do
+    :ok = load_components(component.site)
+    :ok = Beacon.PubSub.component_loaded(component)
     {:noreply, state}
   end
 

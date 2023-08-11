@@ -1464,7 +1464,11 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.update()
+    |> tap(&maybe_reload_component/1)
   end
+
+  def maybe_reload_component({:ok, component}), do: PubSub.component_updated(component)
+  def maybe_reload_component({:error, _component}), do: :noop
 
   defp validate_component_body(changeset) do
     site = Changeset.get_field(changeset, :site)
@@ -1487,6 +1491,24 @@ defmodule Beacon.Content do
   def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
     Repo.get_by(Component, clauses, opts)
+  end
+
+  @doc """
+  List components by `name`.
+
+  ## Example
+
+      iex> list_components_by_name(site, "header")
+      [%Component{name: "header"}]
+
+  """
+  @doc type: :components
+  @spec list_components_by_name(Site.t(), String.t()) :: [Component.t()]
+  def list_components_by_name(site, name) when is_atom(site) and is_binary(name) do
+    Repo.all(
+      from c in Component,
+        where: c.site == ^site and c.name == ^name
+    )
   end
 
   @doc """

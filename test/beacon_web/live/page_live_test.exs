@@ -5,6 +5,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.LiveViewTest
   import Beacon.Fixtures
 
+  alias Beacon.Content
+
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     :ok
@@ -16,7 +18,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     component_fixture(name: "sample_component")
 
     layout =
-      layout_fixture(
+      published_layout_fixture(
         meta_tags: [
           %{"http-equiv" => "refresh", "content" => "300"}
         ],
@@ -31,8 +33,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
           }
         ]
       )
-
-    Beacon.Content.publish_layout(layout)
 
     page_home =
       published_page_fixture(
@@ -230,6 +230,37 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, view, _html} = live(conn, "/markdown")
 
       assert has_element?(view, "h1", "Title")
+    end
+  end
+
+  describe "components" do
+    test "update should reload the resource", %{conn: conn} do
+      component = component_fixture(name: "component_test", body: "component_test_v1")
+      id = component.id
+      Beacon.PubSub.subscribe_to_component(component.site, component.id)
+
+      layout = published_layout_fixture()
+
+      published_page_fixture(
+        path: "component_test",
+        template: """
+        <%= my_component("component_test", []) %>
+        """,
+        layout_id: layout.id
+      )
+
+      Beacon.reload_site(:my_site)
+
+      {:ok, _view, html} = live(conn, "/component_test")
+
+      assert html =~ "component_test_v1"
+
+      Content.update_component(component, %{body: "component_test_v2"})
+
+      assert_receive {:component_loaded, %{id: ^id}}
+
+      {:ok, _view, html} = live(conn, "/component_test")
+      assert html =~ "component_test_v2"
     end
   end
 end
