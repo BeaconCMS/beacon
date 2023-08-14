@@ -134,7 +134,7 @@ defmodule Beacon.Loader do
   defp load_components(site) do
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
-      Beacon.Content.list_components(site)
+      Beacon.Content.list_components(site, per_page: :infinity)
     )
 
     :ok
