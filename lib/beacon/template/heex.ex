@@ -51,7 +51,13 @@ defmodule Beacon.Template.HEEx do
     ]
 
     env = %{env | functions: functions}
-    {rendered, _bindings} = Code.eval_quoted(template, [assigns: assigns], env)
+
+    rendered =
+      case Code.eval_quoted(template, [assigns: assigns], env) do
+        {%Phoenix.LiveView.Rendered{} = rendered, _bindings} -> rendered
+        {[%Phoenix.LiveView.Rendered{} = rendered], _bindings} -> rendered
+      end
+
     {:halt, rendered}
   end
 
