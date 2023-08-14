@@ -414,6 +414,24 @@ defmodule Beacon.ContentTest do
 
       assert_receive :lifecycle_after_update_page
     end
+
+    test "delete event handler OK" do
+      page = page_fixture(%{format: :heex})
+      event_handler_1 = page_event_handler_fixture(%{page: page})
+      event_handler_2 = page_event_handler_fixture(%{page: page})
+
+      assert {:ok, %Page{event_handlers: [^event_handler_2]}} = Content.delete_event_handler_from_page(page, event_handler_1)
+      assert {:ok, %Page{event_handlers: []}} = Content.delete_event_handler_from_page(page, event_handler_2)
+    end
+
+    test "delete triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      event_handler = page_event_handler_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.delete_event_handler_from_page(page, event_handler)
+
+      assert_receive :lifecycle_after_update_page
+    end
   end
 
   describe "components" do
