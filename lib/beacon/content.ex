@@ -1709,6 +1709,19 @@ defmodule Beacon.Content do
     end)
   end
 
+  @doc """
+  Deletes a page event handler and returns the page with updated `:event_handlers` association.
+  """
+  @doc type: :page_event_handlers
+  @spec delete_event_handler_from_page(Page.t(), PageEventHandler.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def delete_event_handler_from_page(page, event_handler) do
+    with {:ok, %PageEventHandler{}} <- Repo.delete(event_handler),
+         %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+         %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+      {:ok, page}
+    end
+  end
+
   # PAGE VARIANTS
 
   @doc """
