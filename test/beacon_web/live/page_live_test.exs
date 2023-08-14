@@ -35,7 +35,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       )
 
     page_home =
-      published_page_fixture(
+      page_fixture(
         layout_id: layout.id,
         path: "home",
         template: """
@@ -73,6 +73,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
         """
       })
+
+    Content.publish_page(page_home)
 
     _page_without_meta_tags =
       published_page_fixture(
