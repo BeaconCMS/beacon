@@ -1,5 +1,6 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Content
+  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
@@ -84,15 +85,6 @@ defmodule Beacon.Fixtures do
     page
   end
 
-  def page_event_params(attrs \\ %{}) do
-    Enum.into(attrs, %{
-      name: "hello",
-      code: """
-        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
-  end
-
   def page_helper_params(attrs \\ %{}) do
     Enum.into(attrs, %{
       name: "upcase",
@@ -169,4 +161,27 @@ defmodule Beacon.Fixtures do
 
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
+
+  def page_event_handler_fixture(attrs \\ %{})
+
+  def page_event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
+    do: page_event_handler_fixture(page, attrs)
+
+  def page_event_handler_fixture(%{page_id: page_id} = attrs) do
+    page_id
+    |> Content.get_page!()
+    |> page_event_handler_fixture(attrs)
+  end
+
+  defp page_event_handler_fixture(page, attrs) do
+    full_attrs = %{
+      name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
+      code: attrs[:code] || "{:noreply, socket}"
+    }
+
+    page
+    |> Ecto.build_assoc(:event_handlers)
+    |> PageEventHandler.changeset(full_attrs)
+    |> Repo.insert!()
+  end
 end

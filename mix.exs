@@ -101,7 +101,9 @@ defmodule Beacon.MixProject do
           Beacon.Content.Page.Event,
           Beacon.Content.Page.Helper,
           Beacon.Content.PageEvent,
+          Beacon.Content.PageEventHandler,
           Beacon.Content.PageSnapshot,
+          Beacon.Content.PageVariant,
           Beacon.Content.Stylesheet,
           Beacon.Content.Snippets.Helper,
           Beacon.Template,
@@ -168,7 +170,8 @@ defmodule Beacon.MixProject do
         "Functions: Page Variants": &(&1[:type] == :page_variants),
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
-        "Functions: Snippets": &(&1[:type] == :snippets)
+        "Functions: Snippets": &(&1[:type] == :snippets),
+        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers)
       ]
     ]
   end

@@ -135,13 +135,15 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   # TODO: path_to_args in paths with dynamic segments may be broken
-  defp handle_event(%{site: site, path: path, events: events}) do
-    Enum.map(events, fn event ->
-      Beacon.safe_code_check!(site, event.code)
+  defp handle_event(page) do
+    %{site: site, path: path, event_handlers: event_handlers} = page
+
+    Enum.map(event_handlers, fn event_handler ->
+      Beacon.safe_code_check!(site, event_handler.code)
 
       quote do
-        def handle_event(unquote(path_to_args(path, "")), unquote(event.name), var!(event_params), var!(socket)) do
-          unquote(Code.string_to_quoted!(event.code))
+        def handle_event(unquote(path_to_args(path, "")), unquote(event_handler.name), var!(event_params), var!(socket)) do
+          unquote(Code.string_to_quoted!(event_handler.code))
         end
       end
     end)
