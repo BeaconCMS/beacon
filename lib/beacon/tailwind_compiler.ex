@@ -152,7 +152,7 @@ defmodule Beacon.TailwindCompiler do
         end)
       end),
       Task.async(fn ->
-        Enum.map(Beacon.Content.list_components(site), fn component ->
+        Enum.map(Beacon.Content.list_components(site, per_page: :infinity), fn component ->
           component_path = Path.join(tmp_dir, "#{site}_component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
           component_path
