@@ -29,7 +29,7 @@ defmodule Beacon.MixHelper do
     File.rm_rf!("tmp")
   end
 
-  def sample_mixfile do
+  defp sample_mixfile do
     """
     defmodule MyApp.MixProject do
       use Mix.Project
@@ -107,7 +107,7 @@ defmodule Beacon.MixHelper do
     """
   end
 
-  def sample_application do
+  defp sample_application do
     """
     defmodule MyApp.Application do
       # See https://hexdocs.pm/elixir/Application.html
@@ -150,7 +150,7 @@ defmodule Beacon.MixHelper do
     """
   end
 
-  def sample_router do
+  defp sample_router do
     """
     defmodule MyAppWeb.Router do
       use MyAppWeb, :router
@@ -199,7 +199,7 @@ defmodule Beacon.MixHelper do
     """
   end
 
-  def sample_config do
+  defp sample_config do
     """
     # This file is responsible for configuring your application
     # and its dependencies with the aid of the Config module.
@@ -268,7 +268,7 @@ defmodule Beacon.MixHelper do
     """
   end
 
-  def sample_dev do
+  defp sample_dev do
     """
     import Config
 
@@ -352,7 +352,7 @@ defmodule Beacon.MixHelper do
     """
   end
 
-  def sample_prod do
+  defp sample_prod do
     """
     import Config
 
