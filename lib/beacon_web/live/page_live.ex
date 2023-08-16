@@ -24,11 +24,11 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {{site, path}, {_page_id, _layout_id, format, templates, _page_module, _component_module}} =
+    {{site, path}, {_page_id, _layout_id, format, page_module, _component_module}} =
       lookup_route!(assigns.__site__, assigns.__live_path__)
 
-    template = choose_template(templates)
-
+    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(path, assigns.__live_path__))
+    template = page_module.render(assigns)
     Lifecycle.Template.render_template(site, template, format, path: path, assigns: assigns, env: __ENV__)
   end
 
@@ -40,13 +40,6 @@ defmodule BeaconWeb.PageLive do
       Make sure a page was created for that path.
       """
   end
-
-  defp choose_template([primary]), do: primary
-  defp choose_template([primary | variants]), do: choose_template(variants, Enum.random(1..100), primary)
-
-  defp choose_template([], _, primary), do: primary
-  defp choose_template([{weight, template} | _], n, _) when weight >= n, do: template
-  defp choose_template([{weight, _} | variants], n, primary), do: choose_template(variants, n - weight, primary)
 
   def handle_info({:page_loaded, _}, socket) do
     # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179
@@ -87,7 +80,7 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{__site__: site} = socket.assigns
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
-    {{_site, _path}, {page_id, layout_id, _format, _template, page_module, component_module}} = lookup_route!(site, path)
+    {{_site, _path}, {page_id, layout_id, _format, page_module, component_module}} = lookup_route!(site, path)
 
     Process.put(:__beacon_site__, site)
 

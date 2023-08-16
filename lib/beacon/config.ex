@@ -93,7 +93,7 @@ defmodule Beacon.Config do
               [
                 {identifier :: atom(),
                  fun ::
-                   (Beacon.Template.t(), Beacon.Template.LoadMetadata.t() ->
+                   (template :: String.t(), Beacon.Template.LoadMetadata.t() ->
                       {:cont, Beacon.Template.t()} | {:halt, Beacon.Template.t()} | {:halt, Exception.t()})}
               ]}
            ]}
@@ -168,14 +168,8 @@ defmodule Beacon.Config do
   ]
 
   @default_render_template [
-    {:heex,
-     [
-       eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
-     ]},
-    {:markdown,
-     [
-       eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
-     ]}
+    {:heex, []},
+    {:markdown, []}
   ]
 
   @default_media_types ["image/jpeg", "image/gif", "image/png", "image/webp", ".pdf"]
@@ -283,15 +277,14 @@ defmodule Beacon.Config do
           load_template: [
             {:custom_format,
              [
-               validate: fn template, _metadata -> MyEngine.validate(template) end
+               validate: fn template, _metadata -> MyEngine.validate(template) end,
+               build_rendered: fn template, _metadata -> %Phoenix.LiveView.Rendered{static: template}  end,
              ]}
           ],
           render_template: [
             {:custom_format,
              [
-               assigns: fn template, %{assigns: assigns} -> MyEngine.parse_to_html(template, assigns) end,
-               compile: &Beacon.Template.HEEx.compile/2,
-               eval: &Beacon.Template.HEEx.eval_ast/2
+               assigns: fn %Phoenix.LiveView.Rendered{static: template} , %{assigns: assigns} -> MyEngine.parse_to_html(template, assigns) end
              ]}
           ],
           after_publish_page: [
@@ -329,20 +322,15 @@ defmodule Beacon.Config do
               compile_heex: &Beacon.Template.HEEx.compile/2
             ],
             custom_format: [
-              validate: #Function<41.3316493/2 in :erl_eval.expr/6>
+              validate: #Function<41.3316493/2 in :erl_eval.expr/6>,
+              build_rendered: #Function<41.3316494/2 in :erl_eval.expr/6>
             ]
           ],
           render_template: [
-            heex: [
-              eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
-            ],
-            markdown: [
-              eval_heex_ast: &Beacon.Template.HEEx.eval_ast/2
-            ],
+            heex: [],
+            markdown: [],
             custom_format: [
-              assigns: #Function<41.3316493/2 in :erl_eval.expr/6>,
-              compile: &Beacon.Template.HEEx.compile/2,
-              eval: &Beacon.Template.HEEx.eval_ast/2
+              assigns: #Function<41.3316493/2 in :erl_eval.expr/6>
             ]
           ],
           after_create_page: [],

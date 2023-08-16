@@ -172,7 +172,7 @@ defmodule Beacon.Loader do
     |> Content.list_published_pages()
     |> Enum.map(fn page ->
       Task.async(fn ->
-        {:ok, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page)
+        {:ok, _module, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page)
         :ok
       end)
     end)
@@ -198,19 +198,19 @@ defmodule Beacon.Loader do
 
   @doc false
   def layout_module_for_site(site, layout_id) do
-    prefix = Macro.camelize("layout_#{layout_id}")
-    module_for_site(site, prefix)
+    resource = Macro.camelize("layout_#{layout_id}")
+    module_for_site(site, resource)
   end
 
   @doc false
   def page_module_for_site(site, page_id) do
-    prefix = Macro.camelize("page_#{page_id}")
-    module_for_site(site, prefix)
+    resource = Macro.camelize("page_#{page_id}")
+    module_for_site(site, resource)
   end
 
-  defp module_for_site(site, prefix) do
+  defp module_for_site(site, resource) do
     site_hash = :crypto.hash(:md5, Atom.to_string(site)) |> Base.encode16()
-    Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
+    Module.concat([BeaconWeb.LiveRenderer, "#{site_hash}#{resource}"])
   end
 
   # This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
@@ -358,7 +358,7 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(page.site),
          {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
          :ok <- load_stylesheets(page.site),
-         {:ok, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page) do
+         {:ok, _module, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page) do
       :ok = Beacon.PubSub.page_loaded(page)
       :ok
     else

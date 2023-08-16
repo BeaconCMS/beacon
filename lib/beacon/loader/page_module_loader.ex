@@ -13,19 +13,19 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
+      for fun <- [&page_assigns/1, &handle_event/1, &helper/1, &render/1] do
         fun.(page)
       end,
       dynamic_helper()
     ]
 
-    ast = render(page_module, component_module, functions)
-    store_page(page, page_module, component_module)
+    ast = build(page_module, component_module, functions)
     :ok = Loader.reload_module!(page_module, ast)
-    {:ok, ast}
+    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
+    {:ok, page_module, ast}
   end
 
-  defp render(module_name, component_module, functions) do
+  defp build(module_name, component_module, functions) do
     quote do
       defmodule unquote(module_name) do
         use Phoenix.HTML
@@ -34,23 +34,6 @@ defmodule Beacon.Loader.PageModuleLoader do
 
         unquote_splicing(functions)
       end
-    end
-  end
-
-  defp store_page(page, page_module, component_module) do
-    %{id: page_id, layout_id: layout_id, format: format, site: site, path: path} = page
-
-    # [primary_template, {weight_variant_1, template_variant_1}, {...}, ...]
-    templates = [Lifecycle.Template.load_template(page) | load_variants(page)]
-
-    Beacon.Router.add_page(site, path, {page_id, layout_id, format, templates, page_module, component_module})
-  end
-
-  defp load_variants(page) do
-    %{variants: variants} = Beacon.Repo.preload(page, :variants)
-
-    for variant <- variants do
-      {variant.weight, Lifecycle.Template.load_template(%{page | template: variant.template})}
     end
   end
 
@@ -163,6 +146,55 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
+  defp render(page) do
+    primary = Lifecycle.Template.load_template(page)
+    variants = load_variants(page)
+
+    case variants do
+      [] ->
+        quote do
+          def render(var!(assigns)) when is_map(var!(assigns)) do
+            [{_, _, template}] = templates(var!(assigns))
+            template
+          end
+
+          def templates(var!(assigns)) when is_map(var!(assigns)) do
+            [{"primary", nil, unquote(primary)}]
+          end
+        end
+
+      variants ->
+        quote do
+          def render(var!(assigns)) when is_map(var!(assigns)) do
+            var!(assigns)
+            |> templates()
+            |> Beacon.Template.choose_template()
+          end
+
+          def templates(var!(assigns)) when is_map(var!(assigns)) do
+            [
+              {"primary", nil, unquote(primary)}
+              | for [name, weight, template] <- unquote(variants) do
+                  {name, weight, template}
+                end
+            ]
+          end
+        end
+    end
+  end
+
+  defp load_variants(page) do
+    %{variants: variants} = Beacon.Repo.preload(page, :variants)
+
+    for variant <- variants do
+      [
+        variant.name,
+        variant.weight,
+        Lifecycle.Template.load_template(%{page | template: variant.template})
+      ]
+    end
+  end
+
   defp dynamic_helper do
     quote do
       def dynamic_helper(helper_name, args) do
@@ -177,8 +209,6 @@ defmodule Beacon.Loader.PageModuleLoader do
     path
     |> String.split("/")
     |> Enum.map(&path_segment_to_arg(&1, prefix))
-
-    # |> String.replace(",|", " |")
   end
 
   defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment

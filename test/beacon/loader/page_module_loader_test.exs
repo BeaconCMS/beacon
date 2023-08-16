@@ -12,11 +12,11 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       page_2 = page_fixture(site: "my_site", path: "2", helpers: [page_helper_params(name: "page_2_upcase")])
       [page_1, page_2] = Repo.preload([page_1, page_2], :event_handlers)
 
-      {:ok, ast} = PageModuleLoader.load_page!(page_1)
+      {:ok, _module, ast} = PageModuleLoader.load_page!(page_1)
       assert has_function?(ast, :page_1_upcase)
       assert has_function?(ast, :dynamic_helper)
 
-      {:ok, ast} = PageModuleLoader.load_page!(page_2)
+      {:ok, _module, ast} = PageModuleLoader.load_page!(page_2)
       assert has_function?(ast, :page_2_upcase)
       assert has_function?(ast, :dynamic_helper)
     end
@@ -71,7 +71,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
       Beacon.Loader.load_page(page)
 
-      {:ok, ast} = PageModuleLoader.load_page!(page)
+      {:ok, _module, ast} = PageModuleLoader.load_page!(page)
 
       assert has_fields?(ast, [{"content", "MY TEST PAGE"}, {"property", "og:description"}])
       assert has_fields?(ast, [{"content", "http://example.com/page/meta-tag"}, {"property", "og:url"}])
@@ -116,7 +116,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
       Beacon.Loader.load_page(page)
 
-      {:ok, ast} = PageModuleLoader.load_page!(page)
+      {:ok, _module, ast} = PageModuleLoader.load_page!(page)
 
       assert has_fields?(ast,
                "@context": "https://schema.org",
@@ -135,5 +135,36 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       end)
 
     present
+  end
+
+  describe "render" do
+    test "render primary template" do
+      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
+      assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = module.render(%{})
+    end
+
+    test "render all templates" do
+      page = page_fixture(site: "my_site", path: "1")
+      Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
+      Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
+      page = Repo.preload(page, [:event_handlers, :variants])
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
+
+      assert [
+               {"primary", nil,
+                %Phoenix.LiveView.Rendered{
+                  static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]
+                }},
+               {"variant_a", 1,
+                %Phoenix.LiveView.Rendered{
+                  static: ["<div>variant_a</div>"]
+                }},
+               {"variant_b", 2,
+                %Phoenix.LiveView.Rendered{
+                  static: ["<div>variant_b</div>"]
+                }}
+             ] = module.templates(%{})
+    end
   end
 end
