@@ -62,20 +62,20 @@ defmodule Beacon.Config do
   @typedoc """
   Register backends and validations for media types. Catchalls are allowed.
   """
-  @type assets :: [{media_type :: String.t(), media_type_config()}]
+  @type media_type_configs :: [{media_type :: String.t(), media_type_config()}]
 
   @typedoc """
   Individual media type configs
   """
   @type media_type_config :: [
-          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})},
+          {:processor, processor_fun :: (Beacon.MediaLibrary.UploadMetadata.t() -> Beacon.MediaLibrary.UploadMetadata.t())},
           {:validations,
            list(
              validation_fun ::
                (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
                | {validation_fun :: (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()), validation_config :: term()}
            )},
-          {:processor, {prossesor_fun :: (Beacon.MediaLibrary.UploadMetadata.t() -> Beacon.MediaLibrary.UploadMetadata.t()), any()}}
+          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})}
         ]
 
   @typedoc """
@@ -121,6 +121,16 @@ defmodule Beacon.Config do
   @type extra_page_fields :: [module()]
 
   @typedoc """
+  Add extra fields to pages.
+  """
+  @type extra_asset_fields :: [extra_asset_field()]
+
+  @typedoc """
+  Add extra fields to pages.
+  """
+  @type extra_asset_field :: {media_type :: String.t(), [module()]}
+
+  @typedoc """
   Default meta tags added to new pages.
   """
   @type default_meta_tags :: [%{binary() => binary()}]
@@ -135,10 +145,11 @@ defmodule Beacon.Config do
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
-          assets: assets(),
+          assets: media_type_configs(),
           allowed_media_accept_types: allowed_media_accept_types(),
           lifecycle: lifecycle(),
           extra_page_fields: extra_page_fields(),
+          extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags()
         }
 
@@ -192,6 +203,7 @@ defmodule Beacon.Config do
               after_publish_page: []
             ],
             extra_page_fields: [],
+            extra_asset_fields: [],
             default_meta_tags: []
 
   @type option ::
@@ -204,10 +216,11 @@ defmodule Beacon.Config do
           | {:live_socket_path, live_socket_path()}
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
-          | {:assets, assets()}
+          | {:assets, media_type_configs()}
           | {:allowed_media_accept_types, allowed_media_accept_types()}
           | {:lifecycle, lifecycle()}
           | {:extra_page_fields, extra_page_fields()}
+          | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
 
   @doc """
@@ -250,6 +263,8 @@ defmodule Beacon.Config do
     Note that the default config is merged with your config.
 
     * `:extra_page_fields` - `t:extra_page_fields/0` (optional)
+
+    * `:extra_asset_fields` - `t:extra_asset_fields/0` (optional)
 
     * `:default_meta_tags` - `t:default_meta_tags/0` (optional)
 
@@ -338,6 +353,7 @@ defmodule Beacon.Config do
           upload_asset: [],
         ],
         extra_page_fields: [],
+        extra_asset_fields: [],
         default_meta_tags: []
       }
 
@@ -374,6 +390,7 @@ defmodule Beacon.Config do
     assets = process_assets_config(allowed_media_accept_types, assigned_assets)
 
     default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
+    extra_asset_fields = Keyword.get(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
     opts =
       opts
@@ -382,6 +399,7 @@ defmodule Beacon.Config do
       |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)
       |> Keyword.put(:assets, assets)
       |> Keyword.put(:default_meta_tags, default_meta_tags)
+      |> Keyword.put(:extra_asset_fields, extra_asset_fields)
 
     struct!(__MODULE__, opts)
   end
@@ -394,8 +412,17 @@ defmodule Beacon.Config do
     Registry.config!(site)
   end
 
-  @spec config_for_media_type(Beacon.Config.t(), String.t()) :: media_type_config()
-  def config_for_media_type(beacon_config, media_type) do
+  @doc """
+  Returns a `t:media_type_config/0` which contains the configuration for backends, processors and validations.
+
+  ## Example
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> jpeg_config = config_for_media_type(beacon_config, "image/jpeg")
+
+  """
+  @spec config_for_media_type(t(), String.t()) :: media_type_config()
+  def config_for_media_type(%Beacon.Config{} = beacon_config, media_type) do
     case get_media_type_config(beacon_config.assets, media_type) do
       nil ->
         raise Beacon.LoaderError, """
@@ -406,13 +433,37 @@ defmodule Beacon.Config do
 
       {_, config} ->
         config
+
+      config ->
+        raise Beacon.LoaderError, """
+        expected to find a `t:media_type/0` configuration for `#{media_type}` in `Beacon.Config.assets` to be of type `t:media_type_config/0`
+
+          Got:
+
+          #{inspect(config)}
+        """
     end
   end
 
-  defp get_media_type_config(media_type_configs, media_type) do
+  def config_for_media_type(non_config, _) do
+    raise Beacon.LoaderError, """
+    expected config to be of type `t:Beacon.Config.t/0`
+
+      Got:
+
+      #{inspect(non_config)}
+    """
+  end
+
+  # Dialyzer doesn't like how we "overload" this function by accepting two different types
+  @dialyzer {:no_contracts, get_media_type_config: 2}
+
+  @spec get_media_type_config(media_type_configs(), String.t()) :: media_type_config() | nil
+  @spec get_media_type_config(extra_asset_fields(), String.t()) :: extra_asset_field() | nil
+  def get_media_type_config(configs, media_type) do
     generic_type = build_generic_media_type(media_type)
 
-    Enum.find(media_type_configs, fn {type, _} ->
+    Enum.find(configs, fn {type, _} ->
       type == media_type || type == generic_type
     end)
   end

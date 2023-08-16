@@ -1,6 +1,11 @@
 defmodule Beacon do
   @moduledoc """
-  BeaconCMS
+  Beacon is Content Management System built on top of Phoenix LiveView that is focused on:
+
+  * Fast rendering to boost SEO scores.
+  * Reloading resources at runtime to avoid deployments.
+  * Seamless integration with existing applications.
+
   """
 
   use Supervisor
@@ -37,7 +42,7 @@ defmodule Beacon do
         children = [
           MyApp.Repo,
           {Phoenix.PubSub, name: MyApp.PubSub},
-          {Beacon, Application.fetch_env!(:my_app, Beacon)}, # <- add before Endpoint
+          {Beacon, Application.fetch_env!(:my_app, Beacon)},
           MyAppWeb.Endpoint
         ]
 
@@ -88,13 +93,6 @@ defmodule Beacon do
   def tailwind_version, do: @tailwind_version
 
   @doc """
-  Reload all resources for all running sites.
-  """
-  def reload_all_sites do
-    Enum.map(Beacon.Registry.running_sites(), &reload_site/1)
-  end
-
-  @doc """
   Reload all resources of `site`.
   """
   @spec reload_site(Beacon.Types.Site.t()) :: :ok
@@ -105,13 +103,5 @@ defmodule Beacon do
     if Beacon.Config.fetch!(site).safe_code_check do
       SafeCode.Validator.validate!(code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
     end
-  end
-
-  def default_site_meta_tags do
-    [
-      %{"charset" => "utf-8"},
-      %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
-      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
-    ]
   end
 end

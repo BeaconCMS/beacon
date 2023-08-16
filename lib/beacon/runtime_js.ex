@@ -42,10 +42,16 @@ defmodule Beacon.RuntimeJS do
 
   def load do
     js = build()
-    compressed = :zlib.gzip(js)
-    hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
-    true = :ets.insert(:beacon_assets, {:js, {hash, js, compressed}})
-    :ok
+
+    case :brotli.encode(js) do
+      {:ok, compressed} ->
+        hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
+        true = :ets.insert(:beacon_assets, {:js, {hash, js, compressed}})
+        :ok
+
+      error ->
+        raise Beacon.LoaderError, "failed to compress js: #{inspect(error)}"
+    end
   end
 
   def current_hash do

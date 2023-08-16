@@ -4,8 +4,9 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
   """
 
   alias Beacon.MediaLibrary.Asset
+  alias Beacon.MediaTypes
 
-  defstruct [:site, :config, :allowed_media_accept_types, :path, :name, :media_type, :size, :output, :resource]
+  defstruct [:site, :config, :allowed_media_accept_types, :path, :name, :media_type, :size, :output, :resource, :extra]
 
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
@@ -16,7 +17,8 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
           media_type: String.t() | nil,
           size: integer() | nil,
           output: any(),
-          resource: Ecto.Changeset.t(%Asset{})
+          resource: Ecto.Changeset.t(%Asset{}),
+          extra: map() | nil
         }
 
   # TODO: https://github.com/BeaconCMS/beacon/pull/239#discussion_r1194160478
@@ -29,10 +31,16 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
 
     config = Beacon.Config.fetch!(site)
     name = Keyword.get(opts, :name, Path.basename(path))
-    media_type = Keyword.get(opts, :media_type, media_type_from_name(name))
+
+    media_type =
+      opts
+      |> Keyword.get(:media_type, media_type_from_name(name))
+      |> MediaTypes.normalize()
+
     size = Keyword.get(opts, :size)
     output = Keyword.get(opts, :output)
     resource = Keyword.get(opts, :resource, Asset.bare_changeset())
+    extra = Keyword.get(opts, :extra)
 
     %__MODULE__{
       site: site,
@@ -43,7 +51,8 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
       media_type: media_type,
       size: size,
       output: output,
-      resource: resource
+      resource: resource,
+      extra: extra
     }
   end
 

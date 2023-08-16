@@ -1,4 +1,6 @@
 defmodule BeaconWeb.API.ErrorJSON do
+  @moduledoc false
+
   # If you want to customize a particular status code,
   # you may add your own clauses, such as:
   #

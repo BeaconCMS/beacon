@@ -6,6 +6,13 @@ defmodule BeaconWeb.Components do
   use Phoenix.Component
   import Beacon.Router, only: [beacon_asset_path: 2]
 
+  @doc false
+  def render(fun, assigns, env) do
+    fun
+    |> Phoenix.LiveView.TagEngine.component(assigns, env)
+    |> Phoenix.HTML.Safe.to_iodata()
+  end
+
   @doc """
   Renders a image previously uploaded in Admin Media Library.
 
@@ -30,7 +37,7 @@ defmodule BeaconWeb.Components do
 
   ## Examples
 
-      <BeaconWeb.Components.image name="logo.jpg" width="200px" sources={["480w", "800w"]} sizes="(max-width: 600px) 480px, 800px"/>
+      <BeaconWeb.Components.image_set name="logo.jpg" width="200px" sources={["480w", "800w"]} sizes="(max-width: 600px) 480px, 800px"/>
   """
 
   attr :class, :string, default: nil

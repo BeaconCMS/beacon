@@ -40,7 +40,7 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 11. Run `mix phx.server`
 
-Visit http://localhost:4000/my_site/home to see the page created from seeds or http://localhost:4000/admin to manage your new created site.
+Visit http://localhost:4000/my_site/home to see the page created from seeds.
 
 ## Steps
 
@@ -177,7 +177,7 @@ For more details please check out the docs: `mix help beacon.install`
     end
     ```
 
-4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call both `beacon_site` and `beacon_admin` in your app router:
+4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
 
     ```elixir
     use Beacon.Router
@@ -185,11 +185,10 @@ For more details please check out the docs: `mix help beacon.install`
     scope "/" do
       pipe_through :browser
       beacon_site "/my_site", site: :my_site
-      beacon_admin "/admin"
     end
     ```
 
-Make sure you're not adding the macros `beacon_site` and `beacon_admin` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
+Make sure you're not adding the macro `beacon_site` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
 
 5. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
 
@@ -238,8 +237,7 @@ For more info on site options, check out `Beacon.start_link/1`.
       Content.create_layout!(%{
         site: "<%= site %>",
         title: "Sample Home Page",
-        stylesheet_urls: [],
-        body: """
+        template: """
         <header>
           Header
         </header>
@@ -328,7 +326,7 @@ Feel free to edit `priv/repo/beacon_seeds.exs` as you wish and run:
 mix setup
 ```
 
-### Visit your new site and admin
+### Visit your new site
 
 Run the Phoenix server:
 
@@ -349,5 +347,3 @@ Open http://localhost:4000/my_site/blog/my_first_post and note:
 - The path params blog slug
 - The live data blog_slug_uppercase
 - The zoom in cursor from the stylesheet
-
-Open http://localhost:4000/admin to manage your new created site.

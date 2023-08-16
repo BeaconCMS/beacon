@@ -31,10 +31,6 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(controllers|live|components)/.*(ex|heex)$"
     ]
-  ],
-  watchers: [
-    tailwind: {Tailwind, :install_and_run, [:admin, ~w(--watch)]},
-    esbuild: {Esbuild, :install_and_run, [:cdn_admin, ~w(--sourcemap=inline --watch)]}
   ]
 )
 
@@ -58,11 +54,11 @@ defmodule SamplePhoenixWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug BeaconWeb.API.Plug
   end
 
   scope "/" do
     pipe_through :browser
-    beacon_admin "/admin"
     beacon_site "/dev", site: :dev
     beacon_site "/other", site: :other
   end
@@ -83,7 +79,14 @@ defmodule SamplePhoenix.Endpoint do
 
   plug Phoenix.LiveReloader
   plug Phoenix.CodeReloader
-  plug Plug.RequestId
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
   plug Plug.Session, @session_options
   plug SamplePhoenixWeb.Router
 end
@@ -108,6 +111,38 @@ defmodule BeaconDataSource do
   def meta_tags(:dev, %{meta_tags: meta_tags}), do: meta_tags
 end
 
+defmodule BeaconTagsField do
+  use Phoenix.Component
+  import BeaconWeb.CoreComponents
+  import Ecto.Changeset
+
+  @behaviour Beacon.Content.PageField
+
+  @impl true
+  def name, do: :tags
+
+  @impl true
+  def type, do: :string
+
+  @impl true
+  def default, do: "beacon,dev"
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <.input type="text" label="Tags" field={@field} />
+    """
+  end
+
+  @impl true
+  def changeset(data, attrs, _metadata) do
+    data
+    |> cast(attrs, [:tags])
+    |> validate_required([:tags])
+    |> validate_format(:tags, ~r/,/, message: "invalid format, expected ,")
+  end
+end
+
 seeds = fn ->
   Beacon.Content.create_stylesheet!(%{
     site: "dev",
@@ -120,7 +155,8 @@ seeds = fn ->
     name: "sample_component",
     body: """
     <%= @val %>
-    """
+    """,
+    category: "other"
   })
 
   layout =
@@ -131,8 +167,11 @@ seeds = fn ->
         %{"name" => "layout-meta-tag-one", "content" => "value"},
         %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
-      stylesheet_urls: [],
-      body: """
+      resource_links: [
+        %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
+        %{"rel" => "stylesheet", "href" => "alternative.css"}
+      ],
+      template: """
       <%= @inner_content %>
       """
     })
@@ -153,7 +192,8 @@ seeds = fn ->
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
       name: "dockyard_1.png",
-      size: 196_000
+      size: 196_000,
+      extra: %{"alt" => "logo"}
     )
 
   img1 = Beacon.MediaLibrary.upload(metadata)
@@ -163,7 +203,8 @@ seeds = fn ->
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
       name: "dockyard_2.png",
-      size: 196_000
+      size: 196_000,
+      extra: %{"alt" => "alternate logo"}
     )
 
   img2 = Beacon.MediaLibrary.upload(metadata)
@@ -206,7 +247,9 @@ seeds = fn ->
           </ul>
         </div>
 
-        <%= my_component("sample_component", val: 1) %>
+        <div>
+          Sample component: <%= my_component("sample_component", val: 1) %>
+        </div>
 
         <div>
           <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
@@ -314,8 +357,7 @@ seeds = fn ->
     Beacon.Content.create_layout!(%{
       site: "other",
       title: "other",
-      stylesheet_urls: [],
-      body: """
+      template: """
       <%= @inner_content %>
       """
     })
@@ -339,7 +381,7 @@ dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
   data_source: BeaconDataSource,
-  extra_page_fields: [Beacon.Dev.TagsField],
+  extra_page_fields: [BeaconTagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]]
 ]
 
@@ -372,12 +414,14 @@ Task.start(fn ->
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
-  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
-  Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
+  # TODO: revert this change and remove ecto.reset from mix dev alias
+  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
+  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
   seeds.()
 
-  Beacon.reload_all_sites()
+  :ok = Beacon.reload_site(:dev)
+  :ok = Beacon.reload_site(:other)
 
   Process.sleep(:infinity)
 end)

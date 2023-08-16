@@ -1,13 +1,17 @@
 defmodule Beacon.ContentTest do
   use Beacon.DataCase
+
   import Beacon.Fixtures
+
   alias Beacon.Content
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
+  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageSnapshot
+  alias Beacon.Content.PageVariant
   alias Beacon.Repo
 
   describe "layouts" do
@@ -15,7 +19,7 @@ defmodule Beacon.ContentTest do
       Content.create_layout!(%{
         site: "my_site",
         title: "test",
-        body: "<p>layout</p>"
+        template: "<p>layout</p>"
       })
 
       assert %LayoutEvent{event: :created} = Repo.one(LayoutEvent)
@@ -65,35 +69,41 @@ defmodule Beacon.ContentTest do
       Content.publish_layout(layout)
       assert %LayoutEvent{event: :published} = Content.get_latest_layout_event(layout.site, layout.id)
     end
+
+    test "validate body heex on create" do
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_layout(%{site: :test, title: "test", template: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "validate body heex on update" do
+      layout = layout_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_layout(layout, %{template: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
   end
 
   describe "pages" do
-    test "validate invalid template" do
+    test "validate template heex on create" do
       layout = layout_fixture()
 
-      assert %Ecto.Changeset{errors: [template: {error, []}], valid?: false} =
-               Content.validate_page(%Page{}, %{
-                 "site" => "my_site",
-                 "path" => "/",
-                 "template" => "<div>invalid</span>",
-                 "layout_id" => layout.id
-               })
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_page(%{site: :test, path: "/", layout_id: layout.id, template: "<div"})
 
-      assert error =~ "unmatched closing tag"
+      assert compilation_error =~ "expected closing `>`"
     end
 
-    test "create page should validate invalid templates" do
-      layout = layout_fixture()
+    test "validate template heex on update" do
+      page = page_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
-               Content.create_page(%{
-                 "site" => "my_site",
-                 "path" => "/",
-                 "template" => "<div>invalid</span>",
-                 "layout_id" => layout.id
-               })
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_page(page, %{template: "<div"})
 
-      assert error =~ "unmatched closing tag"
+      assert compilation_error =~ "expected closing `>`"
     end
 
     # TODO: require paths starting with / which will make this test fail
@@ -125,21 +135,10 @@ defmodule Beacon.ContentTest do
     test "update page should validate invalid templates" do
       page = page_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} =
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false}} =
                Content.update_page(page, %{"template" => "<div>invalid</span>"})
 
-      assert error =~ "unmatched closing tag"
-    end
-
-    test "publish page should validate invalid templates" do
-      page = page_fixture()
-
-      # simulate an invalid template
-      Repo.update_all(Page, set: [template: "<div>invalid</span>"])
-      page = Repo.reload!(page)
-
-      assert {:error, %Ecto.Changeset{errors: [template: {error, []}], valid?: false}} = Content.publish_page(page)
-      assert error =~ "unmatched closing tag"
+      assert compilation_error =~ "unmatched closing tag"
     end
 
     test "publish page should create a published event" do
@@ -292,6 +291,174 @@ defmodule Beacon.ContentTest do
                "author name is {% helper 'author_name' %}",
                %{page: %Page{site: "my_site", extra: %{"author_id" => 1}}}
              ) == {:ok, "author name is test_1"}
+    end
+  end
+
+  describe "variants" do
+    test "create variant OK" do
+      page = page_fixture(%{format: :heex})
+      attrs = %{name: "Foo", weight: 3, template: "<div>Bar</div>"}
+
+      assert {:ok, %Page{variants: [variant]}} = Content.create_variant_for_page(page, attrs)
+      assert %PageVariant{name: "Foo", weight: 3, template: "<div>Bar</div>"} = variant
+    end
+
+    test "create triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      attrs = %{name: "Foo", weight: 3, template: "<div>Bar</div>"}
+
+      {:ok, %Page{}} = Content.create_variant_for_page(page, attrs)
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "update variant OK" do
+      page = page_fixture(%{format: :heex})
+      variant = page_variant_fixture(%{page: page})
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>changed</div>"}
+
+      assert {:ok, %Page{variants: [updated_variant]}} = Content.update_variant_for_page(page, variant, attrs)
+      assert %PageVariant{name: "Changed Name", weight: 99, template: "<div>changed</div>"} = updated_variant
+    end
+
+    test "update triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      variant = page_variant_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.update_variant_for_page(page, variant, %{name: "Changed"})
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "update variant should validate invalid templates" do
+      page = page_fixture(%{format: :heex})
+      variant = page_variant_fixture(%{page: page})
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.update_variant_for_page(page, variant, attrs)
+
+      assert error =~ "unmatched closing tag"
+    end
+
+    test "update variant should validate total weight of all variants" do
+      page = page_fixture(%{format: :heex})
+      _variant_1 = page_variant_fixture(%{page: page, weight: 99})
+      variant_2 = page_variant_fixture(%{page: page, weight: 0})
+
+      assert {:error, %Ecto.Changeset{errors: [weight: {"total weights cannot exceed 100", []}], valid?: false}} =
+               Content.update_variant_for_page(page, variant_2, %{weight: 2})
+
+      assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_2, %{weight: 1})
+    end
+
+    test "update variant should not validate total weight if unchanged" do
+      page = page_fixture(%{format: :heex})
+      variant_1 = page_variant_fixture(%{page: page, weight: 99})
+      _variant_2 = page_variant_fixture(%{page: page, weight: 98})
+
+      assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_1, %{name: "Foo"})
+    end
+
+    test "delete variant OK" do
+      page = page_fixture(%{format: :heex})
+      variant_1 = page_variant_fixture(%{page: page})
+      variant_2 = page_variant_fixture(%{page: page})
+
+      assert {:ok, %Page{variants: [^variant_2]}} = Content.delete_variant_from_page(page, variant_1)
+      assert {:ok, %Page{variants: []}} = Content.delete_variant_from_page(page, variant_2)
+    end
+
+    test "delete triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      variant = page_variant_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.delete_variant_from_page(page, variant)
+
+      assert_receive :lifecycle_after_update_page
+    end
+  end
+
+  describe "event_handlers" do
+    test "create event handler OK" do
+      page = page_fixture()
+      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+
+      assert {:ok, %Page{event_handlers: [event_handler]}} = Content.create_event_handler_for_page(page, attrs)
+      assert %PageEventHandler{name: "Foo", code: "{:noreply, socket}"} = event_handler
+    end
+
+    test "create triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+
+      {:ok, %Page{}} = Content.create_event_handler_for_page(page, attrs)
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "update event handler OK" do
+      page = page_fixture(%{format: :heex})
+      event_handler = page_event_handler_fixture(%{page: page})
+      attrs = %{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"}
+
+      assert {:ok, %Page{event_handlers: [updated_event_handler]}} = Content.update_event_handler_for_page(page, event_handler, attrs)
+      assert %PageEventHandler{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"} = updated_event_handler
+    end
+
+    test "update triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      event_handler = page_event_handler_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.update_event_handler_for_page(page, event_handler, %{name: "Changed"})
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "delete event handler OK" do
+      page = page_fixture(%{format: :heex})
+      event_handler_1 = page_event_handler_fixture(%{page: page})
+      event_handler_2 = page_event_handler_fixture(%{page: page})
+
+      assert {:ok, %Page{event_handlers: [^event_handler_2]}} = Content.delete_event_handler_from_page(page, event_handler_1)
+      assert {:ok, %Page{event_handlers: []}} = Content.delete_event_handler_from_page(page, event_handler_2)
+    end
+
+    test "delete triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      event_handler = page_event_handler_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.delete_event_handler_from_page(page, event_handler)
+
+      assert_receive :lifecycle_after_update_page
+    end
+  end
+
+  describe "components" do
+    test "validate template heex on create" do
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_component(%{site: :test, name: "test", body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "validate template heex on update" do
+      component = component_fixture()
+
+      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_component(component, %{body: "<div"})
+
+      assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "list components" do
+      component_a = component_fixture(name: "component_a")
+      component_b = component_fixture(name: "component_b")
+
+      components = Content.list_components(component_b.site, query: "_b")
+
+      assert Enum.member?(components, component_b)
+      refute Enum.member?(components, component_a)
     end
   end
 end

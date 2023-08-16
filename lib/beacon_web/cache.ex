@@ -2,6 +2,8 @@
 # Originally licensed under Apache 2.0 available at https://www.apache.org/licenses/LICENSE-2.0
 
 defmodule BeaconWeb.Cache do
+  @moduledoc false
+
   import Plug.Conn
 
   @max_cache_age 60

@@ -1,21 +1,5 @@
 defmodule BeaconWeb do
-  @moduledoc """
-  The entrypoint for defining your web interface, such
-  as controllers, components, channels, and so on.
-
-  This can be used in your application as:
-
-      use BeaconWeb, :controller
-      use BeaconWeb, :html
-
-  The definitions below will be executed for every controller,
-  component, etc, so keep them short and clean, focused
-  on imports, uses and aliases.
-
-  Do NOT define functions inside the quoted expressions
-  below. Instead, define additional modules and import
-  those modules here.
-  """
+  @moduledoc false
 
   def controller do
     quote do
@@ -72,9 +56,6 @@ defmodule BeaconWeb do
 
       # Router helpers
       alias BeaconWeb.Router.Helpers, as: Routes
-
-      # Admin Router helper
-      import Beacon.Router, only: [beacon_admin_path: 2, beacon_admin_path: 3]
     end
   end
 

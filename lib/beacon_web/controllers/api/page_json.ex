@@ -1,4 +1,6 @@
 defmodule BeaconWeb.API.PageJSON do
+  @moduledoc false
+
   alias Beacon.Content.Page
 
   @doc """
@@ -16,13 +18,17 @@ defmodule BeaconWeb.API.PageJSON do
   end
 
   defp data(%Page{} = page) do
+    {:ok, ast} = Beacon.Template.HEEx.Tokenizer.tokenize(page.template)
+    json_ast = Beacon.Template.HEEx.JsonTransformer.transform(ast)
+
     %{
       id: page.id,
       layout_id: page.layout_id,
       path: page.path,
       site: page.site,
       template: page.template,
-      format: page.format
+      format: page.format,
+      ast: json_ast
     }
   end
 end

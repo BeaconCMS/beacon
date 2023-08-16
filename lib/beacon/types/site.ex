@@ -1,4 +1,8 @@
 defmodule Beacon.Types.Site do
+  @moduledoc """
+  Sites are identified as atoms and stored as string in the database.
+  """
+
   use Ecto.Type
 
   @typedoc """

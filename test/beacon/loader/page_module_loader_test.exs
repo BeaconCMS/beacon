@@ -2,12 +2,15 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   use Beacon.DataCase, async: false
 
   import Beacon.Fixtures
+
   alias Beacon.Loader.PageModuleLoader
+  alias Beacon.Repo
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
       page_1 = page_fixture(site: "my_site", path: "1", helpers: [page_helper_params(name: "page_1_upcase")])
       page_2 = page_fixture(site: "my_site", path: "2", helpers: [page_helper_params(name: "page_2_upcase")])
+      [page_1, page_2] = Repo.preload([page_1, page_2], :event_handlers)
 
       {:ok, ast} = PageModuleLoader.load_page!(page_1)
       assert has_function?(ast, :page_1_upcase)
@@ -52,7 +55,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       layout = published_layout_fixture()
 
       page =
-        published_page_fixture(
+        [
           site: "my_site",
           layout_id: layout.id,
           path: "page/meta-tag",
@@ -62,7 +65,9 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
             %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
             %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"}
           ]
-        )
+        ]
+        |> published_page_fixture()
+        |> Repo.preload(:event_handlers)
 
       Beacon.Loader.load_page(page)
 
@@ -85,7 +90,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       layout = published_layout_fixture()
 
       page =
-        published_page_fixture(
+        [
           site: "my_site",
           layout_id: layout.id,
           path: "page/raw-schema",
@@ -105,7 +110,9 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
               }
             }
           ]
-        )
+        ]
+        |> published_page_fixture()
+        |> Repo.preload(:event_handlers)
 
       Beacon.Loader.load_page(page)
 

@@ -1,10 +1,11 @@
 defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
-  require Logger
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
+
+  require Logger
 
   def load_page!(%Content.Page{} = page) do
     component_module = Loader.component_module_for_site(page.site)
@@ -37,9 +38,20 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp store_page(page, page_module, component_module) do
-    %{id: page_id, layout_id: layout_id, site: site, path: path} = page
-    template = Lifecycle.Template.load_template(page)
-    Beacon.Router.add_page(site, path, {page_id, layout_id, page.format, template, page_module, component_module})
+    %{id: page_id, layout_id: layout_id, format: format, site: site, path: path} = page
+
+    # [primary_template, {weight_variant_1, template_variant_1}, {...}, ...]
+    templates = [Lifecycle.Template.load_template(page) | load_variants(page)]
+
+    Beacon.Router.add_page(site, path, {page_id, layout_id, format, templates, page_module, component_module})
+  end
+
+  defp load_variants(page) do
+    %{variants: variants} = Beacon.Repo.preload(page, :variants)
+
+    for variant <- variants do
+      {variant.weight, Lifecycle.Template.load_template(%{page | template: variant.template})}
+    end
   end
 
   defp page_assigns(page) do
@@ -123,13 +135,15 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   # TODO: path_to_args in paths with dynamic segments may be broken
-  defp handle_event(%{site: site, path: path, events: events}) do
-    Enum.map(events, fn event ->
-      Beacon.safe_code_check!(site, event.code)
+  defp handle_event(page) do
+    %{site: site, path: path, event_handlers: event_handlers} = page
+
+    Enum.map(event_handlers, fn event_handler ->
+      Beacon.safe_code_check!(site, event_handler.code)
 
       quote do
-        def handle_event(unquote(path_to_args(path, "")), unquote(event.name), var!(event_params), var!(socket)) do
-          unquote(Code.string_to_quoted!(event.code))
+        def handle_event(unquote(path_to_args(path, "")), unquote(event_handler.name), var!(event_params), var!(socket)) do
+          unquote(Code.string_to_quoted!(event_handler.code))
         end
       end
     end)

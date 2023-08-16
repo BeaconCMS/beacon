@@ -1,16 +1,13 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Content
+  alias Beacon.Content.PageEventHandler
+  alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
+  alias Beacon.Repo
 
-  def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
-  def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
-
-  def conn_admin(conn) do
-    conn
-    |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:session_id, "admin_session_123")
-  end
+  defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
+  defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
 
   def stylesheet_fixture(attrs \\ %{}) do
     attrs
@@ -29,7 +26,8 @@ defmodule Beacon.Fixtures do
       name: "sample_component",
       body: ~S"""
       <span id={"my-component-#{@val}"}><%= @val %></span>
-      """
+      """,
+      category: "other"
     })
     |> Content.create_component!()
   end
@@ -40,8 +38,8 @@ defmodule Beacon.Fixtures do
       site: "my_site",
       title: "Sample Home Page",
       meta_tags: [],
-      stylesheet_urls: [],
-      body: """
+      resource_links: [],
+      template: """
       <header>Page header</header>
       <%= @inner_content %>
       <footer>Page footer</footer>
@@ -87,15 +85,6 @@ defmodule Beacon.Fixtures do
     page
   end
 
-  def page_event_params(attrs \\ %{}) do
-    Enum.into(attrs, %{
-      name: "hello",
-      code: """
-        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
-  end
-
   def page_helper_params(attrs \\ %{}) do
     Enum.into(attrs, %{
       name: "upcase",
@@ -131,13 +120,14 @@ defmodule Beacon.Fixtures do
       attrs
       |> Enum.into(%{
         site: :my_site,
-        file_size: 100_000
+        file_size: 100_000,
+        extra: %{"alt" => "some alt text"}
       })
       |> Map.put_new(:file_name, "image.jpg")
 
     attrs = Map.put_new(attrs, :file_path, path_for(attrs.file_name))
 
-    UploadMetadata.new(attrs.site, attrs.file_path, name: attrs.file_name, size: attrs.file_size)
+    UploadMetadata.new(attrs.site, attrs.file_path, name: attrs.file_name, size: attrs.file_size, extra: attrs.extra)
   end
 
   defp path_for(file_name) do
@@ -145,5 +135,54 @@ defmodule Beacon.Fixtures do
     file_name = "image#{ext}"
 
     Path.join(["test", "support", "fixtures", file_name])
+  end
+
+  def page_variant_fixture(attrs \\ %{})
+
+  def page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: page_variant_fixture(page, attrs)
+
+  def page_variant_fixture(%{page_id: page_id} = attrs) do
+    page_id
+    |> Content.get_page!()
+    |> page_variant_fixture(attrs)
+  end
+
+  defp page_variant_fixture(page, attrs) do
+    full_attrs = %{
+      name: attrs[:name] || "Variant #{System.unique_integer([:positive])}",
+      weight: attrs[:weight] || Enum.random(1..10),
+      template: attrs[:template] || template_for(page)
+    }
+
+    page
+    |> Ecto.build_assoc(:variants)
+    |> PageVariant.changeset(full_attrs)
+    |> Repo.insert!()
+  end
+
+  defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
+  defp template_for(%{format: :markdown} = _page), do: "# My site"
+
+  def page_event_handler_fixture(attrs \\ %{})
+
+  def page_event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
+    do: page_event_handler_fixture(page, attrs)
+
+  def page_event_handler_fixture(%{page_id: page_id} = attrs) do
+    page_id
+    |> Content.get_page!()
+    |> page_event_handler_fixture(attrs)
+  end
+
+  defp page_event_handler_fixture(page, attrs) do
+    full_attrs = %{
+      name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
+      code: attrs[:code] || "{:noreply, socket}"
+    }
+
+    page
+    |> Ecto.build_assoc(:event_handlers)
+    |> PageEventHandler.changeset(full_attrs)
+    |> Repo.insert!()
   end
 end

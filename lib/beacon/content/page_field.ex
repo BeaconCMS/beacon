@@ -13,7 +13,7 @@ defmodule Beacon.Content.PageField do
   Each page field will be:
 
     * stored in the `page.extra` map field
-    * displayed in Beacon Admin
+    * displayed in Beacon LiveAdmin
     * validated when the pages is saved or published
 
   ## Example
@@ -39,7 +39,7 @@ defmodule Beacon.Content.PageField do
         end
 
         @impl true
-        def changeset(data, attrs) do
+        def changeset(data, attrs, _metadata) do
           data
           |> cast(attrs, [:tags])
           |> validate_required([:tags])
@@ -66,7 +66,7 @@ defmodule Beacon.Content.PageField do
   @callback default :: any()
 
   @doc """
-  Template to render the field on Admin.
+  Template to render the field on LiveAdmin.
   """
   @callback render(assigns :: Phoenix.LiveView.Socket.assigns()) :: Phoenix.LiveView.Rendered.t()
 
@@ -165,5 +165,16 @@ defmodule Beacon.Content.PageField do
           Ecto.Changeset.add_error(page_changeset, :extra, "invalid", field_changeset.errors)
       end
     end)
+  end
+
+  def render_field(mod, field, env) do
+    rendered =
+      Phoenix.LiveView.TagEngine.component(
+        &mod.render/1,
+        [field: field],
+        {env.module, env.function, env.file, env.line}
+      )
+
+    Phoenix.HTML.Safe.to_iodata(rendered)
   end
 end
