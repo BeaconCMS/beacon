@@ -26,6 +26,7 @@ defmodule Beacon.Content do
   import Ecto.Query
 
   alias Beacon.Content.Component
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -1653,6 +1654,54 @@ defmodule Beacon.Content do
       # TODO: wrap error and return a Beacon exception
       _error -> :error
     end
+  end
+
+  # ERROR PAGES
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking error page changes.
+
+  ## Example
+
+      iex> change_error_page(error_page, %{status: 404})
+      %Ecto.Changeset{data: %ErrorPage{}}
+
+  """
+  @doc type: :error_pages
+  @spec change_error_page(ErrorPage.t(), map()) :: Changeset.t()
+  def change_error_page(%ErrorPage{} = error_page, attrs \\ %{}) do
+    ErrorPage.changeset(error_page, attrs)
+  end
+
+  @doc """
+  Creates a new error page.
+  """
+  @doc type: :error_pages
+  @spec create_error_page(%{status: integer(), template: binary()}) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def create_error_page(attrs) do
+    %ErrorPage{}
+    |> ErrorPage.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an error page.
+  """
+  @doc type: :error_pages
+  @spec update_error_page(ErrorPage.t(), map()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def update_error_page(error_page, attrs) do
+    error_page
+    |> ErrorPage.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an error page.
+  """
+  @doc type: :error_pages
+  @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def delete_error_page(error_page) do
+    Repo.delete(error_page)
   end
 
   # PAGE EVENT HANDLERS
