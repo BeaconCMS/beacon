@@ -216,8 +216,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
                config :logger, level: :info
 
                # Runtime production configuration, including reading
-               # of environme
-               nt variables, is done on config/runtime.exs.
+               # of environment variables, is done on config/runtime.exs.
                """
 
       # Injects beacon supervisor into application file
@@ -315,7 +314,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
                  scope "/" do
                    pipe_through :browser
-                   beacon_admin "/admin"
                    beacon_site "/my_site", site: :my_site
                  end
                end
