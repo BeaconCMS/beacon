@@ -1,18 +1,13 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Content
+  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.Repo
 
-  def get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
-  def get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
-
-  def conn_admin(conn) do
-    conn
-    |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:session_id, "admin_session_123")
-  end
+  defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
+  defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
 
   def stylesheet_fixture(attrs \\ %{}) do
     attrs
@@ -43,8 +38,8 @@ defmodule Beacon.Fixtures do
       site: "my_site",
       title: "Sample Home Page",
       meta_tags: [],
-      stylesheet_urls: [],
-      body: """
+      resource_links: [],
+      template: """
       <header>Page header</header>
       <%= @inner_content %>
       <footer>Page footer</footer>
@@ -88,15 +83,6 @@ defmodule Beacon.Fixtures do
       |> Content.publish_page()
 
     page
-  end
-
-  def page_event_params(attrs \\ %{}) do
-    Enum.into(attrs, %{
-      name: "hello",
-      code: """
-        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
-      """
-    })
   end
 
   def page_helper_params(attrs \\ %{}) do
@@ -176,4 +162,27 @@ defmodule Beacon.Fixtures do
 
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
+
+  def page_event_handler_fixture(attrs \\ %{})
+
+  def page_event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
+    do: page_event_handler_fixture(page, attrs)
+
+  def page_event_handler_fixture(%{page_id: page_id} = attrs) do
+    page_id
+    |> Content.get_page!()
+    |> page_event_handler_fixture(attrs)
+  end
+
+  defp page_event_handler_fixture(page, attrs) do
+    full_attrs = %{
+      name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
+      code: attrs[:code] || "{:noreply, socket}"
+    }
+
+    page
+    |> Ecto.build_assoc(:event_handlers)
+    |> PageEventHandler.changeset(full_attrs)
+    |> Repo.insert!()
+  end
 end

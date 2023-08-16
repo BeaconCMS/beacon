@@ -11,8 +11,6 @@ defmodule Beacon.MediaLibrary do
   alias Beacon.Repo
   alias Beacon.Types.Site
 
-  # TODO: remove all deprecated functions after releasing beacon live admin
-
   def upload(metadata) do
     with metadata <- Backend.process!(metadata),
          metadata <- send_to_cdns(metadata),
@@ -163,14 +161,6 @@ defmodule Beacon.MediaLibrary do
     |> Repo.one()
   end
 
-  @deprecated "Use get_asset_by/2 instead."
-  def get_asset_by(clauses) when is_list(clauses) do
-    Asset
-    |> where([a], is_nil(a.deleted_at))
-    |> where([_a], ^Enum.to_list(clauses))
-    |> Repo.one()
-  end
-
   @doc """
   Returns the list of all uploaded assetf of `site`.
 
@@ -188,32 +178,6 @@ defmodule Beacon.MediaLibrary do
         where: is_nil(asset.deleted_at),
         where: is_nil(asset.source_id),
         order_by: [desc: asset.inserted_at],
-        preload: [:thumbnail]
-      )
-    )
-  end
-
-  @deprecated "Use list_assets/1 instead."
-  def list_assets do
-    Repo.all(
-      from(asset in Asset,
-        where: is_nil(asset.deleted_at),
-        where: is_nil(asset.source_id),
-        order_by: [desc: asset.inserted_at],
-        preload: [:thumbnail]
-      )
-    )
-  end
-
-  @deprecated "Use search/2 instead."
-  def search(query) do
-    query = query |> String.split() |> Enum.join("%")
-    query = "%#{query}%"
-
-    Repo.all(
-      from(asset in Asset,
-        where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query),
-        where: is_nil(asset.source_id),
         preload: [:thumbnail]
       )
     )

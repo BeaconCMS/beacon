@@ -31,6 +31,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
+  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
@@ -39,6 +40,7 @@ defmodule Beacon.Content do
   alias Beacon.Lifecycle
   alias Beacon.PubSub
   alias Beacon.Repo
+  alias Beacon.Template.HEEx.HeexTransformer
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
@@ -66,7 +68,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec change_layout(Layout.t(), map()) :: Ecto.Changeset.t()
+  @spec change_layout(Layout.t(), map()) :: Changeset.t()
   def change_layout(%Layout{} = layout, attrs \\ %{}) do
     Layout.changeset(layout, attrs)
   end
@@ -81,12 +83,12 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
   def create_layout(attrs) do
     changeset = Layout.changeset(%Layout{}, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_layout_body(changeset),
+      with {:ok, changeset} <- validate_layout_template(changeset),
            {:ok, layout} <- Repo.insert(changeset),
            {:ok, _event} <- create_layout_event(layout, "created") do
         {:ok, layout}
@@ -116,11 +118,11 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
   def update_layout(%Layout{} = layout, attrs) do
     changeset = Layout.changeset(layout, attrs)
 
-    with {:ok, ^changeset} <- validate_layout_body(changeset) do
+    with {:ok, changeset} <- validate_layout_template(changeset) do
       Repo.update(changeset)
     end
   end
@@ -136,7 +138,7 @@ defmodule Beacon.Content do
     changeset = Layout.changeset(layout, %{})
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_layout_body(changeset),
+      with {:ok, _changeset} <- validate_layout_template(changeset),
            {:ok, event} <- create_layout_event(layout, "published"),
            {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
         :ok = PubSub.layout_published(layout)
@@ -153,11 +155,15 @@ defmodule Beacon.Content do
     |> publish_layout()
   end
 
-  defp validate_layout_body(changeset) do
+  defp validate_layout_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body)
+    template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :body, :heex, body, metadata)
+
+    case do_validate_template(changeset, :template, :heex, template, metadata) do
+      %Changeset{errors: []} = changeset -> {:ok, changeset}
+      %Changeset{} = changeset -> {:error, changeset}
+    end
   end
 
   @doc false
@@ -340,9 +346,38 @@ defmodule Beacon.Content do
 
   defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
     layout
+    |> convert_body_to_template()
+    |> convert_stylesheet_urls_to_resource_links()
+  end
+
+  defp extract_layout_snapshot(%{schema_version: 2, layout: %Layout{} = layout}) do
+    convert_stylesheet_urls_to_resource_links(layout)
+  end
+
+  defp extract_layout_snapshot(%{schema_version: 3, layout: %Layout{} = layout}) do
+    layout
   end
 
   defp extract_layout_snapshot(_snapshot), do: nil
+
+  defp convert_body_to_template(layout) do
+    {body, layout} = Map.pop(layout, :body)
+    Map.put(layout, :template, body)
+  end
+
+  defp convert_stylesheet_urls_to_resource_links(layout) do
+    {stylesheet_urls, layout} = Map.pop(layout, :stylesheet_urls)
+
+    resource_links =
+      Enum.map(stylesheet_urls, fn url ->
+        %{
+          rel: "stylesheet",
+          href: url
+        }
+      end)
+
+    Map.put(layout, :resource_links, resource_links)
+  end
 
   # deprecated: to be removed
   @doc false
@@ -362,7 +397,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec change_page(Page.t(), map()) :: Ecto.Changeset.t()
+  @spec change_page(Page.t(), map()) :: Changeset.t()
   def change_page(%Page{} = page, attrs \\ %{}) do
     Page.create_changeset(page, attrs)
   end
@@ -374,7 +409,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec validate_page(Site.t(), Page.t(), map()) :: Ecto.Changeset.t()
+  @spec validate_page(Site.t(), Page.t(), map()) :: Changeset.t()
   def validate_page(site, %Page{} = page, attrs) when is_map(attrs) do
     {extra_attrs, page_attrs} = Map.pop(attrs, "extra")
 
@@ -412,12 +447,12 @@ defmodule Beacon.Content do
   and no snapshot is created.
   """
   @doc type: :pages
-  @spec create_page(map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_page(map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
     changeset = Page.create_changeset(%Page{}, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_page_template(changeset),
+      with {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
@@ -448,12 +483,21 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_page(%Page{} = page, attrs) do
+    {ast, attrs} = Map.pop(attrs, "ast")
+
+    attrs =
+      if is_nil(ast) do
+        attrs
+      else
+        Map.put(attrs, :template, HeexTransformer.transform(ast))
+      end
+
     changeset = Page.update_changeset(page, attrs)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_page_template(changeset),
+      with {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- Repo.update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
@@ -474,7 +518,7 @@ defmodule Beacon.Content do
     changeset = Page.update_changeset(page, %{})
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_page_template(changeset),
+      with {:ok, _changeset} <- validate_page_template(changeset),
            {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
@@ -530,7 +574,11 @@ defmodule Beacon.Content do
     format = Changeset.get_field(changeset, :format)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-    do_validate_template(changeset, :template, format, template, metadata)
+
+    case do_validate_template(changeset, :template, format, template, metadata) do
+      %Changeset{errors: []} = changeset -> {:ok, changeset}
+      %Changeset{} = changeset -> {:error, changeset}
+    end
   end
 
   @doc """
@@ -563,7 +611,7 @@ defmodule Beacon.Content do
 
   @doc false
   def create_page_snapshot(page, event) do
-    page = Repo.preload(page, :variants)
+    page = Repo.preload(page, [:variants, :event_handlers])
     attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
 
     %PageSnapshot{}
@@ -748,10 +796,18 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
-    Repo.preload(page, :variants, force: true)
+    page
+    |> Repo.reload()
+    |> Repo.preload([:variants, :event_handlers], force: true)
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
+    page
+    |> Repo.reload()
+    |> Repo.preload(:event_handlers, force: true)
+  end
+
+  defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page}) do
     page
   end
 
@@ -761,12 +817,12 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def put_page_extra(%Page{} = page, attrs) when is_map(attrs) do
     attrs = %{"extra" => attrs}
 
     page
-    |> Ecto.Changeset.cast(attrs, [:extra])
+    |> Changeset.cast(attrs, [:extra])
     |> Repo.update()
   end
 
@@ -782,7 +838,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :stylesheets
-  @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
   def create_stylesheet(attrs \\ %{}) do
     %Stylesheet{}
     |> Stylesheet.changeset(attrs)
@@ -807,7 +863,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :stylesheets
-  @spec update_stylesheet(Stylesheet.t(), map()) :: {:ok, Stylesheet.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_stylesheet(Stylesheet.t(), map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
   def update_stylesheet(%Stylesheet{} = stylesheet, attrs) do
     stylesheet
     |> Stylesheet.changeset(attrs)
@@ -859,282 +915,352 @@ defmodule Beacon.Content do
   @doc type: :components
   def blueprint_components do
     nav_1 = """
-      <nav>
-        <div class="flex justify-between px-8 py-5 bg-white">
-          <div class="w-auto mr-14">
-            <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg"></a>
-          </div>
-          <div class="w-auto flex flex-wrap items-center">
-            <ul class="flex items-center mr-10">
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Features</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Solutions</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Resources</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Pricing</a>
-              </li>
-            </ul>
-            <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-              Start Free Trial
-            </button>
-          </div>
+    <nav>
+      <div class="flex justify-between px-8 py-5 bg-white">
+        <div class="w-auto mr-14">
+          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" /></a>
         </div>
-      </nav>
+        <div class="w-auto flex flex-wrap items-center">
+          <ul class="flex items-center mr-10">
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Features</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Solutions</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Resources</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Pricing</a>
+            </li>
+          </ul>
+          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+            Start Free Trial
+          </button>
+        </div>
+      </div>
+    </nav>
     """
 
     nav_2 = """
-      <nav>
-        <div class="flex justify-between px-8 py-5 bg-white">
-          <div class="w-auto mr-14">
-            <a href="#">
-              <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg">
-            </a>
-          </div>
-          <div class="w-auto flex flex-wrap items-center">
-            <ul class="flex items-center mr-10">
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Features</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Solutions</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Resources</a>
-              </li>
-              <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-                <a href="#">Pricing</a>
-              </li>
-            </ul>
-          </div>
-          <div class="w-auto flex flex-wrap items-center">
-            <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-              Start Free Trial
-            </button>
-          </div>
+    <nav>
+      <div class="flex justify-between px-8 py-5 bg-white">
+        <div class="w-auto mr-14">
+          <a href="#">
+            <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" />
+          </a>
         </div>
-      </nav>
+        <div class="w-auto flex flex-wrap items-center">
+          <ul class="flex items-center mr-10">
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Features</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Solutions</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Resources</a>
+            </li>
+            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
+              <a href="#">Pricing</a>
+            </li>
+          </ul>
+        </div>
+        <div class="w-auto flex flex-wrap items-center">
+          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
+            Start Free Trial
+          </button>
+        </div>
+      </div>
+    </nav>
     """
 
     header_1 = """
-      <div class="container mx-auto px-4">
+    <div class="container mx-auto px-4">
       <div class="max-w-xl">
-      <span class="inline-block mb-3 text-gray-600 text-base">
-      Flexible Pricing Plan
-    </span>
-    <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
-      Everything you need to launch a website
-    </h2>
-
-    </div>
-    <div class="flex flex-wrap">
-      <div class="w-full md:w-1/3">
-      <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
-      <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-      Basic
-    </h3>
-    <p class="mb-5 text-gray-600 text-sm">
-      Best for freelancers
-    </p>
-    <div class="mb-9 flex">
-      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
-    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
-    <span class="font-heading font-semibold self-end">/ m</span>
-
-    </div>
-    <div class="p-1">
-      <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-      <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-
-    </div>
-    <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-      <p class="relative z-10">
-      Join now
-    </p>
-    </div>
-    </button>
-    </div>
-    <ul>
-      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.0.0.0"></path>
-    </svg>
-    <p>
-      100GB Cloud Storage
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.1.0.0"></path>
-    </svg>
-    <p>
-      10 Email Connection
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.0.0.4.2.0.0"></path>
-    </svg>
-    <p>
-      Daily Analytics
-    </p>
-    </li>
-    </ul>
-    </div>
-
-    </div>
-    <div class="w-full md:w-1/3">
-      <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
-      <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-      Premium
-    </h3>
-    <p class="mb-5 text-gray-600 text-sm">
-      Best for small agency
-    </p>
-    <div class="mb-9 flex">
-      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-      $
-    </span>
-    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-      99
-    </span>
-    <span class="font-heading font-semibold self-end">
-      / m
-    </span>
-    </div>
-    <div class="p-1">
-      <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-      <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-
-    </div>
-    <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-      <p class="relative z-10">Join now</p>
-
-    </div>
-    </button>
-    </div>
-    <ul>
-      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.0.0.0"></path>
-    </svg>
-    <p>
-      500GB Cloud Storage
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.1.0.0"></path>
-    </svg>
-    <p>
-      50 Email Connection
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.2.0.0"></path>
-    </svg>
-    <p>
-      Daily Analytics
-    </p>
-    </li>
-    <li class="flex items-center font-heading font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.1.0.4.3.0.0"></path>
-    </svg>
-    <p>
-      Premium Support
-    </p>
-    </li>
-    </ul>
-    </div>
-    </div>
-    <div class="w-full md:w-1/3">
-      <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
-      <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
-      Popular choice
-    </p>
-    <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-      Enterprise
-    </h3>
-    <p class="mb-5 text-gray-600 text-sm">
-      Best for large agency
-    </p>
-    <div class="mb-9 flex">
-      <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-      $
-    </span>
-    <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-      199
-    </span>
-    <span class="font-heading font-semibold self-end">
-      / m
-    </span>
-
-    </div>
-    <div class="group relative mb-9">
-      <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
-
-    </div>
-    <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
-      <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
-      <p>
-      Join now
-    </p>
-
-    </div>
-
-    </button>
-
-    </div>
-    <ul>
-      <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.0.0.0"></path>
-    </svg>
-    <p>
-      2TB Cloud Storage
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.1.0.0"></path>
-    </svg>
-    <p>
-      Unlimited Email Connection
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.2.0.0"></path>
-    </svg>
-    <p>
-      Daily Analytics
-    </p>
-
-    </li>
-    <li class="flex items-center font-heading font-medium text-base text-gray-900">
-      <svg class="mr-2.5">
-      <path d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-path="0.0.1.2.0.5.3.0.0"></path>
-    </svg>
-    <p>
-      Premium Support
-    </p>
-    </li>
-    </ul>
-    </div>
-    </div>
-    </div>
+        <span class="inline-block mb-3 text-gray-600 text-base">
+          Flexible Pricing Plan
+        </span>
+        <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
+          Everything you need to launch a website
+        </h2>
+      </div>
+      <div class="flex flex-wrap">
+        <div class="w-full md:w-1/3">
+          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
+            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+              Basic
+            </h3>
+            <p class="mb-5 text-gray-600 text-sm">
+              Best for freelancers
+            </p>
+            <div class="mb-9 flex">
+              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
+              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
+              <span class="font-heading font-semibold self-end">/ m</span>
+            </div>
+            <div class="p-1">
+              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+                </div>
+                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+                  <p class="relative z-10">
+                    Join now
+                  </p>
+                </div>
+              </button>
+            </div>
+            <ul>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.0.0.4.0.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  100GB Cloud Storage
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.0.0.4.1.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  10 Email Connection
+                </p>
+              </li>
+              <li class="flex items-center font-heading font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.0.0.4.2.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Daily Analytics
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="w-full md:w-1/3">
+          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
+            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+              Premium
+            </h3>
+            <p class="mb-5 text-gray-600 text-sm">
+              Best for small agency
+            </p>
+            <div class="mb-9 flex">
+              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+                $
+              </span>
+              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+                99
+              </span>
+              <span class="font-heading font-semibold self-end">
+                / m
+              </span>
+            </div>
+            <div class="p-1">
+              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
+                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
+                </div>
+                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
+                  <p class="relative z-10">Join now</p>
+                </div>
+              </button>
+            </div>
+            <ul>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.0.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  500GB Cloud Storage
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.1.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  50 Email Connection
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.2.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Daily Analytics
+                </p>
+              </li>
+              <li class="flex items-center font-heading font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.1.0.4.3.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Premium Support
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="w-full md:w-1/3">
+          <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
+            <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
+              Popular choice
+            </p>
+            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
+              Enterprise
+            </h3>
+            <p class="mb-5 text-gray-600 text-sm">
+              Best for large agency
+            </p>
+            <div class="mb-9 flex">
+              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
+                $
+              </span>
+              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
+                199
+              </span>
+              <span class="font-heading font-semibold self-end">
+                / m
+              </span>
+            </div>
+            <div class="group relative mb-9">
+              <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
+              </div>
+              <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
+                <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
+                  <p>
+                    Join now
+                  </p>
+                </div>
+              </button>
+            </div>
+            <ul>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.0.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  2TB Cloud Storage
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.1.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Unlimited Email Connection
+                </p>
+              </li>
+              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.2.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Daily Analytics
+                </p>
+              </li>
+              <li class="flex items-center font-heading font-medium text-base text-gray-900">
+                <svg class="mr-2.5">
+                  <path
+                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
+                    stroke="#A1A1AA"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    data-path="0.0.1.2.0.5.3.0.0"
+                  >
+                  </path>
+                </svg>
+                <p>
+                  Premium Support
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
     """
 
@@ -1303,7 +1429,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :components
-  @spec change_component(Component.t(), map()) :: Ecto.Changeset.t()
+  @spec change_component(Component.t(), map()) :: Changeset.t()
   def change_component(%Component{} = component, attrs \\ %{}) do
     Component.changeset(component, attrs)
   end
@@ -1317,14 +1443,13 @@ defmodule Beacon.Content do
       {:ok, %Component{}}
 
   """
-  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   @doc type: :components
   def create_component(attrs \\ %{}) do
-    changeset = Component.changeset(%Component{}, attrs)
-
-    with {:ok, ^changeset} <- validate_component_body(changeset) do
-      Repo.insert(changeset)
-    end
+    %Component{}
+    |> Component.changeset(attrs)
+    |> validate_component_body()
+    |> Repo.insert()
   end
 
   @doc type: :components
@@ -1343,13 +1468,17 @@ defmodule Beacon.Content do
 
   """
   @doc type: :components
+  @spec update_component(Component.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   def update_component(%Component{} = component, attrs) do
-    changeset = Component.changeset(component, attrs)
-
-    with {:ok, ^changeset} <- validate_component_body(changeset) do
-      Repo.update(changeset)
-    end
+    component
+    |> Component.changeset(attrs)
+    |> validate_component_body()
+    |> Repo.update()
+    |> tap(&maybe_reload_component/1)
   end
+
+  def maybe_reload_component({:ok, component}), do: PubSub.component_updated(component)
+  def maybe_reload_component({:error, _component}), do: :noop
 
   defp validate_component_body(changeset) do
     site = Changeset.get_field(changeset, :site)
@@ -1375,23 +1504,56 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Returns the list of components for a `site`.
+  List components by `name`.
 
   ## Example
 
-      iex> list_components()
-      [%Component{}, ...]
+      iex> list_components_by_name(site, "header")
+      [%Component{name: "header"}]
 
   """
   @doc type: :components
-  @spec list_components(Site.t()) :: [Component.t()]
-  def list_components(site) do
+  @spec list_components_by_name(Site.t(), String.t()) :: [Component.t()]
+  def list_components_by_name(site, name) when is_atom(site) and is_binary(name) do
     Repo.all(
       from c in Component,
-        where: c.site == ^site,
-        order_by: c.name
+        where: c.site == ^site and c.name == ^name
     )
   end
+
+  @doc """
+  List components.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search components by title.
+
+  """
+  @doc type: :components
+  @spec list_components(Site.t(), keyword()) :: [Component.t()]
+  def list_components(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_components_base()
+    |> query_list_components_limit(per_page)
+    |> query_list_components_search(search)
+    |> Repo.all()
+  end
+
+  defp query_list_components_base(site) do
+    from c in Component,
+      where: c.site == ^site,
+      order_by: [asc: c.name]
+  end
+
+  defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_components_limit(query, :infinity = _limit), do: query
+  defp query_list_components_limit(query, _per_page), do: from(q in query, limit: 20)
+  defp query_list_components_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.name, ^"%#{search}%"))
+  defp query_list_components_search(query, _search), do: query
 
   # SNIPPETS
 
@@ -1399,12 +1561,12 @@ defmodule Beacon.Content do
   Creates a snippet helper
   """
   @doc type: :snippets
-  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Changeset.t()}
   def create_snippet_helper(attrs) do
     %Snippets.Helper{}
-    |> Ecto.Changeset.cast(attrs, [:site, :name, :body])
-    |> Ecto.Changeset.validate_required([:site, :name, :body])
-    |> Ecto.Changeset.unique_constraint([:site, :name])
+    |> Changeset.cast(attrs, [:site, :name, :body])
+    |> Changeset.validate_required([:site, :name, :body])
+    |> Changeset.unique_constraint([:site, :name])
     |> Repo.insert()
   end
 
@@ -1493,6 +1655,73 @@ defmodule Beacon.Content do
     end
   end
 
+  # PAGE EVENT HANDLERS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking event handler changes.
+
+  ## Example
+
+      iex> change_page_event_handler(page_event_handler, %{name: "form-submit"})
+      %Ecto.Changeset{data: %PageEventHandler{}}
+
+  """
+  @doc type: :page_event_handlers
+  @spec change_page_event_handler(PageEventHandler.t(), map()) :: Changeset.t()
+  def change_page_event_handler(%PageEventHandler{} = event_handler, attrs \\ %{}) do
+    PageEventHandler.changeset(event_handler, attrs)
+  end
+
+  @doc """
+  Creates a new page event handler and returns the page with updated `:event_handlers` association.
+  """
+  @doc type: :page_event_handlers
+  @spec create_event_handler_for_page(Page.t(), %{name: binary(), code: binary()}) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def create_event_handler_for_page(page, attrs) do
+    changeset =
+      page
+      |> Ecto.build_assoc(:event_handlers)
+      |> PageEventHandler.changeset(attrs)
+
+    Repo.transact(fn ->
+      with {:ok, %PageEventHandler{}} <- Repo.insert(changeset),
+           %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
+  Updates a page event handler and returns the page with updated `:event_handlers` association.
+  """
+  @doc type: :page_event_handlers
+  @spec update_event_handler_for_page(Page.t(), PageEventHandler.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def update_event_handler_for_page(page, event_handler, attrs) do
+    changeset = PageEventHandler.changeset(event_handler, attrs)
+
+    Repo.transact(fn ->
+      with {:ok, %PageEventHandler{}} <- Repo.update(changeset),
+           %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc """
+  Deletes a page event handler and returns the page with updated `:event_handlers` association.
+  """
+  @doc type: :page_event_handlers
+  @spec delete_event_handler_from_page(Page.t(), PageEventHandler.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def delete_event_handler_from_page(page, event_handler) do
+    with {:ok, %PageEventHandler{}} <- Repo.delete(event_handler),
+         %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+         %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+      {:ok, page}
+    end
+  end
+
   # PAGE VARIANTS
 
   @doc """
@@ -1505,13 +1734,13 @@ defmodule Beacon.Content do
 
   """
   @doc type: :page_variants
-  @spec change_page_variant(PageVariant.t(), map()) :: Ecto.Changeset.t()
-  def change_page_variant(%PageVariant{} = page, attrs \\ %{}) do
-    PageVariant.changeset(page, attrs)
+  @spec change_page_variant(PageVariant.t(), map()) :: Changeset.t()
+  def change_page_variant(%PageVariant{} = variant, attrs \\ %{}) do
+    PageVariant.changeset(variant, attrs)
   end
 
   @doc """
-  Creates a new page variant and returns the page with updated variants association.
+  Creates a new page variant and returns the page with updated `:variants` association.
   """
   @doc type: :page_variants
   @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}) ::
@@ -1532,16 +1761,18 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Updates a page variant and returns the page with updated variants association.
+  Updates a page variant and returns the page with updated `:variants` association.
   """
   @doc type: :page_variants
   @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_variant_for_page(page, variant, attrs) do
-    changeset = PageVariant.changeset(variant, attrs)
+    changeset =
+      variant
+      |> PageVariant.changeset(attrs)
+      |> validate_variant(page)
 
     Repo.transact(fn ->
-      with {:ok, ^changeset} <- validate_variant_template(changeset, page),
-           {:ok, %PageVariant{}} <- Repo.update(changeset),
+      with {:ok, %PageVariant{}} <- Repo.update(changeset),
            %Page{} = page <- Repo.preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
@@ -1549,40 +1780,33 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp validate_variant_template(changeset, page) do
-    %{format: format, site: site, path: path} = page
+  defp validate_variant(changeset, page) do
+    %{format: format, site: site, path: path} = page = Repo.preload(page, :variants)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-    do_validate_template(changeset, :template, format, template, metadata)
+
+    changeset
+    |> do_validate_weights(page)
+    |> do_validate_template(:template, format, template, metadata)
   end
 
-  ## Utils
+  defp do_validate_weights(changeset, page) do
+    Changeset.validate_change(changeset, :weight, fn :weight, changed_weight ->
+      %{id: changed_variant_id} = changeset.data
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.HEEx.compile(template, metadata) do
-      {:cont, _ast} ->
-        {:ok, changeset}
+      total_weights =
+        Enum.reduce(page.variants, 0, fn
+          %{id: ^changed_variant_id}, acc -> acc + changed_weight
+          variant, acc -> acc + variant.weight
+        end)
 
-      {:halt, %{description: description}} ->
-        {:error, Changeset.add_error(changeset, field, "invalid", compilation_error: description)}
-
-      {:halt, _} ->
-        {:error, Changeset.add_error(changeset, field, "invalid")}
-    end
+      if total_weights > 100 do
+        [weight: "total weights cannot exceed 100"]
+      else
+        []
+      end
+    end)
   end
-
-  defp do_validate_template(changeset, field, :markdown = _format, template, metadata) when is_binary(template) do
-    case Beacon.Template.Markdown.convert_to_html(template, metadata) do
-      {:cont, _template} ->
-        {:ok, changeset}
-
-      {:halt, %{message: message}} ->
-        {:error, Changeset.add_error(changeset, field, message)}
-    end
-  end
-
-  # TODO: expose template validation to custom template formats defined by users
-  defp do_validate_template(changeset, _field, _format, _template, _metadata), do: {:ok, changeset}
 
   @doc """
   Deletes a page variant and returns the page with updated variants association.
@@ -1596,4 +1820,28 @@ defmodule Beacon.Content do
       {:ok, page}
     end
   end
+
+  ## Utils
+
+  defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      case Beacon.Template.HEEx.compile(template, metadata) do
+        {:cont, _ast} -> []
+        {:halt, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:halt, _} -> [{field, "invalid"}]
+      end
+    end)
+  end
+
+  defp do_validate_template(changeset, field, :markdown = _format, template, metadata) when is_binary(template) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      case Beacon.Template.Markdown.convert_to_html(template, metadata) do
+        {:cont, _template} -> []
+        {:halt, %{message: message}} -> [{field, message}]
+      end
+    end)
+  end
+
+  # TODO: expose template validation to custom template formats defined by users
+  defp do_validate_template(changeset, _field, _format, _template, _metadata), do: changeset
 end

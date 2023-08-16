@@ -44,7 +44,7 @@ defmodule Beacon.MixProject do
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
-      {:floki, ">= 0.30.0"},
+      {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:hackney, "~> 1.16", only: [:dev, :test]},
       {:heroicons, "~> 0.5"},
@@ -75,15 +75,13 @@ defmodule Beacon.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build", "assets.build.admin", "ecto.setup"],
+      setup: ["deps.get", "assets.setup", "assets.build", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       dev: ["ecto.reset", "run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
-      "assets.build": ["assets.build.core", "assets.build.admin"],
-      "assets.build.core": ["esbuild cdn", "esbuild cdn_min"],
-      "assets.build.admin": ["tailwind admin --minify", "esbuild cdn_admin", "esbuild cdn_min_admin"]
+      "assets.build": ["esbuild cdn", "esbuild cdn_min"]
     ]
   end
 
@@ -103,7 +101,9 @@ defmodule Beacon.MixProject do
           Beacon.Content.Page.Event,
           Beacon.Content.Page.Helper,
           Beacon.Content.PageEvent,
+          Beacon.Content.PageEventHandler,
           Beacon.Content.PageSnapshot,
+          Beacon.Content.PageVariant,
           Beacon.Content.Stylesheet,
           Beacon.Content.Snippets.Helper,
           Beacon.Template,
@@ -170,7 +170,8 @@ defmodule Beacon.MixProject do
         "Functions: Page Variants": &(&1[:type] == :page_variants),
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
-        "Functions: Snippets": &(&1[:type] == :snippets)
+        "Functions: Snippets": &(&1[:type] == :snippets),
+        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers)
       ]
     ]
   end

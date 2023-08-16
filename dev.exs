@@ -31,10 +31,6 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
       ~r"lib/beacon/.*(ex)$",
       ~r"lib/beacon_web/(controllers|live|components)/.*(ex|heex)$"
     ]
-  ],
-  watchers: [
-    tailwind: {Tailwind, :install_and_run, [:admin, ~w(--watch)]},
-    esbuild: {Esbuild, :install_and_run, [:cdn_admin, ~w(--sourcemap=inline --watch)]}
   ]
 )
 
@@ -63,7 +59,6 @@ defmodule SamplePhoenixWeb.Router do
 
   scope "/" do
     pipe_through :browser
-    beacon_admin "/admin"
     beacon_site "/dev", site: :dev
     beacon_site "/other", site: :other
   end
@@ -172,8 +167,11 @@ seeds = fn ->
         %{"name" => "layout-meta-tag-one", "content" => "value"},
         %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
-      stylesheet_urls: [],
-      body: """
+      resource_links: [
+        %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
+        %{"rel" => "stylesheet", "href" => "alternative.css"}
+      ],
+      template: """
       <%= @inner_content %>
       """
     })
@@ -249,7 +247,9 @@ seeds = fn ->
           </ul>
         </div>
 
-        <%= my_component("sample_component", val: 1) %>
+        <div>
+          Sample component: <%= my_component("sample_component", val: 1) %>
+        </div>
 
         <div>
           <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
@@ -357,8 +357,7 @@ seeds = fn ->
     Beacon.Content.create_layout!(%{
       site: "other",
       title: "other",
-      stylesheet_urls: [],
-      body: """
+      template: """
       <%= @inner_content %>
       """
     })

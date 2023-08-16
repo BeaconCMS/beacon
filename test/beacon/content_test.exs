@@ -9,6 +9,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
+  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
   alias Beacon.Repo
@@ -18,7 +19,7 @@ defmodule Beacon.ContentTest do
       Content.create_layout!(%{
         site: "my_site",
         title: "test",
-        body: "<p>layout</p>"
+        template: "<p>layout</p>"
       })
 
       assert %LayoutEvent{event: :created} = Repo.one(LayoutEvent)
@@ -70,8 +71,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate body heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_layout(%{site: :test, title: "test", body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_layout(%{site: :test, title: "test", template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -79,20 +80,8 @@ defmodule Beacon.ContentTest do
     test "validate body heex on update" do
       layout = layout_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_layout(layout, %{body: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
-    end
-
-    test "validate body heex on publish" do
-      layout = layout_fixture()
-
-      # simulate incorrect data inserted manually
-      {1, nil} = Repo.update_all(Layout, set: [body: "<div"])
-      layout = Repo.reload(layout)
-
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} = Content.publish_layout(layout)
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_layout(layout, %{template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -113,18 +102,6 @@ defmodule Beacon.ContentTest do
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.update_page(page, %{template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
-    end
-
-    test "validate template heex on publish" do
-      page = page_fixture()
-
-      # simulate incorrect data inserted manually
-      {1, nil} = Repo.update_all(Page, set: [template: "<div"])
-      page = Repo.reload(page)
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} = Content.publish_page(page)
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -364,6 +341,25 @@ defmodule Beacon.ContentTest do
       assert error =~ "unmatched closing tag"
     end
 
+    test "update variant should validate total weight of all variants" do
+      page = page_fixture(%{format: :heex})
+      _variant_1 = page_variant_fixture(%{page: page, weight: 99})
+      variant_2 = page_variant_fixture(%{page: page, weight: 0})
+
+      assert {:error, %Ecto.Changeset{errors: [weight: {"total weights cannot exceed 100", []}], valid?: false}} =
+               Content.update_variant_for_page(page, variant_2, %{weight: 2})
+
+      assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_2, %{weight: 1})
+    end
+
+    test "update variant should not validate total weight if unchanged" do
+      page = page_fixture(%{format: :heex})
+      variant_1 = page_variant_fixture(%{page: page, weight: 99})
+      _variant_2 = page_variant_fixture(%{page: page, weight: 98})
+
+      assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_1, %{name: "Foo"})
+    end
+
     test "delete variant OK" do
       page = page_fixture(%{format: :heex})
       variant_1 = page_variant_fixture(%{page: page})
@@ -378,6 +374,61 @@ defmodule Beacon.ContentTest do
       variant = page_variant_fixture(%{page: page})
 
       {:ok, %Page{}} = Content.delete_variant_from_page(page, variant)
+
+      assert_receive :lifecycle_after_update_page
+    end
+  end
+
+  describe "event_handlers" do
+    test "create event handler OK" do
+      page = page_fixture()
+      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+
+      assert {:ok, %Page{event_handlers: [event_handler]}} = Content.create_event_handler_for_page(page, attrs)
+      assert %PageEventHandler{name: "Foo", code: "{:noreply, socket}"} = event_handler
+    end
+
+    test "create triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+
+      {:ok, %Page{}} = Content.create_event_handler_for_page(page, attrs)
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "update event handler OK" do
+      page = page_fixture(%{format: :heex})
+      event_handler = page_event_handler_fixture(%{page: page})
+      attrs = %{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"}
+
+      assert {:ok, %Page{event_handlers: [updated_event_handler]}} = Content.update_event_handler_for_page(page, event_handler, attrs)
+      assert %PageEventHandler{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"} = updated_event_handler
+    end
+
+    test "update triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      event_handler = page_event_handler_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.update_event_handler_for_page(page, event_handler, %{name: "Changed"})
+
+      assert_receive :lifecycle_after_update_page
+    end
+
+    test "delete event handler OK" do
+      page = page_fixture(%{format: :heex})
+      event_handler_1 = page_event_handler_fixture(%{page: page})
+      event_handler_2 = page_event_handler_fixture(%{page: page})
+
+      assert {:ok, %Page{event_handlers: [^event_handler_2]}} = Content.delete_event_handler_from_page(page, event_handler_1)
+      assert {:ok, %Page{event_handlers: []}} = Content.delete_event_handler_from_page(page, event_handler_2)
+    end
+
+    test "delete triggers after_update_page lifecycle" do
+      page = page_fixture(site: :lifecycle_test)
+      event_handler = page_event_handler_fixture(%{page: page})
+
+      {:ok, %Page{}} = Content.delete_event_handler_from_page(page, event_handler)
 
       assert_receive :lifecycle_after_update_page
     end
@@ -398,6 +449,16 @@ defmodule Beacon.ContentTest do
                Content.update_component(component, %{body: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
+    end
+
+    test "list components" do
+      component_a = component_fixture(name: "component_a")
+      component_b = component_fixture(name: "component_b")
+
+      components = Content.list_components(component_b.site, query: "_b")
+
+      assert Enum.member?(components, component_b)
+      refute Enum.member?(components, component_a)
     end
   end
 end

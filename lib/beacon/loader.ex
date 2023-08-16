@@ -11,11 +11,13 @@ defmodule Beacon.Loader do
   And deleting a resource will unload it from memory.
 
   """
-
   use GenServer
-  require Logger
+
   alias Beacon.Content
   alias Beacon.PubSub
+  alias Beacon.Repo
+
+  require Logger
 
   @doc false
   def start_link(config) do
@@ -39,13 +41,24 @@ defmodule Beacon.Loader do
 
     PubSub.subscribe_to_layouts(config.site)
     PubSub.subscribe_to_pages(config.site)
+    PubSub.subscribe_to_components(config.site)
 
     {:ok, config}
   end
 
-  # TODO: skip if components already exists
   defp populate_components(site) do
-    Enum.each(Content.blueprint_components(), fn attrs -> Content.create_component!(Map.put(attrs, :site, site)) end)
+    for attrs <- Content.blueprint_components() do
+      case Content.list_components_by_name(site, attrs.name) do
+        [] ->
+          attrs
+          |> Map.put(:site, site)
+          |> Content.create_component!()
+
+        _ ->
+          :skip
+      end
+    end
+
     :ok
   end
 
@@ -76,6 +89,7 @@ defmodule Beacon.Loader do
 
   @doc false
   def load_page(%Content.Page{} = page) do
+    page = Repo.preload(page, :event_handlers)
     config = Beacon.Config.fetch!(page.site)
     GenServer.call(name(config.site), {:load_page, page}, 60_000)
   end
@@ -123,7 +137,7 @@ defmodule Beacon.Loader do
   defp load_components(site) do
     Beacon.Loader.ComponentModuleLoader.load_components(
       site,
-      Beacon.Content.list_components(site)
+      Beacon.Content.list_components(site, per_page: :infinity)
     )
 
     :ok
@@ -318,6 +332,12 @@ defmodule Beacon.Loader do
     |> Content.get_published_page(id)
     |> do_unload_page()
 
+    {:noreply, state}
+  end
+
+  def handle_info({:component_updated, component}, state) do
+    :ok = load_components(component.site)
+    :ok = Beacon.PubSub.component_loaded(component)
     {:noreply, state}
   end
 
