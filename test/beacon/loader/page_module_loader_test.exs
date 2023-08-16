@@ -6,6 +6,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   alias Beacon.Loader.PageModuleLoader
   alias Beacon.Repo
 
+  setup_all do
+    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    start_supervised!({Beacon.Loader.PageModuleLoader, Beacon.Config.fetch!(:my_site)})
+    :ok
+  end
+
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
       page_1 = page_fixture(site: "my_site", path: "1", helpers: [page_helper_params(name: "page_1_upcase")])
@@ -34,13 +40,6 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   end
 
   describe "page_assigns/1" do
-    defp start_loader(_) do
-      start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
-      :ok
-    end
-
-    setup [:start_loader]
-
     test "interpolates meta tag snippets" do
       snippet_helper_fixture(%{
         site: "my_site",

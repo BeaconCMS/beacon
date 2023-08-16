@@ -1,13 +1,29 @@
 defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
+  use GenServer
+
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
 
   require Logger
 
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: name(config.site))
+  end
+
+  def name(site) do
+    Beacon.Registry.via({site, __MODULE__})
+  end
+
+  def init(config) do
+    {:ok, config}
+  end
+
   def load_page!(%Content.Page{} = page, stage \\ :boot) do
+    config = Beacon.Config.fetch!(page.site)
+
     stage =
       if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test] do
         :request
@@ -15,22 +31,7 @@ defmodule Beacon.Loader.PageModuleLoader do
         stage
       end
 
-    component_module = Loader.component_module_for_site(page.site)
-    page_module = Loader.page_module_for_site(page.site, page.id)
-
-    # Group function heads together to avoid compiler warnings
-    functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
-        fun.(page)
-      end,
-      render(page, stage),
-      dynamic_helper()
-    ]
-
-    ast = build(page_module, component_module, functions)
-    :ok = Loader.reload_module!(page_module, ast)
-    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
-    {:ok, page_module, ast}
+    GenServer.call(name(config.site), {:load_page!, page, stage}, 300_000)
   end
 
   defp build(module_name, component_module, functions) do
@@ -231,4 +232,26 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
   defp path_segment_to_arg("*" <> segment, prefix), do: "| " <> prefix <> segment
   defp path_segment_to_arg(segment, _prefix), do: segment
+
+  ## Callbacks
+
+  def handle_call({:load_page!, page, stage}, _from, config) do
+    component_module = Loader.component_module_for_site(page.site)
+    page_module = Loader.page_module_for_site(page.site, page.id)
+
+    # Group function heads together to avoid compiler warnings
+    functions = [
+      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
+        fun.(page)
+      end,
+      render(page, stage),
+      dynamic_helper()
+    ]
+
+    ast = build(page_module, component_module, functions)
+    :ok = Loader.reload_module!(page_module, ast)
+    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
+
+    {:reply, {:ok, page_module, ast}, config}
+  end
 end

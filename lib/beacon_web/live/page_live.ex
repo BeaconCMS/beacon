@@ -34,8 +34,11 @@ defmodule BeaconWeb.PageLive do
 
   # TODO: backpressure and move to a proper module
   defp do_render(site, page_id, page_module, assigns) do
+    require Logger
+
     case page_module.render(assigns) do
       :not_loaded ->
+        Logger.debug("compiling #{page_module}")
         page = Beacon.Content.get_published_page(site, page_id)
         {:ok, page_module, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page, :request)
         page_module.render(assigns)

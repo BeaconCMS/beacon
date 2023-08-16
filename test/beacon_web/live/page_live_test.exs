@@ -9,6 +9,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    start_supervised!({Beacon.Loader.PageModuleLoader, Beacon.Config.fetch!(:my_site)})
     :ok
   end
 
