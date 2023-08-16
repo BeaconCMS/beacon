@@ -24,12 +24,25 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {{site, path}, {_page_id, _layout_id, format, page_module, _component_module}} =
+    {{site, path}, {page_id, _layout_id, format, page_module, _component_module}} =
       lookup_route!(assigns.__site__, assigns.__live_path__)
 
     assigns = Phoenix.Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(path, assigns.__live_path__))
-    template = page_module.render(assigns)
+    template = do_render(site, page_id, page_module, assigns)
     Lifecycle.Template.render_template(site, template, format, path: path, assigns: assigns, env: __ENV__)
+  end
+
+  # TODO: backpressure and move to a proper module
+  defp do_render(site, page_id, page_module, assigns) do
+    case page_module.render(assigns) do
+      :not_loaded ->
+        page = Beacon.Content.get_published_page(site, page_id)
+        {:ok, page_module, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page, :request)
+        page_module.render(assigns)
+
+      rendered ->
+        rendered
+    end
   end
 
   defp lookup_route!(site, path) do

@@ -7,15 +7,23 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   require Logger
 
-  def load_page!(%Content.Page{} = page) do
+  def load_page!(%Content.Page{} = page, stage \\ :boot) do
+    stage =
+      if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test] do
+        :request
+      else
+        stage
+      end
+
     component_module = Loader.component_module_for_site(page.site)
     page_module = Loader.page_module_for_site(page.site, page.id)
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1, &render/1] do
+      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
+      render(page, stage),
       dynamic_helper()
     ]
 
@@ -146,7 +154,16 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
-  defp render(page) do
+  defp render(_page, :boot) do
+    quote do
+      def render(var!(assigns)) when is_map(var!(assigns)) do
+        _ = var!(assigns)
+        :not_loaded
+      end
+    end
+  end
+
+  defp render(page, :request) do
     primary = Lifecycle.Template.load_template(page)
     variants = load_variants(page)
 
