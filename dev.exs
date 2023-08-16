@@ -192,7 +192,8 @@ seeds = fn ->
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
       name: "dockyard_1.png",
-      size: 196_000
+      size: 196_000,
+      extra: %{"alt" => "logo"}
     )
 
   img1 = Beacon.MediaLibrary.upload(metadata)
@@ -202,7 +203,8 @@ seeds = fn ->
       :dev,
       Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
       name: "dockyard_2.png",
-      size: 196_000
+      size: 196_000,
+      extra: %{"alt" => "alternate logo"}
     )
 
   img2 = Beacon.MediaLibrary.upload(metadata)

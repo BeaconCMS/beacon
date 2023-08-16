@@ -24,6 +24,7 @@ defmodule Beacon.MediaLibrary.Asset do
     field :deleted_at, :utc_datetime
     field :keys, :map, default: %{}
     field :usage_tag, :string
+    field :extra, :map, default: %{}
 
     belongs_to :source, Beacon.MediaLibrary.Asset
 
