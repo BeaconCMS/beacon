@@ -15,7 +15,13 @@ defmodule Beacon.MixHelper do
     File.mkdir!("lib/my_app")
     File.mkdir!("lib/my_app_web")
     File.mkdir!("config")
+
     File.write!("mix.exs", sample_mixfile())
+    File.write!("config/config.exs", sample_config())
+    File.write!("config/dev.exs", sample_dev())
+    File.write!("config/prod.exs", sample_prod())
+    File.write!("lib/my_app/application.ex", sample_application())
+    File.write!("lib/my_app_web/router.ex", sample_router())
   end
 
   def clean_tmp_dir do
