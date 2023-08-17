@@ -1,6 +1,7 @@
 defmodule Beacon.Lifecycle.Template do
   @moduledoc false
 
+  require Logger
   alias Beacon.Lifecycle
   @behaviour Beacon.Lifecycle
 
@@ -92,8 +93,16 @@ defmodule Beacon.Lifecycle.Template do
 
   This stage runs in the render callback of the LiveView responsible for displaying the page.
   """
-  def render_template(site, template, format, context) do
-    lifecycle = Lifecycle.execute(__MODULE__, site, :render_template, template, sub_key: format, context: context)
+  @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
+  def render_template(page, page_module, assigns, env) do
+    template =
+      case page_module.render(assigns) do
+        %Phoenix.LiveView.Rendered{} = rendered -> rendered
+        :not_loaded -> Beacon.Loader.PageModuleLoader.load_page!(page, page_module, assigns)
+      end
+
+    context = [path: page.path, assigns: assigns, env: env]
+    lifecycle = Lifecycle.execute(__MODULE__, page.site, :render_template, template, sub_key: page.format, context: context)
     lifecycle.output
   end
 end

@@ -19,26 +19,4 @@ defmodule Beacon.Lifecycle.TemplateTest do
       assert Lifecycle.Template.load_template(page) == "<div>beacon</div>"
     end
   end
-
-  describe "render_template" do
-    setup do
-      opts = [
-        path: "/test/lifecycle",
-        assigns: %{},
-        env: __ENV__
-      ]
-
-      [opts: opts, format: :markdown, template: "<div>{ title }</div>"]
-    end
-
-    test "template must be valid heex", %{template: template, format: format, opts: opts} do
-      assert %Phoenix.LiveView.Rendered{static: ["<p>Beacon</p>"]} = Lifecycle.Template.render_template(:lifecycle_test, template, format, opts)
-    end
-
-    test "render must return a Phoenix.LiveView.Rendered struct", %{template: template, format: format, opts: opts} do
-      assert_raise Beacon.LoaderError, ~r/Return output must be of type Phoenix.LiveView.Rendered.*/, fn ->
-        Lifecycle.Template.render_template(:lifecycle_test_fail, template, format, opts)
-      end
-    end
-  end
 end

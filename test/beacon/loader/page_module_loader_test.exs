@@ -151,18 +151,9 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
 
       assert [
-               {"primary", nil,
-                %Phoenix.LiveView.Rendered{
-                  static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]
-                }},
-               {"variant_a", 1,
-                %Phoenix.LiveView.Rendered{
-                  static: ["<div>variant_a</div>"]
-                }},
-               {"variant_b", 2,
-                %Phoenix.LiveView.Rendered{
-                  static: ["<div>variant_b</div>"]
-                }}
+               %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]},
+               {1, %Phoenix.LiveView.Rendered{static: ["<div>variant_a</div>"]}},
+               {2, %Phoenix.LiveView.Rendered{static: ["<div>variant_b</div>"]}}
              ] = module.templates(%{})
     end
   end

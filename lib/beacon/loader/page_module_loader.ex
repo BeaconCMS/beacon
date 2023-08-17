@@ -34,6 +34,16 @@ defmodule Beacon.Loader.PageModuleLoader do
     GenServer.call(name(config.site), {:load_page!, page, stage}, 300_000)
   end
 
+  # TODO: retry
+  def load_page!(%Content.Page{} = page, page_module, assigns) do
+    Logger.debug("compiling #{page_module}")
+
+    %Content.Page{} = page = Beacon.Content.get_published_page(page.site, page.id)
+    {:ok, ^page_module, _ast} = load_page!(page, :request)
+    %Phoenix.LiveView.Rendered{} = rendered = page_module.render(assigns)
+    rendered
+  end
+
   defp build(module_name, component_module, functions) do
     quote do
       defmodule unquote(module_name) do
