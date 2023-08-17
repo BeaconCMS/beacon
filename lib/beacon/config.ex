@@ -94,7 +94,7 @@ defmodule Beacon.Config do
                 {identifier :: atom(),
                  fun ::
                    (template :: String.t(), Beacon.Template.LoadMetadata.t() ->
-                      {:cont, Beacon.Template.t()} | {:halt, Beacon.Template.t()} | {:halt, Exception.t()})}
+                      {:cont, String.t() | Beacon.Template.t()} | {:halt, String.t() | Beacon.Template.t()} | {:halt, Exception.t()})}
               ]}
            ]}
           | {:render_template,
