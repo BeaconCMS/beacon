@@ -96,7 +96,7 @@ defmodule Mix.Tasks.Beacon.Install do
   def inject_endpoint_render_errors_config(config_file_path) do
     config_file_content = File.read!(config_file_path)
 
-    if String.contains?(config_file_content, "ErrorHTML") do
+    if String.contains?(config_file_content, "BeaconWeb.ErrorHTML") do
       Mix.shell().info([
         :yellow,
         "* skip ",
@@ -106,19 +106,20 @@ defmodule Mix.Tasks.Beacon.Install do
         " (already exists)"
       ])
     else
-      regex = ~r/(config.*\.Endpoint,\n)((?:.*\n)*\s*)\n/
-      [header, endpoint_config] = Regex.run(regex, config_file_content, capture: :all_but_first)
+      regex = ~r/(config.*\.Endpoint,\n)((?:.+\n)*\s*)\n/
+      [_header, endpoint_config] = Regex.run(regex, config_file_content, capture: :all_but_first)
       endpoint_config = "[" <> endpoint_config <> "]"
       {config_list, []} = Code.eval_string(endpoint_config)
-      updated_config_list = Keyword.put(config_list, :render_errors, formats: [html: BeaconWeb.ErrorHTML])
-      updated_str = inspect(updated_config_list) |> IO.inspect()
+      render_errors_value = [formats: [html: BeaconWeb.ErrorHTML]]
+      updated_config_list = Keyword.update(config_list, :render_errors, render_errors_value, fn _ -> render_errors_value end)
+      updated_str = inspect(updated_config_list) <> "\n"
 
       new_config_file_content =
         regex
         |> Regex.replace(config_file_content, "\\1#{updated_str}")
         |> Code.format_string!(file: config_file_path)
 
-      File.write!(config_file_path, new_config_file_content)
+      File.write!(config_file_path, [new_config_file_content, "\n"])
     end
   end
 
