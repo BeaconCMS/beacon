@@ -66,11 +66,11 @@ defmodule Beacon.Template do
   end
 
   @doc false
-  def choose_template([{_, _, primary}]), do: primary
+  def choose_template([primary]), do: primary
   def choose_template([primary | variants]), do: choose_template(variants, Enum.random(1..100), primary)
 
   @doc false
-  def choose_template([], _, {_, _, primary}), do: primary
-  def choose_template([{_name, weight, template} | _], n, _) when weight >= n, do: template
-  def choose_template([{_name, weight, _} | variants], n, {_, _, primary}), do: choose_template(variants, n - weight, primary)
+  def choose_template([], _, primary), do: primary
+  def choose_template([{weight, template} | _], n, _) when weight >= n, do: template
+  def choose_template([{weight, _} | variants], n, primary), do: choose_template(variants, n - weight, primary)
 end

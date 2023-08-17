@@ -172,12 +172,12 @@ defmodule Beacon.Loader.PageModuleLoader do
       [] ->
         quote do
           def render(var!(assigns)) when is_map(var!(assigns)) do
-            [{_, _, template}] = templates(var!(assigns))
-            template
+            [primary] = templates(var!(assigns))
+            primary
           end
 
           def templates(var!(assigns)) when is_map(var!(assigns)) do
-            [{"primary", nil, unquote(primary)}]
+            [unquote(primary)]
           end
         end
 
@@ -191,9 +191,9 @@ defmodule Beacon.Loader.PageModuleLoader do
 
           def templates(var!(assigns)) when is_map(var!(assigns)) do
             [
-              {"primary", nil, unquote(primary)}
+              unquote(primary)
               | for [name, weight, template] <- unquote(variants) do
-                  {name, weight, template}
+                  {weight, template}
                 end
             ]
           end
