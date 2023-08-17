@@ -12,5 +12,4 @@ defmodule Beacon.Repo.Migrations.CreateErrorPages do
 
     create index(:beacon_error_pages, [:status])
   end
-  end
 end

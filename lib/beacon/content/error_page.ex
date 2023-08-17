@@ -35,10 +35,11 @@ defmodule Beacon.Content.ErrorPage do
     timestamps()
   end
 
-  @error_codes Range.to_list(400..418) ++
-                 Range.to_list(421..426) ++
+  # If we move to Elixir 1.15+ we can use Range.to_list/1 here
+  @error_codes Enum.to_list(400..418) ++
+                 Enum.to_list(421..426) ++
                  [428, 429, 431, 451] ++
-                 Range.to_list(500..508) ++
+                 Enum.to_list(500..508) ++
                  [510, 511]
 
   @doc false
