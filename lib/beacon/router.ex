@@ -8,6 +8,14 @@ defmodule Beacon.Router do
   In your app router, add `use Beacon.Router` and call one the of the available macros.
   """
 
+  @ets_table :beacon_router
+
+  @doc false
+  # We store routes by order and length so the most visited pages will likely be in the first rows
+  def init do
+    :ets.new(@ets_table, [:ordered_set, :named_table, :public, read_concurrency: true])
+  end
+
   defmacro __using__(_opts) do
     quote do
       unquote(prelude())
@@ -183,7 +191,7 @@ defmodule Beacon.Router do
 
   @doc false
   def add_page(site, path, {_page_id, _layout_id, _format, _page_module, _component_module} = metadata) do
-    add_page(:beacon_pages, site, path, metadata)
+    add_page(@ets_table, site, path, metadata)
   end
 
   @doc false
@@ -193,12 +201,12 @@ defmodule Beacon.Router do
 
   @doc false
   def del_page(site, path) do
-    :ets.delete(:beacon_pages, {site, path})
+    :ets.delete(@ets_table, {site, path})
   end
 
   @doc false
   def dump_pages do
-    case :ets.match(:beacon_pages, :"$1") do
+    case :ets.match(@ets_table, :"$1") do
       [] -> []
       [pages] -> pages
     end
@@ -206,7 +214,7 @@ defmodule Beacon.Router do
 
   @doc false
   def lookup_path(site, path) do
-    lookup_path(:beacon_pages, site, path)
+    lookup_path(@ets_table, site, path)
   end
 
   # Lookup for a path stored in ets that is coming from a live view.
@@ -313,7 +321,7 @@ defmodule Beacon.Router do
 
   @doc false
   def path_params(page_path, path_info) do
-    page_path = String.split(page_path, "/")
+    page_path = String.split(page_path, "/", [])
 
     Enum.zip_reduce(page_path, path_info, %{}, fn
       ":" <> segment, value, acc ->
