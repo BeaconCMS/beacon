@@ -247,7 +247,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
   def handle_call({:load_page!, page, stage}, _from, config) do
     component_module = Loader.component_module_for_site(page.site)
-    page_module = Loader.page_module_for_site(page.site, page.id)
+    page_module = Loader.page_module_for_site(page.id)
 
     # Group function heads together to avoid compiler warnings
     functions = [

@@ -197,19 +197,21 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def layout_module_for_site(site, layout_id) do
-    resource = Macro.camelize("layout_#{layout_id}")
-    module_for_site(site, resource)
+  def layout_module_for_site(layout_id) do
+    "Layout#{layout_id}" |> Macro.camelize() |> module_for_site()
   end
 
   @doc false
-  def page_module_for_site(site, page_id) do
-    resource = Macro.camelize("page_#{page_id}")
-    module_for_site(site, resource)
+  def page_module_for_site(page_id) do
+    "Page#{page_id}" |> Macro.camelize() |> module_for_site()
+  end
+
+  defp module_for_site(resource) do
+    Module.concat([BeaconWeb.LiveRenderer, resource])
   end
 
   defp module_for_site(site, resource) do
-    site_hash = :crypto.hash(:md5, Atom.to_string(site)) |> Base.encode16()
+    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16()
     Module.concat([BeaconWeb.LiveRenderer, "#{site_hash}#{resource}"])
   end
 
@@ -368,7 +370,7 @@ defmodule Beacon.Loader do
 
   @doc false
   def do_unload_page(page) do
-    module = page_module_for_site(page.site, page.id)
+    module = page_module_for_site(page.id)
     :code.delete(module)
     :code.purge(module)
     Beacon.Router.del_page(page.site, page.path)

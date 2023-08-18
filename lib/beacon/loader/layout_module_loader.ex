@@ -8,7 +8,7 @@ defmodule Beacon.Loader.LayoutModuleLoader do
 
   def load_layout!(%Content.Layout{} = layout) do
     component_module = Loader.component_module_for_site(layout.site)
-    module = Loader.layout_module_for_site(layout.site, layout.id)
+    module = Loader.layout_module_for_site(layout.id)
     render_function = render_layout(layout)
     ast = render(module, render_function, component_module)
     :ok = Loader.reload_module!(module, ast)
