@@ -198,12 +198,12 @@ defmodule Beacon.Loader do
 
   @doc false
   def layout_module_for_site(layout_id) do
-    "Layout#{layout_id}" |> Macro.camelize() |> module_for_site()
+    module_for_site("Layout#{layout_id}")
   end
 
   @doc false
   def page_module_for_site(page_id) do
-    "Page#{page_id}" |> Macro.camelize() |> module_for_site()
+    module_for_site("Page#{page_id}")
   end
 
   defp module_for_site(resource) do
