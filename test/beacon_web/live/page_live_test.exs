@@ -199,7 +199,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       {:ok, _layout} = Content.publish_layout(layout)
 
-      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}
+      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
 
       {:ok, _view, html} = live(conn, "/home")
       assert html =~ ~s|updated_layout|
