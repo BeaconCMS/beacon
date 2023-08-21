@@ -84,7 +84,6 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> assign(:beacon, %{site: site})
       |> assign(:beacon_live_data, live_data)
       |> assign(:__live_path__, path)
       |> assign(:__page_updated_at, DateTime.utc_now())
