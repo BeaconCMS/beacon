@@ -6,7 +6,7 @@ defmodule BeaconWeb.API.ComponentController do
   action_fallback BeaconWeb.API.FallbackController
 
   def index(conn, _params) do
-    component_definitions = Content.list_components(:dev)
+    component_definitions = Content.list_components(:dev, per_page: 30)
     render(conn, :index, component_definitions: component_definitions)
   end
 
