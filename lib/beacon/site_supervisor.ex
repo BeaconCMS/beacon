@@ -15,7 +15,10 @@ defmodule Beacon.SiteSupervisor do
       if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
         []
       else
-        [{Beacon.Loader, config}]
+        [
+          {Beacon.Loader.PageModuleLoader, config},
+          {Beacon.Loader, config}
+        ]
       end
 
     Supervisor.init(children, strategy: :one_for_one)

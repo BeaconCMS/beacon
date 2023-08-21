@@ -91,7 +91,7 @@ defmodule Beacon.Loader do
   def load_page(%Content.Page{} = page) do
     page = Repo.preload(page, :event_handlers)
     config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:load_page, page}, 60_000)
+    GenServer.call(name(config.site), {:load_page, page}, 30_000)
   end
 
   @doc false
@@ -172,7 +172,7 @@ defmodule Beacon.Loader do
     |> Content.list_published_pages()
     |> Enum.map(fn page ->
       Task.async(fn ->
-        {:ok, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page)
+        {:ok, _module, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page)
         :ok
       end)
     end)
@@ -197,20 +197,22 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def layout_module_for_site(site, layout_id) do
-    prefix = Macro.camelize("layout_#{layout_id}")
-    module_for_site(site, prefix)
+  def layout_module_for_site(layout_id) do
+    module_for_site("Layout#{layout_id}")
   end
 
   @doc false
-  def page_module_for_site(site, page_id) do
-    prefix = Macro.camelize("page_#{page_id}")
-    module_for_site(site, prefix)
+  def page_module_for_site(page_id) do
+    module_for_site("Page#{page_id}")
   end
 
-  defp module_for_site(site, prefix) do
-    site_hash = :crypto.hash(:md5, Atom.to_string(site)) |> Base.encode16()
-    Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
+  defp module_for_site(resource) do
+    Module.concat([BeaconWeb.LiveRenderer, resource])
+  end
+
+  defp module_for_site(site, resource) do
+    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16()
+    Module.concat([BeaconWeb.LiveRenderer, "#{site_hash}#{resource}"])
   end
 
   # This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
@@ -358,8 +360,8 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(page.site),
          {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
          :ok <- load_stylesheets(page.site),
-         {:ok, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page) do
-      :ok = Beacon.PubSub.page_loaded(page)
+         {:ok, _module, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page),
+         :ok <- Beacon.PubSub.page_loaded(page) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for page #{page.title} of site #{page.site}"
@@ -368,7 +370,7 @@ defmodule Beacon.Loader do
 
   @doc false
   def do_unload_page(page) do
-    module = page_module_for_site(page.site, page.id)
+    module = page_module_for_site(page.id)
     :code.delete(module)
     :code.purge(module)
     Beacon.Router.del_page(page.site, page.path)

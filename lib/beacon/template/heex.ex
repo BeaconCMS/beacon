@@ -3,7 +3,6 @@ defmodule Beacon.Template.HEEx do
   Handle loading and compilation of HEEx templates.
   """
 
-  import Beacon.Template, only: [is_ast: 1]
   require Logger
 
   @doc """
@@ -35,53 +34,12 @@ defmodule Beacon.Template.HEEx do
       {:halt, exception}
   end
 
-  @doc """
-  Compile `template` AST to generate a `%Phoenix.LiveView.Rendered{}` struct.
-  """
-  @spec eval_ast(Beacon.Template.t(), Beacon.Template.RenderMetadata.t()) :: {:halt, Phoenix.LiveView.Rendered.t()}
-  def eval_ast(template, metadata) when is_ast(template) do
-    %{path: path, assigns: assigns, env: env} = metadata
-
-    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, path_params(path, assigns.__live_path__))
-
-    functions = [
-      {assigns.__beacon_page_module__, [dynamic_helper: 2]},
-      {assigns.__beacon_component_module__, [my_component: 2]}
-      | env.functions
-    ]
-
-    env = %{env | functions: functions}
-
-    rendered =
-      case Code.eval_quoted(template, [assigns: assigns], env) do
-        {%Phoenix.LiveView.Rendered{} = rendered, _bindings} -> rendered
-        {[%Phoenix.LiveView.Rendered{} = rendered], _bindings} -> rendered
-      end
-
-    {:halt, rendered}
-  end
-
-  defp path_params(page_path, path_info) do
-    page_path = String.split(page_path, "/")
-
-    Enum.zip_reduce(page_path, path_info, %{}, fn
-      ":" <> segment, value, acc ->
-        Map.put(acc, segment, value)
-
-      "*" <> segment, value, acc ->
-        position = Enum.find_index(path_info, &(&1 == value))
-        Map.put(acc, segment, Enum.drop(path_info, position))
-
-      _, _, acc ->
-        acc
-    end)
-  end
-
   @doc false
   def compile_heex_template!(file, template) do
     EEx.compile_string(template,
       engine: Phoenix.LiveView.TagEngine,
       line: 1,
+      indentation: 0,
       file: file,
       caller: __ENV__,
       source: template,

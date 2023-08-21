@@ -7,6 +7,7 @@ defmodule Beacon.LoaderTest do
 
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    start_supervised!({Beacon.Loader.PageModuleLoader, Beacon.Config.fetch!(:my_site)})
     :ok
   end
 
@@ -111,7 +112,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "unload page", %{page: page} do
-      module = Beacon.Loader.page_module_for_site(page.site, page.id)
+      module = Beacon.Loader.page_module_for_site(page.id)
       assert Keyword.has_key?(module.__info__(:functions), :page_assigns)
 
       Beacon.Loader.do_unload_page(page)
