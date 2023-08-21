@@ -117,7 +117,7 @@ defmodule Beacon.LoaderTest do
 
       Beacon.Loader.unload_page(page)
 
-      refute Code.loaded?(module)
+      refute :erlang.module_loaded(module)
     end
   end
 end

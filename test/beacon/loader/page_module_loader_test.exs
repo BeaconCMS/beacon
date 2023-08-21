@@ -167,10 +167,10 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
     test "unload page" do
       page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
-      assert Code.loaded?(module)
+      assert :erlang.module_loaded(module)
 
       PageModuleLoader.unload_page!(page)
-      refute Code.loaded?(module)
+      refute :erlang.module_loaded(module)
     end
 
     test "unload page template" do
