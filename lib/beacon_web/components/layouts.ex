@@ -40,7 +40,7 @@ defmodule BeaconWeb.Layouts do
   defp compiled_page_assigns(page_id) do
     page_id
     |> Beacon.Loader.page_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+    |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
   end
 
   defp compiled_layout_assigns(layout_id) do
@@ -60,7 +60,7 @@ defmodule BeaconWeb.Layouts do
     %{title: page_title} =
       page_id
       |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
 
     if page_title do
       page_title
@@ -147,7 +147,7 @@ defmodule BeaconWeb.Layouts do
     %{raw_schema: raw_schema} =
       page_id
       |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
 
     is_empty = fn raw_schema ->
       raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []

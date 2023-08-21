@@ -66,7 +66,7 @@ defmodule BeaconWeb.PageLive do
     socket.assigns.__beacon_page_module__
     |> Beacon.Loader.call_function_with_retry(
       :handle_event,
-      [socket.assigns.__live_path__, event_name, event_params, socket]
+      [event_name, event_params, socket]
     )
     |> case do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->

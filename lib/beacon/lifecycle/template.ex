@@ -91,14 +91,18 @@ defmodule Beacon.Lifecycle.Template do
   @doc """
   Render a `page` template using the registered format used on the `page`.
 
-  This stage runs in the render callback of the LiveView responsible for displaying the page.
+  ## Notes
+
+    - This stage runs in the render callback of the LiveView responsible for displaying the page.
+    - It will load and compile the page module if it wasn't not loaded yet.
+
   """
   @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
   def render_template(page, page_module, assigns, env) do
     template =
       case page_module.render(assigns) do
         %Phoenix.LiveView.Rendered{} = rendered -> rendered
-        :not_loaded -> Beacon.Loader.PageModuleLoader.load_page!(page, page_module, assigns)
+        :not_loaded -> Beacon.Loader.PageModuleLoader.load_page_template!(page, page_module, assigns)
       end
 
     context = [path: page.path, assigns: assigns, env: env]

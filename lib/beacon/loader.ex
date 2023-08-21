@@ -91,7 +91,7 @@ defmodule Beacon.Loader do
   def load_page(%Content.Page{} = page) do
     page = Repo.preload(page, :event_handlers)
     config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:load_page, page}, 60_000)
+    GenServer.call(name(config.site), {:load_page, page}, 30_000)
   end
 
   @doc false
@@ -360,8 +360,8 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(page.site),
          {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
          :ok <- load_stylesheets(page.site),
-         {:ok, _module, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page) do
-      :ok = Beacon.PubSub.page_loaded(page)
+         {:ok, _module, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page),
+         :ok <- Beacon.PubSub.page_loaded(page) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for page #{page.title} of site #{page.site}"

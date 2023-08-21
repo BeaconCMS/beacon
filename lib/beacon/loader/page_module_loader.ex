@@ -31,17 +31,29 @@ defmodule Beacon.Loader.PageModuleLoader do
         stage
       end
 
-    GenServer.call(name(config.site), {:load_page!, page, stage}, 300_000)
+    GenServer.call(name(config.site), {:load_page!, page, stage}, 30_000)
   end
 
   # TODO: retry
-  def load_page!(%Content.Page{} = page, page_module, assigns) do
+  def load_page_template!(%Content.Page{} = page, page_module, assigns) do
     Logger.debug("compiling #{page_module}")
 
-    %Content.Page{} = page = Beacon.Content.get_published_page(page.site, page.id)
-    {:ok, ^page_module, _ast} = load_page!(page, :request)
-    %Phoenix.LiveView.Rendered{} = rendered = page_module.render(assigns)
-    rendered
+    with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
+         {:ok, ^page_module, _ast} <- load_page!(page, :request),
+         %Phoenix.LiveView.Rendered{} = rendered <- page_module.render(assigns) do
+      rendered
+    else
+      _ ->
+        raise Beacon.LoaderError,
+          message: """
+          failed to load the template for the following page:
+
+            id: #{page.id}
+            title: #{page.title}
+            path: #{page.path}
+
+          """
+    end
   end
 
   defp build(module_name, component_module, functions) do
@@ -56,13 +68,35 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
+  ## Callbacks
+
+  def handle_call({:load_page!, page, stage}, _from, config) do
+    component_module = Loader.component_module_for_site(page.site)
+    page_module = Loader.page_module_for_site(page.id)
+
+    # Group function heads together to avoid compiler warnings
+    functions = [
+      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
+        fun.(page)
+      end,
+      render(page, stage),
+      dynamic_helper()
+    ]
+
+    ast = build(page_module, component_module, functions)
+    :ok = Loader.reload_module!(page_module, ast)
+    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
+
+    {:reply, {:ok, page_module, ast}, config}
+  end
+
   defp page_assigns(page) do
-    %{id: id, meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
+    %{meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
     meta_tags = interpolate_meta_tags(meta_tags, page)
     raw_schema = interpolate_raw_schema(raw_schema, page)
 
     quote do
-      def page_assigns(unquote(id)) do
+      def page_assigns do
         %{
           title: unquote(title),
           meta_tags: unquote(Macro.escape(meta_tags)),
@@ -72,7 +106,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  def interpolate_meta_tags(meta_tags, page) do
+  defp interpolate_meta_tags(meta_tags, page) do
     meta_tags
     |> List.wrap()
     |> Enum.map(&interpolate_meta_tag(&1, page))
@@ -136,15 +170,14 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
-  # TODO: path_to_args in paths with dynamic segments may be broken
   defp handle_event(page) do
-    %{site: site, path: path, event_handlers: event_handlers} = page
+    %{site: site, event_handlers: event_handlers} = page
 
     Enum.map(event_handlers, fn event_handler ->
       Beacon.safe_code_check!(site, event_handler.code)
 
       quote do
-        def handle_event(unquote(path_to_args(path, "")), unquote(event_handler.name), var!(event_params), var!(socket)) do
+        def handle_event(unquote(event_handler.name), var!(event_params), var!(socket)) do
           unquote(Code.string_to_quoted!(event_handler.code))
         end
       end
@@ -229,39 +262,5 @@ defmodule Beacon.Loader.PageModuleLoader do
         Loader.call_function_with_retry(__MODULE__, String.to_atom(helper_name), [args])
       end
     end
-  end
-
-  defp path_to_args("", _), do: []
-
-  defp path_to_args(path, prefix) do
-    path
-    |> String.split("/")
-    |> Enum.map(&path_segment_to_arg(&1, prefix))
-  end
-
-  defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
-  defp path_segment_to_arg("*" <> segment, prefix), do: "| " <> prefix <> segment
-  defp path_segment_to_arg(segment, _prefix), do: segment
-
-  ## Callbacks
-
-  def handle_call({:load_page!, page, stage}, _from, config) do
-    component_module = Loader.component_module_for_site(page.site)
-    page_module = Loader.page_module_for_site(page.id)
-
-    # Group function heads together to avoid compiler warnings
-    functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
-        fun.(page)
-      end,
-      render(page, stage),
-      dynamic_helper()
-    ]
-
-    ast = build(page_module, component_module, functions)
-    :ok = Loader.reload_module!(page_module, ast)
-    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
-
-    {:reply, {:ok, page_module, ast}, config}
   end
 end
