@@ -21,39 +21,46 @@ defmodule Beacon.Loader.PageModuleLoader do
     {:ok, config}
   end
 
-  def load_page!(%Content.Page{} = page, stage \\ :boot) do
+  @doc """
+  Reload the page module.
+
+  `stage` can be one of:
+
+    - `:boot` - it won't load the template, useful during app booting process
+    - `:request` - it will load the template, useful during a request
+
+  """
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test] do
+    def load_page!(%Content.Page{} = page, stage \\ :request) do
+      config = Beacon.Config.fetch!(page.site)
+      GenServer.call(name(config.site), {:load_page!, page, stage}, 30_000)
+    end
+  else
+    def load_page!(%Content.Page{} = page, stage \\ :boot) do
+      config = Beacon.Config.fetch!(page.site)
+      GenServer.call(name(config.site), {:load_page!, page, stage}, 30_000)
+    end
+  end
+
+  def unload_page!(page) do
     config = Beacon.Config.fetch!(page.site)
-
-    stage =
-      if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test] do
-        :request
-      else
-        stage
-      end
-
-    GenServer.call(name(config.site), {:load_page!, page, stage}, 30_000)
+    GenServer.call(name(config.site), {:unload_page!, page}, 30_000)
   end
 
   # TODO: retry
+  @doc "Reload the page module and return the %Rendered{} template"
   def load_page_template!(%Content.Page{} = page, page_module, assigns) do
-    Logger.debug("compiling #{page_module}")
+    config = Beacon.Config.fetch!(page.site)
+    GenServer.call(name(config.site), {:load_page_template!, page, page_module, assigns}, 30_000)
+  end
 
-    with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
-         {:ok, ^page_module, _ast} <- load_page!(page, :request),
-         %Phoenix.LiveView.Rendered{} = rendered <- page_module.render(assigns) do
-      rendered
-    else
-      _ ->
-        raise Beacon.LoaderError,
-          message: """
-          failed to load the template for the following page:
+  @doc """
+  Reload the page module replacing the template with a special `:not_loaded` value.
 
-            id: #{page.id}
-            title: #{page.title}
-            path: #{page.path}
-
-          """
-    end
+  That's useful to force the page to reload on the next request.
+  """
+  def unload_page_template!(%Content.Page{} = page) do
+    load_page!(page, :boot)
   end
 
   defp build(module_name, component_module, functions) do
@@ -71,6 +78,42 @@ defmodule Beacon.Loader.PageModuleLoader do
   ## Callbacks
 
   def handle_call({:load_page!, page, stage}, _from, config) do
+    {:reply, do_load_page!(page, stage), config}
+  end
+
+  def handle_call({:unload_page!, page}, _from, config) do
+    page_module = Loader.page_module_for_site(page.id)
+    :code.delete(page_module)
+    :code.purge(page_module)
+    Beacon.Router.del_page(page.site, page.path)
+    {:reply, {:ok, page_module}, config}
+  end
+
+  def handle_call({:load_page_template!, page, page_module, assigns}, _from, config) do
+    Logger.debug("compiling #{page_module}")
+
+    rendered =
+      with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
+           {:ok, ^page_module, _ast} <- do_load_page!(page, :request),
+           %Phoenix.LiveView.Rendered{} = rendered <- page_module.render(assigns) do
+        rendered
+      else
+        _ ->
+          raise Beacon.LoaderError,
+            message: """
+            failed to load the template for the following page:
+
+              id: #{page.id}
+              title: #{page.title}
+              path: #{page.path}
+
+            """
+      end
+
+    {:reply, rendered, config}
+  end
+
+  def do_load_page!(page, stage) do
     component_module = Loader.component_module_for_site(page.site)
     page_module = Loader.page_module_for_site(page.id)
 
@@ -87,7 +130,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     :ok = Loader.reload_module!(page_module, ast)
     Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
 
-    {:reply, {:ok, page_module, ast}, config}
+    {:ok, page_module, ast}
   end
 
   defp page_assigns(page) do

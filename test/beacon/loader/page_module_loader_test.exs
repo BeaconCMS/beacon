@@ -2,7 +2,6 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   use Beacon.DataCase, async: false
 
   import Beacon.Fixtures
-
   alias Beacon.Loader.PageModuleLoader
   alias Beacon.Repo
 
@@ -137,6 +136,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   end
 
   describe "render" do
+    test "do not load template on boot stage" do
+      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page, :boot)
+      assert module.render(%{}) == :not_loaded
+    end
+
     test "render primary template" do
       page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
@@ -155,6 +160,26 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
                {1, %Phoenix.LiveView.Rendered{static: ["<div>variant_a</div>"]}},
                {2, %Phoenix.LiveView.Rendered{static: ["<div>variant_b</div>"]}}
              ] = module.templates(%{})
+    end
+  end
+
+  describe "loading" do
+    test "unload page" do
+      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
+      assert Code.loaded?(module)
+
+      PageModuleLoader.unload_page!(page)
+      refute Code.loaded?(module)
+    end
+
+    test "unload page template" do
+      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
+      assert %Phoenix.LiveView.Rendered{} = module.render(%{})
+
+      PageModuleLoader.unload_page_template!(page)
+      assert module.render(%{}) == :not_loaded
     end
   end
 end

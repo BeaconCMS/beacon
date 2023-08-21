@@ -90,7 +90,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     Beacon.reload_site(:my_site)
 
-    :ok
+    [layout: layout]
   end
 
   describe "meta tags" do
@@ -182,6 +182,21 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home")
 
       assert html =~ ~s(phx-socket="/custom_live")
+    end
+
+    test "reload layout", %{conn: conn, layout: layout} do
+      {:ok, layout} =
+        Content.update_layout(layout, %{
+          "template" => """
+          <%= @inner_content %>
+          <span>updated_layout</span>
+          """
+        })
+
+      {:ok, _layout} = Content.publish_layout(layout)
+
+      {:ok, _view, html} = live(conn, "/home")
+      assert html =~ ~s|updated_layout|
     end
   end
 

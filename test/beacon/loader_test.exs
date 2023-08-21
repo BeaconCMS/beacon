@@ -115,11 +115,9 @@ defmodule Beacon.LoaderTest do
       module = Beacon.Loader.page_module_for_site(page.id)
       assert Keyword.has_key?(module.__info__(:functions), :page_assigns)
 
-      Beacon.Loader.do_unload_page(page)
+      Beacon.Loader.unload_page(page)
 
-      assert_raise UndefinedFunctionError, fn ->
-        module.__info__(:functions)
-      end
+      refute Code.loaded?(module)
     end
   end
 end
