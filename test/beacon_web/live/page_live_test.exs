@@ -185,6 +185,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "reload layout", %{conn: conn, layout: layout} do
+      Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
+
       {:ok, layout} =
         Content.update_layout(layout, %{
           "template" => """
@@ -193,7 +195,11 @@ defmodule BeaconWeb.Live.PageLiveTest do
           """
         })
 
+      id = layout.id
+
       {:ok, _layout} = Content.publish_layout(layout)
+
+      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}
 
       {:ok, _view, html} = live(conn, "/home")
       assert html =~ ~s|updated_layout|

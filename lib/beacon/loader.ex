@@ -300,7 +300,8 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(site),
          :ok <- load_stylesheets(site),
          {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
-         :ok <- unload_pages_template(site, layout.id) do
+         :ok <- unload_pages_template(site, layout.id),
+         :ok <- Beacon.PubSub.layout_loaded(layout) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"

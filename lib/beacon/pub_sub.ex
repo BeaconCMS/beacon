@@ -12,8 +12,14 @@ defmodule Beacon.PubSub do
 
   defp topic_layouts(site), do: "beacon:#{site}:layouts"
 
+  defp topic_layout(site, id), do: "beacon:#{site}:layouts:#{id}"
+
   def subscribe_to_layouts(site) do
     Phoenix.PubSub.subscribe(@pubsub, topic_layouts(site))
+  end
+
+  def subscribe_to_layout(site, id) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_layout(site, id))
   end
 
   def layout_published(%Layout{} = layout) do
@@ -21,6 +27,14 @@ defmodule Beacon.PubSub do
     |> topic_layouts()
     |> broadcast({:layout_published, %{site: layout.site, id: layout.id}})
   end
+
+  def layout_loaded(%Layout{} = layout) do
+    layout.site
+    |> topic_layout(layout.id)
+    |> local_broadcast({:layout_loaded, layout(layout)})
+  end
+
+  defp layout(layout), do: %{site: layout.site, id: layout.id}
 
   # Pages
 
