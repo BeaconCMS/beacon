@@ -25,10 +25,7 @@ defmodule BeaconWeb.PageLive do
 
   def render(assigns) do
     {{site, path}, {page_id, _layout_id, format, page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
-
-    # TODO: remove beacon_path_params?
-    # assigns = Phoenix.Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(path, assigns.__live_path__))
-
+    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(path, assigns.__live_path__))
     page = %Beacon.Content.Page{id: page_id, site: site, path: path, format: format}
     Lifecycle.Template.render_template(page, page_module, assigns, __ENV__)
   end

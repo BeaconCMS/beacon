@@ -1,7 +1,6 @@
 defmodule Beacon.Lifecycle.Template do
   @moduledoc false
 
-  require Logger
   alias Beacon.Lifecycle
   @behaviour Beacon.Lifecycle
 
