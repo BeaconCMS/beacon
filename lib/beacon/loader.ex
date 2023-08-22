@@ -99,6 +99,11 @@ defmodule Beacon.Loader do
     GenServer.call(name(config.site), {:load_page, page}, 30_000)
   end
 
+  def load_page_template(%Content.Page{} = page, page_module, assigns) when is_atom(page_module) and is_map(assigns) do
+    config = Beacon.Config.fetch!(page.site)
+    GenServer.call(name(config.site), {:load_page_template, page, page_module, assigns}, 30_000)
+  end
+
   @doc false
   def unload_page(%Content.Page{} = page) do
     config = Beacon.Config.fetch!(page.site)
@@ -155,7 +160,7 @@ defmodule Beacon.Loader do
     |> Content.list_published_layouts()
     |> Enum.map(fn layout ->
       Task.async(fn ->
-        {:ok, _ast} = LayoutModuleLoader.load_layout!(layout)
+        {:ok, _module, _ast} = LayoutModuleLoader.load_layout!(layout)
         :ok
       end)
     end)
@@ -283,6 +288,11 @@ defmodule Beacon.Loader do
     {:reply, do_load_page(page), config}
   end
 
+  def handle_call({:load_page_template, page, page_module, assigns}, _from, config) do
+    rendered = PageModuleLoader.load_page_template!(page, page_module, assigns)
+    {:reply, rendered, config}
+  end
+
   @doc false
   def handle_call({:unload_page, page}, _from, config) do
     PageModuleLoader.unload_page!(page)
@@ -299,9 +309,7 @@ defmodule Beacon.Loader do
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(site),
          :ok <- load_stylesheets(site),
-         {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
-         :ok <- unload_pages_template(site, layout.id),
-         :ok <- Beacon.PubSub.layout_loaded(layout) do
+         {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
@@ -364,27 +372,13 @@ defmodule Beacon.Loader do
     with :ok <- load_components(page.site),
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(page.site),
-         {:ok, _ast} <- LayoutModuleLoader.load_layout!(layout),
+         {:ok, _module, _ast} <- LayoutModuleLoader.load_layout!(layout),
          :ok <- load_stylesheets(page.site),
-         {:ok, _module, _ast} <- PageModuleLoader.load_page!(page),
-         :ok <- Beacon.PubSub.page_loaded(page) do
+         {:ok, _module, _ast} <- PageModuleLoader.load_page!(page) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for page #{page.title} of site #{page.site}"
     end
-  end
-
-  defp unload_pages_template(site, layout_id) do
-    pages =
-      site
-      |> Content.list_published_pages()
-      |> Enum.filter(&(&1.layout_id == layout_id))
-
-    for page <- pages do
-      PageModuleLoader.unload_page_template!(page)
-    end
-
-    :ok
   end
 
   @doc false

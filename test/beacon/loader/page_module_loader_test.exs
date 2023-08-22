@@ -7,7 +7,6 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
-    start_supervised!({Beacon.Loader.PageModuleLoader, Beacon.Config.fetch!(:my_site)})
     :ok
   end
 
@@ -171,15 +170,6 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
       PageModuleLoader.unload_page!(page)
       refute :erlang.module_loaded(module)
-    end
-
-    test "unload page template" do
-      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
-      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
-      assert %Phoenix.LiveView.Rendered{} = module.render(%{})
-
-      PageModuleLoader.unload_page_template!(page)
-      assert module.render(%{}) == :not_loaded
     end
   end
 end
