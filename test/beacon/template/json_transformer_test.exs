@@ -46,7 +46,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
        ]}
     ]
 
-    assert JsonTransformer.transform(tokenization) ==
+    assert JsonTransformer.transform(tokenization, :my_site) ==
              [
                %{
                  "attrs" => %{},
@@ -87,7 +87,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
        ]}
     ]
 
-    assert JsonTransformer.transform(tokenization) ==
+    assert JsonTransformer.transform(tokenization, :my_site) ==
              [
                %{
                  "tag" => "eex_block",
@@ -103,5 +103,26 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
                  ]
                }
              ]
+  end
+
+  test "includes the rendered HTML for phoenix function components" do
+    tokenization =  [
+      {:tag_block, ".link",
+       [
+         {"patch", {:string, "/contact", %{delimiter: 34}}, %{line: 1, column: 8}},
+         {"replace", {:expr, "true", %{line: 1, column: 34}}, %{line: 1, column: 25}}
+       ], [{:text, "Sample text", %{mode: :normal, newlines: 0}}], %{mode: :inline}}
+    ]
+
+    assert JsonTransformer.transform(tokenization, :my_site) ==
+      [
+        %{
+          "attrs" => %{"patch" => "/contact", "replace" => "{true}"},
+          "content" => ["Sample text"],
+          "rendered_html" => ~S|<a href="/contact" data-phx-link="patch" data-phx-link-state="replace">Sample text</a>|,
+          "tag" => ".link"
+        }
+      ]
+
   end
 end
