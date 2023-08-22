@@ -103,7 +103,7 @@ defmodule Beacon.Lifecycle.Template do
     template =
       case page_module.render(assigns) do
         %Phoenix.LiveView.Rendered{} = rendered -> rendered
-        :not_loaded -> Beacon.Loader.PageModuleLoader.load_page_template!(page, page_module, assigns)
+        :not_loaded -> Beacon.Loader.load_page_template(page, page_module, assigns)
       end
 
     context = [path: page.path, assigns: assigns, env: env]

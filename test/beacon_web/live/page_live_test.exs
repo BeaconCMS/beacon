@@ -9,7 +9,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
-    start_supervised!({Beacon.Loader.PageModuleLoader, Beacon.Config.fetch!(:my_site)})
     :ok
   end
 
@@ -137,6 +136,20 @@ defmodule BeaconWeb.Live.PageLiveTest do
       assert html =~ ~S|<link href="print.css" media="print" rel="stylesheet"/>|
       assert html =~ ~S|<link as="font" crossorigin="anonymous" href="font.woff2" rel="preload" type="font/woff2"/>|
     end
+
+    test "update resource links on layout publish", %{conn: conn, layout: layout} do
+      Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
+
+      {:ok, layout} =
+        Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
+
+      id = layout.id
+      {:ok, _layout} = Content.publish_layout(layout)
+      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
+
+      {:ok, _view, html} = live(conn, "/home")
+      assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
+    end
   end
 
   describe "render" do
@@ -196,9 +209,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
         })
 
       id = layout.id
-
       {:ok, _layout} = Content.publish_layout(layout)
-
       assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
 
       {:ok, _view, html} = live(conn, "/home")
