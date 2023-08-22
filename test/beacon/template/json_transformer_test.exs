@@ -46,7 +46,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
        ]}
     ]
 
-    assert JsonTransformer.transform(tokenization, :my_site) ==
+    assert JsonTransformer.transform(tokenization) ==
              [
                %{
                  "attrs" => %{},
@@ -87,7 +87,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
        ]}
     ]
 
-    assert JsonTransformer.transform(tokenization, :my_site) ==
+    assert JsonTransformer.transform(tokenization) ==
              [
                %{
                  "tag" => "eex_block",
@@ -114,7 +114,7 @@ defmodule Beacon.Template.HEEx.JsonTransformerTest do
        ], [{:text, "Sample text", %{mode: :normal, newlines: 0}}], %{mode: :inline}}
     ]
 
-    assert JsonTransformer.transform(tokenization, :my_site) ==
+    assert JsonTransformer.transform(tokenization) ==
       [
         %{
           "attrs" => %{"patch" => "/contact", "replace" => "{true}"},

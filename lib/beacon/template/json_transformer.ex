@@ -45,12 +45,12 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     }
   ]
   """
-  def transform(ast, site) do
-    _transform(ast, [], site)
+  def transform(ast) do
+    _transform(ast, [])
   end
 
-  defp _transform([head], acc, site) do
-    case transform_entry(head, site) do
+  defp _transform([head], acc) do
+    case transform_entry(head) do
       nil ->
         acc
 
@@ -59,25 +59,25 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     end
   end
 
-  defp _transform([head | tail], acc, site) do
-    case transform_entry(head, site) do
+  defp _transform([head | tail], acc) do
+    case transform_entry(head) do
       nil ->
-        _transform(tail, acc, site)
+        _transform(tail, acc)
 
       entry ->
-        [entry | _transform(tail, acc, site)]
+        [entry | _transform(tail, acc)]
     end
   end
 
   defp _transform([], acc, _), do: acc
 
   # Strips blank text nodes and insignificant whitespace before or after text.
-  defp transform_entry({:text, str, _}, _site) do
+  defp transform_entry({:text, str, _}) do
     str = String.trim(str)
     if str != "", do: str
   end
 
-  defp transform_entry({:eex, str, _}, _site) do
+  defp transform_entry({:eex, str, _}) do
     %{
       "tag" => "eex",
       "attrs" => %{},
@@ -85,30 +85,30 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     }
   end
 
-  defp transform_entry({:eex_block, arg, content_ast}, site) do
+  defp transform_entry({:eex_block, arg, content_ast}) do
     %{
       "tag" => "eex_block",
       "arg" => arg,
-      "blocks" => Enum.map(content_ast, fn block -> transform_block(block, site) end)
+      "blocks" => Enum.map(content_ast, fn block -> transform_block(block) end)
     }
   end
 
-  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node, site) do
+  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node) do
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
-      "content" => transform(content_ast, site)
+      "content" => transform(content_ast)
     }
     case tag do
       "." <> _rest ->
-        rendered_html = Beacon.Template.HEEx.render_component(site, reconstruct_template(ast_node), %{ text: "Sample text" })
+        rendered_html = Beacon.Template.HEEx.render_component(reconstruct_template(ast_node), %{ text: "Sample text" })
         Map.put(entry, "rendered_html", rendered_html)
       _ ->
         entry
     end
   end
 
-  defp transform_entry({:tag_self_close, tag, attrs}, _site) do
+  defp transform_entry({:tag_self_close, tag, attrs}) do
     %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs, true),
@@ -164,10 +164,10 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     {attr_name, true}
   end
 
-  defp transform_block({content_ast, key}, site) do
+  defp transform_block({content_ast, key}) do
     %{
       "key" => key,
-      "content" => transform(content_ast, site)
+      "content" => transform(content_ast)
     }
   end
 end
