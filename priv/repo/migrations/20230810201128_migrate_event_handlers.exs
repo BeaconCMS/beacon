@@ -1,7 +1,6 @@
 defmodule Beacon.Repo.Migrations.MigrateEventHandlers do
   use Ecto.Migration
 
-  alias Beacon.Content
   alias Beacon.Content.Page
   alias Beacon.Content.PageEventHandler
   alias Beacon.Repo
