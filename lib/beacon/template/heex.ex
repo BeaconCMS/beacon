@@ -58,7 +58,7 @@ defmodule Beacon.Template.HEEx do
 
   """
   # https://github.com/phoenixframework/phoenix_live_view/blob/fb111738d56745f37338867b9faea86eb9baa6e1/lib/phoenix_live_view/test/live_view_test.ex#L452
-  def render_component(site, template, assigns, opts \\ []) do
+  def render_component(site, template, assigns, opts \\ []) when is_atom(site) and is_binary(template) and is_map(assigns) and is_list(opts) do
     endpoint = Beacon.Config.fetch!(site).endpoint
     socket = %Phoenix.LiveView.Socket{endpoint: endpoint, router: opts[:router]}
 
