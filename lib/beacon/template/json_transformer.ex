@@ -77,11 +77,13 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     if str != "", do: str
   end
 
-  defp transform_entry({:eex, str, _}) do
+  defp transform_entry({:eex, str, _} = ast_node) do
+    html = Beacon.Template.HEEx.render_component(reconstruct_template(ast_node), %{ beacon_live_data: %{ year: 2023 } })
     %{
       "tag" => "eex",
       "attrs" => %{},
-      "content" => str
+      "content" => str,
+      "rendered_html" => html
     }
   end
 
