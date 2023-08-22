@@ -4,7 +4,7 @@ defmodule Beacon.Template.HeexTest do
   alias Beacon.Template.HEEx
 
   test "render_component" do
-    assert HEEx.render_component(:my_site, ~S|<.link patch="/contact" replace={true}><%= @text %></.link>|, %{text: "Book Meeting"}) ==
+    assert HEEx.render_component(~S|<.link patch="/contact" replace={true}><%= @text %></.link>|, %{text: "Book Meeting"}) ==
              ~S|<a href="/contact" data-phx-link="patch" data-phx-link-state="replace">Book Meeting</a>|
   end
 end

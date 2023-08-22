@@ -57,11 +57,7 @@ defmodule Beacon.Template.HEEx do
       "<a href=\"/contact\" data-phx-link=\"patch\" data-phx-link-state=\"replace\">Book Meeting</a>"
 
   """
-  # https://github.com/phoenixframework/phoenix_live_view/blob/fb111738d56745f37338867b9faea86eb9baa6e1/lib/phoenix_live_view/test/live_view_test.ex#L452
-  def render_component(site, template, assigns, opts \\ []) when is_atom(site) and is_binary(template) and is_map(assigns) and is_list(opts) do
-    endpoint = Beacon.Config.fetch!(site).endpoint
-    socket = %Phoenix.LiveView.Socket{endpoint: endpoint, router: opts[:router]}
-
+  def render_component(template, assigns, opts \\ []) when is_binary(template) and is_map(assigns) and is_list(opts) do
     assigns =
       assigns
       |> Map.new()
@@ -72,11 +68,6 @@ defmodule Beacon.Template.HEEx do
       |> compile_heex_template!(template)
       |> Code.eval_quoted([assigns: assigns], BeaconWeb.PageLive.make_env())
 
-    rendered_to_diff_string(rendered, socket)
-  end
-
-  defp rendered_to_diff_string(rendered, socket) do
-    {_, diff, _} = Phoenix.LiveView.Diff.render(socket, rendered, Phoenix.LiveView.Diff.new_components())
-    diff |> Phoenix.LiveView.Diff.to_iodata() |> IO.iodata_to_binary()
+    rendered |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
   end
 end
