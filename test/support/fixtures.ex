@@ -1,5 +1,6 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Content
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
@@ -183,6 +184,29 @@ defmodule Beacon.Fixtures do
     page
     |> Ecto.build_assoc(:event_handlers)
     |> PageEventHandler.changeset(full_attrs)
+    |> Repo.insert!()
+  end
+
+  def error_page_fixture(attrs \\ %{})
+
+  def error_page_fixture(%{layout: %Content.Layout{}} = attrs) do
+    {layout, attrs} = Map.pop!(attrs, :layout)
+
+    attrs
+    |> Map.put(:layout_id, layout.id)
+    |> error_page_fixture()
+  end
+
+  def error_page_fixture(attrs) do
+    full_attrs = %{
+      site: attrs[:site] || "my_site",
+      status: attrs[:status] || Enum.random(111..999),
+      template: attrs[:template] || "Uh-oh!",
+      layout_id: attrs[:layout_id] || layout_fixture().id
+    }
+
+    %ErrorPage{}
+    |> ErrorPage.changeset(full_attrs)
     |> Repo.insert!()
   end
 end

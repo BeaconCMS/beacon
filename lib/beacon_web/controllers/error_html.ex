@@ -1,6 +1,5 @@
 defmodule BeaconWeb.ErrorHTML do
   @moduledoc false
-
   use BeaconWeb, :html
 
   # If you want to customize your error pages,
@@ -15,7 +14,17 @@ defmodule BeaconWeb.ErrorHTML do
   # The default is to render a plain text page based on
   # the template name. For example, "404.html" becomes
   # "Not Found".
-  def render(template, _assigns) do
-    Phoenix.Controller.status_message_from_template(template)
+  def render(template, assigns) do
+    {_, _, %{extra: %{session: %{"beacon_site" => site}}}} = assigns.conn.private.phoenix_live_view
+
+    status =
+      template
+      |> String.split(".")
+      |> hd()
+      |> String.to_integer()
+
+    site
+    |> Beacon.Content.get_error_page_by_status(status)
+    |> Map.fetch!(:template)
   end
 end

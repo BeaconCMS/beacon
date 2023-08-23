@@ -4,6 +4,7 @@ defmodule Beacon.ContentTest do
   import Beacon.Fixtures
 
   alias Beacon.Content
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -431,6 +432,35 @@ defmodule Beacon.ContentTest do
       {:ok, %Page{}} = Content.delete_event_handler_from_page(page, event_handler)
 
       assert_receive :lifecycle_after_update_page
+    end
+  end
+
+  describe "error_pages:" do
+    test "get_error_page_by_status/2" do
+      error_page = error_page_fixture(%{site: :my_site, status: 404})
+      _other = error_page_fixture(%{site: :my_site, status: 400})
+
+      assert ^error_page = Content.get_error_page_by_status(:my_site, 404)
+    end
+
+    test "create_error_page/1" do
+      %{id: layout_id} = layout_fixture()
+      attrs = %{site: :my_site, status: 400, template: "Oops!", layout_id: layout_id}
+
+      assert {:ok, %ErrorPage{} = error_page} = Content.create_error_page(attrs)
+      assert %{site: :my_site, status: 400, template: "Oops!", layout_id: ^layout_id} = error_page
+    end
+
+    test "update_error_page/2" do
+      error_page = error_page_fixture()
+
+      assert {:ok, %ErrorPage{template: "Changed"}} = Content.update_error_page(error_page, %{template: "Changed"})
+    end
+
+    test "delete_error_page/1" do
+      error_page = error_page_fixture()
+
+      assert {:ok, %ErrorPage{__meta__: %{state: :deleted}}} = Content.delete_error_page(error_page)
     end
   end
 

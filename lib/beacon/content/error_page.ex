@@ -22,33 +22,31 @@ defmodule Beacon.Content.ErrorPage do
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
+          site: Beacon.Types.Site.t(),
           status: integer,
           template: binary(),
+          layout_id: Ecto.UUID.t(),
+          layout: Beacon.Content.Layout.t(),
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
         }
 
   schema "beacon_error_pages" do
+    field :site, Beacon.Types.Site
     field :status, :integer
     field :template, :string
+
+    belongs_to :layout, Beacon.Content.Layout
 
     timestamps()
   end
 
-  # If we move to Elixir 1.15+ we can use Range.to_list/1 here
-  @error_codes Enum.to_list(400..418) ++
-                 Enum.to_list(421..426) ++
-                 [428, 429, 431, 451] ++
-                 Enum.to_list(500..508) ++
-                 [510, 511]
-
   @doc false
   def changeset(%__MODULE__{} = error_page, attrs) do
-    fields = [:status, :template]
+    fields = ~w(status template site layout_id)a
 
     error_page
     |> cast(attrs, fields)
     |> validate_required(fields)
-    |> validate_inclusion(:status, @error_codes)
   end
 end

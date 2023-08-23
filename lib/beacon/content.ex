@@ -75,6 +75,18 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns a map of attrs to load the default layout into new sites.
+  """
+  @spec default_layout() :: map()
+  @doc type: :layouts
+  def default_layout do
+    %{
+      title: "Default",
+      template: "<%= @inner_content %>"
+    }
+  end
+
+  @doc """
   Creates a layout.
 
   ## Example
@@ -1674,14 +1686,54 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  """
+  @doc type: :error_pages
+  @spec get_error_page_by_status(Site.t(), Integer.t()) :: ErrorPage.t()
+  def get_error_page_by_status(site, status) do
+    Repo.one(
+      from e in ErrorPage,
+        where: e.site == ^site,
+        where: e.status == ^status
+    )
+  end
+
+  @doc """
   Creates a new error page.
   """
   @doc type: :error_pages
-  @spec create_error_page(%{status: integer(), template: binary()}) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  @spec create_error_page(%{site: Site.t(), status: integer(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+          {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def create_error_page(attrs) do
     %ErrorPage{}
     |> ErrorPage.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Creates a new error page, raising if the operation fails.
+  """
+  @doc type: :error_pages
+  @spec create_error_page!(%{site: Site.t(), status: integer(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+          ErrorPage.t()
+  def create_error_page!(attrs) do
+    case create_error_page(attrs) do
+      {:ok, error_page} -> error_page
+      {:error, changeset} -> raise "failed to create error page, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Returns attr data to load the default error_pages into new sites.
+  """
+  @spec default_error_pages() :: [map()]
+  @doc type: :error_pages
+  def default_error_pages do
+    for status <- [404, 500] do
+      %{
+        status: status,
+        template: Plug.Conn.Status.reason_phrase(status)
+      }
+    end
   end
 
   @doc """

@@ -31,17 +31,21 @@ defmodule Beacon.Loader do
 
   @doc false
   def init(config) do
+    %{site: site} = config
+
     if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
       :skip
     else
-      with :ok <- populate_components(config.site) do
-        :ok = load_site_from_db(config.site)
+      with :ok <- populate_components(site),
+           :ok <- populate_layouts(site),
+           :ok <- populate_error_pages(site) do
+        :ok = load_site_from_db(site)
       end
     end
 
-    PubSub.subscribe_to_layouts(config.site)
-    PubSub.subscribe_to_pages(config.site)
-    PubSub.subscribe_to_components(config.site)
+    PubSub.subscribe_to_layouts(site)
+    PubSub.subscribe_to_pages(site)
+    PubSub.subscribe_to_components(site)
 
     {:ok, config}
   end
@@ -53,6 +57,39 @@ defmodule Beacon.Loader do
           attrs
           |> Map.put(:site, site)
           |> Content.create_component!()
+
+        _ ->
+          :skip
+      end
+    end
+
+    :ok
+  end
+
+  defp populate_layouts(site) do
+    case Content.get_layout_by(site, title: "Default") do
+      nil ->
+        Content.default_layout()
+        |> Map.put(:site, site)
+        |> Content.create_layout!()
+
+      _ ->
+        :skip
+    end
+
+    :ok
+  end
+
+  defp populate_error_pages(site) do
+    default_layout = Content.get_layout_by(site, title: "Default")
+
+    for attrs <- Content.default_error_pages() do
+      case Content.get_error_page_by_status(site, attrs.status) do
+        nil ->
+          attrs
+          |> Map.put(:site, site)
+          |> Map.put(:layout_id, default_layout.id)
+          |> Content.create_error_page!()
 
         _ ->
           :skip
