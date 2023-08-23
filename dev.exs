@@ -264,6 +264,10 @@ seeds = fn ->
           <p>From dynamic_helper:</p>
           <%= dynamic_helper("upcase", %{name: "beacon"}) %>
         </div>
+
+        <div>
+          <p>RANDOM:<%= Enum.random(1..100) %></p>
+        </div>
       </main>
       """,
       helpers: [

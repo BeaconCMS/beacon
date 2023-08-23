@@ -70,10 +70,12 @@ defmodule Beacon.Lifecycle.Template do
 
   def validate_output!(lifecycle, _site, _type) do
     raise Beacon.LoaderError, """
-    Return output must be of type Phoenix.LiveView.Rendered.
+    excpected output to be a %Phoenix.LiveView.Rendered{} struct
 
-    Output returned:
-    #{inspect(lifecycle.output)}
+    Got:
+
+      #{inspect(lifecycle.output)}
+
     """
   end
 
@@ -90,10 +92,22 @@ defmodule Beacon.Lifecycle.Template do
   @doc """
   Render a `page` template using the registered format used on the `page`.
 
-  This stage runs in the render callback of the LiveView responsible for displaying the page.
+  ## Notes
+
+    - This stage runs in the render callback of the LiveView responsible for displaying the page.
+    - It will load and compile the page module if it wasn't not loaded yet.
+
   """
-  def render_template(site, template, format, context) do
-    lifecycle = Lifecycle.execute(__MODULE__, site, :render_template, template, sub_key: format, context: context)
+  @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
+  def render_template(page, page_module, assigns, env) do
+    template =
+      case page_module.render(assigns) do
+        %Phoenix.LiveView.Rendered{} = rendered -> rendered
+        :not_loaded -> Beacon.Loader.load_page_template(page, page_module, assigns)
+      end
+
+    context = [path: page.path, assigns: assigns, env: env]
+    lifecycle = Lifecycle.execute(__MODULE__, page.site, :render_template, template, sub_key: page.format, context: context)
     lifecycle.output
   end
 end

@@ -146,18 +146,24 @@ defmodule Beacon.Content do
   Event + snapshot
   """
   @doc type: :layouts
-  @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | any()
+  @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    changeset = Layout.changeset(layout, %{})
+    publish = fn layout ->
+      changeset = Layout.changeset(layout, %{})
 
-    Repo.transact(fn ->
-      with {:ok, _changeset} <- validate_layout_template(changeset),
-           {:ok, event} <- create_layout_event(layout, "published"),
-           {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
-        :ok = PubSub.layout_published(layout)
-        {:ok, layout}
-      end
-    end)
+      Repo.transact(fn ->
+        with {:ok, _changeset} <- validate_layout_template(changeset),
+             {:ok, event} <- create_layout_event(layout, "published"),
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
+          {:ok, layout}
+        end
+      end)
+    end
+
+    with {:ok, layout} <- publish.(layout),
+         :ok <- PubSub.layout_published(layout) do
+      {:ok, layout}
+    end
   end
 
   @doc type: :layouts
@@ -526,19 +532,25 @@ defmodule Beacon.Content do
   can keep editing the page as needed without impacting the published page.
   """
   @doc type: :pages
-  @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    changeset = Page.update_changeset(page, %{})
+    publish = fn page ->
+      changeset = Page.update_changeset(page, %{})
 
-    Repo.transact(fn ->
-      with {:ok, _changeset} <- validate_page_template(changeset),
-           {:ok, event} <- create_page_event(page, "published"),
-           {:ok, _snapshot} <- create_page_snapshot(page, event),
-           %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
-        :ok = PubSub.page_published(page)
-        {:ok, page}
-      end
-    end)
+      Repo.transact(fn ->
+        with {:ok, _changeset} <- validate_page_template(changeset),
+             {:ok, event} <- create_page_event(page, "published"),
+             {:ok, _snapshot} <- create_page_snapshot(page, event),
+             %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
+
+    with {:ok, page} <- publish.(page),
+         :ok <- PubSub.page_published(page) do
+      {:ok, page}
+    end
   end
 
   @doc type: :pages

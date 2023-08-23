@@ -14,6 +14,11 @@ defmodule Beacon.Loader do
   use GenServer
 
   alias Beacon.Content
+  alias Beacon.Loader.ComponentModuleLoader
+  alias Beacon.Loader.LayoutModuleLoader
+  alias Beacon.Loader.PageModuleLoader
+  alias Beacon.Loader.SnippetModuleLoader
+  alias Beacon.Loader.StylesheetModuleLoader
   alias Beacon.PubSub
   alias Beacon.Repo
 
@@ -128,7 +133,18 @@ defmodule Beacon.Loader do
   def load_page(%Content.Page{} = page) do
     page = Repo.preload(page, :event_handlers)
     config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:load_page, page}, 60_000)
+    GenServer.call(name(config.site), {:load_page, page}, 30_000)
+  end
+
+  def load_page_template(%Content.Page{} = page, page_module, assigns) when is_atom(page_module) and is_map(assigns) do
+    config = Beacon.Config.fetch!(page.site)
+    GenServer.call(name(config.site), {:load_page_template, page, page_module, assigns}, 30_000)
+  end
+
+  @doc false
+  def unload_page(%Content.Page{} = page) do
+    config = Beacon.Config.fetch!(page.site)
+    GenServer.call(name(config.site), {:unload_page, page}, 30_000)
   end
 
   @doc false
@@ -152,41 +168,27 @@ defmodule Beacon.Loader do
       reraise Beacon.LoaderError, [message: message], __STACKTRACE__
   end
 
-  defp load_runtime_css(site) do
-    # too slow to run the css compiler on every test
-    if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
-      :ok
-    else
-      Beacon.RuntimeCSS.load(site)
-    end
+  # too slow to run the css compiler on every test
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
+    defp load_runtime_css(_site), do: :ok
+  else
+    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load(site)
   end
 
   defp load_stylesheets(site) do
-    Beacon.Loader.StylesheetModuleLoader.load_stylesheets(
-      site,
-      Beacon.Content.list_stylesheets(site)
-    )
-
+    StylesheetModuleLoader.load_stylesheets(site, Content.list_stylesheets(site))
     :ok
   end
 
   # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
   defp load_components(site) do
-    Beacon.Loader.ComponentModuleLoader.load_components(
-      site,
-      Beacon.Content.list_components(site, per_page: :infinity)
-    )
-
+    ComponentModuleLoader.load_components(site, Content.list_components(site, per_page: :infinity))
     :ok
   end
 
   @doc false
   def load_snippet_helpers(site) do
-    Beacon.Loader.SnippetModuleLoader.load_helpers(
-      site,
-      Beacon.Content.list_snippet_helpers(site)
-    )
-
+    SnippetModuleLoader.load_helpers(site, Content.list_snippet_helpers(site))
     :ok
   end
 
@@ -195,11 +197,11 @@ defmodule Beacon.Loader do
     |> Content.list_published_layouts()
     |> Enum.map(fn layout ->
       Task.async(fn ->
-        {:ok, _ast} = Beacon.Loader.LayoutModuleLoader.load_layout!(layout)
+        {:ok, _module, _ast} = LayoutModuleLoader.load_layout!(layout)
         :ok
       end)
     end)
-    |> Task.await_many(60_000)
+    |> Task.await_many(30_000)
 
     :ok
   end
@@ -209,7 +211,7 @@ defmodule Beacon.Loader do
     |> Content.list_published_pages()
     |> Enum.map(fn page ->
       Task.async(fn ->
-        {:ok, _ast} = Beacon.Loader.PageModuleLoader.load_page!(page)
+        {:ok, _module, _ast} = PageModuleLoader.load_page!(page)
         :ok
       end)
     end)
@@ -234,20 +236,22 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def layout_module_for_site(site, layout_id) do
-    prefix = Macro.camelize("layout_#{layout_id}")
-    module_for_site(site, prefix)
+  def layout_module_for_site(layout_id) do
+    module_for_site("Layout#{layout_id}")
   end
 
   @doc false
-  def page_module_for_site(site, page_id) do
-    prefix = Macro.camelize("page_#{page_id}")
-    module_for_site(site, prefix)
+  def page_module_for_site(page_id) do
+    module_for_site("Page#{page_id}")
   end
 
-  defp module_for_site(site, prefix) do
-    site_hash = :crypto.hash(:md5, Atom.to_string(site)) |> Base.encode16()
-    Module.concat([BeaconWeb.LiveRenderer, "#{prefix}#{site_hash}"])
+  defp module_for_site(resource) do
+    Module.concat([BeaconWeb.LiveRenderer, resource])
+  end
+
+  defp module_for_site(site, resource) do
+    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16()
+    Module.concat([BeaconWeb.LiveRenderer, "#{site_hash}#{resource}"])
   end
 
   # This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
@@ -274,10 +278,11 @@ defmodule Beacon.Loader do
 
     _e in FunctionClauseError ->
       error_message = """
-      Could not call #{function} for the given path: #{inspect(List.flatten(args))}.
+      could not call #{function} for the given path: #{inspect(List.flatten(args))}.
 
-      Make sure you have created a page for this path. Check Pages.create_page!/2 \
-      for more info.\
+      Make sure you have created a page for this path.
+
+      See Pages.create_page!/2 for more info.
       """
 
       reraise Beacon.LoaderError, [message: error_message], __STACKTRACE__
@@ -320,6 +325,17 @@ defmodule Beacon.Loader do
     {:reply, do_load_page(page), config}
   end
 
+  def handle_call({:load_page_template, page, page_module, assigns}, _from, config) do
+    rendered = PageModuleLoader.load_page_template!(page, page_module, assigns)
+    {:reply, rendered, config}
+  end
+
+  @doc false
+  def handle_call({:unload_page, page}, _from, config) do
+    PageModuleLoader.unload_page!(page)
+    {:reply, page, config}
+  end
+
   @doc false
   def handle_info({:layout_published, %{site: site, id: id}}, state) do
     layout = Content.get_published_layout(site, id)
@@ -330,7 +346,7 @@ defmodule Beacon.Loader do
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(site),
          :ok <- load_stylesheets(site),
-         {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout) do
+         {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
@@ -367,11 +383,12 @@ defmodule Beacon.Loader do
   def handle_info({:page_unpublished, %{site: site, id: id}}, state) do
     site
     |> Content.get_published_page(id)
-    |> do_unload_page()
+    |> PageModuleLoader.unload_page!()
 
     {:noreply, state}
   end
 
+  @doc false
   def handle_info({:component_updated, component}, state) do
     :ok = load_components(component.site)
     :ok = Beacon.PubSub.component_loaded(component)
@@ -383,33 +400,22 @@ defmodule Beacon.Loader do
     {:noreply, state}
   end
 
-  @doc false
-  def do_load_page(page) when is_nil(page), do: nil
+  defp do_load_page(page) when is_nil(page), do: nil
 
-  def do_load_page(page) do
+  defp do_load_page(page) do
     layout = Content.get_published_layout(page.site, page.layout_id)
 
     # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
     with :ok <- load_components(page.site),
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(page.site),
-         {:ok, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
+         {:ok, _module, _ast} <- LayoutModuleLoader.load_layout!(layout),
          :ok <- load_stylesheets(page.site),
-         {:ok, _ast} <- Beacon.Loader.PageModuleLoader.load_page!(page) do
-      :ok = Beacon.PubSub.page_loaded(page)
+         {:ok, _module, _ast} <- PageModuleLoader.load_page!(page) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for page #{page.title} of site #{page.site}"
     end
-  end
-
-  @doc false
-  def do_unload_page(page) do
-    module = page_module_for_site(page.site, page.id)
-    :code.delete(module)
-    :code.purge(module)
-    Beacon.Router.del_page(page.site, page.path)
-    :ok
   end
 
   @doc false
