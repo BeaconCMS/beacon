@@ -84,7 +84,7 @@ defmodule Beacon.Loader do
     default_layout = Content.get_layout_by(site, title: "Default")
 
     for attrs <- Content.default_error_pages() do
-      case Content.get_error_page_by_status(site, attrs.status) do
+      case Content.get_error_page(site, attrs.status) do
         nil ->
           attrs
           |> Map.put(:site, site)

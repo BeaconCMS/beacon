@@ -436,11 +436,11 @@ defmodule Beacon.ContentTest do
   end
 
   describe "error_pages:" do
-    test "get_error_page_by_status/2" do
+    test "get_error_page/2" do
       error_page = error_page_fixture(%{site: :my_site, status: 404})
       _other = error_page_fixture(%{site: :my_site, status: 400})
 
-      assert ^error_page = Content.get_error_page_by_status(:my_site, 404)
+      assert ^error_page = Content.get_error_page(:my_site, 404)
     end
 
     test "create_error_page/1" do
