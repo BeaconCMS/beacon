@@ -1701,7 +1701,7 @@ defmodule Beacon.Content do
   Returns the error page for a given site and status code, or `nil` if no matching error page exists.
   """
   @doc type: :error_pages
-  @spec get_error_page(Site.t(), Integer.t()) :: ErrorPage.t() | nil
+  @spec get_error_page(Site.t(), integer()) :: ErrorPage.t() | nil
   def get_error_page(site, status) do
     Repo.one(
       from e in ErrorPage,
