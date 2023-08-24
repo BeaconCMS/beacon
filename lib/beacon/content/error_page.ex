@@ -2,10 +2,12 @@ defmodule Beacon.Content.ErrorPage do
   @moduledoc """
   Stores a template which can be rendered for error responses.
 
-  An ErrorPage contains two main fields:
+  An ErrorPage contains four main fields:
 
     * `:status` - the status code for which this ErrorPage is to be used
     * `:template` - the template to be rendered
+    * `:site` - the Beacon site which should use this page
+    * `:layout_id` - the ID of the Beacon Layout which is used for rendering
 
   > #### Do not create or edit ErrorPages manually {: .warning}
   >

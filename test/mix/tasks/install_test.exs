@@ -27,6 +27,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       Install.run(["--site", "my_site"])
 
       # Injects beacon repo config into config file
+      # and sets Endpoint's :render_errors option
       assert File.read!(@config_path) ==
                """
                # This file is responsible for configuring your application

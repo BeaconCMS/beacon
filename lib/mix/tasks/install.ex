@@ -107,10 +107,10 @@ defmodule Mix.Tasks.Beacon.Install do
       ])
     else
       regex = ~r/(config.*\.Endpoint,\n)((?:.+\n)*\s*)\n/
-      [_header, endpoint_config] = Regex.run(regex, config_file_content, capture: :all_but_first)
-      endpoint_config = "[" <> endpoint_config <> "]"
-      {config_list, []} = Code.eval_string(endpoint_config)
       render_errors_value = [formats: [html: BeaconWeb.ErrorHTML]]
+
+      [_header, endpoint_config_str] = Regex.run(regex, config_file_content, capture: :all_but_first)
+      {config_list, []} = Code.eval_string("[" <> endpoint_config_str <> "]")
       updated_config_list = Keyword.update(config_list, :render_errors, render_errors_value, fn _ -> render_errors_value end)
       updated_str = inspect(updated_config_list) <> "\n"
 
