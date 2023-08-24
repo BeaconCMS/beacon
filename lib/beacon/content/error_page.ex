@@ -48,5 +48,6 @@ defmodule Beacon.Content.ErrorPage do
     error_page
     |> cast(attrs, fields)
     |> validate_required(fields)
+    |> unique_constraint([:status, :site])
   end
 end

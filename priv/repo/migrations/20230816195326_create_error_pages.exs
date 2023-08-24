@@ -12,6 +12,6 @@ defmodule Beacon.Repo.Migrations.CreateErrorPages do
       timestamps()
     end
 
-    create index(:beacon_error_pages, [:site, :status])
+    create unique_index(:beacon_error_pages, [:status, :site])
   end
 end

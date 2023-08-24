@@ -1716,7 +1716,11 @@ defmodule Beacon.Content do
   @doc type: :error_pages
   @spec list_error_pages(Site.t()) :: [ErrorPage.t()]
   def list_error_pages(site) do
-    Repo.all(from e in ErrorPage, where: e.site == ^site)
+    Repo.all(
+      from e in ErrorPage,
+        where: e.site == ^site,
+        order_by: e.status
+    )
   end
 
   @doc """
