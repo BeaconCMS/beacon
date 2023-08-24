@@ -14,6 +14,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
   alias Beacon.Repo
+  alias Ecto.Changeset
 
   describe "layouts" do
     test "create layout should create a created event" do
@@ -443,12 +444,20 @@ defmodule Beacon.ContentTest do
       assert ^error_page = Content.get_error_page(:my_site, 404)
     end
 
-    test "create_error_page/1" do
+    test "create_error_page/1 OK" do
       %{id: layout_id} = layout_fixture()
       attrs = %{site: :my_site, status: 400, template: "Oops!", layout_id: layout_id}
 
       assert {:ok, %ErrorPage{} = error_page} = Content.create_error_page(attrs)
       assert %{site: :my_site, status: 400, template: "Oops!", layout_id: ^layout_id} = error_page
+    end
+
+    test "create_error_page/1 ERROR (duplicate)" do
+      error_page = error_page_fixture()
+      bad_attrs = %{site: error_page.site, status: error_page.status, template: "Error", layout_id: layout_fixture().id}
+
+      assert {:error, %Changeset{errors: errors}} = Content.create_error_page(bad_attrs)
+      assert [{:status, {"has already been taken", [constraint: :unique, constraint_name: "beacon_error_pages_status_site_index"]}}] = errors
     end
 
     test "update_error_page/2" do

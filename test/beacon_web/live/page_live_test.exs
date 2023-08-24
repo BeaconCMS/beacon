@@ -140,8 +140,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "update resource links on layout publish", %{conn: conn, layout: layout} do
       Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
 
-      {:ok, layout} =
-        Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
+      {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
 
       id = layout.id
       {:ok, _layout} = Content.publish_layout(layout)
