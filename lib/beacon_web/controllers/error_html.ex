@@ -11,8 +11,11 @@ defmodule BeaconWeb.ErrorHTML do
       |> hd()
       |> String.to_integer()
 
-    site
-    |> Beacon.Content.get_error_page(status)
-    |> Map.fetch!(:template)
+    %{layout: %{template: layout_template}, template: page_template} =
+      site
+      |> Beacon.Content.get_error_page(status)
+      |> Beacon.Repo.preload(:layout)
+
+    EEx.eval_string(layout_template, assigns: [inner_content: page_template])
   end
 end
