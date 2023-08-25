@@ -7,8 +7,8 @@ defmodule BeaconWeb.API.PageController do
   # TODO: pass arg site
   @site :dev
 
-  def index(conn, _params) do
-    pages = Content.list_pages(@site)
+  def index(conn, %{"site" => site}) do
+    pages = Content.list_pages(site)
     render(conn, :index, pages: pages)
   end
 

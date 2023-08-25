@@ -8,8 +8,8 @@ defmodule BeaconWeb.API.ComponentController do
   # TODO: pass arg site
   @site :dev
 
-  def index(conn, _params) do
-    component_definitions = Content.list_components(@site, per_page: :infinity)
+  def index(conn, %{"site" => site}) do
+    component_definitions = Content.list_components(site, per_page: :infinity)
     render(conn, :index, component_definitions: component_definitions)
   end
 
