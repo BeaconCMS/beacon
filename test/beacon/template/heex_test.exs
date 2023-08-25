@@ -1,10 +1,35 @@
 defmodule Beacon.Template.HeexTest do
-  use ExUnit.Case, async: true
+  use Beacon.DataCase, async: false
 
   alias Beacon.Template.HEEx
+  import Beacon.Fixtures
 
-  test "render_component" do
-    assert HEEx.render_component(~S|<.link patch="/contact" replace={true}><%= @text %></.link>|, %{text: "Book Meeting"}) ==
-             ~S|<a href="/contact" data-phx-link="patch" data-phx-link-state="replace">Book Meeting</a>|
+  describe "render_component" do
+    test "phoenix components" do
+      assert HEEx.render_component(
+               :my_site,
+               ~S|<.link patch="/contact" replace={true}><%= @text %></.link>|,
+               %{text: "Book Meeting"}
+             ) == ~S|<a href="/contact" data-phx-link="patch" data-phx-link-state="replace">Book Meeting</a>|
+    end
+
+    test "eex expressions" do
+      assert HEEx.render_component(:my_site, ~S|<%= 1 + @value %>|, %{value: 1}) == "2"
+    end
+
+    test "user defined components" do
+      start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+      component_fixture(site: "my_site", name: "sample")
+      Beacon.Loader.load_components(:my_site)
+
+      component_module = Beacon.Loader.component_module_for_site(:my_site)
+      Code.loaded?(component_module) |> dbg
+
+      assert HEEx.render_component(
+               :my_site,
+               ~S|<%= my_component("sample", %{val: 1}) %>|,
+               %{}
+             ) == ~S|<span id="my-component-1">1</span>|
+    end
   end
 end

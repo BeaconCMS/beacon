@@ -57,16 +57,25 @@ defmodule Beacon.Template.HEEx do
       "<a href=\"/contact\" data-phx-link=\"patch\" data-phx-link-state=\"replace\">Book Meeting</a>"
 
   """
-  def render_component(template, assigns, opts \\ []) when is_binary(template) and is_map(assigns) and is_list(opts) do
+  def render_component(site, template, assigns, opts \\ []) when is_atom(site) and is_binary(template) and is_map(assigns) and is_list(opts) do
     assigns =
       assigns
       |> Map.new()
       |> Map.put_new(:__changed__, %{})
 
+    env = BeaconWeb.PageLive.make_env()
+
+    functions = [
+      {Beacon.Loader.component_module_for_site(:my_site), [my_component: 2]}
+      | env.functions
+    ]
+
+    env = %{env | functions: functions}
+
     {rendered, _} =
       "nofile"
       |> compile_heex_template!(template)
-      |> Code.eval_quoted([assigns: assigns], BeaconWeb.PageLive.make_env())
+      |> Code.eval_quoted([assigns: assigns], env)
 
     rendered |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
   end
