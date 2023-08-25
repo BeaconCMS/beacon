@@ -138,11 +138,11 @@ defmodule Beacon.Router do
       scope path, BeaconWeb.API do
         import Phoenix.Router, only: [get: 3, post: 3, put: 3]
 
-        get "/pages", PageController, :index
-        get "/pages/:id", PageController, :show
-        put "/pages/:id", PageController, :update
-        get "/components", ComponentController, :index
-        post "/components", ComponentController, :create
+        get "/:site/pages", PageController, :index
+        get "/:site/pages/:id", PageController, :show
+        put "/:site/pages/:id", PageController, :update
+        get "/:site/components", ComponentController, :index
+        post "/:site/components", ComponentController, :create
       end
     end
   end
