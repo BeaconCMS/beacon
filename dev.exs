@@ -264,7 +264,7 @@ seeds = fn ->
 
         <div>
           <p>From dynamic_helper:</p>
-          <%= dynamic_helper("upcase", %{name: "beacon"}) %>
+          <!-- %= dynamic_helper("upcase", %{name: "beacon"}) %> -->
         </div>
 
         <div>

@@ -45,12 +45,12 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     }
   ]
   """
-  def transform(ast) do
-    _transform(ast, [])
+  def transform(ast, site) do
+    _transform(ast, [], site)
   end
 
-  defp _transform([head], acc) do
-    case transform_entry(head) do
+  defp _transform([head], acc, site) do
+    case transform_entry(head, site) do
       nil ->
         acc
 
@@ -59,26 +59,26 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     end
   end
 
-  defp _transform([head | tail], acc) do
-    case transform_entry(head) do
+  defp _transform([head | tail], acc, site) do
+    case transform_entry(head, site) do
       nil ->
-        _transform(tail, acc)
+        _transform(tail, acc, site)
 
       entry ->
-        [entry | _transform(tail, acc)]
+        [entry | _transform(tail, acc, site)]
     end
   end
 
   defp _transform([], acc, _), do: acc
 
   # Strips blank text nodes and insignificant whitespace before or after text.
-  defp transform_entry({:text, str, _}) do
+  defp transform_entry({:text, str, _}, _site) do
     str = String.trim(str)
     if str != "", do: str
   end
 
-  defp transform_entry({:eex, str, _} = ast_node) do
-    html = Beacon.Template.HEEx.render_component(reconstruct_template(ast_node), %{ beacon_live_data: %{ year: "2023", month: "August" } })
+  defp transform_entry({:eex, str, _} = ast_node, site) do
+    html = Beacon.Template.HEEx.render_component(site, reconstruct_template(ast_node), %{ beacon_path_params: %{}, beacon_live_data: %{ year: "2023", month: "August" } })
     %{
       "tag" => "eex",
       "attrs" => %{},
@@ -87,15 +87,15 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     }
   end
 
-  defp transform_entry({:eex_block, arg, content_ast}) do
+  defp transform_entry({:eex_block, arg, content_ast}, site) do
     %{
       "tag" => "eex_block",
       "arg" => arg,
-      "blocks" => Enum.map(content_ast, fn block -> transform_block(block) end)
+      "blocks" => Enum.map(content_ast, fn block -> transform_block(block, site) end)
     }
   end
 
-  defp transform_entry({:eex_comment, comment}) do
+  defp transform_entry({:eex_comment, comment}, _site) do
     %{
       "tag" => "eex_comment",
       "attrs" => %{},
@@ -103,22 +103,30 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     }
   end
 
-  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node) do
+  defp transform_entry({:html_comment, [{:text, comment, _}]}, _site) do
+    %{
+      "tag" => "html_comment",
+      "attrs" => %{},
+      "content" => comment
+    }
+  end
+
+  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node, site) do
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
-      "content" => transform(content_ast)
+      "content" => transform(content_ast, site)
     }
     case tag do
       "." <> _rest ->
-        rendered_html = Beacon.Template.HEEx.render_component(reconstruct_template(ast_node), %{ text: "Sample text" })
+        rendered_html = Beacon.Template.HEEx.render_component(site, reconstruct_template(ast_node), %{ text: "Sample text" })
         Map.put(entry, "rendered_html", rendered_html)
       _ ->
         entry
     end
   end
 
-  defp transform_entry({:tag_self_close, tag, attrs}) do
+  defp transform_entry({:tag_self_close, tag, attrs}, _site) do
     %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs, true),
@@ -174,10 +182,10 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     {attr_name, true}
   end
 
-  defp transform_block({content_ast, key}) do
+  defp transform_block({content_ast, key}, site) do
     %{
       "key" => key,
-      "content" => transform(content_ast)
+      "content" => transform(content_ast, site)
     }
   end
 end

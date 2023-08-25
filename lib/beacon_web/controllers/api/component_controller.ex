@@ -21,8 +21,9 @@ defmodule BeaconWeb.API.ComponentController do
     render(conn, :show, page: page)
   end
 
-  def create(conn, %{"definition_id" => component_definition_id}) do
+  def create(conn, %{"definition_id" => component_definition_id, "page_id" => page_id}) do
+    page = Content.get_page!(page_id)
     definition = Content.get_component_by(@site, id: component_definition_id)
-    render(conn, :show, rendered_html: definition.body)
+    render(conn, :show, rendered_html: definition.body, page: page)
   end
 end

@@ -19,9 +19,9 @@ defmodule BeaconWeb.API.ComponentJSON do
     BeaconWeb.API.PageJSON.show(%{page: page})
   end
 
-  def show(%{rendered_html: rendered_html}) do
+  def show(%{rendered_html: rendered_html, page: page}) do
     {:ok, ast} = Beacon.Template.HEEx.Tokenizer.tokenize(rendered_html)
-    json_ast = Beacon.Template.HEEx.JsonTransformer.transform(ast)
+    json_ast = Beacon.Template.HEEx.JsonTransformer.transform(ast, page.site)
 
     %{
       data: %{ast: json_ast}

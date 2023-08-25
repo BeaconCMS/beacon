@@ -19,7 +19,7 @@ defmodule BeaconWeb.API.PageJSON do
 
   defp data(%Page{} = page) do
     {:ok, ast} = Beacon.Template.HEEx.Tokenizer.tokenize(page.template)
-    json_ast = Beacon.Template.HEEx.JsonTransformer.transform(ast)
+    json_ast = Beacon.Template.HEEx.JsonTransformer.transform(ast, page.site)
 
     %{
       id: page.id,
