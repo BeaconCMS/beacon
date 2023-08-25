@@ -235,6 +235,8 @@ seeds = fn ->
       },
       template: """
       <main>
+        <%!-- Home Page --%>
+
         <h1 class="text-violet-500">Dev</h1>
         <p class="text-sm">Page</p>
 
