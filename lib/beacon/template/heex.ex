@@ -66,7 +66,7 @@ defmodule Beacon.Template.HEEx do
     env = BeaconWeb.PageLive.make_env()
 
     functions = [
-      {Beacon.Loader.component_module_for_site(:my_site), [my_component: 2]}
+      {Beacon.Loader.component_module_for_site(site), [my_component: 2]}
       | env.functions
     ]
 
