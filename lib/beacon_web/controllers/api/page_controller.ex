@@ -4,8 +4,11 @@ defmodule BeaconWeb.API.PageController do
 
   action_fallback BeaconWeb.API.FallbackController
 
+  # TODO: pass arg site
+  @site :dev
+
   def index(conn, _params) do
-    pages = Content.list_pages(:dev)
+    pages = Content.list_pages(@site)
     render(conn, :index, pages: pages)
   end
 

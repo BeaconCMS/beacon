@@ -93,6 +93,14 @@ defmodule Beacon.Template.HEEx.JsonTransformer do
     }
   end
 
+  defp transform_entry({:eex_comment, comment}) do
+    %{
+      "tag" => "eex_comment",
+      "attrs" => %{},
+      "content" => comment
+    }
+  end
+
   defp transform_entry({:tag_block, tag, attrs, content_ast, _}) do
     %{
       "tag" => tag,
