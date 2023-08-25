@@ -22,9 +22,6 @@ defmodule Beacon.Template.HeexTest do
       component_fixture(site: "my_site", name: "sample")
       Beacon.Loader.load_components(:my_site)
 
-      component_module = Beacon.Loader.component_module_for_site(:my_site)
-      Code.loaded?(component_module) |> dbg
-
       assert HEEx.render_component(
                :my_site,
                ~S|<%= my_component("sample", %{val: 1}) %>|,
