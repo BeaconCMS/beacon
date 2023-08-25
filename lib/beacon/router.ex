@@ -142,7 +142,6 @@ defmodule Beacon.Router do
         get "/:site/pages/:id", PageController, :show
         put "/:site/pages/:id", PageController, :update
         get "/:site/components", ComponentController, :index
-        post "/:site/components", ComponentController, :create
       end
     end
   end

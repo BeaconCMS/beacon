@@ -8,13 +8,14 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
   end
 
   defp create_page(_) do
-    page = page_fixture()
+    page = page_fixture(site: :my_site)
     %{page: page}
   end
 
   describe "index" do
+    setup [:create_page]
+
     test "lists all pages", %{conn: conn} do
-      page_fixture(site: :my_site)
       conn = get(conn, "/api/my_site/pages")
 
       assert [
