@@ -1,25 +1,11 @@
 defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
-  use GenServer
-
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
 
   require Logger
-
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config, name: name(config.site))
-  end
-
-  def name(site) do
-    Beacon.Registry.via({site, __MODULE__})
-  end
-
-  def init(config) do
-    {:ok, config}
-  end
 
   @doc """
   Reload the page module.
@@ -32,85 +18,43 @@ defmodule Beacon.Loader.PageModuleLoader do
   """
   if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test] do
     def load_page!(%Content.Page{} = page, stage \\ :request) do
-      config = Beacon.Config.fetch!(page.site)
-      GenServer.call(name(config.site), {:load_page!, page, stage}, 30_000)
+      do_load_page!(page, stage)
     end
   else
     def load_page!(%Content.Page{} = page, stage \\ :boot) do
-      config = Beacon.Config.fetch!(page.site)
-      GenServer.call(name(config.site), {:load_page!, page, stage}, 30_000)
+      do_load_page!(page, stage)
     end
   end
 
   def unload_page!(page) do
-    config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:unload_page!, page}, 30_000)
+    page_module = Loader.page_module_for_site(page.id)
+    :code.delete(page_module)
+    :code.purge(page_module)
+    Beacon.Router.del_page(page.site, page.path)
+    {:ok, page_module}
   end
 
   # TODO: retry
   @doc "Reload the page module and return the %Rendered{} template"
   def load_page_template!(%Content.Page{} = page, page_module, assigns) do
-    config = Beacon.Config.fetch!(page.site)
-    GenServer.call(name(config.site), {:load_page_template!, page, page_module, assigns}, 30_000)
-  end
-
-  @doc """
-  Reload the page module replacing the template with a special `:not_loaded` value.
-
-  That's useful to force the page to reload on the next request.
-  """
-  def unload_page_template!(%Content.Page{} = page) do
-    load_page!(page, :boot)
-  end
-
-  defp build(module_name, component_module, functions) do
-    quote do
-      defmodule unquote(module_name) do
-        use Phoenix.HTML
-        import Phoenix.Component
-        unquote(Loader.maybe_import_my_component(component_module, functions))
-
-        unquote_splicing(functions)
-      end
-    end
-  end
-
-  ## Callbacks
-
-  def handle_call({:load_page!, page, stage}, _from, config) do
-    {:reply, do_load_page!(page, stage), config}
-  end
-
-  def handle_call({:unload_page!, page}, _from, config) do
-    page_module = Loader.page_module_for_site(page.id)
-    :code.delete(page_module)
-    :code.purge(page_module)
-    Beacon.Router.del_page(page.site, page.path)
-    {:reply, {:ok, page_module}, config}
-  end
-
-  def handle_call({:load_page_template!, page, page_module, assigns}, _from, config) do
     Logger.debug("compiling #{page_module}")
 
-    rendered =
-      with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
-           {:ok, ^page_module, _ast} <- do_load_page!(page, :request),
-           %Phoenix.LiveView.Rendered{} = rendered <- page_module.render(assigns) do
-        rendered
-      else
-        _ ->
-          raise Beacon.LoaderError,
-            message: """
-            failed to load the template for the following page:
+    with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
+         {:ok, ^page_module, _ast} <- do_load_page!(page, :request),
+         %Phoenix.LiveView.Rendered{} = rendered <- page_module.render(assigns) do
+      rendered
+    else
+      _ ->
+        raise Beacon.LoaderError,
+          message: """
+          failed to load the template for the following page:
 
-              id: #{page.id}
-              title: #{page.title}
-              path: #{page.path}
+            id: #{page.id}
+            title: #{page.title}
+            path: #{page.path}
 
-            """
-      end
-
-    {:reply, rendered, config}
+          """
+    end
   end
 
   def do_load_page!(page, stage) do
@@ -129,8 +73,21 @@ defmodule Beacon.Loader.PageModuleLoader do
     ast = build(page_module, component_module, functions)
     :ok = Loader.reload_module!(page_module, ast)
     Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
+    :ok = Beacon.PubSub.page_loaded(page)
 
     {:ok, page_module, ast}
+  end
+
+  defp build(module_name, component_module, functions) do
+    quote do
+      defmodule unquote(module_name) do
+        use Phoenix.HTML
+        import Phoenix.Component
+        unquote(Loader.maybe_import_my_component(component_module, functions))
+
+        unquote_splicing(functions)
+      end
+    end
   end
 
   defp page_assigns(page) do

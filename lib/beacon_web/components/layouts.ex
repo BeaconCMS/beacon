@@ -30,7 +30,7 @@ defmodule BeaconWeb.Layouts do
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id} = assigns) do
     layout_id
     |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:render, [layout_id, assigns])
+    |> Beacon.Loader.call_function_with_retry(:render, [assigns])
   end
 
   def live_socket_path(%{__site__: site}) do
@@ -46,7 +46,7 @@ defmodule BeaconWeb.Layouts do
   defp compiled_layout_assigns(layout_id) do
     layout_id
     |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
   end
 
   def render_page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
@@ -68,7 +68,7 @@ defmodule BeaconWeb.Layouts do
       %{title: layout_title} =
         layout_id
         |> Beacon.Loader.layout_module_for_site()
-        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
 
       layout_title || missing_page_title()
     end
