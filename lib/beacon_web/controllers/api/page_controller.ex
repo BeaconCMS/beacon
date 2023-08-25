@@ -4,14 +4,12 @@ defmodule BeaconWeb.API.PageController do
 
   action_fallback BeaconWeb.API.FallbackController
 
-  # TODO: pass arg site
-  @site :dev
-
   def index(conn, %{"site" => site}) do
     pages = Content.list_pages(site)
     render(conn, :index, pages: pages)
   end
 
+  @spec show(Plug.Conn.t(), map) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
     page = Content.get_page!(id)
     render(conn, :show, page: page)
