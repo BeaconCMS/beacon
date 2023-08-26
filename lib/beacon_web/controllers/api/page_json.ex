@@ -18,6 +18,8 @@ defmodule BeaconWeb.API.PageJSON do
   end
 
   defp data(%Page{} = page) do
+    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(page.template, page.site)
+
     %{
       id: page.id,
       layout_id: page.layout_id,
@@ -25,7 +27,7 @@ defmodule BeaconWeb.API.PageJSON do
       site: page.site,
       template: page.template,
       format: page.format,
-      ast: Beacon.Template.HEEx.JSONEncoder.encode(page.template, page.site)
+      ast: ast
     }
   end
 end
