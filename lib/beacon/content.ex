@@ -40,7 +40,7 @@ defmodule Beacon.Content do
   alias Beacon.Lifecycle
   alias Beacon.PubSub
   alias Beacon.Repo
-  alias Beacon.Template.HEEx.HeexTransformer
+  alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
@@ -497,7 +497,7 @@ defmodule Beacon.Content do
       if is_nil(ast) do
         attrs
       else
-        Map.put(attrs, :template, HeexTransformer.transform(ast))
+        Map.put(attrs, :template, HEExDecoder.decode(ast))
       end
 
     changeset = Page.update_changeset(page, attrs)

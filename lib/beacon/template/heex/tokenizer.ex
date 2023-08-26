@@ -1,6 +1,8 @@
 # DO NOT CHANGE THIS FILE
 # It a copy from https://github.com/phoenixframework/phoenix_live_view/blob/d0e46f5430d113269b8903a8b45b025d77532429/lib/phoenix_live_view/html_formatter.ex
 
+# Generates a nested list of token for a given HEEx template
+
 defmodule Beacon.Template.HEEx.Tokenizer do
   alias Phoenix.LiveView.Tokenizer
 

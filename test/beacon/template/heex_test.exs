@@ -1,4 +1,4 @@
-defmodule Beacon.Template.HeexTest do
+defmodule Beacon.Template.HEExTest do
   use Beacon.DataCase, async: false
 
   alias Beacon.Template.HEEx

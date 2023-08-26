@@ -1,14 +1,21 @@
-defmodule Beacon.Template.HEEx.HeexTransformer do
-  def transform(ast) do
+defmodule Beacon.Template.HEEx.HEExDecoder do
+  @moduledoc false
+
+  @doc """
+  Decodes a nested list of tokens into a formatted HEEx template binary.
+  """
+  @spec decode(list()) :: String.t()
+  def decode(ast) do
     ast
-    |> _transform()
+    |> transform()
     |> :erlang.iolist_to_binary()
     |> Phoenix.LiveView.HTMLFormatter.format(heex_line_length: 100)
+    |> String.trim()
   end
 
-  defp _transform([str]) when is_binary(str), do: str
+  defp transform([str]) when is_binary(str), do: str
 
-  defp _transform(ast) do
+  defp transform(ast) do
     Enum.map(ast, &transform_node/1)
   end
 
@@ -21,11 +28,11 @@ defmodule Beacon.Template.HEEx.HeexTransformer do
   end
 
   defp transform_node(%{"tag" => tag, "attrs" => attrs, "content" => content}) when map_size(attrs) == 0 do
-    ["<", tag, ">", _transform(content), "</", tag, ">"]
+    ["<", tag, ">", transform(content), "</", tag, ">"]
   end
 
   defp transform_node(%{"tag" => tag, "attrs" => attrs, "content" => content}) do
-    ["<", tag, " ", transform_attrs(attrs), ">", _transform(content), "</", tag, ">"]
+    ["<", tag, " ", transform_attrs(attrs), ">", transform(content), "</", tag, ">"]
   end
 
   defp transform_node(str) when is_binary(str), do: str
