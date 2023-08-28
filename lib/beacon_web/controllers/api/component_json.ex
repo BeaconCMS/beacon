@@ -3,40 +3,21 @@ defmodule BeaconWeb.API.ComponentJSON do
 
   alias Beacon.Content.Component
 
-  def index(%{component_definitions: definitions}) do
-    %{
-      menu_categories: [
-        %{
-          name: "Base",
-          items: for(category <- Component.categories(), do: %{id: category, name: category})
-        }
-      ],
-      component_definitions: for(definition <- definitions, do: definition_data(definition))
-    }
+  def index(%{components: components}) do
+    %{data: for(component <- components, do: data(component))}
   end
 
-  def show(%{page: page}) do
-    BeaconWeb.API.PageJSON.show(%{page: page})
+  def show(%{component: component}) do
+    %{data: data(component)}
   end
 
-  def show(%{rendered_html: rendered_html, page: page}) do
-    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(page.site, rendered_html)
-
+  defp data(%Component{} = component) do
     %{
-      data: %{ast: ast}
-    }
-  end
-
-  # @doc """
-  # Renders a single component definition.
-  # """
-  defp definition_data(%Component{} = definition) do
-    %{
-      id: definition.id,
-      category: definition.category,
-      name: definition.name,
-      thumbnail: definition.thumbnail,
-      blueprint: definition.body
+      id: component.id,
+      name: component.name,
+      body: component.body,
+      category: component.category,
+      thumbnail: component.thumbnail
     }
   end
 end

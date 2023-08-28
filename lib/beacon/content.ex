@@ -193,7 +193,7 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single layout.
+  Gets a single layout by `id`.
 
   ## Example
 
@@ -633,7 +633,7 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single page.
+  Gets a single page by `id`.
 
   A list of preloads may be passed as a second argument.
 
@@ -1497,6 +1497,26 @@ defmodule Beacon.Content do
     body = Changeset.get_field(changeset, :body)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
     do_validate_template(changeset, :body, :heex, body, metadata)
+  end
+
+  @doc """
+  Gets a single component by `id`.
+
+  ## Example
+
+      iex> get_component("788b2161-b23a-48ed-abcd-8af788004bbb")
+      %Component{}
+
+  """
+  @doc type: :components
+  @spec get_component(Ecto.UUID.t()) :: Component.t() | nil
+  def get_component(id) when is_binary(id) do
+    Repo.get(Component, id)
+  end
+
+  @doc type: :components
+  def get_component!(id) when is_binary(id) do
+    Repo.get!(Page, id)
   end
 
   @doc """
