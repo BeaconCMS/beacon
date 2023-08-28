@@ -18,7 +18,9 @@ defmodule BeaconWeb.API.PageJSON do
   end
 
   defp data(%Page{} = page) do
-    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(page.site, page.template)
+    path = for segment <- String.split(page.path, "/"), segment != "", do: segment
+    beacon_live_data = Beacon.DataSource.live_data(page.site, path, []) |> dbg
+    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(page.site, page.template, %{beacon_live_data: beacon_live_data})
 
     %{
       id: page.id,

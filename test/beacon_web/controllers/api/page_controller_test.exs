@@ -3,12 +3,31 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
   import Beacon.Fixtures
   alias Beacon.Content.Page
 
+  setup_all do
+    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    :ok
+  end
+
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
   defp create_page(_) do
-    page = page_fixture(site: :my_site)
+    component_fixture()
+
+    page =
+      page_fixture(
+        site: :my_site,
+        template: ~S"""
+        <main>
+          <%= my_component("sample_component", val: 1) %>
+        </main>
+
+        """
+      )
+
+    Beacon.reload_site(:my_site)
+
     %{page: page}
   end
 
@@ -20,11 +39,25 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
 
       assert [
                %{
-                 "ast" => [%{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => ["my_site#home"], "tag" => "h1"}], "tag" => "main"}],
+                 "ast" => [
+                   %{
+                     "attrs" => %{},
+                     "content" => [
+                       %{
+                         "attrs" => %{},
+                         "content" => ["my_component(\"sample_component\", val: 1)"],
+                         "tag" => "eex",
+                         "metadata" => %{"opt" => ~c"="},
+                         "renderedHtml" => "<span id=\"my-component-1\">1</span>"
+                       }
+                     ],
+                     "tag" => "main"
+                   }
+                 ],
                  "format" => "heex",
                  "path" => "/home",
                  "site" => "my_site",
-                 "template" => "<main>\n  <h1>my_site#home</h1>\n</main>\n"
+                 "template" => "<main>\n  <%= my_component(\"sample_component\", val: 1) %>\n</main>\n\n"
                }
              ] = json_response(conn, 200)["data"]
     end
@@ -38,12 +71,26 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
       conn = get(conn, "/api/my_site/pages/#{id}")
 
       assert %{
-               "ast" => [%{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => ["my_site#home"], "tag" => "h1"}], "tag" => "main"}],
+               "ast" => [
+                 %{
+                   "attrs" => %{},
+                   "content" => [
+                     %{
+                       "attrs" => %{},
+                       "content" => ["my_component(\"sample_component\", val: 1)"],
+                       "tag" => "eex",
+                       "metadata" => %{"opt" => ~c"="},
+                       "renderedHtml" => "<span id=\"my-component-1\">1</span>"
+                     }
+                   ],
+                   "tag" => "main"
+                 }
+               ],
                "format" => "heex",
                "id" => ^id,
                "path" => "/home",
                "site" => "my_site",
-               "template" => "<main>\n  <h1>my_site#home</h1>\n</main>\n"
+               "template" => "<main>\n  <%= my_component(\"sample_component\", val: 1) %>\n</main>\n\n"
              } = json_response(conn, 200)["data"]
     end
   end
