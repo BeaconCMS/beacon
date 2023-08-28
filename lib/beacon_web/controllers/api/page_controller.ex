@@ -11,13 +11,13 @@ defmodule BeaconWeb.API.PageController do
   end
 
   @spec show(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def show(conn, %{"id" => id}) do
-    page = Content.get_page!(id)
+  def show(conn, %{"page_id" => page_id}) do
+    page = Content.get_page!(page_id)
     render(conn, :show, page: page)
   end
 
-  def update(conn, %{"id" => id, "page" => page_params}) do
-    page = Content.get_page!(id)
+  def update(conn, %{"page_id" => page_id, "page" => page_params}) do
+    page = Content.get_page!(page_id)
 
     with {:ok, %Page{} = page} <- Content.update_page(page, page_params) do
       render(conn, :show, page: page)

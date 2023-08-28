@@ -139,10 +139,10 @@ defmodule Beacon.Router do
         import Phoenix.Router, only: [get: 3, post: 3, put: 3]
 
         get "/:site/pages", PageController, :index
-        get "/:site/pages/:id", PageController, :show
-        put "/:site/pages/:id", PageController, :update
+        get "/:site/pages/:page_id", PageController, :show
+        put "/:site/pages/:page_id", PageController, :update
         get "/:site/components", ComponentController, :index
-        get "/:site/components/:id", ComponentController, :show
+        get "/:site/components/:component_id", ComponentController, :show
       end
     end
   end

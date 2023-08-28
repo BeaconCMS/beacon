@@ -1516,7 +1516,7 @@ defmodule Beacon.Content do
 
   @doc type: :components
   def get_component!(id) when is_binary(id) do
-    Repo.get!(Page, id)
+    Repo.get!(Component, id)
   end
 
   @doc """

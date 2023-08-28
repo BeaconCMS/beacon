@@ -1,7 +1,6 @@
 defmodule BeaconWeb.API.ComponentController do
   use BeaconWeb, :controller
   alias Beacon.Content
-  alias Beacon.Content.Component
 
   action_fallback BeaconWeb.API.FallbackController
 
@@ -11,11 +10,8 @@ defmodule BeaconWeb.API.ComponentController do
     render(conn, :index, components: components)
   end
 
-  def show(conn, %{"site" => site, "id" => id}) do
-    site = String.to_existing_atom(site)
-
-    with %Component{} = component <- Content.get_component_by(site, id: id) do
-      render(conn, :show, component: component, site: site)
-    end
+  def show(conn, %{"component_id" => component_id}) do
+    component = Content.get_component!(component_id)
+    render(conn, :show, component: component)
   end
 end
