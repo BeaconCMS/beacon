@@ -1,11 +1,41 @@
 defmodule Beacon.Template.HEEx.JSONEncoder do
   @moduledoc false
 
+  alias Beacon.Template.HEEx.HEExDecoder
+
+  @type token :: map()
+
   @doc """
   Encodes a HEEx `template` into a format that can be encoded into JSON.
 
   The returned data structure can be serialized and sent over the wire to any client that uses a JSON API,
   and it aims to retain all the information we need to reconstruct back the original template from it.
+
+  ## Data Structure
+
+  The encoded data structured emitted at the end is a list of tokens componsed of either a `heex_node` or a `eex_node`,
+  as specified below:
+
+      tokens = [heex_node() | eex_node()]
+
+      heex_node = %{
+        "tag" => String.t(),
+        "attrs" => %{String.t() => String.t()},
+        "content" => content(),
+        "rendered_html" => String.t()
+      }
+
+      eex_node = %{
+       "tag" => "eex_block",
+       "arg" => String.t(),
+       "blocks" => [%{"key" => String.t(), "content" => content()}]
+      }
+
+      content = [heex_node() | eex_node() | String.t()]
+
+  Note that:
+
+    * `rendered_html` key is optional
 
   ## Example
 
@@ -38,10 +68,10 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       ]
 
   """
-  @spec encode(String.t(), Beacon.Types.Site.t()) :: {:ok, list()} | {:error, String.t()}
-  def encode(template, site) when is_binary(template) and is_atom(site) do
+  @spec encode(Beacon.Types.Site.t(), String.t(), map()) :: {:ok, [token()]} | {:error, String.t()}
+  def encode(site, template, assigns \\ %{}) when is_atom(site) and is_binary(template) and is_map(assigns) do
     case Beacon.Template.HEEx.Tokenizer.tokenize(template) do
-      {:ok, tokens} -> {:ok, encode_tokens(tokens, site)}
+      {:ok, tokens} -> {:ok, encode_tokens(tokens, site, assigns)}
       error -> error
     end
   rescue
@@ -58,12 +88,12 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       reraise Beacon.ParserError, [message: message], __STACKTRACE__
   end
 
-  defp encode_tokens(ast, site) when is_list(ast) and is_atom(site) do
-    transform(ast, [], site)
+  defp encode_tokens(ast, site, assigns) do
+    transform(ast, [], site, assigns)
   end
 
-  defp transform([head], acc, site) do
-    case transform_entry(head, site) do
+  defp transform([head], acc, site, assigns) do
+    case transform_entry(head, site, assigns) do
       nil ->
         acc
 
@@ -72,20 +102,20 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp transform([head | tail], acc, site) do
-    case transform_entry(head, site) do
+  defp transform([head | tail], acc, site, assigns) do
+    case transform_entry(head, site, assigns) do
       nil ->
-        transform(tail, acc, site)
+        transform(tail, acc, site, assigns)
 
       entry ->
-        [entry | transform(tail, acc, site)]
+        [entry | transform(tail, acc, site, assigns)]
     end
   end
 
-  defp transform([], acc, _), do: acc
+  defp transform([], acc, _site, _assigns), do: acc
 
   # Strips blank text nodes and insignificant whitespace before or after text.
-  defp transform_entry({:text, text, _}, _site) do
+  defp transform_entry({:text, text, _}, _site, _assigns) do
     cond do
       :binary.first(text) in ~c"\n" or :binary.last(text) in ~c"\n" ->
         text = String.trim(text)
@@ -96,13 +126,8 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp transform_entry({:eex, str, _} = ast_node, site) do
-    # FIXME: assigns
-    html =
-      Beacon.Template.HEEx.render_component(site, reconstruct_template(ast_node), %{
-        beacon_path_params: %{},
-        beacon_live_data: %{year: "2023", month: "August"}
-      })
+  defp transform_entry({:eex, str, _} = ast_node, site, assigns) do
+    html = Beacon.Template.HEEx.render_component(site, HEExDecoder.decode(ast_node), assigns)
 
     %{
       "tag" => "eex",
@@ -112,40 +137,45 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp transform_entry({:eex_block, arg, content_ast}, site) do
+  defp transform_entry({:eex_block, arg, content_ast}, site, assigns) do
     %{
       "tag" => "eex_block",
       "arg" => arg,
-      "blocks" => Enum.map(content_ast, fn block -> transform_block(block, site) end)
+      "blocks" => Enum.map(content_ast, fn block -> transform_block(block, site, assigns) end)
     }
   end
 
-  defp transform_entry({:eex_comment, comment}, _site) do
+  defp transform_entry({:eex_comment, text}, _site, _assigns) do
     %{
       "tag" => "eex_comment",
       "attrs" => %{},
-      "content" => List.wrap(comment)
+      "content" => List.wrap(text)
     }
   end
 
-  defp transform_entry({:html_comment, [{:text, comment, _}]}, _site) do
+  defp transform_entry({:html_comment, [{:text, text, _}]}, _site, _assigns) do
+    text =
+      text
+      |> String.replace("<!--", "")
+      |> String.replace("-->", "")
+
     %{
       "tag" => "html_comment",
       "attrs" => %{},
-      "content" => comment
+      "content" => List.wrap(text)
     }
   end
 
-  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node, site) do
+  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node, site, assigns) do
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
-      "content" => encode_tokens(content_ast, site)
+      "content" => encode_tokens(content_ast, site, assigns)
     }
 
     case tag do
       "." <> _rest ->
-        rendered_html = Beacon.Template.HEEx.render_component(site, reconstruct_template(ast_node), %{text: "Sample text"})
+        rendered_html = Beacon.Template.HEEx.render_component(site, HEExDecoder.decode(ast_node), assigns)
         Map.put(entry, "rendered_html", rendered_html)
 
       _ ->
@@ -153,36 +183,12 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp transform_entry({:tag_self_close, tag, attrs}, _site) do
+  defp transform_entry({:tag_self_close, tag, attrs}, _site, _assigns) do
     %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs, true),
       "content" => []
     }
-  end
-
-  defp reconstruct_template({:tag_block, tag, attrs, content_ast, _}) do
-    "<" <> tag <> reconstruct_attrs(attrs) <> ">" <> Enum.map_join(content_ast, &reconstruct_template/1) <> "</" <> tag <> ">"
-  end
-
-  defp reconstruct_template({:eex, expr, _}) do
-    "<%=" <> expr <> "%>"
-  end
-
-  defp reconstruct_template({:text, text, _}), do: text
-
-  defp reconstruct_attrs([]), do: ""
-
-  defp reconstruct_attrs(attrs) do
-    " " <> Enum.map_join(attrs, &reconstruct_attr/1)
-  end
-
-  defp reconstruct_attr({name, {:string, content, _}, _}) do
-    ~s|#{name}="#{content}"|
-  end
-
-  defp reconstruct_attr({name, {:expr, content, _}, _}) do
-    "#{name}={#{content}}"
   end
 
   defp transform_attrs([]), do: %{}
@@ -196,7 +202,8 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_attrs(attrs, true) do
-    transform_attrs(attrs)
+    attrs
+    |> transform_attrs()
     |> Map.put("self_close", true)
   end
 
@@ -212,10 +219,10 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     {attr_name, true}
   end
 
-  defp transform_block({content_ast, key}, site) do
+  defp transform_block({content_ast, key}, site, assigns) do
     %{
       "key" => key,
-      "content" => encode_tokens(content_ast, site)
+      "content" => encode_tokens(content_ast, site, assigns)
     }
   end
 end

@@ -752,7 +752,7 @@ dy_seeds = fn ->
                     </span>
                   </h1>
                   <h2 class="-order-1 md:text-base md:leading-7 lg:mb-5 lg:text-lg xl:mb-6 xl:text-xl xl:leading-8 mb-3 text-sm font-semibold leading-6">
-                    <%= @beacon_live_data[:slogan] %>
+                    Growth, Uninhibited
                   </h2>
                 </div>
                 <%!-- Intro text --%>

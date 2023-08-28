@@ -4,8 +4,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   alias Beacon.Template.HEEx.JSONEncoder
   import Beacon.Fixtures
 
-  defp assert_output(template, expected, site \\ :my_site) do
-    assert {:ok, encoded} = JSONEncoder.encode(template, site)
+  defp assert_output(template, expected, assigns \\ %{}, site \\ :my_site) do
+    assert {:ok, encoded} = JSONEncoder.encode(site, template, assigns)
     assert encoded == expected
   end
 
@@ -18,8 +18,23 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     ])
   end
 
+  test "nested elements" do
+    assert_output(
+      ~S|<div><span>content</span></div>|,
+      [
+        %{
+          "attrs" => %{},
+          "content" => [%{"attrs" => %{}, "content" => ["content"], "tag" => "span"}],
+          "tag" => "div"
+        }
+      ]
+    )
+  end
+
   test "comments" do
+    assert_output(~S|<!-- comment -->|, [%{"attrs" => %{}, "content" => [" comment "], "tag" => "html_comment"}])
     assert_output(~S|<%!-- comment --%>|, [%{"attrs" => %{}, "content" => [" comment "], "tag" => "eex_comment"}])
+    assert_output(~S|<%!-- <%= :expr %> --%>|, [%{"attrs" => %{}, "content" => [" <%= :expr %> "], "tag" => "eex_comment"}])
   end
 
   test "eex expressions" do
@@ -28,25 +43,48 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert_output(
       ~S"""
       <%= if @completed do %>
-      Congrats
+        <div><span><%= @completed_message %></span></div>
       <% else %>
-      Keep working
+        Keep working
       <% end %>
       """,
       [
         %{
           "arg" => "if @completed do",
-          "blocks" => [%{"content" => ["Congrats"], "key" => "else"}, %{"content" => ["Keep working"], "key" => "end"}],
+          "blocks" => [
+            %{
+              "content" => [
+                %{
+                  "attrs" => %{},
+                  "content" => [
+                    %{
+                      "attrs" => %{},
+                      "content" => [%{"attrs" => %{}, "content" => ["@completed_message"], "rendered_html" => "Congrats", "tag" => "eex"}],
+                      "tag" => "span"
+                    }
+                  ],
+                  "tag" => "div"
+                }
+              ],
+              "key" => "else"
+            },
+            %{"content" => ["Keep working"], "key" => "end"}
+          ],
           "tag" => "eex_block"
         }
-      ]
+      ],
+      %{completed_message: "Congrats"}
     )
 
     assert_output(
       ~S"""
       <%= case @users do %>
       <% users when is_list(users) -> %>
-        <div>Users</div>
+        <%= if length(users) == 1 do %>
+          <div>Only 1 found</div>
+        <% else %>
+          <div>Multiple users found</div>
+        <% end %>
       <% :error -> %>
         <div>Not Found</div>
       <% _ -> %>
@@ -58,9 +96,29 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
           "arg" => "case @users do",
           "blocks" => [
             %{"content" => [], "key" => "users when is_list(users) ->"},
-            %{"content" => [%{"attrs" => %{}, "content" => ["Users"], "tag" => "div"}], "key" => ":error ->"},
-            %{"content" => [%{"attrs" => %{}, "content" => ["Not Found"], "tag" => "div"}], "key" => "_ ->"},
-            %{"content" => [%{"attrs" => %{}, "content" => ["Something went wrong"], "tag" => "div"}], "key" => "end"}
+            %{
+              "content" => [
+                %{
+                  "tag" => "eex_block",
+                  "arg" => "if length(users) == 1 do",
+                  "blocks" => [
+                    %{"content" => [%{"attrs" => %{}, "content" => ["Only 1 found"], "tag" => "div"}], "key" => "else"},
+                    %{"content" => [%{"attrs" => %{}, "content" => ["Multiple users found"], "tag" => "div"}], "key" => "end"}
+                  ]
+                }
+              ],
+              "key" => ":error ->"
+            },
+            %{
+              "content" => [%{"attrs" => %{}, "content" => ["Not Found"], "tag" => "div"}],
+              "key" => "_ ->"
+            },
+            %{
+              "content" => [
+                %{"attrs" => %{}, "content" => ["Something went wrong"], "tag" => "div"}
+              ],
+              "key" => "end"
+            }
           ],
           "tag" => "eex_block"
         }
@@ -107,18 +165,17 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
-  test "beacon_live_data assigns" do
+  test "assigns" do
     assert_output(
-      ~S|<%= @beacon_live_data[:todo] %>|,
-      [
-        %{"attrs" => %{}, "content" => ["@beacon_live_data[:todo]"], "rendered_html" => "", "tag" => "eex"}
-      ]
+      ~S|<%= @project.name %>|,
+      [%{"attrs" => %{}, "content" => ["@project.name"], "rendered_html" => "Beacon", "tag" => "eex"}],
+      %{project: %{name: "Beacon"}}
     )
   end
 
   test "invalid template" do
     assert_raise Beacon.ParserError, fn ->
-      JSONEncoder.encode(~S|<%= :error|, :my_site)
+      JSONEncoder.encode(:my_site, ~S|<%= :error|)
     end
   end
 end

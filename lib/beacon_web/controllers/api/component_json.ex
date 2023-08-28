@@ -20,7 +20,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
 
   def show(%{rendered_html: rendered_html, page: page}) do
-    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(rendered_html, page.site)
+    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(page.site, rendered_html)
 
     %{
       data: %{ast: ast}

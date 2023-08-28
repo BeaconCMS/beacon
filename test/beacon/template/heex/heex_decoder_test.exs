@@ -5,10 +5,10 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   alias Beacon.Template.HEEx.JSONEncoder
   import Beacon.Fixtures
 
-  defp assert_equal(input, site \\ :my_site) do
-    assert {:ok, encoded} = JSONEncoder.encode(input, site)
-    decoded = encoded |> HEExDecoder.decode() |> String.trim()
-    assert decoded == input
+  defp assert_equal(input, assigns \\ %{}, site \\ :my_site) do
+    assert {:ok, encoded} = JSONEncoder.encode(site, input, assigns)
+    decoded = HEExDecoder.decode(encoded)
+    assert String.trim(decoded) == String.trim(input)
   end
 
   test "html elements with attrs" do
@@ -17,31 +17,31 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     assert_equal(~S|<span class="bg-red text-sm">warning</span>|)
   end
 
-  @tag :skip
   test "comments" do
     assert_equal(~S|<%!-- comment --%>|)
+    assert_equal(~S|<%!-- <%= expr %> --%>|)
   end
 
-  @tag :skip
   test "eex expressions" do
     assert_equal(~S|value: <%= 1 %>|)
+    assert_equal(~S|<%= _a = true %>|)
 
     assert_equal(~S"""
     <%= if @completed do %>
-    Congrats
+      Congrats
     <% else %>
-    Keep working
+      Keep working
     <% end %>
     """)
 
     assert_equal(~S"""
     <%= case @users do %>
-    <% users when is_list(users) -> %>
-      <div>Users</div>
-    <% :error -> %>
-      <div>Not Found</div>
-    <% _ -> %>
-      <div>Something went wrong</div>
+      <% users when is_list(users) -> %>
+        <div>Users</div>
+      <% :error -> %>
+        <div>Not Found</div>
+      <% _ -> %>
+        <div>Something went wrong</div>
     <% end %>
     """)
   end
@@ -60,6 +60,6 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   end
 
   test "beacon_live_data assigns" do
-    assert_equal(~S|<%= @beacon_live_data[:name] %>|)
+    assert_equal(~S|<%= @beacon_live_data[:name] %>|, %{beacon_live_data: %{name: "Beacon"}})
   end
 end
