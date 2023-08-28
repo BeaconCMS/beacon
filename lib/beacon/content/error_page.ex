@@ -33,7 +33,7 @@ defmodule Beacon.Content.ErrorPage do
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
           site: Beacon.Types.Site.t(),
-          status: error_code(),
+          status: error_status(),
           template: binary(),
           layout_id: Ecto.UUID.t(),
           layout: Beacon.Content.Layout.t(),
@@ -41,7 +41,7 @@ defmodule Beacon.Content.ErrorPage do
           updated_at: DateTime.t()
         }
 
-  @type error_code :: unquote(list_to_typespec(@valid_error_codes))
+  @type error_status :: unquote(list_to_typespec(@valid_error_codes))
 
   schema "beacon_error_pages" do
     field :site, Beacon.Types.Site

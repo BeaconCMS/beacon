@@ -1,7 +1,8 @@
 defmodule Beacon.Loader.ErrorModuleLoader do
   @moduledoc false
-
   alias Beacon.Loader
+
+  require Logger
 
   def load_error_pages!(error_pages, site) do
     error_module = Loader.error_module_for_site(site)
