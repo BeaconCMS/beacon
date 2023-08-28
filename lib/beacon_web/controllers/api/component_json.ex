@@ -8,7 +8,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
 
   def show(%{component: component, site: site}) do
-    {:ok, ast } = Beacon.Template.HEEx.JSONEncoder.encode(site, component.body)
+    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(site, component.body)
 
     %{
       data: %{ast: ast}
