@@ -30,6 +30,24 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
     end
   end
 
+  describe "show" do
+    setup [:create_page]
+
+    test "show a page", %{conn: conn, page: page} do
+      id = page.id
+      conn = get(conn, "/api/my_site/pages/#{id}")
+
+      assert %{
+               "ast" => [%{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => ["my_site#home"], "tag" => "h1"}], "tag" => "main"}],
+               "format" => "heex",
+               "id" => ^id,
+               "path" => "/home",
+               "site" => "my_site",
+               "template" => "<main>\n  <h1>my_site#home</h1>\n</main>\n"
+             } = json_response(conn, 200)["data"]
+    end
+  end
+
   describe "update layout" do
     setup [:create_page]
 

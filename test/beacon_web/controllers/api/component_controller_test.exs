@@ -26,4 +26,21 @@ defmodule BeaconWeb.Controllers.Api.ComponentControllerTest do
              ] = json_response(conn, 200)["data"]
     end
   end
+
+  describe "show" do
+    setup [:create_component]
+
+    test "show a component", %{conn: conn, component: component} do
+      id = component.id
+      conn = get(conn, "/api/my_site/components/#{id}")
+
+      assert %{
+               "body" => "<span id={\"my-component-\#{@val}\"}><%= @val %></span>\n",
+               "category" => "other",
+               "id" => ^id,
+               "name" => "sample_component",
+               "thumbnail" => nil
+             } = json_response(conn, 200)["data"]
+    end
+  end
 end
