@@ -127,7 +127,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_entry({:eex, str, _} = ast_node, site, assigns) do
-    html = Beacon.Template.HEEx.render_component(site, HEExDecoder.decode(ast_node), assigns)
+    html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(ast_node), assigns)
 
     %{
       "tag" => "eex",
@@ -175,7 +175,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
     case tag do
       "." <> _rest ->
-        rendered_html = Beacon.Template.HEEx.render_component(site, HEExDecoder.decode(ast_node), assigns)
+        rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(ast_node), assigns)
         Map.put(entry, "rendered_html", rendered_html)
 
       _ ->

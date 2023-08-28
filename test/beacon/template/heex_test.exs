@@ -4,9 +4,9 @@ defmodule Beacon.Template.HEExTest do
   alias Beacon.Template.HEEx
   import Beacon.Fixtures
 
-  describe "render_component" do
+  describe "render" do
     test "phoenix components" do
-      assert HEEx.render_component(
+      assert HEEx.render(
                :my_site,
                ~S|<.link patch="/contact" replace={true}><%= @text %></.link>|,
                %{text: "Book Meeting"}
@@ -14,7 +14,7 @@ defmodule Beacon.Template.HEExTest do
     end
 
     test "eex expressions" do
-      assert HEEx.render_component(:my_site, ~S|<%= 1 + @value %>|, %{value: 1}) == "2"
+      assert HEEx.render(:my_site, ~S|<%= 1 + @value %>|, %{value: 1}) == "2"
     end
 
     test "user defined components" do
@@ -22,7 +22,7 @@ defmodule Beacon.Template.HEExTest do
       component_fixture(site: "my_site", name: "sample")
       Beacon.Loader.load_components(:my_site)
 
-      assert HEEx.render_component(
+      assert HEEx.render(
                :my_site,
                ~S|<%= my_component("sample", %{val: 1}) %>|,
                %{}

@@ -49,15 +49,21 @@ defmodule Beacon.Template.HEEx do
   end
 
   @doc """
-  Returns the rendered HTML of a HEEx `template`
+  Renders the HEEx `template` with `assigns`.
+
+  > #### Use only to render isolated templates {: .warning}
+  >
+  > This function should not be used to render Page Templates,
+  > its purpose is only to render isolated pieces of templates.
 
   ## Example
 
-      iex> Beacon.Template.HEEx.render_component(:my_site, ~S|<.link patch="/contact" replace={true}><%= @text %></.link>|, %{text: "Book Meeting"})
+      iex> Beacon.Template.HEEx.render(:my_site, ~S|<.link patch="/contact" replace={true}><%= @text %></.link>|, %{text: "Book Meeting"})
       "<a href=\"/contact\" data-phx-link=\"patch\" data-phx-link-state=\"replace\">Book Meeting</a>"
 
   """
-  def render_component(site, template, assigns, opts \\ []) when is_atom(site) and is_binary(template) and is_map(assigns) and is_list(opts) do
+  @spec render(Beacon.Types.Site.t(), String.t(), map()) :: String.t()
+  def render(site, template, assigns \\ %{}) when is_atom(site) and is_binary(template) and is_map(assigns) do
     assigns =
       assigns
       |> Map.new()
