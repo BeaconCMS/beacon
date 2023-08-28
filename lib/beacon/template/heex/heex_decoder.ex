@@ -43,6 +43,10 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     ["<%=", content, "%>"]
   end
 
+  defp transform_node(%{"tag" => "html_comment", "content" => content}) do
+    ["<!--", content, "-->"]
+  end
+
   defp transform_node(%{"tag" => "eex_comment", "content" => content}) do
     ["<%!--", content, "--%>"]
   end

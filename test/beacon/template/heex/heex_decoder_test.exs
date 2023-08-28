@@ -18,8 +18,12 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   end
 
   test "comments" do
-    assert_equal(~S|<%!-- comment --%>|)
-    assert_equal(~S|<%!-- <%= expr %> --%>|)
+    assert_equal(~S|<!-- comment -->|)
+
+    if Version.match?(System.version(), ">= 1.15.0") do
+      assert_equal(~S|<%!-- comment --%>|)
+      assert_equal(~S|<%!-- <%= expr %> --%>|)
+    end
   end
 
   test "eex expressions" do
