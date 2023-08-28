@@ -11,9 +11,10 @@ defmodule BeaconWeb.API.ComponentController do
     render(conn, :index, components: components)
   end
 
-  def show(conn, %{"id" => id}) do
-    with %Component{} = component <- Content.get_component(id) do
-      render(conn, :show, component: component)
+  def show(conn, %{"site" => site, "id" => id}) do
+    site = String.to_existing_atom(site)
+    with %Component{} = component <- Content.get_component_by(site, id: id) do
+      render(conn, :show, component: component, site: site)
     end
   end
 end
