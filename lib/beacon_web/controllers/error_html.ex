@@ -2,8 +2,11 @@ defmodule BeaconWeb.ErrorHTML do
   @moduledoc false
   use BeaconWeb, :html
 
+  alias Beacon.Loader
+
   def render(template, assigns) do
     {_, _, %{extra: %{session: %{"beacon_site" => site}}}} = assigns.conn.private.phoenix_live_view
+    error_module = Loader.error_module_for_site(site)
 
     status =
       template
@@ -11,11 +14,6 @@ defmodule BeaconWeb.ErrorHTML do
       |> hd()
       |> String.to_integer()
 
-    %{layout: %{template: layout_template}, template: page_template} =
-      site
-      |> Beacon.Content.get_error_page(status)
-      |> Beacon.Repo.preload(:layout)
-
-    EEx.eval_string(layout_template, assigns: [inner_content: page_template])
+    error_module.render(status)
   end
 end

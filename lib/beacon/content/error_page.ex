@@ -20,8 +20,8 @@ defmodule Beacon.Content.ErrorPage do
   """
   use Beacon.Schema
 
+  import Beacon.Utils, only: [list_to_typespec: 1]
   import Ecto.Changeset
-  import __MODULE__, only: [list_to_typespec: 1]
 
   # We can use Range.to_list/1 here when we upgrade to Elixir 1.15
   @valid_error_codes Enum.to_list(400..418) ++
@@ -65,9 +65,4 @@ defmodule Beacon.Content.ErrorPage do
   end
 
   def valid_error_codes, do: @valid_error_codes
-
-  # https://elixirforum.com/t/dynamically-generate-typespecs-from-module-attribute-list/7078/5
-  def list_to_typespec(list) when is_list(list) do
-    Enum.reduce(list, &{:|, [], [&1, &2]})
-  end
 end
