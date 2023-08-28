@@ -1,14 +1,12 @@
 defmodule BeaconWeb.API.PageController do
   use BeaconWeb, :controller
   alias Beacon.Content
+  alias Beacon.Content.Page
 
   action_fallback BeaconWeb.API.FallbackController
 
-  # TODO: pass arg site
-  @site :dev
-
-  def index(conn, _params) do
-    pages = Content.list_pages(@site)
+  def index(conn, %{"site" => site}) do
+    pages = Content.list_pages(site)
     render(conn, :index, pages: pages)
   end
 
@@ -17,10 +15,11 @@ defmodule BeaconWeb.API.PageController do
     render(conn, :show, page: page)
   end
 
-  def update(conn, %{"id" => id} = map) do
+  def update(conn, %{"id" => id, "page" => page_params}) do
     page = Content.get_page!(id)
-    data = Map.delete(map, "id")
-    {:ok, page} = Content.update_page(page, data)
-    render(conn, :show, page: page)
+
+    with {:ok, %Page{} = page} <- Content.update_page(page, page_params) do
+      render(conn, :show, page: page)
+    end
   end
 end
