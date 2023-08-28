@@ -1701,7 +1701,7 @@ defmodule Beacon.Content do
   Returns the error page for a given site and status code, or `nil` if no matching error page exists.
   """
   @doc type: :error_pages
-  @spec get_error_page(Site.t(), integer()) :: ErrorPage.t() | nil
+  @spec get_error_page(Site.t(), ErrorPage.error_status()) :: ErrorPage.t() | nil
   def get_error_page(site, status) do
     Repo.one(
       from e in ErrorPage,
@@ -1727,7 +1727,7 @@ defmodule Beacon.Content do
   Creates a new error page.
   """
   @doc type: :error_pages
-  @spec create_error_page(%{site: Site.t(), status: integer(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+  @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
           {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def create_error_page(attrs) do
     %ErrorPage{}
@@ -1739,7 +1739,7 @@ defmodule Beacon.Content do
   Creates a new error page, raising if the operation fails.
   """
   @doc type: :error_pages
-  @spec create_error_page!(%{site: Site.t(), status: integer(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+  @spec create_error_page!(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
           ErrorPage.t()
   def create_error_page!(attrs) do
     case create_error_page(attrs) do

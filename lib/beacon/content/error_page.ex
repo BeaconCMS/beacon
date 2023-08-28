@@ -21,17 +21,27 @@ defmodule Beacon.Content.ErrorPage do
   use Beacon.Schema
 
   import Ecto.Changeset
+  import __MODULE__, only: [list_to_typespec: 1]
+
+  # We can use Range.to_list/1 here when we upgrade to Elixir 1.15
+  @valid_error_codes Enum.to_list(400..418) ++
+                       Enum.to_list(421..426) ++
+                       [428, 429, 431, 451] ++
+                       Enum.to_list(500..508) ++
+                       [510, 511]
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
           site: Beacon.Types.Site.t(),
-          status: integer,
+          status: error_code(),
           template: binary(),
           layout_id: Ecto.UUID.t(),
           layout: Beacon.Content.Layout.t(),
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
         }
+
+  @type error_code :: unquote(list_to_typespec(@valid_error_codes))
 
   schema "beacon_error_pages" do
     field :site, Beacon.Types.Site
@@ -51,5 +61,13 @@ defmodule Beacon.Content.ErrorPage do
     |> cast(attrs, fields)
     |> validate_required(fields)
     |> unique_constraint([:status, :site])
+    |> validate_inclusion(:status, @valid_error_codes)
+  end
+
+  def valid_error_codes, do: @valid_error_codes
+
+  # https://elixirforum.com/t/dynamically-generate-typespecs-from-module-attribute-list/7078/5
+  def list_to_typespec(list) when is_list(list) do
+    Enum.reduce(list, &{:|, [], [&1, &2]})
   end
 end
