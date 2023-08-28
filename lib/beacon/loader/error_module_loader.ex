@@ -8,6 +8,13 @@ defmodule Beacon.Loader.ErrorModuleLoader do
 
     render_functions = Enum.map(error_pages, &build_render_fn/1)
 
+    # TODO: get from db
+    layout_404_template =
+      Beacon.Template.HEEx.compile_heex_template!("site-#{site}-error-layout-404", """
+      <div>layout_404#examle</div>
+      <%= @inner_content %>
+      """)
+
     ast =
       quote do
         defmodule unquote(error_module) do
@@ -21,8 +28,13 @@ defmodule Beacon.Loader.ErrorModuleLoader do
 
           # Catch-all for error which do not have an ErrorPage defined
           def render(var!(status)) do
-            Logger.warn("Missing Error page for #{unquote(site)} status #{var!(status)}")
+            Logger.warning("Missing Error page for #{unquote(site)} status #{var!(status)}")
             Plug.Conn.Status.reason_phrase(var!(status))
+          end
+
+          # TODO: build dynamically
+          def layout(404, var!(assigns)) when is_map(var!(assigns)) do
+            unquote(layout_404_template) |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
           end
         end
       end
@@ -33,13 +45,17 @@ defmodule Beacon.Loader.ErrorModuleLoader do
   end
 
   defp build_render_fn(error_page) do
-    %{site: site, template: page_template, layout: %{template: layout_template}} = error_page
-    file = "site-#{site}-error-pages"
+    %{site: site, template: page_template, layout: %{template: _layout_template}} = error_page
+    file = "site-#{site}-error-page-#{error_page.status}"
+
+    error_module = Loader.error_module_for_site(site)
+
+    ast = Beacon.Template.HEEx.compile_heex_template!(file, page_template)
 
     quote do
       def render(unquote(error_page.status)) do
-        content = Beacon.Template.HEEx.compile_heex_template!(unquote(file), unquote(page_template))
-        Beacon.Template.HEEx.compile_heex_template!(unquote(file), unquote(layout_template), inner_content: content)
+        var!(assigns) = %{}
+        apply(unquote(error_module), :layout, [unquote(error_page.status), %{inner_content: unquote(ast)}])
       end
     end
   end

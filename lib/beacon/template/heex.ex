@@ -35,7 +35,7 @@ defmodule Beacon.Template.HEEx do
   end
 
   @doc false
-  def compile_heex_template!(file, template, extra \\ []) do
+  def compile_heex_template!(file, template) do
     assigns =
       [
         engine: Phoenix.LiveView.TagEngine,
@@ -46,7 +46,7 @@ defmodule Beacon.Template.HEEx do
         source: template,
         trim: true,
         tag_handler: Phoenix.LiveView.HTMLEngine
-      ] ++ extra
+      ]
 
     EEx.compile_string(template, assigns)
   end
