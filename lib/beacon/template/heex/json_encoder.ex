@@ -16,7 +16,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   The encoded data structured emitted at the end is a list of tokens componsed of either a `heex_node` or a `eex_node`,
   as specified below:
 
-      tokens = [heex_node() | eex_node()]
+      tokens = [heex_node() | eex_node() | eex_block_node()]
 
       heex_node = %{
         "tag" => String.t(),
@@ -26,12 +26,20 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       }
 
       eex_node = %{
+        "tag" => "eex",
+        "metadata" => %{opt: list()},
+        "attrs" => %{String.t() => String.t()},
+        "content" => content(),
+        "rendered_html" => String.t(),
+      }
+
+      eex_block_node = %{
        "tag" => "eex_block",
        "arg" => String.t(),
        "blocks" => [%{"key" => String.t(), "content" => content()}]
       }
 
-      content = [heex_node() | eex_node() | String.t()]
+      content = [heex_node() | eex_node() | eex_block_node() | String.t()]
 
   Note that:
 
@@ -126,13 +134,14 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp transform_entry({:eex, str, _} = ast_node, site, assigns) do
-    html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(ast_node), assigns)
+  defp transform_entry({:eex, expr, %{opt: opt}} = node, site, assigns) do
+    html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
 
     %{
       "tag" => "eex",
+      "metadata" => %{"opt" => opt},
       "attrs" => %{},
-      "content" => [str],
+      "content" => [expr],
       "rendered_html" => html
     }
   end
@@ -166,7 +175,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = ast_node, site, assigns) do
+  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = node, site, assigns) do
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
@@ -175,7 +184,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
     case tag do
       "." <> _rest ->
-        rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(ast_node), assigns)
+        rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
         Map.put(entry, "rendered_html", rendered_html)
 
       _ ->

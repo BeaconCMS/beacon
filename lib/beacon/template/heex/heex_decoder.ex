@@ -39,6 +39,10 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     Enum.map(ast, &transform_node/1)
   end
 
+  defp transform_node(%{"tag" => "eex", "attrs" => _attrs, "content" => content, "metadata" => %{"opt" => []}}) do
+    ["<%", content, "%>"]
+  end
+
   defp transform_node(%{"tag" => "eex", "attrs" => _attrs, "content" => content}) do
     ["<%=", content, "%>"]
   end
@@ -96,6 +100,14 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
 
   defp decode_node({:tag_block, tag, attrs, content_ast, _}) do
     ["<", tag, reconstruct_attrs(attrs), ">", Enum.map_join(content_ast, &decode_node/1), "</", tag, ">"]
+  end
+
+  defp decode_node({:tag_self_close, tag, attrs}) do
+    ["<", tag, reconstruct_attrs(attrs), "/>"]
+  end
+
+  defp decode_node({:eex, expr, %{opt: []}}) do
+    ["<%", expr, "%>"]
   end
 
   defp decode_node({:eex, expr, _}) do

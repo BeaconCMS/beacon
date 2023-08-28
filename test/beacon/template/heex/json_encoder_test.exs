@@ -41,7 +41,15 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "eex expressions" do
-    assert_output(~S|value: <%= 1 %>|, ["value: ", %{"attrs" => %{}, "content" => ["1"], "rendered_html" => "1", "tag" => "eex"}])
+    assert_output(
+      ~S|<% _name = "Beacon" %>|,
+      [%{"attrs" => %{}, "content" => ["_name = \"Beacon\""], "metadata" => %{"opt" => []}, "rendered_html" => "", "tag" => "eex"}]
+    )
+
+    assert_output(
+      ~S|value: <%= 1 %>|,
+      ["value: ", %{"attrs" => %{}, "content" => ["1"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "1", "tag" => "eex"}]
+    )
 
     assert_output(
       ~S"""
@@ -62,7 +70,15 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                   "content" => [
                     %{
                       "attrs" => %{},
-                      "content" => [%{"attrs" => %{}, "content" => ["@completed_message"], "rendered_html" => "Congrats", "tag" => "eex"}],
+                      "content" => [
+                        %{
+                          "attrs" => %{},
+                          "content" => ["@completed_message"],
+                          "metadata" => %{"opt" => ~c"="},
+                          "rendered_html" => "Congrats",
+                          "tag" => "eex"
+                        }
+                      ],
                       "tag" => "span"
                     }
                   ],
@@ -161,6 +177,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         %{
           "attrs" => %{},
           "content" => ["my_component(\"sample_component\", %{val: 1})"],
+          "metadata" => %{"opt" => ~c"="},
           "rendered_html" => "<span id=\"my-component-1\">1</span>",
           "tag" => "eex"
         }
@@ -171,7 +188,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   test "assigns" do
     assert_output(
       ~S|<%= @project.name %>|,
-      [%{"attrs" => %{}, "content" => ["@project.name"], "rendered_html" => "Beacon", "tag" => "eex"}],
+      [%{"attrs" => %{}, "content" => ["@project.name"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "Beacon", "tag" => "eex"}],
       %{project: %{name: "Beacon"}}
     )
   end

@@ -83,6 +83,8 @@ defmodule Beacon.Template.HEEx do
       |> compile_heex_template!(template)
       |> Code.eval_quoted([assigns: assigns], env)
 
-    rendered |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
+    rendered
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
   end
 end
