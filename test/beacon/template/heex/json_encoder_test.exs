@@ -145,6 +145,19 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
+  @tag :skip
+  test "comprehensions" do
+    assert_output(
+      ~S|
+          <%= for val <- @beacon_live_data[:vals] do %>
+            <%= my_component("sample_component", val: val) %>
+          <% end %>
+        |,
+      [],
+      %{beacon_live_data: %{vals: [1, 2]}}
+    )
+  end
+
   test "function components" do
     assert_output(
       ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,

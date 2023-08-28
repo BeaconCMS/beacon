@@ -146,11 +146,11 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp transform_entry({:eex_block, arg, content_ast}, site, assigns) do
+  defp transform_entry({:eex_block, arg, content}, site, assigns) do
     %{
       "tag" => "eex_block",
       "arg" => arg,
-      "blocks" => Enum.map(content_ast, fn block -> transform_block(block, site, assigns) end)
+      "blocks" => Enum.map(content, fn block -> transform_block(block, site, assigns) end)
     }
   end
 
@@ -175,11 +175,11 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp transform_entry({:tag_block, tag, attrs, content_ast, _} = node, site, assigns) do
+  defp transform_entry({:tag_block, tag, attrs, content, _} = node, site, assigns) do
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
-      "content" => encode_tokens(content_ast, site, assigns)
+      "content" => encode_tokens(content, site, assigns)
     }
 
     case tag do
@@ -228,10 +228,10 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     {attr_name, true}
   end
 
-  defp transform_block({content_ast, key}, site, assigns) do
+  defp transform_block({content, key}, site, assigns) do
     %{
       "key" => key,
-      "content" => encode_tokens(content_ast, site, assigns)
+      "content" => encode_tokens(content, site, assigns)
     }
   end
 end
