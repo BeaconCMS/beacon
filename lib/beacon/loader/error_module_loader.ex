@@ -33,9 +33,13 @@ defmodule Beacon.Loader.ErrorModuleLoader do
   end
 
   defp build_render_fn(error_page) do
+    %{site: site, template: page_template, layout: %{template: layout_template}} = error_page
+    file = "site-#{site}-error-pages"
+
     quote do
       def render(unquote(error_page.status)) do
-        do_some_render(error_page.template, error_page.layout)
+        content = Beacon.Template.HEEx.compile_heex_template!(unquote(file), unquote(page_template))
+        Beacon.Template.HEEx.compile_heex_template!(unquote(file), unquote(layout_template), inner_content: content)
       end
     end
   end
