@@ -200,7 +200,7 @@ defmodule Beacon.Fixtures do
   def error_page_fixture(attrs) do
     full_attrs = %{
       site: attrs[:site] || "my_site",
-      status: attrs[:status] || Enum.random(111..999),
+      status: attrs[:status] || Enum.random(ErrorPage.valid_statuses()),
       template: attrs[:template] || "Uh-oh!",
       layout_id: attrs[:layout_id] || layout_fixture().id
     }

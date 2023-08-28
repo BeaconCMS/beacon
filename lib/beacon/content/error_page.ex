@@ -24,11 +24,11 @@ defmodule Beacon.Content.ErrorPage do
   import Ecto.Changeset
 
   # We can use Range.to_list/1 here when we upgrade to Elixir 1.15
-  @valid_error_codes Enum.to_list(400..418) ++
-                       Enum.to_list(421..426) ++
-                       [428, 429, 431, 451] ++
-                       Enum.to_list(500..508) ++
-                       [510, 511]
+  @valid_error_statuses Enum.to_list(400..418) ++
+                          Enum.to_list(421..426) ++
+                          [428, 429, 431, 451] ++
+                          Enum.to_list(500..508) ++
+                          [510, 511]
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
@@ -41,7 +41,7 @@ defmodule Beacon.Content.ErrorPage do
           updated_at: DateTime.t()
         }
 
-  @type error_status :: unquote(list_to_typespec(@valid_error_codes))
+  @type error_status :: unquote(list_to_typespec(@valid_error_statuses))
 
   schema "beacon_error_pages" do
     field :site, Beacon.Types.Site
@@ -61,8 +61,8 @@ defmodule Beacon.Content.ErrorPage do
     |> cast(attrs, fields)
     |> validate_required(fields)
     |> unique_constraint([:status, :site])
-    |> validate_inclusion(:status, @valid_error_codes)
+    |> validate_inclusion(:status, @valid_error_statuses)
   end
 
-  def valid_error_codes, do: @valid_error_codes
+  def valid_statuses, do: @valid_error_statuses
 end

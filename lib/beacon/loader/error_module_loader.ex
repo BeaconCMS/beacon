@@ -2,8 +2,6 @@ defmodule Beacon.Loader.ErrorModuleLoader do
   @moduledoc false
   alias Beacon.Loader
 
-  require Logger
-
   def load_error_pages!(error_pages, site) do
     error_module = Loader.error_module_for_site(site)
     component_module = Loader.component_module_for_site(site)
@@ -16,6 +14,7 @@ defmodule Beacon.Loader.ErrorModuleLoader do
           use Phoenix.HTML
           import Phoenix.Component
           unquote(Loader.maybe_import_my_component(component_module, render_functions))
+          require Logger
 
           # One function per error page
           unquote_splicing(render_functions)
