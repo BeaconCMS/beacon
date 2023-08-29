@@ -12,7 +12,12 @@ defmodule BeaconWeb.API.PageController do
 
   @spec show(Plug.Conn.t(), map) :: Plug.Conn.t()
   def show(conn, %{"page_id" => page_id}) do
-    page = Content.get_page!(page_id)
+    page =
+      case fetch_query_params(conn) do
+        %{params: %{"include" => "layout"}} -> Content.get_page!(page_id, preloads: [:layout])
+        _ -> Content.get_page!(page_id)
+      end
+
     render(conn, :show, page: page)
   end
 
