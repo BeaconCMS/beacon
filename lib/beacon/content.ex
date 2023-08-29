@@ -735,7 +735,8 @@ defmodule Beacon.Content do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search pages by path or title
+    * `:query` - search pages by path or title.
+    * `:preloads` - a list of preloads to load.
 
   """
   @doc type: :pages
@@ -743,11 +744,13 @@ defmodule Beacon.Content do
   def list_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
 
     site
     |> query_list_pages_base()
     |> query_list_pages_limit(per_page)
     |> query_list_pages_search(search)
+    |> query_list_pages_preloads(preloads)
     |> Repo.all()
   end
 
@@ -761,10 +764,17 @@ defmodule Beacon.Content do
   defp query_list_pages_limit(query, :infinity = _limit), do: query
   defp query_list_pages_limit(query, _per_page), do: from(q in query, limit: 20)
 
-  defp query_list_pages_search(query, search) when is_binary(search),
-    do: from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))
+  defp query_list_pages_search(query, search) when is_binary(search) do
+    from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))
+  end
 
   defp query_list_pages_search(query, _search), do: query
+
+  defp query_list_pages_preloads(query, [_preload | _] = preloads) do
+    from(q in query, preload: ^preloads)
+  end
+
+  defp query_list_pages_preloads(query, _preloads), do: query
 
   @doc """
   Returns all published pages for `site`.
