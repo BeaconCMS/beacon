@@ -38,7 +38,7 @@ defmodule BeaconWeb.API.PageJSON do
     ast
   end
 
-  defp maybe_include_layout(%{ast: page_ast, template: page_template} = data, %Page{layout: %Layout{} = layout}) do
+  defp maybe_include_layout(%{template: page_template} = data, %Page{layout: %Layout{} = layout}) do
     layout =
       layout
       |> Map.from_struct()
