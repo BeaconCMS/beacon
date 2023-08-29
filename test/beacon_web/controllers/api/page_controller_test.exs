@@ -29,7 +29,7 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
 
     Beacon.Loader.load_page(page)
 
-    %{page: page}
+    %{layout: layout, page: page}
   end
 
   describe "index" do
@@ -92,6 +92,36 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
                "path" => "/home",
                "site" => "my_site",
                "template" => "<main>\n  <%= my_component(\"sample_component\", val: List.first(@beacon_live_data[:vals])) %>\n</main>\n"
+             } = json_response(conn, 200)["data"]
+    end
+
+    test "include layout", %{conn: conn, layout: layout, page: page} do
+      layout_id = layout.id
+      page_id = page.id
+
+      conn = get(conn, "/api/my_site/pages/#{page_id}?include=layout")
+
+      assert %{
+               "layout" => %{
+                 "id" => ^layout_id,
+                 "metaTags" => [],
+                 "resourceLinks" => [],
+                 "site" => "my_site",
+                 "template" => "<header>Page header</header>\n<%= @inner_content %>\n<footer>Page footer</footer>\n",
+                 "title" => "Sample Home Page",
+                 "ast" => [
+                   %{"attrs" => %{}, "content" => ["Page header"], "tag" => "header"},
+                   %{
+                     "attrs" => %{},
+                     "content" => ["@inner_content"],
+                     "metadata" => %{"opt" => ~c"="},
+                     "renderedHtml" =>
+                       "&lt;main&gt;\n  &lt;%= my_component(&quot;sample_component&quot;, val: List.first(@beacon_live_data[:vals])) %&gt;\n&lt;/main&gt;\n",
+                     "tag" => "eex"
+                   },
+                   %{"attrs" => %{}, "content" => ["Page footer"], "tag" => "footer"}
+                 ]
+               }
              } = json_response(conn, 200)["data"]
     end
   end

@@ -206,6 +206,32 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
+  test "layout inner_content" do
+    layout_template = ~S|
+    <header>my_header</header>
+    <%= @inner_content %>
+    |
+
+    page_template = ~S|
+    <div>page</div>
+    |
+
+    assert_output(
+      layout_template,
+      [
+        %{"attrs" => %{}, "content" => ["my_header"], "tag" => "header"},
+        %{
+          "attrs" => %{},
+          "content" => ["@inner_content"],
+          "metadata" => %{"opt" => ~c"="},
+          "rendered_html" => "\n    &lt;div&gt;page&lt;/div&gt;\n    ",
+          "tag" => "eex"
+        }
+      ],
+      %{inner_content: page_template}
+    )
+  end
+
   test "invalid template" do
     assert_raise Beacon.ParserError, fn ->
       JSONEncoder.encode(:my_site, ~S|<%= :error|)

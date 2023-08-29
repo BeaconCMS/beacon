@@ -635,28 +635,35 @@ defmodule Beacon.Content do
   @doc """
   Gets a single page by `id`.
 
-  A list of preloads may be passed as a second argument.
+  ## Options
+
+    * `:preloads` - a list of preloads to load.
 
   ## Examples
 
       iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
 
-      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", [:layout])
+      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", preloads: [:layout])
       %Page{layout: %Layout{}}
 
   """
   @doc type: :pages
-  @spec get_page(Ecto.UUID.t(), list()) :: Page.t() | nil
-  def get_page(id, preloads \\ []) when is_binary(id) and is_list(preloads) do
+  @spec get_page(Ecto.UUID.t(), keyword()) :: Page.t() | nil
+  def get_page(id, opts \\ []) when is_binary(id) and is_list(opts) do
+    preloads = Keyword.get(opts, :preloads, [])
+
     Page
     |> Repo.get(id)
     |> Repo.preload(preloads)
   end
 
   @doc type: :pages
-  def get_page!(id) when is_binary(id) do
-    Repo.get!(Page, id)
+  def get_page!(id, opts \\ []) when is_binary(id) and is_list(opts) do
+    case get_page(id, opts) do
+      %Page{} = page -> page
+      nil -> raise "page #{id} not found"
+    end
   end
 
   @doc """
