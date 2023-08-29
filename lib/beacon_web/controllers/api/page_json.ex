@@ -50,6 +50,7 @@ defmodule BeaconWeb.API.PageJSON do
 
   defp maybe_include_layout(data, _page), do: data
 
+  # TODO: cache layout ast instead of recomputing for every page
   defp layout_ast(layout, page_template) do
     {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(layout.site, layout.template, %{inner_content: page_template})
     ast

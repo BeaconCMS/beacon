@@ -62,6 +62,34 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
                }
              ] = json_response(conn, 200)["data"]
     end
+
+    test "include layout", %{conn: conn} do
+      conn = get(conn, "/api/my_site/pages?include=layout")
+
+      assert [
+               %{
+                 "layout" => %{
+                   "ast" => [
+                     %{"attrs" => %{}, "content" => ["Page header"], "tag" => "header"},
+                     %{
+                       "attrs" => %{},
+                       "content" => ["@inner_content"],
+                       "metadata" => %{"opt" => ~c"="},
+                       "renderedHtml" =>
+                         "&lt;main&gt;\n  &lt;%= my_component(&quot;sample_component&quot;, val: List.first(@beacon_live_data[:vals])) %&gt;\n&lt;/main&gt;\n",
+                       "tag" => "eex"
+                     },
+                     %{"attrs" => %{}, "content" => ["Page footer"], "tag" => "footer"}
+                   ],
+                   "metaTags" => [],
+                   "resourceLinks" => [],
+                   "site" => "my_site",
+                   "template" => "<header>Page header</header>\n<%= @inner_content %>\n<footer>Page footer</footer>\n",
+                   "title" => "Sample Home Page"
+                 }
+               }
+             ] = json_response(conn, 200)["data"]
+    end
   end
 
   describe "show" do

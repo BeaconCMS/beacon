@@ -6,7 +6,12 @@ defmodule BeaconWeb.API.PageController do
   action_fallback BeaconWeb.API.FallbackController
 
   def index(conn, %{"site" => site}) do
-    pages = Content.list_pages(site)
+    pages =
+      case fetch_query_params(conn) do
+        %{params: %{"include" => "layout"}} -> Content.list_pages(site, preloads: [:layout])
+        _ -> Content.list_pages(site)
+      end
+
     render(conn, :index, pages: pages)
   end
 
