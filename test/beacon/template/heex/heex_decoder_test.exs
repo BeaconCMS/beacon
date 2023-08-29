@@ -29,7 +29,7 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   test "eex expressions" do
     assert_equal(~S|<%= _a = true %>|)
     assert_equal(~S|value: <%= 1 %>|)
-    assert_equal(~S|<% a = 1 %>|)
+    assert_equal(~S|<% _a = 1 %>|)
 
     assert_equal(~S"""
     <%= if @completed do %>
@@ -49,13 +49,6 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
         <div>Something went wrong</div>
     <% end %>
     """)
-
-    # assert_equal(~S"""
-    # <% link_collection = [{"Page", "/page"}] %>
-    # <%= for {text, path} <- links do %>
-    #   <.link navigate={path} class="text-2xl"><%= text %></.link>
-    # <% end %>
-    # """)
   end
 
   test "function components" do

@@ -44,6 +44,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   Note that:
 
     * `rendered_html` key is optional
+    * Comprehensions are not supported
 
   ## Example
 
