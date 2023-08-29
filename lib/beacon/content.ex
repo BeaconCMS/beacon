@@ -1730,9 +1730,12 @@ defmodule Beacon.Content do
   @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
           {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def create_error_page(attrs) do
-    %ErrorPage{}
-    |> ErrorPage.changeset(attrs)
-    |> Repo.insert()
+    changeset = ErrorPage.changeset(%ErrorPage{}, attrs)
+
+    with {:ok, error_page} <- Repo.insert(changeset) do
+      PubSub.error_pages_updated(error_page.site)
+      {:ok, error_page}
+    end
   end
 
   @doc """
@@ -1768,9 +1771,12 @@ defmodule Beacon.Content do
   @doc type: :error_pages
   @spec update_error_page(ErrorPage.t(), map()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def update_error_page(error_page, attrs) do
-    error_page
-    |> ErrorPage.changeset(attrs)
-    |> Repo.update()
+    changeset = ErrorPage.changeset(error_page, attrs)
+
+    with {:ok, updated} <- Repo.update(changeset) do
+      PubSub.error_pages_updated(updated.site)
+      {:ok, updated}
+    end
   end
 
   @doc """
@@ -1779,7 +1785,10 @@ defmodule Beacon.Content do
   @doc type: :error_pages
   @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def delete_error_page(error_page) do
-    Repo.delete(error_page)
+    with {:ok, deleted} <- Repo.delete(error_page) do
+      PubSub.error_pages_updated(deleted.site)
+      {:ok, deleted}
+    end
   end
 
   # PAGE EVENT HANDLERS

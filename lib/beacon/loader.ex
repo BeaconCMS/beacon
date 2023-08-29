@@ -43,6 +43,7 @@ defmodule Beacon.Loader do
       PubSub.subscribe_to_layouts(site)
       PubSub.subscribe_to_pages(site)
       PubSub.subscribe_to_components(site)
+      PubSub.subscribe_to_error_pages(site)
 
       {:ok, config}
     end
@@ -60,6 +61,7 @@ defmodule Beacon.Loader do
       PubSub.subscribe_to_layouts(site)
       PubSub.subscribe_to_pages(site)
       PubSub.subscribe_to_components(site)
+      PubSub.subscribe_to_error_pages(site)
 
       {:ok, config}
     end
@@ -421,6 +423,12 @@ defmodule Beacon.Loader do
     :ok = load_components(component.site)
     :ok = Beacon.PubSub.component_loaded(component)
     {:noreply, state}
+  end
+
+  @doc false
+  def handle_info(:error_pages_updated, config) do
+    :ok = load_error_pages(config.site)
+    {:noreply, config}
   end
 
   @doc false

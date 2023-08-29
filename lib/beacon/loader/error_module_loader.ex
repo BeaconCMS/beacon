@@ -1,5 +1,6 @@
 defmodule Beacon.Loader.ErrorModuleLoader do
   @moduledoc false
+  alias Beacon.Content
   alias Beacon.Loader
 
   def load_error_pages!(error_pages, site) do
@@ -33,17 +34,25 @@ defmodule Beacon.Loader.ErrorModuleLoader do
   end
 
   defp build_render_fn(error_page) do
-    %{site: site, template: page_template, layout: %{id: layout_id}} = error_page
+    %{site: site, template: page_template, layout: %{id: layout_id}, status: status} = error_page
+    layout = Content.get_published_layout(site, layout_id)
 
-    file = "site-#{site}-error-page-#{error_page.status}"
+    file = "site-#{site}-error-page-#{status}"
     ast = Beacon.Template.HEEx.compile_heex_template!(file, page_template)
 
-    layout_module = Loader.layout_module_for_site(layout_id)
+    layout_module = Loader.layout_module_for_site(layout.id)
 
     quote do
-      def render(unquote(error_page.status)) do
+      def render(unquote(status)) do
         var!(assigns) = %{}
-        unquote(layout_module).render(%{inner_content: unquote(ast)}) |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
+
+        unquote(layout_module).render(%{
+          inner_content: unquote(ast),
+          beacon_live_data: %{},
+          title: unquote(layout.title),
+          meta_tags: unquote(layout.meta_tags),
+          resource_links: unquote(layout.resource_links)
+        })
       end
     end
   end
