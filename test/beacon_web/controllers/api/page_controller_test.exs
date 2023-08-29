@@ -1,14 +1,34 @@
 defmodule BeaconWeb.Controllers.Api.PageControllerTest do
-  use BeaconWeb.ConnCase
+  use BeaconWeb.ConnCase, async: false
   import Beacon.Fixtures
   alias Beacon.Content.Page
+
+  setup_all do
+    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    :ok
+  end
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
   defp create_page(_) do
-    page = page_fixture(site: :my_site)
+    layout = published_layout_fixture(site: :my_site)
+    component_fixture(site: :my_site)
+
+    page =
+      published_page_fixture(
+        site: :my_site,
+        layout_id: layout.id,
+        template: ~S"""
+        <main>
+          <%= my_component("sample_component", val: List.first(@beacon_live_data[:vals])) %>
+        </main>
+        """
+      )
+
+    Beacon.Loader.load_page(page)
+
     %{page: page}
   end
 
@@ -20,11 +40,25 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
 
       assert [
                %{
-                 "ast" => [%{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => ["my_site#home"], "tag" => "h1"}], "tag" => "main"}],
+                 "ast" => [
+                   %{
+                     "attrs" => %{},
+                     "content" => [
+                       %{
+                         "attrs" => %{},
+                         "content" => ["my_component(\"sample_component\", val: List.first(@beacon_live_data[:vals]))"],
+                         "metadata" => %{"opt" => ~c"="},
+                         "renderedHtml" => "<span id=\"my-component-first\">first</span>",
+                         "tag" => "eex"
+                       }
+                     ],
+                     "tag" => "main"
+                   }
+                 ],
                  "format" => "heex",
                  "path" => "/home",
                  "site" => "my_site",
-                 "template" => "<main>\n  <h1>my_site#home</h1>\n</main>\n"
+                 "template" => "<main>\n  <%= my_component(\"sample_component\", val: List.first(@beacon_live_data[:vals])) %>\n</main>\n"
                }
              ] = json_response(conn, 200)["data"]
     end
@@ -38,12 +72,26 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
       conn = get(conn, "/api/my_site/pages/#{id}")
 
       assert %{
-               "ast" => [%{"attrs" => %{}, "content" => [%{"attrs" => %{}, "content" => ["my_site#home"], "tag" => "h1"}], "tag" => "main"}],
+               "ast" => [
+                 %{
+                   "attrs" => %{},
+                   "content" => [
+                     %{
+                       "attrs" => %{},
+                       "content" => ["my_component(\"sample_component\", val: List.first(@beacon_live_data[:vals]))"],
+                       "metadata" => %{"opt" => ~c"="},
+                       "renderedHtml" => "<span id=\"my-component-first\">first</span>",
+                       "tag" => "eex"
+                     }
+                   ],
+                   "tag" => "main"
+                 }
+               ],
                "format" => "heex",
                "id" => ^id,
                "path" => "/home",
                "site" => "my_site",
-               "template" => "<main>\n  <h1>my_site#home</h1>\n</main>\n"
+               "template" => "<main>\n  <%= my_component(\"sample_component\", val: List.first(@beacon_live_data[:vals])) %>\n</main>\n"
              } = json_response(conn, 200)["data"]
     end
   end
@@ -52,14 +100,15 @@ defmodule BeaconWeb.Controllers.Api.PageControllerTest do
     setup [:create_page]
 
     test "renders page when data is valid", %{conn: conn, page: %Page{id: id} = page} do
-      conn = put(conn, "/api/my_site/pages/#{page.id}", page: %{path: "/updated_path"})
+      conn = put(conn, "/api/my_site/pages/#{page.id}", page: %{template: "<div>home</div>"})
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
       conn = get(conn, "/api/my_site/pages/#{id}")
 
       assert %{
                "id" => ^id,
-               "path" => "/updated_path"
+               "path" => "/home",
+               "template" => "<div>home</div>"
              } = json_response(conn, 200)["data"]
     end
 
