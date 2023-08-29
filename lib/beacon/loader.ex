@@ -88,6 +88,7 @@ defmodule Beacon.Loader do
         Content.default_layout()
         |> Map.put(:site, site)
         |> Content.create_layout!()
+        |> Content.publish_layout()
 
       _ ->
         :skip

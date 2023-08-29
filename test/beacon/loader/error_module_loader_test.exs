@@ -20,7 +20,7 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
       |> Beacon.Repo.preload(:layout)
       |> ErrorModuleLoader.load_error_pages!(@site)
 
-    assert module.render(404) == "<div>layout_404#examle</div>\nNot Found"
-    # assert module.render(500) == "TODO"
+    assert module.render(404) == "Not Found"
+    assert module.render(500) == "Internal Server Error"
   end
 end
