@@ -41,7 +41,7 @@ defmodule Beacon.Content do
   alias Beacon.Lifecycle
   alias Beacon.PubSub
   alias Beacon.Repo
-  alias Beacon.Template.HEEx.HeexTransformer
+  alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
@@ -206,7 +206,7 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single layout.
+  Gets a single layout by `id`.
 
   ## Example
 
@@ -510,7 +510,7 @@ defmodule Beacon.Content do
       if is_nil(ast) do
         attrs
       else
-        Map.put(attrs, :template, HeexTransformer.transform(ast))
+        Map.put(attrs, :template, HEExDecoder.decode(ast))
       end
 
     changeset = Page.update_changeset(page, attrs)
@@ -646,30 +646,37 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single page.
+  Gets a single page by `id`.
 
-  A list of preloads may be passed as a second argument.
+  ## Options
+
+    * `:preloads` - a list of preloads to load.
 
   ## Examples
 
       iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
 
-      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", [:layout])
+      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", preloads: [:layout])
       %Page{layout: %Layout{}}
 
   """
   @doc type: :pages
-  @spec get_page(Ecto.UUID.t(), list()) :: Page.t() | nil
-  def get_page(id, preloads \\ []) when is_binary(id) and is_list(preloads) do
+  @spec get_page(Ecto.UUID.t(), keyword()) :: Page.t() | nil
+  def get_page(id, opts \\ []) when is_binary(id) and is_list(opts) do
+    preloads = Keyword.get(opts, :preloads, [])
+
     Page
     |> Repo.get(id)
     |> Repo.preload(preloads)
   end
 
   @doc type: :pages
-  def get_page!(id) when is_binary(id) do
-    Repo.get!(Page, id)
+  def get_page!(id, opts \\ []) when is_binary(id) and is_list(opts) do
+    case get_page(id, opts) do
+      %Page{} = page -> page
+      nil -> raise "page #{id} not found"
+    end
   end
 
   @doc """
@@ -741,7 +748,8 @@ defmodule Beacon.Content do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search pages by path or title
+    * `:query` - search pages by path or title.
+    * `:preloads` - a list of preloads to load.
 
   """
   @doc type: :pages
@@ -749,11 +757,13 @@ defmodule Beacon.Content do
   def list_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
 
     site
     |> query_list_pages_base()
     |> query_list_pages_limit(per_page)
     |> query_list_pages_search(search)
+    |> query_list_pages_preloads(preloads)
     |> Repo.all()
   end
 
@@ -767,10 +777,17 @@ defmodule Beacon.Content do
   defp query_list_pages_limit(query, :infinity = _limit), do: query
   defp query_list_pages_limit(query, _per_page), do: from(q in query, limit: 20)
 
-  defp query_list_pages_search(query, search) when is_binary(search),
-    do: from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))
+  defp query_list_pages_search(query, search) when is_binary(search) do
+    from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))
+  end
 
   defp query_list_pages_search(query, _search), do: query
+
+  defp query_list_pages_preloads(query, [_preload | _] = preloads) do
+    from(q in query, preload: ^preloads)
+  end
+
+  defp query_list_pages_preloads(query, _preloads), do: query
 
   @doc """
   Returns all published pages for `site`.
@@ -1510,6 +1527,26 @@ defmodule Beacon.Content do
     body = Changeset.get_field(changeset, :body)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
     do_validate_template(changeset, :body, :heex, body, metadata)
+  end
+
+  @doc """
+  Gets a single component by `id`.
+
+  ## Example
+
+      iex> get_component("788b2161-b23a-48ed-abcd-8af788004bbb")
+      %Component{}
+
+  """
+  @doc type: :components
+  @spec get_component(Ecto.UUID.t()) :: Component.t() | nil
+  def get_component(id) when is_binary(id) do
+    Repo.get(Component, id)
+  end
+
+  @doc type: :components
+  def get_component!(id) when is_binary(id) do
+    Repo.get!(Component, id)
   end
 
   @doc """

@@ -197,7 +197,8 @@ defmodule Beacon.Loader do
   end
 
   # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
-  defp load_components(site) do
+  @doc false
+  def load_components(site) do
     ComponentModuleLoader.load_components(site, Content.list_components(site, per_page: :infinity))
     :ok
   end
@@ -222,7 +223,8 @@ defmodule Beacon.Loader do
     :ok
   end
 
-  defp load_pages(site) do
+  @doc false
+  def load_pages(site) do
     site
     |> Content.list_published_pages()
     |> Enum.map(fn page ->

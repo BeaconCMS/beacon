@@ -23,7 +23,7 @@ defmodule Beacon.Content.Page do
   use Beacon.Schema
 
   alias Beacon.Content
-  alias Beacon.Template.HEEx.HeexTransformer
+  alias Beacon.Template.HEEx.HEExDecoder
 
   @version 3
 
@@ -103,7 +103,7 @@ defmodule Beacon.Content.Page do
       if is_nil(ast) do
         attrs
       else
-        Map.put(attrs, :template, HeexTransformer.transform(ast))
+        Map.put(attrs, :template, HEExDecoder.decode(ast))
       end
 
     page
