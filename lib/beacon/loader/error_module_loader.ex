@@ -28,7 +28,7 @@ defmodule Beacon.Loader.ErrorModuleLoader do
           # Catch-all for error which do not have an ErrorPage defined
           def render(var!(conn), var!(status)) do
             _ = var!(conn)
-            Logger.warning("Missing Error page for #{unquote(site)} status #{var!(status)}")
+            Logger.warning("missing error page for #{unquote(site)} status #{var!(status)}")
             Plug.Conn.Status.reason_phrase(var!(status))
           end
 
