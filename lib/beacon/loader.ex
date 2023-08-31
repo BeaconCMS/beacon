@@ -170,8 +170,7 @@ defmodule Beacon.Loader do
     :ok
   end
 
-  @doc false
-  def load_pages(site) do
+  defp load_pages(site) do
     site
     |> Content.list_published_pages()
     |> Enum.map(fn page ->
