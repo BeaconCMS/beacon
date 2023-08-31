@@ -16,7 +16,7 @@ defmodule Beacon.Loader.ErrorModuleLoader do
           use Phoenix.HTML
           require EEx
           import Phoenix.Component
-          unquote(Loader.maybe_import_my_component(component_module, render_functions))
+          unquote(Loader.maybe_import_my_component(component_module, render_functions ++ layout_functions))
           require Logger
 
           # One function per error page
