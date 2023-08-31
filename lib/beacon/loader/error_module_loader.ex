@@ -36,7 +36,8 @@ defmodule Beacon.Loader.ErrorModuleLoader do
             :def,
             :root_layout,
             Path.join([:code.priv_dir(:beacon), "layouts", "runtime_error.html.heex"]),
-            [:assigns]
+            [:assigns],
+            engine: Phoenix.HTML.Engine
           )
         end
       end
@@ -49,8 +50,7 @@ defmodule Beacon.Loader.ErrorModuleLoader do
   defp build_layout_fn(%ErrorPage{} = error_page) do
     %{site: site, layout: %{id: layout_id}, status: status} = error_page
     %{template: template} = Content.get_published_layout(site, layout_id)
-
-    compiled = EEx.compile_string(template)
+    compiled = EEx.compile_string(template, engine: Phoenix.HTML.Engine)
 
     quote do
       def layout(unquote(status), var!(assigns)) when is_map(var!(assigns)) do

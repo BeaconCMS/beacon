@@ -1749,16 +1749,32 @@ defmodule Beacon.Content do
 
   @doc """
   Lists all error pages for a given site.
+
+  ## Options
+
+    * `:preloads` - a list of preloads to load.
+
   """
   @doc type: :error_pages
-  @spec list_error_pages(Site.t()) :: [ErrorPage.t()]
-  def list_error_pages(site) do
-    Repo.all(
+  @spec list_error_pages(Site.t(), keyword()) :: [ErrorPage.t()]
+  def list_error_pages(site, opts \\ []) do
+    preloads = Keyword.get(opts, :preloads, [])
+
+    query =
       from e in ErrorPage,
         where: e.site == ^site,
         order_by: e.status
-    )
+
+    query
+    |> query_list_error_pages_preloads(preloads)
+    |> Repo.all()
   end
+
+  defp query_list_error_pages_preloads(query, [_preload | _] = preloads) do
+    from(q in query, preload: ^preloads)
+  end
+
+  defp query_list_error_pages_preloads(query, _preloads), do: query
 
   @doc """
   Creates a new error page.

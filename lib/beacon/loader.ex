@@ -244,10 +244,13 @@ defmodule Beacon.Loader do
   end
 
   defp load_error_pages(site) do
-    site
-    |> Content.list_error_pages()
-    |> Repo.preload(:layout)
-    |> ErrorModuleLoader.load_error_pages!(site)
+    error_pages = Content.list_error_pages(site, preloads: [:layout])
+
+    with {:ok, _module, _ast} <- ErrorModuleLoader.load_error_pages!(error_pages, site) do
+      :ok
+    else
+      _ -> raise Beacon.LoaderError, message: "failed to load error pages of site #{site}"
+    end
 
     :ok
   end

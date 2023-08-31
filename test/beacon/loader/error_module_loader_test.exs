@@ -8,8 +8,7 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
   defp load_error_pages_module(site) do
     {:ok, module, _ast} =
       site
-      |> Beacon.Content.list_error_pages()
-      |> Beacon.Repo.preload(:layout)
+      |> Beacon.Content.list_error_pages(preloads: [:layout])
       |> ErrorModuleLoader.load_error_pages!(site)
 
     module
@@ -53,19 +52,21 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
       """
       |> Regex.compile!()
 
-    assert error_module.root_layout(%{conn: conn, inner_content: "#inner_content#"}) =~ expected
+    {:safe, html} = error_module.root_layout(%{conn: conn, inner_content: "#inner_content#"})
+    assert IO.iodata_to_binary(html) =~ expected
   end
 
   test "default layouts", %{error_module: error_module} do
-    assert error_module.layout(404, %{inner_content: "Not Found"}) == "Not Found"
-    assert error_module.layout(500, %{inner_content: "Internal Server Error"}) == "Internal Server Error"
+    assert error_module.layout(404, %{inner_content: "Not Found"}) == {:safe, ["Not Found"]}
+    assert error_module.layout(500, %{inner_content: "Internal Server Error"}) == {:safe, ["Internal Server Error"]}
   end
 
   test "custom layout" do
     layout = published_layout_fixture(template: "#custom_layout#<%= @inner_content %>", site: @site)
     error_page = error_page_fixture(layout: layout, template: "error_501", status: 501, site: @site)
     error_module = load_error_pages_module(@site)
-    assert error_module.layout(501, %{inner_content: error_page.template}) == "#custom_layout#error_501"
+
+    assert error_module.layout(501, %{inner_content: error_page.template}) == {:safe, ["#custom_layout#", "error_501"]}
   end
 
   test "default error pages", %{conn: conn, error_module: error_module} do
@@ -87,7 +88,8 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
       """
       |> Regex.compile!()
 
-    assert error_module.render(conn, 404) =~ expected
+    {:safe, html} = error_module.render(conn, 404)
+    assert IO.iodata_to_binary(html) =~ expected
 
     expected =
       ~S"""
@@ -107,7 +109,8 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
       """
       |> Regex.compile!()
 
-    assert error_module.render(conn, 500) =~ expected
+    {:safe, html} = error_module.render(conn, 500)
+    assert IO.iodata_to_binary(html) =~ expected
   end
 
   test "custom error page", %{conn: conn} do
@@ -133,6 +136,7 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
       """
       |> Regex.compile!()
 
-    assert error_module.render(conn, 501) =~ expected
+    {:safe, html} = error_module.render(conn, 501)
+    assert IO.iodata_to_binary(html) =~ expected
   end
 end
