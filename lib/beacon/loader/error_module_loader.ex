@@ -43,7 +43,6 @@ defmodule Beacon.Loader.ErrorModuleLoader do
       end
 
     :ok = Loader.reload_module!(error_module, ast)
-
     {:ok, error_module, ast}
   end
 
