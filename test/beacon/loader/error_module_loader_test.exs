@@ -1,33 +1,51 @@
 defmodule Beacon.Loader.ErrorModuleLoaderTest do
-  use Beacon.DataCase, async: false
+  use BeaconWeb.ConnCase, async: false
   import Beacon.Fixtures
   alias Beacon.Loader.ErrorModuleLoader
 
   @site :my_site
+
+  defp load_error_pages_module(site) do
+    {:ok, module, _ast} =
+      site
+      |> Beacon.Content.list_error_pages()
+      |> Beacon.Repo.preload(:layout)
+      |> ErrorModuleLoader.load_error_pages!(site)
+
+    module
+  end
+
+  def build_conn(conn) do
+    conn
+    |> Plug.Conn.assign(:__site__, @site)
+    |> Plug.Conn.put_private(:phoenix_router, Beacon.BeaconTest.Router)
+  end
 
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(@site)})
     :ok
   end
 
-  setup do
+  setup %{conn: conn} do
     :ok = Beacon.Loader.populate_layouts(@site)
     :ok = Beacon.Loader.populate_error_pages(@site)
     error_module = load_error_pages_module(@site)
-    [error_module: error_module]
+
+    [conn: build_conn(conn), error_module: error_module]
   end
 
-  test "root layout", %{error_module: error_module} do
+  test "root layout", %{conn: conn, error_module: error_module} do
     layout_template = "#inner_content#"
+    csrf_token = Phoenix.Controller.get_csrf_token()
 
-    assert error_module.root_layout(%{inner_content: layout_template}) == """
+    assert error_module.root_layout(%{conn: conn, inner_content: layout_template}) == """
            <!DOCTYPE html>
            <html lang="en">
              <head>
-               <meta name="csrf-token" content={get_csrf_token()} />
+               <meta name="csrf-token" content=#{csrf_token} />
                <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href={asset_path(@conn, :css)} />
-               <script defer src={asset_path(@conn, :js)}>
+               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
+               <script defer src=/beacon_assets/js->
                </script>
              </head>
              <body>
@@ -49,15 +67,17 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
     assert error_module.layout(501, %{inner_content: error_page.template}) == "#custom_layout#error_501"
   end
 
-  test "default error pages", %{error_module: error_module} do
-    assert error_module.render(404) == """
+  test "default error pages", %{conn: conn, error_module: error_module} do
+    csrf_token = Phoenix.Controller.get_csrf_token()
+
+    assert error_module.render(conn, 404) == """
            <!DOCTYPE html>
            <html lang="en">
              <head>
-               <meta name="csrf-token" content={get_csrf_token()} />
+               <meta name="csrf-token" content=#{csrf_token} />
                <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href={asset_path(@conn, :css)} />
-               <script defer src={asset_path(@conn, :js)}>
+               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
+               <script defer src=/beacon_assets/js->
                </script>
              </head>
              <body>
@@ -66,14 +86,14 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
            </html>
            """
 
-    assert error_module.render(500) == """
+    assert error_module.render(conn, 500) == """
            <!DOCTYPE html>
            <html lang="en">
              <head>
-               <meta name="csrf-token" content={get_csrf_token()} />
+               <meta name="csrf-token" content=#{csrf_token} />
                <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href={asset_path(@conn, :css)} />
-               <script defer src={asset_path(@conn, :js)}>
+               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
+               <script defer src=/beacon_assets/js->
                </script>
              </head>
              <body>
@@ -83,19 +103,20 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
            """
   end
 
-  test "custom error page" do
+  test "custom error page", %{conn: conn} do
     layout = published_layout_fixture(template: "#custom_layout#<%= @inner_content %>", site: @site)
     _error_page = error_page_fixture(layout: layout, template: "error_501", status: 501, site: @site)
     error_module = load_error_pages_module(@site)
+    csrf_token = Phoenix.Controller.get_csrf_token()
 
-    assert error_module.render(501) == """
+    assert error_module.render(conn, 501) == """
            <!DOCTYPE html>
            <html lang="en">
              <head>
-               <meta name="csrf-token" content={get_csrf_token()} />
+               <meta name="csrf-token" content=#{csrf_token} />
                <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href={asset_path(@conn, :css)} />
-               <script defer src={asset_path(@conn, :js)}>
+               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
+               <script defer src=/beacon_assets/js->
                </script>
              </head>
              <body>
@@ -103,15 +124,5 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
              </body>
            </html>
            """
-  end
-
-  defp load_error_pages_module(site) do
-    {:ok, module, _ast} =
-      site
-      |> Beacon.Content.list_error_pages()
-      |> Beacon.Repo.preload(:layout)
-      |> ErrorModuleLoader.load_error_pages!(site)
-
-    module
   end
 end

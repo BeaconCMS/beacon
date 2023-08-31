@@ -62,8 +62,8 @@ defmodule Beacon.Loader.ErrorModuleLoader do
     %{template: template, status: status} = error_page
 
     quote do
-      def render(unquote(status)) do
-        var!(assigns) = %{inner_content: unquote(error_module).layout(unquote(status), %{inner_content: unquote(template)})}
+      def render(var!(conn), unquote(status)) do
+        var!(assigns) = %{conn: var!(conn), inner_content: unquote(error_module).layout(unquote(status), %{inner_content: unquote(template)})}
         unquote(error_module).root_layout(var!(assigns))
       end
     end

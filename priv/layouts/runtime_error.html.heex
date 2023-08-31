@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta name="csrf-token" content={get_csrf_token()} />
+    <meta name="csrf-token" content=<%= Phoenix.Controller.get_csrf_token() %> />
     <title>Error</title>
-    <link id="beacon-runtime-stylesheet" rel="stylesheet" href={asset_path(@conn, :css)} />
-    <script defer src={asset_path(@conn, :js)}>
+    <link id="beacon-runtime-stylesheet" rel="stylesheet" href=<%= BeaconWeb.Layouts.asset_path(@conn, :css) %> />
+    <script defer src=<%= BeaconWeb.Layouts.asset_path(@conn, :js) %>>
     </script>
   </head>
   <body>
