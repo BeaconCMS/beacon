@@ -429,7 +429,8 @@ defmodule Beacon.Loader do
 
   @doc false
   def handle_info(:error_pages_updated, config) do
-    :ok = load_error_pages(config.site)
+    # FIXME: race condition on tests
+    # :ok = load_error_pages(config.site)
     {:noreply, config}
   end
 

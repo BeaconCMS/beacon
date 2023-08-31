@@ -14,6 +14,6 @@ defmodule BeaconWeb.ErrorHTML do
       |> hd()
       |> String.to_integer()
 
-    error_module.render(status)
+    {:safe, error_module.render(status)}
   end
 end

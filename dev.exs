@@ -17,12 +17,15 @@ Logger.configure(level: :debug)
 
 Application.put_env(:phoenix, :json_library, Jason)
 
+display_error_pages? = false
+
 Application.put_env(:beacon, SamplePhoenix.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),
-  debug_errors: true,
+  debug_errors: !display_error_pages?,
+  render_errors: [formats: [html: BeaconWeb.ErrorHTML]],
   check_origin: false,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [

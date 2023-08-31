@@ -1,40 +1,26 @@
 defmodule Beacon.Loader.ErrorModuleLoader do
   @moduledoc false
   alias Beacon.Content
+  alias Beacon.Content.ErrorPage
   alias Beacon.Loader
-
-  @root_layout """
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta name="csrf-token" content={get_csrf_token()} />
-      <.live_title>
-        Error
-      </.live_title>
-      <link id="beacon-runtime-stylesheet" rel="stylesheet" href={asset_path(@conn, :css)} />
-      <script defer src={asset_path(@conn, :js)}>
-      </script>
-    </head>
-    <body>
-      <%= @inner_content %>
-    </body>
-  </html>
-  """
 
   def load_error_pages!(error_pages, site) do
     error_module = Loader.error_module_for_site(site)
     component_module = Loader.component_module_for_site(site)
-
-    render_functions = Enum.map(error_pages, &build_render_fn/1)
     layout_functions = Enum.map(error_pages, &build_layout_fn/1)
+    render_functions = Enum.map(error_pages, &build_render_fn(&1, error_module))
 
     ast =
       quote do
         defmodule unquote(error_module) do
           use Phoenix.HTML
+          require EEx
           import Phoenix.Component
           unquote(Loader.maybe_import_my_component(component_module, render_functions))
           require Logger
+
+          # One function per error page
+          unquote_splicing(layout_functions)
 
           # One function per error page
           unquote_splicing(render_functions)
@@ -45,8 +31,12 @@ defmodule Beacon.Loader.ErrorModuleLoader do
             Plug.Conn.Status.reason_phrase(var!(status))
           end
 
-          # One function per error page
-          unquote_splicing(layout_functions)
+          EEx.function_from_file(
+            :def,
+            :root_layout,
+            Path.join([__DIR__, "lib", "beacon_web", "components", "layouts", "runtime_error.html.heex"]),
+            [:assigns]
+          )
         end
       end
 
@@ -55,44 +45,26 @@ defmodule Beacon.Loader.ErrorModuleLoader do
     {:ok, error_module, ast}
   end
 
-  defp build_layout_fn(error_page) do
-    %{site: site, template: page_template, layout: %{id: layout_id}, status: status} = error_page
-    layout = Content.get_published_layout(site, layout_id)
+  defp build_layout_fn(%ErrorPage{} = error_page) do
+    %{site: site, layout: %{id: layout_id}, status: status} = error_page
+    %{template: template} = Content.get_published_layout(site, layout_id)
 
-    file = "site-#{site}-error-page-#{status}"
-    ast = Beacon.Template.HEEx.compile_heex_template!(file, page_template)
-
-    layout_module = Loader.layout_module_for_site(layout.id)
-
-    rendered_layout =
-      layout_module.render(%{
-        inner_content: ast,
-        beacon_live_data: %{},
-        title: layout.title,
-        meta_tags: layout.meta_tags,
-        resource_links: layout.resource_links
-      })
-
-    ast = EEx.compile_string(@root_layout, inner_content: rendered_layout)
+    compiled = EEx.compile_string(template)
 
     quote do
-      def layout(unquote(status), var!(assigns)) do
-        unquote(ast)
+      def layout(unquote(status), var!(assigns)) when is_map(var!(assigns)) do
+        unquote(compiled)
       end
     end
   end
 
-  defp build_render_fn(error_page) do
-    %{site: site, template: page_template, status: status} = error_page
-
-    error_module = Loader.error_module_for_site(site)
-    file = "site-#{site}-error-page-#{status}"
-    ast = Beacon.Template.HEEx.compile_heex_template!(file, page_template)
+  defp build_render_fn(%ErrorPage{} = error_page, error_module) do
+    %{template: template, status: status} = error_page
 
     quote do
-      def render(unquote(error_page.status)) do
-        var!(assigns) = %{}
-        apply(unquote(error_module), :layout, [unquote(status), %{inner_content: unquote(ast)}])
+      def render(unquote(status)) do
+        var!(assigns) = %{inner_content: unquote(error_module).layout(unquote(status), %{inner_content: unquote(template)})}
+        unquote(error_module).root_layout(var!(assigns))
       end
     end
   end
