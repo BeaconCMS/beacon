@@ -34,7 +34,7 @@ defmodule Beacon.Loader.ErrorModuleLoader do
           EEx.function_from_file(
             :def,
             :root_layout,
-            Path.join([__DIR__, "lib", "beacon_web", "components", "layouts", "runtime_error.html.heex"]),
+            Path.join([:code.priv_dir(:beacon), "layouts", "runtime_error.html.heex"]),
             [:assigns]
           )
         end
