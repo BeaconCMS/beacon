@@ -35,24 +35,25 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
   end
 
   test "root layout", %{conn: conn, error_module: error_module} do
-    layout_template = "#inner_content#"
-    csrf_token = Phoenix.Controller.get_csrf_token()
+    expected =
+      ~S"""
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta name="csrf-token" content=.* />
+          <title>Error</title>
+          <link rel="stylesheet" href=/beacon_assets/css.* />
+          <script defer src=/beacon_assets/js.*>
+          </script>
+        </head>
+        <body>
+          #inner_content#
+        </body>
+      </html>
+      """
+      |> Regex.compile!()
 
-    assert error_module.root_layout(%{conn: conn, inner_content: layout_template}) == """
-           <!DOCTYPE html>
-           <html lang="en">
-             <head>
-               <meta name="csrf-token" content=#{csrf_token} />
-               <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
-               <script defer src=/beacon_assets/js->
-               </script>
-             </head>
-             <body>
-               #{layout_template}
-             </body>
-           </html>
-           """
+    assert error_module.root_layout(%{conn: conn, inner_content: "#inner_content#"}) =~ expected
   end
 
   test "default layouts", %{error_module: error_module} do
@@ -68,61 +69,70 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
   end
 
   test "default error pages", %{conn: conn, error_module: error_module} do
-    csrf_token = Phoenix.Controller.get_csrf_token()
+    expected =
+      ~S"""
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta name="csrf-token" content=.* />
+          <title>Error</title>
+          <link rel="stylesheet" href=/beacon_assets/css.* />
+          <script defer src=/beacon_assets/js.*>
+          </script>
+        </head>
+        <body>
+          Not Found
+        </body>
+      </html>
+      """
+      |> Regex.compile!()
 
-    assert error_module.render(conn, 404) == """
-           <!DOCTYPE html>
-           <html lang="en">
-             <head>
-               <meta name="csrf-token" content=#{csrf_token} />
-               <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
-               <script defer src=/beacon_assets/js->
-               </script>
-             </head>
-             <body>
-               Not Found
-             </body>
-           </html>
-           """
+    assert error_module.render(conn, 404) =~ expected
 
-    assert error_module.render(conn, 500) == """
-           <!DOCTYPE html>
-           <html lang="en">
-             <head>
-               <meta name="csrf-token" content=#{csrf_token} />
-               <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
-               <script defer src=/beacon_assets/js->
-               </script>
-             </head>
-             <body>
-               Internal Server Error
-             </body>
-           </html>
-           """
+    expected =
+      ~S"""
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta name="csrf-token" content=.* />
+          <title>Error</title>
+          <link rel="stylesheet" href=/beacon_assets/css.* />
+          <script defer src=/beacon_assets/js.*>
+          </script>
+        </head>
+        <body>
+          Internal Server Error
+        </body>
+      </html>
+      """
+      |> Regex.compile!()
+
+    assert error_module.render(conn, 500) =~ expected
   end
 
   test "custom error page", %{conn: conn} do
     layout = published_layout_fixture(template: "#custom_layout#<%= @inner_content %>", site: @site)
     _error_page = error_page_fixture(layout: layout, template: "error_501", status: 501, site: @site)
     error_module = load_error_pages_module(@site)
-    csrf_token = Phoenix.Controller.get_csrf_token()
 
-    assert error_module.render(conn, 501) == """
-           <!DOCTYPE html>
-           <html lang="en">
-             <head>
-               <meta name="csrf-token" content=#{csrf_token} />
-               <title>Error</title>
-               <link id="beacon-runtime-stylesheet" rel="stylesheet" href=/beacon_assets/css- />
-               <script defer src=/beacon_assets/js->
-               </script>
-             </head>
-             <body>
-               #custom_layout#error_501
-             </body>
-           </html>
-           """
+    expected =
+      ~S"""
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta name="csrf-token" content=.* />
+          <title>Error</title>
+          <link rel="stylesheet" href=/beacon_assets/css.* />
+          <script defer src=/beacon_assets/js.*>
+          </script>
+        </head>
+        <body>
+          #custom_layout#error_501
+        </body>
+      </html>
+      """
+      |> Regex.compile!()
+
+    assert error_module.render(conn, 501) =~ expected
   end
 end

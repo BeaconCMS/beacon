@@ -26,7 +26,8 @@ defmodule Beacon.Loader.ErrorModuleLoader do
           unquote_splicing(render_functions)
 
           # Catch-all for error which do not have an ErrorPage defined
-          def render(var!(status)) do
+          def render(var!(conn), var!(status)) do
+            _ = var!(conn)
             Logger.warning("Missing Error page for #{unquote(site)} status #{var!(status)}")
             Plug.Conn.Status.reason_phrase(var!(status))
           end

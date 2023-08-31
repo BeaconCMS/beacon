@@ -40,6 +40,9 @@ defmodule Beacon.Loader do
     def init(config) do
       %{site: site} = config
 
+      # avoid compilation warnings
+      populate_components(nil)
+
       PubSub.subscribe_to_layouts(site)
       PubSub.subscribe_to_pages(site)
       PubSub.subscribe_to_components(site)
@@ -66,6 +69,8 @@ defmodule Beacon.Loader do
       {:ok, config}
     end
   end
+
+  defp populate_components(nil), do: :skip
 
   defp populate_components(site) do
     for attrs <- Content.blueprint_components() do

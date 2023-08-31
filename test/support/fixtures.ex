@@ -188,15 +188,15 @@ defmodule Beacon.Fixtures do
   end
 
   def error_page_fixture(attrs \\ %{}) do
-    full_attrs = %{
-      site: attrs[:site] || "my_site",
-      status: attrs[:status] || Enum.random(ErrorPage.valid_statuses()),
-      template: attrs[:template] || "Uh-oh!",
-      layout_id: attrs[:layout_id] || attrs[:layout][:id] || layout_fixture().id
-    }
+    layout = get_lazy(attrs, :layout, fn -> layout_fixture() end)
 
-    %ErrorPage{}
-    |> ErrorPage.changeset(full_attrs)
-    |> Repo.insert!()
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      status: Enum.random(ErrorPage.valid_statuses()),
+      template: "Uh-oh!",
+      layout_id: layout.id
+    })
+    |> Content.create_error_page!()
   end
 end
