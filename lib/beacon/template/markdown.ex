@@ -12,7 +12,16 @@ defmodule Beacon.Template.Markdown do
     template = MDEx.to_html(template, extension: [table: true, autolink: true, tasklist: true], parse: [smart: true], render: [unsafe_: true])
     {:cont, template}
   rescue
-    _error ->
-      {:halt, %{message: "failed to convert markdown to html"}}
+    exception ->
+      message = """
+      failed to convert markdown to html
+
+      Got:
+
+        #{Exception.message(exception)}
+
+      """
+
+      {:halt, %Beacon.ParserError{message: message}}
   end
 end
