@@ -61,7 +61,9 @@ defmodule Beacon.MixProject do
       {:postgrex, "~> 0.16"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:tailwind, "~> 0.2"},
-      live_monaco_editor_dep()
+      {:rustler, ">= 0.0.0", optional: true},
+      live_monaco_editor_dep(),
+      mdex_dep()
     ]
   end
 
@@ -70,6 +72,14 @@ defmodule Beacon.MixProject do
       {:live_monaco_editor, path: path}
     else
       {:live_monaco_editor, "~> 0.1"}
+    end
+  end
+
+  defp mdex_dep do
+    if path = System.get_env("MDEX_PATH") do
+      {:mdex, path: path}
+    else
+      {:mdex, "~> 0.1.2"}
     end
   end
 

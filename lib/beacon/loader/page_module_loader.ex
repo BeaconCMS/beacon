@@ -16,7 +16,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     - `:request` - it will load the template, useful during a request
 
   """
-  if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test] do
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
     def load_page!(%Content.Page{} = page, stage \\ :request) do
       do_load_page!(page, stage)
     end
