@@ -61,6 +61,7 @@ defmodule Beacon.MixProject do
       {:postgrex, "~> 0.16"},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:tailwind, "~> 0.2"},
+      {:rustler, ">= 0.0.0", optional: true},
       live_monaco_editor_dep(),
       mdex_dep()
     ]
