@@ -95,7 +95,7 @@ defmodule Beacon.Lifecycle.Template do
   ## Notes
 
     - This stage runs in the render callback of the LiveView responsible for displaying the page.
-    - It will load and compile the page module if it wasn't not loaded yet.
+    - It will load and compile the page module if it was not loaded yet.
 
   """
   @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
