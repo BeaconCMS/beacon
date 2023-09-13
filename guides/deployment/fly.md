@@ -1,10 +1,10 @@
 # Deploying on Fly.io
 
-Once you have a Beacon site up and running locally, you can have it deployed on https://fly.io by following this guide.
+Once you have a [Beacon site up and running](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md) locally, you can have it deployed on [Fly.io](https://fly.io) by following this guide.
 
 ## Fly.io CLI
 
-Firstly instal the fly cli tool as described at https://fly.io/docs/hands-on/install-flyctl. You're gonna use it to deploy your beacon site.
+Firstly instal the fly cli tool as described at [Install flyctl](https://fly.io/docs/hands-on/install-flyctl), you'll need it to deploy your site.
 
 ## Sign in or sign up
 
@@ -22,7 +22,7 @@ fly auth login
 
 ## Dockerfile
 
-Aplications on Fly run on containers, let's generate a Dockerfile and other supporting files, and then make a couple of changes:
+Aplications on Fly run on containers, let's generate a Dockerfile and then make a couple of changes on that file:
 
 Run:
 
@@ -43,42 +43,6 @@ RUN mix tailwind.install
 ```
 RUN mkdir -p /app/bin/_build
 COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
-```
-
-## Seeds
-
-1. Create the file `rel/overlays/bin/beacon_seeds` with the content:
-
-```shell
-#!/bin/sh
-cd -P -- "$(dirname -- "$0")"
-exec ./my_app eval MyApp.Release.beacon_seeds
-```
-
-2. Create the file `rel/overlays/bin/beacon_seeds.bat` with the content:
-
-```shell
-call "%~dp0\my_app" eval MyApp.Release.beacon_seeds
-```
-
-In both files do:
-
-* Replace `MyApp` with your main application module name
-* Replace `my_app` with your application name
-* Make them executable by running `chmod +x rel/overlays/bin/beacon_seeds.bat rel/overlays/bin/beacon_seeds` or the equivalent on your system
-
-3. Add this function in the generated `Release` module, usually at `lib/my_app/release.ex`:
-
-```elixir
-def beacon_seeds do
-  load_app()
-
-  {:ok, _, _} =
-    Ecto.Migrator.with_repo(Beacon.Repo, fn _repo ->
-      seeds_path = Path.join([:code.priv_dir(@app), "repo", "beacon_seeds.exs"])
-      Code.eval_file(seeds_path)
-    end)
-end
 ```
 
 ## Database connection
@@ -112,40 +76,16 @@ Beacon is designed to minimize deployments as much as possible but eventually yo
 fly deploy
 ```
 
-## Populate sample data
-
-Before we can access the deployed site let's run seeds to populate some sample data:
-
-1. Connect to your running application:
-
-```sh
-fly ssh console
-```
-
-2. Open a IEx console:
-
-```sh
-app/bin/my_app remote
-```
-
-3. Then call your seeds function:
-
-```
-MyApp.Release.beacon_seeds
-```
-
-Note that you could save some commands and just call `fly ssh console --command "/app/bin/beacon_seeds"` to run seeds, but it may fail and at this momment it's recommended to connected to the instance as showed before.
-
 ## Open
 
 Finally run the following command to see your site live:
 
 ```sh
-fly open my_site/home
+fly open /
 ```
 
-Change `my_site` to your site name if you have used a custom name when generating your site.
+Change the path if you have created a custom page and not followed the guides.
 
 ## More commands
 
-You can find all available commands at https://fly.io/docs/flyctl and also more tips on the official [Phoenix Deploying on Fly.io guide](https://github.com/phoenixframework/phoenix/blob/master/guides/deployment/fly.md).
+You can find all available commands in the [Fly.io docs](https://fly.io/docs/flyctl) and also find more tips on the official [Phoenix Deploying on Fly.io guide](https://github.com/phoenixframework/phoenix/blob/master/guides/deployment/fly.md).

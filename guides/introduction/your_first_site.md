@@ -26,7 +26,7 @@ scope "/", MyAppWeb do
 end
 ```
 
-Also feel free to delete page_controller.ex and related files, you won't need it.
+Also feel free to delete page_controller.ex and related files, you won't need those files.
 
 And finally change the generated scope created by Beacon to look like:
 
@@ -41,15 +41,15 @@ With this change the site will be served at [http://localhost:4000/](http://loca
 
 ## Connecting to a database
 
-The install generator will change and create some files for you but the most important configuration at this point is adjusting the Repo credentials since Beacon requires a database to store layouts, pages, and all site data.
+The `beacon.install` generator will change and create some files for you but the most important configuration at this point is adjusting the Repo credentials since Beacon requires a database to save layouts, pages, and all the site data.
 
-Inspect the config `config :beacon, Beacon.Repo` in the file `config/dev.exs` and make sure it looks correct to your environment.
+Look for the config `config :beacon, Beacon.Repo` in the files `config/dev.exs` and `config/prod.exs` to make the database configuration looks correct to your environment.
 
 ## Acessing LiveAdmin to manage your site
 
 We're done with configuration so far, let's run the project and access the LiveAdmin UI.
 
-Firstly execute to install dependencies:
+Firstly execute the following to install dependencies:
 
 ```sh
 mix setup
@@ -61,11 +61,12 @@ And now start your Phoenix app:
 mix phx.server
 ```
 
-Visit [http://localhost:4000/admin](http://localhost:4000/admin) and you should see `my_site` listed.
+Visit [http://localhost:4000/admin](http://localhost:4000/admin) and you should see the `my_site` that you just created listed on the admin interface.
+
+
+Now let's create the resources for our first site. Beacon has built-in support for Tailwind and we'll be using the [Flowbite](https://flowbite.com/docs/) components to style our page but you're free to adapt the styles as you want.
 
 ## Creating a layout
-
-Beacon has built-in support for Tailwind classes and we'll be using the [Flowbite](https://flowbite.com/docs/) components to style our page but you're free to use any tool or design system you want.
 
 Click on the "Layouts" button, then "Create New Layout". On this page we'll create the layout where all pages will be rendered. It will contain a footer, header, and the placeholder to render page's content.
 
@@ -87,9 +88,14 @@ Input "Main" for title and the following template:
       <ul
         class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
         <li>
-          <a href="#"
+          <a href="/"
             class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
             aria-current="page">Home</a>
+        </li>
+        <li>
+          <a href="/contact"
+            class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
+            aria-current="page">Contact</a>
         </li>
       </ul>
     </div>
@@ -101,13 +107,15 @@ Input "Main" for title and the following template:
 
 The `@inner_content` is important here, it's where page's templates will be injected into the layout.
 
-Save the changes and Publish it.
+Click on Create Draft Layout, then click on Publish, and Confirm. Done, we have a layout to render the pages.
 
 ## Creating the home page
 
-For the home page we'll display an image uploaded to the Media Library. Firstly, go to [http://localhost:4000/admin/my_site/media_library](http://localhost:4000/admin/my_site/media_library), click "Upload", and finish by uploading an image that you like. On the list of assets, click "View", and on the bottom of the modal that has opened you'll find the path for that asset, copy it.
+For the home page we'll display an image uploaded to the Media Library. Firstly, click on Media Library on the sidebar menu, then click "Upload", and upload any image that you like.
 
-Go to [http://localhost:4000/admin/my_site/pages/new](http://localhost:4000/admin/my_site/pages/new) and input some data into the form:
+On the list of assets, take note of the **Name** of the asset.
+
+Now let's create the page. Click on Pages on the sidebar menu, then click on Create New Page, and input some data into the form:
 
 * Path: leave it empty, that will be the root home page
 * Title: Home - My Site
@@ -115,11 +123,11 @@ Go to [http://localhost:4000/admin/my_site/pages/new](http://localhost:4000/admi
 
 ```heex
 <div class="h-screen mt-20">
-  <img src="URL_OF_ASSET_HERE" class="mx-auto" />
+  <BeaconWeb.Components.image name="ASSET_NAME" />
 </div>
 ```
 
-Replace `URL_OF_ASSET_HERE`, save the changes, and publish the page.
+Replace `ASSET_NAME` with the asset name you just uploaded, it should look something like "my_image.webp". Click on Create Draft Page, then click Publish, and Confirm.
 
 Go ahead and visit [http://localhost:4000](http://localhost:4000) - that's your first published page!
 
@@ -155,26 +163,26 @@ Done. Go ahead and test the content form.
 
 ## Improving SEO
 
-Beacon is very focused on SEO and it's optimized to render pages as fast as possible, but that alone is not enough to perform well on search engines. On the Page Editor you can add Meta Tags and a Schema to provide extra info used by search engines crawling the page.
+Beacon is very focused on SEO and it's optimized to render pages as fast as possible, but that alone is not enough to perform well on search engines. On the Page Editor you can add Meta Tags and a Schema to provide extra info about the page which is used by search engines to extract contextual information.
 
 ### Meta Tags
 
 The title and description are two essential pieces of information that every page must have, and even though title is not a meta tag per se it goes along with the description for SEO purposes. Both are automatically added to your page when you fill the Title and Description fields in the Page Editor form.
 
-In the era of social media it's important to add [Open Graph](https://ogp.me) meta tags to enrich your pages with link previews and extra information. Edit your page, go to "Meta Tags" tab and add a couple of meta tags:
+Besides those two pieces of meta, it's also important to add [Open Graph](https://ogp.me) meta tags used by social medias to enrich link previews on their platforms, so let's add some meta tags. Edit any page, go to the Meta Tags tab and add a couple of meta tags:
 
 | property       | content                 |
 | -------------- | ----------------------- |
 | og:title       | {{ page.title }}        |
 | og:description | {{ page.description }}  |
 
-Many other meta tags can be added depending on the type and content of the page, but those are good to get started.
+Many other meta tags can be added depending on the type and content of the page, but those are a great start.
 
-Save the changes.
+Save the changes, go to the Page tag, and Publish the changes.
 
 ## Schema
 
-[Strutured Data](https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data) can be added to help search engines undertand the content of the page. Go to the "Schema" tab and input this content in the code editor:
+[Strutured Data](https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data) can be added to help search engines understand the content of the page. Go to the Schema tab and input this content in the code editor:
 
 ```json
 [
@@ -187,12 +195,11 @@ Save the changes.
 ]
 ```
 
-Replace the URL with a domain you own if you intend to deploy your site.
-
-Note that content can be a single object or a list of objects as necessary.
-
-Save the changes.
+These values have no meaning running your site locally but you should replace it accordingly if you plan to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/deployment/fly.md).
 
 
+Save the changes, go to the Page tag, and Publish the changes.Save the changes.
 
+--
 
+Congratulations! You have a site up and running. The next step is to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/deployment/fly.md).
