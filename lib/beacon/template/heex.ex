@@ -3,7 +3,6 @@ defmodule Beacon.Template.HEEx do
   Handle loading and compilation of HEEx templates.
   """
 
-  import Beacon.Template, only: [is_ast: 1]
   require Logger
 
   @doc """
@@ -35,52 +34,57 @@ defmodule Beacon.Template.HEEx do
       {:halt, exception}
   end
 
-  @doc """
-  Compile `template` AST to generate a `%Phoenix.LiveView.Rendered{}` struct.
-  """
-  @spec eval_ast(Beacon.Template.t(), Beacon.Template.RenderMetadata.t()) :: {:halt, Phoenix.LiveView.Rendered.t()}
-  def eval_ast(template, metadata) when is_ast(template) do
-    %{path: path, assigns: assigns, env: env} = metadata
-
-    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, path_params(path, assigns.__live_path__))
-
-    functions = [
-      {assigns.__beacon_page_module__, [dynamic_helper: 2]},
-      {assigns.__beacon_component_module__, [my_component: 2]}
-      | env.functions
-    ]
-
-    env = %{env | functions: functions}
-    {rendered, _bindings} = Code.eval_quoted(template, [assigns: assigns], env)
-    {:halt, rendered}
-  end
-
-  defp path_params(page_path, path_info) do
-    page_path = String.split(page_path, "/")
-
-    Enum.zip_reduce(page_path, path_info, %{}, fn
-      ":" <> segment, value, acc ->
-        Map.put(acc, segment, value)
-
-      "*" <> segment, value, acc ->
-        position = Enum.find_index(path_info, &(&1 == value))
-        Map.put(acc, segment, Enum.drop(path_info, position))
-
-      _, _, acc ->
-        acc
-    end)
-  end
-
   @doc false
   def compile_heex_template!(file, template) do
     EEx.compile_string(template,
       engine: Phoenix.LiveView.TagEngine,
       line: 1,
+      indentation: 0,
       file: file,
       caller: __ENV__,
       source: template,
       trim: true,
       tag_handler: Phoenix.LiveView.HTMLEngine
     )
+  end
+
+  @doc """
+  Renders the HEEx `template` with `assigns`.
+
+  > #### Use only to render isolated templates {: .warning}
+  >
+  > This function should not be used to render Page Templates,
+  > its purpose is only to render isolated pieces of templates.
+
+  ## Example
+
+      iex> Beacon.Template.HEEx.render(:my_site, ~S|<.link patch="/contact" replace={true}><%= @text %></.link>|, %{text: "Book Meeting"})
+      "<a href=\"/contact\" data-phx-link=\"patch\" data-phx-link-state=\"replace\">Book Meeting</a>"
+
+  """
+  @spec render(Beacon.Types.Site.t(), String.t(), map()) :: String.t()
+  def render(site, template, assigns \\ %{}) when is_atom(site) and is_binary(template) and is_map(assigns) do
+    assigns =
+      assigns
+      |> Map.new()
+      |> Map.put_new(:__changed__, %{})
+
+    env = BeaconWeb.PageLive.make_env()
+
+    functions = [
+      {Beacon.Loader.component_module_for_site(site), [my_component: 2]}
+      | env.functions
+    ]
+
+    env = %{env | functions: functions}
+
+    {rendered, _} =
+      "nofile"
+      |> compile_heex_template!(template)
+      |> Code.eval_quoted([assigns: assigns], env)
+
+    rendered
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
   end
 end

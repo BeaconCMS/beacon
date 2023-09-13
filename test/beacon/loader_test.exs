@@ -29,7 +29,7 @@ defmodule Beacon.LoaderTest do
 
       layout =
         layout_fixture(
-          body: """
+          template: """
           <header>layout_v1</header>
           <%= @inner_content %>
           """
@@ -75,7 +75,7 @@ defmodule Beacon.LoaderTest do
 
       {:ok, layout} =
         Content.update_layout(layout, %{
-          body: """
+          template: """
           <header>layout_v2</header>
           <%= @inner_content %>
           """
@@ -84,7 +84,7 @@ defmodule Beacon.LoaderTest do
       Content.publish_layout(layout)
 
       Content.update_layout(layout, %{
-        body: """
+        template: """
         <header>layout_v3_unpublished</header>
         <%= @inner_content %>
         """
@@ -111,14 +111,12 @@ defmodule Beacon.LoaderTest do
     end
 
     test "unload page", %{page: page} do
-      module = Beacon.Loader.page_module_for_site(page.site, page.id)
+      module = Beacon.Loader.page_module_for_site(page.id)
       assert Keyword.has_key?(module.__info__(:functions), :page_assigns)
 
-      Beacon.Loader.do_unload_page(page)
+      Beacon.Loader.unload_page(page)
 
-      assert_raise UndefinedFunctionError, fn ->
-        module.__info__(:functions)
-      end
+      refute :erlang.module_loaded(module)
     end
   end
 end

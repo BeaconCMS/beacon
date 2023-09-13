@@ -1,30 +1,84 @@
 defmodule Beacon.Loader.PageModuleLoader do
   @moduledoc false
 
-  require Logger
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
 
-  def load_page!(%Content.Page{} = page) do
+  require Logger
+
+  @doc """
+  Reload the page module.
+
+  `stage` can be one of:
+
+    - `:boot` - it won't load the template, useful during app booting process
+    - `:request` - it will load the template, useful during a request
+
+  """
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
+    def load_page!(%Content.Page{} = page, stage \\ :request) do
+      do_load_page!(page, stage)
+    end
+  else
+    def load_page!(%Content.Page{} = page, stage \\ :boot) do
+      do_load_page!(page, stage)
+    end
+  end
+
+  def unload_page!(page) do
+    page_module = Loader.page_module_for_site(page.id)
+    :code.delete(page_module)
+    :code.purge(page_module)
+    Beacon.Router.del_page(page.site, page.path)
+    {:ok, page_module}
+  end
+
+  # TODO: retry
+  @doc "Reload the page module and return the %Rendered{} template"
+  def load_page_template!(%Content.Page{} = page, page_module, assigns) do
+    Logger.debug("compiling #{page_module}")
+
+    with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
+         {:ok, ^page_module, _ast} <- do_load_page!(page, :request),
+         %Phoenix.LiveView.Rendered{} = rendered <- page_module.render(assigns) do
+      rendered
+    else
+      _ ->
+        raise Beacon.LoaderError,
+          message: """
+          failed to load the template for the following page:
+
+            id: #{page.id}
+            title: #{page.title}
+            path: #{page.path}
+
+          """
+    end
+  end
+
+  def do_load_page!(page, stage) do
     component_module = Loader.component_module_for_site(page.site)
-    page_module = Loader.page_module_for_site(page.site, page.id)
+    page_module = Loader.page_module_for_site(page.id)
 
     # Group function heads together to avoid compiler warnings
     functions = [
       for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
+      render(page, stage),
       dynamic_helper()
     ]
 
-    ast = render(page_module, component_module, functions)
-    store_page(page, page_module, component_module)
+    ast = build(page_module, component_module, functions)
     :ok = Loader.reload_module!(page_module, ast)
-    {:ok, ast}
+    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
+    :ok = Beacon.PubSub.page_loaded(page)
+
+    {:ok, page_module, ast}
   end
 
-  defp render(module_name, component_module, functions) do
+  defp build(module_name, component_module, functions) do
     quote do
       defmodule unquote(module_name) do
         use Phoenix.HTML
@@ -36,19 +90,13 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  defp store_page(page, page_module, component_module) do
-    %{id: page_id, layout_id: layout_id, site: site, path: path} = page
-    template = Lifecycle.Template.load_template(page)
-    Beacon.Router.add_page(site, path, {page_id, layout_id, page.format, template, page_module, component_module})
-  end
-
   defp page_assigns(page) do
-    %{id: id, meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
+    %{meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
     meta_tags = interpolate_meta_tags(meta_tags, page)
     raw_schema = interpolate_raw_schema(raw_schema, page)
 
     quote do
-      def page_assigns(unquote(id)) do
+      def page_assigns do
         %{
           title: unquote(title),
           meta_tags: unquote(Macro.escape(meta_tags)),
@@ -58,7 +106,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     end
   end
 
-  def interpolate_meta_tags(meta_tags, page) do
+  defp interpolate_meta_tags(meta_tags, page) do
     meta_tags
     |> List.wrap()
     |> Enum.map(&interpolate_meta_tag(&1, page))
@@ -122,14 +170,15 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
-  # TODO: path_to_args in paths with dynamic segments may be broken
-  defp handle_event(%{site: site, path: path, events: events}) do
-    Enum.map(events, fn event ->
-      Beacon.safe_code_check!(site, event.code)
+  defp handle_event(page) do
+    %{site: site, event_handlers: event_handlers} = page
+
+    Enum.map(event_handlers, fn event_handler ->
+      Beacon.safe_code_check!(site, event_handler.code)
 
       quote do
-        def handle_event(unquote(path_to_args(path, "")), unquote(event.name), var!(event_params), var!(socket)) do
-          unquote(Code.string_to_quoted!(event.code))
+        def handle_event(unquote(event_handler.name), var!(event_params), var!(socket)) do
+          unquote(Code.string_to_quoted!(event_handler.code))
         end
       end
     end)
@@ -149,6 +198,64 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
+  defp render(_page, :boot) do
+    quote do
+      def render(var!(assigns)) when is_map(var!(assigns)) do
+        _ = var!(assigns)
+        :not_loaded
+      end
+    end
+  end
+
+  defp render(page, :request) do
+    primary = Lifecycle.Template.load_template(page)
+    variants = load_variants(page)
+
+    case variants do
+      [] ->
+        quote do
+          def render(var!(assigns)) when is_map(var!(assigns)) do
+            [primary] = templates(var!(assigns))
+            primary
+          end
+
+          def templates(var!(assigns)) when is_map(var!(assigns)) do
+            [unquote(primary)]
+          end
+        end
+
+      variants ->
+        quote do
+          def render(var!(assigns)) when is_map(var!(assigns)) do
+            var!(assigns)
+            |> templates()
+            |> Beacon.Template.choose_template()
+          end
+
+          def templates(var!(assigns)) when is_map(var!(assigns)) do
+            [
+              unquote(primary)
+              | for [name, weight, template] <- unquote(variants) do
+                  {weight, template}
+                end
+            ]
+          end
+        end
+    end
+  end
+
+  defp load_variants(page) do
+    %{variants: variants} = Beacon.Repo.preload(page, :variants)
+
+    for variant <- variants do
+      [
+        variant.name,
+        variant.weight,
+        Lifecycle.Template.load_template(%{page | template: variant.template})
+      ]
+    end
+  end
+
   defp dynamic_helper do
     quote do
       def dynamic_helper(helper_name, args) do
@@ -156,18 +263,4 @@ defmodule Beacon.Loader.PageModuleLoader do
       end
     end
   end
-
-  defp path_to_args("", _), do: []
-
-  defp path_to_args(path, prefix) do
-    path
-    |> String.split("/")
-    |> Enum.map(&path_segment_to_arg(&1, prefix))
-
-    # |> String.replace(",|", " |")
-  end
-
-  defp path_segment_to_arg(":" <> segment, prefix), do: prefix <> segment
-  defp path_segment_to_arg("*" <> segment, prefix), do: "| " <> prefix <> segment
-  defp path_segment_to_arg(segment, _prefix), do: segment
 end

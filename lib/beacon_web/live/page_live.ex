@@ -24,8 +24,10 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {{site, path}, {_page_id, _layout_id, format, template, _page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
-    Lifecycle.Template.render_template(site, template, format, path: path, assigns: assigns, env: __ENV__)
+    {{site, path}, {page_id, _layout_id, format, page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
+    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(path, assigns.__live_path__))
+    page = %Beacon.Content.Page{id: page_id, site: site, path: path, format: format}
+    Lifecycle.Template.render_template(page, page_module, assigns, __ENV__)
   end
 
   defp lookup_route!(site, path) do
@@ -61,7 +63,7 @@ defmodule BeaconWeb.PageLive do
     socket.assigns.__beacon_page_module__
     |> Beacon.Loader.call_function_with_retry(
       :handle_event,
-      [socket.assigns.__live_path__, event_name, event_params, socket]
+      [event_name, event_params, socket]
     )
     |> case do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
@@ -76,13 +78,12 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{__site__: site} = socket.assigns
     live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
-    {{_site, _path}, {page_id, layout_id, _format, _template, page_module, component_module}} = lookup_route!(site, path)
+    {{_site, _path}, {page_id, layout_id, _format, page_module, component_module}} = lookup_route!(site, path)
 
     Process.put(:__beacon_site__, site)
 
     socket =
       socket
-      |> assign(:beacon, %{site: site})
       |> assign(:beacon_live_data, live_data)
       |> assign(:__live_path__, path)
       |> assign(:__page_updated_at, DateTime.utc_now())

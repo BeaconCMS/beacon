@@ -2,15 +2,24 @@ defmodule Beacon.PubSub do
   @moduledoc false
 
   require Logger
+  alias Beacon.Content.Component
   alias Beacon.Content.Layout
   alias Beacon.Content.Page
 
   @pubsub __MODULE__
 
+  # Layouts
+
   defp topic_layouts(site), do: "beacon:#{site}:layouts"
+
+  defp topic_layout(site, id), do: "beacon:#{site}:layouts:#{id}"
 
   def subscribe_to_layouts(site) do
     Phoenix.PubSub.subscribe(@pubsub, topic_layouts(site))
+  end
+
+  def subscribe_to_layout(site, id) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_layout(site, id))
   end
 
   def layout_published(%Layout{} = layout) do
@@ -18,6 +27,16 @@ defmodule Beacon.PubSub do
     |> topic_layouts()
     |> broadcast({:layout_published, %{site: layout.site, id: layout.id}})
   end
+
+  def layout_loaded(%Layout{} = layout) do
+    layout.site
+    |> topic_layout(layout.id)
+    |> local_broadcast({:layout_loaded, layout(layout)})
+  end
+
+  defp layout(layout), do: %{site: layout.site, id: layout.id}
+
+  # Pages
 
   defp topic_pages(site), do: "beacon:#{site}:pages"
 
@@ -78,6 +97,38 @@ defmodule Beacon.PubSub do
   end
 
   defp page(page), do: %{site: page.site, id: page.id, path: page.path}
+
+  # Components
+
+  defp topic_components(site), do: "beacon:#{site}:components"
+
+  defp topic_component(site, id) when is_binary(id) do
+    "beacon:#{site}:components:#{id}"
+  end
+
+  def subscribe_to_components(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_components(site))
+  end
+
+  def subscribe_to_component(site, id) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_component(site, id))
+  end
+
+  def component_updated(%Component{} = component) do
+    component.site
+    |> topic_components()
+    |> broadcast({:component_updated, component(component)})
+  end
+
+  def component_loaded(component) do
+    component.site
+    |> topic_component(component.id)
+    |> local_broadcast({:component_loaded, component(component)})
+  end
+
+  defp component(component), do: %{site: component.site, id: component.id, name: component.name}
+
+  # Utils
 
   defp broadcast(topic, message) when is_binary(topic) do
     Phoenix.PubSub.broadcast(@pubsub, topic, message)

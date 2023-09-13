@@ -13,15 +13,15 @@ defmodule Beacon.Content.Layout do
 
   use Beacon.Schema
 
-  @version 1
+  @version 3
 
   @type t :: %__MODULE__{
           id: String.t(),
           site: Beacon.Types.Site.t(),
           title: String.t(),
-          body: String.t(),
+          template: String.t(),
           meta_tags: [map()],
-          stylesheet_urls: [String.t()],
+          resource_links: [map()],
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
         }
@@ -29,9 +29,9 @@ defmodule Beacon.Content.Layout do
   schema "beacon_layouts" do
     field :site, Beacon.Types.Site
     field :title, :string
-    field :body, :string
+    field :template, :string
     field :meta_tags, {:array, :map}, default: []
-    field :stylesheet_urls, {:array, :string}, default: []
+    field :resource_links, {:array, :map}, default: []
 
     timestamps()
   end
@@ -46,31 +46,7 @@ defmodule Beacon.Content.Layout do
   @doc false
   def changeset(%__MODULE__{} = layout, attrs) do
     layout
-    |> cast(attrs, [:site, :title, :body, :meta_tags, :stylesheet_urls])
-    |> validate_required([:site, :title, :body])
-    |> validate_body()
+    |> cast(attrs, [:site, :title, :template, :meta_tags, :resource_links])
+    |> validate_required([:site, :title, :template])
   end
-
-  defp validate_body(changeset) do
-    site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body, "")
-    do_validate_body(changeset, site, body)
-  end
-
-  defp do_validate_body(changeset, site, body) when is_atom(site) and is_binary(body) do
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: ""}
-
-    case Beacon.Template.HEEx.compile(body, metadata) do
-      {:cont, _ast} ->
-        changeset
-
-      {:halt, %{description: description}} ->
-        add_error(changeset, :body, "invalid", compilation_error: description)
-
-      {:halt, _} ->
-        add_error(changeset, :body, "invalid")
-    end
-  end
-
-  defp do_validate_body(changeset, _site, _body), do: changeset
 end

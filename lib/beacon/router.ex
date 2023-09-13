@@ -3,10 +3,18 @@
 
 defmodule Beacon.Router do
   @moduledoc """
-  Provides routing helpers to instantiate sites, admin interface, or api endpoints.
+  Provides routing helpers to instantiate sites, or api endpoints.
 
   In your app router, add `use Beacon.Router` and call one the of the available macros.
   """
+
+  @ets_table :beacon_router
+
+  @doc false
+  # We store routes by order and length so the most visited pages will likely be in the first rows
+  def init do
+    :ets.new(@ets_table, [:ordered_set, :named_table, :public, read_concurrency: true])
+  end
 
   defmacro __using__(_opts) do
     quote do
@@ -17,8 +25,7 @@ defmodule Beacon.Router do
   defp prelude do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
-      Module.register_attribute(__MODULE__, :beacon_admin_prefix, accumulate: false)
-      import Beacon.Router, only: [beacon_site: 2, beacon_admin: 1, beacon_admin: 2, beacon_api: 1]
+      import Beacon.Router, only: [beacon_site: 2, beacon_api: 1]
       @before_compile unquote(__MODULE__)
     end
   end
@@ -34,13 +41,9 @@ defmodule Beacon.Router do
         end
       end
 
-    admin_prefix = Module.get_attribute(env.module, :beacon_admin_prefix)
-
     quote do
       @doc false
       def __beacon_sites__, do: unquote(Macro.escape(sites))
-      @doc false
-      def __beacon_admin_prefix__, do: unquote(Macro.escape(admin_prefix))
       unquote(prefixes)
     end
   end
@@ -106,11 +109,8 @@ defmodule Beacon.Router do
 
     site =
       cond do
-        site == :beacon_admin ->
-          raise ArgumentError, ":beacon_admin is a reserved site name."
-
-        site == :beacon_assets ->
-          raise ArgumentError, ":beacon_assets is a reserved site name."
+        String.starts_with?(Atom.to_string(site), ["beacon", "__beacon"]) ->
+          raise ArgumentError, ":site can not start with beacon or __beacon, got: #{site}"
 
         site && is_atom(opts[:site]) ->
           opts[:site]
@@ -131,102 +131,6 @@ defmodule Beacon.Router do
   end
 
   @doc """
-  Admin routes for a beacon site.
-
-  ## Examples
-
-      defmodule MyAppWeb.Router do
-        use Phoenix.Router
-        use Beacon.Router
-
-        scope "/", MyAppWeb do
-          pipe_through :browser
-          beacon_admin "/admin", on_mount: [SomeHook]
-        end
-      end
-
-  ## Options
-
-    * `:on_mount` (optional) , an optional list of `on_mount` hooks passed to `live_session`.
-    This will allow for authenticated routes, among other uses.
-  """
-  defmacro beacon_admin(path, opts \\ []) do
-    quote bind_quoted: binding(), location: :keep do
-      # check before scope so it can raise with the proper message
-      if existing = Module.get_attribute(__MODULE__, :beacon_admin_prefix) do
-        raise ArgumentError, """
-        Only one declaration of beacon_admin/1 is allowed per router.
-
-        Can't add #{inspect(path)} when #{inspect(existing)} is already defined.
-        """
-      else
-        @beacon_admin_prefix Phoenix.Router.scoped_path(__MODULE__, path)
-      end
-
-      scope path, alias: false, as: false do
-        import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
-
-        session_opts = Beacon.Router.__admin_session_opts__(opts)
-
-        live_session :beacon_admin, session_opts do
-          get "/beacon_assets/css-:md5", BeaconWeb.Admin.AssetsController, :css, as: :beacon_admin_asset
-          get "/beacon_assets/js:md5", BeaconWeb.Admin.AssetsController, :js, as: :beacon_admin_asset
-
-          live "/", BeaconWeb.Admin.HomeLive.Index, :index
-          live "/pages", BeaconWeb.Admin.PageLive.Index, :index
-          live "/pages/new", BeaconWeb.Admin.PageLive.Index, :new
-          live "/page_editor/:id", BeaconWeb.Admin.PageEditorLive, :edit
-          live "/media_library", BeaconWeb.Admin.MediaLibraryLive.Index, :index
-          live "/media_library/upload", BeaconWeb.Admin.MediaLibraryLive.Index, :upload
-          live "/media_library/:id", BeaconWeb.Admin.MediaLibraryLive.Index, :show
-        end
-      end
-    end
-  end
-
-  @doc false
-  def __admin_session_opts__(opts) do
-    if Keyword.has_key?(opts, :root_layout) do
-      raise ArgumentError, """
-      You cannot assign a different root_layout.
-
-      Beacon Admin depends on {BeaconWeb.Layouts, :admin}
-      """
-    end
-
-    if Keyword.has_key?(opts, :layout) do
-      raise ArgumentError, """
-      You cannot assign a layout.
-
-      Beacon Admin depends on {BeaconWeb.Layouts, :admin}
-      """
-    end
-
-    on_mounts = get_on_mount_list(Keyword.get(opts, :on_mount, []))
-
-    [
-      on_mount: on_mounts,
-      root_layout: {BeaconWeb.Layouts, :admin}
-    ]
-  end
-
-  defp get_on_mount_list(on_mounts) when is_list(on_mounts) do
-    if Enum.member?(on_mounts, BeaconWeb.Admin.Hooks.AssignAgent) do
-      on_mounts
-    else
-      on_mounts ++ [BeaconWeb.Admin.Hooks.AssignAgent]
-    end
-  end
-
-  defp get_on_mount_list(on_mounts) do
-    raise ArgumentError, """
-    expected `on_mount` option to be a list.
-
-    Got: #{inspect(on_mounts)}
-    """
-  end
-
-  @doc """
   API routes.
   """
   defmacro beacon_api(path) do
@@ -234,11 +138,12 @@ defmodule Beacon.Router do
       scope path, BeaconWeb.API do
         import Phoenix.Router, only: [get: 3, post: 3, put: 3]
 
-        get "/pages", PageController, :index
-        get "/pages/:id", PageController, :show
-        put "/pages/:id", PageController, :update
-        get "/components", ComponentController, :index
-        post "/components", ComponentController, :create
+        get "/:site/pages", PageController, :index
+        get "/:site/pages/:page_id", PageController, :show
+        put "/:site/pages/:page_id", PageController, :update
+        get "/:site/pages/:page_id/components/:component_id", ComponentController, :show_ast
+        get "/:site/components", ComponentController, :index
+        get "/:site/components/:component_id", ComponentController, :show
       end
     end
   end
@@ -272,36 +177,6 @@ defmodule Beacon.Router do
     Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
   end
 
-  @doc """
-  Router helper to generate admin paths relative to the current scope.
-
-  ## Examples
-
-      scope "/" do
-        beacon_admin "/admin"
-      end
-
-      iex> beacon_admin_path(@socket, "/pages")
-      "/admin/pages"
-
-
-      scope "/parent" do
-        scope "/nested" do
-          beacon_admin "/admin"
-        end
-      end
-
-      iex> beacon_admin_path(@socket, "/pages", %{active: true})
-      "/parent/nested/admin/pages?active=true
-  """
-  def beacon_admin_path(socket, path, params \\ %{}) do
-    prefix = socket.router.__beacon_admin_prefix__()
-    path = build_path_with_prefix(prefix, path)
-    params = for {key, val} <- params, do: {key, val}
-
-    Phoenix.VerifiedRoutes.unverified_path(socket, socket.router, path, params)
-  end
-
   @doc false
   def build_path_with_prefix(prefix, "/") do
     prefix
@@ -316,23 +191,23 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def add_page(site, path, {_page_id, _layout_id, _format, _template, _page_module, _component_module} = metadata) do
-    add_page(:beacon_pages, site, path, metadata)
+  def add_page(site, path, {_page_id, _layout_id, _format, _page_module, _component_module} = metadata) do
+    add_page(@ets_table, site, path, metadata)
   end
 
   @doc false
-  def add_page(table, site, path, {_page_id, _layout_id, _format, _template, _page_module, _component_module} = metadata) do
+  def add_page(table, site, path, {_page_id, _layout_id, _format, _page_module, _component_module} = metadata) do
     :ets.insert(table, {{site, path}, metadata})
   end
 
   @doc false
   def del_page(site, path) do
-    :ets.delete(:beacon_pages, {site, path})
+    :ets.delete(@ets_table, {site, path})
   end
 
   @doc false
   def dump_pages do
-    case :ets.match(:beacon_pages, :"$1") do
+    case :ets.match(@ets_table, :"$1") do
       [] -> []
       [pages] -> pages
     end
@@ -340,7 +215,7 @@ defmodule Beacon.Router do
 
   @doc false
   def lookup_path(site, path) do
-    lookup_path(:beacon_pages, site, path)
+    lookup_path(@ets_table, site, path)
   end
 
   # Lookup for a path stored in ets that is coming from a live view.
@@ -443,5 +318,22 @@ defmodule Beacon.Router do
       end)
 
     match?
+  end
+
+  @doc false
+  def path_params(page_path, path_info) do
+    page_path = String.split(page_path, "/", [])
+
+    Enum.zip_reduce(page_path, path_info, %{}, fn
+      ":" <> segment, value, acc ->
+        Map.put(acc, segment, value)
+
+      "*" <> segment, value, acc ->
+        position = Enum.find_index(path_info, &(&1 == value))
+        Map.put(acc, segment, Enum.drop(path_info, position))
+
+      _, _, acc ->
+        acc
+    end)
   end
 end

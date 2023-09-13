@@ -18,7 +18,7 @@ defmodule Beacon.TailwindCompilerTest do
 
     layout =
       layout_fixture(
-        body: """
+        template: """
         <header class="text-gray-100">Page header</header>
         <%= @inner_content %>
         """

@@ -20,11 +20,12 @@ defmodule Beacon.Content.Page do
   > Manipulating data manually will most likely result
   > in inconsistent behavior and crashes.
   """
-
   use Beacon.Schema
-  alias Beacon.Content
 
-  @version 1
+  alias Beacon.Content
+  alias Beacon.Template.HEEx.HEExDecoder
+
+  @version 3
 
   @type t :: %__MODULE__{}
 
@@ -42,10 +43,8 @@ defmodule Beacon.Content.Page do
 
     belongs_to :layout, Content.Layout
 
-    embeds_many :events, Event do
-      field :name, :string
-      field :code, :string
-    end
+    has_many :variants, Content.PageVariant
+    has_many :event_handlers, Content.PageEventHandler
 
     embeds_many :helpers, Helper do
       field :name, :string
@@ -79,7 +78,6 @@ defmodule Beacon.Content.Page do
       :extra
     ])
     |> cast(attrs, [:path], empty_values: [])
-    |> cast_embed(:events, with: &events_changeset/2)
     |> cast_embed(:helpers, with: &helpers_changeset/2)
     |> unique_constraint([:path, :site])
     |> validate_required([
@@ -91,15 +89,22 @@ defmodule Beacon.Content.Page do
     |> validate_string([:path])
     |> foreign_key_constraint(:layout_id)
     |> remove_empty_meta_attributes(:meta_tags)
-    |> validate_template()
   end
 
   # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
   # need them to get going on the admin interface for now
   # TODO: only allow path if status = draft
   @doc false
-  def update_changeset(page, attrs) do
+  def update_changeset(page, attrs \\ %{}) do
     {extra_attrs, attrs} = Map.pop(attrs, "extra")
+    {ast, attrs} = Map.pop(attrs, "ast")
+
+    attrs =
+      if is_nil(ast) do
+        attrs
+      else
+        Map.put(attrs, :template, HEExDecoder.decode(ast))
+      end
 
     page
     |> cast(attrs, [
@@ -122,14 +127,7 @@ defmodule Beacon.Content.Page do
     |> validate_raw_schema(attrs["raw_schema"])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
-    |> validate_template()
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
-  end
-
-  defp events_changeset(schema, params) do
-    schema
-    |> cast(params, [:name, :code])
-    |> validate_required([:name, :code])
   end
 
   defp helpers_changeset(schema, params) do
@@ -186,40 +184,4 @@ defmodule Beacon.Content.Page do
       {:error, _} -> add_error(changeset, :raw_schema, "invalid schema")
     end
   end
-
-  defp validate_template(changeset) do
-    site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path, "")
-    format = Changeset.get_field(changeset, :format)
-    template = Changeset.get_field(changeset, :template, "")
-    do_validate_template(changeset, site, path, format, template)
-  end
-
-  defp do_validate_template(changeset, site, path, format, template) when is_atom(site) and is_atom(format) and is_binary(template) do
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
-
-    result =
-      case format do
-        :heex -> Beacon.Template.HEEx.compile(template, metadata)
-        :markdown -> Beacon.Template.Markdown.convert_to_html(template, metadata)
-        # TODO: execute template validation for custom engines provived by users
-        _ -> {:cont, :skip}
-      end
-
-    case result do
-      {:cont, _} ->
-        changeset
-
-      {:halt, %{description: description}} ->
-        add_error(changeset, :template, "invalid", compilation_error: description)
-
-      {:halt, %{message: message}} ->
-        add_error(changeset, :template, "invalid", compilation_error: message)
-
-      {:halt, _} ->
-        add_error(changeset, :template, "invalid")
-    end
-  end
-
-  defp do_validate_template(changeset, _site, _path, _format, _template), do: changeset
 end

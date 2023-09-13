@@ -38,7 +38,7 @@ defmodule Beacon.Repo.Migrations.EmbedPageEvents do
     end
   end
 
-  defp update_page_events(page_id, events) do
+  defp update_page_events(events, page_id) do
     execute(fn ->
       repo().query!(
         """
@@ -58,8 +58,9 @@ defmodule Beacon.Repo.Migrations.EmbedPageEvents do
     end
 
     for page_id <- page_ids() do
-      events = events_for_page(page_id)
-      update_page_events(page_id, events)
+      page_id
+      |> events_for_page()
+      |> update_page_events(page_id)
     end
 
     drop table("beacon_page_events")

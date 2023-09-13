@@ -5,6 +5,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.LiveViewTest
   import Beacon.Fixtures
 
+  alias Beacon.Content
+
   setup_all do
     start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     :ok
@@ -16,16 +18,24 @@ defmodule BeaconWeb.Live.PageLiveTest do
     component_fixture(name: "sample_component")
 
     layout =
-      layout_fixture(
+      published_layout_fixture(
         meta_tags: [
           %{"http-equiv" => "refresh", "content" => "300"}
+        ],
+        resource_links: [
+          %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
+          %{
+            "rel" => "preload",
+            "href" => "font.woff2",
+            "as" => "font",
+            "type" => "font/woff2",
+            "crossorigin" => "anonymous"
+          }
         ]
       )
 
-    Beacon.Content.publish_layout(layout)
-
-    _page_home =
-      published_page_fixture(
+    page_home =
+      page_fixture(
         layout_id: layout.id,
         path: "home",
         template: """
@@ -50,13 +60,21 @@ defmodule BeaconWeb.Live.PageLiveTest do
           %{"name" => "theme-color", "content" => "#3c790a", "media" => "(prefers-color-scheme: dark)"},
           %{"property" => "og:title", "content" => "Beacon"}
         ],
-        events: [
-          page_event_params()
-        ],
         helpers: [
           page_helper_params()
         ]
       )
+
+    _page_home_form_submit_handler =
+      page_event_handler_fixture(%{
+        page: page_home,
+        name: "hello",
+        code: """
+        {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
+        """
+      })
+
+    Content.publish_page(page_home)
 
     _page_without_meta_tags =
       published_page_fixture(
@@ -71,7 +89,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     Beacon.reload_site(:my_site)
 
-    :ok
+    [layout: layout]
   end
 
   describe "meta tags" do
@@ -106,6 +124,31 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     test "render without meta tags", %{conn: conn} do
       assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
+    end
+  end
+
+  describe "resource links" do
+    setup [:create_page]
+
+    test "render layout resource links on page head", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/home")
+
+      assert html =~ ~S|<link href="print.css" media="print" rel="stylesheet"/>|
+      assert html =~ ~S|<link as="font" crossorigin="anonymous" href="font.woff2" rel="preload" type="font/woff2"/>|
+    end
+
+    test "update resource links on layout publish", %{conn: conn, layout: layout} do
+      Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
+
+      {:ok, layout} =
+        Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
+
+      id = layout.id
+      {:ok, _layout} = Content.publish_layout(layout)
+      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
+
+      {:ok, _view, html} = live(conn, "/home")
+      assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
     end
   end
 
@@ -152,6 +195,25 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home")
 
       assert html =~ ~s(phx-socket="/custom_live")
+    end
+
+    test "reload layout", %{conn: conn, layout: layout} do
+      Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
+
+      {:ok, layout} =
+        Content.update_layout(layout, %{
+          "template" => """
+          <%= @inner_content %>
+          <span>updated_layout</span>
+          """
+        })
+
+      id = layout.id
+      {:ok, _layout} = Content.publish_layout(layout)
+      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
+
+      {:ok, _view, html} = live(conn, "/home")
+      assert html =~ ~s|updated_layout|
     end
   end
 
@@ -203,6 +265,37 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, view, _html} = live(conn, "/markdown")
 
       assert has_element?(view, "h1", "Title")
+    end
+  end
+
+  describe "components" do
+    test "update should reload the resource", %{conn: conn} do
+      component = component_fixture(name: "component_test", body: "component_test_v1")
+      id = component.id
+      Beacon.PubSub.subscribe_to_component(component.site, component.id)
+
+      layout = published_layout_fixture()
+
+      published_page_fixture(
+        path: "component_test",
+        template: """
+        <%= my_component("component_test", []) %>
+        """,
+        layout_id: layout.id
+      )
+
+      Beacon.reload_site(:my_site)
+
+      {:ok, _view, html} = live(conn, "/component_test")
+
+      assert html =~ "component_test_v1"
+
+      Content.update_component(component, %{body: "component_test_v2"})
+
+      assert_receive {:component_loaded, %{id: ^id}}
+
+      {:ok, _view, html} = live(conn, "/component_test")
+      assert html =~ "component_test_v2"
     end
   end
 end

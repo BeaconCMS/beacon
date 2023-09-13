@@ -6,9 +6,6 @@ defmodule BeaconWeb.Layouts do
 
   embed_templates "layouts/*"
 
-  beacon_admin_css_path = Path.join(__DIR__, "../../../priv/static/assets/admin.css")
-  @external_resource beacon_admin_css_path
-
   # TODO: style nonce
   def asset_path(conn, asset) when asset in [:css, :js] do
     %{assigns: %{__site__: site}} = conn
@@ -24,36 +21,32 @@ defmodule BeaconWeb.Layouts do
     Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
   end
 
-  def admin_asset_path(conn, asset) when asset in [:css, :js] do
-    prefix = router(conn).__beacon_admin_prefix__()
-    hash = BeaconWeb.Admin.AssetsController.current_hash(asset)
-    path = Beacon.Router.sanitize_path("#{prefix}/beacon_assets/#{asset}-#{hash}")
-    Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
-  end
-
   defp router(%Plug.Conn{private: %{phoenix_router: router}}), do: router
   defp router(%Phoenix.LiveView.Socket{router: router}), do: router
 
-  def render_dynamic_layout(%{__dynamic_layout_id__: layout_id, __site__: site} = assigns) do
-    site
-    |> Beacon.Loader.layout_module_for_site(layout_id)
-    |> Beacon.Loader.call_function_with_retry(:render, [layout_id, assigns])
+  def dynamic_layout?(%{__dynamic_layout_id__: _}), do: true
+  def dynamic_layout?(_), do: false
+
+  def render_dynamic_layout(%{__dynamic_layout_id__: layout_id} = assigns) do
+    layout_id
+    |> Beacon.Loader.layout_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:render, [assigns])
   end
 
   def live_socket_path(%{__site__: site}) do
     Beacon.Config.fetch!(site).live_socket_path
   end
 
-  defp compiled_page_assigns(site, page_id) do
-    site
-    |> Beacon.Loader.page_module_for_site(page_id)
-    |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+  defp compiled_page_assigns(page_id) do
+    page_id
+    |> Beacon.Loader.page_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
   end
 
-  defp compiled_layout_assigns(site, layout_id) do
-    site
-    |> Beacon.Loader.layout_module_for_site(layout_id)
-    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+  defp compiled_layout_assigns(layout_id) do
+    layout_id
+    |> Beacon.Loader.layout_module_for_site()
+    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
   end
 
   def render_page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
@@ -63,20 +56,19 @@ defmodule BeaconWeb.Layouts do
 
   def render_page_title(assigns), do: page_title(assigns)
 
-  @doc false
-  def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id, __site__: site}) do
+  def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id}) do
     %{title: page_title} =
-      site
-      |> Beacon.Loader.page_module_for_site(page_id)
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
+      page_id
+      |> Beacon.Loader.page_module_for_site()
+      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
 
     if page_title do
       page_title
     else
       %{title: layout_title} =
-        site
-        |> Beacon.Loader.layout_module_for_site(layout_id)
-        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [layout_id])
+        layout_id
+        |> Beacon.Loader.layout_module_for_site()
+        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
 
       layout_title || missing_page_title()
     end
@@ -88,13 +80,6 @@ defmodule BeaconWeb.Layouts do
     Logger.warning("No page title set")
     ""
   end
-
-  @doc """
-  Render all page, layout, and site meta tags.
-
-  See `default_site_meta_tags/0` for a list of default meta tags
-  that are included in all pages.
-  """
 
   def render_meta_tags(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
     params = Map.drop(assigns.conn.params, ["path"])
@@ -119,32 +104,6 @@ defmodule BeaconWeb.Layouts do
     """
   end
 
-  def render_schema(%{__dynamic_page_id__: page_id, __site__: site} = assigns) do
-    %{raw_schema: raw_schema} =
-      site
-      |> Beacon.Loader.page_module_for_site(page_id)
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [page_id])
-
-    is_empty = fn raw_schema ->
-      raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []
-    end
-
-    if is_empty.(raw_schema) do
-      []
-    else
-      assigns = assign(assigns, :raw_schema, Jason.encode!(raw_schema))
-
-      ~H"""
-      <script type="application/ld+json">
-        <%= {:safe, @raw_schema} %>
-      </script>
-      """
-    end
-  end
-
-  @doc """
-  List of all meta tags, including site, layout, and page.
-  """
   def meta_tags(assigns) do
     page_meta_tags = page_meta_tags(assigns) || []
     layout_meta_tags = layout_meta_tags(assigns) || []
@@ -164,8 +123,8 @@ defmodule BeaconWeb.Layouts do
     compiled_page_meta_tags(assigns)
   end
 
-  defp compiled_page_meta_tags(%{__dynamic_page_id__: page_id, __site__: site}) do
-    %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
+  defp compiled_page_meta_tags(%{__dynamic_page_id__: page_id}) do
+    %{meta_tags: meta_tags} = compiled_page_assigns(page_id)
     meta_tags
   end
 
@@ -179,54 +138,59 @@ defmodule BeaconWeb.Layouts do
     compiled_layout_meta_tags(assigns)
   end
 
-  defp compiled_layout_meta_tags(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{meta_tags: meta_tags} = compiled_layout_assigns(site, layout_id)
+  defp compiled_layout_meta_tags(%{__dynamic_layout_id__: layout_id}) do
+    %{meta_tags: meta_tags} = compiled_layout_assigns(layout_id)
     meta_tags
   end
 
-  def dynamic_layout?(%{__dynamic_layout_id__: _}), do: true
-  def dynamic_layout?(_), do: false
+  def render_schema(%{__dynamic_page_id__: page_id} = assigns) do
+    %{raw_schema: raw_schema} =
+      page_id
+      |> Beacon.Loader.page_module_for_site()
+      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
 
-  def stylesheet_tag(%{__dynamic_layout_id__: _, __site__: site}) do
-    stylesheet_tag =
-      site
-      |> Beacon.Loader.stylesheet_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:render, [])
+    is_empty = fn raw_schema ->
+      raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []
+    end
 
-    {:safe, stylesheet_tag}
+    if is_empty.(raw_schema) do
+      []
+    else
+      assigns = assign(assigns, :raw_schema, Jason.encode!(raw_schema))
+
+      ~H"""
+      <script type="application/ld+json">
+        <%= {:safe, @raw_schema} %>
+      </script>
+      """
+    end
   end
 
-  def stylesheet_tag(_), do: ""
+  def render_resource_links(%{__dynamic_layout_id__: _, __site__: _} = assigns) do
+    resource_links = layout_resource_links(assigns) || []
+    assigns = assign(assigns, :resource_links, resource_links)
 
-  def linked_stylesheets(%{__dynamic_layout_id__: _, __site__: _} = assigns) do
-    {:safe, linked_stylesheets_unsafe(assigns)}
+    ~H"""
+    <%= for attr <- @resource_links do %>
+      <link {attr} />
+    <% end %>
+    """
   end
 
-  def linked_stylesheets(_), do: ""
+  def render_resource_links(_assigns), do: []
 
-  def linked_stylesheets_unsafe(assigns) do
+  defp layout_resource_links(%{layout_assigns: %{resource_links: resource_links}} = assigns) do
     assigns
-    |> get_linked_stylesheets()
-    |> Enum.map_join("\n", fn sheet ->
-      # TODO: escape key/values here
-      ~s(    <link rel="stylesheet" href="#{sheet}">)
-    end)
+    |> compiled_layout_resource_links()
+    |> Map.merge(resource_links)
   end
 
-  # for non dynamic pages
-
-  def get_linked_stylesheets(%{layout_assigns: %{linked_stylesheets: linked_stylesheets}} = assigns) do
-    assigns
-    |> compiled_linked_stylesheets()
-    |> Map.merge(linked_stylesheets)
+  defp layout_resource_links(assigns) do
+    compiled_layout_resource_links(assigns)
   end
 
-  def get_linked_stylesheets(assigns) do
-    compiled_linked_stylesheets(assigns)
-  end
-
-  defp compiled_linked_stylesheets(%{__dynamic_layout_id__: layout_id, __site__: site}) do
-    %{stylesheet_urls: compiled_linked_stylesheets} = compiled_layout_assigns(site, layout_id)
-    compiled_linked_stylesheets
+  defp compiled_layout_resource_links(%{__dynamic_layout_id__: layout_id}) do
+    %{resource_links: resource_links} = compiled_layout_assigns(layout_id)
+    resource_links
   end
 end
