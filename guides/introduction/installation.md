@@ -29,16 +29,14 @@ We recommend following the guide thoroughly, but if you want a short version or 
 5. Add `:beacon` dependency to `mix.exs`
 
   ```elixir
-  {:beacon, github: "BeaconCMS/beacon"}
+  {:beacon, github: "BeaconCMS/beacon", override: true}
   ```
+  
+Note that the option `override: true` is required if running Beacon and Beacon LiveAdmin in the same application.
 
-6. Run `mix deps.get`
+6. Add `:beacon` into `:import_deps` in file `.formatter.exs`
 
-5. Add `:beacon` into `:import_deps` in file `.formatter.exs`
-
-8. Run `mix beacon.install --site my_site`
-
-9. Run `mix setup`
+7. Run `mix setup`
 
 Now you can follow the other guides to [install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md) or create [your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md).
 
@@ -74,7 +72,7 @@ mix archive.install hex phx_new
 
 [PostgresSQL](https://www.postgresql.org) is the default database used by Beacon but it also supports MySQL and SQLServer through [ecto adapters](https://github.com/elixir-ecto/ecto#usage). Make sure one of them is up and running in your environment.
 
-### Generating a new application
+### Generate a new application
 
 We'll be using `phx_new` to generate a new application. You can run `mix help phx.new` to show the full documentation with more options, but let's use the default values for our new site:
 
@@ -92,23 +90,19 @@ Beacon supports both.
 
 After it finishes you can open the generated directory: `cd my_app`
 
-### Installing Beacon
+### Install Beacon
 
 1. Edit `mix.exs` to add `:beacon` as a dependency:
 
 ```elixir
-{:beacon, github: "BeaconCMS/beacon"}
+{:beacon, github: "BeaconCMS/beacon", override: true}
 ```
 
 Or add to both apps `my_app` and `my_app_web` if running in an Umbrella app.
 
-2. Fetch beacon dep:
+Note that the option `override: true` is required if running Beacon and Beacon LiveAdmin in the same application.
 
-```sh
-mix deps.get
-```
-
-3. Add `:beacon` to `import_deps` in the .formatter.exs file:
+2. Add `:beacon` to `import_deps` in the .formatter.exs file:
 
 ```elixir
 [
@@ -117,6 +111,10 @@ mix deps.get
 ]
 ```
 
-4. Run `mix compile`
+3. Run `mix setup`
+
+Beacon depends on some C libraries to compile correctly, if compilation fails make sure you have a C compiler installed in your environment.
+
+--
 
 Now you can follow the other guides to [install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md) or create [your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md).
