@@ -4,7 +4,7 @@ Beacon is the core application that loads and renders your site pages. It runs a
 
 To create the resources for your site, you'll need an admin interface that can be installed following the [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md).
 
-We also have prepared the guide [Your First Site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md) to get your started into creating the first layout, pages, and components for your site.
+We also have prepared the guide [Your First Site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md) to get started into creating the first layout, pages, and components for your site.
 
 ## TLDR
 
@@ -34,7 +34,7 @@ We recommend following the guide thoroughly, but if you want a short version or 
 
 6. Run `mix deps.get`
 
-7. Add `:beacon` dependency to `.formatter.exs`
+5. Add `:beacon` into `:import_deps` in file `.formatter.exs`
 
 8. Run `mix beacon.install --site my_site`
 
