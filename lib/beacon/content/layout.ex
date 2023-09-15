@@ -47,6 +47,6 @@ defmodule Beacon.Content.Layout do
   def changeset(%__MODULE__{} = layout, attrs) do
     layout
     |> cast(attrs, [:site, :title, :template, :meta_tags, :resource_links])
-    |> validate_required([:site, :title, :template])
+    |> validate_required([:site, :title])
   end
 end
