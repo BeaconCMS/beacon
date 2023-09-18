@@ -9,7 +9,27 @@ defmodule Beacon.Template.Markdown do
 
   @spec convert_to_html(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
   def convert_to_html(template, _metadata) do
-    template = MDEx.to_html(template, extension: [table: true, autolink: true, tasklist: true], parse: [smart: true], render: [unsafe_: true])
+    template =
+      MDEx.to_html(template,
+        extension: [
+          strikethrough: true,
+          tagfilter: true,
+          table: true,
+          autolink: true,
+          tasklist: true,
+          superscript: true,
+          description_lists: true
+        ],
+        parse: [smart: true],
+        render: [
+          hardbreaks: true,
+          unsafe_: true
+        ],
+        features: [
+          syntax_highlight_theme: "Dracula"
+        ]
+      )
+
     {:cont, template}
   rescue
     exception ->
