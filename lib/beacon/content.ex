@@ -2012,6 +2012,10 @@ defmodule Beacon.Content do
 
   ## Utils
 
+  defp do_validate_template(changeset, field, _format, nil = _template, _metadata) do
+    Changeset.add_error(changeset, field, "can't be blank", compilation_error: nil)
+  end
+
   defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.HEEx.compile(template, metadata) do

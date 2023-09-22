@@ -82,7 +82,6 @@ defmodule Beacon.Content.Page do
     |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
-      :template,
       :layout_id,
       :format
     ])
@@ -119,7 +118,6 @@ defmodule Beacon.Content.Page do
     |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
-      :template,
       :layout_id,
       :format
     ])

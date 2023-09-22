@@ -178,6 +178,16 @@ dev_seeds = fn ->
 
   Beacon.Content.publish_layout(layout)
 
+  Beacon.Content.create_component!(%{
+    site: "dev",
+    name: "sample_component",
+    body: """
+    <li>
+      <%= @val %>
+    </li>
+    """
+  })
+
   Beacon.Content.create_snippet_helper!(%{
     site: "dev",
     name: "author_name",

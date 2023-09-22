@@ -29,9 +29,7 @@ Main components:
 
 The file `dev.exs` is a self-contained Phoenix application running Beacon with sample data and code reloading enabled. Follow these steps to get a site up and running:
 
-1. Install [cmark-gfm](https://github.com/github/cmark-gfm)
-
-2. Install dependencies, build assets, and run database setup:
+1. Install dependencies, build assets, and run database setup:
 
 ```sh
 mix setup
@@ -40,7 +38,7 @@ mix setup
 If deps compilation fails, make sure your environment has the compilers installed.
 On Ubuntu look for the `build_essential` package, on macOS install utilities with `xcode-select --install`
 
-3. Execute the dev script:
+2. Execute the dev script:
 
 ```sh
 iex --sname core -S mix dev
