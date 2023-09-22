@@ -26,6 +26,7 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
   end
 
   setup %{conn: conn} do
+    component_fixture(site: @site)
     :ok = Beacon.Loader.populate_layouts(@site)
     :ok = Beacon.Loader.populate_error_pages(@site)
     error_module = load_error_pages_module(@site)
@@ -67,6 +68,22 @@ defmodule Beacon.Loader.ErrorModuleLoaderTest do
     error_module = load_error_pages_module(@site)
 
     assert error_module.layout(501, %{inner_content: error_page.template}) == {:safe, ["#custom_layout#", "error_501"]}
+  end
+
+  test "user-defined component in layout" do
+    layout = published_layout_fixture(template: ~S|<%= my_component("sample_component", val: 1 )%><%= @inner_content %>|, site: @site)
+    error_page = error_page_fixture(layout: layout, template: "error", status: 502, site: @site)
+    error_module = load_error_pages_module(@site)
+
+    assert error_module.layout(502, %{inner_content: error_page.template}) == {:safe, ["1", "error"]}
+  end
+
+  test "user-defined component in page" do
+    layout = published_layout_fixture(template: ~S|<%= @inner_content %>|, site: @site)
+    error_page = error_page_fixture(layout: layout, template: ~S|<%= my_component("sample_component", val: 1) %>|, status: 503, site: @site)
+    error_module = load_error_pages_module(@site)
+
+    assert error_module.layout(503, %{inner_content: error_page.template}) == {:safe, ["1", "error"]}
   end
 
   test "default error pages", %{conn: conn, error_module: error_module} do
