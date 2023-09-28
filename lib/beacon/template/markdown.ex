@@ -26,7 +26,7 @@ defmodule Beacon.Template.Markdown do
           unsafe_: true
         ],
         features: [
-          syntax_highlight_theme: "Dracula"
+          syntax_highlight_theme: "onedark"
         ]
       )
 
