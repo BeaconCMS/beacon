@@ -41,32 +41,29 @@ defmodule Mix.Tasks.Beacon.Install do
     prod_config_file = config_file_path("prod.exs")
     maybe_inject_beacon_repo_config(prod_config_file, bindings)
 
-    maybe_create_beacon_data_source_file(bindings)
-
     maybe_inject_beacon_site_routes(bindings)
 
     maybe_inject_beacon_supervisor(bindings)
 
-    maybe_create_beacon_seeds(bindings)
-
-    # Run new seeds in mix setup
-    maybe_inject_beacon_seeds_alias(bindings)
-
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:site]} and a sample page is available at /#{bindings[:site]}/home
+      A new site has been configured at /#{bindings[:site]}
 
-      Usually it can be accessed at http://localhost:4000/#{bindings[:site]}/home
+      Please check out the guides for more info:
 
-      Note that the generator changes existing files and it may not be formatted, please run `mix format` if needed.
+        * https://github.com/BeaconCMS/beacon/tree/main/guides
+        * https://github.com/BeaconCMS/beacon_live_admin/tree/main/guides
 
-      Now you can adjust your project's config files, router.ex, or beacon_seeds.exs as you wish and run:
+      Adjust the configuration as needed and run:
 
           $ mix setup
 
       And then start your Phoenix app:
 
           $ mix phx.server
+
+      Note that the generator changes existing files which may not be formatted correctly, please run `mix format` if needed.
+
     """)
   end
 
@@ -127,20 +124,6 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   @doc false
-  def maybe_create_beacon_data_source_file(bindings) do
-    dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
-    template_path = get_in(bindings, [:beacon_data_source, :template_path])
-
-    if File.exists?(dest_path) do
-      Mix.shell().info([:yellow, "* skip ", :reset, "creating file ", Path.relative_to_cwd(dest_path), " (already exists)"])
-    else
-      File.touch!(dest_path)
-      Mix.shell().info([:green, "* creating ", :reset, Path.relative_to_cwd(dest_path)])
-      File.write!(dest_path, EEx.eval_file(template_path, bindings))
-    end
-  end
-
-  @doc false
   def maybe_inject_beacon_site_routes(bindings) do
     router_file = get_in(bindings, [:router, :path])
     router_file_content = File.read!(router_file)
@@ -171,65 +154,15 @@ defmodule Mix.Tasks.Beacon.Install do
       Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon supervisor into ", Path.relative_to_cwd(application_file), " (already exists)"])
     else
       site = bindings[:site]
-      data_source = bindings |> get_in([:beacon_data_source, :module_name]) |> inspect()
       endpoint = bindings |> get_in([:endpoint, :module_name]) |> inspect()
 
       new_application_file_content =
         application_file_content
         |> String.replace(".Endpoint\n", ".Endpoint,\n")
-        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, endpoint: #{endpoint}, data_source: #{data_source}]]}\n]")
+        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, endpoint: #{endpoint}]]}\n]")
 
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(application_file)])
       File.write!(application_file, new_application_file_content)
-    end
-  end
-
-  @doc false
-  def maybe_create_beacon_seeds(bindings) do
-    seeds_path = get_in(bindings, [:seeds, :path])
-    template_path = get_in(bindings, [:seeds, :template_path])
-
-    File.mkdir_p!(Path.dirname(seeds_path))
-    File.touch!(seeds_path)
-
-    seeds_content = EEx.eval_file(template_path, bindings)
-    seeds_file_content = File.read!(seeds_path)
-
-    if Enum.any?(
-         ["Content.create_stylesheet!", "Content.create_component!", "Layouts.create_layout!", "Pages.create_page!"],
-         &String.contains?(seeds_file_content, &1)
-       ) do
-      Mix.shell().info([:yellow, "* skip ", :reset, "injecting seeds into ", Path.relative_to_cwd(seeds_path), " (already exists)"])
-    else
-      new_seeds_content =
-        seeds_file_content
-        |> String.trim_trailing()
-        |> Kernel.<>(seeds_content)
-        |> String.trim_leading()
-
-      Mix.shell().info([:green, "* creating ", :reset, Path.relative_to_cwd(seeds_path)])
-      File.write!(seeds_path, new_seeds_content)
-    end
-  end
-
-  @doc false
-  def maybe_inject_beacon_seeds_alias(bindings) do
-    mix_path = get_in(bindings, [:mix, :path])
-    relative_seeds_path = get_in(bindings, [:seeds, :path]) |> Path.relative_to_cwd()
-
-    mix_file_content = File.read!(mix_path)
-
-    cond do
-      String.contains?(mix_file_content, "run #{relative_seeds_path}") ->
-        Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon seeds path into ", Path.relative_to_cwd(mix_path), " (already exists)"])
-
-      !String.contains?(mix_file_content, "ecto.setup") ->
-        Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon seeds path into ", Path.relative_to_cwd(mix_path), " (nothing to update)"])
-
-      true ->
-        new_mix_file_content = String.replace(mix_file_content, ~r/(\"ecto\.setup\":[^]]*)]/, "\\1, \"run #{relative_seeds_path}\"]")
-        Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(mix_path)])
-        File.write!(mix_path, new_mix_file_content)
     end
   end
 
@@ -261,11 +194,6 @@ defmodule Mix.Tasks.Beacon.Install do
       ctx_app: ctx_app,
       templates_path: templates_path,
       site: site,
-      beacon_data_source: %{
-        dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
-        template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
-        module_name: Module.concat(base_module, "BeaconDataSource")
-      },
       endpoint: %{
         module_name: Module.concat(web_module, "Endpoint")
       },
@@ -275,10 +203,6 @@ defmodule Mix.Tasks.Beacon.Install do
       },
       application: %{
         path: Path.join([root, lib_path, "application.ex"])
-      },
-      seeds: %{
-        path: Path.join([root, "priv", "repo", "beacon_seeds.exs"]),
-        template_path: Path.join([templates_path, "install", "seeds.exs"])
       },
       mix: %{
         path: Path.join([root, "mix.exs"])
