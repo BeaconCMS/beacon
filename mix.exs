@@ -79,7 +79,7 @@ defmodule Beacon.MixProject do
     if path = System.get_env("MDEX_PATH") do
       {:mdex, path: path}
     else
-      {:mdex, "~> 0.1.7"}
+      {:mdex, "~> 0.1.9"}
     end
   end
 

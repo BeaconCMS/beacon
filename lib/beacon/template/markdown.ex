@@ -13,7 +13,7 @@ defmodule Beacon.Template.Markdown do
       MDEx.to_html(template,
         extension: [
           strikethrough: true,
-          tagfilter: true,
+          tagfilter: false,
           table: true,
           autolink: true,
           tasklist: true,
