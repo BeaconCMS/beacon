@@ -30,7 +30,7 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 6. Run `mix deps.get`
 
-7. Add `:beacon` dependency to `.formatter.exs` in `:
+7. Add `:beacon` dependency to `:import_deps` in `.formatter.exs`:
 
 8. Run `mix beacon.install --site my_site`
 
@@ -112,8 +112,8 @@ mix deps.get
 
 ```elixir
 [
- import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
- # rest of file
+  import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
+  # rest of file
 ]
 ```
 
