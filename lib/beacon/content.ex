@@ -29,6 +29,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
+  alias Beacon.Content.LiveData
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageEventHandler
@@ -1869,6 +1870,117 @@ defmodule Beacon.Content do
       {:ok, page}
     end
   end
+
+  # LIVE DATA
+
+  @doc """
+  Returns a list of all existing LiveData formats.
+  """
+  @doc type: :live_data
+  @spec live_data_formats() :: [atom()]
+  def live_data_formats, do: LiveData.formats()
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking LiveData changes.
+
+  ## Example
+
+      iex> change_live_data(live_data, %{code: "false"})
+      %Ecto.Changeset{data: %LiveData{}}
+
+  """
+  @doc type: :live_data
+  @spec change_live_data(LiveData.t(), map()) :: Changeset.t()
+  def change_live_data(%LiveData{} = live_data, attrs \\ %{}) do
+    LiveData.changeset(live_data, attrs)
+  end
+
+  @doc """
+  Creates new assigns for Page templates using user-inputted code.
+  """
+  @doc type: :live_data
+  @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_live_data(attrs) do
+    %LiveData{}
+    |> LiveData.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Gets a single LiveData entry by `id`.
+
+  ## Example
+
+      iex> get_live_data("788b2161-b23a-48ed-abcd-8af788004bbb")
+      %LiveData{}
+
+  """
+  @doc type: :live_data
+  @spec get_live_data(Ecto.UUID.t()) :: LiveData.t() | nil
+  def get_live_data(id) when is_binary(id) do
+    Repo.get(LiveData, id)
+  end
+
+  @doc """
+  Query LiveData for a given site.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search records by path.
+
+  """
+  @doc type: :live_data
+  @spec live_data_for_site(Site.t(), Keyword.t()) :: [LiveData.t()]
+  def live_data_for_site(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_live_data_for_site_base()
+    |> query_live_data_for_site_limit(per_page)
+    |> query_live_data_for_site_search(search)
+    |> Repo.all()
+  end
+
+  defp query_live_data_for_site_base(site) do
+    from ld in LiveData,
+      where: ld.site == ^site,
+      order_by: [asc: ld.path]
+  end
+
+  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_for_site_search(query, _search), do: query
+
+  @doc """
+  Updates LiveData.
+
+      iex> update_live_data(live_data, %{code: "true"})
+      {:ok, %LiveData{}}
+
+  """
+  @doc type: :live_data
+  @spec update_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def update_live_data(%LiveData{} = live_data, attrs) do
+    live_data
+    |> LiveData.changeset(attrs)
+    |> validate_live_data_code()
+    |> Repo.update()
+    |> tap(&maybe_reload_live_data/1)
+  end
+
+  defp validate_live_data_code(changeset) do
+    site = Changeset.get_field(changeset, :site)
+    code = Changeset.get_field(changeset, :code)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
+    do_validate_template(changeset, :code, :heex, code, metadata)
+  end
+
+  def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
+  def maybe_reload_live_data({:error, _live_data}), do: :noop
 
   ## Utils
 

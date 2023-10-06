@@ -4,6 +4,7 @@ defmodule Beacon.PubSub do
   require Logger
   alias Beacon.Content.Component
   alias Beacon.Content.Layout
+  alias Beacon.Content.LiveData
   alias Beacon.Content.Page
 
   @pubsub __MODULE__
@@ -127,6 +128,18 @@ defmodule Beacon.PubSub do
   end
 
   defp component(component), do: %{site: component.site, id: component.id, name: component.name}
+
+  # Live Data
+
+  def live_data_updated(%LiveData{} = live_data) do
+    live_data.site
+    |> topic_live_data()
+    |> broadcast({:live_data_updated, live_data(live_data)})
+  end
+
+  defp topic_live_data(site), do: "beacon:#{site}:live_data"
+
+  defp live_data(live_data), do: %{site: live_data.site, id: live_data.id, assign: live_data.assign}
 
   # Utils
 
