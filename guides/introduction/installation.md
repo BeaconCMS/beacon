@@ -4,7 +4,7 @@ Beacon is an application that runs on top of an existing Phoenix LiveView applic
 
 ## TLDR
 
-We recomment following the guide thoroughly, but if you want a short version or to just recap the main steps:
+We recommend following the guide thoroughly, but if you want a short version or to just recap the main steps:
 
 1. Install Elixir v1.14+
 
