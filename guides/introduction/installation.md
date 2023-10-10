@@ -296,7 +296,7 @@ For more info on site options, check out `Beacon.start_link/1`.
       <main>
         <h2>A blog</h2>
         <ul>
-          <li>Path Params Blog Slug: <%%= @beacon_path_params.blog_slug %></li>
+          <li>Path Params Blog Slug: <%%= @beacon_path_params["blog_slug"] %></li>
           <li>Live Data blog_slug_uppercase: <%%= @beacon_live_data.blog_slug_uppercase %></li>
         </ul>
       </main>
