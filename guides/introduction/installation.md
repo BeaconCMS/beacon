@@ -30,7 +30,7 @@ We recomment following the guide thoroughly, but if you want a short version or 
 
 6. Run `mix deps.get`
 
-7. Add `:beacon` dependency to `.formatter.exs` in `:
+7. Add `:beacon` to `import_deps` in the .formatter.exs file.
 
 8. Run `mix beacon.install --site my_site`
 
