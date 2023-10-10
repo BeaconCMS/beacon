@@ -48,3 +48,12 @@ Note that running a named node isn't required unless you're running Beacon LiveA
 
 Finally, visit any of the routes defined in `dev.exs` as http://localhost:4001/dev/home
 or request resources from the API as http://localhost:4001/api/pages
+
+## Looking for help with your Elixir project?
+
+<img src="assets/images/dockyard_logo.png" width="256" alt="DockYard logo">
+
+At DockYard we are [ready to help you build your next Elixir project](https://dockyard.com/phoenix-consulting).
+We have a unique expertise in Elixir and Phoenix development that is unmatched and we love to [write about Elixir](https://dockyard.com/blog/categories/elixir).
+
+Have a project in mind? [Get in touch](https://dockyard.com/contact/hire-us)!
