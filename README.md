@@ -25,6 +25,16 @@ Main components:
 - Admin - LiveView UI to manage layouts, pages, and all other resources. See https://github.com/BeaconCMS/beacon_live_admin
 - Page Builder - An easy to use, drag & drop UI for building pages, targeted to non-technical users. Not released yet, in the initial stages of development.
 
+## Contributing
+
+Check out the [CONTRIBUTING.md](https://github.com/BeaconCMS/beacon/blob/main/CONTRIBUTING.md) doc for overall guidelines to contribute to this project,
+then follow the [Local Developments](https://github.com/BeaconCMS/beacon#local-development) steps to run a local project, or watch the video below to understand more
+about Beacon internals:
+
+<a href="https://www.youtube.com/watch?v=5jk0fIJOFuc">
+  <img src="https://raw.githubusercontent.com/BeaconCMS/beacon/main/assets/images/youtube_card.png" width="512" alt="YouTube card - ElixirConf 2023 - Leandro Pereira - Beacon: The next generation of CMS in Phoenix LiveView">
+</a>
+
 ## Local Development
 
 The file `dev.exs` is a self-contained Phoenix application running Beacon with sample data and code reloading enabled. Follow these steps to get a site up and running:

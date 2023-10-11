@@ -1,4 +1,4 @@
-# How to contribute
+# How to Contribute
 
 ## Issue Tags
 
@@ -45,33 +45,3 @@ get accepted:
 
 If your pull-request addresses an issue then please add the corresponding
 issue's number to the description of your pull-request.
-
-# How to work with this project locally
-
-## Installation
-
-First clone this repository:
-
-```sh
-git clone git@github.com:BeaconCMS/beacon.git
-```
-
-Call setup to install deps:
-
-```sh
-mix setup
-```
-
-## Running tests
-
-```sh
-mix test
-```
-
-## Running a local app
-
-```sh
-iex -S mix dev
-```
-
-Check out https://github.com/BeaconCMS/beacon/blob/main/dev.exs and visit http://localhost:4001/dev/home
