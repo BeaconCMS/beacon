@@ -28,7 +28,7 @@ Main components:
 ## Contributing
 
 Check out the [CONTRIBUTING.md](https://github.com/BeaconCMS/beacon/blob/main/CONTRIBUTING.md) doc for overall guidelines to contribute to this project,
-then follow the [Local Developments](https://github.com/BeaconCMS/beacon#local-development) steps to run a local project, or watch the video below to understand more
+then follow the [Local Development](https://github.com/BeaconCMS/beacon#local-development) steps to run a local project or watch the video below to understand more
 about Beacon internals:
 
 <a href="https://www.youtube.com/watch?v=5jk0fIJOFuc">
