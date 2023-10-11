@@ -30,7 +30,7 @@ We recommend following the guide thoroughly, but if you want a short version or 
 
 6. Run `mix deps.get`
 
-7. Add `:beacon` dependency to `:import_deps` in `.formatter.exs`:
+7. Add `:beacon` to `import_deps` in the .formatter.exs file.
 
 8. Run `mix beacon.install --site my_site`
 
@@ -296,7 +296,7 @@ For more info on site options, check out `Beacon.start_link/1`.
       <main>
         <h2>A blog</h2>
         <ul>
-          <li>Path Params Blog Slug: <%%= @beacon_path_params.blog_slug %></li>
+          <li>Path Params Blog Slug: <%%= @beacon_path_params["blog_slug"] %></li>
           <li>Live Data blog_slug_uppercase: <%%= @beacon_live_data.blog_slug_uppercase %></li>
         </ul>
       </main>
