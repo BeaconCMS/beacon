@@ -35,12 +35,12 @@ defmodule Beacon.MixProject do
   defp deps do
     [
       {:accent, "~> 1.1"},
-      {:brotli, "~> 0.3.2"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.5", only: :dev},
+      {:ex_brotli, "~> 0.3"},
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
