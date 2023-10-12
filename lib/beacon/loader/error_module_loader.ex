@@ -6,7 +6,6 @@ defmodule Beacon.Loader.ErrorModuleLoader do
 
   def load_error_pages!(error_pages, site) do
     error_module = Loader.error_module_for_site(site)
-    component_module = Loader.component_module_for_site(site)
     layout_functions = Enum.map(error_pages, &build_layout_fn/1)
     render_functions = Enum.map(error_pages, &build_render_fn(&1, error_module))
 
@@ -16,16 +15,12 @@ defmodule Beacon.Loader.ErrorModuleLoader do
           use Phoenix.HTML
           require EEx
           import Phoenix.Component
-          unquote(Loader.maybe_import_my_component(component_module, render_functions ++ layout_functions))
           require Logger
 
-          # One function per error page
           unquote_splicing(layout_functions)
-
-          # One function per error page
           unquote_splicing(render_functions)
 
-          # Catch-all for error which do not have an ErrorPage defined
+          # catch-all for error which do not have an ErrorPage defined
           def render(var!(conn), var!(status)) do
             _ = var!(conn)
             Logger.warning("missing error page for #{unquote(site)} status #{var!(status)}")
