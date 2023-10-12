@@ -4,6 +4,7 @@ defmodule Beacon.ContentTest do
   import Beacon.Fixtures
 
   alias Beacon.Content
+  alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -462,13 +463,11 @@ defmodule Beacon.ContentTest do
 
     test "update_error_page/2" do
       error_page = error_page_fixture()
-
       assert {:ok, %ErrorPage{template: "Changed"}} = Content.update_error_page(error_page, %{template: "Changed"})
     end
 
     test "delete_error_page/1" do
       error_page = error_page_fixture()
-
       assert {:ok, %ErrorPage{__meta__: %{state: :deleted}}} = Content.delete_error_page(error_page)
     end
   end
@@ -498,6 +497,11 @@ defmodule Beacon.ContentTest do
 
       assert Enum.member?(components, component_b)
       refute Enum.member?(components, component_a)
+    end
+
+    test "update_component" do
+      component = component_fixture(name: "new_component", body: "old_body")
+      assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
     end
   end
 end

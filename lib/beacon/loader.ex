@@ -245,13 +245,10 @@ defmodule Beacon.Loader do
   defp load_error_pages(site) do
     error_pages = Content.list_error_pages(site, preloads: [:layout])
 
-    with {:ok, _module, _ast} <- ErrorModuleLoader.load_error_pages!(error_pages, site) do
-      :ok
-    else
+    case ErrorModuleLoader.load_error_pages!(error_pages, site) do
+      {:ok, _module, _ast} -> :ok
       _ -> raise Beacon.LoaderError, message: "failed to load error pages of site #{site}"
     end
-
-    :ok
   end
 
   @doc false
@@ -435,9 +432,8 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def handle_info(:error_pages_updated, config) do
-    # FIXME: race condition on tests
-    # :ok = load_error_pages(config.site)
+  def handle_info(:error_page_updated, config) do
+    :ok = load_error_pages(config.site)
     {:noreply, config}
   end
 

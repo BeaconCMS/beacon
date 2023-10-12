@@ -130,17 +130,17 @@ defmodule Beacon.PubSub do
 
   # Error Pages
 
+  defp topic_error_pages(site), do: "beacon:#{site}:error_pages"
+
   def subscribe_to_error_pages(site) do
     Phoenix.PubSub.subscribe(@pubsub, topic_error_pages(site))
   end
 
-  def error_pages_updated(site) do
+  def error_page_updated(site) do
     site
     |> topic_error_pages()
-    |> broadcast(:error_pages_updated)
+    |> broadcast(:error_page_updated)
   end
-
-  defp topic_error_pages(site), do: "beacon:#{site}:error_pages"
 
   # Utils
 
