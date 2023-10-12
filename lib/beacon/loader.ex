@@ -125,7 +125,7 @@ defmodule Beacon.Loader do
   end
 
   defp load_site_from_db(site) do
-    with :ok <- Beacon.RuntimeJS.load(),
+    with :ok <- Beacon.RuntimeJS.load!(),
          :ok <- load_runtime_css(site),
          :ok <- load_stylesheets(site),
          :ok <- load_components(site),
@@ -193,7 +193,7 @@ defmodule Beacon.Loader do
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
     defp load_runtime_css(_site), do: :ok
   else
-    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load(site)
+    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
   end
 
   defp load_stylesheets(site) do

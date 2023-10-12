@@ -4,7 +4,7 @@ Once you have a Beacon site up and running locally, you can have it deployed on 
 
 ## Fly.io CLI
 
-Firstly instal the fly cli tool as described at https://fly.io/docs/hands-on/install-flyctl. You're gonna use it to deploy your beacon site.
+Firstly, install the Fly CLI tool as described at https://fly.io/docs/hands-on/install-flyctl. You're going to use it to deploy your beacon site.
 
 ## Sign in or sign up
 
@@ -22,7 +22,7 @@ fly auth login
 
 ## Dockerfile
 
-Aplications on Fly run on containers, let's generate a Dockerfile and other supporting files, and then make a couple of changes:
+Applications on Fly run on containers, let's generate a Dockerfile and other supporting files, and then make a couple of changes:
 
 Run:
 
@@ -122,7 +122,7 @@ Before we can access the deployed site let's run seeds to populate some sample d
 fly ssh console
 ```
 
-2. Open a IEx console:
+2. Open an IEx console:
 
 ```sh
 app/bin/my_app remote
@@ -134,11 +134,11 @@ app/bin/my_app remote
 MyApp.Release.beacon_seeds
 ```
 
-Note that you could save some commands and just call `fly ssh console --command "/app/bin/beacon_seeds"` to run seeds, but it may fail and at this momment it's recommended to connected to the instance as showed before.
+Note that you could save some commands and just call `fly ssh console --command "/app/bin/beacon_seeds"` to run seeds, but it may fail and at this momment it's recommended to connect to the instance as shown before.
 
 ## Open
 
-Finally run the following command to see your site live:
+Finally, run the following command to see your site live:
 
 ```sh
 fly open my_site/home
