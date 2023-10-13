@@ -7,7 +7,7 @@ defmodule Beacon.DataSource do
     user_data_source_mod = get_data_source(site)
 
     if user_data_source_mod && is_atom(user_data_source_mod) do
-      user_data_source_mod.live_data(site, path, params)
+      user_data_source_mod.live_data(path, params)
     else
       %{}
     end

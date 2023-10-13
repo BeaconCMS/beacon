@@ -1922,7 +1922,7 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Query LiveData for a given site.
+  Query paths with LiveData for a given site.
 
   ## Options
 
@@ -1931,29 +1931,31 @@ defmodule Beacon.Content do
 
   """
   @doc type: :live_data
-  @spec live_data_for_site(Site.t(), Keyword.t()) :: [LiveData.t()]
-  def live_data_for_site(site, opts \\ []) do
+  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [LiveData.t()]
+  def live_data_paths_for_site(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     search = Keyword.get(opts, :query)
 
     site
-    |> query_live_data_for_site_base()
-    |> query_live_data_for_site_limit(per_page)
-    |> query_live_data_for_site_search(search)
+    |> query_live_data_paths_for_site_base()
+    |> query_live_data_paths_for_site_limit(per_page)
+    |> query_live_data_paths_for_site_search(search)
     |> Repo.all()
   end
 
-  defp query_live_data_for_site_base(site) do
+  defp query_live_data_paths_for_site_base(site) do
     from ld in LiveData,
       where: ld.site == ^site,
+      select: ld.path,
+      distinct: ld.path,
       order_by: [asc: ld.path]
   end
 
-  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
-  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
-  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
-  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
-  defp query_live_data_for_site_search(query, _search), do: query
+  defp query_live_data_paths_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_paths_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_paths_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+  defp query_live_data_paths_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_paths_for_site_search(query, _search), do: query
 
   @doc """
   Updates LiveData.

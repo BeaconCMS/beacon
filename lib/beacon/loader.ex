@@ -15,6 +15,7 @@ defmodule Beacon.Loader do
 
   alias Beacon.Content
   alias Beacon.Loader.ComponentModuleLoader
+  alias Beacon.Loader.DataSourceModuleLoader
   alias Beacon.Loader.LayoutModuleLoader
   alias Beacon.Loader.PageModuleLoader
   alias Beacon.Loader.SnippetModuleLoader
@@ -74,7 +75,8 @@ defmodule Beacon.Loader do
          :ok <- load_components(site),
          :ok <- load_snippet_helpers(site),
          :ok <- load_layouts(site),
-         :ok <- load_pages(site) do
+         :ok <- load_pages(site),
+         :ok <- load_data_source(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for site #{site}"
@@ -184,6 +186,11 @@ defmodule Beacon.Loader do
     :ok
   end
 
+  defp load_data_source(site) do
+    DataSourceModuleLoader.load_data_source(site, Content.live_data_for_site(site))
+    :ok
+  end
+
   @doc false
   def stylesheet_module_for_site(site) do
     module_for_site(site, "Stylesheet")
@@ -192,6 +199,11 @@ defmodule Beacon.Loader do
   @doc false
   def component_module_for_site(site) do
     module_for_site(site, "Component")
+  end
+
+  @doc false
+  def data_source_module_for_site(site) do
+    module_for_site(site, "DataSource")
   end
 
   @doc false
