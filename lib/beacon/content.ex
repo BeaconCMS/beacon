@@ -26,6 +26,7 @@ defmodule Beacon.Content do
   import Ecto.Query
 
   alias Beacon.Content.Component
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -47,7 +48,7 @@ defmodule Beacon.Content do
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
 
-  These meta tags can be overwriten or extended on a Layout or Page level.
+  These meta tags can be overwritten or extended on a Layout or Page level.
   """
   @spec default_site_meta_tags() :: [map()]
   def default_site_meta_tags do
@@ -71,6 +72,18 @@ defmodule Beacon.Content do
   @spec change_layout(Layout.t(), map()) :: Changeset.t()
   def change_layout(%Layout{} = layout, attrs \\ %{}) do
     Layout.changeset(layout, attrs)
+  end
+
+  @doc """
+  Returns a map of attrs to load the default layout into new sites.
+  """
+  @spec default_layout() :: map()
+  @doc type: :layouts
+  def default_layout do
+    %{
+      title: "Default",
+      template: "<%= @inner_content %>"
+    }
   end
 
   @doc """
@@ -1675,7 +1688,7 @@ defmodule Beacon.Content do
 
   Note that the `:page` assigns is made available as `assigns["page"]` (String.t) due to how Solid works.
 
-  Snipets can be used in:
+  Snippets can be used in:
 
     * Meta Tag value
     * Page Schema (structured Schema.org tags)
@@ -1702,6 +1715,137 @@ defmodule Beacon.Content do
       # TODO: wrap error and return a Beacon exception
       _error -> :error
     end
+  end
+
+  # ERROR PAGES
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking error page changes.
+
+  ## Example
+
+      iex> change_error_page(error_page, %{status: 404})
+      %Ecto.Changeset{data: %ErrorPage{}}
+
+  """
+  @doc type: :error_pages
+  @spec change_error_page(ErrorPage.t(), map()) :: Changeset.t()
+  def change_error_page(%ErrorPage{} = error_page, attrs \\ %{}) do
+    ErrorPage.changeset(error_page, attrs)
+  end
+
+  @doc """
+  Returns the error page for a given site and status code, or `nil` if no matching error page exists.
+  """
+  @doc type: :error_pages
+  @spec get_error_page(Site.t(), ErrorPage.error_status()) :: ErrorPage.t() | nil
+  def get_error_page(site, status) do
+    Repo.one(
+      from e in ErrorPage,
+        where: e.site == ^site,
+        where: e.status == ^status
+    )
+  end
+
+  @doc """
+  Lists all error pages for a given site.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:preloads` - a list of preloads to load.
+
+  """
+  @doc type: :error_pages
+  @spec list_error_pages(Site.t(), keyword()) :: [ErrorPage.t()]
+  def list_error_pages(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    site
+    |> query_list_error_pages_base()
+    |> query_list_error_pages_limit(per_page)
+    |> query_list_error_pages_preloads(preloads)
+    |> Repo.all()
+  end
+
+  defp query_list_error_pages_base(site) do
+    from p in ErrorPage,
+      where: p.site == ^site,
+      order_by: [asc: p.status]
+  end
+
+  defp query_list_error_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_error_pages_limit(query, :infinity = _limit), do: query
+  defp query_list_error_pages_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_error_pages_preloads(query, [_preload | _] = preloads) do
+    from(q in query, preload: ^preloads)
+  end
+
+  defp query_list_error_pages_preloads(query, _preloads), do: query
+
+  @doc """
+  Creates a new error page.
+  """
+  @doc type: :error_pages
+  @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+          {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def create_error_page(attrs) do
+    %ErrorPage{}
+    |> ErrorPage.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates a new error page, raising if the operation fails.
+  """
+  @doc type: :error_pages
+  @spec create_error_page!(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+          ErrorPage.t()
+  def create_error_page!(attrs) do
+    case create_error_page(attrs) do
+      {:ok, error_page} -> error_page
+      {:error, changeset} -> raise "failed to create error page, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Returns attr data to load the default error_pages into new sites.
+  """
+  @spec default_error_pages() :: [map()]
+  @doc type: :error_pages
+  def default_error_pages do
+    for status <- [404, 500] do
+      %{
+        status: status,
+        template: Plug.Conn.Status.reason_phrase(status)
+      }
+    end
+  end
+
+  @doc """
+  Updates an error page.
+  """
+  @doc type: :error_pages
+  @spec update_error_page(ErrorPage.t(), map()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def update_error_page(error_page, attrs) do
+    error_page
+    |> ErrorPage.changeset(attrs)
+    |> Repo.update()
+    |> tap(&maybe_reload_error_page/1)
+  end
+
+  def maybe_reload_error_page({:ok, error_page}), do: PubSub.error_page_updated(error_page)
+  def maybe_reload_error_page({:error, _error_page}), do: :noop
+
+  @doc """
+  Deletes an error page.
+  """
+  @doc type: :error_pages
+  @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def delete_error_page(error_page) do
+    Repo.delete(error_page)
   end
 
   # PAGE EVENT HANDLERS

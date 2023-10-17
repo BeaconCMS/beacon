@@ -34,6 +34,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     config_file_path = config_file_path("config.exs")
     maybe_inject_beacon_repo_into_ecto_repos(config_file_path)
+    inject_endpoint_render_errors_config(config_file_path)
 
     dev_config_file = config_file_path("dev.exs")
     maybe_inject_beacon_repo_config(dev_config_file, bindings)
@@ -88,6 +89,37 @@ defmodule Mix.Tasks.Beacon.Install do
       new_config_file_content = Regex.replace(regex, config_file_content, "ecto_repos: [\\1, Beacon.Repo]")
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(config_file_path)])
       File.write!(config_file_path, new_config_file_content)
+    end
+  end
+
+  @doc false
+  def inject_endpoint_render_errors_config(config_file_path) do
+    config_file_content = File.read!(config_file_path)
+
+    if String.contains?(config_file_content, "BeaconWeb.ErrorHTML") do
+      Mix.shell().info([
+        :yellow,
+        "* skip ",
+        :reset,
+        "injecting Beacon.ErrorHTML to render_errors into ",
+        Path.relative_to_cwd(config_file_path),
+        " (already exists)"
+      ])
+    else
+      regex = ~r/(config.*\.Endpoint,\n)((?:.+\n)*\s*)\n/
+      render_errors_value = [formats: [html: BeaconWeb.ErrorHTML]]
+
+      [_header, endpoint_config_str] = Regex.run(regex, config_file_content, capture: :all_but_first)
+      {config_list, []} = Code.eval_string("[" <> endpoint_config_str <> "]")
+      updated_config_list = Keyword.update(config_list, :render_errors, render_errors_value, fn _ -> render_errors_value end)
+      updated_str = inspect(updated_config_list) <> "\n"
+
+      new_config_file_content =
+        regex
+        |> Regex.replace(config_file_content, "\\1#{updated_str}")
+        |> Code.format_string!(file: config_file_path)
+
+      File.write!(config_file_path, [new_config_file_content, "\n"])
     end
   end
 

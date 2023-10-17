@@ -1,5 +1,6 @@
 defmodule Beacon.Fixtures do
   alias Beacon.Content
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
@@ -184,5 +185,18 @@ defmodule Beacon.Fixtures do
     |> Ecto.build_assoc(:event_handlers)
     |> PageEventHandler.changeset(full_attrs)
     |> Repo.insert!()
+  end
+
+  def error_page_fixture(attrs \\ %{}) do
+    layout = get_lazy(attrs, :layout, fn -> layout_fixture() end)
+
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      status: Enum.random(ErrorPage.valid_statuses()),
+      template: "Uh-oh!",
+      layout_id: layout.id
+    })
+    |> Content.create_error_page!()
   end
 end

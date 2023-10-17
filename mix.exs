@@ -104,6 +104,7 @@ defmodule Beacon.MixProject do
         Content: [
           Beacon.Content,
           Beacon.Content.Component,
+          Beacon.Content.ErrorPage,
           Beacon.Content.Layout,
           Beacon.Content.LayoutEvent,
           Beacon.Content.LayoutSnapshot,
@@ -181,7 +182,8 @@ defmodule Beacon.MixProject do
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
-        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers)
+        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
+        "Functions: Error Pages": &(&1[:type] == :error_pages)
       ]
     ]
   end
