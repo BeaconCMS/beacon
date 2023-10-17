@@ -1,6 +1,6 @@
 defmodule Beacon.Loader do
   @moduledoc """
-  Loader is the process resposible for loading, unloading, and reloading all resources for each site.
+  Loader is the process responsible for loading, unloading, and reloading all resources for each site.
 
   At start it will load all `Beacon.Content.blueprint_components/0` and existing resources stored
   in the database like layouts, pages, snippets, etc.
@@ -15,7 +15,7 @@ defmodule Beacon.Loader do
 
   alias Beacon.Content
   alias Beacon.Loader.ComponentModuleLoader
-  alias Beacon.Loader.ErrorModuleLoader
+  alias Beacon.Loader.ErrorPageModuleLoader
   alias Beacon.Loader.LayoutModuleLoader
   alias Beacon.Loader.PageModuleLoader
   alias Beacon.Loader.SnippetModuleLoader
@@ -244,7 +244,7 @@ defmodule Beacon.Loader do
 
   defp load_error_pages(site) do
     error_pages = Content.list_error_pages(site, preloads: [:layout])
-    ErrorModuleLoader.load_error_pages!(error_pages, site)
+    ErrorPageModuleLoader.load_error_pages!(error_pages, site)
     :ok
   end
 
@@ -425,13 +425,16 @@ defmodule Beacon.Loader do
   def handle_info({:component_updated, component}, state) do
     :ok = load_components(component.site)
     :ok = Beacon.PubSub.component_loaded(component)
+    :ok = load_runtime_css(component.site)
     {:noreply, state}
   end
 
   @doc false
-  def handle_info(:error_page_updated, config) do
-    :ok = load_error_pages(config.site)
-    {:noreply, config}
+  def handle_info({:error_page_updated, error_page}, state) do
+    :ok = load_error_pages(error_page.site)
+    :ok = Beacon.PubSub.error_page_loaded(error_page)
+    :ok = load_runtime_css(error_page.site)
+    {:noreply, state}
   end
 
   @doc false

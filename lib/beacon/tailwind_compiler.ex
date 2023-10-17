@@ -164,6 +164,13 @@ defmodule Beacon.TailwindCompiler do
           File.write!(page_path, page.template)
           page_path
         end)
+      end),
+      Task.async(fn ->
+        Enum.map(Content.list_error_pages(site, per_page: :infinity), fn error_page ->
+          error_page_path = Path.join(tmp_dir, "#{site}_error_page_#{error_page.status}.template")
+          File.write!(error_page_path, error_page.template)
+          error_page_path
+        end)
       end)
     ]
     |> Task.await_many()

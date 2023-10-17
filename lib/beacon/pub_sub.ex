@@ -3,6 +3,8 @@ defmodule Beacon.PubSub do
 
   require Logger
   alias Beacon.Content.Component
+  alias Beacon.Content.ErrorPage
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.Page
 
@@ -132,15 +134,31 @@ defmodule Beacon.PubSub do
 
   defp topic_error_pages(site), do: "beacon:#{site}:error_pages"
 
+  defp topic_error_page(site, id) when is_binary(id) do
+    "beacon:#{site}:error_pages:#{id}"
+  end
+
   def subscribe_to_error_pages(site) do
     Phoenix.PubSub.subscribe(@pubsub, topic_error_pages(site))
   end
 
-  def error_page_updated(site) do
-    site
-    |> topic_error_pages()
-    |> broadcast(:error_page_updated)
+  def subscribe_to_error_page(site, id) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_error_page(site, id))
   end
+
+  def error_page_updated(%ErrorPage{} = error_page) do
+    error_page.site
+    |> topic_error_pages()
+    |> broadcast({:error_page_updated, error_page(error_page)})
+  end
+
+  def error_page_loaded(error_page) do
+    error_page.site
+    |> topic_error_page(error_page.id)
+    |> local_broadcast({:error_page_loaded, error_page(error_page)})
+  end
+
+  defp error_page(error_page), do: %{site: error_page.site, id: error_page.id, status: error_page.status}
 
   # Utils
 

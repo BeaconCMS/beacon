@@ -48,7 +48,7 @@ defmodule Beacon.Content do
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
 
-  These meta tags can be overwriten or extended on a Layout or Page level.
+  These meta tags can be overwritten or extended on a Layout or Page level.
   """
   @spec default_site_meta_tags() :: [map()]
   def default_site_meta_tags do
@@ -1688,7 +1688,7 @@ defmodule Beacon.Content do
 
   Note that the `:page` assigns is made available as `assigns["page"]` (String.t) due to how Solid works.
 
-  Snipets can be used in:
+  Snippets can be used in:
 
     * Meta Tag value
     * Page Schema (structured Schema.org tags)
@@ -1752,23 +1752,32 @@ defmodule Beacon.Content do
 
   ## Options
 
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
     * `:preloads` - a list of preloads to load.
 
   """
   @doc type: :error_pages
   @spec list_error_pages(Site.t(), keyword()) :: [ErrorPage.t()]
   def list_error_pages(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
     preloads = Keyword.get(opts, :preloads, [])
 
-    query =
-      from e in ErrorPage,
-        where: e.site == ^site,
-        order_by: e.status
-
-    query
+    site
+    |> query_list_error_pages_base()
+    |> query_list_error_pages_limit(per_page)
     |> query_list_error_pages_preloads(preloads)
     |> Repo.all()
   end
+
+  defp query_list_error_pages_base(site) do
+    from p in ErrorPage,
+      where: p.site == ^site,
+      order_by: [asc: p.status]
+  end
+
+  defp query_list_error_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_error_pages_limit(query, :infinity = _limit), do: query
+  defp query_list_error_pages_limit(query, _per_page), do: from(q in query, limit: 20)
 
   defp query_list_error_pages_preloads(query, [_preload | _] = preloads) do
     from(q in query, preload: ^preloads)
@@ -1827,7 +1836,7 @@ defmodule Beacon.Content do
     |> tap(&maybe_reload_error_page/1)
   end
 
-  def maybe_reload_error_page({:ok, error_page}), do: PubSub.error_page_updated(error_page.site)
+  def maybe_reload_error_page({:ok, error_page}), do: PubSub.error_page_updated(error_page)
   def maybe_reload_error_page({:error, _error_page}), do: :noop
 
   @doc """
