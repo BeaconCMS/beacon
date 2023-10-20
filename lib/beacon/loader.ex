@@ -379,7 +379,8 @@ defmodule Beacon.Loader do
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(site),
          :ok <- load_stylesheets(site),
-         {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout) do
+         {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
+         :ok <- load_error_pages(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
