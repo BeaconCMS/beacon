@@ -1922,6 +1922,15 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Gets all LiveData for a site in one unpaginated query.
+  """
+  @doc type: :live_data
+  @spec live_data_for_site(Site.t()) :: [LiveData.t()]
+  def live_data_for_site(site) do
+    Repo.all(from ld in LiveData, where: ld.site == ^site)
+  end
+
+  @doc """
   Query paths with LiveData for a given site.
 
   ## Options
@@ -1931,7 +1940,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :live_data
-  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [LiveData.t()]
+  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [String.t()]
   def live_data_paths_for_site(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     search = Keyword.get(opts, :query)

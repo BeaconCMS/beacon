@@ -1,13 +1,13 @@
 defmodule Beacon.Loader.DataSourceModuleLoader do
   @moduledoc false
-  alias Beacon.Content
   alias Beacon.Loader
 
   require Logger
 
   def load_data_source(site, data) do
     data_source_module = Loader.data_source_module_for_site(site)
-    live_data_functions = Enum.map(data, &live_data_fn/1)
+    data_by_path = Enum.group_by(data, & &1.path)
+    live_data_functions = Enum.map(data_by_path, &live_data_fn/1)
     # TODO
     default_data = %{}
 
@@ -36,15 +36,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
     {:ok, ast}
   end
 
-  defp live_data_fn(%Content.LiveData{} = data) do
-    code =
-      case data.format do
-        :text -> data.code
-        :elixir -> Code.string_to_quoted!(data.code)
-      end
-
-    path = data.path
-
+  defp live_data_fn({path, data_list}) do
     path_list =
       quote do
         unquote(path)
@@ -57,7 +49,16 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
     quote do
       def live_data(unquote(path_list), var!(params), var!(data)) do
-        unquote(code)
+        Enum.reduce(unquote(data_list), var!(data), fn live_data, acc ->
+          Map.put(
+            acc,
+            live_data.assign,
+            case live_data.format do
+              :text -> live_data.code
+              :elixir -> Code.string_to_quoted!(live_data.code)
+            end
+          )
+        end)
       end
     end
   end
