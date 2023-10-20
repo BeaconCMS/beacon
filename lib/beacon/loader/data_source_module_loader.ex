@@ -8,8 +8,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
     data_source_module = Loader.data_source_module_for_site(site)
     data_by_path = Enum.group_by(data, & &1.path)
     live_data_functions = Enum.map(data_by_path, &live_data_fn/1)
-    # TODO
-    default_data = %{}
+    # TODO default data
 
     ast =
       quote do
@@ -19,7 +18,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
           @impl Beacon.DataSource.Behaviour
           def live_data(path, params) do
-            live_data(path, params, unquote(default_data))
+            live_data(path, params, %{})
           end
 
           unquote_splicing(live_data_functions)

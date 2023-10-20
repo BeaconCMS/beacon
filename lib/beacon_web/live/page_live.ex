@@ -77,7 +77,8 @@ defmodule BeaconWeb.PageLive do
   def handle_params(params, _url, socket) do
     %{"path" => path} = params
     %{__site__: site} = socket.assigns
-    live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
+    data_source_module = Beacon.Loader.data_source_module_for_site(site)
+    live_data = data_source_module.live_data(path, Map.drop(params, ["path"]))
     {{_site, _path}, {page_id, layout_id, _format, page_module, component_module}} = lookup_route!(site, path)
 
     Process.put(:__beacon_site__, site)

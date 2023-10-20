@@ -19,6 +19,7 @@ defmodule Beacon.Content.LiveData do
           site: Beacon.Types.Site.t(),
           path: String.t(),
           assign: String.t(),
+          format: :text | :elixir,
           code: String.t()
         }
 
@@ -35,7 +36,7 @@ defmodule Beacon.Content.LiveData do
   end
 
   def changeset(%__MODULE__{} = live_data, attrs) do
-    fields = ~w(site path assign code)a
+    fields = ~w(site path assign format code)a
 
     live_data
     |> cast(attrs, fields)

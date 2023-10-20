@@ -1967,6 +1967,15 @@ defmodule Beacon.Content do
   defp query_live_data_paths_for_site_search(query, _search), do: query
 
   @doc """
+  Gets all LiveData for a single path of a given site.
+  """
+  @doc type: :live_data
+  @spec live_data_for_path(Site.t(), String.t()) :: [LiveData.t()]
+  def live_data_for_path(site, path) do
+    Repo.all(from ld in LiveData, where: ld.path == ^path and ld.site == ^site)
+  end
+
+  @doc """
   Updates LiveData.
 
       iex> update_live_data(live_data, %{code: "true"})
@@ -1992,6 +2001,15 @@ defmodule Beacon.Content do
 
   def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
   def maybe_reload_live_data({:error, _live_data}), do: :noop
+
+  @doc """
+  Deletes LiveData.
+  """
+  @doc type: :live_data
+  @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def delete_live_data(live_data) do
+    Repo.delete(live_data)
+  end
 
   ## Utils
 
