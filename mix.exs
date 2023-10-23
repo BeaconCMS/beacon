@@ -79,7 +79,8 @@ defmodule Beacon.MixProject do
     if path = System.get_env("MDEX_PATH") do
       {:mdex, path: path}
     else
-      {:mdex, "~> 0.1.9"}
+      # {:mdex, "~> 0.1.9"}
+      {:mdex, git: "https://github.com/leandrocp/mdex.git", branch: "lp/update-autumn"}
     end
   end
 
