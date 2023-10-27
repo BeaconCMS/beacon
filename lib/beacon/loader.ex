@@ -1,6 +1,6 @@
 defmodule Beacon.Loader do
   @moduledoc """
-  Loader is the process resposible for loading, unloading, and reloading all resources for each site.
+  Loader is the process responsible for loading, unloading, and reloading all resources for each site.
 
   At start it will load all `Beacon.Content.blueprint_components/0` and existing resources stored
   in the database like layouts, pages, snippets, etc.
@@ -16,6 +16,7 @@ defmodule Beacon.Loader do
   alias Beacon.Content
   alias Beacon.Loader.ComponentModuleLoader
   alias Beacon.Loader.DataSourceModuleLoader
+  alias Beacon.Loader.ErrorPageModuleLoader
   alias Beacon.Loader.LayoutModuleLoader
   alias Beacon.Loader.PageModuleLoader
   alias Beacon.Loader.SnippetModuleLoader
@@ -35,23 +36,43 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  @doc false
-  def init(config) do
-    if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
-      :skip
-    else
-      with :ok <- populate_components(config.site) do
-        :ok = load_site_from_db(config.site)
-      end
+  if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
+    @doc false
+    def init(config) do
+      %{site: site} = config
+
+      # avoid compilation warnings
+      populate_components(nil)
+
+      PubSub.subscribe_to_layouts(site)
+      PubSub.subscribe_to_pages(site)
+      PubSub.subscribe_to_components(site)
+      PubSub.subscribe_to_error_pages(site)
+
+      {:ok, config}
     end
+  else
+    @doc false
+    def init(config) do
+      %{site: site} = config
 
-    PubSub.subscribe_to_layouts(config.site)
-    PubSub.subscribe_to_pages(config.site)
-    PubSub.subscribe_to_components(config.site)
-    PubSub.subscribe_to_live_data(config.site)
+      with :ok <- populate_components(site),
+           :ok <- populate_layouts(site),
+           :ok <- populate_error_pages(site) do
+        :ok = load_site_from_db(site)
+      end
 
-    {:ok, config}
+      PubSub.subscribe_to_layouts(site)
+      PubSub.subscribe_to_pages(site)
+      PubSub.subscribe_to_components(site)
+      PubSub.subscribe_to_error_pages(site)
+      PubSub.subscribe_to_live_data(site)
+
+      {:ok, config}
+    end
   end
+
+  defp populate_components(nil), do: :skip
 
   defp populate_components(site) do
     for attrs <- Content.blueprint_components() do
@@ -69,8 +90,44 @@ defmodule Beacon.Loader do
     :ok
   end
 
+  @doc false
+  def populate_layouts(site) do
+    case Content.get_layout_by(site, title: "Default") do
+      nil ->
+        Content.default_layout()
+        |> Map.put(:site, site)
+        |> Content.create_layout!()
+        |> Content.publish_layout()
+
+      _ ->
+        :skip
+    end
+
+    :ok
+  end
+
+  @doc false
+  def populate_error_pages(site) do
+    default_layout = Content.get_layout_by(site, title: "Default")
+
+    for attrs <- Content.default_error_pages() do
+      case Content.get_error_page(site, attrs.status) do
+        nil ->
+          attrs
+          |> Map.put(:site, site)
+          |> Map.put(:layout_id, default_layout.id)
+          |> Content.create_error_page!()
+
+        _ ->
+          :skip
+      end
+    end
+
+    :ok
+  end
+
   defp load_site_from_db(site) do
-    with :ok <- Beacon.RuntimeJS.load(),
+    with :ok <- Beacon.RuntimeJS.load!(),
          :ok <- load_runtime_css(site),
          :ok <- load_stylesheets(site),
          :ok <- load_components(site),
@@ -138,7 +195,7 @@ defmodule Beacon.Loader do
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
     defp load_runtime_css(_site), do: :ok
   else
-    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load(site)
+    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
   end
 
   defp load_stylesheets(site) do
@@ -187,6 +244,12 @@ defmodule Beacon.Loader do
     :ok
   end
 
+  defp load_error_pages(site) do
+    error_pages = Content.list_error_pages(site, preloads: [:layout])
+    ErrorPageModuleLoader.load_error_pages!(error_pages, site)
+    :ok
+  end
+
   defp load_data_source(site) do
     DataSourceModuleLoader.load_data_source(site, Content.live_data_for_site(site))
     :ok
@@ -200,6 +263,11 @@ defmodule Beacon.Loader do
   @doc false
   def component_module_for_site(site) do
     module_for_site(site, "Component")
+  end
+
+  @doc false
+  def error_module_for_site(site) do
+    module_for_site(site, "ErrorPages")
   end
 
   @doc false
@@ -323,7 +391,8 @@ defmodule Beacon.Loader do
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(site),
          :ok <- load_stylesheets(site),
-         {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout) do
+         {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
+         :ok <- load_error_pages(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
@@ -369,6 +438,15 @@ defmodule Beacon.Loader do
   def handle_info({:component_updated, component}, state) do
     :ok = load_components(component.site)
     :ok = Beacon.PubSub.component_loaded(component)
+    :ok = load_runtime_css(component.site)
+    {:noreply, state}
+  end
+
+  @doc false
+  def handle_info({:error_page_updated, error_page}, state) do
+    :ok = load_error_pages(error_page.site)
+    :ok = Beacon.PubSub.error_page_loaded(error_page)
+    :ok = load_runtime_css(error_page.site)
     {:noreply, state}
   end
 

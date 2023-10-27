@@ -4,6 +4,8 @@ defmodule Beacon.ContentTest do
   import Beacon.Fixtures
 
   alias Beacon.Content
+  alias Beacon.Content.Component
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -13,6 +15,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
   alias Beacon.Repo
+  alias Ecto.Changeset
 
   describe "layouts" do
     test "create layout should create a created event" do
@@ -434,6 +437,41 @@ defmodule Beacon.ContentTest do
     end
   end
 
+  describe "error_pages:" do
+    test "get_error_page/2" do
+      error_page = error_page_fixture(%{site: :my_site, status: 404})
+      _other = error_page_fixture(%{site: :my_site, status: 400})
+
+      assert ^error_page = Content.get_error_page(:my_site, 404)
+    end
+
+    test "create_error_page/1 OK" do
+      %{id: layout_id} = layout_fixture()
+      attrs = %{site: :my_site, status: 400, template: "Oops!", layout_id: layout_id}
+
+      assert {:ok, %ErrorPage{} = error_page} = Content.create_error_page(attrs)
+      assert %{site: :my_site, status: 400, template: "Oops!", layout_id: ^layout_id} = error_page
+    end
+
+    test "create_error_page/1 ERROR (duplicate)" do
+      error_page = error_page_fixture()
+      bad_attrs = %{site: error_page.site, status: error_page.status, template: "Error", layout_id: layout_fixture().id}
+
+      assert {:error, %Changeset{errors: errors}} = Content.create_error_page(bad_attrs)
+      assert [{:status, {"has already been taken", [constraint: :unique, constraint_name: "beacon_error_pages_status_site_index"]}}] = errors
+    end
+
+    test "update_error_page/2" do
+      error_page = error_page_fixture()
+      assert {:ok, %ErrorPage{template: "Changed"}} = Content.update_error_page(error_page, %{template: "Changed"})
+    end
+
+    test "delete_error_page/1" do
+      error_page = error_page_fixture()
+      assert {:ok, %ErrorPage{__meta__: %{state: :deleted}}} = Content.delete_error_page(error_page)
+    end
+  end
+
   describe "components" do
     test "validate template heex on create" do
       assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
@@ -459,6 +497,11 @@ defmodule Beacon.ContentTest do
 
       assert Enum.member?(components, component_b)
       refute Enum.member?(components, component_a)
+    end
+
+    test "update_component" do
+      component = component_fixture(name: "new_component", body: "old_body")
+      assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
     end
   end
 end

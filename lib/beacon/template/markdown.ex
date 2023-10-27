@@ -32,7 +32,7 @@ defmodule Beacon.Template.Markdown do
         ],
         parse: [smart: true],
         render: [
-          hardbreaks: true,
+          hardbreaks: false,
           unsafe_: true
         ],
         features: [

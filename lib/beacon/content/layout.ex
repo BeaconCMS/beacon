@@ -49,4 +49,7 @@ defmodule Beacon.Content.Layout do
     |> cast(attrs, [:site, :title, :template, :meta_tags, :resource_links])
     |> validate_required([:site, :title])
   end
+
+  @doc false
+  def fetch(layout, key), do: Map.fetch(layout, key)
 end

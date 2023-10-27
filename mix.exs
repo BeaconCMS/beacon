@@ -35,12 +35,12 @@ defmodule Beacon.MixProject do
   defp deps do
     [
       {:accent, "~> 1.1"},
-      {:brotli, "~> 0.3.2"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.5", only: :dev},
+      {:ex_brotli, "~> 0.3"},
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
@@ -79,7 +79,7 @@ defmodule Beacon.MixProject do
     if path = System.get_env("MDEX_PATH") do
       {:mdex, path: path}
     else
-      {:mdex, "~> 0.1.9"}
+      {:mdex, "~> 0.1"}
     end
   end
 
@@ -104,6 +104,7 @@ defmodule Beacon.MixProject do
         Content: [
           Beacon.Content,
           Beacon.Content.Component,
+          Beacon.Content.ErrorPage,
           Beacon.Content.Layout,
           Beacon.Content.LayoutEvent,
           Beacon.Content.LayoutSnapshot,
@@ -181,7 +182,8 @@ defmodule Beacon.MixProject do
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
-        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers)
+        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
+        "Functions: Error Pages": &(&1[:type] == :error_pages)
       ]
     ]
   end

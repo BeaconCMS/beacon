@@ -19,10 +19,10 @@ defmodule Beacon.RuntimeCSS do
   end
 
   @doc false
-  def load(site) do
+  def load!(site) do
     {:ok, css} = compile(site)
 
-    case :brotli.encode(css) do
+    case ExBrotli.compress(css) do
       {:ok, compressed} ->
         hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
         true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})
