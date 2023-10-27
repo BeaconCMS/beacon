@@ -1,8 +1,6 @@
 defmodule Beacon.DataSource do
   @moduledoc false
 
-  @behaviour Beacon.DataSource.Behaviour
-
   def live_data(site, path, params) do
     user_data_source_mod = get_data_source(site)
 

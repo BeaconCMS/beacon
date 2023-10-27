@@ -49,8 +49,20 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
           path
           |> String.split("/", trim: true)
           |> Enum.map(fn
-            ":" <> param -> param |> String.to_atom() |> Macro.unique_var(nil)
+            ":" <> param -> Macro.unique_var(:"#{param}", :"#{path}")
             param -> param
+          end)
+        )
+      end
+
+    bindings =
+      quote do
+        unquote(
+          path
+          |> String.split("/", trim: true)
+          |> Enum.filter(&String.starts_with?(&1, ":"))
+          |> Keyword.new(fn ":" <> param ->
+            {:"#{param}", Macro.unique_var(:"#{param}", :"#{path}")}
           end)
         )
       end
@@ -63,7 +75,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
             live_data.assign,
             case live_data.format do
               :text -> live_data.code
-              :elixir -> Code.string_to_quoted!(live_data.code)
+              :elixir -> Code.eval_string(live_data.code, unquote(bindings), __ENV__)
             end
           )
         end)
