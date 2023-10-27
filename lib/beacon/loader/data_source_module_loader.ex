@@ -30,6 +30,13 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
         end
       end
 
+    # For debugging - will print module content to the terminal
+    ast
+    |> Code.quoted_to_algebra()
+    |> Inspect.Algebra.format(:infinity)
+    |> IO.iodata_to_binary()
+    |> IO.puts()
+
     :ok = Loader.reload_module!(data_source_module, ast)
 
     {:ok, ast}
@@ -38,17 +45,19 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
   defp live_data_fn({path, data_list}) do
     path_list =
       quote do
-        unquote(path)
-        |> String.split("/", trim: true)
-        |> Enum.map(fn
-          ":" <> param -> var!(Macro.unique_var(param, nil))
-          param -> param
-        end)
+        unquote(
+          path
+          |> String.split("/", trim: true)
+          |> Enum.map(fn
+            ":" <> param -> param |> String.to_atom() |> Macro.unique_var(nil)
+            param -> param
+          end)
+        )
       end
 
     quote do
       def live_data(unquote(path_list), var!(params), var!(data)) do
-        Enum.reduce(unquote(data_list), var!(data), fn live_data, acc ->
+        Enum.reduce(unquote(Macro.escape(data_list)), var!(data), fn live_data, acc ->
           Map.put(
             acc,
             live_data.assign,
