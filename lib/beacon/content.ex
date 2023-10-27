@@ -1904,6 +1904,7 @@ defmodule Beacon.Content do
     %LiveData{}
     |> LiveData.changeset(attrs)
     |> Repo.insert()
+    |> tap(&maybe_reload_live_data/1)
   end
 
   @doc """

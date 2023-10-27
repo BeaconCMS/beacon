@@ -48,6 +48,7 @@ defmodule Beacon.Loader do
     PubSub.subscribe_to_layouts(config.site)
     PubSub.subscribe_to_pages(config.site)
     PubSub.subscribe_to_components(config.site)
+    PubSub.subscribe_to_live_data(config.site)
 
     {:ok, config}
   end
@@ -369,6 +370,13 @@ defmodule Beacon.Loader do
     :ok = load_components(component.site)
     :ok = Beacon.PubSub.component_loaded(component)
     {:noreply, state}
+  end
+
+  @doc false
+  def handle_info(:live_data_updated, config) do
+    :ok = load_data_source(config.site)
+
+    {:noreply, config}
   end
 
   @doc false

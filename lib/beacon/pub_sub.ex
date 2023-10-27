@@ -131,15 +131,17 @@ defmodule Beacon.PubSub do
 
   # Live Data
 
+  def subscribe_to_live_data(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_live_data(site))
+  end
+
   def live_data_updated(%LiveData{} = live_data) do
     live_data.site
     |> topic_live_data()
-    |> broadcast({:live_data_updated, live_data(live_data)})
+    |> broadcast(:live_data_updated)
   end
 
   defp topic_live_data(site), do: "beacon:#{site}:live_data"
-
-  defp live_data(live_data), do: %{site: live_data.site, id: live_data.id, assign: live_data.assign}
 
   # Utils
 

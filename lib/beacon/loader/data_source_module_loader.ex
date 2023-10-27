@@ -49,7 +49,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
           path
           |> String.split("/", trim: true)
           |> Enum.map(fn
-            ":" <> param -> Macro.unique_var(:"#{param}", :"#{path}")
+            ":" <> param -> Macro.var(:"#{param}", :"#{path}")
             param -> param
           end)
         )
@@ -62,7 +62,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
           |> String.split("/", trim: true)
           |> Enum.filter(&String.starts_with?(&1, ":"))
           |> Keyword.new(fn ":" <> param ->
-            {:"#{param}", Macro.unique_var(:"#{param}", :"#{path}")}
+            {:"#{param}", Macro.var(:"#{param}", :"#{path}")}
           end)
         )
       end
@@ -75,7 +75,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
             live_data.assign,
             case live_data.format do
               :text -> live_data.code
-              :elixir -> Code.eval_string(live_data.code, unquote(bindings), __ENV__)
+              :elixir -> live_data.code |> Code.eval_string(unquote(bindings), __ENV__) |> elem(0)
             end
           )
         end)
