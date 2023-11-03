@@ -134,8 +134,6 @@ jobs:
 
       - run: mix tailwind.install
 
-      # - run: mix compile --warnings-as-errors
-
       - run: mix format --check-formatted
 
       - run: mix deps.unlock --check-unused
@@ -143,3 +141,5 @@ jobs:
       - run: mix credo --strict
 
       - run: mix dialyzer
+
+      - run: mix compile --warnings-as-errors

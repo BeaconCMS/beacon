@@ -40,14 +40,12 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
                         {
                           [
                             {:text, " ", %{newlines: 0}},
-                            {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}],
-                             %{mode: :block}}
+                            {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}}
                           ],
                           "else"
                         },
                         {[
-                           {:tag_block, "p", [], [{:text, "that", %{newlines: 0}}],
-                            %{mode: :block}}
+                           {:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}}
                          ], "end"}
                       ]
                     },
@@ -58,10 +56,8 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
                 {:text, "\n", %{newlines: 1}},
                 {:tag_self_close, "BeaconWeb.Components.image_set",
                  [
-                   {"asset", {:expr, "@beacon_live_data[:img1]", %{column: 40, line: 5}},
-                    %{column: 33, line: 5}},
-                   {"sources", {:expr, "[\"480w\"]", %{column: 75, line: 5}},
-                    %{column: 66, line: 5}},
+                   {"asset", {:expr, "@beacon_live_data[:img1]", %{column: 40, line: 5}}, %{column: 33, line: 5}},
+                   {"sources", {:expr, "[\"480w\"]", %{column: 75, line: 5}}, %{column: 66, line: 5}},
                    {"width", {:string, "200px", %{delimiter: 34}}, %{column: 85, line: 5}}
                  ]}
               ]}
