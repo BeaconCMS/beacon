@@ -51,10 +51,10 @@ defmodule Beacon.MixProject do
       {:image, "~> 0.32"},
       {:jason, "~> 1.0"},
       {:solid, "~> 0.14"},
-      {:phoenix, "~> 1.7"},
+      phoenix_dep(),
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:phoenix_live_view, "~> 0.19"},
+      phoenix_live_view_dep(),
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
@@ -67,19 +67,33 @@ defmodule Beacon.MixProject do
     ]
   end
 
+  defp phoenix_dep do
+    cond do
+      env = System.get_env("PHOENIX_VERSION") -> {:phoenix, env}
+      path = System.get_env("PHOENIX_PATH") -> {:phoenix, path}
+      :default -> {:phoenix, "~> 1.7"}
+    end
+  end
+
+  defp phoenix_live_view_dep do
+    cond do
+      env = System.get_env("PHOENIX_LIVE_VIEW_VERSION") -> {:phoenix_live_view, env}
+      path = System.get_env("PHOENIX_LIVE_VIEW_PATH") -> {:phoenix_live_view, path}
+      :default -> {:phoenix_live_view, "~> 0.19"}
+    end
+  end
+
   defp live_monaco_editor_dep do
-    if path = System.get_env("LIVE_MONACO_EDITOR_PATH") do
-      {:live_monaco_editor, path: path}
-    else
-      {:live_monaco_editor, "~> 0.1"}
+    cond do
+      path = System.get_env("LIVE_MONACO_EDITOR_PATH") -> {:live_monaco_editor, path: path}
+      :default -> {:live_monaco_editor, "~> 0.1"}
     end
   end
 
   defp mdex_dep do
-    if path = System.get_env("MDEX_PATH") do
-      {:mdex, path: path}
-    else
-      {:mdex, "~> 0.1"}
+    cond do
+      path = System.get_env("MDEX_PATH") -> {:mdex, path: path}
+      :default -> {:mdex, "~> 0.1"}
     end
   end
 
