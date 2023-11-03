@@ -1,5 +1,5 @@
 # DO NOT CHANGE THIS FILE
-# It a copy from https://github.com/phoenixframework/phoenix_live_view/blob/d0e46f5430d113269b8903a8b45b025d77532429/lib/phoenix_live_view/html_formatter.ex
+# It a copy from https://github.com/phoenixframework/phoenix_live_view/blob/dfcdb18604076c4ad46eef3da4cebd06b823a51a/lib/phoenix_live_view/html_formatter.ex
 
 # Generates a nested list of token for a given HEEx template
 
@@ -254,7 +254,7 @@ defmodule Beacon.Template.HEEx.Tokenizer do
          source
        ) do
     {mode, block} =
-      if (tag_name in ["pre", "textarea"] or contains_special_attrs?(attrs)) and buffer != [] do
+      if tag_name in ["pre", "textarea"] or contains_special_attrs?(attrs) do
         content = content_from_source(source, open_meta.inner_location, close_meta.inner_location)
         {:preserve, [{:text, content, %{newlines: 0}}]}
       else
