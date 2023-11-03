@@ -1,14 +1,22 @@
 # DO NOT CHANGE THIS FILE
 # It a copy from https://github.com/phoenixframework/phoenix_live_view/blob/dfcdb18604076c4ad46eef3da4cebd06b823a51a/lib/phoenix_live_view/html_formatter.ex
-
-# Generates a nested list of token for a given HEEx template
+#
+# Changes from original source code:
+# - make tokenize/1 public
+# - tokenize/1 returns {:ok, tokens}
 
 defmodule Beacon.Template.HEEx.Tokenizer do
+  alias Phoenix.LiveView.HTMLAlgebra
   alias Phoenix.LiveView.Tokenizer
+  alias Phoenix.LiveView.Tokenizer.ParseError
 
   defguard is_tag_open(tag_type)
            when tag_type in [:slot, :remote_component, :local_component, :tag]
 
+  # Reference for all inline elements so that we can tell the formatter to not
+  # force a line break. This list has been taken from here:
+  #
+  # https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements#list_of_inline_elements
   @inline_tags ~w(a abbr acronym audio b bdi bdo big br button canvas cite
   code data datalist del dfn em embed i iframe img input ins kbd label map
   mark meter noscript object output picture progress q ruby s samp select slot
@@ -18,19 +26,55 @@ defmodule Beacon.Template.HEEx.Tokenizer do
 
   @inline_elements @inline_tags ++ @inline_components
 
-  def tokenize(source) do
+  # Default line length to be used in case nothing is specified in the `.formatter.exs` options.
+  @default_line_length 98
+
+  if Version.match?(System.version(), ">= 1.13.0") do
+    @behaviour Mix.Tasks.Format
+  end
+
+  # TODO: Add it back after versions before Elixir 1.13 are no longer supported.
+  # @impl Mix.Tasks.Format
+  @doc false
+  def features(_opts) do
+    [sigils: [:H], extensions: [".heex"]]
+  end
+
+  # TODO: Add it back after versions before Elixir 1.13 are no longer supported.
+  # @impl Mix.Tasks.Format
+  @doc false
+  def format(source, opts) do
+    line_length = opts[:heex_line_length] || opts[:line_length] || @default_line_length
     newlines = :binary.matches(source, ["\r\n", "\n"])
 
-    source
-    |> _tokenize()
-    |> to_tree([], [], {source, newlines})
+    formatted =
+      source
+      |> tokenize()
+      |> to_tree([], [], {source, newlines})
+      |> case do
+        {:ok, nodes} ->
+          nodes
+          |> HTMLAlgebra.build(opts)
+          |> Inspect.Algebra.format(line_length)
+
+        {:error, line, column, message} ->
+          file = opts[:file] || "nofile"
+          raise ParseError, line: line, column: column, file: file, description: message
+      end
+
+    # If the opening delimiter is a single character, such as ~H"...",
+    # do not add trailing newline.
+    newline = if match?(<<_>>, opts[:opening_delimiter]), do: [], else: ?\n
+
+    # TODO: Remove IO.iodata_to_binary/1 call on Elixir v1.14+
+    IO.iodata_to_binary([formatted, newline])
   end
 
   # Tokenize contents using EEx.tokenize and Phoenix.Live.Tokenizer respectively.
   #
   # The following content:
   #
-  # "<section>\n  <p><%= user.name %></p>\n  <%= if true do %> <p>this</p><% else %><p>that</p><% end %>\n</section>\n"
+  # "<section>\n  <p><%= user.name ></p>\n  <%= if true do %> <p>this</p><% else %><p>that</p><% end %>\n</section>\n"
   #
   # Will be tokenized as:
   #
@@ -56,10 +100,10 @@ defmodule Beacon.Template.HEEx.Tokenizer do
   # TODO: Remove this when we no longer support earlier versions.
   @eex_expr [:start_expr, :expr, :end_expr, :middle_expr]
   if Code.ensure_loaded?(EEx) && function_exported?(EEx, :tokenize, 2) do
-    defp _tokenize(source) do
+    def tokenize(source) do
       {:ok, eex_nodes} = EEx.tokenize(source)
       {tokens, cont} = Enum.reduce(eex_nodes, {[], :text}, &do_tokenize(&1, &2, source))
-      Tokenizer.finalize(tokens, "nofile", cont, source)
+      {:ok, Tokenizer.finalize(tokens, "nofile", cont, source)}
     end
 
     defp do_tokenize({:text, text, meta}, {tokens, cont}, source) do
@@ -79,10 +123,10 @@ defmodule Beacon.Template.HEEx.Tokenizer do
       {[{:eex, type, expr |> List.to_string() |> String.trim(), meta} | tokens], cont}
     end
   else
-    defp _tokenize(source) do
+    def tokenize(source) do
       {:ok, eex_nodes} = EEx.Tokenizer.tokenize(source, 1, 1, %{indentation: 0, trim: false})
       {tokens, cont} = Enum.reduce(eex_nodes, {[], :text}, &do_tokenize(&1, &2, source))
-      Tokenizer.finalize(tokens, "nofile", cont, source)
+      {:ok, Tokenizer.finalize(tokens, "nofile", cont, source)}
     end
 
     defp do_tokenize({:text, line, column, text}, {tokens, cont}, source) do
@@ -231,13 +275,7 @@ defmodule Beacon.Template.HEEx.Tokenizer do
     end
   end
 
-  @void_tags ~w(area base br col hr img input link meta param command keygen source)
-  defp to_tree([{:tag, name, attrs, meta} | tokens], buffer, stack, source)
-       when name in @void_tags do
-    to_tree(tokens, [{:tag_self_close, meta.tag_name, attrs} | buffer], stack, source)
-  end
-
-  defp to_tree([{type, _name, attrs, %{self_close: true} = meta} | tokens], buffer, stack, source)
+  defp to_tree([{type, _name, attrs, %{closing: _} = meta} | tokens], buffer, stack, source)
        when is_tag_open(type) do
     to_tree(tokens, [{:tag_self_close, meta.tag_name, attrs} | buffer], stack, source)
   end
@@ -404,7 +442,8 @@ defmodule Beacon.Template.HEEx.Tokenizer do
 
   defp may_set_preserve_on_text(buffer, _mode, _tag_name), do: buffer
 
-  defp whitespace_around?(text), do: :binary.first(text) in ~c"\s\t" or :binary.last(text) in ~c"\s\t"
+  defp whitespace_around?(text),
+    do: :binary.first(text) in ~c"\s\t" or :binary.last(text) in ~c"\s\t"
 
   defp cleanup_extra_spaces_leading(text) do
     if :binary.first(text) in ~c"\s\t" do
