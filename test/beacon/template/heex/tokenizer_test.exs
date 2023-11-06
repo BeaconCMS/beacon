@@ -16,50 +16,54 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
     <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
     |
 
-    assert Tokenizer.tokenize(template) ==
-             {:ok,
-              [
-                {
-                  :tag_block,
-                  "section",
-                  [],
-                  [
-                    {:text, "\n  ", %{newlines: 1}},
-                    {
-                      :tag_block,
-                      "p",
-                      [],
-                      [{:eex, "user.name", %{column: 6, line: 2, opt: ~c"="}}],
-                      %{mode: :block}
-                    },
-                    {:text, "\n  ", %{newlines: 1}},
-                    {
-                      :eex_block,
-                      "if true do",
-                      [
-                        {
-                          [
-                            {:text, " ", %{newlines: 0}},
-                            {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}}
-                          ],
-                          "else"
-                        },
-                        {[
-                           {:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}}
-                         ], "end"}
-                      ]
-                    },
-                    {:text, "\n", %{newlines: 1}}
-                  ],
-                  %{mode: :block}
-                },
-                {:text, "\n", %{newlines: 1}},
-                {:tag_self_close, "BeaconWeb.Components.image_set",
+    assert Tokenizer.tokenize(template) == {
+             :ok,
+             [
+               {
+                 :tag_block,
+                 "section",
+                 [],
                  [
-                   {"asset", {:expr, "@beacon_live_data[:img1]", %{column: 40, line: 5}}, %{column: 33, line: 5}},
-                   {"sources", {:expr, "[\"480w\"]", %{column: 75, line: 5}}, %{column: 66, line: 5}},
-                   {"width", {:string, "200px", %{delimiter: 34}}, %{column: 85, line: 5}}
-                 ]}
-              ]}
+                   {:text, "\n      ", %{newlines: 1}},
+                   {:tag_block, "p", [], [{:eex, "user.name", %{column: 10, line: 3, opt: ~c"="}}], %{mode: :block}},
+                   {:text, "\n      ", %{newlines: 1}},
+                   {
+                     :eex_block,
+                     "if true do",
+                     [
+                       {
+                         [
+                           {:text, "\n        ", %{newlines: 1}},
+                           {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}},
+                           {:text, "\n      ", %{newlines: 1}}
+                         ],
+                         "else"
+                       },
+                       {
+                         [
+                           {:text, "\n        ", %{newlines: 1}},
+                           {:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}},
+                           {:text, "\n      ", %{newlines: 1}}
+                         ],
+                         "end"
+                       }
+                     ]
+                   },
+                   {:text, "\n    ", %{newlines: 1}}
+                 ],
+                 %{mode: :block}
+               },
+               {:text, "\n    ", %{newlines: 1}},
+               {
+                 :tag_self_close,
+                 "BeaconWeb.Components.image_set",
+                 [
+                   {"asset", {:expr, "@beacon_live_data[:img1]", %{column: 44, line: 10}}, %{column: 37, line: 10}},
+                   {"sources", {:expr, "[\"480w\"]", %{column: 79, line: 10}}, %{column: 70, line: 10}},
+                   {"width", {:string, "200px", %{delimiter: 34}}, %{column: 89, line: 10}}
+                 ]
+               }
+             ]
+           }
   end
 end
