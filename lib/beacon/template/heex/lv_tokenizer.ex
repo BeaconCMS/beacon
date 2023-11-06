@@ -3,9 +3,9 @@
 
 defmodule Beacon.Template.HEEx.LVTokenizer do
   @moduledoc false
-  @space_chars '\s\t\f'
-  @quote_chars '"\''
-  @stop_chars '>/=\r\n' ++ @quote_chars ++ @space_chars
+  @space_chars ~c"\s\t\f"
+  @quote_chars ~c"\"'"
+  @stop_chars ~c">/=\r\n" ++ @quote_chars ++ @space_chars
 
   defmodule ParseError do
     @moduledoc false
