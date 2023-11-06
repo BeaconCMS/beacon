@@ -71,7 +71,6 @@ jobs:
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
       - run: mix do deps.get, deps.compile
-        if: steps.cache-deps.outputs.cache-hit != 'true'
 
       - run: mix tailwind.install
 
@@ -117,7 +116,6 @@ jobs:
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
       - run: mix do deps.get, deps.compile
-        if: steps.cache-deps.outputs.cache-hit != 'true'
 
       - name: Cache dialyzer
         uses: actions/cache@v2
