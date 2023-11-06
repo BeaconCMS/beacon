@@ -1769,6 +1769,27 @@ defmodule Beacon.Content do
     |> Repo.all()
   end
 
+  @doc type: :error_pages
+  @spec list_error_pages_by(Site.t(), keyword(), keyword()) :: Layout.t() | nil
+  def list_error_pages_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    filter_layout_id =
+      if layout_id = clauses[:layout_id] do
+        dynamic([ep], ep.layout_id == ^layout_id)
+      else
+        true
+      end
+
+    site
+    |> query_list_error_pages_base()
+    |> query_list_error_pages_limit(per_page)
+    |> query_list_error_pages_preloads(preloads)
+    |> where(^filter_layout_id)
+    |> Repo.all()
+  end
+
   defp query_list_error_pages_base(site) do
     from p in ErrorPage,
       where: p.site == ^site,
