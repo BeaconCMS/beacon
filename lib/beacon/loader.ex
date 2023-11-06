@@ -169,7 +169,7 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def reload_module!(module, ast, file \\ "nofile") do
+  def reload_module!(module, ast, file \\ "nofile", failure_count \\ 0) do
     :code.delete(module)
     :code.purge(module)
     [{^module, _}] = Code.compile_quoted(ast, file)
@@ -177,16 +177,24 @@ defmodule Beacon.Loader do
     :ok
   rescue
     e ->
-      message = """
-      failed to load module #{inspect(module)}
+      if failure_count >= 3 do
+        Logger.debug("failed to load module #{inspect(module)} after #{failure_count} tries.")
 
-      Got:
+        message = """
+        failed to load module #{inspect(module)}
 
-        #{Exception.message(e)}"],
+        Got:
 
-      """
+          #{Exception.message(e)}"],
 
-      reraise Beacon.LoaderError, [message: message], __STACKTRACE__
+        """
+
+        reraise Beacon.LoaderError, [message: message], __STACKTRACE__
+      else
+        Logger.debug("failed to load module #{inspect(module)}, retrying...")
+        :timer.sleep(100 * (failure_count * 2))
+        reload_module!(module, ast, file, failure_count + 1)
+      end
   end
 
   # too slow to run the css compiler on every test
@@ -295,14 +303,12 @@ defmodule Beacon.Loader do
     e in UndefinedFunctionError ->
       case {failure_count, e} do
         {x, _} when x >= 10 ->
-          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} 10 times.")
+          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} after #{failure_count} tries.")
           reraise e, __STACKTRACE__
 
         {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
-          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time. Retrying.")
-
+          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time, retrying...")
           :timer.sleep(100 * (failure_count * 2))
-
           call_function_with_retry(module, function, args, failure_count + 1)
 
         _ ->
@@ -380,7 +386,7 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(site),
          :ok <- load_stylesheets(site),
          {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
-         :ok <- load_error_pages(site) do
+         :ok <- maybe_reload_error_pages(layout) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
@@ -459,6 +465,13 @@ defmodule Beacon.Loader do
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for page #{page.title} of site #{page.site}"
     end
+  end
+
+  # we need to reload error pages bacause the layout is embeeded into those pages
+  defp maybe_reload_error_pages(layout) do
+    error_pages = Content.list_error_pages_by(layout.site, [layout_id: layout.id], per_page: :infinity, preloads: [:layout])
+    ErrorPageModuleLoader.load_error_pages!(error_pages, layout.site)
+    :ok
   end
 
   @doc false
