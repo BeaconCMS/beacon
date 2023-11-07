@@ -141,4 +141,4 @@ jobs:
 
       - run: mix credo --strict
 
-      - run: mix dialyzer
+      - run: mix dialyzer --format github
