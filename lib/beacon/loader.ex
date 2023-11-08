@@ -185,7 +185,7 @@ defmodule Beacon.Loader do
 
         Got:
 
-          #{Exception.message(e)}"],
+          #{Exception.message(e)}
 
         """
 
