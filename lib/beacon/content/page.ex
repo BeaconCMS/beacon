@@ -36,7 +36,7 @@ defmodule Beacon.Content.Page do
     field :description, :string
     field :template, :string
     field :meta_tags, {:array, :map}, default: []
-    field :raw_schema, {:array, :map}, default: []
+    field :raw_schema, Beacon.Types.JsonArrayMap, default: []
     field :order, :integer, default: 1
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
