@@ -276,6 +276,21 @@ defmodule Beacon.ContentTest do
                })
     end
 
+    test "update raw_schema" do
+      layout = layout_fixture(site: :raw_schema_test)
+
+      page =
+        Content.create_page!(%{
+          site: "my_site",
+          path: "/",
+          template: "<p>page</p>",
+          layout_id: layout.id,
+          raw_schema: [%{"foo" => "bar"}]
+        })
+
+      assert {:ok, %Page{raw_schema: [%{"@type" => "BlogPosting"}]}} = Content.update_page(page, %{"raw_schema" => [%{"@type" => "BlogPosting"}]})
+    end
+
     test "validate raw_schema" do
       layout = layout_fixture(site: :raw_schema_test)
 

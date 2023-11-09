@@ -112,6 +112,7 @@ defmodule Beacon.Content.Page do
       :title,
       :description,
       :meta_tags,
+      :raw_schema,
       :format
     ])
     |> cast(attrs, [:path], empty_values: [])
