@@ -122,7 +122,6 @@ defmodule Beacon.Content.Page do
       :format
     ])
     |> validate_string([:path])
-    |> validate_raw_schema(attrs["raw_schema"])
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
@@ -172,14 +171,5 @@ defmodule Beacon.Content.Page do
     meta_tag
     |> Enum.reject(fn {_key, value} -> is_nil(value) || String.trim(value) == "" end)
     |> Map.new()
-  end
-
-  defp validate_raw_schema(changeset, raw_schema) do
-    raw_schema = if raw_schema in ["", nil], do: "[]", else: raw_schema
-
-    case Jason.decode(raw_schema) do
-      {:ok, raw_schema} -> put_change(changeset, :raw_schema, raw_schema)
-      {:error, _} -> add_error(changeset, :raw_schema, "invalid schema")
-    end
   end
 end
