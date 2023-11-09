@@ -5,7 +5,7 @@ defmodule Beacon.Types.JsonArrayMap do
 
   use Ecto.Type
 
-  def type, do: :mine
+  def type, do: {:array, :map}
 
   def cast(term) when is_map(term), do: {:ok, [term]}
 
@@ -16,6 +16,13 @@ defmodule Beacon.Types.JsonArrayMap do
 
       {false, list} ->
         {:error, message: "expected a list of map or a map, got: #{inspect(list)}"}
+    end
+  end
+
+  def cast(term) when is_binary(term) do
+    case decode(term) do
+      {:ok, term} -> cast(term)
+      {:error, message} -> {:error, message: message}
     end
   end
 
@@ -35,9 +42,26 @@ defmodule Beacon.Types.JsonArrayMap do
     end
   end
 
+  def dump(term) when is_binary(term) do
+    case decode(term) do
+      {:ok, term} -> dump(term)
+      {:error, _message} -> :error
+    end
+  end
+
   def dump(_site), do: :error
 
+  def load(term) when is_map(term), do: {:ok, [term]}
+
   def load(term) when is_list(term), do: {:ok, term}
+
+  def load(term) when is_binary(term) do
+    case decode(term) do
+      {:ok, term} -> load(term)
+      {:error, _message} -> :error
+    end
+  end
+
   def load(_term), do: :error
 
   defp validate(term) when is_list(term) do
@@ -54,4 +78,15 @@ defmodule Beacon.Types.JsonArrayMap do
   end
 
   defp validate(term), do: {false, term}
+
+  defp decode(term) when is_binary(term) do
+    case Jason.decode(term) do
+      {:ok, term} ->
+        {:ok, term}
+
+      {:error, error} ->
+        message = Exception.message(error)
+        {:error, "expected a list of map or a map, got error: #{message}"}
+    end
+  end
 end
