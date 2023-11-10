@@ -9,6 +9,10 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert encoded == expected
   end
 
+  test "nil template cast to empty string" do
+    assert_output(nil, [])
+  end
+
   test "html elements with attrs" do
     assert_output(~S|<div>content</div>|, [%{"attrs" => %{}, "content" => ["content"], "tag" => "div"}])
     assert_output(~S|<a href="/contact">contact</a>|, [%{"attrs" => %{"href" => "/contact"}, "content" => ["contact"], "tag" => "a"}])

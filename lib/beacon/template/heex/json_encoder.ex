@@ -78,7 +78,13 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
   """
   @spec encode(Beacon.Types.Site.t(), String.t(), map()) :: {:ok, [token()]} | {:error, String.t()}
-  def encode(site, template, assigns \\ %{}) when is_atom(site) and is_binary(template) and is_map(assigns) do
+  def encode(site, template, assigns \\ %{})
+
+  def encode(site, nil = _template, assigns) when is_atom(site) and is_map(assigns) do
+    encode(site, "", assigns)
+  end
+
+  def encode(site, template, assigns) when is_atom(site) and is_binary(template) and is_map(assigns) do
     case Beacon.Template.HEEx.Tokenizer.tokenize(template) do
       {:ok, tokens} -> {:ok, encode_tokens(tokens, site, assigns)}
       error -> error
