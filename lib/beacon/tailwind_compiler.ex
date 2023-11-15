@@ -165,7 +165,7 @@ defmodule Beacon.TailwindCompiler do
           template =
             page_module
             |> Beacon.Template.render()
-            |> Map.get(:static)
+            |> fetch_static()
             |> List.to_string()
 
           page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(path)}.template")
@@ -184,6 +184,9 @@ defmodule Beacon.TailwindCompiler do
     |> Task.await_many()
     |> List.flatten()
   end
+
+  defp fetch_static(%{static: static}), do: static
+  defp fetch_static(_), do: []
 
   # import app css into input css used by tailwind-cli to load tailwind functions and directives
   defp generate_input_css_file!(tmp_dir, site) do
