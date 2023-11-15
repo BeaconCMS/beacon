@@ -49,7 +49,7 @@ defmodule Beacon.Template do
   # it is NOT supposed to be used to render templates
   def __render__(site, path_list) when is_list(path_list) do
     case Beacon.Router.lookup_path(site, path_list) do
-      {{site, path}, {page_id, _layout_id, format, page_module, component_module}} ->
+      {{^site, path}, {page_id, _layout_id, format, page_module, component_module}} ->
         assigns = %{__changed__: %{}, __live_path__: [], __beacon_page_module__: page_module, __beacon_component_module__: component_module}
         page = %Beacon.Content.Page{id: page_id, site: site, path: path, format: format}
         Beacon.Lifecycle.Template.render_template(page, page_module, assigns, BeaconWeb.PageLive.make_env())
@@ -57,6 +57,13 @@ defmodule Beacon.Template do
       _ ->
         raise BeaconWeb.NotFoundError, "page not found: #{inspect(path_list)}"
     end
+  end
+
+  @doc false
+  def render(page_module, assigns \\ %{}) when is_atom(page_module) and is_map(assigns) do
+    %{__changed__: %{}, __live_path__: [], beacon_path_params: %{}, beacon_live_data: %{}}
+    |> Map.merge(assigns)
+    |> page_module.render()
   end
 
   @doc false

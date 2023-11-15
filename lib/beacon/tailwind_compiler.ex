@@ -145,13 +145,6 @@ defmodule Beacon.TailwindCompiler do
   defp generate_template_files!(tmp_dir, site) do
     [
       Task.async(fn ->
-        Enum.map(Content.list_layouts(site, per_page: :infinity), fn layout ->
-          layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
-          File.write!(layout_path, layout.template)
-          layout_path
-        end)
-      end),
-      Task.async(fn ->
         Enum.map(Beacon.Content.list_components(site, per_page: :infinity), fn component ->
           component_path = Path.join(tmp_dir, "#{site}_component_#{remove_special_chars(component.name)}.template")
           File.write!(component_path, component.body)
@@ -159,9 +152,24 @@ defmodule Beacon.TailwindCompiler do
         end)
       end),
       Task.async(fn ->
-        Enum.map(Content.list_pages(site, per_page: :infinity), fn page ->
-          page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
-          File.write!(page_path, page.template)
+        Enum.map(Content.list_layouts(site, per_page: :infinity), fn layout ->
+          layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
+          File.write!(layout_path, layout.template)
+          layout_path
+        end)
+      end),
+      Task.async(fn ->
+        # parse from laoded pages (ETS) so it can fetch callback transformations
+        # thay may include additoinal stylesheet classes as the markdown parser does
+        Beacon.Router.dump_page_modules(site, fn {_site, path, page_module} ->
+          template =
+            page_module
+            |> Beacon.Template.render()
+            |> Map.get(:static)
+            |> List.to_string()
+
+          page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(path)}.template")
+          File.write!(page_path, template)
           page_path
         end)
       end),

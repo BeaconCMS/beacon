@@ -126,13 +126,13 @@ defmodule Beacon.Loader do
 
   defp load_site_from_db(site) do
     with :ok <- Beacon.RuntimeJS.load!(),
-         :ok <- load_runtime_css(site),
-         :ok <- load_stylesheets(site),
          :ok <- load_components(site),
          :ok <- load_snippet_helpers(site),
          :ok <- load_layouts(site),
          :ok <- load_pages(site),
-         :ok <- load_error_pages(site) do
+         :ok <- load_error_pages(site),
+         :ok <- load_stylesheets(site),
+         :ok <- load_runtime_css(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for site #{site}"
@@ -199,12 +199,15 @@ defmodule Beacon.Loader do
 
   # too slow to run the css compiler on every test
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
-    defp load_runtime_css(_site), do: :ok
+    @doc false
+    def load_runtime_css(_site), do: :ok
   else
-    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
+    @doc false
+    def load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
   end
 
-  defp load_stylesheets(site) do
+  @doc false
+  def load_stylesheets(site) do
     StylesheetModuleLoader.load_stylesheets(site, Content.list_stylesheets(site))
     :ok
   end
@@ -222,7 +225,8 @@ defmodule Beacon.Loader do
     :ok
   end
 
-  defp load_layouts(site) do
+  @doc false
+  def load_layouts(site) do
     site
     |> Content.list_published_layouts()
     |> Enum.map(fn layout ->
@@ -236,7 +240,8 @@ defmodule Beacon.Loader do
     :ok
   end
 
-  defp load_pages(site) do
+  @doc false
+  def load_pages(site) do
     site
     |> Content.list_published_pages()
     |> Enum.map(fn page ->
