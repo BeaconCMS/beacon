@@ -11,20 +11,28 @@ permissions:
 
 jobs:
   test:
-    name: test (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
-
-    env:
-      MIX_ENV: test
-      MDEX_BUILD: 1
+    name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
 
     strategy:
       matrix:
         include:
-          - elixir: "1.13.0"
-            otp: "23"
+          # minimum required versions
+          - otp: "23"
+            elixir: "1.13.0"
+            phoenix-version: "1.7.0"
+            phoenix-live-view-version: "0.19.0"
 
-          - elixir: "1.15.1"
-            otp: "26"
+          # latest
+          - otp: "26"
+            elixir: "1.15"
+            phoenix-version: "~> 1.7"
+            phoenix-live-view-version: "~> 0.20"
+
+    env:
+      MIX_ENV: test
+      MDEX_BUILD: 1
+      PHOENIX_VERSION: ${{matrix.phoenix-version}}
+      PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
 
     runs-on: ubuntu-20.04
 
@@ -32,6 +40,7 @@ jobs:
       postgres:
         image: postgres:13.1
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
@@ -48,8 +57,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
       - name: Cache mix deps
         uses: actions/cache@v3
@@ -58,29 +67,31 @@ jobs:
           path: |
             deps
             _build
-          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
       - run: mix do deps.get, deps.compile
-        if: steps.cache-deps.outputs.cache-hit != 'true'
 
       - run: mix tailwind.install
 
       - run: mix test
 
   quality:
-    name: quality (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
-
-    env:
-      MIX_ENV: dev
-      MDEX_BUILD: 1
+    name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
 
     strategy:
       matrix:
         include:
-          - elixir: "1.15.1"
-            otp: "26"
+          # latest
+          - otp: "26"
+            elixir: "1.15"
+            phoenix-version: "~> 1.7"
+            phoenix-live-view-version: "~> 0.20"
+
+    env:
+      MIX_ENV: dev
+      MDEX_BUILD: 1
 
     runs-on: ubuntu-20.04
 
@@ -91,8 +102,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
       - name: Cache mix deps
         uses: actions/cache@v3
@@ -101,21 +112,20 @@ jobs:
           path: |
             deps
             _build
-          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
       - run: mix do deps.get, deps.compile
-        if: steps.cache-deps.outputs.cache-hit != 'true'
 
       - name: Cache dialyzer
         uses: actions/cache@v2
         id: cache-plt
         with:
           path: priv/plts
-          key: dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+            dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Generate dialyzer plt
         run: mix dialyzer --plt
@@ -123,7 +133,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      # - run: mix compile --warnings-as-errors
+      - run: mix compile --warnings-as-errors
 
       - run: mix format --check-formatted
 
@@ -131,4 +141,4 @@ jobs:
 
       - run: mix credo --strict
 
-      - run: mix dialyzer
+      - run: mix dialyzer --format github

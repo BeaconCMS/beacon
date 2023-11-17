@@ -262,6 +262,52 @@ defmodule Beacon.ContentTest do
       assert_receive :lifecycle_after_create_page
       assert_receive :lifecycle_after_publish_page
     end
+
+    test "save raw_schema" do
+      layout = layout_fixture(site: :raw_schema_test)
+
+      assert %Page{raw_schema: [%{"foo" => "bar"}]} =
+               Content.create_page!(%{
+                 site: "my_site",
+                 path: "/",
+                 template: "<p>page</p>",
+                 layout_id: layout.id,
+                 raw_schema: [%{"foo" => "bar"}]
+               })
+    end
+
+    test "update raw_schema" do
+      layout = layout_fixture(site: :raw_schema_test)
+
+      page =
+        Content.create_page!(%{
+          site: "my_site",
+          path: "/",
+          template: "<p>page</p>",
+          layout_id: layout.id,
+          raw_schema: [%{"foo" => "bar"}]
+        })
+
+      assert {:ok, %Page{raw_schema: [%{"@type" => "BlogPosting"}]}} = Content.update_page(page, %{"raw_schema" => [%{"@type" => "BlogPosting"}]})
+    end
+
+    test "validate raw_schema" do
+      layout = layout_fixture(site: :raw_schema_test)
+
+      assert {:error,
+              %{
+                errors: [
+                  raw_schema: {"expected a list of map or a map, got: [nil]", [type: Beacon.Types.JsonArrayMap, validation: :cast]}
+                ]
+              }} =
+               Content.create_page(%{
+                 site: "my_site",
+                 path: "/",
+                 template: "<p>page</p>",
+                 layout_id: layout.id,
+                 raw_schema: [nil]
+               })
+    end
   end
 
   describe "snippets" do

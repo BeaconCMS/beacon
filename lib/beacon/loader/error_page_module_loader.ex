@@ -4,6 +4,8 @@ defmodule Beacon.Loader.ErrorPageModuleLoader do
   alias Beacon.Content.ErrorPage
   alias Beacon.Loader
 
+  def load_error_pages!([] = _error_pages, _site), do: :skip
+
   def load_error_pages!(error_pages, site) do
     error_module = Loader.error_module_for_site(site)
     layout_functions = Enum.map(error_pages, &build_layout_fn/1)

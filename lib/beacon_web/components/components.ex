@@ -37,14 +37,14 @@ defmodule BeaconWeb.Components do
 
   ## Examples
 
-      <BeaconWeb.Components.image_set name="logo.jpg" width="200px" sources={["480w", "800w"]} sizes="(max-width: 600px) 480px, 800px"/>
+      <BeaconWeb.Components.image_set name="logo.jpg" width="200px" sources={["480w", "800w"]} sizes="(max-width: 600px) 480px, 800px" />
   """
 
   attr :class, :string, default: nil
   attr :sizes, :string, default: nil
-  attr :rest, :global
   attr :sources, :list, default: [], doc: "a list of usage_tags"
   attr :asset, :map, required: true, doc: "a MediaLibrary.Asset struct"
+  attr :rest, :global
 
   def image_set(assigns) do
     assigns =
