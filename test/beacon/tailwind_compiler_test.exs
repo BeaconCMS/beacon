@@ -8,7 +8,7 @@ defmodule Beacon.TailwindCompilerTest do
   @site :my_site
 
   setup_all do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
+    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(@site)})
     :ok
   end
 
@@ -63,12 +63,12 @@ defmodule Beacon.TailwindCompilerTest do
     :ok
   end
 
-  describe "compile/2" do
+  describe "compile site" do
     setup [:create_page]
 
     test "includes classes from all resources" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(:my_site)
+        assert {:ok, output} = TailwindCompiler.compile(@site)
 
         # test/support/templates/*.*ex
         assert output =~ "text-red-50"
@@ -83,9 +83,25 @@ defmodule Beacon.TailwindCompilerTest do
 
     test "do not include classes from unpublished pages" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(:my_site)
+        assert {:ok, output} = TailwindCompiler.compile(@site)
 
         refute output =~ "text-gray-300"
+      end)
+    end
+  end
+
+  describe "compile template" do
+    test "compile a specific template binary with custom tailwind config" do
+      capture_io(fn ->
+        config = Beacon.Registry.config!(@site)
+        Registry.register(Beacon.Registry, {:site, :test_tailwind_compile_template}, config)
+
+        Beacon.Registry.update_config(:test_tailwind_compile_template, fn config ->
+          %{config | tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.custom.js.eex"])}
+        end)
+
+        {:ok, css} = TailwindCompiler.compile(:test_tailwind_compile_template, ~S|<div class="text-gray-50">|)
+        assert css =~ "text-gray-50"
       end)
     end
   end
