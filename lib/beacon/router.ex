@@ -207,10 +207,26 @@ defmodule Beacon.Router do
 
   @doc false
   def dump_pages do
-    case :ets.match(@ets_table, :"$1") do
-      [] -> []
-      [pages] -> pages
-    end
+    @ets_table |> :ets.match(:"$1") |> List.flatten()
+  end
+
+  @doc false
+  def dump_pages(site) do
+    match = {{site, :_}, :_}
+    guards = []
+    body = [:"$_"]
+
+    @ets_table
+    |> :ets.select([{match, guards, body}])
+    |> List.flatten()
+  end
+
+  def dump_page_modules(site, fun \\ &Function.identity/1) do
+    site
+    |> dump_pages()
+    |> Enum.map(fn {{^site, _path} = key, {_page_id, _layout_id, _format, page_module, _component_module}} ->
+      fun.(Tuple.append(key, page_module))
+    end)
   end
 
   @doc false

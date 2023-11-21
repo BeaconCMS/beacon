@@ -103,13 +103,15 @@ defmodule Beacon.MediaLibrary do
     |> Enum.map(&get_url_for(&1, asset))
   end
 
-  def srcset_for_image(asset, sources) do
+  def srcset_for_image(%Asset{} = asset, sources) do
     asset = Repo.preload(asset, :assets)
 
     asset.assets
     |> filter_sources(sources)
     |> build_srcset()
   end
+
+  def srcset_for_image(_asset, _sources), do: []
 
   defp filter_sources(assets, sources) do
     Enum.filter(
