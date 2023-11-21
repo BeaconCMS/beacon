@@ -4,10 +4,16 @@ defmodule Beacon.RuntimeCSS do
   """
 
   @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
+  @callback compile(Beacon.Types.Site.t(), template :: String.t()) :: {:ok, String.t()} | {:error, any()}
 
   @doc false
   def compile(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.compile(site)
+  end
+
+  @doc false
+  def compile(site, template) when is_atom(site) and is_binary(template) do
+    Beacon.Config.fetch!(site).css_compiler.compile(site, template)
   end
 
   @doc false
