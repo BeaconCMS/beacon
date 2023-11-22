@@ -16,8 +16,9 @@ defmodule Beacon.DataSource.Behaviour do
 
       <%= @beacon_live_data[:year] %>
 
-  Note that module has to be linked to your site by providing
-  its name to `beacon_site/2` in your app router.
+  Your data source module has to be informed in your site's config `:data_source` to be loaded,
+  see `Beacon.Config` for more info and examples.
+
   """
 
   @optional_callbacks page_title: 2, meta_tags: 2
