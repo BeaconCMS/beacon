@@ -41,7 +41,7 @@ defmodule Beacon.Loader.PageModuleLoader do
 
     with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
          {:ok, ^page_module, _ast} <- do_load_page!(page, :request),
-         %Phoenix.LiveView.Rendered{} = rendered <- Beacon.Template.render(assigns) do
+         %Phoenix.LiveView.Rendered{} = rendered <- Beacon.Template.render(page_module, assigns) do
       rendered
     else
       _ ->
