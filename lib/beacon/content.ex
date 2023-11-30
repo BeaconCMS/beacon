@@ -796,6 +796,16 @@ defmodule Beacon.Content do
   defp query_list_pages_preloads(query, _preloads), do: query
 
   @doc """
+  Counts the total number of pages based on the amount of pages.
+  """
+  @spec count_pages(Site.t()) :: integer()
+  def count_pages(site) do
+    query = from p in Page, where: p.site == ^site, select: count(p.id)
+
+    Repo.one(query)
+  end
+
+  @doc """
   Returns all published pages for `site`.
 
   Unpublished pages are not returned even if it was once published before,
