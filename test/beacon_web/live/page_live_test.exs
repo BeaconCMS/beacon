@@ -74,6 +74,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
+    _live_data = live_data_fixture(site: :my_site, path: "home", assign: "vals", format: :elixir, code: "[\"first\", \"second\", \"third\"]")
+
     Content.publish_page(page_home)
 
     _page_without_meta_tags =
@@ -90,6 +92,14 @@ defmodule BeaconWeb.Live.PageLiveTest do
     Beacon.reload_site(:my_site)
 
     [layout: layout]
+  end
+
+  test "live data", %{conn: conn} do
+    create_page(:ok)
+
+    {:ok, view, _html} = live(conn, "/home")
+
+    assert view
   end
 
   describe "meta tags" do

@@ -72,7 +72,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
         Enum.reduce(unquote(Macro.escape(data_list)), var!(data), fn live_data, acc ->
           Map.put(
             acc,
-            live_data.assign,
+            String.to_atom(live_data.assign),
             case live_data.format do
               :text -> live_data.code
               :elixir -> live_data.code |> Code.eval_string(unquote(bindings), __ENV__) |> elem(0)
