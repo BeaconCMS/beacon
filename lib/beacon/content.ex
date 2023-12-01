@@ -493,6 +493,21 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Sets the template of a page based the given `ast`.
+
+  ## Example
+
+      iex> set_page_ast(page, ast)
+      {:ok, %Page{}}
+
+  """
+  @doc type: :pages
+  @spec set_page_ast(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def set_page_ast(%Page{} = page, ast) do
+    Map.put(page, :template, HEExDecoder.decode(ast))
+  end
+
+  @doc """
   Updates a page.
 
   ## Example
