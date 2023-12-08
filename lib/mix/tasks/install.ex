@@ -30,6 +30,10 @@ defmodule Mix.Tasks.Beacon.Install do
 
     {options, _parsed} = OptionParser.parse!(argv, strict: @switches)
 
+    if Keyword.get(options, :site) |> String.starts_with?("beacon_") do
+      Mix.raise("site names starting with 'beacon_' are considered invalid, please choose another site name")
+    end
+
     bindings = build_context_bindings(options)
 
     config_file_path = config_file_path("config.exs")
