@@ -31,6 +31,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.LiveData
+  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageEventHandler
@@ -2039,29 +2040,29 @@ defmodule Beacon.Content do
   # LIVE DATA
 
   @doc """
-  Returns a list of all existing LiveData formats.
+  Returns a list of all existing LiveDataAssign formats.
   """
   @doc type: :live_data
-  @spec live_data_formats() :: [atom()]
-  def live_data_formats, do: LiveData.formats()
+  @spec live_data_assign_formats() :: [atom()]
+  def live_data_assign_formats, do: LiveDataAssign.formats()
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for tracking LiveData changes.
+  Returns an `%Ecto.Changeset{}` for tracking LiveData `:path` changes.
 
   ## Example
 
-      iex> change_live_data(live_data, %{code: "false"})
+      iex> change_live_data(live_data, %{path: "/foo/:bar_id"})
       %Ecto.Changeset{data: %LiveData{}}
 
   """
   @doc type: :live_data
-  @spec change_live_data(LiveData.t(), map()) :: Changeset.t()
-  def change_live_data(%LiveData{} = live_data, attrs \\ %{}) do
-    LiveData.changeset(live_data, attrs)
+  @spec change_live_data_path(LiveData.t(), map()) :: Changeset.t()
+  def change_live_data_path(%LiveData{} = live_data, attrs \\ %{}) do
+    LiveData.path_changeset(live_data, attrs)
   end
 
   @doc """
-  Creates new assigns for Page templates using user-inputted code.
+  Creates a new LiveData for scoping live data to pages.
   """
   @doc type: :live_data
   @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
@@ -2073,18 +2074,40 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single LiveData entry by `id`.
+  Creates a new LiveDataAssign.
+  """
+  @doc type: :live_data
+  @spec create_assign_for_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_assign_for_live_data(live_data, attrs) do
+    changeset =
+      live_data
+      |> Ecto.build_assoc(:assigns)
+      |> LiveDataAssign.changeset(attrs)
+
+    case Repo.insert(changeset) do
+      {:ok, %LiveDataAssign{}} ->
+        live_data = Repo.preload(live_data, :assigns, force: true)
+        maybe_reload_live_data({:ok, live_data})
+        {:ok, live_data}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  @doc """
+  Gets a single `LiveData` entry by `:site` and `:path`.
 
   ## Example
 
-      iex> get_live_data("788b2161-b23a-48ed-abcd-8af788004bbb")
+      iex> get_live_data(:my_site, "/foo/bar/:baz")
       %LiveData{}
 
   """
   @doc type: :live_data
-  @spec get_live_data(Ecto.UUID.t()) :: LiveData.t() | nil
-  def get_live_data(id) when is_binary(id) do
-    Repo.get(LiveData, id)
+  @spec get_live_data(Site.t(), String.t()) :: LiveData.t() | nil
+  def get_live_data(site, path) do
+    Repo.get_by(LiveData, site: site, path: path)
   end
 
   @doc """
@@ -2093,11 +2116,11 @@ defmodule Beacon.Content do
   @doc type: :live_data
   @spec live_data_for_site(Site.t()) :: [LiveData.t()]
   def live_data_for_site(site) do
-    Repo.all(from ld in LiveData, where: ld.site == ^site)
+    Repo.all(from ld in LiveData, where: ld.site == ^site, preload: :assigns)
   end
 
   @doc """
-  Query paths with LiveData for a given site.
+  Query LiveData paths for a given site.
 
   ## Options
 
@@ -2108,7 +2131,7 @@ defmodule Beacon.Content do
   @doc type: :live_data
   @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [String.t()]
   def live_data_paths_for_site(site, opts \\ []) do
-    per_page = Keyword.get(opts, :per_page, 20)
+    per_page = Keyword.get(opts, :per_page, :infinity)
     search = Keyword.get(opts, :query)
 
     site
@@ -2122,7 +2145,6 @@ defmodule Beacon.Content do
     from ld in LiveData,
       where: ld.site == ^site,
       select: ld.path,
-      distinct: ld.path,
       order_by: [asc: ld.path]
   end
 
@@ -2133,26 +2155,34 @@ defmodule Beacon.Content do
   defp query_live_data_paths_for_site_search(query, _search), do: query
 
   @doc """
-  Gets all LiveData for a single path of a given site.
-  """
-  @doc type: :live_data
-  @spec live_data_for_path(Site.t(), String.t()) :: [LiveData.t()]
-  def live_data_for_path(site, path) do
-    Repo.all(from ld in LiveData, where: ld.path == ^path and ld.site == ^site)
-  end
+  Updates LiveDataPath.
 
-  @doc """
-  Updates LiveData.
-
-      iex> update_live_data(live_data, %{code: "true"})
+      iex> update_live_data_path(live_data, "/foo/bar/:baz_id")
       {:ok, %LiveData{}}
 
   """
   @doc type: :live_data
-  @spec update_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def update_live_data(%LiveData{} = live_data, attrs) do
+  @spec update_live_data_path(LiveData.t(), String.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def update_live_data_path(%LiveData{} = live_data, path) do
     live_data
-    |> LiveData.changeset(attrs)
+    |> LiveData.path_changeset(%{path: path})
+    |> Repo.update()
+    |> tap(&maybe_reload_live_data/1)
+  end
+
+  @doc """
+  Updates LiveDataAssign.
+
+      iex> update_live_data_assign(live_data_assign, %{code: "true"})
+      {:ok, %LiveDataAssign{}}
+
+  """
+  @doc type: :live_data
+  @spec update_live_data_assign(LiveDataAssign.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs) do
+    live_data_assign
+    |> Repo.preload(:live_data)
+    |> LiveDataAssign.changeset(attrs)
     |> validate_live_data_code()
     |> Repo.update()
     |> tap(&maybe_reload_live_data/1)
@@ -2160,9 +2190,9 @@ defmodule Beacon.Content do
 
   defp validate_live_data_code(changeset) do
     site = Changeset.get_field(changeset, :site)
-    code = Changeset.get_field(changeset, :code)
+    value = Changeset.get_field(changeset, :value)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :code, :heex, code, metadata)
+    do_validate_template(changeset, :value, :heex, value, metadata)
   end
 
   def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
@@ -2175,6 +2205,15 @@ defmodule Beacon.Content do
   @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
   def delete_live_data(live_data) do
     Repo.delete(live_data)
+  end
+
+  @doc """
+  Deletes LiveDataAssign.
+  """
+  @doc type: :live_data
+  @spec delete_live_data_assign(LiveDataAssign.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def delete_live_data_assign(live_data_assign) do
+    Repo.delete(live_data_assign)
   end
 
   ## Utils

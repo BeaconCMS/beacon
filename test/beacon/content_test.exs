@@ -9,6 +9,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
+  alias Beacon.Content.LiveData
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageEventHandler
@@ -548,6 +549,93 @@ defmodule Beacon.ContentTest do
     test "update_component" do
       component = component_fixture(name: "new_component", body: "old_body")
       assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
+    end
+  end
+
+  describe "live data" do
+    test "create_live_data_path/1 OK" do
+      attrs = %{site: :my_site, path: "/foo/:bar"}
+
+      assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
+      assert %{site: :my_site, path: "/foo/:bar"} = live_data
+    end
+
+    test "get all live data paths for site" do
+      %{path: live_data_path} = live_data_fixture(site: :my_site)
+
+      assert [^live_data_path] = Content.live_data_paths_for_site(:my_site)
+    end
+
+    test "search live data paths" do
+      live_data_fixture(site: :my_site, path: "/foo")
+      live_data_fixture(site: :my_site, path: "/bar")
+
+      assert ["/foo"] = Content.live_data_paths_for_site(:my_site, query: "fo")
+      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, query: "ba")
+    end
+
+    test "get_live_data" do
+      live_data = live_data_fixture()
+
+      assert Content.get_live_data(live_data.site, live_data.path) == live_data
+    end
+
+    test "live_data_for_site/1" do
+      live_data_1 = live_data_fixture(site: :my_site, path: "/foo")
+      live_data_2 = live_data_fixture(site: :my_site, path: "/bar")
+      live_data_3 = live_data_fixture(site: :other_site, path: "/baz")
+
+      results = Content.live_data_for_site(:my_site)
+
+      assert Enum.any?(results, &(&1.id == live_data_1.id))
+      assert Enum.any?(results, &(&1.id == live_data_2.id))
+      refute Enum.any?(results, &(&1.id == live_data_3.id))
+    end
+
+    test "update live data" do
+      live_data = live_data_fixture(site: :my_site, path: "/foo")
+
+      assert {:ok, result} = Content.update_live_data_path(live_data, "/foo/:bar_id")
+      assert result.id == live_data.id
+      assert result.path == "/foo/:bar_id"
+    end
+
+    test "delete live data" do
+      live_data = live_data_fixture()
+
+      assert [%{}] = Content.live_data_for_site(live_data.site)
+      assert {:ok, _} = Content.delete_live_data(live_data)
+      assert [] = Content.live_data_for_site(live_data.site)
+    end
+
+    test "create_assign_for_live_data/2 OK" do
+      live_data = live_data_fixture()
+      attrs = %{key: "product_id", format: :elixir, value: "123"}
+
+      assert {:ok, %LiveData{assigns: [assign]}} = Content.create_assign_for_live_data(live_data, attrs)
+      assert %{key: "product_id", format: :elixir, value: "123"} = assign
+    end
+
+    test "update a live data assign" do
+      live_data = live_data_fixture()
+      live_data_assign = live_data_assign_fixture(live_data)
+
+      attrs = %{key: "wins", value: "1337", format: :elixir}
+      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, attrs)
+
+      assert updated_assign.id == live_data_assign.id
+      assert updated_assign.key == "wins"
+      assert updated_assign.value == "1337"
+      assert updated_assign.format == :elixir
+    end
+
+    test "delete a live data assign" do
+      live_data = live_data_fixture()
+      live_data_assign = live_data_assign_fixture(live_data)
+
+      assert %{assigns: [^live_data_assign]} = Repo.preload(live_data, :assigns)
+      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign)
+      assert %{assigns: []} = Repo.preload(live_data, :assigns)
     end
   end
 end

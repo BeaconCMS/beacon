@@ -2,6 +2,7 @@ defmodule Beacon.Fixtures do
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.LiveData
+  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
@@ -204,10 +205,20 @@ defmodule Beacon.Fixtures do
   def live_data_fixture(attrs \\ %{}) do
     Repo.insert!(%LiveData{
       site: attrs[:site] || :site_a,
-      path: attrs[:path] || "/foo/bar",
-      assign: attrs[:assign] || "bar",
-      format: attrs[:format] || :text,
-      code: attrs[:code] || "Hello world!"
+      path: attrs[:path] || "/foo/bar"
     })
+  end
+
+  def live_data_assign_fixture(live_data, attrs \\ %{}) do
+    full_attrs = %{
+      key: attrs[:key] || "bar",
+      value: attrs[:value] || "Hello world!",
+      format: attrs[:format] || :text
+    }
+
+    live_data
+    |> Ecto.build_assoc(:assigns)
+    |> LiveDataAssign.changeset(full_attrs)
+    |> Repo.insert!()
   end
 end

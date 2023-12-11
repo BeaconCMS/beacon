@@ -1,6 +1,6 @@
-defmodule Beacon.Content.LiveDataPath do
+defmodule Beacon.Content.LiveData do
   @moduledoc """
-  Dynamic assigns to be used by page templates and updated with page event handlers.
+  The LiveData schema scopes `LiveDataAssign`s to `Page`s via site and path.
 
   > #### Do not create or edit live data manually {: .warning}
   >
@@ -20,21 +20,19 @@ defmodule Beacon.Content.LiveDataPath do
           id: Ecto.UUID.t(),
           site: Beacon.Types.Site.t(),
           path: String.t(),
-          live_data_assigns: [LiveDataAssign]
+          assigns: [LiveDataAssign]
         }
-
-  @formats [:text, :elixir]
 
   schema "beacon_live_data" do
     field :site, Beacon.Types.Site
     field :path, :string
 
-    has_many :live_data_assigns, LiveDataAssign
+    has_many :assigns, LiveDataAssign
 
     timestamps()
   end
 
-  def changeset(%__MODULE__{} = live_data_path, attrs) do
+  def changeset(%__MODULE__{} = live_data, attrs) do
     fields = ~w(site path)a
 
     live_data
@@ -42,7 +40,7 @@ defmodule Beacon.Content.LiveDataPath do
     |> validate_required(fields)
   end
 
-  def path_changeset(%__MODULE__{} = live_data_path, attrs) do
+  def path_changeset(%__MODULE__{} = live_data, attrs) do
     live_data
     |> cast(attrs, [:path])
     |> validate_required([:path])

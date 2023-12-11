@@ -14,31 +14,31 @@ defmodule Beacon.Content.LiveDataAssign do
 
   use Beacon.Schema
 
-  alias Beacon.Content.LiveDataPath
+  alias Beacon.Content.LiveData
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
-          live_data_path_id: Ecto.UUID.t(),
-          live_data_path: LiveDataPath.t(),
-          assign: String.t(),
+          key: String.t(),
+          value: String.t(),
           format: :text | :elixir,
-          code: String.t()
+          live_data_id: Ecto.UUID.t(),
+          live_data: LiveData.t()
         }
 
   @formats [:text, :elixir]
 
   schema "beacon_live_data_assigns" do
-    field :assign, :string
+    field :key, :string
+    field :value, :string
     field :format, Ecto.Enum, values: @formats
-    field :code, :string
 
-    belongs_to :live_data_path, LiveDataPath
+    belongs_to :live_data, LiveData
 
     timestamps()
   end
 
   def changeset(%__MODULE__{} = live_data_assign, attrs) do
-    fields = ~w(assign format code live_data_path_id)a
+    fields = ~w(key value format live_data_id)a
 
     live_data_assign
     |> cast(attrs, fields)

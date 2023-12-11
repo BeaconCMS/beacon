@@ -6,6 +6,7 @@ defmodule Beacon.PubSub do
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LiveData
+  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
 
   @pubsub __MODULE__
@@ -168,6 +169,14 @@ defmodule Beacon.PubSub do
 
   def live_data_updated(%LiveData{} = live_data) do
     live_data.site
+    |> topic_live_data()
+    |> broadcast(:live_data_updated)
+  end
+
+  def live_data_updated(%LiveDataAssign{} = live_data_assign) do
+    %{live_data: %{site: site}} = Beacon.Repo.preload(live_data_assign, :live_data)
+
+    site
     |> topic_live_data()
     |> broadcast(:live_data_updated)
   end
