@@ -36,6 +36,14 @@ defmodule Beacon.Types.Site do
 
   def valid?(_site), do: false
 
+  def valid_name?(site) when is_atom(site) do
+    valid_name?(Atom.to_string(site))
+  end
+
+  def valid_name?(site) when is_binary(site) do
+    not String.starts_with?(site, "beacon_")
+  end
+
   @doc false
   def safe_to_atom(site) when is_atom(site), do: site
   def safe_to_atom(site) when is_binary(site), do: String.to_existing_atom(site)
