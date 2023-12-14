@@ -751,6 +751,7 @@ defmodule Beacon.Content do
     * `:offset` - offsets the number of rows selected from the result.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by.
 
   """
   @doc type: :pages
@@ -760,6 +761,7 @@ defmodule Beacon.Content do
     offset = Keyword.get(opts, :offset, 0)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_pages_base()
@@ -767,14 +769,11 @@ defmodule Beacon.Content do
     |> query_list_pages_offset(offset)
     |> query_list_pages_search(search)
     |> query_list_pages_preloads(preloads)
+    |> query_list_pages_sort(sort)
     |> Repo.all()
   end
 
-  defp query_list_pages_base(site) do
-    from p in Page,
-      where: p.site == ^site,
-      order_by: [asc: p.order, asc: fragment("length(?)", p.path)]
-  end
+  defp query_list_pages_base(site), do: from(p in Page, where: p.site == ^site)
 
   defp query_list_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_pages_limit(query, :infinity = _limit), do: query
@@ -794,6 +793,8 @@ defmodule Beacon.Content do
   end
 
   defp query_list_pages_preloads(query, _preloads), do: query
+
+  defp query_list_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """
   Counts the total number of pages based on the amount of pages.
