@@ -338,6 +338,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     cond do
       !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".")
       :default -> options
     end
   end
