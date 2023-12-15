@@ -7,7 +7,7 @@ defmodule Beacon.Application do
   def start(_type, _args) do
     # Starts just the minimum required apps for beacon to work.
     # - Keep loading sites as children of main sup to have control of where and when to trigger it.
-    # - Loading repo allows to run seeds without trigering module and css recompilation.
+    # - Loading repo allows to run seeds without triggering module and css recompilation.
     children = [
       Beacon.Registry,
       {Phoenix.PubSub, name: Beacon.PubSub},

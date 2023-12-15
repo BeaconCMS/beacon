@@ -13,7 +13,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
   ## Data Structure
 
-  The encoded data structured emitted at the end is a list of tokens componsed of either a `heex_node` or a `eex_node`,
+  The encoded data structured emitted at the end is a list of tokens composed of either a `heex_node` or a `eex_node`,
   as specified below:
 
       tokens = [heex_node() | eex_node() | eex_block_node()]

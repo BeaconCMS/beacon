@@ -454,7 +454,7 @@ defmodule Beacon.Content do
     * `title` - String.t()
     * `description` - String.t()
     * `template` - String.t()
-    * `meta_tags` - list(map()) eg: `[%{"property" => "og:title", "content" => "My New Siste"}]`
+    * `meta_tags` - list(map()) eg: `[%{"property" => "og:title", "content" => "My New Site"}]`
 
   See `Beacon.Content.Page` for more info.
 
