@@ -70,7 +70,7 @@ defmodule Beacon.Lifecycle.Template do
 
   def validate_output!(lifecycle, _site, _type) do
     raise Beacon.LoaderError, """
-    excpected output to be a %Phoenix.LiveView.Rendered{} struct
+    expected output to be a %Phoenix.LiveView.Rendered{} struct
 
     Got:
 
