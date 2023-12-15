@@ -70,7 +70,7 @@ defmodule Beacon.Lifecycle.Template do
 
   def validate_output!(lifecycle, _site, _type) do
     raise Beacon.LoaderError, """
-    excpected output to be a %Phoenix.LiveView.Rendered{} struct
+    expected output to be a %Phoenix.LiveView.Rendered{} struct
 
     Got:
 
@@ -101,7 +101,7 @@ defmodule Beacon.Lifecycle.Template do
   @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
   def render_template(page, page_module, assigns, env) do
     template =
-      case page_module.render(assigns) do
+      case Beacon.Template.render(page_module, assigns) do
         %Phoenix.LiveView.Rendered{} = rendered -> rendered
         :not_loaded -> Beacon.Loader.load_page_template(page, page_module, assigns)
       end

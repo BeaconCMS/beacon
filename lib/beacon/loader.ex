@@ -128,12 +128,13 @@ defmodule Beacon.Loader do
 
   defp load_site_from_db(site) do
     with :ok <- Beacon.RuntimeJS.load!(),
-         :ok <- load_runtime_css(site),
-         :ok <- load_stylesheets(site),
          :ok <- load_components(site),
          :ok <- load_snippet_helpers(site),
          :ok <- load_layouts(site),
          :ok <- load_pages(site),
+         :ok <- load_error_pages(site),
+         :ok <- load_stylesheets(site),
+         :ok <- load_runtime_css(site),
          :ok <- load_data_source(site) do
       :ok
     else
@@ -201,12 +202,15 @@ defmodule Beacon.Loader do
 
   # too slow to run the css compiler on every test
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
-    defp load_runtime_css(_site), do: :ok
+    @doc false
+    def load_runtime_css(_site), do: :ok
   else
-    defp load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
+    @doc false
+    def load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
   end
 
-  defp load_stylesheets(site) do
+  @doc false
+  def load_stylesheets(site) do
     StylesheetModuleLoader.load_stylesheets(site, Content.list_stylesheets(site))
     :ok
   end
@@ -224,7 +228,8 @@ defmodule Beacon.Loader do
     :ok
   end
 
-  defp load_layouts(site) do
+  @doc false
+  def load_layouts(site) do
     site
     |> Content.list_published_layouts()
     |> Enum.map(fn layout ->
@@ -238,7 +243,8 @@ defmodule Beacon.Loader do
     :ok
   end
 
-  defp load_pages(site) do
+  @doc false
+  def load_pages(site) do
     site
     |> Content.list_published_pages()
     |> Enum.map(fn page ->
@@ -372,8 +378,9 @@ defmodule Beacon.Loader do
 
   @doc false
   def handle_call({:load_page, page}, _from, config) do
+    result = do_load_page!(page)
     :ok = load_runtime_css(page.site)
-    {:reply, do_load_page(page), config}
+    {:reply, result, config}
   end
 
   def handle_call({:load_page_template, page, page_module, assigns}, _from, config) do
@@ -391,14 +398,14 @@ defmodule Beacon.Loader do
   def handle_info({:layout_published, %{site: site, id: id}}, state) do
     layout = Content.get_published_layout(site, id)
 
-    with :ok <- load_runtime_css(site),
-         # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
-         :ok <- load_components(site),
+    # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
+    with :ok <- load_components(site),
          # TODO: load only used snippet helpers
          :ok <- load_snippet_helpers(site),
-         :ok <- load_stylesheets(site),
          {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
-         :ok <- maybe_reload_error_pages(layout) do
+         :ok <- maybe_reload_error_pages(layout),
+         :ok <- load_runtime_css(site),
+         :ok <- load_stylesheets(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
@@ -409,24 +416,24 @@ defmodule Beacon.Loader do
 
   @doc false
   def handle_info({:page_published, %{site: site, id: id}}, state) do
-    :ok = load_runtime_css(site)
-
     site
     |> Content.get_published_page(id)
-    |> do_load_page()
+    |> do_load_page!()
+
+    :ok = load_runtime_css(site)
 
     {:noreply, state}
   end
 
   @doc false
   def handle_info({:pages_published, site, pages}, state) do
-    :ok = load_runtime_css(site)
-
     for page <- pages do
       site
       |> Content.get_published_page(page.id)
-      |> do_load_page()
+      |> do_load_page!()
     end
+
+    :ok = load_runtime_css(site)
 
     {:noreply, state}
   end
@@ -468,9 +475,9 @@ defmodule Beacon.Loader do
     {:noreply, state}
   end
 
-  defp do_load_page(page) when is_nil(page), do: nil
+  defp do_load_page!(page) when is_nil(page), do: nil
 
-  defp do_load_page(page) do
+  defp do_load_page!(page) do
     layout = Content.get_published_layout(page.site, page.layout_id)
 
     # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84

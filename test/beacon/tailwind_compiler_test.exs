@@ -1,9 +1,16 @@
 defmodule Beacon.TailwindCompilerTest do
-  use Beacon.DataCase, async: true
+  use Beacon.DataCase, async: false
 
   import ExUnit.CaptureIO
   import Beacon.Fixtures
   alias Beacon.TailwindCompiler
+
+  @site :my_site
+
+  setup_all do
+    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(@site)})
+    :ok
+  end
 
   defp create_page(_) do
     stylesheet_fixture()
@@ -17,15 +24,16 @@ defmodule Beacon.TailwindCompilerTest do
     )
 
     layout =
-      layout_fixture(
+      published_layout_fixture(
         template: """
         <header class="text-gray-100">Page header</header>
         <%= @inner_content %>
         """
       )
 
-    page_fixture(
+    published_page_fixture(
       layout_id: layout.id,
+      path: "/a",
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
@@ -36,15 +44,31 @@ defmodule Beacon.TailwindCompilerTest do
       """
     )
 
+    page_fixture(
+      layout_id: layout.id,
+      path: "/b",
+      template: """
+      <main>
+        <h2 class="text-gray-300">Some Values:</h2>
+      </main>
+      """
+    )
+
+    Beacon.Loader.load_stylesheets(@site)
+    Beacon.Loader.load_components(@site)
+    Beacon.Loader.load_layouts(@site)
+    Beacon.Loader.load_pages(@site)
+    Beacon.Loader.load_runtime_css(@site)
+
     :ok
   end
 
-  describe "compile/2" do
+  describe "compile site" do
     setup [:create_page]
 
     test "includes classes from all resources" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(:my_site)
+        assert {:ok, output} = TailwindCompiler.compile(@site)
 
         # test/support/templates/*.*ex
         assert output =~ "text-red-50"
@@ -54,6 +78,30 @@ defmodule Beacon.TailwindCompilerTest do
         assert output =~ "text-gray-50"
         assert output =~ "text-gray-100"
         assert output =~ "text-gray-200"
+      end)
+    end
+
+    test "do not include classes from unpublished pages" do
+      capture_io(fn ->
+        assert {:ok, output} = TailwindCompiler.compile(@site)
+
+        refute output =~ "text-gray-300"
+      end)
+    end
+  end
+
+  describe "compile template" do
+    test "compile a specific template binary with custom tailwind config" do
+      capture_io(fn ->
+        config = Beacon.Registry.config!(@site)
+        Registry.register(Beacon.Registry, {:site, :test_tailwind_compile_template}, config)
+
+        Beacon.Registry.update_config(:test_tailwind_compile_template, fn config ->
+          %{config | tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.custom.js.eex"])}
+        end)
+
+        {:ok, css} = TailwindCompiler.compile(:test_tailwind_compile_template, ~S|<div class="text-gray-50">|)
+        assert css =~ "text-gray-50"
       end)
     end
   end

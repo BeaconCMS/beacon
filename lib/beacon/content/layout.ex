@@ -29,7 +29,7 @@ defmodule Beacon.Content.Layout do
   schema "beacon_layouts" do
     field :site, Beacon.Types.Site
     field :title, :string
-    field :template, :string
+    field :template, :string, default: "<%= @inner_content %>"
     field :meta_tags, {:array, :map}, default: []
     field :resource_links, {:array, :map}, default: []
 
