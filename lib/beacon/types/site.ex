@@ -46,7 +46,7 @@ defmodule Beacon.Types.Site do
   end
 
   def valid_path?(path) when is_atom(path) do
-    valid_name?(Atom.to_string(path))
+    path |> Atom.to_string() |> valid_path?()
   end
 
   def valid_path?(path) when is_binary(path) do
