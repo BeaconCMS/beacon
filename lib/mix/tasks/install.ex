@@ -342,13 +342,10 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp validate_options!(options) do
-    site = options |> Keyword.get(:site, "false") |> String.to_atom()
-    path = options |> Keyword.get(:path, "/#{site}")
-
     cond do
-      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.")
-      !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".")
-      !Beacon.Types.Site.valid_path?(path) -> raise_with_help!("Invalid path value. The path value have to start with /.")
+      !Beacon.Types.Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid_name?(options[:site]) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".")
+      !Beacon.Types.Site.valid_path?(options[:path]) -> raise_with_help!("Invalid path value. The path value have to start with /.")
       :default -> options
     end
   end
