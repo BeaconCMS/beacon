@@ -27,8 +27,7 @@ defmodule Beacon.Types.Site do
   def valid?(site) when site in ["", nil, true, false], do: false
 
   def valid?(site) when is_binary(site) do
-    # TODO: Should we add the Regex.match? from the line bellow?
-    nil
+    Regex.match?(~r/^[a-zA-Z0-9_]+$/, site)
   end
 
   def valid?(site) when is_atom(site) do
