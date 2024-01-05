@@ -30,11 +30,11 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
       end
 
     # For debugging - will print module content to the terminal
-    ast
-    |> Code.quoted_to_algebra()
-    |> Inspect.Algebra.format(:infinity)
-    |> IO.iodata_to_binary()
-    |> IO.puts()
+    # ast
+    # |> Code.quoted_to_algebra()
+    # |> Inspect.Algebra.format(:infinity)
+    # |> IO.iodata_to_binary()
+    # |> IO.puts()
 
     :ok = Loader.reload_module!(data_source_module, ast)
 
@@ -70,6 +70,8 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
     quote do
       def live_data(unquote(path_list), var!(params), var!(data)) do
+        %{} = var!(params)
+
         Enum.reduce(unquote(Macro.escape(assigns)), var!(data), fn assign, acc ->
           Map.put(
             acc,

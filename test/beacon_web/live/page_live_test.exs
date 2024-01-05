@@ -74,7 +74,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
-    _live_data = live_data_fixture(site: :my_site, path: "home", assign: "vals", format: :elixir, code: "[\"first\", \"second\", \"third\"]")
+    live_data = live_data_fixture(site: :my_site, path: "home")
+    live_data_assign_fixture(live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
 
     Content.publish_page(page_home)
 
