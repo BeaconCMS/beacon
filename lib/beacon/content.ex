@@ -2079,6 +2079,21 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns an `%Ecto.Changeset{}` for tracking LiveDataAssign changes.
+
+  ## Example
+
+      iex> change_live_data_assign(live_data_assign, %{format: :elixir, value: "Enum.random(1..100)"})
+      %Ecto.Changeset{data: %LiveDataAssign{}}
+
+  """
+  @doc type: :live_data
+  @spec change_live_data_assign(LiveDataAssign.t(), map()) :: Changeset.t()
+  def change_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs \\ %{}) do
+    LiveDataAssign.changeset(live_data_assign, attrs)
+  end
+
+  @doc """
   Creates a new LiveData for scoping live data to pages.
   """
   @doc type: :live_data
@@ -2124,7 +2139,9 @@ defmodule Beacon.Content do
   @doc type: :live_data
   @spec get_live_data(Site.t(), String.t()) :: LiveData.t() | nil
   def get_live_data(site, path) do
-    Repo.get_by(LiveData, site: site, path: path)
+    LiveData
+    |> Repo.get_by(site: site, path: path)
+    |> Repo.preload(:assigns)
   end
 
   @doc """

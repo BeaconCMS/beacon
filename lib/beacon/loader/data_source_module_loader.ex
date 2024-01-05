@@ -6,8 +6,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
   def load_data_source(site, data) do
     data_source_module = Loader.data_source_module_for_site(site)
-    data_by_path = Enum.group_by(data, & &1.path)
-    live_data_functions = Enum.map(data_by_path, &live_data_fn/1)
+    live_data_functions = Enum.map(data, &live_data_fn/1)
     # TODO default data
 
     ast =
@@ -42,7 +41,9 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
     {:ok, ast}
   end
 
-  defp live_data_fn({path, data_list}) do
+  defp live_data_fn(live_data) do
+    %{path: path, assigns: assigns} = live_data
+
     path_list =
       quote do
         unquote(
@@ -69,13 +70,13 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
     quote do
       def live_data(unquote(path_list), var!(params), var!(data)) do
-        Enum.reduce(unquote(Macro.escape(data_list)), var!(data), fn live_data, acc ->
+        Enum.reduce(unquote(Macro.escape(assigns)), var!(data), fn assign, acc ->
           Map.put(
             acc,
-            String.to_atom(live_data.assign),
-            case live_data.format do
-              :text -> live_data.code
-              :elixir -> live_data.code |> Code.eval_string(unquote(bindings), __ENV__) |> elem(0)
+            String.to_atom(assign.key),
+            case assign.format do
+              :text -> assign.value
+              :elixir -> assign.value |> Code.eval_string(unquote(bindings), __ENV__) |> elem(0)
             end
           )
         end)
