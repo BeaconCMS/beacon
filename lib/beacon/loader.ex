@@ -265,7 +265,8 @@ defmodule Beacon.Loader do
   end
 
   defp load_data_source(site) do
-    DataSourceModuleLoader.load_data_source(site, Content.live_data_for_site(site))
+    live_data = Content.live_data_for_site(site)
+    DataSourceModuleLoader.load_data_source(live_data, site)
     :ok
   end
 

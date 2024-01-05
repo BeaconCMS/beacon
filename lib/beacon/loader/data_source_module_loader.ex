@@ -4,7 +4,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
   require Logger
 
-  def load_data_source(site, data) do
+  def load_data_source(data, site) do
     data_source_module = Loader.data_source_module_for_site(site)
     live_data_functions = Enum.map(data, &live_data_fn/1)
     # TODO default data
@@ -38,7 +38,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
     :ok = Loader.reload_module!(data_source_module, ast)
 
-    {:ok, ast}
+    {:ok, data_source_module, ast}
   end
 
   defp live_data_fn(live_data) do
