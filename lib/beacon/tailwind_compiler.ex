@@ -44,9 +44,9 @@ defmodule Beacon.TailwindCompiler do
     content = [
       ?{,
       " raw: ",
-      ?',
+      ?`,
       template,
-      ?',
+      ?`,
       ", extension: ",
       ?',
       "html",
