@@ -460,7 +460,7 @@ defmodule Beacon.Content do
 
   The created page is not published automatically,
   you can make as much changes you need and when the page
-  is ready to be published you can call publish_page/1
+  is ready to be published you can call `publish_page/1`
 
   It will insert a `created` event into the page timeline,
   and no snapshot is created.
@@ -468,11 +468,15 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec create_page(map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
-    site = attrs["site"] || attrs[:site]
+    attrs =
+      Map.new(attrs, fn
+        {key, val} when is_binary(key) -> {key, val}
+        {key, val} -> {Atom.to_string(key), val}
+      end)
 
     Repo.transact(fn ->
-      with {:ok, site} <- Beacon.Types.Site.cast(site),
-           attrs = put_default_meta_tags(site, attrs),
+      with {:ok, site} <- Beacon.Types.Site.cast(attrs["site"]),
+           attrs = maybe_put_default_meta_tags(site, attrs),
            changeset = Page.create_changeset(%Page{}, attrs),
            {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- Repo.insert(changeset),
@@ -483,9 +487,9 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp put_default_meta_tags(site, attrs) do
+  defp maybe_put_default_meta_tags(site, attrs) do
     default_meta_tags = Beacon.Config.fetch!(site).default_meta_tags
-    Map.put_new(attrs, :meta_tags, default_meta_tags)
+    Map.put_new(attrs, "meta_tags", default_meta_tags)
   end
 
   @doc """
