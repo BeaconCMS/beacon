@@ -986,7 +986,7 @@ dev_site = [
   extra_page_fields: [BeaconTagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
-    %{"name" =>  "default", "content" => "dev"}
+    %{"name" => "default", "content" => "dev"}
   ]
 ]
 
