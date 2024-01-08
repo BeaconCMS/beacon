@@ -39,9 +39,7 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          data_source: Beacon.BeaconTest.BeaconDataSource,
          default_meta_tags: [
-           %{"name" => "foo_meta_tag"},
-           %{"name" => "bar_meta_tag"},
-           %{"name" => "baz_meta_tag"}
+           %{"name" => "foo", "content" => "bar"}
          ]
        ],
        [
