@@ -443,6 +443,11 @@ defmodule Mix.Tasks.Beacon.InstallTest do
         Install.run(["--site", "my@site!"])
       end
 
+      # Invalid site name
+      assert_raise Mix.Error, fn ->
+        Install.run(["--site", "beacon_"])
+      end
+
       # Invalid option
       assert_raise OptionParser.ParseError, ~r/1 error found!\n--invalid-argument : Unknown option/, fn ->
         Install.run(["--invalid-argument", "invalid"])
