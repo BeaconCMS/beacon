@@ -209,6 +209,15 @@ For more info on site options, check out `Beacon.start_link/1`.
 6. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
     ```elixir
+    # Replace "<%= site %>" with your site name.
+    # ## Example using my_site as site value:
+    #
+    #     Content.create_stylesheet!(%{
+    #       site: "my_site",
+    #       name: "sample_stylesheet",
+    #       content: "body {cursor: zoom-in;}"
+    #     })
+    
     alias Beacon.Content
 
     Content.create_stylesheet!(%{
@@ -222,7 +231,7 @@ For more info on site options, check out `Beacon.start_link/1`.
       name: "sample_component",
       body: """
       <li>
-        <%%= @val %>
+        <%= @val %>
       </li>
       """
     })
@@ -235,7 +244,7 @@ For more info on site options, check out `Beacon.start_link/1`.
         <header>
           Header
         </header>
-        <%%= @inner_content %>
+        <%= @inner_content %>
 
         <footer>
           Page Footer
@@ -253,18 +262,18 @@ For more info on site options, check out `Beacon.start_link/1`.
       <main>
         <h2>Some Values:</h2>
         <ul>
-          <%%= for val <- @beacon_live_data[:vals] do %>
-            <%%= my_component("sample_component", val: val) %>
-          <%% end %>
+          <%= for val <- @beacon_live_data[:vals] do %>
+            <%= my_component("sample_component", val: val) %>
+          <% end %>
         </ul>
 
         <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-          Name: <%%= text_input f, :name %> <%%= submit "Hello" %>
+          Name: <%= text_input f, :name %> <%= submit "Hello" %>
         </.form>
 
-        <%%= if assigns[:message], do: assigns.message %>
+        <%= if assigns[:message], do: assigns.message %>
 
-        <%%= dynamic_helper("upcase", "Beacon") %>
+        <%= dynamic_helper("upcase", "Beacon") %>
       </main>
       """,
       helpers: [
@@ -296,8 +305,8 @@ For more info on site options, check out `Beacon.start_link/1`.
       <main>
         <h2>A blog</h2>
         <ul>
-          <li>Path Params Blog Slug: <%%= @beacon_path_params["blog_slug"] %></li>
-          <li>Live Data blog_slug_uppercase: <%%= @beacon_live_data.blog_slug_uppercase %></li>
+          <li>Path Params Blog Slug: <%= @beacon_path_params["blog_slug"] %></li>
+          <li>Live Data blog_slug_uppercase: <%= @beacon_live_data.blog_slug_uppercase %></li>
         </ul>
       </main>
       """
