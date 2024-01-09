@@ -20,7 +20,8 @@ defmodule Mix.Tasks.Beacon.Install do
   use Mix.Task
 
   @switches [
-    site: :string
+    site: :string,
+    path: :string
   ]
 
   def run(argv) do
@@ -274,7 +275,10 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp build_context_bindings(options) do
-    options = validate_options!(options)
+    options =
+      options
+      |> add_default_options_if_missing()
+      |> validate_options!()
 
     base_module = Mix.Phoenix.base()
     web_module = Mix.Phoenix.web_module(base_module)
@@ -285,6 +289,7 @@ defmodule Mix.Tasks.Beacon.Install do
     templates_path = Path.join([Application.app_dir(:beacon), "priv", "templates"])
     root = root_path()
     site = Keyword.get(options, :site)
+    path = Keyword.get(options, :path)
 
     [
       base_module: base_module,
@@ -293,6 +298,7 @@ defmodule Mix.Tasks.Beacon.Install do
       ctx_app: ctx_app,
       templates_path: templates_path,
       site: site,
+      path: path,
       beacon_data_source: %{
         dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
         template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
@@ -326,6 +332,8 @@ defmodule Mix.Tasks.Beacon.Install do
     mix beacon.install expect a site name, for example:
 
         mix beacon.install --site blog
+        or 
+        mix beacon.install --site blog --path "/blog_path"
     """)
   end
 
@@ -334,12 +342,27 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp validate_options!(options) do
-    site = String.to_atom(options[:site])
-
     cond do
-      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.")
-      !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".")
+      !Beacon.Types.Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid_name?(options[:site]) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".")
+      !Beacon.Types.Site.valid_path?(options[:path]) -> raise_with_help!("Invalid path value. The path value have to start with /.")
       :default -> options
     end
+  end
+
+  defp add_default_options_if_missing(options) do
+    defaults =
+      @switches
+      |> Keyword.keys()
+      |> Enum.reduce([], fn
+        :path, acc ->
+          site = Keyword.get(options, :site)
+          [{:path, "/#{site}"} | acc]
+
+        _key, acc ->
+          acc
+      end)
+
+    Keyword.merge(defaults, options)
   end
 end

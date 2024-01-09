@@ -34,4 +34,14 @@ defmodule Beacon.Types.SiteTest do
       refute Site.valid_name?("beacon_some_name")
     end
   end
+
+  describe "valid_path?/1" do
+    test "SUCCESS: Return TRUE if it is a valid path" do
+      assert Site.valid_path?("/some_name")
+    end
+
+    test "SUCCESS: Return FALSE if it is an invalid name" do
+      refute Site.valid_path?("forgot_slash_at_beginning")
+    end
+  end
 end
