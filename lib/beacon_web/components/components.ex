@@ -53,7 +53,7 @@ defmodule BeaconWeb.Components do
   end
 
   @doc """
-  Renders a feature page item to be used in the BeaconWeb.Components.featured_pages component.
+  Renders the default item for featured_pages.
 
   ## Examples
 
@@ -78,9 +78,7 @@ defmodule BeaconWeb.Components do
           <div>
             <p class="font-bold text-gray-700"></p>
             <p class="text-eyebrow font-medium text-gray-500">
-              <time datetime="2023-09-19">
-                <%= DateTime.to_string(@updated_at) %>
-              </time>
+              <time> <%= DateTime.to_string(@updated_at) %> </time>
             </p>
           </div>
         </div>
@@ -95,11 +93,19 @@ defmodule BeaconWeb.Components do
 
   ## Examples
 
+    Without pages, A.K.A, default behavior:
       <BeaconWeb.Components.featured_pages />
+
+    With pages:
+      <BeaconWeb.Components.featured_pages :let={page} pages={Beacon.Content.list_pages(...)}>
+        <article >
+          <%= page.title %>
+        </article>
+      </BeaconWeb.Components.featured_pages>
   """
 
   attr :pages, :list, default: []
-  slot :actions, doc: "the slot for form actions, such as a submit button"
+  slot :inner_block
 
   def featured_pages(assigns) do
     assigns =
@@ -119,9 +125,15 @@ defmodule BeaconWeb.Components do
       </div>
 
       <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
+       <%= if Enum.empty?(@inner_block) do %>
         <div :for={page <- @pages}>
           <BeaconWeb.Components.feature_page_item title={page.title} updated_at={page.updated_at} page_path={page.path} />
         </div>
+       <% else %>
+          <%= for page <- @pages do %>
+            <%= render_slot(@inner_block, page) %>
+          <% end %>
+       <% end %>       
       </div>
     </div>
     """
