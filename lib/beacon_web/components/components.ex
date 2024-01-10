@@ -61,15 +61,15 @@ defmodule BeaconWeb.Components do
   """
 
   attr :title, :string, required: true
-  attr :published_date, :any, required: true
-  attr :image_path, :string, required: true
+  attr :updated_at, :any, required: true
+  attr :page_path, :string, required: true
 
   def feature_page_item(assigns) do
     ~H"""
     <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
       <div class="flex flex-col">
         <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
-          <a href="#" data-phx-link="redirect" data-phx-link-state="push" class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
+          <a href={@page_path} data-phx-link="redirect" data-phx-link-state="push" class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
             <%= @title %>
           </a>
         </h3>
@@ -79,14 +79,11 @@ defmodule BeaconWeb.Components do
             <p class="font-bold text-gray-700"></p>
             <p class="text-eyebrow font-medium text-gray-500">
               <time datetime="2023-09-19">
-                <%= DateTime.to_string(@published_date) %>
+                <%= DateTime.to_string(@updated_at) %>
               </time>
             </p>
           </div>
         </div>
-      </div>
-      <div class="-order-1 mb-6 h-72">
-        <img class="object-cover w-full h-full rounded-2xl" src={@image_path} alt="Narwin" loading="lazy" data-test-article-illustration="" />
       </div>
     </article>
     """
@@ -101,12 +98,13 @@ defmodule BeaconWeb.Components do
       <BeaconWeb.Components.featured_pages />
   """
 
-  attr :site_pages, :list, default: []
+  attr :pages, :list, default: []
+  slot :actions, doc: "the slot for form actions, such as a submit button"
 
   def featured_pages(assigns) do
     assigns =
-      if Enum.empty?(assigns.site_pages),
-        do: Map.put(assigns, :site_pages, Beacon.Content.list_pages(Process.get(:__beacon_site__), per_page: 3)),
+      if Enum.empty?(assigns.pages),
+        do: Map.put(assigns, :pages, Beacon.Content.list_pages(Process.get(:__beacon_site__), per_page: 3)),
         else: assigns
 
     ~H"""
@@ -121,8 +119,8 @@ defmodule BeaconWeb.Components do
       </div>
 
       <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
-        <div :for={site_page <- @site_pages}>
-          <BeaconWeb.Components.feature_page_item title={site_page.title} published_date={site_page.inserted_at} image_path="#" />
+        <div :for={page <- @pages}>
+          <BeaconWeb.Components.feature_page_item title={page.title} updated_at={page.updated_at} page_path={page.path} />
         </div>
       </div>
     </div>
