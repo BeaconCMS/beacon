@@ -68,19 +68,24 @@ defmodule BeaconWeb.Components do
     ~H"""
     <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
       <div class="flex flex-col">
-        <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
-          <a href={@page_path} data-phx-link="redirect" data-phx-link-state="push" class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
-            <%= @title %>
-          </a>
-        </h3>
+        <div>
+          <p class="font-bold text-gray-700"></p>
+          <p class="text-eyebrow font-medium text-gray-500 text-sm text-left">
+            <%= Calendar.strftime(@updated_at, "%d %B %Y") %>
+          </p>
+        </div>
 
         <div class="-order-1 flex gap-x-2 items-center mb-3">
-          <div>
-            <p class="font-bold text-gray-700"></p>
-            <p class="text-eyebrow font-medium text-gray-500">
-              <time> <%= DateTime.to_string(@updated_at) %> </time>
-            </p>
-          </div>
+          <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
+            <a
+              href={@page_path}
+              data-phx-link="redirect"
+              data-phx-link-state="push"
+              class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none"
+            >
+              <%= @title %>
+            </a>
+          </h3>
         </div>
       </div>
     </article>
@@ -125,15 +130,15 @@ defmodule BeaconWeb.Components do
       </div>
 
       <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
-       <%= if Enum.empty?(@inner_block) do %>
-        <div :for={page <- @pages}>
-          <BeaconWeb.Components.feature_page_item title={page.title} updated_at={page.updated_at} page_path={page.path} />
-        </div>
-       <% else %>
+        <%= if Enum.empty?(@inner_block) do %>
+          <div :for={page <- @pages}>
+            <BeaconWeb.Components.feature_page_item title={page.title} updated_at={page.updated_at} page_path={page.path} />
+          </div>
+        <% else %>
           <%= for page <- @pages do %>
             <%= render_slot(@inner_block, page) %>
           <% end %>
-       <% end %>       
+        <% end %>
       </div>
     </div>
     """
