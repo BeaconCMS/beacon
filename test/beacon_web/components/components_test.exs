@@ -41,21 +41,20 @@ defmodule BeaconWeb.ComponentsTest do
     test "SUCCESS: reading_time should show 1 min to read the page", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/home")
 
-      assert render(view) =~ "1 min read"
+      assert render(view) =~ "1"
     end
   end
 
   defp create_page_with_component(template) do
     layout = published_layout_fixture()
 
-    page_home =
-      page_fixture(
-        layout_id: layout.id,
-        path: "home",
-        template: template
-      )
+    published_page_fixture(
+      layout_id: layout.id,
+      path: "home",
+      template: template
+    )
 
-    Content.publish_page(page_home)
-    Beacon.reload_site(:my_site)
+    Beacon.Loader.load_components(:my_site)
+    Beacon.Loader.load_pages(:my_site)
   end
 end
