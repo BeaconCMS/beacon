@@ -48,7 +48,7 @@ defmodule BeaconWeb.Components do
     assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
 
     ~H"""
-    <%= @estimated_time_in_minutes %> min read
+    <%= @estimated_time_in_minutes %>
     """
   end
 
