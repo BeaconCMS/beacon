@@ -33,6 +33,26 @@ defmodule BeaconWeb.Components do
   end
 
   @doc """
+  Renders a the amount in minutes for a page to be read.
+
+  ## Examples
+
+      <BeaconWeb.Components.reading_time />
+  """
+
+  def reading_time(assigns) do
+    %{template: content} = Beacon.Content.get_page_by(Process.get(:__beacon_site__), path: Process.get(:__beacon_page_path__))
+    content_without_html_tags = String.replace(content, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
+    words_per_minute = 270
+    estimated_time_in_minutes = Kernel.trunc((String.split(content_without_html_tags, " ") |> length()) / words_per_minute)
+    assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
+
+    ~H"""
+    <%= @estimated_time_in_minutes %>
+    """
+  end
+
+  @doc """
   Renders a image previously uploaded in Admin Media Library with srcset.
 
   ## Examples
