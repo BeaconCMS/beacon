@@ -43,6 +43,7 @@ defmodule Beacon.Content.LiveDataAssign do
     live_data_assign
     |> cast(attrs, fields)
     |> validate_required(fields)
+    |> validate_format(:key, ~r/^\S+$/)
   end
 
   def formats, do: @formats
