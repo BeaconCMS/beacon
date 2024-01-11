@@ -62,6 +62,7 @@ defmodule Beacon.MixProject do
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:tailwind, "~> 0.2"},
       {:rustler, ">= 0.0.0", optional: true},
+      {:faker, "~> 0.17", only: :test},
       live_monaco_editor_dep(),
       mdex_dep()
     ]

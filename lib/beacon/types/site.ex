@@ -27,6 +27,7 @@ defmodule Beacon.Types.Site do
   def valid?(site) when site in ["", nil, true, false], do: false
 
   def valid?(site) when is_binary(site) do
+    Regex.match?(~r/^[a-zA-Z0-9_]+$/, site)
   end
 
   def valid?(site) when is_atom(site) do
@@ -42,6 +43,14 @@ defmodule Beacon.Types.Site do
 
   def valid_name?(site) when is_binary(site) do
     not String.starts_with?(site, "beacon_")
+  end
+
+  def valid_path?(path) when is_atom(path) do
+    path |> Atom.to_string() |> valid_path?()
+  end
+
+  def valid_path?(path) when is_binary(path) do
+    String.starts_with?(path, "/")
   end
 
   @doc false

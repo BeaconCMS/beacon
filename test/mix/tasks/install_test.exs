@@ -448,10 +448,77 @@ defmodule Mix.Tasks.Beacon.InstallTest do
         Install.run(["--site", "beacon_"])
       end
 
+      # Invalid path value
+      assert_raise Mix.Error, fn ->
+        Install.run(["--site", "blog", "--path", "forgot_slash_at_beginning"])
+      end
+
       # Invalid option
       assert_raise OptionParser.ParseError, ~r/1 error found!\n--invalid-argument : Unknown option/, fn ->
         Install.run(["--invalid-argument", "invalid"])
       end
+    end)
+  end
+
+  test "SUCCESS: New flag --path value updates beacon_path" do
+    Mix.Project.in_project(:my_app, ".", fn _module ->
+      Install.run(["--site", "my_site", "--path", "/some_other_path"])
+
+      # Injects beacon scope into router file
+      assert File.read!(@router_path) ==
+               """
+               defmodule MyAppWeb.Router do
+                 use MyAppWeb, :router
+
+                 pipeline :browser do
+                   plug :accepts, ["html"]
+                   plug :fetch_session
+                   plug :fetch_live_flash
+                   plug :put_root_layout, html: {MyAppWeb.Layouts, :root}
+                   plug :protect_from_forgery
+                   plug :put_secure_browser_headers
+                 end
+
+                 pipeline :api do
+                   plug :accepts, ["json"]
+                 end
+
+                 scope "/", MyAppWeb do
+                   pipe_through :browser
+
+                   get "/", PageController, :home
+                 end
+
+                 # Other scopes may use custom stacks.
+                 # scope "/api", MyAppWeb do
+                 #   pipe_through :api
+                 # end
+
+                 # Enable LiveDashboard and Swoosh mailbox preview in development
+                 if Application.compile_env(:test_app, :dev_routes) do
+                   # If you want to use the LiveDashboard in production, you should put
+                   # it behind authentication and allow only admins to access it.
+                   # If your application does not have an admins-only section yet,
+                   # you can use Plug.BasicAuth to set up some basic authentication
+                   # as long as you are also using SSL (which you should anyway).
+                   import Phoenix.LiveDashboard.Router
+
+                   scope "/dev" do
+                     pipe_through :browser
+
+                     live_dashboard "/dashboard", metrics: MyAppWeb.Telemetry
+                     forward "/mailbox", Plug.Swoosh.MailboxPreview
+                   end
+                 end
+
+                 use Beacon.Router
+
+                 scope "/" do
+                   pipe_through :browser
+                   beacon_site "/some_other_path", site: :my_site
+                 end
+               end
+               """
     end)
   end
 end

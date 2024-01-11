@@ -984,7 +984,10 @@ dev_site = [
   endpoint: SamplePhoenix.Endpoint,
   data_source: BeaconDataSource,
   extra_page_fields: [BeaconTagsField],
-  lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]]
+  lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
+  default_meta_tags: [
+    %{"name" => "default", "content" => "dev"}
+  ]
 ]
 
 s3_bucket = System.get_env("S3_BUCKET")

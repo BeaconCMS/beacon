@@ -3,5 +3,5 @@
 
   scope "/" do
     pipe_through :browser
-    beacon_site "/<%= site %>", site: :<%= site %>
+    beacon_site "<%= path %>", site: :<%= site %>
   end
