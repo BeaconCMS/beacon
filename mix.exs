@@ -64,7 +64,6 @@ defmodule Beacon.MixProject do
       {:rustler, ">= 0.0.0", optional: true},
       {:faker, "~> 0.17", only: :test},
       {:oembed, "~> 0.4.1"},
-
       live_monaco_editor_dep(),
       mdex_dep()
     ]

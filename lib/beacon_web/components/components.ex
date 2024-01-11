@@ -42,10 +42,11 @@ defmodule BeaconWeb.Components do
   attr :url, :string, required: true
 
   def embed(assigns) do
-    {:ok, %{html: html}} = OEmbed.for(assigns.url)
+    {:ok, %{html: raw_html}} = OEmbed.for(assigns.url)
+    assigns = Map.put(assigns, :raw_html, raw_html)
 
     ~H"""
-    <%= Phoenix.HTML.raw(html) %>
+    <%= Phoenix.HTML.raw(@raw_html) %>
     """
   end
 
