@@ -33,6 +33,23 @@ defmodule BeaconWeb.Components do
   end
 
   @doc """
+  Renders an iframe of the embedded resource.
+
+  ## Examples
+
+      BeaconWeb.Components.embed url="https://www.youtube.com/watch?v=giYbq4HmfGA"
+  """
+  attr :url, :string, required: true
+
+  def embed(assigns) do
+    {:ok, %{html: html}} = OEmbed.for(assigns.url)
+
+    ~H"""
+    <%= Phoenix.HTML.raw(html) %>
+    """
+  end
+
+  @doc """
   Renders a the amount in minutes for a page to be read.
 
   ## Examples

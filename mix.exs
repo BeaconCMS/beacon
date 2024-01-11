@@ -44,9 +44,9 @@ defmodule Beacon.MixProject do
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
-      {:floki, ">= 0.30.0", only: :test},
+      {:floki, ">= 0.30.0"},
       {:gettext, "~> 0.20"},
-      {:hackney, "~> 1.16", only: [:dev, :test]},
+      {:hackney, "~> 1.16"},
       {:heroicons, "~> 0.5"},
       {:image, "~> 0.32"},
       {:jason, "~> 1.0"},
@@ -63,6 +63,8 @@ defmodule Beacon.MixProject do
       {:tailwind, "~> 0.2"},
       {:rustler, ">= 0.0.0", optional: true},
       {:faker, "~> 0.17", only: :test},
+      {:oembed, "~> 0.4.1"},
+
       live_monaco_editor_dep(),
       mdex_dep()
     ]
