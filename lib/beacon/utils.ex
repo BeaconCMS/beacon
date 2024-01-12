@@ -5,4 +5,13 @@ defmodule Beacon.Utils do
   def list_to_typespec(list) when is_list(list) do
     Enum.reduce(list, &{:|, [], [&1, &2]})
   end
+
+  # For debugging - will print module content to the terminal
+  def print_module_from_ast(ast) do
+    ast
+    |> Code.quoted_to_algebra()
+    |> Inspect.Algebra.format(:infinity)
+    |> IO.iodata_to_binary()
+    |> IO.puts()
+  end
 end

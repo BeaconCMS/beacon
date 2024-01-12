@@ -7,7 +7,9 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
   def load_data_source(data, site) do
     data_source_module = Loader.data_source_module_for_site(site)
     live_data_functions = Enum.map(data, &live_data_fn/1)
-    # TODO default data
+
+    # TODO: let users customize this
+    default_data = %{}
 
     ast =
       quote do
@@ -17,7 +19,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
 
           @impl Beacon.DataSource.Behaviour
           def live_data(path, params) do
-            live_data(path, params, %{})
+            live_data(path, params, unquote(Macro.escape(default_data)))
           end
 
           unquote_splicing(live_data_functions)
@@ -28,13 +30,6 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
           end
         end
       end
-
-    # For debugging - will print module content to the terminal
-    # ast
-    # |> Code.quoted_to_algebra()
-    # |> Inspect.Algebra.format(:infinity)
-    # |> IO.iodata_to_binary()
-    # |> IO.puts()
 
     :ok = Loader.reload_module!(data_source_module, ast)
 
