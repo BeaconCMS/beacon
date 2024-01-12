@@ -131,11 +131,11 @@ defmodule Beacon.Loader do
          :ok <- load_components(site),
          :ok <- load_snippet_helpers(site),
          :ok <- load_layouts(site),
+         :ok <- load_data_source(site),
          :ok <- load_pages(site),
          :ok <- load_error_pages(site),
          :ok <- load_stylesheets(site),
-         :ok <- load_runtime_css(site),
-         :ok <- load_data_source(site) do
+         :ok <- load_runtime_css(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for site #{site}"
