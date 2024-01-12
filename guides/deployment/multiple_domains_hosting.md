@@ -23,7 +23,7 @@ end
 
 ## Multiple Domains/Tenants hosting with BeaconCMS
 
-So if you need to host multiple domains or subdomains in Beacon, you can use the same `:host` option:
+So if you need to host multiple domains or subdomains with Beacon, you can use the same `:host` option:
 
 Here's another example, but now using Beacon:
 
@@ -46,10 +46,11 @@ Here's another example, but now using Beacon:
   end
 ```
 
-You also need to pass the :check_origin option when configuring your
+You also need to pass the `:check_origin` option when configuring your
 endpoint explicitly outlining which origins are allowed:
 
-`runtime.exs`
+Edit `config/runtime.exs` and edit the following config inside `config :my_app, MyAppWeb.Endpoint, ...`:
+
 ```elixir
     check_origin: [
       "https://beacon-demo.com/",
