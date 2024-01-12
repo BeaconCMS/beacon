@@ -76,7 +76,7 @@ defmodule Beacon.ContentTest do
 
     test "validate body heex on create" do
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_layout(%{site: :test, title: "test", template: "<div"})
+               Content.create_layout(%{site: :my_site, title: "test", template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -96,7 +96,7 @@ defmodule Beacon.ContentTest do
       layout = layout_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_page(%{site: :test, path: "/", layout_id: layout.id, template: "<div"})
+               Content.create_page(%{site: :my_site, path: "/", layout_id: layout.id, template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -112,28 +112,36 @@ defmodule Beacon.ContentTest do
 
     # TODO: require paths starting with / which will make this test fail
     test "create page with empty path" do
-      layout = layout_fixture()
-
       assert {:ok, %Page{path: ""}} =
                Content.create_page(%{
                  site: "my_site",
                  path: "",
                  template: "<p>page</p>",
-                 layout_id: layout.id
+                 layout_id: layout_fixture().id
                })
     end
 
     test "create page should create a created event" do
-      layout = layout_fixture()
-
       Content.create_page!(%{
         site: "my_site",
         path: "/",
         template: "<p>page</p>",
-        layout_id: layout.id
+        layout_id: layout_fixture().id
       })
 
       assert %PageEvent{event: :created} = Repo.one(PageEvent)
+    end
+
+    test "create page includes default meta tags" do
+      page =
+        Content.create_page!(%{
+          site: "default_meta_tags_test",
+          path: "/",
+          template: "<p>page</p>",
+          layout_id: layout_fixture().id
+        })
+
+      assert page.meta_tags == [%{"name" => "foo", "content" => "bar"}]
     end
 
     test "update page should validate invalid templates" do
@@ -522,7 +530,7 @@ defmodule Beacon.ContentTest do
   describe "components" do
     test "validate template heex on create" do
       assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_component(%{site: :test, name: "test", body: "<div"})
+               Content.create_component(%{site: :my_site, name: "test", body: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
