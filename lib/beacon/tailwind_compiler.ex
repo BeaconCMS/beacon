@@ -144,7 +144,7 @@ defmodule Beacon.TailwindCompiler do
 
     args = args ++ extra_args
 
-    Logger.info("""
+    Logger.debug("""
     running Beacon Tailwind Compiler
 
       bin_path: #{inspect(Tailwind.bin_path())}
@@ -271,7 +271,7 @@ defmodule Beacon.TailwindCompiler do
   end
 
   defp write_file!(content, tmp_dir, filename) do
-    Logger.info("""
+    Logger.debug("""
     writing file #{filename}
 
     Content:
