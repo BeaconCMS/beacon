@@ -149,6 +149,22 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
+  test "live data" do
+    assert_output(
+      "<%= inspect(@beacon_live_data[:vals]) %>",
+      [
+        %{
+          "attrs" => %{},
+          "content" => ["inspect(@beacon_live_data[:vals])"],
+          "metadata" => %{"opt" => ~c"="},
+          "rendered_html" => "[1, 2, 3]",
+          "tag" => "eex"
+        }
+      ],
+      %{beacon_live_data: %{vals: [1, 2, 3]}}
+    )
+  end
+
   @tag :skip
   test "comprehensions" do
     assert_output(
