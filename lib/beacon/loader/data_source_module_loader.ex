@@ -51,6 +51,11 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
         )
       end
 
+    params_var =
+      quote do
+        unquote(Macro.var(:params, :"#{path}"))
+      end
+
     bindings =
       quote do
         unquote(
@@ -60,13 +65,12 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
           |> Keyword.new(fn ":" <> param ->
             {:"#{param}", Macro.var(:"#{param}", :"#{path}")}
           end)
+          |> Keyword.put(:params, Macro.var(:params, :"#{path}"))
         )
       end
 
     quote do
-      def live_data(unquote(path_list), var!(params), var!(data)) do
-        %{} = var!(params)
-
+      def live_data(unquote(path_list), unquote(params_var), var!(data)) do
         Enum.reduce(unquote(Macro.escape(assigns)), var!(data), fn assign, acc ->
           Map.put(
             acc,
