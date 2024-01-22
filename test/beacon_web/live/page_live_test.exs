@@ -100,7 +100,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     {:ok, view, _html} = live(conn, "/home")
 
-    assert view
+    assert has_element?(view, "#my-component-first", "first")
+    assert has_element?(view, "#my-component-second", "second")
+    assert has_element?(view, "#my-component-third", "third")
   end
 
   describe "meta tags" do
