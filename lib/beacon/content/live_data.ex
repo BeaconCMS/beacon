@@ -32,17 +32,21 @@ defmodule Beacon.Content.LiveData do
     timestamps()
   end
 
-  def changeset(%__MODULE__{} = live_data, attrs) do
-    fields = ~w(site path)a
+  # Note: `empty_values: [nil]` is necessary in changesets below, as well as skipping validation
+  # for `:path`, because we don't use a leading slash, so root path is "", which Ecto considers
+  # an empty value by default.
+  #
+  # Eventually we will switch to including the leading slash
+  # (see https://github.com/BeaconCMS/beacon/issues/395)
+  # and we can remove the `:empty_values` option as well as validating the `:path`
 
+  def changeset(%__MODULE__{} = live_data, attrs) do
     live_data
-    |> cast(attrs, fields)
-    |> validate_required(fields)
+    |> cast(attrs, [:site, :path], empty_values: [nil])
+    |> validate_required([:site])
   end
 
   def path_changeset(%__MODULE__{} = live_data, attrs) do
-    live_data
-    |> cast(attrs, [:path])
-    |> validate_required([:path])
+    cast(live_data, attrs, [:path], empty_values: [nil])
   end
 end
