@@ -4,10 +4,6 @@ defmodule Beacon.LoaderError do
   defexception message: "Error in Beacon.Loader", plug_status: 404
 end
 
-defmodule Beacon.DataSourceError do
-  defexception message: "Error in Beacon.DataSource"
-end
-
 defmodule Beacon.AuthorizationError do
   defexception message: "Error in Beacon.Authorization"
 end

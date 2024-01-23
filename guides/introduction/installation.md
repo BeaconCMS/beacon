@@ -159,19 +159,7 @@ For more details please check out the docs: `mix help beacon.install`
     show_sensitive_data_on_connection_error: true
     ```
 
-3. Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
-
-    ```elixir
-    defmodule MyApp.BeaconDataSource do
-      @behaviour Beacon.DataSource.Behaviour
-
-      def live_data(:my_site, ["home"], _params), do: %{vals: ["first", "second", "third"]}
-      def live_data(:my_site, ["blog", blog_slug], _params), do: %{blog_slug_uppercase: String.upcase(blog_slug)}
-      def live_data(_, _, _), do: %{}
-    end
-    ```
-
-4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
+3. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
 
     ```elixir
     use Beacon.Router
@@ -184,7 +172,7 @@ For more details please check out the docs: `mix help beacon.install`
 
 Make sure you're not adding the macro `beacon_site` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
 
-5. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
+4. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
 
     ```elixir
     @impl true
@@ -192,7 +180,7 @@ Make sure you're not adding the macro `beacon_site` into the existing `scope "/"
       children = [
         # ommited others for brevity
         MyAppWeb.Endpoint,
-        {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint, data_source: MyApp.BeaconDataSource]]}
+        {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint]]}
       ]
 
       opts = [strategy: :one_for_one, name: MyApp.Supervisor]
@@ -203,10 +191,10 @@ Make sure you're not adding the macro `beacon_site` into the existing `scope "/"
 For more info on site options, check out `Beacon.start_link/1`.
 
 **Notes**
-- The site identification has to be the same across your environment, in configuration, `beacon_site`, and `live_data`. In this example we're using `:my_site`.
+- The site identification has to be the same across your environment, in configuration and `beacon_site`. In this example we're using `:my_site`.
 - Include it after your app `Endpoint`.
 
-6. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
+5. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
     ```elixir
     # Replace "<%= site %>" with your site name.
@@ -297,6 +285,12 @@ For more info on site options, check out `Beacon.start_link/1`.
     |> Content.create_page!()
     |> Content.publish_page()
 
+    home_live_data = Content.create_live_data(%{site: "<%= site %>", path: "home"})
+
+    Content.create_assign_for_live_data(home_live_data, %{format: :elixir, key: "vals", value: """
+    ["first", "second", "third"]
+    """})
+
     %{
       path: "blog/:blog_slug",
       site: "<%= site %>",
@@ -313,6 +307,14 @@ For more info on site options, check out `Beacon.start_link/1`.
     }
     |> Content.create_page!()
     |> Content.publish_page()
+
+    blog_live_data = Content.create_live_data(%{site: "<%= site %>", path: "blog/:blog_slug"})
+
+    Content.create_assign_for_live_data(blog_live_data, %{
+      format: :elixir,
+      key: "blog_slug_uppercase",
+      value: "String.upcase(blog_slug)"
+    })
     ```
 
 6. Include new seeds in the `ecto.setup` alias in `mix.exs`:
@@ -341,7 +343,7 @@ Open http://localhost:4000/my_site/home and note:
 
 - The Header and Footer from the layout
 - The list element from the page
-- The three components rendered with the beacon_live_data from your DataSource
+- The three components rendered with live data assigns
 - The zoom in cursor from the stylesheet
 
 Open http://localhost:4000/my_site/blog/my_first_post and note:

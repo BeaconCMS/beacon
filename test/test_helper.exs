@@ -17,7 +17,6 @@ Supervisor.start_link(
          site: :my_site,
          endpoint: Beacon.BeaconTest.Endpoint,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
-         data_source: Beacon.BeaconTest.BeaconDataSource,
          live_socket_path: "/custom_live",
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField]
        ],
@@ -31,13 +30,11 @@ Supervisor.start_link(
        ],
        [
          site: :data_source_test,
-         endpoint: Beacon.BeaconTest.Endpoint,
-         data_source: Beacon.BeaconTest.TestDataSource
+         endpoint: Beacon.BeaconTest.Endpoint
        ],
        [
          site: :default_meta_tags_test,
          endpoint: Beacon.BeaconTest.Endpoint,
-         data_source: Beacon.BeaconTest.BeaconDataSource,
          default_meta_tags: [
            %{"name" => "foo", "content" => "bar"}
          ]

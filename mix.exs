@@ -123,6 +123,8 @@ defmodule Beacon.MixProject do
           Beacon.Content.Layout,
           Beacon.Content.LayoutEvent,
           Beacon.Content.LayoutSnapshot,
+          Beacon.Content.LiveData,
+          Beacon.Content.LiveDataAssign,
           Beacon.Content.Page,
           Beacon.Content.Page.Event,
           Beacon.Content.Page.Helper,
@@ -134,8 +136,7 @@ defmodule Beacon.MixProject do
           Beacon.Content.Snippets.Helper,
           Beacon.Template,
           Beacon.Template.HEEx,
-          Beacon.Template.Markdown,
-          Beacon.DataSource.Behaviour
+          Beacon.Template.Markdown
         ],
         "Media Library": [
           Beacon.MediaLibrary,
@@ -184,7 +185,6 @@ defmodule Beacon.MixProject do
         ],
         Exceptions: [
           Beacon.LoaderError,
-          Beacon.DataSourceError,
           Beacon.AuthorizationError,
           Beacon.ParserError,
           BeaconWeb.NotFoundError
@@ -198,7 +198,8 @@ defmodule Beacon.MixProject do
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
         "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
-        "Functions: Error Pages": &(&1[:type] == :error_pages)
+        "Functions: Error Pages": &(&1[:type] == :error_pages),
+        "Functions: Live Data": &(&1[:type] == :live_data)
       ]
     ]
   end

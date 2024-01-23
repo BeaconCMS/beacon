@@ -33,7 +33,7 @@ defmodule Beacon do
       # config.exs or runtime.exs
       config :my_app, Beacon,
         sites: [
-          [site: :my_site, endpoint: MyAppWeb.Endpoint, data_source: MyApp.BeaconDataSource]
+          [site: :my_site, endpoint: MyAppWeb.Endpoint]
         ],
         authorization_source: MyApp.AuthorizationPolicy
 
