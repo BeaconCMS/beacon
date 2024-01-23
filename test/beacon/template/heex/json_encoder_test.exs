@@ -171,13 +171,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       [
         %{
           "arg" => "for val <- @beacon_live_data[:vals] do",
-          "blocks" => [
-            %{
-              "content" => [%{"attrs" => %{}, "content" => ["val"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "", "tag" => "eex"}],
-              "key" => "end"
-            }
-          ],
-          "tag" => "eex_block"
+          "tag" => "eex_block",
+          "rendered_html" => "\n1\n"
         }
       ],
       %{beacon_live_data: %{vals: [1]}}

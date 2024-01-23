@@ -153,12 +153,23 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp transform_entry({:eex_block, arg, content}, site, assigns) do
-    %{
-      "tag" => "eex_block",
-      "arg" => arg,
-      "blocks" => Enum.map(content, fn block -> transform_block(block, site, assigns) end)
-    }
+  defp transform_entry({:eex_block, arg, content} = entry, site, assigns) do
+    arg = String.trim(arg)
+
+    # TODO: improve for comprehensions detection
+    if String.starts_with?(arg, "for ") do
+      %{
+        "tag" => "eex_block",
+        "arg" => arg,
+        "rendered_html" => render_comprehension_block(site, assigns, entry)
+      }
+    else
+      %{
+        "tag" => "eex_block",
+        "arg" => arg,
+        "blocks" => Enum.map(content, fn block -> transform_block(block, site, assigns) end)
+      }
+    end
   end
 
   defp transform_entry({:eex_comment, text}, _site, _assigns) do
@@ -240,5 +251,16 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       "key" => key,
       "content" => encode_tokens(content, site, assigns)
     }
+  end
+
+  defp render_comprehension_block(site, assigns, {:eex_block, _arg, _content}) do
+    # TODO: extract template from arg + content
+    template = ~S|
+    <%= for val <- @beacon_live_data[:vals] do %>
+      <%= val %>
+    <% end %>
+    |
+
+    Beacon.Template.HEEx.render(site, template, assigns)
   end
 end
