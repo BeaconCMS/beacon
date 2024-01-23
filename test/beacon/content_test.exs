@@ -323,13 +323,25 @@ defmodule Beacon.ContentTest do
     test "assigns" do
       assert Content.render_snippet(
                "page title is {{ page.title }}",
-               %{page: %Page{title: "test"}}
+               %{page: %{title: "test"}, live_data: %{}}
              ) == {:ok, "page title is test"}
 
       assert Content.render_snippet(
                "author.id is {{ page.extra.author.id }}",
-               %{page: %Page{extra: %{"author" => %{"id" => 1}}}}
+               %{page: %{extra: %{"author" => %{"id" => 1}}}, live_data: %{}}
              ) == {:ok, "author.id is 1"}
+    end
+
+    test "with live data" do
+      assert Content.render_snippet(
+               "page title is {{ live_data.foo }}",
+               %{page: %{}, live_data: %{foo: "foobar"}}
+             ) == {:ok, "page title is foobar"}
+
+      assert Content.render_snippet(
+               "foo, bar, baz... {{ live_data.foo.bar.baz }}",
+               %{page: %{}, live_data: %{foo: %{bar: %{baz: "bong"}}}}
+             ) == {:ok, "foo, bar, baz... bong"}
     end
 
     test "render helper" do
@@ -347,7 +359,7 @@ defmodule Beacon.ContentTest do
 
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
-               %{page: %Page{site: "my_site", extra: %{"author_id" => 1}}}
+               %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
              ) == {:ok, "author name is test_1"}
     end
   end
