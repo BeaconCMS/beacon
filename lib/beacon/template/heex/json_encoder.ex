@@ -129,7 +129,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
   defp transform([], acc, _site, _assigns), do: acc
 
-  # Strips blank text nodes and insignificant whitespace before or after text.
+  # strips out blank text nodes and insignificant whitespace before or after text.
   defp transform_entry({:text, text, _}, _site, _assigns) do
     cond do
       :binary.first(text) in ~c"\n" or :binary.last(text) in ~c"\n" ->

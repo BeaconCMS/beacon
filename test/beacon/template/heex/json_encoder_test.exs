@@ -54,11 +54,13 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       ~S|value: <%= 1 %>|,
       ["value: ", %{"attrs" => %{}, "content" => ["1"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "1", "tag" => "eex"}]
     )
+  end
 
+  test "block expressions" do
     assert_output(
       ~S"""
       <%= if @completed do %>
-        <div><span><%= @completed_message %></span></div>
+        <span><%= @completed_message %></span>
       <% else %>
         Keep working
       <% end %>
@@ -74,19 +76,13 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                   "content" => [
                     %{
                       "attrs" => %{},
-                      "content" => [
-                        %{
-                          "attrs" => %{},
-                          "content" => ["@completed_message"],
-                          "metadata" => %{"opt" => ~c"="},
-                          "rendered_html" => "Congrats",
-                          "tag" => "eex"
-                        }
-                      ],
-                      "tag" => "span"
+                      "content" => ["@completed_message"],
+                      "metadata" => %{"opt" => ~c"="},
+                      "rendered_html" => "Congrats",
+                      "tag" => "eex"
                     }
                   ],
-                  "tag" => "div"
+                  "tag" => "span"
                 }
               ],
               "key" => "else"
@@ -165,16 +161,26 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
-  @tag :skip
   test "comprehensions" do
     assert_output(
       ~S|
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
-          <% end %>
+        <%= for val <- @beacon_live_data[:vals] do %>
+          <%= val %>
+        <% end %>
         |,
-      [],
-      %{beacon_live_data: %{vals: [1, 2]}}
+      [
+        %{
+          "arg" => "for val <- @beacon_live_data[:vals] do",
+          "blocks" => [
+            %{
+              "content" => [%{"attrs" => %{}, "content" => ["val"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "", "tag" => "eex"}],
+              "key" => "end"
+            }
+          ],
+          "tag" => "eex_block"
+        }
+      ],
+      %{beacon_live_data: %{vals: [1]}}
     )
   end
 
