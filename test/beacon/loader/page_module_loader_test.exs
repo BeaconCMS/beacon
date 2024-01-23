@@ -38,42 +38,6 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
   end
 
   describe "page_assigns/1" do
-    test "interpolates meta tag snippets" do
-      snippet_helper_fixture(%{
-        site: "my_site",
-        name: "og_description",
-        body: ~S"""
-        assigns
-        |> get_in(["page", "description"])
-        |> String.upcase()
-        """
-      })
-
-      layout = published_layout_fixture()
-
-      page =
-        [
-          site: "my_site",
-          layout_id: layout.id,
-          path: "page/meta-tag",
-          title: "my first page",
-          description: "my test page",
-          meta_tags: [
-            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-            %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"}
-          ]
-        ]
-        |> published_page_fixture()
-        |> Repo.preload(:event_handlers)
-
-      Beacon.Loader.load_page(page)
-
-      {:ok, _module, ast} = PageModuleLoader.load_page!(page)
-
-      assert has_fields?(ast, [{"content", "MY TEST PAGE"}, {"property", "og:description"}])
-      assert has_fields?(ast, [{"content", "http://example.com/page/meta-tag"}, {"property", "og:url"}])
-    end
-
     test "interpolates raw_schema snippets" do
       snippet_helper_fixture(%{
         site: "my_site",

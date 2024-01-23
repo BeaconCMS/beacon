@@ -138,6 +138,56 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "render without meta tags", %{conn: conn} do
       assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
     end
+
+    test "interpolate snippets", %{conn: conn} do
+      snippet_helper_fixture(%{
+        site: "my_site",
+        name: "og_description",
+        body: ~S"""
+        assigns
+        |> get_in(["page", "description"])
+        |> String.upcase()
+        """
+      })
+
+      layout = published_layout_fixture()
+
+      page =
+        [
+          site: "my_site",
+          layout_id: layout.id,
+          path: "page/meta-tag",
+          title: "my first page",
+          description: "my test page",
+          meta_tags: [
+            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+            %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"},
+            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+          ]
+        ]
+        |> published_page_fixture()
+        |> Beacon.Repo.preload(:event_handlers)
+
+      live_data = live_data_fixture(path: "page/meta-tag")
+      live_data_assign_fixture(live_data, format: :text, key: "image", value: "http://img.example.com")
+
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
+      Beacon.Loader.load_page(page)
+
+      {:ok, _view, html} = live(conn, "/page/meta-tag")
+
+      expected =
+        ~S"""
+        <meta content="MY TEST PAGE" property="og:description"/>
+        <meta content="http://example.com/page/meta-tag" property="og:url"/>
+        <meta content="http://img.example.com" property="og:image"/>
+        """
+        |> String.replace("\n", "")
+        |> String.replace("  ", "")
+        |> Regex.compile!()
+
+      assert html =~ expected
+    end
   end
 
   describe "resource links" do
