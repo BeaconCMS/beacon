@@ -265,6 +265,35 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert page_title(view) =~ "page_title"
     end
+
+    test "with snippet helper from page", %{conn: conn} do
+      stylesheet_fixture()
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "foo/bar/:baz")
+      live_data = live_data_fixture(path: "foo/bar/:baz") |> Beacon.Repo.preload(:assigns)
+
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([live_data], :my_site)
+      Beacon.Loader.load_page(page)
+
+      {:ok, view, _html} = live(conn, "/foo/bar/123")
+
+      assert page_title(view) =~ "foo/bar/:baz"
+    end
+
+    test "with snippet helper from live data assigns", %{conn: conn} do
+      stylesheet_fixture()
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: "test {{ live_data.test }}", path: "foo/bar/:baz")
+      live_data = live_data_fixture(path: "foo/bar/:baz")
+      live_data_assign_fixture(live_data, format: :elixir, key: "test", value: "baz")
+
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
+      Beacon.Loader.load_page(page)
+
+      {:ok, view, _html} = live(conn, "/foo/bar/123")
+
+      assert page_title(view) =~ "test 123"
+    end
   end
 
   describe "markdown" do

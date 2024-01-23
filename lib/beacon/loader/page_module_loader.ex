@@ -91,59 +91,36 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp page_assigns(page) do
-    %{meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
-    meta_tags = interpolate_meta_tags(meta_tags, page)
-    raw_schema = interpolate_raw_schema(raw_schema, page)
+    # %{meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
+    # meta_tags = interpolate_meta_tags(meta_tags, page)
+    raw_schema = interpolate_raw_schema(page)
 
     quote do
       def page_assigns do
         %{
-          title: unquote(title),
-          meta_tags: unquote(Macro.escape(meta_tags)),
-          raw_schema: unquote(Macro.escape(raw_schema))
+          title: unquote(page.title),
+          meta_tags: unquote(Macro.escape(page.meta_tags)),
+          raw_schema: unquote(Macro.escape(raw_schema)),
+          site: unquote(page.site),
+          path: unquote(page.path),
+          description: unquote(page.description),
+          order: unquote(page.order),
+          format: unquote(page.format),
+          extra: unquote(Macro.escape(page.extra))
         }
       end
     end
   end
 
-  defp interpolate_meta_tags(meta_tags, page) do
-    meta_tags
-    |> List.wrap()
-    |> Enum.map(&interpolate_meta_tag(&1, page))
-  end
-
-  defp interpolate_meta_tag(meta_tag, page) when is_map(meta_tag) do
-    Map.new(meta_tag, &interpolate_meta_tag_attribute(&1, page))
-  end
-
-  defp interpolate_meta_tag_attribute({key, value}, page) when is_binary(value) do
-    case Beacon.Content.render_snippet(value, %{page: page}) do
-      {:ok, new_value} ->
-        {key, new_value}
-
-      error ->
-        message = """
-        failed to interpolate meta tags
-
-        Got:
-
-          #{inspect(error)}
-
-        """
-
-        raise Beacon.LoaderError, message: message
-    end
-  end
-
-  defp interpolate_raw_schema(raw_schema, page) do
-    raw_schema
+  defp interpolate_raw_schema(page) do
+    page.raw_schema
     |> List.wrap()
     |> Enum.map(&interpolate_raw_schema_record(&1, page))
   end
 
   defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
     render = fn key, value, page ->
-      case Beacon.Content.render_snippet(value, %{page: page}) do
+      case Beacon.Content.render_snippet(value, %{page: page, live_data: %{}}) do
         {:ok, new_value} ->
           {key, new_value}
 

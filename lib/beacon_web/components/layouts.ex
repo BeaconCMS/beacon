@@ -49,12 +49,9 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
   end
 
-  def render_page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
-    params = Map.drop(assigns.conn.params, ["path"])
-    Beacon.DataSource.page_title(site, path, params, assigns.beacon_live_data, page_title(assigns))
+  def render_page_title(assigns) do
+    BeaconWeb.DataSource.page_title(assigns)
   end
-
-  def render_page_title(assigns), do: page_title(assigns)
 
   def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id}) do
     %{title: page_title} =
@@ -81,24 +78,9 @@ defmodule BeaconWeb.Layouts do
     ""
   end
 
-  def render_meta_tags(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
-    params = Map.drop(assigns.conn.params, ["path"])
-
-    do_render_meta_tags(
-      assigns,
-      Beacon.DataSource.meta_tags(site, path, params, assigns.beacon_live_data, meta_tags(assigns))
-    )
-  end
-
   def render_meta_tags(assigns) do
-    do_render_meta_tags(assigns, meta_tags(assigns))
-  end
-
-  defp do_render_meta_tags(assigns, meta_tags) do
-    assigns = assign(assigns, :meta_tags, meta_tags)
-
     ~H"""
-    <%= for meta_attributes <- @meta_tags do %>
+    <%= for meta_attributes <- BeaconWeb.DataSource.meta_tags(assigns) do %>
       <meta {meta_attributes} />
     <% end %>
     """

@@ -12,6 +12,10 @@ defmodule Beacon.ParserError do
   defexception message: "Error parsing template"
 end
 
+defmodule Beacon.SnippetError do
+  defexception [:message]
+end
+
 defmodule BeaconWeb.NotFoundError do
   defexception [:message, plug_status: 404]
 end

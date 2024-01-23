@@ -1695,7 +1695,7 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %Page{title: "home"}})
+      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %{title: "home"}})
       {:ok, "title is home"}
 
   Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
@@ -1723,21 +1723,34 @@ defmodule Beacon.Content do
 
     * Meta Tag value
     * Page Schema (structured Schema.org tags)
+    * Page Title
 
   Allowed assigns:
 
-    * :page (Beacon.Content.Page.t())
+    * :page (map)
+    * :live_data (map)
 
   """
   @doc type: :snippets
-  @spec render_snippet(String.t(), %{page: Page.t()}) :: {:ok, String.t()} | :error
+  @spec render_snippet(String.t(), %{
+          page: %{
+            site: Beacon.Types.Site.t(),
+            path: String.t(),
+            title: String.t(),
+            description: String.t(),
+            meta_tags: [map()],
+            raw_schema: Beacon.Types.JsonArrayMap.t(),
+            order: integer(),
+            format: atom(),
+            extra: map()
+          },
+          live_data: map()
+        }) :: {:ok, String.t()} | :error
   def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
-    page =
-      assigns.page
-      |> Map.from_struct()
-      |> Map.new(fn {k, v} -> {to_string(k), v} end)
-
-    assigns = %{"page" => page}
+    assigns = %{
+      "page" => deep_stringify(assigns.page),
+      "live_data" => deep_stringify(assigns.live_data)
+    }
 
     with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
          {:ok, template} <- Solid.render(template, assigns) do
@@ -1747,6 +1760,10 @@ defmodule Beacon.Content do
       _error -> :error
     end
   end
+
+  defp deep_stringify(struct) when is_struct(struct), do: deep_stringify(Map.from_struct(struct))
+  defp deep_stringify(map) when is_map(map), do: Map.new(map, fn {k, v} -> {to_string(k), deep_stringify(v)} end)
+  defp deep_stringify(non_map), do: non_map
 
   # ERROR PAGES
 
