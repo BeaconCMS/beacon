@@ -161,7 +161,8 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       %{
         "tag" => "eex_block",
         "arg" => arg,
-        "rendered_html" => render_comprehension_block(site, assigns, entry)
+        "rendered_html" => render_comprehension_block(site, assigns, entry),
+        "ast" => encode_comprehension_block(entry)
       }
     else
       %{
@@ -253,14 +254,44 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp render_comprehension_block(site, assigns, {:eex_block, _arg, _content}) do
-    # TODO: extract template from arg + content
-    template = ~S|
-    <%= for val <- @beacon_live_data[:vals] do %>
-      <%= val %>
-    <% end %>
-    |
-
-    Beacon.Template.HEEx.render(site, template, assigns)
+  defp encode_comprehension_block({:eex_block, _arg, content}) do
+    case Jason.encode(content) do
+      {:ok, json} -> json
+      error -> error
+    end
   end
+
+  defp render_comprehension_block(_site, _assigns, {:eex_block, _arg, _content}) do
+    "TODO"
+  end
+
+  defp extract_eex_block_content(_content) do
+    "TODO"
+  end
+
+  def encode_eex_block(value) when is_tuple(value) do
+    value
+    |> Tuple.to_list()
+    |> Enum.reduce([], fn node, acc -> [encode_block_node(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  def encode_eex_block(value, opts) when is_tuple(value) do
+    value
+    |> encode_eex_block()
+    |> Jason.Encode.list(opts)
+  end
+
+  def encode_block_node(nodes) when is_list(nodes) do
+    nodes
+    |> Enum.reduce([], fn node, acc -> [encode_block_node(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  def encode_block_node(node) when is_tuple(node) do
+    [type | content] = Tuple.to_list(node)
+    %{type: type, content: content |> List.flatten() |> encode_block_node()}
+  end
+
+  def encode_block_node(node), do: node
 end

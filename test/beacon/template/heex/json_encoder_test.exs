@@ -164,18 +164,33 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   test "comprehensions" do
     assert_output(
       ~S|
-        <%= for val <- @beacon_live_data[:vals] do %>
-          <%= val %>
+        <%= for employee <- @beacon_live_data[:employees] do %>
+          <!-- start -->
+          <%= employee.position %>
+          <div>
+            <%= for person <- @beacon_live_data[:persons] do %>
+              <%= if person.id == employee.id do %>
+                <span><%= person.name %></span>
+              <% end %>
+            <% end %>
+          </div>
         <% end %>
         |,
       [
         %{
-          "arg" => "for val <- @beacon_live_data[:vals] do",
+          "arg" => "for employee <- @beacon_live_data[:employees] do",
           "tag" => "eex_block",
-          "rendered_html" => "\n1\n"
+          "rendered_html" => "TODO",
+          "ast" =>
+            "[[[{\"type\":\"html_comment\",\"content\":[{\"type\":\"text\",\"content\":[\"<!-- start -->\",{}]}]},{\"type\":\"eex\",\"content\":[\"employee.position\",{\"line\":4,\"opt\":[61],\"column\":11}]},{\"type\":\"text\",\"content\":[\"\\n          \",{\"newlines\":1}]},{\"type\":\"tag_block\",\"content\":[\"div\",{\"type\":\"text\",\"content\":[\"\\n            \",{\"newlines\":1}]},{\"type\":\"eex_block\",\"content\":[\"for person <- @beacon_live_data[:persons] do\",{\"type\":[[\"text\",\"\\n              \",{\"newlines\":1}],[\"eex_block\",\"if person.id == employee.id do\",[{\"type\":[[\"text\",\"\\n                \",{\"newlines\":1}],[\"tag_block\",\"span\",[],[{\"type\":\"eex\",\"content\":[\"person.name\",{\"line\":8,\"opt\":[61],\"column\":23}]}],{\"mode\":\"inline\"}],[\"text\",\"\\n              \",{\"newlines\":1}]],\"content\":[\"end\"]}]],[\"text\",\"\\n            \",{\"newlines\":1}]],\"content\":[\"end\"]}]},{\"type\":\"text\",\"content\":[\"\\n          \",{\"newlines\":1}]},{\"mode\":\"block\"}]},{\"type\":\"text\",\"content\":[\"\\n        \",{\"newlines\":1}]}],\"end\"]]"
         }
       ],
-      %{beacon_live_data: %{vals: [1]}}
+      %{
+        beacon_live_data: %{
+          employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
+          persons: [%{id: 1, name: "José"}, %{id: 99, name: "Chris"}]
+        }
+      }
     )
   end
 
@@ -257,5 +272,75 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert_raise Beacon.ParserError, fn ->
       JSONEncoder.encode(:my_site, ~S|<%= :error|)
     end
+  end
+
+  test "encode eex_block" do
+    ast =
+      {[
+         {:html_comment, [{:text, "<!-- start -->", %{}}]},
+         {:eex, "employee.position", %{line: 4, opt: ~c"=", column: 11}},
+         {:text, "\n          ", %{newlines: 1}},
+         {:tag_block, "div", [],
+          [
+            {:text, "\n            ", %{newlines: 1}},
+            {:eex_block, "for person <- @beacon_live_data[:persons] do",
+             [
+               {[
+                  {:text, "\n              ", %{newlines: 1}},
+                  {:eex_block, "if person.id == employee.id do",
+                   [
+                     {[
+                        {:text, "\n                ", %{newlines: 1}},
+                        {:tag_block, "span", [], [{:eex, "person.name", %{line: 8, opt: ~c"=", column: 23}}], %{mode: :inline}},
+                        {:text, "\n              ", %{newlines: 1}}
+                      ], "end"}
+                   ]},
+                  {:text, "\n            ", %{newlines: 1}}
+                ], "end"}
+             ]},
+            {:text, "\n          ", %{newlines: 1}}
+          ], %{mode: :block}},
+         {:text, "\n        ", %{newlines: 1}}
+       ], "end"}
+
+    assert JSONEncoder.encode_eex_block(ast) == [
+             [
+               %{type: :html_comment, content: [%{type: :text, content: ["<!-- start -->", %{}]}]},
+               %{type: :eex, content: ["employee.position", %{line: 4, opt: ~c"=", column: 11}]},
+               %{type: :text, content: ["\n          ", %{newlines: 1}]},
+               %{
+                 type: :tag_block,
+                 content: [
+                   "div",
+                   %{type: :text, content: ["\n            ", %{newlines: 1}]},
+                   %{
+                     type: :eex_block,
+                     content: [
+                       "for person <- @beacon_live_data[:persons] do",
+                       %{
+                         type: [
+                           {:text, "\n              ", %{newlines: 1}},
+                           {:eex_block, "if person.id == employee.id do",
+                            [
+                              {[
+                                 {:text, "\n                ", %{newlines: 1}},
+                                 {:tag_block, "span", [], [{:eex, "person.name", %{line: 8, opt: ~c"=", column: 23}}], %{mode: :inline}},
+                                 {:text, "\n              ", %{newlines: 1}}
+                               ], "end"}
+                            ]},
+                           {:text, "\n            ", %{newlines: 1}}
+                         ],
+                         content: ["end"]
+                       }
+                     ]
+                   },
+                   %{type: :text, content: ["\n          ", %{newlines: 1}]},
+                   %{mode: :block}
+                 ]
+               },
+               %{type: :text, content: ["\n        ", %{newlines: 1}]}
+             ],
+             "end"
+           ]
   end
 end
