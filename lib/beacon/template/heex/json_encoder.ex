@@ -265,8 +265,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
     template =
       Enum.reduce(nodes, [arg], fn node, acc ->
-        text = [extract_node_text(node) | " \n "]
-        [text | acc]
+        [[extract_node_text(node), " \n "] | acc]
       end)
       |> Enum.reverse()
       |> List.to_string()
