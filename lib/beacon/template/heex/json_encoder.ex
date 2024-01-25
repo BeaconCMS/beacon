@@ -261,13 +261,54 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp render_comprehension_block(_site, _assigns, {:eex_block, _arg, _content}) do
-    "TODO"
+  defp render_comprehension_block(site, assigns, {:eex_block, arg, nodes}) do
+    arg = ["<%= ", arg, " %>", "\n"]
+
+    template =
+    Enum.reduce(nodes, [arg], fn node, acc ->
+      text = [extract_eex_block_node_text(node) | " \n "]
+      [text | acc]
+    end)
+    |> Enum.reverse()
+    |> List.to_string()
+
+    Beacon.Template.HEEx.render(site, template, assigns)
   end
 
-  defp extract_eex_block_content(_content) do
-    "TODO"
+  defp extract_eex_block_node_text("end" = _value), do: ["<% end %>"]
+
+  defp extract_eex_block_node_text(value) when is_binary(value), do: value
+
+  defp extract_eex_block_node_text({:eex, expr, %{opt: ~c"="}}) do
+    ["<%= ", expr, " %>"]
   end
+
+  defp extract_eex_block_node_text({:eex, expr, _}) do
+    ["<% ", expr, " %>"]
+  end
+
+  defp extract_eex_block_node_text({:eex_block, expr, children}) do
+    ["<%= ", expr, " %>", extract_eex_block_node_text(children)]
+  end
+
+  defp extract_eex_block_node_text({:tag_block, tag, _, children, _}) do
+    ["<", tag, ">", extract_eex_block_node_text(children), "</", tag, ">"]
+  end
+
+  defp extract_eex_block_node_text(value) when is_tuple(value) do
+    value
+    |> Tuple.to_list()
+    |> Enum.reduce([], fn node, acc -> [extract_eex_block_node_text(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  defp extract_eex_block_node_text(value) when is_list(value) do
+    value
+    |> Enum.reduce([], fn node, acc -> [extract_eex_block_node_text(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  defp extract_eex_block_node_text(_value), do: []
 
   def encode_eex_block(value) when is_tuple(value) do
     value

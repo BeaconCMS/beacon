@@ -180,7 +180,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         %{
           "arg" => "for employee <- @beacon_live_data[:employees] do",
           "tag" => "eex_block",
-          "rendered_html" => "TODO",
+          "rendered_html" =>
+            "\n<!-- start -->CEO\n          <div>\n\n\n                <span>José</span>\n\n\n\n\n          </div>\n\n<!-- start -->Manager\n          <div>\n\n\n\n\n\n          </div>\n",
           "ast" =>
             "[[[{\"type\":\"html_comment\",\"content\":[{\"type\":\"text\",\"content\":[\"<!-- start -->\",{}]}]},{\"type\":\"eex\",\"content\":[\"employee.position\",{\"line\":4,\"opt\":[61],\"column\":11}]},{\"type\":\"text\",\"content\":[\"\\n          \",{\"newlines\":1}]},{\"type\":\"tag_block\",\"content\":[\"div\",{\"type\":\"text\",\"content\":[\"\\n            \",{\"newlines\":1}]},{\"type\":\"eex_block\",\"content\":[\"for person <- @beacon_live_data[:persons] do\",{\"type\":[[\"text\",\"\\n              \",{\"newlines\":1}],[\"eex_block\",\"if person.id == employee.id do\",[{\"type\":[[\"text\",\"\\n                \",{\"newlines\":1}],[\"tag_block\",\"span\",[],[{\"type\":\"eex\",\"content\":[\"person.name\",{\"line\":8,\"opt\":[61],\"column\":23}]}],{\"mode\":\"inline\"}],[\"text\",\"\\n              \",{\"newlines\":1}]],\"content\":[\"end\"]}]],[\"text\",\"\\n            \",{\"newlines\":1}]],\"content\":[\"end\"]}]},{\"type\":\"text\",\"content\":[\"\\n          \",{\"newlines\":1}]},{\"mode\":\"block\"}]},{\"type\":\"text\",\"content\":[\"\\n        \",{\"newlines\":1}]}],\"end\"]]"
         }
