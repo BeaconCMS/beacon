@@ -55,8 +55,13 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     ["<%!--", content, "--%>"]
   end
 
-  defp transform_node(%{"tag" => "eex_block", "blocks" => blocks, "arg" => arg}) do
+  defp transform_node(%{"tag" => "eex_block", "arg" => arg, "blocks" => blocks}) do
     ["<%=", arg, " %>", Enum.map(blocks, &transform_block/1)]
+  end
+
+  # eex_block with a `for` comprehension
+  defp transform_node(%{"tag" => "eex_block", "arg" => arg, "ast" => ast}) do
+    ["<%= ", arg, " %>", decode_comprehension_ast(ast)]
   end
 
   defp transform_node(%{"tag" => tag, "attrs" => %{"self_close" => true} = attrs, "content" => []}) do
@@ -129,4 +134,25 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
   defp reconstruct_attr({name, {:expr, content, _}, _}) do
     [name, "=", ?{, content, ?}]
   end
+
+  defp decode_comprehension_ast(ast) do
+    ast
+    |> Jason.decode!()
+    |> List.flatten()
+    |> Enum.reduce([], fn node, acc -> decode_comprehension_ast_node(node, acc) end)
+    |> Enum.reverse()
+  end
+
+  defp decode_comprehension_ast_node(%{"type" => "text", "content" => [content | _]}, acc) do
+    [content | acc]
+  end
+
+  defp decode_comprehension_ast_node(%{"type" => "eex", "content" => [expr, %{"opt" => ~c"="}]}, acc) do
+    [["<%= ", expr, " %>"] | acc]
+  end
+
+  # TODO: improve eex_block closing detection (maybe augment it in JSONEncoder)
+  defp decode_comprehension_ast_node("end", acc), do: ["<% end %>" | acc]
+
+  defp decode_comprehension_ast_node(node, acc) when is_binary(node), do: [node | acc]
 end

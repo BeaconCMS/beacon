@@ -52,11 +52,14 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   end
 
   test "comprehensions" do
-    assert_equal(~S"""
-    <%= for val <- @beacon_live_data[:vals] do %>
-      <%= val %>
-    <% end %>
-    """)
+    assert_equal(
+      ~S"""
+      <%= for val <- @beacon_live_data[:vals] do %>
+        <%= val %>
+      <% end %>
+      """,
+      %{beacon_live_data: %{vals: [1]}}
+    )
   end
 
   test "function components" do
