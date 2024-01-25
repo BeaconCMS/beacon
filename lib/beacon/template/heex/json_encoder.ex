@@ -90,16 +90,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   rescue
     exception ->
-      message = """
-      failed to encode the HEEx template
-
-      Got:
-
-        #{Exception.message(exception)}
-
-      """
-
-      reraise Beacon.ParserError, [message: message], __STACKTRACE__
+      {:error, Exception.message(exception)}
   end
 
   defp encode_tokens(ast, site, assigns) do

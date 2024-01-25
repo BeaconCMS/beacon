@@ -271,9 +271,10 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "invalid template" do
-    assert_raise Beacon.ParserError, fn ->
-      JSONEncoder.encode(:my_site, ~S|<%= :error|)
-    end
+    assert JSONEncoder.encode(:my_site, ~S|<%= :error|) == {
+             :error,
+             "no match of right hand side value: {:error, \"expected closing '%>' for EEx expression\\n  |\\n1 | <%= :error\\n  | ^\", %{line: 1, column: 1}}"
+           }
   end
 
   test "encode eex_block" do
