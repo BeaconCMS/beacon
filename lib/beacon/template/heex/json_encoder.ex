@@ -44,7 +44,6 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   Note that:
 
     * `rendered_html` key is optional
-    * Comprehensions are not supported
 
   ## Example
 
@@ -265,50 +264,61 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     arg = ["<%= ", arg, " %>", "\n"]
 
     template =
-    Enum.reduce(nodes, [arg], fn node, acc ->
-      text = [extract_eex_block_node_text(node) | " \n "]
-      [text | acc]
-    end)
-    |> Enum.reverse()
-    |> List.to_string()
+      Enum.reduce(nodes, [arg], fn node, acc ->
+        text = [extract_node_text(node) | " \n "]
+        [text | acc]
+      end)
+      |> Enum.reverse()
+      |> List.to_string()
 
     Beacon.Template.HEEx.render(site, template, assigns)
   end
 
-  defp extract_eex_block_node_text("end" = _value), do: ["<% end %>"]
-
-  defp extract_eex_block_node_text(value) when is_binary(value), do: value
-
-  defp extract_eex_block_node_text({:eex, expr, %{opt: ~c"="}}) do
-    ["<%= ", expr, " %>"]
-  end
-
-  defp extract_eex_block_node_text({:eex, expr, _}) do
-    ["<% ", expr, " %>"]
-  end
-
-  defp extract_eex_block_node_text({:eex_block, expr, children}) do
-    ["<%= ", expr, " %>", extract_eex_block_node_text(children)]
-  end
-
-  defp extract_eex_block_node_text({:tag_block, tag, _, children, _}) do
-    ["<", tag, ">", extract_eex_block_node_text(children), "</", tag, ">"]
-  end
-
-  defp extract_eex_block_node_text(value) when is_tuple(value) do
+  defp extract_node_text({nodes, "end"} = value) when is_list(nodes) do
     value
     |> Tuple.to_list()
-    |> Enum.reduce([], fn node, acc -> [extract_eex_block_node_text(node) | acc] end)
+    |> Enum.reduce([], fn node, acc -> [extract_node_text(node) | acc] end)
     |> Enum.reverse()
   end
 
-  defp extract_eex_block_node_text(value) when is_list(value) do
+  defp extract_node_text(value) when is_list(value) do
     value
-    |> Enum.reduce([], fn node, acc -> [extract_eex_block_node_text(node) | acc] end)
+    |> Enum.reduce([], fn node, acc -> [extract_node_text(node) | acc] end)
     |> Enum.reverse()
   end
 
-  defp extract_eex_block_node_text(_value), do: []
+  defp extract_node_text("end" = _value), do: ["<% end %>"]
+
+  defp extract_node_text(value) when is_binary(value), do: value
+
+  defp extract_node_text({:text, text, _}), do: text
+
+  defp extract_node_text({:html_comment, children}), do: [extract_node_text(children), "\n"]
+
+  # TODO: eex comments are stripped out of rendered html by the heex engine
+  defp extract_node_text({:eex_comment, _content}), do: []
+
+  defp extract_node_text({:eex, expr, %{opt: ~c"="}}), do: ["<%= ", expr, " %>"]
+
+  defp extract_node_text({:eex, expr, _}), do: ["<% ", expr, " %>"]
+
+  defp extract_node_text({:eex_block, expr, children}), do: ["<%= ", expr, " %>", extract_node_text(children)]
+
+  defp extract_node_text({:tag_self_close, tag, attrs}) do
+    attrs =
+      Enum.reduce(attrs, [], fn attr, acc ->
+        [extract_node_attr(attr) | acc]
+      end)
+
+    [?<, tag, " ", attrs, "/>"]
+  end
+
+  defp extract_node_text({:tag_block, tag, _, children, _}) do
+    [?<, tag, ?>, extract_node_text(children), "</", tag, ">"]
+  end
+
+  defp extract_node_attr({attr, {:string, text, _}, _}), do: [attr, ?=, ?", text, ?", " "]
+  defp extract_node_attr({attr, {:expr, expr, _}, _}), do: [attr, ?=, ?{, expr, ?}, " "]
 
   def encode_eex_block(value) when is_tuple(value) do
     value
