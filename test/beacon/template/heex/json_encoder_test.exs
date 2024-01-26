@@ -56,6 +56,32 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
+  test "eex expressions in attrs" do
+    assert_output(
+      ~S|
+      <img
+        alt={@beacon_live_data.person.bio}
+        src={@beacon_live_data.person.picture}
+        class="w-full h-auto max-w-full"
+      />
+      |,
+      [
+        %{
+          "attrs" => %{
+            "alt" => "{@beacon_live_data.person.bio}",
+            "class" => "w-full h-auto max-w-full",
+            "self_close" => true,
+            "src" => "{@beacon_live_data.person.picture}"
+          },
+          "content" => [],
+          "rendered_html" => "<img alt=\"person bio\" src=\"profile.jpg\" class=\"w-full h-auto max-w-full\">",
+          "tag" => "img"
+        }
+      ],
+      %{beacon_live_data: %{person: %{bio: "person bio", picture: "profile.jpg"}}}
+    )
+  end
+
   test "block expressions" do
     assert_output(
       ~S"""
@@ -201,7 +227,12 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert_output(
       ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
       [
-        %{"attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"}, "content" => [], "tag" => "BeaconWeb.Components.image"}
+        %{
+          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
+          "content" => [],
+          "tag" => "BeaconWeb.Components.image",
+          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
+        }
       ]
     )
 
@@ -211,8 +242,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         %{
           "attrs" => %{"path" => "/contact", "replace" => "{true}"},
           "content" => ["Book meeting"],
-          "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>",
-          "tag" => ".link"
+          "tag" => ".link",
+          "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>"
         }
       ]
     )
@@ -230,8 +261,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
           "attrs" => %{},
           "content" => ["my_component(\"sample_component\", %{val: 1})"],
           "metadata" => %{"opt" => ~c"="},
-          "rendered_html" => "<span id=\"my-component-1\">1</span>",
-          "tag" => "eex"
+          "tag" => "eex",
+          "rendered_html" => "<span id=\"my-component-1\">1</span>"
         }
       ]
     )
