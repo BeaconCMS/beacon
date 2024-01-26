@@ -201,11 +201,12 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp transform_entry({:tag_self_close, tag, attrs}, _site, _assigns) do
+  defp transform_entry({:tag_self_close, tag, attrs} = node, site, assigns) do
     %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs, true),
-      "content" => []
+      "content" => [],
+      "rendered_html" => Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
     }
   end
 
