@@ -54,11 +54,13 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       ~S|value: <%= 1 %>|,
       ["value: ", %{"attrs" => %{}, "content" => ["1"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "1", "tag" => "eex"}]
     )
+  end
 
+  test "block expressions" do
     assert_output(
       ~S"""
       <%= if @completed do %>
-        <div><span><%= @completed_message %></span></div>
+        <span><%= @completed_message %></span>
       <% else %>
         Keep working
       <% end %>
@@ -74,19 +76,13 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                   "content" => [
                     %{
                       "attrs" => %{},
-                      "content" => [
-                        %{
-                          "attrs" => %{},
-                          "content" => ["@completed_message"],
-                          "metadata" => %{"opt" => ~c"="},
-                          "rendered_html" => "Congrats",
-                          "tag" => "eex"
-                        }
-                      ],
-                      "tag" => "span"
+                      "content" => ["@completed_message"],
+                      "metadata" => %{"opt" => ~c"="},
+                      "rendered_html" => "Congrats",
+                      "tag" => "eex"
                     }
                   ],
-                  "tag" => "div"
+                  "tag" => "span"
                 }
               ],
               "key" => "else"
@@ -149,17 +145,56 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
-  @tag :skip
-  test "comprehensions" do
+  test "live data" do
     assert_output(
-      ~S|
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
-          <% end %>
-        |,
-      [],
-      %{beacon_live_data: %{vals: [1, 2]}}
+      "<%= inspect(@beacon_live_data[:vals]) %>",
+      [
+        %{
+          "attrs" => %{},
+          "content" => ["inspect(@beacon_live_data[:vals])"],
+          "metadata" => %{"opt" => ~c"="},
+          "rendered_html" => "[1, 2, 3]",
+          "tag" => "eex"
+        }
+      ],
+      %{beacon_live_data: %{vals: [1, 2, 3]}}
     )
+  end
+
+  test "comprehensions" do
+    template = ~S|
+        <%= for employee <- @beacon_live_data[:employees] do %>
+          <!-- regular <!-- comment --> -->
+          <%= employee.position %>
+          <div>
+            <%= for person <- @beacon_live_data[:persons] do %>
+              <%= if person.id == employee.id do %>
+                <span><%= person.name %></span>
+                <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+        |
+
+    assert {:ok,
+            [
+              %{
+                "arg" => "for employee <- @beacon_live_data[:employees] do",
+                "tag" => "eex_block",
+                "rendered_html" =>
+                  "\n<!-- regular <!-- comment --> -->\nCEO\n          <div>\n\n\n                <span>José</span>\n                <img width=\"200\" src=\"profile.jpg\">\n\n\n\n\n          </div>\n\n<!-- regular <!-- comment --> -->\nManager\n          <div>\n\n\n\n\n                <span>Chris</span>\n                <img width=\"200\" src=\"default.jpg\">\n\n\n          </div>\n",
+                "ast" => ast
+              }
+            ]} =
+             JSONEncoder.encode(:my_site, template, %{
+               beacon_live_data: %{
+                 employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
+                 persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
+               }
+             })
+
+    assert is_binary(ast)
   end
 
   test "function components" do
@@ -237,8 +272,91 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "invalid template" do
-    assert_raise Beacon.ParserError, fn ->
-      JSONEncoder.encode(:my_site, ~S|<%= :error|)
-    end
+    assert {:error, _} = JSONEncoder.encode(:my_site, ~S|<%= :error|)
+  end
+
+  test "encode eex_block" do
+    ast =
+      {[
+         {:html_comment, [{:text, "<!-- regular <!-- comment --> -->", %{}}]},
+         {:eex, "employee.position", %{line: 4, opt: ~c"=", column: 11}},
+         {:text, "\n          ", %{newlines: 1}},
+         {:tag_block, "div", [],
+          [
+            {:text, "\n            ", %{newlines: 1}},
+            {:eex_block, "for person <- @beacon_live_data[:persons] do",
+             [
+               {[
+                  {:text, "\n              ", %{newlines: 1}},
+                  {:eex_block, "if person.id == employee.id do",
+                   [
+                     {[
+                        {:text, "\n                ", %{newlines: 1}},
+                        {:tag_block, "span", [], [{:eex, "person.name", %{line: 8, opt: ~c"=", column: 23}}], %{mode: :inline}},
+                        {:text, "\n                ", %{newlines: 1}},
+                        {:tag_self_close, "img",
+                         [
+                           {"src", {:expr, "if person.picture , do: person.picture, else: \"default.jpg\"", %{line: 9, column: 27}},
+                            %{line: 9, column: 22}},
+                           {"width", {:string, "200", %{delimiter: 34}}, %{line: 9, column: 88}}
+                         ]},
+                        {:text, "\n              ", %{newlines: 1}}
+                      ], "end"}
+                   ]},
+                  {:text, "\n            ", %{newlines: 1}}
+                ], "end"}
+             ]},
+            {:text, "\n          ", %{newlines: 1}}
+          ], %{mode: :block}},
+         {:text, "\n        ", %{newlines: 1}}
+       ], "end"}
+
+    assert JSONEncoder.encode_eex_block(ast) ==
+             [
+               [
+                 %{type: :html_comment, content: [%{type: :text, content: ["<!-- regular <!-- comment --> -->", %{}]}]},
+                 %{type: :eex, content: ["employee.position", %{line: 4, opt: ~c"=", column: 11}]},
+                 %{type: :text, content: ["\n          ", %{newlines: 1}]},
+                 %{
+                   type: :tag_block,
+                   content: [
+                     "div",
+                     %{type: :text, content: ["\n            ", %{newlines: 1}]},
+                     %{
+                       type: :eex_block,
+                       content: [
+                         "for person <- @beacon_live_data[:persons] do",
+                         %{
+                           type: [
+                             {:text, "\n              ", %{newlines: 1}},
+                             {:eex_block, "if person.id == employee.id do",
+                              [
+                                {[
+                                   {:text, "\n                ", %{newlines: 1}},
+                                   {:tag_block, "span", [], [{:eex, "person.name", %{line: 8, opt: ~c"=", column: 23}}], %{mode: :inline}},
+                                   {:text, "\n                ", %{newlines: 1}},
+                                   {:tag_self_close, "img",
+                                    [
+                                      {"src", {:expr, "if person.picture , do: person.picture, else: \"default.jpg\"", %{line: 9, column: 27}},
+                                       %{line: 9, column: 22}},
+                                      {"width", {:string, "200", %{delimiter: 34}}, %{line: 9, column: 88}}
+                                    ]},
+                                   {:text, "\n              ", %{newlines: 1}}
+                                 ], "end"}
+                              ]},
+                             {:text, "\n            ", %{newlines: 1}}
+                           ],
+                           content: ["end"]
+                         }
+                       ]
+                     },
+                     %{type: :text, content: ["\n          ", %{newlines: 1}]},
+                     %{mode: :block}
+                   ]
+                 },
+                 %{type: :text, content: ["\n        ", %{newlines: 1}]}
+               ],
+               "end"
+             ]
   end
 end

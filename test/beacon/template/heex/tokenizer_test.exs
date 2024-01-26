@@ -3,64 +3,100 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
 
   alias Beacon.Template.HEEx.Tokenizer
 
-  test "tokenizes a complex template" do
-    template = ~S|
-    <section>
-      <p><%= user.name %></p>
+  test "inline expression" do
+    assert Tokenizer.tokenize(~S|
+      <%= user.name %>
+    |) == {:ok, [{:eex, "user.name", %{line: 2, opt: ~c"=", column: 7}}]}
+  end
+
+  test "block expression" do
+    assert Tokenizer.tokenize(~S|
       <%= if true do %>
         <p>this</p>
       <% else %>
         <p>that</p>
       <% end %>
-    </section>
-    <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
-    |
+    |) ==
+             {:ok,
+              [
+                {:eex_block, "if true do",
+                 [
+                   {[
+                      {:text, "\n        ", %{newlines: 1}},
+                      {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}},
+                      {:text, "\n      ", %{newlines: 1}}
+                    ], "else"},
+                   {[
+                      {:text, "\n        ", %{newlines: 1}},
+                      {:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}},
+                      {:text, "\n      ", %{newlines: 1}}
+                    ], "end"}
+                 ]}
+              ]}
+  end
 
-    assert Tokenizer.tokenize(template) == {
+  test "comprehension" do
+    assert Tokenizer.tokenize(~S|
+      <%= for employee <- @beacon_live_data[:employees] do %>
+        <!-- regular <!-- comment --> -->
+        <%= employee.position %>
+        <div>
+          <%= for person <- @beacon_live_data[:persons] do %>
+            <%= if person.id == employee.id do %>
+              <span><%= person.name %></span>
+              <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    |) == {
              :ok,
              [
                {
-                 :tag_block,
-                 "section",
-                 [],
+                 :eex_block,
+                 "for employee <- @beacon_live_data[:employees] do",
                  [
-                   {:text, "\n      ", %{newlines: 1}},
-                   {:tag_block, "p", [], [{:eex, "user.name", %{column: 10, line: 3, opt: ~c"="}}], %{mode: :block}},
-                   {:text, "\n      ", %{newlines: 1}},
                    {
-                     :eex_block,
-                     "if true do",
                      [
+                       {:html_comment, [{:text, "<!-- regular <!-- comment --> -->", %{}}]},
+                       {:eex, "employee.position", %{column: 9, line: 4, opt: ~c"="}},
+                       {:text, "\n        ", %{newlines: 1}},
                        {
+                         :tag_block,
+                         "div",
+                         [],
                          [
-                           {:text, "\n        ", %{newlines: 1}},
-                           {:tag_block, "p", [], [{:text, "this", %{newlines: 0}}], %{mode: :block}},
-                           {:text, "\n      ", %{newlines: 1}}
+                           {:text, "\n          ", %{newlines: 1}},
+                           {:eex_block, "for person <- @beacon_live_data[:persons] do",
+                            [
+                              {[
+                                 {:text, "\n            ", %{newlines: 1}},
+                                 {:eex_block, "if person.id == employee.id do",
+                                  [
+                                    {[
+                                       {:text, "\n              ", %{newlines: 1}},
+                                       {:tag_block, "span", [], [{:eex, "person.name", %{column: 21, line: 8, opt: ~c"="}}], %{mode: :inline}},
+                                       {:text, "\n              ", %{newlines: 1}},
+                                       {:tag_self_close, "img",
+                                        [
+                                          {"src", {:expr, "if person.picture , do: person.picture, else: \"default.jpg\"", %{column: 25, line: 9}},
+                                           %{column: 20, line: 9}},
+                                          {"width", {:string, "200", %{delimiter: 34}}, %{column: 86, line: 9}}
+                                        ]},
+                                       {:text, "\n            ", %{newlines: 1}}
+                                     ], "end"}
+                                  ]},
+                                 {:text, "\n          ", %{newlines: 1}}
+                               ], "end"}
+                            ]},
+                           {:text, "\n        ", %{newlines: 1}}
                          ],
-                         "else"
+                         %{mode: :block}
                        },
-                       {
-                         [
-                           {:text, "\n        ", %{newlines: 1}},
-                           {:tag_block, "p", [], [{:text, "that", %{newlines: 0}}], %{mode: :block}},
-                           {:text, "\n      ", %{newlines: 1}}
-                         ],
-                         "end"
-                       }
-                     ]
-                   },
-                   {:text, "\n    ", %{newlines: 1}}
-                 ],
-                 %{mode: :block}
-               },
-               {:text, "\n    ", %{newlines: 1}},
-               {
-                 :tag_self_close,
-                 "BeaconWeb.Components.image_set",
-                 [
-                   {"asset", {:expr, "@beacon_live_data[:img1]", %{column: 44, line: 10}}, %{column: 37, line: 10}},
-                   {"sources", {:expr, "[\"480w\"]", %{column: 79, line: 10}}, %{column: 70, line: 10}},
-                   {"width", {:string, "200px", %{delimiter: 34}}, %{column: 89, line: 10}}
+                       {:text, "\n      ", %{newlines: 1}}
+                     ],
+                     "end"
+                   }
                  ]
                }
              ]

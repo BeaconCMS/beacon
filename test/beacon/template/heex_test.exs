@@ -17,6 +17,18 @@ defmodule Beacon.Template.HEExTest do
       assert HEEx.render(:my_site, ~S|<%= 1 + @value %>|, %{value: 1}) == "2"
     end
 
+    test "comprehensions" do
+      assert HEEx.render(
+               :my_site,
+               ~S|
+                  <%= for val <- @beacon_live_data[:vals] do %>
+                    <%= val %>
+                  <% end %>
+                |,
+               %{beacon_live_data: %{vals: [1, 2]}}
+             ) == "\n1\n\n2\n"
+    end
+
     test "user defined components" do
       start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
       component_fixture(site: "my_site", name: "sample")

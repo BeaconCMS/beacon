@@ -51,6 +51,17 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     """)
   end
 
+  test "comprehensions" do
+    assert_equal(
+      ~S"""
+      <%= for val <- @beacon_live_data[:vals] do %>
+        <%= val %>
+      <% end %>
+      """,
+      %{beacon_live_data: %{vals: [1]}}
+    )
+  end
+
   test "function components" do
     assert_equal(~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|)
     assert_equal(~S|<.link path="/contact" replace={true}>Book meeting</.link>|)
@@ -64,7 +75,7 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     assert_equal(~S|<%= my_component("sample_component", %{val: 1}) %>|)
   end
 
-  test "beacon_live_data assigns" do
+  test "live data assigns" do
     assert_equal(~S|<%= @beacon_live_data[:name] %>|, %{beacon_live_data: %{name: "Beacon"}})
   end
 end
