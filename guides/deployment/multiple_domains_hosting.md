@@ -28,18 +28,21 @@ So if you need to host multiple domains or subdomains with Beacon, you can use t
 Here's another example, but now using Beacon:
 
 ```elixir
+  # serve the `:demo` site at demo.org/demo
   scope "/", host: "demo.org" do
     pipe_through :browser
 
     beacon_site "/demo", site: :demo
   end
 
+  # serve the `:blog` site at blog.com
   scope "/", host: "blog.com" do
     pipe_through :browser
 
-    beacon_site "/blog", site: :blog
+    beacon_site "/", site: :blog
   end
 
+  # serve the admin interface at the prefix /admin on the root domain
   scope "/admin" do
     pipe_through :browser
     beacon_live_admin "/"
