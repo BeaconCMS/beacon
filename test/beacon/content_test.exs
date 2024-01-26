@@ -580,6 +580,27 @@ defmodule Beacon.ContentTest do
       assert %{site: :my_site, path: "foo/:bar"} = live_data
     end
 
+    test "path validation" do
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: ""})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "foo/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/123"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/123/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo_bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo-bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: ":/foo"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:/bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo//bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:123"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:123/bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:Bar"})
+    end
+
     test "create_live_data/1 for root path" do
       attrs = %{site: :my_site, path: ""}
 

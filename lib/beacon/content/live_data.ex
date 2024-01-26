@@ -43,10 +43,36 @@ defmodule Beacon.Content.LiveData do
   def changeset(%__MODULE__{} = live_data, attrs) do
     live_data
     |> cast(attrs, [:site, :path], empty_values: [nil])
+    |> validate_path()
     |> validate_required([:site])
   end
 
   def path_changeset(%__MODULE__{} = live_data, attrs) do
-    cast(live_data, attrs, [:path], empty_values: [nil])
+    live_data
+    |> cast(attrs, [:path], empty_values: [nil])
+    |> validate_path()
+  end
+
+  # TODO: remove this after https://github.com/BeaconCMS/beacon/issues/395 is resolved
+  def validate_path(%{changes: %{path: ""}} = changeset), do: changeset
+
+  # This is the only case where an empty path segment is allowed
+  def validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
+
+  def validate_path(changeset) do
+    regex = ~r"
+      ^                             # Start of path string
+      (\/?(:[a-z])?[A-Za-z0-9-_]+)  # First segment may skip leading slash - for backwards compatibility
+                                    # The above line can be removed after issue 395 is resolved
+      (                             # Start of path segment
+      \/                            # The rest of the path segments must contain a leading slash
+      (:[a-z])?                     # Colon optional for capturing params
+                                    # When used, the first character must be a lowercase letter
+      [A-Za-z0-9-_]+                # Other characters can be alphanumeric including hyphen and underscore
+      )*                            # End of path segment, there may be any number of segments
+      $                             # End of path string
+    "x
+
+    validate_format(changeset, :path, regex)
   end
 end
