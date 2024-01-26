@@ -37,20 +37,69 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
 
   test "comprehension" do
     assert Tokenizer.tokenize(~S|
-      <%= for val <- @beacon_live_data[:vals] do %>
-        <%= val %>
+      <%= for employee <- @beacon_live_data[:employees] do %>
+        <!-- regular <!-- comment --> -->
+        <%= employee.position %>
+        <div>
+          <%= for person <- @beacon_live_data[:persons] do %>
+            <%= if person.id == employee.id do %>
+              <span><%= person.name %></span>
+              <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
+            <% end %>
+          <% end %>
+        </div>
       <% end %>
-    |) ==
-             {:ok,
-              [
-                {:eex_block, "for val <- @beacon_live_data[:vals] do",
+    |) == {
+             :ok,
+             [
+               {
+                 :eex_block,
+                 "for employee <- @beacon_live_data[:employees] do",
                  [
-                   {[
-                      {:text, "\n        ", %{newlines: 1}},
-                      {:eex, "val", %{line: 3, opt: ~c"=", column: 9}},
-                      {:text, "\n      ", %{newlines: 1}}
-                    ], "end"}
-                 ]}
-              ]}
+                   {
+                     [
+                       {:html_comment, [{:text, "<!-- regular <!-- comment --> -->", %{}}]},
+                       {:eex, "employee.position", %{column: 9, line: 4, opt: '='}},
+                       {:text, "\n        ", %{newlines: 1}},
+                       {
+                         :tag_block,
+                         "div",
+                         [],
+                         [
+                           {:text, "\n          ", %{newlines: 1}},
+                           {:eex_block, "for person <- @beacon_live_data[:persons] do",
+                            [
+                              {[
+                                 {:text, "\n            ", %{newlines: 1}},
+                                 {:eex_block, "if person.id == employee.id do",
+                                  [
+                                    {[
+                                       {:text, "\n              ", %{newlines: 1}},
+                                       {:tag_block, "span", [], [{:eex, "person.name", %{column: 21, line: 8, opt: '='}}], %{mode: :inline}},
+                                       {:text, "\n              ", %{newlines: 1}},
+                                       {:tag_self_close, "img",
+                                        [
+                                          {"src", {:expr, "if person.picture , do: person.picture, else: \"default.jpg\"", %{column: 25, line: 9}},
+                                           %{column: 20, line: 9}},
+                                          {"width", {:string, "200", %{delimiter: 34}}, %{column: 86, line: 9}}
+                                        ]},
+                                       {:text, "\n            ", %{newlines: 1}}
+                                     ], "end"}
+                                  ]},
+                                 {:text, "\n          ", %{newlines: 1}}
+                               ], "end"}
+                            ]},
+                           {:text, "\n        ", %{newlines: 1}}
+                         ],
+                         %{mode: :block}
+                       },
+                       {:text, "\n      ", %{newlines: 1}}
+                     ],
+                     "end"
+                   }
+                 ]
+               }
+             ]
+           }
   end
 end
