@@ -10,7 +10,7 @@ defmodule BeaconWeb.ComponentsTest do
     :ok
   end
 
-  describe "image" do
+  describe "reading_time/1" do
     setup context do
       create_page_with_component("""
       <main>
@@ -28,6 +28,45 @@ defmodule BeaconWeb.ComponentsTest do
       {:ok, view, _html} = live(conn, "/home")
 
       assert render(view) =~ "3 min to read"
+    end
+  end
+
+  describe "featured_pages/1 default" do
+    setup context do
+      create_page_with_component("""
+      <main>
+        <BeaconWeb.Components.featured_pages />
+      </main>
+      """)
+
+      context
+    end
+
+    test "SUCCESS: reading_time should show 1 min to read the page", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home")
+
+      assert render(view) =~ "href=\"home\""
+    end
+  end
+
+  describe "featured_pages/1 with Inner Block" do
+    setup context do
+      create_page_with_component("""
+      <main>
+      <BeaconWeb.Components.featured_pages :let={_page} pages={Beacon.Content.list_pages(Process.get(:__beacon_site__), per_page: 3)}>
+          FOO BAR
+      </BeaconWeb.Components.featured_pages>
+      </main>
+      """)
+
+      context
+    end
+
+    test "SUCCESS: reading_time should show 1 min to read the page", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home")
+
+      refute render(view) =~ "href=\"home\""
+      assert render(view) =~ "FOO BAR"
     end
   end
 
