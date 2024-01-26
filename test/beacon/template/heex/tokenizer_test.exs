@@ -59,7 +59,7 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
                    {
                      [
                        {:html_comment, [{:text, "<!-- regular <!-- comment --> -->", %{}}]},
-                       {:eex, "employee.position", %{column: 9, line: 4, opt: '='}},
+                       {:eex, "employee.position", %{column: 9, line: 4, opt: ~c"="}},
                        {:text, "\n        ", %{newlines: 1}},
                        {
                          :tag_block,
@@ -75,7 +75,7 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
                                   [
                                     {[
                                        {:text, "\n              ", %{newlines: 1}},
-                                       {:tag_block, "span", [], [{:eex, "person.name", %{column: 21, line: 8, opt: '='}}], %{mode: :inline}},
+                                       {:tag_block, "span", [], [{:eex, "person.name", %{column: 21, line: 8, opt: ~c"="}}], %{mode: :inline}},
                                        {:text, "\n              ", %{newlines: 1}},
                                        {:tag_self_close, "img",
                                         [
