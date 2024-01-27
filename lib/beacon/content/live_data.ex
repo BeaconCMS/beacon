@@ -61,16 +61,20 @@ defmodule Beacon.Content.LiveData do
 
   def validate_path(changeset) do
     regex = ~r"
-      ^                             # Start of path string
-      (\/?(:[a-z])?[A-Za-z0-9-_]+)  # First segment may skip leading slash - for backwards compatibility
-                                    # The above line can be removed after issue 395 is resolved
-      (                             # Start of path segment
-      \/                            # The rest of the path segments must contain a leading slash
-      (:[a-z])?                     # Colon optional for capturing params
-                                    # When used, the first character must be a lowercase letter
-      [A-Za-z0-9-_]+                # Other characters can be alphanumeric including hyphen and underscore
-      )*                            # End of path segment, there may be any number of segments
-      $                             # End of path string
+      ^                                            # Start of path string
+      (\/?(:[a-z_][a-zA-Z0-9_]*|[a-zA-Z0-9_-]+))  # First segment may skip leading slash - for backwards compatibility
+                                                   # The above line can be removed after issue 395 is resolved
+      (                                            # Start of path segment
+        \/                                         # The rest of the path segments must contain a leading slash
+          (                                        # Option 1 - capturing param
+            :                                      #   Must start with a leading colon
+            [a-z_]                                 #   The first character must be a lowercase letter or underscore
+            [a-zA-Z0-9_]*                          #   Other characters can be capitalized or numeric
+          |                                        # Option 2 - hardcoded segment
+            [a-zA-Z0-9_-]+                         #   Alphanumeric, hyphens, or underscores
+          )
+      )*                                           # End of path segment, there may be any number of segments
+      $                                            # End of path string
     "x
 
     validate_format(changeset, :path, regex)
