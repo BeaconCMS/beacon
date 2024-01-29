@@ -4,6 +4,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
+  alias Beacon.Template.HEEx
 
   require Logger
 
@@ -208,7 +209,9 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp render(page, :request) do
-    primary = Lifecycle.Template.load_template(page)
+    primary_template = Lifecycle.Template.load_template(page)
+    {:ok, primary} = HEEx.compile(page.site, page.path, primary_template)
+
     variants = load_variants(page)
 
     case variants do
@@ -248,10 +251,14 @@ defmodule Beacon.Loader.PageModuleLoader do
     %{variants: variants} = Beacon.Repo.preload(page, :variants)
 
     for variant <- variants do
+      page = %{page | template: variant.template}
+      template = Lifecycle.Template.load_template(page)
+      {:ok, page} = HEEx.compile(page.site, page.path, template)
+
       [
         variant.name,
         variant.weight,
-        Lifecycle.Template.load_template(%{page | template: variant.template})
+        page
       ]
     end
   end

@@ -221,14 +221,6 @@ defmodule Beacon.Router do
     |> List.flatten()
   end
 
-  def dump_page_modules(site, fun \\ &Function.identity/1) do
-    site
-    |> dump_pages()
-    |> Enum.map(fn {{^site, _path} = key, {_page_id, _layout_id, _format, page_module, _component_module}} ->
-      fun.(Tuple.append(key, page_module))
-    end)
-  end
-
   @doc false
   def lookup_path(site, path) do
     lookup_path(@ets_table, site, path)
