@@ -33,7 +33,20 @@ defmodule Beacon.TailwindCompilerTest do
 
     published_page_fixture(
       layout_id: layout.id,
-      path: "/a",
+      path: "/tailwind-test",
+      template: """
+      <main>
+        <h2 class="text-gray-200">Some Values:</h2>
+        <%= for val <- @beacon_live_data[:vals] do %>
+          <%= my_component("sample_component", val: val) %>
+        <% end %>
+      </main>
+      """
+    )
+
+    published_page_fixture(
+      layout_id: layout.id,
+      path: "/tailwind-test-post-process",
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
@@ -87,6 +100,11 @@ defmodule Beacon.TailwindCompilerTest do
 
         refute output =~ "text-gray-300"
       end)
+    end
+
+    test "fetch post processed page templates" do
+      assert {:ok, output} = TailwindCompiler.compile(@site)
+      assert output =~ "text-blue-200"
     end
   end
 

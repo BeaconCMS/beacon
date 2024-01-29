@@ -2072,10 +2072,10 @@ defmodule Beacon.Content do
 
   defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case Beacon.Template.HEEx.compile(template, metadata) do
-        {:cont, _ast} -> []
-        {:halt, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
-        {:halt, _} -> [{field, "invalid"}]
+      case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
+        {:ok, _ast} -> []
+        {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:error, _} -> [{field, "invalid"}]
       end
     end)
   end
