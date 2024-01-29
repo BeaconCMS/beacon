@@ -253,12 +253,12 @@ defmodule Beacon.Loader.PageModuleLoader do
     for variant <- variants do
       page = %{page | template: variant.template}
       template = Lifecycle.Template.load_template(page)
-      {:ok, page} = HEEx.compile(page.site, page.path, template)
+      {:ok, ast} = HEEx.compile(page.site, page.path, template)
 
       [
         variant.name,
         variant.weight,
-        page
+        ast
       ]
     end
   end
