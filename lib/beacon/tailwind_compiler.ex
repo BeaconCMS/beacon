@@ -204,7 +204,7 @@ defmodule Beacon.TailwindCompiler do
         end)
       end)
     ]
-    |> Task.await_many()
+    |> Task.await_many(30_000)
     |> List.flatten()
   end
 

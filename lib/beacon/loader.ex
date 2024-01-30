@@ -35,44 +35,44 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
+  def init(config) do
+    {:ok, config, {:continue, :load_site_from_db}}
+  end
+
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
     @doc false
-    def init(config) do
-      %{site: site} = config
-
+    def handle_continue(:load_site_from_db, config) do
       # avoid compilation warnings
-      populate_components(nil)
-
-      PubSub.subscribe_to_layouts(site)
-      PubSub.subscribe_to_pages(site)
-      PubSub.subscribe_to_components(site)
-      PubSub.subscribe_to_error_pages(site)
-
-      {:ok, config}
+      populate_default_components(nil)
+      subscribe_to_events(config.site)
+      {:noreply, config}
     end
   else
     @doc false
-    def init(config) do
+    def handle_continue(:load_site_from_db, config) do
       %{site: site} = config
 
-      with :ok <- populate_components(site),
-           :ok <- populate_layouts(site),
-           :ok <- populate_error_pages(site) do
+      with :ok <- populate_default_components(site),
+           :ok <- populate_default_layouts(site),
+           :ok <- populate_default_error_pages(site) do
         :ok = load_site_from_db(site)
+        subscribe_to_events(site)
       end
 
-      PubSub.subscribe_to_layouts(site)
-      PubSub.subscribe_to_pages(site)
-      PubSub.subscribe_to_components(site)
-      PubSub.subscribe_to_error_pages(site)
-
-      {:ok, config}
+      {:noreply, config}
     end
   end
 
-  defp populate_components(nil), do: :skip
+  defp subscribe_to_events(site) do
+    PubSub.subscribe_to_layouts(site)
+    PubSub.subscribe_to_pages(site)
+    PubSub.subscribe_to_components(site)
+    PubSub.subscribe_to_error_pages(site)
+  end
 
-  defp populate_components(site) do
+  defp populate_default_components(nil), do: :skip
+
+  defp populate_default_components(site) do
     for attrs <- Content.blueprint_components() do
       case Content.list_components_by_name(site, attrs.name) do
         [] ->
@@ -89,7 +89,7 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def populate_layouts(site) do
+  def populate_default_layouts(site) do
     case Content.get_layout_by(site, title: "Default") do
       nil ->
         Content.default_layout()
@@ -105,7 +105,7 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def populate_error_pages(site) do
+  def populate_default_error_pages(site) do
     default_layout = Content.get_layout_by(site, title: "Default")
 
     for attrs <- Content.default_error_pages() do
@@ -250,7 +250,7 @@ defmodule Beacon.Loader do
         :ok
       end)
     end)
-    |> Task.await_many(300_000)
+    |> Task.await_many(60_000)
 
     :ok
   end
