@@ -35,6 +35,7 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
+  @doc false
   def init(config) do
     {:ok, config, {:continue, :load_site_from_db}}
   end
