@@ -26,8 +26,8 @@ defmodule Beacon.Loader.ErrorPageModuleLoaderTest do
   end
 
   setup %{conn: conn} do
-    :ok = Beacon.Loader.populate_layouts(@site)
-    :ok = Beacon.Loader.populate_error_pages(@site)
+    :ok = Beacon.Loader.populate_default_layouts(@site)
+    :ok = Beacon.Loader.populate_default_error_pages(@site)
     error_module = load_error_pages_module(@site)
 
     [conn: build_conn(conn), error_module: error_module]
