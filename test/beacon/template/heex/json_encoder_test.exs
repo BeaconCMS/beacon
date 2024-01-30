@@ -306,7 +306,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert {:error, _} = JSONEncoder.encode(:my_site, ~S|<%= :error|)
   end
 
-  test "encode eex_block" do
+  test "encode_eex_block_node" do
     ast =
       {[
          {:html_comment, [{:text, "<!-- regular <!-- comment --> -->", %{}}]},
@@ -342,7 +342,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
          {:text, "\n        ", %{newlines: 1}}
        ], "end"}
 
-    assert JSONEncoder.encode_eex_block(ast) ==
+    assert JSONEncoder.encode_eex_block_node(ast) ==
              [
                [
                  %{type: :html_comment, content: [%{type: :text, content: ["<!-- regular <!-- comment --> -->", %{}]}]},
@@ -357,28 +357,52 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                        type: :eex_block,
                        content: [
                          "for person <- @beacon_live_data[:persons] do",
-                         %{
-                           type: [
-                             {:text, "\n              ", %{newlines: 1}},
-                             {:eex_block, "if person.id == employee.id do",
-                              [
-                                {[
-                                   {:text, "\n                ", %{newlines: 1}},
-                                   {:tag_block, "span", [], [{:eex, "person.name", %{line: 8, opt: ~c"=", column: 23}}], %{mode: :inline}},
-                                   {:text, "\n                ", %{newlines: 1}},
-                                   {:tag_self_close, "img",
-                                    [
-                                      {"src", {:expr, "if person.picture , do: person.picture, else: \"default.jpg\"", %{line: 9, column: 27}},
-                                       %{line: 9, column: 22}},
-                                      {"width", {:string, "200", %{delimiter: 34}}, %{line: 9, column: 88}}
-                                    ]},
-                                   {:text, "\n              ", %{newlines: 1}}
-                                 ], "end"}
-                              ]},
-                             {:text, "\n            ", %{newlines: 1}}
+                         [
+                           [
+                             %{type: :text, content: ["\n              ", %{newlines: 1}]},
+                             %{
+                               type: :eex_block,
+                               content: [
+                                 "if person.id == employee.id do",
+                                 [
+                                   [
+                                     %{type: :text, content: ["\n                ", %{newlines: 1}]},
+                                     %{
+                                       type: :tag_block,
+                                       content: [
+                                         "span",
+                                         %{type: :eex, content: ["person.name", %{line: 8, opt: ~c"=", column: 23}]},
+                                         %{mode: :inline}
+                                       ]
+                                     },
+                                     %{type: :text, content: ["\n                ", %{newlines: 1}]},
+                                     %{
+                                       type: :tag_self_close,
+                                       content: [
+                                         "img",
+                                         %{
+                                           type: "src",
+                                           content: [
+                                             %{
+                                               type: :expr,
+                                               content: ["if person.picture , do: person.picture, else: \"default.jpg\"", %{line: 9, column: 27}]
+                                             },
+                                             %{line: 9, column: 22}
+                                           ]
+                                         },
+                                         %{type: "width", content: [%{type: :string, content: ["200", %{delimiter: 34}]}, %{line: 9, column: 88}]}
+                                       ]
+                                     },
+                                     %{type: :text, content: ["\n              ", %{newlines: 1}]}
+                                   ],
+                                   "end"
+                                 ]
+                               ]
+                             },
+                             %{type: :text, content: ["\n            ", %{newlines: 1}]}
                            ],
-                           content: ["end"]
-                         }
+                           "end"
+                         ]
                        ]
                      },
                      %{type: :text, content: ["\n          ", %{newlines: 1}]},

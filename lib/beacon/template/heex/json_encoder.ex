@@ -246,7 +246,10 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp encode_comprehension_block({:eex_block, _arg, content}) do
-    case Jason.encode(content) do
+    content
+    |> Enum.reduce([], fn node, acc -> [encode_eex_block_node(node) | acc] end)
+    |> Jason.encode()
+    |> case do
       {:ok, json} -> json
       error -> error
     end
@@ -311,29 +314,20 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   defp extract_node_attr({attr, {:string, text, _}, _}), do: [attr, ?=, ?", text, ?", " "]
   defp extract_node_attr({attr, {:expr, expr, _}, _}), do: [attr, ?=, ?{, expr, ?}, " "]
 
-  def encode_eex_block(value) when is_tuple(value) do
-    value
-    |> Tuple.to_list()
-    |> Enum.reduce([], fn node, acc -> [encode_block_node(node) | acc] end)
-    |> Enum.reverse()
+  def encode_eex_block_node({nodes, "end"}) when is_list(nodes) do
+    [encode_eex_block_node(nodes), "end"]
   end
 
-  def encode_eex_block(value, opts) when is_tuple(value) do
-    value
-    |> encode_eex_block()
-    |> Jason.Encode.list(opts)
-  end
-
-  def encode_block_node(nodes) when is_list(nodes) do
-    nodes
-    |> Enum.reduce([], fn node, acc -> [encode_block_node(node) | acc] end)
-    |> Enum.reverse()
-  end
-
-  def encode_block_node(node) when is_tuple(node) do
+  def encode_eex_block_node(node) when is_tuple(node) do
     [type | content] = Tuple.to_list(node)
-    %{type: type, content: content |> List.flatten() |> encode_block_node()}
+    %{type: type, content: content |> List.flatten() |> encode_eex_block_node()}
   end
 
-  def encode_block_node(node), do: node
+  def encode_eex_block_node(nodes) when is_list(nodes) do
+    nodes
+    |> Enum.reduce([], fn node, acc -> [encode_eex_block_node(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  def encode_eex_block_node(node) when is_binary(node) or is_map(node), do: node
 end
