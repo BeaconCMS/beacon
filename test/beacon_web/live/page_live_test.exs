@@ -35,7 +35,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       )
 
     page_home =
-      page_fixture(
+      published_page_fixture(
         layout_id: layout.id,
         path: "home",
         template: """
@@ -74,9 +74,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
-    Content.publish_page(page_home)
-
-    _page_without_meta_tags =
+    page_without_meta_tags =
       published_page_fixture(
         layout_id: layout.id,
         path: "without_meta_tags",
@@ -87,7 +85,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         meta_tags: nil
       )
 
-    Beacon.reload_site(:my_site)
+    Beacon.Loader.load_page(page_home)
+    Beacon.Loader.load_page(page_without_meta_tags)
 
     [layout: layout]
   end

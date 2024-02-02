@@ -63,10 +63,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
             %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"}
           ]
         ]
-        |> published_page_fixture()
+        |> page_fixture()
         |> Repo.preload(:event_handlers)
-
-      Beacon.Loader.load_page(page)
 
       {:ok, _module, ast} = PageModuleLoader.load_page!(page)
 
@@ -108,10 +106,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
             }
           ]
         ]
-        |> published_page_fixture()
+        |> page_fixture()
         |> Repo.preload(:event_handlers)
-
-      Beacon.Loader.load_page(page)
 
       {:ok, _module, ast} = PageModuleLoader.load_page!(page)
 
