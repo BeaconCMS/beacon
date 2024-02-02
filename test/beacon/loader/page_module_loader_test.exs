@@ -66,10 +66,12 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         |> page_fixture()
         |> Repo.preload(:event_handlers)
 
-      {:ok, _module, ast} = PageModuleLoader.load_page!(page)
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
 
-      assert has_fields?(ast, [{"content", "MY TEST PAGE"}, {"property", "og:description"}])
-      assert has_fields?(ast, [{"content", "http://example.com/page/meta-tag"}, {"property", "og:url"}])
+      assert Enum.sort(module.page_assigns().meta_tags) == [
+               %{"content" => "MY TEST PAGE", "property" => "og:description"},
+               %{"content" => "http://example.com/page/meta-tag", "property" => "og:url"}
+             ]
     end
 
     test "interpolates raw_schema snippets" do
@@ -109,25 +111,17 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         |> page_fixture()
         |> Repo.preload(:event_handlers)
 
-      {:ok, _module, ast} = PageModuleLoader.load_page!(page)
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
 
-      assert has_fields?(ast,
-               "@context": "https://schema.org",
-               "@type": "BlogPosting",
-               author: {:%{}, [], ["@type": "Person", name: "author_1"]},
-               headline: "hello world"
-             )
+      assert module.page_assigns().raw_schema == [
+               %{
+                 author: %{name: "author_1", "@type": "Person"},
+                 "@context": "https://schema.org",
+                 "@type": "BlogPosting",
+                 headline: "hello world"
+               }
+             ]
     end
-  end
-
-  defp has_fields?(ast, match) do
-    {_new_ast, present} =
-      Macro.prewalk(ast, false, fn
-        {:%{}, _, fields} = node, acc -> {node, acc or match == Enum.sort(fields)}
-        node, acc -> {node, acc}
-      end)
-
-    present
   end
 
   describe "render" do
