@@ -351,6 +351,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
       stylesheet_fixture()
       layout = published_layout_fixture()
       page = published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
+      live_data = live_data_fixture(path: "/markdown")
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
       Beacon.Loader.load_page(page)
 
       {:ok, view, _html} = live(conn, "/markdown")
