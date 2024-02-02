@@ -113,13 +113,14 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
 
-      assert module.page_assigns().raw_schema == [
-               %{
-                 author: %{name: "author_1", "@type": "Person"},
-                 "@context": "https://schema.org",
-                 "@type": "BlogPosting",
-                 headline: "hello world"
-               }
+      [raw_schema] = module.page_assigns().raw_schema
+      raw_schema = Enum.sort(raw_schema)
+
+      assert raw_schema == [
+               "@context": "https://schema.org",
+               "@type": "BlogPosting",
+               author: %{name: "author_1", "@type": "Person"},
+               headline: "hello world"
              ]
     end
   end
