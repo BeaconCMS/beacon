@@ -54,10 +54,6 @@ defmodule Beacon.Types.Site do
   end
 
   @doc false
-  def safe_to_atom(site) when is_atom(site), do: site
-  def safe_to_atom(site) when is_binary(site), do: String.to_existing_atom(site)
-
-  @doc false
   def type, do: :atom
 
   @doc false

@@ -810,12 +810,22 @@ defmodule Beacon.Content do
 
   @doc """
   Counts the total number of pages based on the amount of pages.
-  """
-  @spec count_pages(Site.t()) :: integer()
-  def count_pages(site) do
-    query = from p in Page, where: p.site == ^site, select: count(p.id)
 
-    Repo.one(query)
+  ## Options
+
+    * `:query` - filter rows count by query
+
+  """
+  @doc type: :pages
+  @spec count_pages(Site.t(), keyword()) :: integer()
+  def count_pages(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    base = from p in Page, where: p.site == ^site, select: count(p.id)
+
+    base
+    |> query_list_pages_search(search)
+    |> Repo.one()
   end
 
   @doc """
