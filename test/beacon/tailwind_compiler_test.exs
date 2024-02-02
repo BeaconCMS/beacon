@@ -67,10 +67,6 @@ defmodule Beacon.TailwindCompilerTest do
       """
     )
 
-    Beacon.Loader.load_stylesheets(@site)
-    Beacon.Loader.load_components(@site)
-    Beacon.Loader.load_layouts(@site)
-    Beacon.Loader.load_pages(@site)
     Beacon.Loader.load_runtime_css(@site)
 
     :ok
