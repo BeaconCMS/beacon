@@ -89,7 +89,7 @@ defmodule Beacon.Config do
                 {identifier :: atom(),
                  fun ::
                    (template :: String.t(), Beacon.Template.LoadMetadata.t() ->
-                      {:cont, String.t() | Beacon.Template.t()} | {:halt, String.t() | Beacon.Template.t()} | {:halt, Exception.t()})}
+                      {:cont, String.t()} | {:halt, String.t()} | {:halt, Exception.t()})}
               ]}
            ]}
           | {:render_template,
@@ -148,16 +148,10 @@ defmodule Beacon.Config do
         }
 
   @default_load_template [
-    {:heex,
-     [
-       safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-       compile_heex: &Beacon.Template.HEEx.compile/2
-     ]},
+    {:heex, []},
     {:markdown,
      [
-       convert_to_html: &Beacon.Template.Markdown.convert_to_html/2,
-       safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-       compile_heex: &Beacon.Template.HEEx.compile/2
+       convert_to_html: &Beacon.Template.Markdown.convert_to_html/2
      ]}
   ]
 
@@ -266,8 +260,7 @@ defmodule Beacon.Config do
           load_template: [
             {:custom_format,
              [
-               validate: fn template, _metadata -> MyEngine.validate(template) end,
-               build_rendered: fn template, _metadata -> %Phoenix.LiveView.Rendered{static: template}  end,
+               validate: fn template, _metadata -> MyEngine.validate(template) end
              ]}
           ],
           render_template: [
@@ -300,18 +293,12 @@ defmodule Beacon.Config do
         ]
         lifecycle: [
           load_template: [
-            heex: [
-              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-              compile_heex: &Beacon.Template.HEEx.compile/2
-            ],
+            heex: [],
             markdown: [
               convert_to_html: &Beacon.Template.Markdown.convert_to_html/2,
-              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-              compile_heex: &Beacon.Template.HEEx.compile/2
             ],
             custom_format: [
-              validate: #Function<41.3316493/2 in :erl_eval.expr/6>,
-              build_rendered: #Function<41.3316494/2 in :erl_eval.expr/6>
+              validate: #Function<41.3316493/2 in :erl_eval.expr/6>
             ]
           ],
           render_template: [

@@ -44,7 +44,6 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   Note that:
 
     * `rendered_html` key is optional
-    * Comprehensions are not supported
 
   ## Example
 
@@ -91,16 +90,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   rescue
     exception ->
-      message = """
-      failed to encode the HEEx template
-
-      Got:
-
-        #{Exception.message(exception)}
-
-      """
-
-      reraise Beacon.ParserError, [message: message], __STACKTRACE__
+      {:error, Exception.message(exception)}
   end
 
   defp encode_tokens(ast, site, assigns) do
@@ -129,7 +119,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
   defp transform([], acc, _site, _assigns), do: acc
 
-  # Strips blank text nodes and insignificant whitespace before or after text.
+  # strips out blank text nodes and insignificant whitespace before or after text.
   defp transform_entry({:text, text, _}, _site, _assigns) do
     cond do
       :binary.first(text) in ~c"\n" or :binary.last(text) in ~c"\n" ->
@@ -153,12 +143,24 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
   end
 
-  defp transform_entry({:eex_block, arg, content}, site, assigns) do
-    %{
-      "tag" => "eex_block",
-      "arg" => arg,
-      "blocks" => Enum.map(content, fn block -> transform_block(block, site, assigns) end)
-    }
+  defp transform_entry({:eex_block, arg, content} = entry, site, assigns) do
+    arg = String.trim(arg)
+
+    # TODO: improve for comprehensions detection
+    if String.starts_with?(arg, "for ") do
+      %{
+        "tag" => "eex_block",
+        "arg" => arg,
+        "rendered_html" => render_comprehension_block(site, assigns, entry),
+        "ast" => encode_comprehension_block(entry)
+      }
+    else
+      %{
+        "tag" => "eex_block",
+        "arg" => arg,
+        "blocks" => Enum.map(content, fn block -> transform_block(block, site, assigns) end)
+      }
+    end
   end
 
   defp transform_entry({:eex_comment, text}, _site, _assigns) do
@@ -199,11 +201,12 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
-  defp transform_entry({:tag_self_close, tag, attrs}, _site, _assigns) do
+  defp transform_entry({:tag_self_close, tag, attrs} = node, site, assigns) do
     %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs, true),
-      "content" => []
+      "content" => [],
+      "rendered_html" => Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
     }
   end
 
@@ -241,4 +244,90 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       "content" => encode_tokens(content, site, assigns)
     }
   end
+
+  defp encode_comprehension_block({:eex_block, _arg, content}) do
+    content
+    |> Enum.reduce([], fn node, acc -> [encode_eex_block_node(node) | acc] end)
+    |> Jason.encode()
+    |> case do
+      {:ok, json} -> json
+      error -> error
+    end
+  end
+
+  defp render_comprehension_block(site, assigns, {:eex_block, arg, nodes}) do
+    arg = ["<%= ", arg, " %>", "\n"]
+
+    template =
+      Enum.reduce(nodes, [arg], fn node, acc ->
+        [[extract_node_text(node), " \n "] | acc]
+      end)
+      |> Enum.reverse()
+      |> List.to_string()
+
+    Beacon.Template.HEEx.render(site, template, assigns)
+  end
+
+  defp extract_node_text({nodes, "end"} = value) when is_list(nodes) do
+    value
+    |> Tuple.to_list()
+    |> Enum.reduce([], fn node, acc -> [extract_node_text(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  defp extract_node_text(value) when is_list(value) do
+    value
+    |> Enum.reduce([], fn node, acc -> [extract_node_text(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  defp extract_node_text("end" = _value), do: ["<% end %>"]
+
+  defp extract_node_text(value) when is_binary(value), do: value
+
+  defp extract_node_text({:text, text, _}), do: text
+
+  defp extract_node_text({:html_comment, children}), do: [extract_node_text(children), "\n"]
+
+  # TODO: eex comments are stripped out of rendered html by the heex engine
+  defp extract_node_text({:eex_comment, _content}), do: []
+
+  defp extract_node_text({:eex, expr, %{opt: ~c"="}}), do: ["<%= ", expr, " %>"]
+
+  defp extract_node_text({:eex, expr, _}), do: ["<% ", expr, " %>"]
+
+  defp extract_node_text({:eex_block, expr, children}), do: ["<%= ", expr, " %>", extract_node_text(children)]
+
+  defp extract_node_text({:tag_self_close, tag, attrs}) do
+    attrs =
+      Enum.reduce(attrs, [], fn attr, acc ->
+        [extract_node_attr(attr) | acc]
+      end)
+
+    [?<, tag, " ", attrs, "/>"]
+  end
+
+  defp extract_node_text({:tag_block, tag, _, children, _}) do
+    [?<, tag, ?>, extract_node_text(children), "</", tag, ">"]
+  end
+
+  defp extract_node_attr({attr, {:string, text, _}, _}), do: [attr, ?=, ?", text, ?", " "]
+  defp extract_node_attr({attr, {:expr, expr, _}, _}), do: [attr, ?=, ?{, expr, ?}, " "]
+
+  def encode_eex_block_node({nodes, "end"}) when is_list(nodes) do
+    [encode_eex_block_node(nodes), "end"]
+  end
+
+  def encode_eex_block_node(node) when is_tuple(node) do
+    [type | content] = Tuple.to_list(node)
+    %{type: type, content: content |> List.flatten() |> encode_eex_block_node()}
+  end
+
+  def encode_eex_block_node(nodes) when is_list(nodes) do
+    nodes
+    |> Enum.reduce([], fn node, acc -> [encode_eex_block_node(node) | acc] end)
+    |> Enum.reverse()
+  end
+
+  def encode_eex_block_node(node) when is_binary(node) or is_map(node), do: node
 end

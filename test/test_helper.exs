@@ -18,7 +18,22 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
          live_socket_path: "/custom_live",
-         extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField]
+         extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
+         lifecycle: [
+           load_template: [
+             {:heex,
+              [
+                tailwind_test: fn
+                  template, %{site: :my_site, path: "/tailwind-test-post-process"} ->
+                    template = String.replace(template, "text-gray-200", "text-blue-200")
+                    {:cont, template}
+
+                  template, _metadata ->
+                    {:cont, template}
+                end
+              ]}
+           ]
+         ]
        ],
        [
          site: :s3_site,
@@ -55,8 +70,8 @@ Supervisor.start_link(
               [
                 div_to_p: fn template, _metadata -> {:cont, String.replace(template, "div", "p")} end,
                 assigns: fn template, _metadata -> {:cont, String.replace(template, "{ title }", "Beacon")} end,
-                compile: fn template, _metadata ->
-                  ast = Beacon.Template.HEEx.compile_heex_template!("nofile", template)
+                compile: fn template, metadata ->
+                  {:ok, ast} = Beacon.Template.HEEx.compile(metadata.site, metadata.path, template)
                   {:cont, ast}
                 end,
                 eval: fn template, _metadata ->

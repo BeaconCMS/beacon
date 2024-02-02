@@ -92,6 +92,14 @@ defmodule Beacon.ContentTest do
   end
 
   describe "pages" do
+    test "count pages" do
+      page = page_fixture(title: "title_a")
+
+      assert Content.count_pages(page.site) == 1
+      assert Content.count_pages(page.site, query: "title_a") == 1
+      assert Content.count_pages(page.site, query: "title_b") == 0
+    end
+
     test "validate template heex on create" do
       layout = layout_fixture()
 

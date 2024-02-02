@@ -812,12 +812,22 @@ defmodule Beacon.Content do
 
   @doc """
   Counts the total number of pages based on the amount of pages.
-  """
-  @spec count_pages(Site.t()) :: integer()
-  def count_pages(site) do
-    query = from p in Page, where: p.site == ^site, select: count(p.id)
 
-    Repo.one(query)
+  ## Options
+
+    * `:query` - filter rows count by query
+
+  """
+  @doc type: :pages
+  @spec count_pages(Site.t(), keyword()) :: integer()
+  def count_pages(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    base = from p in Page, where: p.site == ^site, select: count(p.id)
+
+    base
+    |> query_list_pages_search(search)
+    |> Repo.one()
   end
 
   @doc """
@@ -2287,10 +2297,10 @@ defmodule Beacon.Content do
 
   defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case Beacon.Template.HEEx.compile(template, metadata) do
-        {:cont, _ast} -> []
-        {:halt, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
-        {:halt, _} -> [{field, "invalid"}]
+      case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
+        {:ok, _ast} -> []
+        {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:error, _} -> [{field, "invalid"}]
       end
     end)
   end

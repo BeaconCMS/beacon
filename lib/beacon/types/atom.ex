@@ -19,4 +19,7 @@ defmodule Beacon.Types.Atom do
 
   def load(site) when is_binary(site), do: {:ok, String.to_existing_atom(site)}
   def load(_site), do: :error
+
+  def safe_to_atom(value) when is_atom(value), do: value
+  def safe_to_atom(value) when is_binary(value), do: String.to_existing_atom(value)
 end

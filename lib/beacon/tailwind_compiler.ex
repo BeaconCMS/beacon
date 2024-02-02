@@ -189,17 +189,10 @@ defmodule Beacon.TailwindCompiler do
         end)
       end),
       Task.async(fn ->
-        # parse from laoded pages (ETS) so it can fetch callback transformations
-        # thay may include additoinal stylesheet classes as the markdown parser does
-        Beacon.Router.dump_page_modules(site, fn {_site, path, page_module} ->
-          template =
-            page_module
-            |> Beacon.Template.render()
-            |> fetch_static()
-            |> List.to_string()
-
-          page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(path)}.template")
-          File.write!(page_path, template)
+        Enum.map(Content.list_published_pages(site), fn page ->
+          page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
+          post_processed_template = Beacon.Lifecycle.Template.load_template(page)
+          File.write!(page_path, post_processed_template)
           page_path
         end)
       end),
@@ -211,12 +204,9 @@ defmodule Beacon.TailwindCompiler do
         end)
       end)
     ]
-    |> Task.await_many()
+    |> Task.await_many(60_000)
     |> List.flatten()
   end
-
-  defp fetch_static(%{static: static}), do: static
-  defp fetch_static(_), do: []
 
   # import app css into input css used by tailwind-cli to load tailwind functions and directives
   defp generate_input_css_file!(tmp_dir) do
@@ -246,7 +236,7 @@ defmodule Beacon.TailwindCompiler do
     input_css_path
   end
 
-  defp remove_special_chars(name), do: String.replace(name, ~r/[^[:alnum:]_-]+/, "_")
+  defp remove_special_chars(name), do: String.replace(name, ~r/[^[:alnum:]_]+/, "_")
 
   # include paths for the following scenarios:
   # - regular app
