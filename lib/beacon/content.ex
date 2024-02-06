@@ -791,10 +791,11 @@ defmodule Beacon.Content do
   defp query_list_pages_limit(query, :infinity = _limit), do: query
   defp query_list_pages_limit(query, _per_page), do: from(q in query, limit: 20)
 
-  defp query_list_pages_offset(query, per_page, page) when is_integer(per_page) and is_integer(page)  do
+  defp query_list_pages_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
     offset = page * per_page - per_page
     from(q in query, offset: ^offset)
   end
+
   defp query_list_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
   defp query_list_pages_search(query, search) when is_binary(search) do
