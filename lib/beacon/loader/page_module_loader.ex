@@ -143,15 +143,15 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
-    dbg(schema)
-    dbg(page)
+    IO.inspect(schema)
+    IO.inspect(page)
 
     render = fn key, value, page ->
-      dbg(value)
+      IO.inspect(value)
 
       case Beacon.Content.render_snippet(value, %{page: page}) do
         {:ok, new_value} ->
-          dbg(new_value)
+          IO.inspect(new_value)
           {key, new_value}
 
         error ->

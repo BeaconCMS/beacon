@@ -113,8 +113,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
 
-      dbg(module)
-      dbg(module.page_assigns())
+      IO.inspect(module)
+      IO.inspect(module.page_assigns())
 
       [raw_schema] = module.page_assigns().raw_schema
 
