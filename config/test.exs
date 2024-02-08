@@ -2,7 +2,7 @@ import Config
 
 config :phoenix, :json_library, Jason
 
-config :logger, level: :error
+config :logger, level: :info
 
 config :beacon, Beacon.Repo,
   database: "beacon_test",
