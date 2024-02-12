@@ -22,7 +22,6 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     quote do
       defmodule unquote(component_module) do
         import Phoenix.Component
-        use Phoenix.HTML
 
         def my_component(name, assigns \\ []), do: render(name, Enum.into(assigns, %{}))
 
