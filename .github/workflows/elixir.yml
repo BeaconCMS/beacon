@@ -24,7 +24,7 @@ jobs:
 
           # latest
           - otp: "26"
-            elixir: "1.15"
+            elixir: "1.16"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
@@ -85,7 +85,7 @@ jobs:
         include:
           # latest
           - otp: "26"
-            elixir: "1.15"
+            elixir: "1.16"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
