@@ -94,32 +94,6 @@ defmodule SamplePhoenix.Endpoint do
   plug SamplePhoenixWeb.Router
 end
 
-defmodule BeaconDataSource do
-  @behaviour Beacon.DataSource.Behaviour
-
-  def live_data(:dev, ["home"], _params) do
-    [img1] = Beacon.MediaLibrary.search(:dev, "dockyard_1")
-
-    %{year: Date.utc_today().year, img1: img1}
-  end
-
-  def live_data(:dy, _path, _params) do
-    %{slogan: "Growth, Uninhibited"}
-  end
-
-  def live_data(_, _, _), do: %{}
-
-  def page_title(:dev, %{page_title: page_title}), do: String.upcase(page_title)
-
-  def page_title(:dy, _), do: "dy"
-
-  def meta_tags(:dev, %{beacon_live_data: %{year: year}, meta_tags: meta_tags}) do
-    [%{"name" => "year", "content" => year} | meta_tags]
-  end
-
-  def meta_tags(:dev, %{meta_tags: meta_tags}), do: meta_tags
-end
-
 defmodule BeaconTagsField do
   use Phoenix.Component
   import BeaconWeb.CoreComponents
@@ -218,6 +192,31 @@ dev_seeds = fn ->
     )
 
   img2 = Beacon.MediaLibrary.upload(metadata)
+
+  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "home"}) |> dbg
+
+  Beacon.Content.create_assign_for_live_data(
+    home_live_data,
+    %{
+      format: :elixir,
+      key: "year",
+      value: """
+      Date.utc_today().year
+      """
+    }
+  )
+
+  Beacon.Content.create_assign_for_live_data(
+    home_live_data,
+    %{
+      format: :elixir,
+      key: "img1",
+      value: """
+      [img1] = Beacon.MediaLibrary.search(:dev, "dockyard_1")
+      img1
+      """
+    }
+  )
 
   page_home =
     Beacon.Content.create_page!(%{
@@ -982,7 +981,6 @@ end
 dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
-  data_source: BeaconDataSource,
   extra_page_fields: [BeaconTagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
@@ -1012,7 +1010,7 @@ Task.start(fn ->
     {Beacon,
      sites: [
        dev_site,
-       [site: :dy, endpoint: SamplePhoenix.Endpoint, data_source: BeaconDataSource]
+       [site: :dy, endpoint: SamplePhoenix.Endpoint]
      ]},
     SamplePhoenix.Endpoint
   ]

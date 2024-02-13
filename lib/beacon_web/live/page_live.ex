@@ -41,14 +41,13 @@ defmodule BeaconWeb.PageLive do
 
   def handle_info({:page_loaded, _}, socket) do
     # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179
-    %{assigns: %{__beacon_page_params__: params}} = socket
 
     socket =
       socket
       # |> assign(:__page_updated_at, DateTime.utc_now())
       # |> assign(:page_title, page_title(params, socket.assigns))
       |> push_event("beacon:page-updated", %{
-        meta_tags: meta_tags(params, socket.assigns)
+        meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)
         # runtime_css_path: BeaconWeb.Layouts.asset_path(socket, :css)
       })
 
@@ -77,7 +76,9 @@ defmodule BeaconWeb.PageLive do
   def handle_params(params, _url, socket) do
     %{"path" => path} = params
     %{__site__: site} = socket.assigns
-    live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
+
+    data_source_module = Beacon.Loader.data_source_module_for_site(site)
+    live_data = data_source_module.live_data(path, Map.drop(params, ["path"]))
     {{_site, beacon_page_path}, {page_id, layout_id, _format, page_module, component_module}} = lookup_route!(site, path)
 
     Process.put(:__beacon_site__, site)
@@ -97,18 +98,10 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> assign(:page_title, page_title(params, socket.assigns))
-      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns)})
+      |> assign(:page_title, BeaconWeb.DataSource.page_title(socket.assigns))
+      |> push_event("beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})
 
     {:noreply, socket}
-  end
-
-  defp page_title(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
-    Beacon.DataSource.page_title(site, path, params, live_data, BeaconWeb.Layouts.page_title(assigns))
-  end
-
-  defp meta_tags(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
-    Beacon.DataSource.meta_tags(site, path, params, live_data, BeaconWeb.Layouts.meta_tags(assigns))
   end
 
   @doc false

@@ -5,6 +5,8 @@ defmodule Beacon.PubSub do
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
+  alias Beacon.Content.LiveData
+  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
 
   @pubsub __MODULE__
@@ -158,6 +160,28 @@ defmodule Beacon.PubSub do
   end
 
   defp error_page(error_page), do: %{site: error_page.site, id: error_page.id, status: error_page.status}
+
+  # Live Data
+
+  def subscribe_to_live_data(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_live_data(site))
+  end
+
+  def live_data_updated(%LiveData{} = live_data) do
+    live_data.site
+    |> topic_live_data()
+    |> broadcast(:live_data_updated)
+  end
+
+  def live_data_updated(%LiveDataAssign{} = live_data_assign) do
+    %{live_data: %{site: site}} = Beacon.Repo.preload(live_data_assign, :live_data)
+
+    site
+    |> topic_live_data()
+    |> broadcast(:live_data_updated)
+  end
+
+  defp topic_live_data(site), do: "beacon:#{site}:live_data"
 
   # Utils
 

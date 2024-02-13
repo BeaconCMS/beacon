@@ -30,6 +30,8 @@ defmodule Beacon.Content do
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
+  alias Beacon.Content.LiveData
+  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageEventHandler
@@ -1707,7 +1709,7 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %Page{title: "home"}})
+      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %{title: "home"}})
       {:ok, "title is home"}
 
   Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
@@ -1735,30 +1737,62 @@ defmodule Beacon.Content do
 
     * Meta Tag value
     * Page Schema (structured Schema.org tags)
+    * Page Title
 
   Allowed assigns:
 
-    * :page (Beacon.Content.Page.t())
+    * :page (map)
+    * :live_data (map)
 
   """
   @doc type: :snippets
-  @spec render_snippet(String.t(), %{page: Page.t()}) :: {:ok, String.t()} | :error
+  @spec render_snippet(String.t(), %{
+          page: %{
+            site: Beacon.Types.Site.t(),
+            path: String.t(),
+            title: String.t(),
+            description: String.t(),
+            meta_tags: [map()],
+            raw_schema: Beacon.Types.JsonArrayMap.t(),
+            order: integer(),
+            format: atom(),
+            extra: map()
+          },
+          live_data: map()
+        }) :: {:ok, String.t()} | {:error, Beacon.SnippetError.t()}
   def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
-    page =
-      assigns.page
-      |> Map.from_struct()
-      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+    page = Map.get(assigns, :page) || raise "expected assigns.page missing"
+    live_data = Map.get(assigns, :live_data) || raise "expected assigns.live_data missing"
 
-    assigns = %{"page" => page}
+    assigns = %{
+      "page" => deep_stringify(page),
+      "live_data" => deep_stringify(live_data)
+    }
 
     with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
          {:ok, template} <- Solid.render(template, assigns) do
       {:ok, to_string(template)}
     else
-      # TODO: wrap error and return a Beacon exception
-      _error -> :error
+      {:error, error} ->
+        {:error, Beacon.SnippetError.exception(error)}
+
+      error ->
+        message = """
+        failed to render the following snippet
+
+        #{template}
+
+        Got: #{inspect(error)}
+
+        """
+
+        {:error, Beacon.SnippetError.exception(message)}
     end
   end
+
+  defp deep_stringify(struct) when is_struct(struct), do: deep_stringify(Map.from_struct(struct))
+  defp deep_stringify(map) when is_map(map), do: Map.new(map, fn {k, v} -> {to_string(k), deep_stringify(v)} end)
+  defp deep_stringify(non_map), do: non_map
 
   # ERROR PAGES
 
@@ -2076,6 +2110,214 @@ defmodule Beacon.Content do
          %Page{} = page <- Lifecycle.Page.after_update_page(page) do
       {:ok, page}
     end
+  end
+
+  # LIVE DATA
+
+  @doc """
+  Returns a list of all existing LiveDataAssign formats.
+  """
+  @doc type: :live_data
+  @spec live_data_assign_formats() :: [atom()]
+  def live_data_assign_formats, do: LiveDataAssign.formats()
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking LiveData `:path` changes.
+
+  ## Example
+
+      iex> change_live_data(live_data, %{path: "/foo/:bar_id"})
+      %Ecto.Changeset{data: %LiveData{}}
+
+  """
+  @doc type: :live_data
+  @spec change_live_data_path(LiveData.t(), map()) :: Changeset.t()
+  def change_live_data_path(%LiveData{} = live_data, attrs \\ %{}) do
+    LiveData.path_changeset(live_data, attrs)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking LiveDataAssign changes.
+
+  ## Example
+
+      iex> change_live_data_assign(live_data_assign, %{format: :elixir, value: "Enum.random(1..100)"})
+      %Ecto.Changeset{data: %LiveDataAssign{}}
+
+  """
+  @doc type: :live_data
+  @spec change_live_data_assign(LiveDataAssign.t(), map()) :: Changeset.t()
+  def change_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs \\ %{}) do
+    LiveDataAssign.changeset(live_data_assign, attrs)
+  end
+
+  @doc """
+  Creates a new LiveData for scoping live data to pages.
+  """
+  @doc type: :live_data
+  @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_live_data(attrs) do
+    %LiveData{}
+    |> LiveData.changeset(attrs)
+    |> Repo.insert()
+    |> tap(&maybe_reload_live_data/1)
+  end
+
+  @doc """
+  Creates a new LiveData for scoping live data to pages.
+  """
+  @doc type: :live_data
+  @spec create_live_data!(map()) :: LiveData.t()
+  def create_live_data!(attrs) do
+    case create_live_data(attrs) do
+      {:ok, live_data} -> live_data
+      {:error, changeset} -> raise "failed to create live data, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Creates a new LiveDataAssign.
+  """
+  @doc type: :live_data
+  @spec create_assign_for_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_assign_for_live_data(live_data, attrs) do
+    changeset =
+      live_data
+      |> Ecto.build_assoc(:assigns)
+      |> LiveDataAssign.changeset(attrs)
+
+    case Repo.insert(changeset) do
+      {:ok, %LiveDataAssign{}} ->
+        live_data = Repo.preload(live_data, :assigns, force: true)
+        maybe_reload_live_data({:ok, live_data})
+        {:ok, live_data}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  @doc """
+  Gets a single `LiveData` entry by `:site` and `:path`.
+
+  ## Example
+
+      iex> get_live_data(:my_site, "/foo/bar/:baz")
+      %LiveData{}
+
+  """
+  @doc type: :live_data
+  @spec get_live_data(Site.t(), String.t()) :: LiveData.t() | nil
+  def get_live_data(site, path) do
+    LiveData
+    |> Repo.get_by(site: site, path: path)
+    |> Repo.preload(:assigns)
+  end
+
+  @doc """
+  Gets all LiveData for a site in one unpaginated query.
+  """
+  @doc type: :live_data
+  @spec live_data_for_site(Site.t()) :: [LiveData.t()]
+  def live_data_for_site(site) do
+    Repo.all(from ld in LiveData, where: ld.site == ^site, preload: :assigns)
+  end
+
+  @doc """
+  Query LiveData paths for a given site.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search records by path.
+
+  """
+  @doc type: :live_data
+  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [String.t()]
+  def live_data_paths_for_site(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, :infinity)
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_live_data_paths_for_site_base()
+    |> query_live_data_paths_for_site_limit(per_page)
+    |> query_live_data_paths_for_site_search(search)
+    |> Repo.all()
+  end
+
+  defp query_live_data_paths_for_site_base(site) do
+    from ld in LiveData,
+      where: ld.site == ^site,
+      select: ld.path,
+      order_by: [asc: ld.path]
+  end
+
+  defp query_live_data_paths_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_paths_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_paths_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+  defp query_live_data_paths_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_paths_for_site_search(query, _search), do: query
+
+  @doc """
+  Updates LiveDataPath.
+
+      iex> update_live_data_path(live_data, "/foo/bar/:baz_id")
+      {:ok, %LiveData{}}
+
+  """
+  @doc type: :live_data
+  @spec update_live_data_path(LiveData.t(), String.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def update_live_data_path(%LiveData{} = live_data, path) do
+    live_data
+    |> LiveData.path_changeset(%{path: path})
+    |> Repo.update()
+    |> tap(&maybe_reload_live_data/1)
+  end
+
+  @doc """
+  Updates LiveDataAssign.
+
+      iex> update_live_data_assign(live_data_assign, %{code: "true"})
+      {:ok, %LiveDataAssign{}}
+
+  """
+  @doc type: :live_data
+  @spec update_live_data_assign(LiveDataAssign.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs) do
+    live_data_assign
+    |> Repo.preload(:live_data)
+    |> LiveDataAssign.changeset(attrs)
+    |> validate_live_data_code()
+    |> Repo.update()
+    |> tap(&maybe_reload_live_data/1)
+  end
+
+  defp validate_live_data_code(changeset) do
+    site = Changeset.get_field(changeset, :site)
+    value = Changeset.get_field(changeset, :value)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
+    do_validate_template(changeset, :value, :heex, value, metadata)
+  end
+
+  def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
+  def maybe_reload_live_data({:error, _live_data}), do: :noop
+
+  @doc """
+  Deletes LiveData.
+  """
+  @doc type: :live_data
+  @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def delete_live_data(live_data) do
+    Repo.delete(live_data)
+  end
+
+  @doc """
+  Deletes LiveDataAssign.
+  """
+  @doc type: :live_data
+  @spec delete_live_data_assign(LiveDataAssign.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def delete_live_data_assign(live_data_assign) do
+    Repo.delete(live_data_assign)
   end
 
   ## Utils

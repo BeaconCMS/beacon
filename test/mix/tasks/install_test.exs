@@ -12,7 +12,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
   @prod_path "config/prod.exs"
   @application_path "lib/my_app/application.ex"
   @router_path "lib/my_app_web/router.ex"
-  @data_source_path "lib/my_app/beacon_data_source.ex"
   @mixfile_path "mix.exs"
   @seeds_path "priv/repo/beacon_seeds.exs"
 
@@ -242,7 +241,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
                      MyAppWeb.Endpoint,
                      # Start a worker by calling: MyApp.Worker.start_link(arg)
                      # {MyApp.Worker, arg}
-                    {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint, data_source: MyApp.BeaconDataSource]]}
+                    {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint]]}
                ]
 
                    # See https://hexdocs.pm/elixir/Supervisor.html
@@ -395,9 +394,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
                end
                """
 
-      # Creates beacon_data_source file
-      assert File.exists?(@data_source_path)
-
       # Creates beacon_seeds file
       assert File.exists?(@seeds_path)
     end)
@@ -413,7 +409,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       prod = File.read!(@prod_path)
       app = File.read!(@application_path)
       router = File.read!(@router_path)
-      data_source = File.read!(@data_source_path)
       mixfile = File.read!(@mixfile_path)
       seeds = File.read!(@seeds_path)
 
@@ -425,7 +420,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       assert File.read!(@prod_path) == prod
       assert File.read!(@application_path) == app
       assert File.read!(@router_path) == router
-      assert File.read!(@data_source_path) == data_source
       assert File.read!(@mixfile_path) == mixfile
       assert File.read!(@seeds_path) == seeds
     end)

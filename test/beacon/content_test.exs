@@ -9,6 +9,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
+  alias Beacon.Content.LiveData
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageEventHandler
@@ -330,13 +331,25 @@ defmodule Beacon.ContentTest do
     test "assigns" do
       assert Content.render_snippet(
                "page title is {{ page.title }}",
-               %{page: %Page{title: "test"}}
+               %{page: %{title: "test"}, live_data: %{}}
              ) == {:ok, "page title is test"}
 
       assert Content.render_snippet(
                "author.id is {{ page.extra.author.id }}",
-               %{page: %Page{extra: %{"author" => %{"id" => 1}}}}
+               %{page: %{extra: %{"author" => %{"id" => 1}}}, live_data: %{}}
              ) == {:ok, "author.id is 1"}
+    end
+
+    test "with live data" do
+      assert Content.render_snippet(
+               "page title is {{ live_data.foo }}",
+               %{page: %{}, live_data: %{foo: "foobar"}}
+             ) == {:ok, "page title is foobar"}
+
+      assert Content.render_snippet(
+               "foo, bar, baz... {{ live_data.foo.bar.baz }}",
+               %{page: %{}, live_data: %{foo: %{bar: %{baz: "bong"}}}}
+             ) == {:ok, "foo, bar, baz... bong"}
     end
 
     test "render helper" do
@@ -354,7 +367,7 @@ defmodule Beacon.ContentTest do
 
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
-               %{page: %Page{site: "my_site", extra: %{"author_id" => 1}}}
+               %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
              ) == {:ok, "author name is test_1"}
     end
   end
@@ -564,6 +577,135 @@ defmodule Beacon.ContentTest do
     test "update_component" do
       component = component_fixture(name: "new_component", body: "old_body")
       assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
+    end
+  end
+
+  describe "live data" do
+    test "create_live_data/1" do
+      attrs = %{site: :my_site, path: "foo/:bar"}
+
+      assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
+      assert %{site: :my_site, path: "foo/:bar"} = live_data
+    end
+
+    test "path validation" do
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: ""})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "foo/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/123"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/123/bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo_bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo_bar"})
+      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo-bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: ":/foo"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:/bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo//bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:123"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:123/bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:Bar"})
+      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:foo-bar"})
+    end
+
+    test "create_live_data/1 for root path" do
+      attrs = %{site: :my_site, path: ""}
+
+      assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
+      assert %{site: :my_site, path: ""} = live_data
+    end
+
+    test "create_assign_for_live_data/2" do
+      live_data = live_data_fixture()
+      attrs = %{key: "product_id", format: :elixir, value: "123"}
+
+      assert {:ok, %LiveData{assigns: [assign]}} = Content.create_assign_for_live_data(live_data, attrs)
+      assert %{key: "product_id", format: :elixir, value: "123"} = assign
+    end
+
+    test "get_live_data/2" do
+      live_data = live_data_fixture() |> Repo.preload(:assigns)
+
+      assert Content.get_live_data(live_data.site, live_data.path) == live_data
+    end
+
+    test "live_data_for_site/1" do
+      live_data_1 = live_data_fixture(site: :my_site, path: "foo")
+      live_data_2 = live_data_fixture(site: :my_site, path: "bar")
+      live_data_3 = live_data_fixture(site: :other_site, path: "baz")
+
+      results = Content.live_data_for_site(:my_site)
+
+      assert Enum.any?(results, &(&1.id == live_data_1.id))
+      assert Enum.any?(results, &(&1.id == live_data_2.id))
+      refute Enum.any?(results, &(&1.id == live_data_3.id))
+    end
+
+    test "live_data_paths_for_site/2" do
+      %{path: live_data_path} = live_data_fixture(site: :my_site)
+
+      assert [^live_data_path] = Content.live_data_paths_for_site(:my_site)
+    end
+
+    test "live_data_paths_for_site/2 :query option" do
+      live_data_fixture(site: :my_site, path: "foo")
+      live_data_fixture(site: :my_site, path: "bar")
+
+      assert ["foo"] = Content.live_data_paths_for_site(:my_site, query: "fo")
+      assert ["bar"] = Content.live_data_paths_for_site(:my_site, query: "ba")
+    end
+
+    test "live_data_paths_for_site/2 :per_page option" do
+      live_data_fixture(site: :my_site, path: "foo")
+      live_data_fixture(site: :my_site, path: "bar")
+      live_data_fixture(site: :my_site, path: "baz")
+      live_data_fixture(site: :my_site, path: "bong")
+
+      assert ["bar"] = Content.live_data_paths_for_site(:my_site, per_page: 1)
+      assert ["bar", "baz"] = Content.live_data_paths_for_site(:my_site, per_page: 2)
+      assert ["bar", "baz", "bong"] = Content.live_data_paths_for_site(:my_site, per_page: 3)
+      assert ["bar", "baz", "bong", "foo"] = Content.live_data_paths_for_site(:my_site, per_page: 4)
+    end
+
+    test "update_live_data_path/2" do
+      live_data = live_data_fixture(site: :my_site, path: "foo")
+
+      assert {:ok, result} = Content.update_live_data_path(live_data, "foo/:bar_id")
+      assert result.id == live_data.id
+      assert result.path == "foo/:bar_id"
+    end
+
+    test "update_live_data_assign/2" do
+      live_data = live_data_fixture()
+      live_data_assign = live_data_assign_fixture(live_data)
+
+      attrs = %{key: "wins", value: "1337", format: :elixir}
+      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, attrs)
+
+      assert updated_assign.id == live_data_assign.id
+      assert updated_assign.key == "wins"
+      assert updated_assign.value == "1337"
+      assert updated_assign.format == :elixir
+    end
+
+    test "delete_live_data/1" do
+      live_data = live_data_fixture()
+
+      assert [%{}] = Content.live_data_for_site(live_data.site)
+      assert {:ok, _} = Content.delete_live_data(live_data)
+      assert [] = Content.live_data_for_site(live_data.site)
+    end
+
+    test "delete_live_data_assign/1" do
+      live_data = live_data_fixture()
+      live_data_assign = live_data_assign_fixture(live_data)
+
+      assert %{assigns: [^live_data_assign]} = Repo.preload(live_data, :assigns)
+      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign)
+      assert %{assigns: []} = Repo.preload(live_data, :assigns)
     end
   end
 end

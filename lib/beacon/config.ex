@@ -15,11 +15,6 @@ defmodule Beacon.Config do
   @type endpoint :: module()
 
   @typedoc """
-  A module that implements `Beacon.DataSource.Behaviour`, used to provide `@assigns` to pages.
-  """
-  @type data_source :: module() | nil
-
-  @typedoc """
   A module that implements `Beacon.Authorization.Behaviour`, used to provide authorization rules for the admin backend.
   """
   @type authorization_source :: module()
@@ -138,7 +133,6 @@ defmodule Beacon.Config do
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
-          data_source: data_source(),
           authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
@@ -170,7 +164,6 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             endpoint: nil,
-            data_source: nil,
             authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.TailwindCompiler,
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
@@ -197,7 +190,6 @@ defmodule Beacon.Config do
   @type option ::
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
-          | {:data_source, data_source()}
           | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
@@ -219,8 +211,6 @@ defmodule Beacon.Config do
     * `:site` - `t:Beacon.Types.Site.t/0` (required)
 
     * `:endpoint` - `t:endpoint/0` (required)
-
-    * `:data_source` - `t:data_source/0` (optional)
 
     * `:authorization_source` - `t:authorization_source/0` (optional).
     Note this config can't be `nil`. Defaults to `Beacon.Authorization.DefaultPolicy`.
@@ -261,7 +251,6 @@ defmodule Beacon.Config do
       iex> Beacon.Config.new(
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        data_source: MyApp.SiteDataSource,
         authorization_source: MyApp.SiteAuthnPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
         template_formats: [
@@ -288,7 +277,6 @@ defmodule Beacon.Config do
       %Beacon.Config{
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        data_source: MyApp.SiteDataSource,
         authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js.eex",

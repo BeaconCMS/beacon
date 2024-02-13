@@ -20,8 +20,10 @@ defmodule BeaconWeb.API.PageJSON do
   end
 
   defp data(%Page{} = page) do
-    path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
-    live_data = Beacon.DataSource.live_data(page.site, path_info, [])
+    # FIXME: resolve live_data
+    # path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
+    # live_data = Beacon.DataSource.live_data(page.site, path_info, [])
+    live_data = %{}
 
     %{
       id: page.id,

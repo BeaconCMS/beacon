@@ -15,6 +15,7 @@ defmodule Beacon.Loader do
 
   alias Beacon.Content
   alias Beacon.Loader.ComponentModuleLoader
+  alias Beacon.Loader.DataSourceModuleLoader
   alias Beacon.Loader.ErrorPageModuleLoader
   alias Beacon.Loader.LayoutModuleLoader
   alias Beacon.Loader.PageModuleLoader
@@ -45,7 +46,12 @@ defmodule Beacon.Loader do
     def handle_continue(:load_site_from_db, config) do
       # avoid compilation warnings
       populate_default_components(nil)
+
+      # this module is required to render page_live#handle_params
+      :ok = load_data_source(config.site)
+
       subscribe_to_events(config.site)
+
       {:noreply, config}
     end
   else
@@ -69,6 +75,7 @@ defmodule Beacon.Loader do
     PubSub.subscribe_to_pages(site)
     PubSub.subscribe_to_components(site)
     PubSub.subscribe_to_error_pages(site)
+    PubSub.subscribe_to_live_data(site)
   end
 
   defp populate_default_components(nil), do: :skip
@@ -129,6 +136,7 @@ defmodule Beacon.Loader do
     with :ok <- Beacon.RuntimeJS.load!(),
          :ok <- load_components(site),
          :ok <- load_snippet_helpers(site),
+         :ok <- load_data_source(site),
          :ok <- load_layouts(site),
          :ok <- load_pages(site),
          :ok <- load_error_pages(site),
@@ -263,6 +271,13 @@ defmodule Beacon.Loader do
   end
 
   @doc false
+  def load_data_source(site) do
+    live_data = Content.live_data_for_site(site)
+    DataSourceModuleLoader.load_data_source(live_data, site)
+    :ok
+  end
+
+  @doc false
   def stylesheet_module_for_site(site) do
     module_for_site(site, "Stylesheet")
   end
@@ -275,6 +290,11 @@ defmodule Beacon.Loader do
   @doc false
   def error_module_for_site(site) do
     module_for_site(site, "ErrorPages")
+  end
+
+  @doc false
+  def data_source_module_for_site(site) do
+    module_for_site(site, "DataSource")
   end
 
   @doc false
@@ -449,6 +469,12 @@ defmodule Beacon.Loader do
     :ok = Beacon.PubSub.error_page_loaded(error_page)
     :ok = load_runtime_css(error_page.site)
     {:noreply, state}
+  end
+
+  @doc false
+  def handle_info(:live_data_updated, config) do
+    :ok = load_data_source(config.site)
+    {:noreply, config}
   end
 
   @doc false

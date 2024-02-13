@@ -15,6 +15,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
   defp create_page(_) do
     stylesheet_fixture()
 
+    live_data = live_data_fixture(site: :my_site, path: "home")
+    live_data_assign_fixture(live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
+    Beacon.Loader.load_data_source(:my_site)
+
     component_fixture(name: "sample_component")
 
     layout =
@@ -74,6 +78,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
+    Content.publish_page(page_home)
+
     page_without_meta_tags =
       published_page_fixture(
         layout_id: layout.id,
@@ -89,6 +95,16 @@ defmodule BeaconWeb.Live.PageLiveTest do
     Beacon.Loader.load_page(page_without_meta_tags)
 
     [layout: layout]
+  end
+
+  test "live data", %{conn: conn} do
+    create_page(:ok)
+
+    {:ok, view, _html} = live(conn, "/home")
+
+    assert has_element?(view, "#my-component-first", "first")
+    assert has_element?(view, "#my-component-second", "second")
+    assert has_element?(view, "#my-component-third", "third")
   end
 
   describe "meta tags" do
@@ -123,6 +139,56 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
     test "render without meta tags", %{conn: conn} do
       assert {:ok, _view, _html} = live(conn, "/without_meta_tags")
+    end
+
+    test "interpolate snippets", %{conn: conn} do
+      snippet_helper_fixture(%{
+        site: "my_site",
+        name: "og_description",
+        body: ~S"""
+        assigns
+        |> get_in(["page", "description"])
+        |> String.upcase()
+        """
+      })
+
+      layout = published_layout_fixture()
+
+      page =
+        [
+          site: "my_site",
+          layout_id: layout.id,
+          path: "page/meta-tag",
+          title: "my first page",
+          description: "my test page",
+          meta_tags: [
+            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+            %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"},
+            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+          ]
+        ]
+        |> published_page_fixture()
+        |> Beacon.Repo.preload(:event_handlers)
+
+      live_data = live_data_fixture(path: "page/meta-tag")
+      live_data_assign_fixture(live_data, format: :text, key: "image", value: "http://img.example.com")
+
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
+      Beacon.Loader.load_page(page)
+
+      {:ok, _view, html} = live(conn, "/page/meta-tag")
+
+      expected =
+        ~S"""
+        <meta content="MY TEST PAGE" property="og:description"/>
+        <meta content="http://example.com/page/meta-tag" property="og:url"/>
+        <meta content="http://img.example.com" property="og:image"/>
+        """
+        |> String.replace("\n", "")
+        |> String.replace("  ", "")
+        |> Regex.compile!()
+
+      assert html =~ expected
     end
   end
 
@@ -251,6 +317,35 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert page_title(view) =~ "page_title"
     end
+
+    test "with snippet helper from page", %{conn: conn} do
+      stylesheet_fixture()
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "foo/bar/:baz")
+      live_data = live_data_fixture(path: "foo/bar/:baz") |> Beacon.Repo.preload(:assigns)
+
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([live_data], :my_site)
+      Beacon.Loader.load_page(page)
+
+      {:ok, view, _html} = live(conn, "/foo/bar/123")
+
+      assert page_title(view) =~ "foo/bar/:baz"
+    end
+
+    test "with snippet helper from live data assigns", %{conn: conn} do
+      stylesheet_fixture()
+      layout = published_layout_fixture(title: "layout_title")
+      page = published_page_fixture(layout_id: layout.id, title: "test {{ live_data.test }}", path: "foo/bar/:baz")
+      live_data = live_data_fixture(path: "foo/bar/:baz")
+      live_data_assign_fixture(live_data, format: :elixir, key: "test", value: "baz")
+
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
+      Beacon.Loader.load_page(page)
+
+      {:ok, view, _html} = live(conn, "/foo/bar/123")
+
+      assert page_title(view) =~ "test 123"
+    end
   end
 
   describe "markdown" do
@@ -258,6 +353,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
       stylesheet_fixture()
       layout = published_layout_fixture()
       page = published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
+      live_data = live_data_fixture(path: "/markdown")
+      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
       Beacon.Loader.load_page(page)
 
       {:ok, view, _html} = live(conn, "/markdown")
