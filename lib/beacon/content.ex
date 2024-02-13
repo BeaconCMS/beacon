@@ -761,8 +761,8 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:offset` - offsets the number of rows selected from the result.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
     * `:sort` - column in which the result will be ordered by.
@@ -772,7 +772,7 @@ defmodule Beacon.Content do
   @spec list_pages(Site.t(), keyword()) :: [Page.t()]
   def list_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
-    offset = Keyword.get(opts, :offset, 0)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [])
     sort = Keyword.get(opts, :sort, :title)
@@ -780,7 +780,7 @@ defmodule Beacon.Content do
     site
     |> query_list_pages_base()
     |> query_list_pages_limit(per_page)
-    |> query_list_pages_offset(offset)
+    |> query_list_pages_offset(per_page, page)
     |> query_list_pages_search(search)
     |> query_list_pages_preloads(preloads)
     |> query_list_pages_sort(sort)
@@ -793,8 +793,12 @@ defmodule Beacon.Content do
   defp query_list_pages_limit(query, :infinity = _limit), do: query
   defp query_list_pages_limit(query, _per_page), do: from(q in query, limit: 20)
 
-  defp query_list_pages_offset(query, offset) when is_integer(offset), do: from(q in query, offset: ^offset)
-  defp query_list_pages_offset(query, _offset), do: from(q in query, offset: 0)
+  defp query_list_pages_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
   defp query_list_pages_search(query, search) when is_binary(search) do
     from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))

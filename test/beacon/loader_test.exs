@@ -28,7 +28,7 @@ defmodule Beacon.LoaderTest do
       stylesheet_fixture()
 
       layout =
-        layout_fixture(
+        published_layout_fixture(
           template: """
           <header>layout_v1</header>
           <%= @inner_content %>
@@ -44,7 +44,7 @@ defmodule Beacon.LoaderTest do
         )
 
       page =
-        page_fixture(
+        published_page_fixture(
           layout_id: layout.id,
           path: "/loader_test",
           template: """
@@ -55,10 +55,7 @@ defmodule Beacon.LoaderTest do
           """
         )
 
-      Content.publish_layout(layout)
-      Content.publish_page(page)
-
-      Beacon.reload_site(:my_site)
+      Beacon.Loader.load_page(page)
 
       [layout: layout, page: page, component: component]
     end

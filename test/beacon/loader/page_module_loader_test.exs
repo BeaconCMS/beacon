@@ -41,7 +41,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
     test "interpolates raw_schema snippets" do
       snippet_helper_fixture(%{
         site: "my_site",
-        name: "author_name",
+        name: "raw_schema_author_name",
         body: ~S"""
         author_id =  get_in(assigns, ["page", "extra", "author_id"])
         "author_#{author_id}"
@@ -67,35 +67,25 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
               headline: "{{ page.description }}",
               author: %{
                 "@type": "Person",
-                name: "{% helper 'author_name' %}"
+                name: "{% helper 'raw_schema_author_name' %}"
               }
             }
           ]
         ]
-        |> published_page_fixture()
+        |> page_fixture()
         |> Repo.preload(:event_handlers)
 
-      Beacon.Loader.load_page(page)
+      {:ok, module, _ast} = PageModuleLoader.load_page!(page)
 
-      {:ok, _module, ast} = PageModuleLoader.load_page!(page)
+      [raw_schema] = module.page_assigns().raw_schema
 
-      assert has_fields?(ast,
+      assert Enum.sort(raw_schema) == [
                "@context": "https://schema.org",
                "@type": "BlogPosting",
-               author: {:%{}, [], ["@type": "Person", name: "author_1"]},
+               author: %{name: "author_1", "@type": "Person"},
                headline: "hello world"
-             )
+             ]
     end
-  end
-
-  defp has_fields?(ast, match) do
-    {_new_ast, present} =
-      Macro.prewalk(ast, false, fn
-        {:%{}, _, fields} = node, acc -> {node, acc or match == Enum.sort(fields)}
-        node, acc -> {node, acc}
-      end)
-
-    present
   end
 
   describe "render" do

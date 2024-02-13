@@ -17,8 +17,17 @@ defmodule Beacon.RuntimeCSS do
   end
 
   @doc false
-  def fetch(site) do
+  def fetch(site, version \\ :compressed)
+
+  def fetch(site, :compressed) do
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
+      [[css]] -> css
+      _ -> nil
+    end
+  end
+
+  def fetch(site, :uncompressed) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:_, :"$1", :_}}) do
       [[css]] -> css
       _ -> "/* CSS not found for site #{inspect(site)} */"
     end

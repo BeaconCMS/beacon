@@ -15,6 +15,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
   defp create_page(_) do
     stylesheet_fixture()
 
+    live_data = live_data_fixture(site: :my_site, path: "home")
+    live_data_assign_fixture(live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
+    Beacon.Loader.load_data_source(:my_site)
+
     component_fixture(name: "sample_component")
 
     layout =
@@ -35,7 +39,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       )
 
     page_home =
-      page_fixture(
+      published_page_fixture(
         layout_id: layout.id,
         path: "home",
         template: """
@@ -74,12 +78,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """
       })
 
-    live_data = live_data_fixture(site: :my_site, path: "home")
-    live_data_assign_fixture(live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
-
     Content.publish_page(page_home)
 
-    _page_without_meta_tags =
+    page_without_meta_tags =
       published_page_fixture(
         layout_id: layout.id,
         path: "without_meta_tags",
@@ -90,7 +91,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         meta_tags: nil
       )
 
-    Beacon.reload_site(:my_site)
+    Beacon.Loader.load_page(page_home)
+    Beacon.Loader.load_page(page_without_meta_tags)
 
     [layout: layout]
   end
