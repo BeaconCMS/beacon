@@ -14,6 +14,19 @@ end
 
 defmodule Beacon.SnippetError do
   defexception [:message]
+
+  @type t() :: %__MODULE__{
+          message: String.t()
+        }
+
+  @impl true
+  def exception(%Solid.TemplateError{} = error) do
+    message = Exception.message(error)
+    %__MODULE__{message: message}
+  end
+
+  def exception(error) when is_binary(error), do: %__MODULE__{message: error}
+  def exception(_error), do: %__MODULE__{message: "failed to process snippet"}
 end
 
 defmodule BeaconWeb.NotFoundError do

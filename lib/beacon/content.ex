@@ -1759,19 +1759,34 @@ defmodule Beacon.Content do
             extra: map()
           },
           live_data: map()
-        }) :: {:ok, String.t()} | :error
+        }) :: {:ok, String.t()} | {:error, Beacon.SnippetError.t()}
   def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
+    page = Map.get(assigns, :page) || raise "expected assigns.page missing"
+    live_data = Map.get(assigns, :live_data) || raise "expected assigns.live_data missing"
+
     assigns = %{
-      "page" => deep_stringify(assigns.page),
-      "live_data" => deep_stringify(assigns.live_data)
+      "page" => deep_stringify(page),
+      "live_data" => deep_stringify(live_data)
     }
 
     with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
          {:ok, template} <- Solid.render(template, assigns) do
       {:ok, to_string(template)}
     else
-      # TODO: wrap error and return a Beacon exception
-      _error -> :error
+      {:error, error} ->
+        {:error, Beacon.SnippetError.exception(error)}
+
+      error ->
+        message = """
+        failed to render the following snippet
+
+        #{template}
+
+        Got: #{inspect(error)}
+
+        """
+
+        {:error, Beacon.SnippetError.exception(message)}
     end
   end
 

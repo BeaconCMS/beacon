@@ -15,12 +15,15 @@ defmodule BeaconWeb.DataSource do
       {:ok, page_title} ->
         page_title
 
-      :error ->
+      {:error, error} ->
         Logger.error("""
         failed to interpolate page title variables, fallbacking to original page title
 
         Site: #{page.site}
         Page path: #{page.path}
+
+        Got: #{inspect(error)}
+
         """)
 
         page.title
@@ -47,7 +50,7 @@ defmodule BeaconWeb.DataSource do
   defp interpolate_meta_tag_attribute({key, text}, values) when is_binary(text) do
     case Beacon.Content.render_snippet(text, values) do
       {:ok, new_text} -> {key, new_text}
-      :error -> raise Beacon.SnippetError, message: "failed to interpolate meta tags"
+      {:error, error} -> raise error
     end
   end
 end

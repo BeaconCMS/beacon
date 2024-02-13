@@ -92,8 +92,6 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp page_assigns(page) do
-    # %{meta_tags: meta_tags, title: title, raw_schema: raw_schema} = page
-    # meta_tags = interpolate_meta_tags(meta_tags, page)
     raw_schema = interpolate_raw_schema(page)
 
     quote do
@@ -125,7 +123,7 @@ defmodule Beacon.Loader.PageModuleLoader do
         {:ok, new_value} ->
           {key, new_value}
 
-        error ->
+        {:error, error} ->
           message = """
           failed to interpolate raw schema
 

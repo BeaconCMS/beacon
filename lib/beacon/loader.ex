@@ -46,7 +46,12 @@ defmodule Beacon.Loader do
     def handle_continue(:load_site_from_db, config) do
       # avoid compilation warnings
       populate_default_components(nil)
+
+      # this module is required to render page_live#handle_params
+      :ok = load_data_source(config.site)
+
       subscribe_to_events(config.site)
+
       {:noreply, config}
     end
   else
