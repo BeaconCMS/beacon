@@ -2164,6 +2164,18 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Creates a new LiveData for scoping live data to pages.
+  """
+  @doc type: :live_data
+  @spec create_live_data!(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_live_data!(attrs) do
+    case create_live_data(attrs) do
+      {:ok, live_data} -> live_data
+      {:error, changeset} -> raise "failed to create live data, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
   Creates a new LiveDataAssign.
   """
   @doc type: :live_data

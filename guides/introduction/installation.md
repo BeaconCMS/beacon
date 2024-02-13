@@ -205,7 +205,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     #       name: "sample_stylesheet",
     #       content: "body {cursor: zoom-in;}"
     #     })
-    
+
     alias Beacon.Content
 
     Content.create_stylesheet!(%{
@@ -285,7 +285,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     |> Content.create_page!()
     |> Content.publish_page()
 
-    home_live_data = Content.create_live_data(%{site: "<%= site %>", path: "home"})
+    home_live_data = Content.create_live_data!(%{site: "<%= site %>", path: "home"})
 
     Content.create_assign_for_live_data(home_live_data, %{format: :elixir, key: "vals", value: """
     ["first", "second", "third"]
@@ -308,7 +308,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     |> Content.create_page!()
     |> Content.publish_page()
 
-    blog_live_data = Content.create_live_data(%{site: "<%= site %>", path: "blog/:blog_slug"})
+    blog_live_data = Content.create_live_data!(%{site: "<%= site %>", path: "blog/:blog_slug"})
 
     Content.create_assign_for_live_data(blog_live_data, %{
       format: :elixir,
