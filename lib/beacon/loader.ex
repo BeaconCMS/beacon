@@ -131,8 +131,8 @@ defmodule Beacon.Loader do
     with :ok <- Beacon.RuntimeJS.load!(),
          :ok <- load_components(site),
          :ok <- load_snippet_helpers(site),
-         :ok <- load_layouts(site),
          :ok <- load_data_source(site),
+         :ok <- load_layouts(site),
          :ok <- load_pages(site),
          :ok <- load_error_pages(site),
          :ok <- load_stylesheets(site),
@@ -469,7 +469,6 @@ defmodule Beacon.Loader do
   @doc false
   def handle_info(:live_data_updated, config) do
     :ok = load_data_source(config.site)
-
     {:noreply, config}
   end
 

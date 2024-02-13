@@ -54,15 +54,15 @@ defmodule Beacon.Content.LiveData do
   end
 
   # TODO: remove this after https://github.com/BeaconCMS/beacon/issues/395 is resolved
-  def validate_path(%{changes: %{path: ""}} = changeset), do: changeset
+  defp validate_path(%{changes: %{path: ""}} = changeset), do: changeset
 
   # This is the only case where an empty path segment is allowed
-  def validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
+  defp validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
 
-  def validate_path(changeset) do
+  defp validate_path(changeset) do
     regex = ~r"
       ^                                            # Start of path string
-      (\/?(:[a-z_][a-zA-Z0-9_]*|[a-zA-Z0-9_-]+))  # First segment may skip leading slash - for backwards compatibility
+      (\/?(:[a-z_][a-zA-Z0-9_]*|[a-zA-Z0-9_-]+))   # First segment may skip leading slash - for backwards compatibility
                                                    # The above line can be removed after issue 395 is resolved
       (                                            # Start of path segment
         \/                                         # The rest of the path segments must contain a leading slash

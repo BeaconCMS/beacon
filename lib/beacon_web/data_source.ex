@@ -1,6 +1,8 @@
 defmodule BeaconWeb.DataSource do
   @moduledoc false
 
+  require Logger
+
   def page_title(assigns) do
     page =
       assigns.__dynamic_page_id__
@@ -10,8 +12,18 @@ defmodule BeaconWeb.DataSource do
     title = BeaconWeb.Layouts.page_title(assigns)
 
     case Beacon.Content.render_snippet(title, %{page: page, live_data: assigns.beacon_live_data}) do
-      {:ok, page_title} -> page_title
-      :error -> raise Beacon.SnippetError, message: "failed to interpolate page title"
+      {:ok, page_title} ->
+        page_title
+
+      :error ->
+        Logger.error("""
+        failed to interpolate page title variables, fallbacking to original page title
+
+        Site: #{page.site}
+        Page path: #{page.path}
+        """)
+
+        page.title
     end
   end
 
@@ -31,6 +43,7 @@ defmodule BeaconWeb.DataSource do
     Map.new(meta_tag, &interpolate_meta_tag_attribute(&1, values))
   end
 
+  # TODO: maybe remove invalid meta tag instead of raising?
   defp interpolate_meta_tag_attribute({key, text}, values) when is_binary(text) do
     case Beacon.Content.render_snippet(text, values) do
       {:ok, new_text} -> {key, new_text}

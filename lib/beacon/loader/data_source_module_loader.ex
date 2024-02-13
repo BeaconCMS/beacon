@@ -14,10 +14,8 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
     ast =
       quote do
         defmodule unquote(data_source_module) do
-          @behaviour Beacon.DataSource.Behaviour
           require Logger
 
-          @impl Beacon.DataSource.Behaviour
           def live_data(path, params) do
             live_data(path, params, unquote(Macro.escape(default_data)))
           end
