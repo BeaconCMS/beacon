@@ -193,7 +193,7 @@ dev_seeds = fn ->
 
   img2 = Beacon.MediaLibrary.upload(metadata)
 
-  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "home"}) |> dbg
+  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "home"})
 
   Beacon.Content.create_assign_for_live_data(
     home_live_data,
