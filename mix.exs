@@ -52,7 +52,6 @@ defmodule Beacon.MixProject do
       {:solid, "~> 0.14"},
       phoenix_dep(),
       {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_html, "~> 2.14.2 or ~> 3.0 or ~> 4.0"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
       phoenix_live_view_dep(),
       {:phoenix_pubsub, "~> 2.1"},

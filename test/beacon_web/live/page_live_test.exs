@@ -50,10 +50,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
           <% end %>
 
           <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-            Name: <BeaconWeb.CoreComponents.input type="text" field={f[:name]} />
-            <BeaconWeb.CoreComponents.button type="submit">
-              Hello
-            </BeaconWeb.CoreComponents.button>
+            Name: <%= text_input f, :name %>
+            <%= submit "Hello" %>
           </.form>
 
           <%= if assigns[:message], do: assigns.message %>

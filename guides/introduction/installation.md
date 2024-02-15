@@ -256,7 +256,7 @@ For more info on site options, check out `Beacon.start_link/1`.
         </ul>
 
         <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-          Name: <.input type="text" field={f[:name]} /> <.button>Hello</.button>
+          Name: <%= text_input f, :name %> <%= submit "Hello" %>
         </.form>
 
         <%= if assigns[:message], do: assigns.message %>
