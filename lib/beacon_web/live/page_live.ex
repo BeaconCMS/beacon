@@ -1,6 +1,5 @@
 defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
-  use Phoenix.HTML
   require Logger
   import Phoenix.Component
   alias Beacon.Lifecycle

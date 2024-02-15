@@ -82,7 +82,6 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp build(module_name, component_module, functions) do
     quote do
       defmodule unquote(module_name) do
-        use Phoenix.HTML
         import Phoenix.Component
         unquote(Loader.maybe_import_my_component(component_module, functions))
 
