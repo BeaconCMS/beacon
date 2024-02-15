@@ -14,6 +14,7 @@ defmodule Beacon.Loader.ErrorPageModuleLoader do
     ast =
       quote do
         defmodule unquote(error_module) do
+          use Phoenix.HTML
           require EEx
           import Phoenix.Component
           require Logger
