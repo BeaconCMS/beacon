@@ -50,8 +50,6 @@ defmodule Beacon.Content do
   # TODO: enforce start with /
   @path_format ~r"
       ^                                            # Start of path string
-      (\/?(:[a-z_][a-zA-Z0-9_]*|[a-zA-Z0-9_-]+))   # First segment may skip leading slash - for backwards compatibility
-                                                   # The above line can be removed after issue 395 is resolved
       (                                            # Start of path segment
         \/                                         # The rest of the path segments must contain a leading slash
           (                                        # Option 1 - capturing param
@@ -630,7 +628,7 @@ defmodule Beacon.Content do
 
   defp validate_page_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path, "nopath")
+    path = Changeset.get_field(changeset, :path) || "nopath"
     format = Changeset.get_field(changeset, :format)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
@@ -719,7 +717,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_page_by(site, path: "contact")
+      iex> get_page_by(site, path: "/contact")
       %Page{}
 
   """

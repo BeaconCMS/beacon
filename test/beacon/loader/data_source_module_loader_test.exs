@@ -14,7 +14,7 @@ defmodule Beacon.Loader.DataSourceModuleLoaderTest do
   end
 
   test "path with variable" do
-    live_data = live_data_fixture(site: @site, path: "users/:user_id")
+    live_data = live_data_fixture(site: @site, path: "/users/:user_id")
     live_data_assign_fixture(live_data, format: :elixir, key: "user_id", value: "String.to_integer(user_id)")
 
     assert assigns_for_path("users/123") == %{user_id: 123}
@@ -22,9 +22,9 @@ defmodule Beacon.Loader.DataSourceModuleLoaderTest do
   end
 
   test "multiple paths" do
-    live_data = live_data_fixture(site: @site, path: "foo")
+    live_data = live_data_fixture(site: @site, path: "/foo")
     live_data_assign_fixture(live_data, format: :text, key: "customer_id", value: "123")
-    live_data = live_data_fixture(site: @site, path: "bar")
+    live_data = live_data_fixture(site: @site, path: "/bar")
     live_data_assign_fixture(live_data, format: :text, key: "product_id", value: "678")
 
     assert assigns_for_path("foo") == %{customer_id: "123"}

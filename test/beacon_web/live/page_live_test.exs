@@ -15,7 +15,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   defp create_page(_) do
     stylesheet_fixture()
 
-    live_data = live_data_fixture(site: :my_site, path: "home")
+    live_data = live_data_fixture(site: :my_site, path: "/home")
     live_data_assign_fixture(live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
     Beacon.Loader.load_data_source(:my_site)
 
@@ -41,7 +41,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     page_home =
       published_page_fixture(
         layout_id: layout.id,
-        path: "home",
+        path: "/home",
         template: """
         <main>
           <h2>Some Values:</h2>
@@ -83,7 +83,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     page_without_meta_tags =
       published_page_fixture(
         layout_id: layout.id,
-        path: "without_meta_tags",
+        path: "/without_meta_tags",
         template: """
         <main>
         </main>
@@ -158,19 +158,19 @@ defmodule BeaconWeb.Live.PageLiveTest do
         [
           site: "my_site",
           layout_id: layout.id,
-          path: "page/meta-tag",
+          path: "/page/meta-tag",
           title: "my first page",
           description: "my test page",
           meta_tags: [
             %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-            %{"property" => "og:url", "content" => "http://example.com/{{ page.path }}"},
+            %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
             %{"property" => "og:image", "content" => "{{ live_data.image }}"}
           ]
         ]
         |> published_page_fixture()
         |> Beacon.Repo.preload(:event_handlers)
 
-      live_data = live_data_fixture(path: "page/meta-tag")
+      live_data = live_data_fixture(path: "/page/meta-tag")
       live_data_assign_fixture(live_data, format: :text, key: "image", value: "http://img.example.com")
 
       Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
@@ -321,8 +321,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "with snippet helper from page", %{conn: conn} do
       stylesheet_fixture()
       layout = published_layout_fixture(title: "layout_title")
-      page = published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "foo/bar/:baz")
-      live_data = live_data_fixture(path: "foo/bar/:baz") |> Beacon.Repo.preload(:assigns)
+      page = published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "/foo/bar/:baz")
+      live_data = live_data_fixture(path: "/foo/bar/:baz") |> Beacon.Repo.preload(:assigns)
 
       Beacon.Loader.DataSourceModuleLoader.load_data_source([live_data], :my_site)
       Beacon.Loader.load_page(page)
@@ -335,8 +335,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "with snippet helper from live data assigns", %{conn: conn} do
       stylesheet_fixture()
       layout = published_layout_fixture(title: "layout_title")
-      page = published_page_fixture(layout_id: layout.id, title: "test {{ live_data.test }}", path: "foo/bar/:baz")
-      live_data = live_data_fixture(path: "foo/bar/:baz")
+      page = published_page_fixture(layout_id: layout.id, title: "test {{ live_data.test }}", path: "/foo/bar/:baz")
+      live_data = live_data_fixture(path: "/foo/bar/:baz")
       live_data_assign_fixture(live_data, format: :elixir, key: "test", value: "baz")
 
       Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
@@ -372,7 +372,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       layout = published_layout_fixture()
 
       published_page_fixture(
-        path: "component_test",
+        path: "/component_test",
         template: """
         <%= my_component("component_test", []) %>
         """,

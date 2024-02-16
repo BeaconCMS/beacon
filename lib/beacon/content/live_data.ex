@@ -35,19 +35,13 @@ defmodule Beacon.Content.LiveData do
   def changeset(%__MODULE__{} = live_data, attrs) do
     live_data
     |> cast(attrs, [:site, :path])
-    |> validate_path()
     |> validate_required([:site])
+    |> Beacon.Schema.validate_path()
   end
 
   def path_changeset(%__MODULE__{} = live_data, attrs) do
     live_data
     |> cast(attrs, [:path])
-    |> validate_path()
-  end
-
-  defp validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
-
-  defp validate_path(changeset) do
-    validate_format(changeset, :path, Beacon.Content.path_format())
+    |> Beacon.Schema.validate_path()
   end
 end

@@ -82,9 +82,11 @@ defmodule Beacon.Content.Page do
     |> unique_constraint([:path, :site])
     |> validate_required([
       :site,
+      :path,
       :layout_id,
       :format
     ])
+    |> Beacon.Schema.validate_path()
     |> foreign_key_constraint(:layout_id)
     |> remove_empty_meta_attributes(:meta_tags)
   end
@@ -121,7 +123,7 @@ defmodule Beacon.Content.Page do
       :layout_id,
       :format
     ])
-    |> validate_path()
+    |> Beacon.Schema.validate_path()
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
@@ -131,12 +133,6 @@ defmodule Beacon.Content.Page do
     schema
     |> cast(params, [:name, :args, :code])
     |> validate_required([:name, :code])
-  end
-
-  defp validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
-
-  defp validate_path(changeset) do
-    validate_format(changeset, :path, Beacon.Content.path_format())
   end
 
   # For when the UI is a <textarea> but "\n" would cause problems
