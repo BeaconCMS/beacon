@@ -2295,8 +2295,9 @@ defmodule Beacon.Content do
   defp validate_live_data_code(changeset) do
     site = Changeset.get_field(changeset, :site)
     value = Changeset.get_field(changeset, :value)
+    format = Changeset.get_field(changeset, :format)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :value, :elixir, value, metadata)
+    do_validate_template(changeset, :value, format, value, metadata)
   end
 
   def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
@@ -2354,13 +2355,15 @@ defmodule Beacon.Content do
     end)
   end
 
+  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata), do: changeset
+
   # TODO: expose template validation to custom template formats defined by users
   defp do_validate_template(changeset, _field, _format, _template, _metadata), do: changeset
 
   defp validate_elixir_code(code) do
     Application.put_env(:elixir, :ansi_enabled, false)
 
-    {result, _} =
+    {compilation, diagnostics} =
       with_diagnostics(fn ->
         try do
           Code.compile_string(code)
@@ -2371,14 +2374,23 @@ defmodule Beacon.Content do
       end)
 
     result =
-      case result do
-        :ok -> :ok
-        {:error, error} -> {:error, "invalid", Exception.message(error)}
+      case compilation do
+        :ok ->
+          :ok
+
+        {:error, error} ->
+          message = "#{Exception.message(error)}\n#{diagnostic(diagnostics)}"
+          {:error, "invalid", message}
       end
+
+    dbg(result)
 
     Application.put_env(:elixir, :ansi_enabled, true)
     result
   end
+
+  defp diagnostic([%{message: message} | _]), do: message
+  defp diagnostic(_diagnostics), do: ""
 
   # extract elixir code diagnostics
   # https://github.com/elixir-lang/elixir/blob/38a571b73a59b72b34a6d70501b3e20bda34ae0e/lib/elixir/lib/code.ex#L611
