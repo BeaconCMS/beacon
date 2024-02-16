@@ -2378,12 +2378,15 @@ defmodule Beacon.Content do
         :ok ->
           :ok
 
+        # we skip CompileError to avoid raising errors on undefined variables, which we essentially use everywhere.
+        # it may cause some false negatives but we're more worried about syntax errors
+        {:error, %CompileError{}} ->
+          :ok
+
         {:error, error} ->
-          message = "#{Exception.message(error)}\n#{diagnostic(diagnostics)}"
+          message = "#{Exception.message(error)}\n\n#{diagnostic(diagnostics)}"
           {:error, "invalid", message}
       end
-
-    dbg(result)
 
     Application.put_env(:elixir, :ansi_enabled, true)
     result

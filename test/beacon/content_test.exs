@@ -697,9 +697,32 @@ defmodule Beacon.ContentTest do
 
       attrs = %{value: "[1)", format: :elixir}
       assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
-
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{value: "String.to_integer", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "function String.to_integer/0 is undefined"
+
+      attrs = %{value: "if true, do false", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "invalid syntax found"
+    end
+
+    test "validate assign elixir code ignoring undefined variables" do
+      live_data = live_data_fixture()
+      live_data_assign = live_data_assign_fixture(live_data)
+
+      code = ~S|
+      id = String.to_integer(params["id"])
+      new_path = "/new_services/#{service}"
+      if id < 100, do: "less" <> "than", else: "100"
+      |
+
+      attrs = %{value: code, format: :elixir}
+      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, attrs)
     end
 
     test "delete_live_data/1" do
