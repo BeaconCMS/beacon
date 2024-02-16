@@ -1,8 +1,6 @@
 defmodule Beacon.Loader.LayoutModuleLoader do
   @moduledoc false
 
-  require Logger
-
   alias Beacon.Content
   alias Beacon.Loader
 

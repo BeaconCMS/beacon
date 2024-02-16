@@ -241,7 +241,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp dynamic_helper do
     quote do
       def dynamic_helper(helper_name, args) do
-        Loader.call_function_with_retry(__MODULE__, String.to_atom(helper_name), [args])
+        Loader.call_function_with_retry!(__MODULE__, String.to_atom(helper_name), [args])
       end
     end
   end

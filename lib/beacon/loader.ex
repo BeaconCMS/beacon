@@ -187,10 +187,10 @@ defmodule Beacon.Loader do
   rescue
     e ->
       if failure_count >= 3 do
-        Logger.debug("failed to load module #{inspect(module)} after #{failure_count} tries.")
+        Logger.debug("failed to load module #{inspect(module)} after #{failure_count} tries")
 
         message = """
-        failed to load module #{inspect(module)}
+        failed to load module #{inspect(module)} after #{failure_count} tries
 
         Got:
 
@@ -200,7 +200,7 @@ defmodule Beacon.Loader do
 
         reraise Beacon.LoaderError, [message: message], __STACKTRACE__
       else
-        Logger.debug("failed to load module #{inspect(module)}, retrying...")
+        Logger.debug("failed to load module #{inspect(module)} for the #{failure_count + 1}, retrying...")
         :timer.sleep(100 * (failure_count * 2))
         reload_module!(module, ast, file, failure_count + 1)
       end
@@ -323,27 +323,31 @@ defmodule Beacon.Loader do
 
   # This retry logic exists because a module may be in the process of being reloaded, in which case we want to retry
   @doc false
-  def call_function_with_retry(module, function, args, failure_count \\ 0) do
+  def call_function_with_retry!(module, function, args, failure_count \\ 0) when is_atom(module) and is_atom(function) and is_list(args) do
     apply(module, function, args)
   rescue
     e in UndefinedFunctionError ->
       case {failure_count, e} do
         {x, _} when x >= 10 ->
-          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} after #{failure_count} tries.")
+          mfa = Exception.format_mfa(module, function, length(args))
+          Logger.debug("failed to call #{mfa} after #{failure_count} tries")
           reraise e, __STACKTRACE__
 
-        {_, %UndefinedFunctionError{function: ^function, module: ^module}} ->
-          Logger.debug("failed to call #{inspect(module)} #{inspect(function)} with #{inspect(args)} for the #{failure_count + 1} time, retrying...")
+        {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
+          mfa = Exception.format_mfa(module, function, length(args))
+          Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
           :timer.sleep(100 * (failure_count * 2))
-          call_function_with_retry(module, function, args, failure_count + 1)
+          call_function_with_retry!(module, function, args, failure_count + 1)
 
         _ ->
           reraise e, __STACKTRACE__
       end
 
     _e in FunctionClauseError ->
+      mfa = Exception.format_mfa(module, function, length(args))
+
       error_message = """
-      could not call #{function} for the given path: #{inspect(List.flatten(args))}.
+      could not call #{mfa} for the given path: #{inspect(List.flatten(args))}.
 
       Make sure you have created a page for this path.
 

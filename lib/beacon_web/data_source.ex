@@ -3,11 +3,27 @@ defmodule BeaconWeb.DataSource do
 
   require Logger
 
+  def live_data(site, path, params) when is_atom(site) do
+    data_source_module = Beacon.Loader.data_source_module_for_site(site)
+
+    if Code.loaded?(data_source_module) do
+      data_source_module.live_data(path, params)
+    else
+      Logger.warning("""
+      data source module #{data_source_module} for site #{site} and path #{path}  is not loaded
+
+      returning empty live data for that page
+      """)
+
+      %{}
+    end
+  end
+
   def page_title(assigns) do
     page =
       assigns.__dynamic_page_id__
       |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+      |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
 
     title = BeaconWeb.Layouts.page_title(assigns)
 
@@ -34,7 +50,7 @@ defmodule BeaconWeb.DataSource do
     page =
       assigns.__dynamic_page_id__
       |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+      |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
 
     assigns
     |> BeaconWeb.Layouts.meta_tags()
