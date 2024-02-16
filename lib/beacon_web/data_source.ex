@@ -3,14 +3,14 @@ defmodule BeaconWeb.DataSource do
 
   require Logger
 
-  def live_data(site, path, params) when is_atom(site) do
+  def live_data(site, path_info, params) when is_atom(site) and is_list(path_info) do
     data_source_module = Beacon.Loader.data_source_module_for_site(site)
 
     if :erlang.module_loaded(data_source_module) do
-      data_source_module.live_data(path, params)
+      data_source_module.live_data(path_info, params)
     else
       Logger.warning("""
-      data source module #{data_source_module} for site #{site} and path #{path}  is not loaded
+      data source module #{data_source_module} for site #{site} and path #{inspect(path_info)} is not loaded
 
       returning empty live data for that page
       """)
