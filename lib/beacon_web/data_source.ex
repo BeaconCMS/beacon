@@ -6,7 +6,7 @@ defmodule BeaconWeb.DataSource do
   def live_data(site, path, params) when is_atom(site) do
     data_source_module = Beacon.Loader.data_source_module_for_site(site)
 
-    if Code.loaded?(data_source_module) do
+    if :erlang.module_loaded(data_source_module) do
       data_source_module.live_data(path, params)
     else
       Logger.warning("""
