@@ -1,8 +1,6 @@
 defmodule Beacon.Loader.StylesheetModuleLoader do
   @moduledoc false
 
-  require Logger
-
   alias Beacon.Content
 
   def load_stylesheets(_site, [] = _stylesheets) do

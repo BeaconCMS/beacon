@@ -30,7 +30,7 @@ defmodule BeaconWeb.Layouts do
   def render_dynamic_layout(%{__dynamic_layout_id__: layout_id} = assigns) do
     layout_id
     |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:render, [assigns])
+    |> Beacon.Loader.call_function_with_retry!(:render, [assigns])
   end
 
   def live_socket_path(%{__site__: site}) do
@@ -40,13 +40,13 @@ defmodule BeaconWeb.Layouts do
   defp compiled_page_assigns(page_id) do
     page_id
     |> Beacon.Loader.page_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+    |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
   end
 
   defp compiled_layout_assigns(layout_id) do
     layout_id
     |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
+    |> Beacon.Loader.call_function_with_retry!(:layout_assigns, [])
   end
 
   def render_page_title(assigns) do
@@ -57,7 +57,7 @@ defmodule BeaconWeb.Layouts do
     %{title: page_title} =
       page_id
       |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+      |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
 
     if page_title do
       page_title
@@ -65,7 +65,7 @@ defmodule BeaconWeb.Layouts do
       %{title: layout_title} =
         layout_id
         |> Beacon.Loader.layout_module_for_site()
-        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
+        |> Beacon.Loader.call_function_with_retry!(:layout_assigns, [])
 
       layout_title || missing_page_title()
     end
@@ -74,7 +74,7 @@ defmodule BeaconWeb.Layouts do
   def page_title(_), do: missing_page_title()
 
   defp missing_page_title do
-    Logger.warning("No page title set")
+    Logger.warning("no page title was found")
     ""
   end
 
@@ -129,7 +129,7 @@ defmodule BeaconWeb.Layouts do
     %{raw_schema: raw_schema} =
       page_id
       |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+      |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
 
     is_empty = fn raw_schema ->
       raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []

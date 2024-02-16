@@ -28,7 +28,7 @@ defmodule Beacon.Content.Snippets.TagHelper do
     text =
       site
       |> Beacon.Loader.snippet_helpers_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(helper_name, [context.counter_vars])
+      |> Beacon.Loader.call_function_with_retry!(helper_name, [context.counter_vars])
       |> to_string()
 
     {[text: text], context}

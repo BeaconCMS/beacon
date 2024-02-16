@@ -1,8 +1,6 @@
 defmodule Beacon.Loader.SnippetModuleLoader do
   @moduledoc false
 
-  require Logger
-
   alias Beacon.Loader
 
   def load_helpers(_site, [] = _helpers) do

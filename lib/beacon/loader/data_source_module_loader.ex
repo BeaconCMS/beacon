@@ -23,7 +23,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
           unquote_splicing(live_data_functions)
 
           def live_data(path, params, data) do
-            Logger.warning("Unhandled Beacon Live Data request for site #{unquote(site)} with path #{inspect(path)} and params #{inspect(params)}")
+            Logger.warning("live data not found for site #{unquote(site)} with path #{inspect(path)} and params #{inspect(params)}")
             data
           end
         end

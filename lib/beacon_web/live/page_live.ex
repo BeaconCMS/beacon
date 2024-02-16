@@ -33,7 +33,7 @@ defmodule BeaconWeb.PageLive do
   defp lookup_route!(site, path) do
     Beacon.Router.lookup_path(site, path) ||
       raise BeaconWeb.NotFoundError, """
-      route not found for path #{inspect(path)}
+      route not found for site #{site} and path #{inspect(path)}
 
       Make sure a page was created for that path.
       """
@@ -54,13 +54,20 @@ defmodule BeaconWeb.PageLive do
     {:noreply, socket}
   end
 
-  def handle_info(_msg, socket) do
+  def handle_info(msg, socket) do
+    Logger.warning("""
+    unhandled message:
+
+      #{inspect(msg)}
+
+    """)
+
     {:noreply, socket}
   end
 
   def handle_event(event_name, event_params, socket) do
     socket.assigns.__beacon_page_module__
-    |> Beacon.Loader.call_function_with_retry(
+    |> Beacon.Loader.call_function_with_retry!(
       :handle_event,
       [event_name, event_params, socket]
     )
@@ -77,8 +84,7 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{__site__: site} = socket.assigns
 
-    data_source_module = Beacon.Loader.data_source_module_for_site(site)
-    live_data = data_source_module.live_data(path, Map.drop(params, ["path"]))
+    live_data = BeaconWeb.DataSource.live_data(site, path, Map.drop(params, ["path"]))
     {{_site, beacon_page_path}, {page_id, layout_id, _format, page_module, component_module}} = lookup_route!(site, path)
 
     Process.put(:__beacon_site__, site)

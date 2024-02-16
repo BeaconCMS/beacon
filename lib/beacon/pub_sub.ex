@@ -1,7 +1,6 @@
 defmodule Beacon.PubSub do
   @moduledoc false
 
-  require Logger
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
