@@ -708,7 +708,7 @@ defmodule Beacon.ContentTest do
       attrs = %{value: "if true, do false", format: :elixir}
       assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
-      assert compilation_error =~ "invalid syntax found"
+      assert compilation_error =~ "unexpected reserved word: do"
     end
 
     test "validate assign elixir code ignoring undefined variables" do
