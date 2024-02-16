@@ -704,15 +704,9 @@ defmodule Beacon.ContentTest do
       assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
-    end
-
-    test "validate assign elixir code ignoring undefined variables" do
-      live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data)
 
       code = ~S|
       id = String.to_integer(params["id"])
-      new_path = "/new_services/#{service}"
       if id < 100, do: "less" <> "than", else: "100"
       |
 
