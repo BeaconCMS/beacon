@@ -2391,12 +2391,6 @@ defmodule Beacon.Content do
         :ok ->
           :ok
 
-        # we skip CompileError to avoid raising errors on undefined variables, which we essentially use everywhere.
-        # it may cause some false negatives but we're more worried about syntax errors
-        # TODO: add bindings (params and path variables) to fully validate `code` and remove this clause
-        {:error, %CompileError{}} ->
-          :ok
-
         {:error, error} ->
           message = "#{Exception.message(error)}\n\n#{diagnostic(diagnostics)}"
           {:error, "invalid", message}
