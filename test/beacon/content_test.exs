@@ -691,6 +691,17 @@ defmodule Beacon.ContentTest do
       assert updated_assign.format == :elixir
     end
 
+    test "validate assign elixir code" do
+      live_data = live_data_fixture()
+      live_data_assign = live_data_assign_fixture(live_data)
+
+      attrs = %{value: "[1)", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+    end
+
     test "delete_live_data/1" do
       live_data = live_data_fixture()
 

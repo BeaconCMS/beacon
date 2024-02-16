@@ -2296,7 +2296,7 @@ defmodule Beacon.Content do
     site = Changeset.get_field(changeset, :site)
     value = Changeset.get_field(changeset, :value)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :value, :heex, value, metadata)
+    do_validate_template(changeset, :value, :elixir, value, metadata)
   end
 
   def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
@@ -2345,6 +2345,59 @@ defmodule Beacon.Content do
     end)
   end
 
+  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata) when is_binary(code) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      case validate_elixir_code(template) do
+        :ok -> []
+        {:error, reason, message} -> [{field, {reason, compilation_error: message}}]
+      end
+    end)
+  end
+
   # TODO: expose template validation to custom template formats defined by users
   defp do_validate_template(changeset, _field, _format, _template, _metadata), do: changeset
+
+  defp validate_elixir_code(code) do
+    Application.put_env(:elixir, :ansi_enabled, false)
+
+    {result, _} =
+      with_diagnostics(fn ->
+        try do
+          Code.compile_string(code)
+          :ok
+        rescue
+          error -> {:error, error}
+        end
+      end)
+
+    result =
+      case result do
+        :ok -> :ok
+        {:error, error} -> {:error, "invalid", Exception.message(error)}
+      end
+
+    Application.put_env(:elixir, :ansi_enabled, true)
+    result
+  end
+
+  # extract elixir code diagnostics
+  # https://github.com/elixir-lang/elixir/blob/38a571b73a59b72b34a6d70501b3e20bda34ae0e/lib/elixir/lib/code.ex#L611
+  # TODO: remove this function after we required Elixir v1.15+
+  defp with_diagnostics(opts \\ [], fun) do
+    value = :erlang.get(:elixir_code_diagnostics)
+    log = Keyword.get(opts, :log, false)
+    :erlang.put(:elixir_code_diagnostics, {[], log})
+
+    try do
+      result = fun.()
+      {diagnostics, _log?} = :erlang.get(:elixir_code_diagnostics)
+      {result, Enum.reverse(diagnostics)}
+    after
+      if value == :undefined do
+        :erlang.erase(:elixir_code_diagnostics)
+      else
+        :erlang.put(:elixir_code_diagnostics, value)
+      end
+    end
+  end
 end
