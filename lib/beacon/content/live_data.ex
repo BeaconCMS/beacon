@@ -32,51 +32,22 @@ defmodule Beacon.Content.LiveData do
     timestamps()
   end
 
-  # Note: `empty_values: [nil]` is necessary in changesets below, as well as skipping validation
-  # for `:path`, because we don't use a leading slash, so root path is "", which Ecto considers
-  # an empty value by default.
-  #
-  # Eventually we will switch to including the leading slash
-  # (see https://github.com/BeaconCMS/beacon/issues/395)
-  # and we can remove the `:empty_values` option as well as validating the `:path`
-
   def changeset(%__MODULE__{} = live_data, attrs) do
     live_data
-    |> cast(attrs, [:site, :path], empty_values: [nil])
+    |> cast(attrs, [:site, :path])
     |> validate_path()
     |> validate_required([:site])
   end
 
   def path_changeset(%__MODULE__{} = live_data, attrs) do
     live_data
-    |> cast(attrs, [:path], empty_values: [nil])
+    |> cast(attrs, [:path])
     |> validate_path()
   end
 
-  # TODO: remove this after https://github.com/BeaconCMS/beacon/issues/395 is resolved
-  defp validate_path(%{changes: %{path: ""}} = changeset), do: changeset
-
-  # This is the only case where an empty path segment is allowed
   defp validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
 
   defp validate_path(changeset) do
-    regex = ~r"
-      ^                                            # Start of path string
-      (\/?(:[a-z_][a-zA-Z0-9_]*|[a-zA-Z0-9_-]+))   # First segment may skip leading slash - for backwards compatibility
-                                                   # The above line can be removed after issue 395 is resolved
-      (                                            # Start of path segment
-        \/                                         # The rest of the path segments must contain a leading slash
-          (                                        # Option 1 - capturing param
-            :                                      #   Must start with a leading colon
-            [a-z_]                                 #   The first character must be a lowercase letter or underscore
-            [a-zA-Z0-9_]*                          #   Other characters can be capitalized or numeric
-          |                                        # Option 2 - hardcoded segment
-            [a-zA-Z0-9_-]+                         #   Alphanumeric, hyphens, or underscores
-          )
-      )*                                           # End of path segment, there may be any number of segments
-      $                                            # End of path string
-    "x
-
-    validate_format(changeset, :path, regex)
+    validate_format(changeset, :path, Beacon.Content.path_format())
   end
 end

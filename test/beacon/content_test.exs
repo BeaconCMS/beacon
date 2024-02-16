@@ -118,17 +118,6 @@ defmodule Beacon.ContentTest do
       assert compilation_error =~ "expected closing `>`"
     end
 
-    # TODO: require paths starting with / which will make this test fail
-    test "create page with empty path" do
-      assert {:ok, %Page{path: ""}} =
-               Content.create_page(%{
-                 site: "my_site",
-                 path: "",
-                 template: "<p>page</p>",
-                 layout_id: layout_fixture().id
-               })
-    end
-
     test "create page should create a created event" do
       Content.create_page!(%{
         site: "my_site",
@@ -589,7 +578,6 @@ defmodule Beacon.ContentTest do
     end
 
     test "path validation" do
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: ""})
       assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/"})
       assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/bar"})
       assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "foo/bar"})
@@ -612,10 +600,10 @@ defmodule Beacon.ContentTest do
     end
 
     test "create_live_data/1 for root path" do
-      attrs = %{site: :my_site, path: ""}
+      attrs = %{site: :my_site, path: "/"}
 
       assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
-      assert %{site: :my_site, path: ""} = live_data
+      assert %{site: :my_site, path: "/"} = live_data
     end
 
     test "create_assign_for_live_data/2" do

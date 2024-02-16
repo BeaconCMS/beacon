@@ -67,6 +67,7 @@ defmodule Beacon.Content.Page do
     page
     |> cast(attrs, [
       :site,
+      :path,
       :title,
       :description,
       :template,
@@ -77,7 +78,6 @@ defmodule Beacon.Content.Page do
       :format,
       :extra
     ])
-    |> cast(attrs, [:path], empty_values: [])
     |> cast_embed(:helpers, with: &helpers_changeset/2)
     |> unique_constraint([:path, :site])
     |> validate_required([
@@ -85,7 +85,6 @@ defmodule Beacon.Content.Page do
       :layout_id,
       :format
     ])
-    |> validate_string([:path])
     |> foreign_key_constraint(:layout_id)
     |> remove_empty_meta_attributes(:meta_tags)
   end
@@ -122,7 +121,7 @@ defmodule Beacon.Content.Page do
       :layout_id,
       :format
     ])
-    |> validate_string([:path])
+    |> validate_path()
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
@@ -134,13 +133,10 @@ defmodule Beacon.Content.Page do
     |> validate_required([:name, :code])
   end
 
-  defp validate_string(changeset, fields) do
-    Enum.reduce(fields, changeset, fn field, changeset ->
-      case get_field(changeset, field) do
-        val when is_binary(val) -> changeset
-        _ -> add_error(changeset, field, "Not a string")
-      end
-    end)
+  defp validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
+
+  defp validate_path(changeset) do
+    validate_format(changeset, :path, Beacon.Content.path_format())
   end
 
   # For when the UI is a <textarea> but "\n" would cause problems
