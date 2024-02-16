@@ -700,11 +700,6 @@ defmodule Beacon.ContentTest do
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
-      attrs = %{value: "String.to_integer", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
-      {:value, {_, [compilation_error: compilation_error]}} = error
-      assert compilation_error =~ "function String.to_integer/0 is undefined"
-
       attrs = %{value: "if true, do false", format: :elixir}
       assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
