@@ -2296,8 +2296,9 @@ defmodule Beacon.Content do
     site = Changeset.get_field(changeset, :site)
     value = Changeset.get_field(changeset, :value)
     format = Changeset.get_field(changeset, :format)
+    path = Changeset.get_field(changeset, :live_data).path
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :value, format, value, metadata)
+    do_validate_template(changeset, :value, format, value, metadata, path)
   end
 
   def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
@@ -2323,11 +2324,13 @@ defmodule Beacon.Content do
 
   ## Utils
 
-  defp do_validate_template(changeset, field, _format, nil = _template, _metadata) do
+  defp do_validate_template(changeset, field, format, template, metadata, path \\ "")
+
+  defp do_validate_template(changeset, field, _format, nil = _template, _metadata, _path) do
     Changeset.add_error(changeset, field, "can't be blank", compilation_error: nil)
   end
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
+  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _path) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
         {:ok, _ast} -> []
@@ -2337,7 +2340,7 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp do_validate_template(changeset, field, :markdown = _format, template, metadata) when is_binary(template) do
+  defp do_validate_template(changeset, field, :markdown = _format, template, metadata, _path) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.Markdown.convert_to_html(template, metadata) do
         {:cont, _template} -> []
@@ -2346,27 +2349,37 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata) when is_binary(code) do
+  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata, path) when is_binary(code) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case validate_elixir_code(template) do
+      case validate_elixir_code(template, path) do
         :ok -> []
         {:error, reason, message} -> [{field, {reason, compilation_error: message}}]
       end
     end)
   end
 
-  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata), do: changeset
+  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _path), do: changeset
 
   # TODO: expose template validation to custom template formats defined by users
-  defp do_validate_template(changeset, _field, _format, _template, _metadata), do: changeset
+  defp do_validate_template(changeset, _field, _format, _template, _metadata, _path), do: changeset
 
-  defp validate_elixir_code(code) do
+  defp validate_elixir_code(code, path) do
     Application.put_env(:elixir, :ansi_enabled, false)
+
+    vars =
+      path
+      |> String.split("/")
+      |> Enum.filter(&String.starts_with?(&1, ":"))
+      |> Enum.map(&String.slice(&1, 1..-1//1))
+      |> List.insert_at(0, "params")
+      |> Enum.join(", ")
+
+    full_code = "fn #{vars} ->\n" <> code <> "\nend"
 
     {compilation, diagnostics} =
       with_diagnostics(fn ->
         try do
-          Code.compile_string(code)
+          Code.compile_string(full_code)
           :ok
         rescue
           error -> {:error, error}
