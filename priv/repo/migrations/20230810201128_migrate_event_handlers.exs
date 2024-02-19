@@ -5,7 +5,7 @@ defmodule Beacon.Repo.Migrations.MigrateEventHandlers do
   alias Beacon.Content.PageEventHandler
   alias Beacon.Repo
 
-  def change do
+  def up do
     Enum.each(pages_events(), fn %{id: page_id, events: events} ->
       Enum.each(events, fn %{"code" => code, "name" => name} ->
         %Page{id: page_id}
@@ -32,5 +32,8 @@ defmodule Beacon.Repo.Migrations.MigrateEventHandlers do
       _ ->
         []
     end
+  end
+
+  def down do
   end
 end

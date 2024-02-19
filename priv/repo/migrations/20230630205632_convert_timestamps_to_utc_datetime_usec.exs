@@ -16,7 +16,9 @@ defmodule Beacon.Repo.Migrations.ConvertTimestampsToUtcDatetimeUsec do
     case repo().query(query) do
       {:ok, result} ->
         for row <- result.rows do
-          %{id: id, inserted_at: inserted_at, updated_at: updated_at} = repo().load(types, {result.columns, row})
+          %{id: id, inserted_at: inserted_at, updated_at: updated_at} =
+            repo().load(types, {result.columns, row})
+
           {:ok, id} = Ecto.UUID.dump(id)
 
           execute(fn ->

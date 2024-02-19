@@ -7,7 +7,9 @@ defmodule Beacon.Repo.Migrations.CreatePageVariants do
       add :name, :text, null: false
       add :template, :text, null: false
       add :weight, :integer, null: false
-      add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id),
+        null: false
 
       timestamps()
     end

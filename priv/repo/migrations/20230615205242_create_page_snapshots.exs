@@ -7,7 +7,10 @@ defmodule Beacon.Repo.Migrations.CreatePageSnapshots do
       add :schema_version, :integer, null: false, comment: "data structure version"
       add :site, :text, null: false
       add :page, :binary, null: false
-      add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id),
+        null: false
+
       add :event_id, references(:beacon_page_events, on_delete: :delete_all, type: :binary_id)
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
