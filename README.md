@@ -56,8 +56,7 @@ iex --sname core -S mix dev
 
 Note that running a named node isn't required unless you're running Beacon LiveAdmin too.
 
-Finally, visit any of the routes defined in `dev.exs` as http://localhost:4001/dev/home
-or request resources from the API as http://localhost:4001/api/pages
+Finally, visit any of the routes defined in `dev.exs`, eg: http://localhost:4001/dev
 
 ## Looking for help with your Elixir project?
 
