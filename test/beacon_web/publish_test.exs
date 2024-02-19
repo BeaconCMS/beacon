@@ -14,7 +14,7 @@ defmodule BeaconWeb.PublishTest do
   defp create_page(_) do
     stylesheet_fixture()
     layout = published_layout_fixture()
-    page = page_fixture(layout_id: layout.id, path: "publish_test")
+    page = page_fixture(layout_id: layout.id, path: "/publish_test")
 
     Beacon.reload_site(:my_site)
 
@@ -41,7 +41,7 @@ defmodule BeaconWeb.PublishTest do
       Content.publish_page(page)
 
       assert_receive {:page_published, page}
-      assert %{site: :my_site, path: "publish_test", id: ^id} = page
+      assert %{site: :my_site, path: "/publish_test", id: ^id} = page
     end
 
     test "receive page_loaded event", %{page: %{id: id} = page} do
@@ -49,7 +49,7 @@ defmodule BeaconWeb.PublishTest do
       Content.publish_page(page)
 
       assert_receive {:page_loaded, page}
-      assert %{site: :my_site, path: "publish_test", id: ^id} = page
+      assert %{site: :my_site, path: "/publish_test", id: ^id} = page
     end
   end
 end

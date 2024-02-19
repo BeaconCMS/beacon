@@ -193,7 +193,7 @@ dev_seeds = fn ->
 
   img2 = Beacon.MediaLibrary.upload(metadata)
 
-  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "home"})
+  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/"})
 
   Beacon.Content.create_assign_for_live_data(
     home_live_data,
@@ -220,7 +220,7 @@ dev_seeds = fn ->
 
   page_home =
     Beacon.Content.create_page!(%{
-      path: "home",
+      path: "/",
       site: "dev",
       title: "dev home",
       description: "page used for development",
@@ -296,7 +296,7 @@ dev_seeds = fn ->
 
   page_author =
     Beacon.Content.create_page!(%{
-      path: "authors/:author_id",
+      path: "/authors/:author_id",
       site: "dev",
       title: "dev author",
       layout_id: layout.id,
@@ -307,7 +307,7 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/home">Home (navigate)</.link></li>
+            <li><.link navigate="/dev">Home (navigate)</.link></li>
             <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
           </ul>
         </div>
@@ -324,7 +324,7 @@ dev_seeds = fn ->
 
   page_post =
     Beacon.Content.create_page!(%{
-      path: "posts/*slug",
+      path: "/posts/*slug",
       site: "dev",
       title: "dev post",
       layout_id: layout.id,
@@ -335,7 +335,7 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/home">Home (navigate)</.link></li>
+            <li><.link navigate="/dev">Home (navigate)</.link></li>
             <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
           </ul>
         </div>
@@ -352,7 +352,7 @@ dev_seeds = fn ->
 
   page_markdown =
     Beacon.Content.create_page!(%{
-      path: "markdown",
+      path: "/markdown",
       site: "dev",
       title: "dev markdown",
       layout_id: layout.id,
@@ -362,7 +362,7 @@ dev_seeds = fn ->
 
       ## Intro
 
-      Back to [Home](/dev/home)
+      Back to [Home](/dev)
       """
     })
 
@@ -742,7 +742,7 @@ dy_seeds = fn ->
 
   page_home =
     Beacon.Content.create_page!(%{
-      path: "",
+      path: "/",
       site: "dy",
       title: "home",
       description: "home",

@@ -30,10 +30,12 @@ defmodule BeaconWeb.PageLive do
     Lifecycle.Template.render_template(page, page_module, assigns, __ENV__)
   end
 
+  defp lookup_route!(site, [] = _path), do: lookup_route!(site, ["/"])
+
   defp lookup_route!(site, path) do
     Beacon.Router.lookup_path(site, path) ||
       raise BeaconWeb.NotFoundError, """
-      route not found for site #{site} and path #{inspect(path)}
+      no page was found for site #{site} and path #{inspect(path)}
 
       Make sure a page was created for that path.
       """

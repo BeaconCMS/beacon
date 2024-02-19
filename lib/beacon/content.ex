@@ -609,7 +609,7 @@ defmodule Beacon.Content do
 
   defp validate_page_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path, "nopath")
+    path = Changeset.get_field(changeset, :path) || "nopath"
     format = Changeset.get_field(changeset, :format)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
@@ -698,7 +698,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_page_by(site, path: "contact")
+      iex> get_page_by(site, path: "/contact")
       %Page{}
 
   """

@@ -12,8 +12,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
-      page_1 = page_fixture(site: "my_site", path: "1", helpers: [page_helper_params(name: "page_1_upcase")])
-      page_2 = page_fixture(site: "my_site", path: "2", helpers: [page_helper_params(name: "page_2_upcase")])
+      page_1 = page_fixture(site: "my_site", path: "/1", helpers: [page_helper_params(name: "page_1_upcase")])
+      page_2 = page_fixture(site: "my_site", path: "/2", helpers: [page_helper_params(name: "page_2_upcase")])
       [page_1, page_2] = Repo.preload([page_1, page_2], :event_handlers)
 
       {:ok, _module, ast} = PageModuleLoader.load_page!(page_1)
@@ -54,7 +54,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
         [
           site: "my_site",
           layout_id: layout.id,
-          path: "page/raw-schema",
+          path: "/page/raw-schema",
           title: "my first page",
           description: "hello world",
           extra: %{
@@ -90,19 +90,19 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
   describe "render" do
     test "do not load template on boot stage" do
-      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      page = page_fixture(site: "my_site", path: "/1") |> Repo.preload([:event_handlers, :variants])
       {:ok, module, _ast} = PageModuleLoader.load_page!(page, :boot)
       assert module.render(%{}) == :not_loaded
     end
 
     test "render primary template" do
-      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      page = page_fixture(site: "my_site", path: "/1") |> Repo.preload([:event_handlers, :variants])
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
       assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = module.render(%{})
     end
 
     test "render all templates" do
-      page = page_fixture(site: "my_site", path: "1")
+      page = page_fixture(site: "my_site", path: "/1")
       Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
       Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
       page = Repo.preload(page, [:event_handlers, :variants])
@@ -118,7 +118,7 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
 
   describe "loading" do
     test "unload page" do
-      page = page_fixture(site: "my_site", path: "1") |> Repo.preload([:event_handlers, :variants])
+      page = page_fixture(site: "my_site", path: "/1") |> Repo.preload([:event_handlers, :variants])
       {:ok, module, _ast} = PageModuleLoader.load_page!(page)
       assert :erlang.module_loaded(module)
 

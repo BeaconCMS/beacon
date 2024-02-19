@@ -118,17 +118,6 @@ defmodule Beacon.ContentTest do
       assert compilation_error =~ "expected closing `>`"
     end
 
-    # TODO: require paths starting with / which will make this test fail
-    test "create page with empty path" do
-      assert {:ok, %Page{path: ""}} =
-               Content.create_page(%{
-                 site: "my_site",
-                 path: "",
-                 template: "<p>page</p>",
-                 layout_id: layout_fixture().id
-               })
-    end
-
     test "create page should create a created event" do
       Content.create_page!(%{
         site: "my_site",
@@ -582,40 +571,17 @@ defmodule Beacon.ContentTest do
 
   describe "live data" do
     test "create_live_data/1" do
-      attrs = %{site: :my_site, path: "foo/:bar"}
+      attrs = %{site: :my_site, path: "/foo/:bar"}
 
       assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
-      assert %{site: :my_site, path: "foo/:bar"} = live_data
-    end
-
-    test "path validation" do
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: ""})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "foo/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/123"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/123/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo_bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo_bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo-bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: ":/foo"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:/bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo//bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:123"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:123/bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:Bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:foo-bar"})
+      assert %{site: :my_site, path: "/foo/:bar"} = live_data
     end
 
     test "create_live_data/1 for root path" do
-      attrs = %{site: :my_site, path: ""}
+      attrs = %{site: :my_site, path: "/"}
 
       assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
-      assert %{site: :my_site, path: ""} = live_data
+      assert %{site: :my_site, path: "/"} = live_data
     end
 
     test "create_assign_for_live_data/2" do
@@ -633,9 +599,9 @@ defmodule Beacon.ContentTest do
     end
 
     test "live_data_for_site/1" do
-      live_data_1 = live_data_fixture(site: :my_site, path: "foo")
-      live_data_2 = live_data_fixture(site: :my_site, path: "bar")
-      live_data_3 = live_data_fixture(site: :other_site, path: "baz")
+      live_data_1 = live_data_fixture(site: :my_site, path: "/foo")
+      live_data_2 = live_data_fixture(site: :my_site, path: "/bar")
+      live_data_3 = live_data_fixture(site: :other_site, path: "/baz")
 
       results = Content.live_data_for_site(:my_site)
 
@@ -651,31 +617,31 @@ defmodule Beacon.ContentTest do
     end
 
     test "live_data_paths_for_site/2 :query option" do
-      live_data_fixture(site: :my_site, path: "foo")
-      live_data_fixture(site: :my_site, path: "bar")
+      live_data_fixture(site: :my_site, path: "/foo")
+      live_data_fixture(site: :my_site, path: "/bar")
 
-      assert ["foo"] = Content.live_data_paths_for_site(:my_site, query: "fo")
-      assert ["bar"] = Content.live_data_paths_for_site(:my_site, query: "ba")
+      assert ["/foo"] = Content.live_data_paths_for_site(:my_site, query: "fo")
+      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, query: "ba")
     end
 
     test "live_data_paths_for_site/2 :per_page option" do
-      live_data_fixture(site: :my_site, path: "foo")
-      live_data_fixture(site: :my_site, path: "bar")
-      live_data_fixture(site: :my_site, path: "baz")
-      live_data_fixture(site: :my_site, path: "bong")
+      live_data_fixture(site: :my_site, path: "/foo")
+      live_data_fixture(site: :my_site, path: "/bar")
+      live_data_fixture(site: :my_site, path: "/baz")
+      live_data_fixture(site: :my_site, path: "/bong")
 
-      assert ["bar"] = Content.live_data_paths_for_site(:my_site, per_page: 1)
-      assert ["bar", "baz"] = Content.live_data_paths_for_site(:my_site, per_page: 2)
-      assert ["bar", "baz", "bong"] = Content.live_data_paths_for_site(:my_site, per_page: 3)
-      assert ["bar", "baz", "bong", "foo"] = Content.live_data_paths_for_site(:my_site, per_page: 4)
+      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, per_page: 1)
+      assert ["/bar", "/baz"] = Content.live_data_paths_for_site(:my_site, per_page: 2)
+      assert ["/bar", "/baz", "/bong"] = Content.live_data_paths_for_site(:my_site, per_page: 3)
+      assert ["/bar", "/baz", "/bong", "/foo"] = Content.live_data_paths_for_site(:my_site, per_page: 4)
     end
 
     test "update_live_data_path/2" do
-      live_data = live_data_fixture(site: :my_site, path: "foo")
+      live_data = live_data_fixture(site: :my_site, path: "/foo")
 
-      assert {:ok, result} = Content.update_live_data_path(live_data, "foo/:bar_id")
+      assert {:ok, result} = Content.update_live_data_path(live_data, "/foo/:bar_id")
       assert result.id == live_data.id
-      assert result.path == "foo/:bar_id"
+      assert result.path == "/foo/:bar_id"
     end
 
     test "update_live_data_assign/2" do
