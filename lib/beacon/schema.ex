@@ -24,9 +24,11 @@ defmodule Beacon.Schema do
   end
 
   def validate_path(<<"/", _rest::binary>> = path) do
+    not_allowed = :binary.compile_pattern([" ", "?", "="])
+
     cond do
-      String.contains?(path, " ") ->
-        {:error, "invalid path, no space allowed, got: #{path}"}
+      String.contains?(path, not_allowed) ->
+        {:error, "invalid path, no space or query allowed, got: #{path}"}
 
       :default ->
         {:ok, Plug.Router.Utils.build_path_match(path)}
