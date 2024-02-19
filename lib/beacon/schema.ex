@@ -14,12 +14,27 @@ defmodule Beacon.Schema do
     end
   end
 
-  def validate_path(%{changes: %{path: "/"}} = changeset), do: changeset
-
-  def validate_path(%{changes: %{path: path}} = changeset) do
-    message = "expected path to start with a leading slash '/', got: #{path}"
-    Changeset.validate_format(changeset, :path, Beacon.Content.path_format(), message: message)
+  def validate_path(%Changeset{} = changeset) do
+    Changeset.validate_change(changeset, :path, fn :path, path ->
+      case validate_path(path) do
+        {:ok, _} -> []
+        {:error, error} -> [path: error]
+      end
+    end)
   end
 
-  def validate_path(changeset), do: changeset
+  def validate_path(<<"/", _rest::binary>> = path) do
+    cond do
+      String.contains?(path, " ") ->
+        {:error, "invalid path, no space allowed, got: #{path}"}
+
+      :default ->
+        {:ok, Plug.Router.Utils.build_path_match(path)}
+    end
+  rescue
+    e ->
+      {:error, Exception.message(e)}
+  end
+
+  def validate_path(path), do: {:error, "invalid path, it must start with a leading slash '/', got: #{path}"}
 end

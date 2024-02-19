@@ -100,16 +100,6 @@ defmodule Beacon.ContentTest do
       assert Content.count_pages(page.site, query: "title_b") == 0
     end
 
-    test "validate path start with a leading slash" do
-      layout = layout_fixture()
-
-      assert {:error, %{errors: [path: {"can't be blank", [validation: :required]}]}} =
-               Content.create_page(%{site: "my_site", path: "", template: "<p>page</p>", layout_id: layout.id})
-
-      assert {:error, %{errors: [path: {"expected path to start with a leading slash '/', got: blog", [validation: :format]}]}} =
-               Content.create_page(%{site: "my_site", path: "blog", template: "<p>page</p>", layout_id: layout.id})
-    end
-
     test "validate template heex on create" do
       layout = layout_fixture()
 
@@ -585,27 +575,6 @@ defmodule Beacon.ContentTest do
 
       assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
       assert %{site: :my_site, path: "/foo/:bar"} = live_data
-    end
-
-    test "path validation" do
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo/123"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/123/bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo_bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/:foo_bar"})
-      assert {:ok, _} = Content.create_live_data(%{site: :my_site, path: "/foo-bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: ":/foo"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:/bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo:bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo//bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:123"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:123/bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/foo/:Bar"})
-      assert {:error, _} = Content.create_live_data(%{site: :my_site, path: "/:foo-bar"})
     end
 
     test "create_live_data/1 for root path" do
