@@ -268,7 +268,7 @@ defmodule Beacon.Loader do
 
   @doc false
   def load_data_source(site) do
-    live_data = Content.live_data_for_site(site)
+    live_data = Content.live_data_for_site(site, select: [:id, :path, assigns: [:id, :key, :value, :format]])
     DataSourceModuleLoader.load_data_source(live_data, site)
     :ok
   end

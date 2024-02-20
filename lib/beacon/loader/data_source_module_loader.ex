@@ -8,23 +8,16 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
     data_source_module = Loader.data_source_module_for_site(site)
     live_data_functions = Enum.map(data, &live_data_fn/1)
 
-    # TODO: let users customize this
-    default_data = %{}
-
     ast =
       quote do
         defmodule unquote(data_source_module) do
           require Logger
 
-          def live_data(path, params) do
-            live_data(path, params, unquote(Macro.escape(default_data)))
-          end
-
           unquote_splicing(live_data_functions)
 
-          def live_data(path, params, data) do
+          def live_data(path, params) do
             Logger.warning("live data not found for site #{unquote(site)} with path #{inspect(path)} and params #{inspect(params)}")
-            data
+            %{}
           end
         end
       end
@@ -69,8 +62,8 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
       end
 
     quote do
-      def live_data(unquote(path_list), unquote(params_var), var!(data)) do
-        Enum.reduce(unquote(Macro.escape(assigns)), var!(data), fn assign, acc ->
+      def live_data(unquote(path_list), unquote(params_var)) do
+        Enum.reduce(unquote(Macro.escape(assigns)), %{}, fn assign, acc ->
           Map.put(
             acc,
             String.to_atom(assign.key),

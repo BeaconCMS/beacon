@@ -3,7 +3,7 @@ defmodule BeaconWeb.DataSource do
 
   require Logger
 
-  def live_data(site, path_info, params) when is_atom(site) and is_list(path_info) do
+  def live_data(site, path_info, params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(params) do
     data_source_module = Beacon.Loader.data_source_module_for_site(site)
 
     if :erlang.module_loaded(data_source_module) do

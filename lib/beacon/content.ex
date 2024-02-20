@@ -2229,9 +2229,22 @@ defmodule Beacon.Content do
   """
   @doc type: :live_data
   @spec live_data_for_site(Site.t()) :: [LiveData.t()]
-  def live_data_for_site(site) do
-    Repo.all(from ld in LiveData, where: ld.site == ^site, preload: :assigns)
+  def live_data_for_site(site, opts \\ []) when is_atom(site) and is_list(opts) do
+    select = Keyword.get(opts, :select, nil)
+
+    base_query =
+      from d in LiveData,
+        join: a in assoc(d, :assigns),
+        where: d.site == ^site,
+        preload: [assigns: a]
+
+    base_query
+    |> query_live_data_for_site_select(select)
+    |> Repo.all()
   end
+
+  defp query_live_data_for_site_select(query, nil = _select), do: query
+  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
 
   @doc """
   Query LiveData paths for a given site.
