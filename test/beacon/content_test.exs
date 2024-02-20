@@ -104,7 +104,7 @@ defmodule Beacon.ContentTest do
       layout = layout_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_page(%{site: :my_site, path: "/", layout_id: layout.id, template: "<div"})
+               Content.create_page(%{site: :my_site, path: "/", title: "home", layout_id: layout.id, template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -122,6 +122,7 @@ defmodule Beacon.ContentTest do
       Content.create_page!(%{
         site: "my_site",
         path: "/",
+        title: "home",
         template: "<p>page</p>",
         layout_id: layout_fixture().id
       })
@@ -134,6 +135,7 @@ defmodule Beacon.ContentTest do
         Content.create_page!(%{
           site: "default_meta_tags_test",
           path: "/",
+          title: "home",
           template: "<p>page</p>",
           layout_id: layout_fixture().id
         })
@@ -228,6 +230,7 @@ defmodule Beacon.ContentTest do
       Content.create_page!(%{
         site: "lifecycle_test",
         path: "/",
+        title: "home",
         template: "<p>page</p>",
         layout_id: layout.id
       })
@@ -242,6 +245,7 @@ defmodule Beacon.ContentTest do
         Content.create_page!(%{
           site: "lifecycle_test",
           path: "/",
+          title: "home",
           template: "<p>page</p>",
           layout_id: layout.id
         })
@@ -259,6 +263,7 @@ defmodule Beacon.ContentTest do
         Content.create_page!(%{
           site: "lifecycle_test",
           path: "/",
+          title: "home",
           template: "<p>page</p>",
           layout_id: layout.id
         })
@@ -276,6 +281,7 @@ defmodule Beacon.ContentTest do
                Content.create_page!(%{
                  site: "my_site",
                  path: "/",
+                 title: "home",
                  template: "<p>page</p>",
                  layout_id: layout.id,
                  raw_schema: [%{"foo" => "bar"}]
@@ -289,6 +295,7 @@ defmodule Beacon.ContentTest do
         Content.create_page!(%{
           site: "my_site",
           path: "/",
+          title: "home",
           template: "<p>page</p>",
           layout_id: layout.id,
           raw_schema: [%{"foo" => "bar"}]
@@ -309,6 +316,7 @@ defmodule Beacon.ContentTest do
                Content.create_page(%{
                  site: "my_site",
                  path: "/",
+                 title: "home",
                  template: "<p>page</p>",
                  layout_id: layout.id,
                  raw_schema: [nil]

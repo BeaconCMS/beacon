@@ -65,9 +65,10 @@ defmodule Beacon.Fixtures do
 
     attrs
     |> Enum.into(%{
-      path: "/home",
       site: "my_site",
       layout_id: layout_id,
+      path: "/home",
+      title: "home",
       meta_tags: [],
       template: """
       <main>

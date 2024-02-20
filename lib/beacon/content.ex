@@ -2232,11 +2232,7 @@ defmodule Beacon.Content do
   def live_data_for_site(site, opts \\ []) when is_atom(site) and is_list(opts) do
     select = Keyword.get(opts, :select, nil)
 
-    base_query =
-      from d in LiveData,
-        join: a in assoc(d, :assigns),
-        where: d.site == ^site,
-        preload: [assigns: a]
+    base_query = from d in LiveData, where: d.site == ^site, preload: :assigns
 
     base_query
     |> query_live_data_for_site_select(select)
