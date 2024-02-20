@@ -36,13 +36,13 @@ defmodule Beacon.RouterTest do
     end
 
     test "exact match on static paths", %{table: table} do
-      Router.add_page(table, :test, "", @metadata)
-      Router.add_page(table, :test, "home", @metadata)
-      Router.add_page(table, :test, "blog/posts/2020-01-my-post", @metadata)
+      Router.add_page(table, :test, "/", @metadata)
+      Router.add_page(table, :test, "/about", @metadata)
+      Router.add_page(table, :test, "/blog/posts/2020-01-my-post", @metadata)
 
-      assert {{:test, ""}, _} = Router.lookup_path(table, :test, [])
-      assert {{:test, "home"}, _} = Router.lookup_path(table, :test, ["home"])
-      assert {{:test, "blog/posts/2020-01-my-post"}, _} = Router.lookup_path(table, :test, ["blog", "posts", "2020-01-my-post"])
+      assert {{:test, "/"}, _} = Router.lookup_path(table, :test, [])
+      assert {{:test, "/about"}, _} = Router.lookup_path(table, :test, ["about"])
+      assert {{:test, "/blog/posts/2020-01-my-post"}, _} = Router.lookup_path(table, :test, ["blog", "posts", "2020-01-my-post"])
     end
 
     test "multiple dynamic segments", %{table: table} do
@@ -92,5 +92,14 @@ defmodule Beacon.RouterTest do
 
       assert {{:test, "/posts/:year/*slug"}, _} = Router.lookup_path(table, :test, ["posts", "2022", "my-post"])
     end
+  end
+
+  test "path_params" do
+    assert Router.path_params("/", []) == %{}
+    assert Router.path_params("/posts", ["posts"]) == %{}
+    assert Router.path_params("/posts/*slug", ["posts", "2023"]) == %{"slug" => ["2023"]}
+    assert Router.path_params("/posts/*slug", ["posts", "2023", "my-post"]) == %{"slug" => ["2023", "my-post"]}
+    assert Router.path_params("/posts/:author", ["posts", "1-author"]) == %{"author" => "1-author"}
+    assert Router.path_params("/posts/:author/:category", ["posts", "1-author", "test"]) == %{"author" => "1-author", "category" => "test"}
   end
 end

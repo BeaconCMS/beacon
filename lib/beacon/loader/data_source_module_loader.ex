@@ -34,6 +34,7 @@ defmodule Beacon.Loader.DataSourceModuleLoader do
     {:ok, data_source_module, ast}
   end
 
+  # TODO: support glob-like patterns
   defp live_data_fn(live_data) do
     %{path: path, assigns: assigns} = live_data
 

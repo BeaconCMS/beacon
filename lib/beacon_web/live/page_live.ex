@@ -30,8 +30,6 @@ defmodule BeaconWeb.PageLive do
     Lifecycle.Template.render_template(page, page_module, assigns, __ENV__)
   end
 
-  defp lookup_route!(site, [] = _path), do: lookup_route!(site, ["/"])
-
   defp lookup_route!(site, path) do
     Beacon.Router.lookup_path(site, path) ||
       raise BeaconWeb.NotFoundError, """

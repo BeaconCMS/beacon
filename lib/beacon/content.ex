@@ -886,19 +886,29 @@ defmodule Beacon.Content do
     page
     |> Repo.reload()
     |> Repo.preload([:variants, :event_handlers], force: true)
+    |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
     |> Repo.reload()
     |> Repo.preload(:event_handlers, force: true)
+    |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page}) do
     page
+    |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(_snapshot), do: nil
+
+  defp maybe_add_leading_slash(%{path: <<"/", _rest::binary>>} = page), do: page
+
+  defp maybe_add_leading_slash(page) do
+    path = "/" <> page.path
+    %{page | path: path}
+  end
 
   @doc """
 

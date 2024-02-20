@@ -256,10 +256,9 @@ defmodule Beacon.Router do
 
   defp match_static_routes(table, site, path_info) do
     path =
-      if path_info == [] do
-        ""
-      else
-        Enum.join(path_info, "/")
+      case Enum.join(path_info, "/") do
+        "" -> "/"
+        path -> path
       end
 
     match = {{site, path}, :_}
@@ -329,8 +328,8 @@ defmodule Beacon.Router do
   end
 
   @doc false
-  def path_params(page_path, path_info) do
-    page_path = String.split(page_path, "/", [])
+  def path_params(page_path, path_info) when is_binary(page_path) and is_list(path_info) do
+    page_path = for segment <- String.split(page_path, "/"), segment != "", do: segment
 
     Enum.zip_reduce(page_path, path_info, %{}, fn
       ":" <> segment, value, acc ->

@@ -1,6 +1,9 @@
 defmodule Beacon.Repo.Migrations.MigratePagePathLeadingSlash do
   use Ecto.Migration
 
+  # migrate draft pages
+  # handle published pages in Content when it gets extracted
+
   def up do
     for %{id: id, path: path} <- pages(), !is_nil(path) && !String.starts_with?(path, "/") do
       path = "/" <> path

@@ -7,11 +7,10 @@ defmodule Beacon.Utils do
   end
 
   # For debugging - will print module content to the terminal
-  def print_module_from_ast(ast) do
+  def ast_to_binary(ast) do
     ast
     |> Code.quoted_to_algebra()
     |> Inspect.Algebra.format(:infinity)
     |> IO.iodata_to_binary()
-    |> IO.puts()
   end
 end
