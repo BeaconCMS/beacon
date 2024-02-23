@@ -168,4 +168,12 @@ defmodule BeaconWeb.Components do
     <img src={@src} class={@class} {@rest} sizes={@sizes} srcset={@srcset} />
     """
   end
+
+  attr :source, :string, default: nil
+
+  def thumbnail(assigns) do
+    ~H"""
+    <image src={@source} width="50" height="50" />
+    """
+  end
 end

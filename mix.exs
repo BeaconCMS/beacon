@@ -47,11 +47,13 @@ defmodule Beacon.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:hackney, "~> 1.16", only: [:dev, :test]},
-      {:image, "~> 0.32"},
+      {:image, "~> 0.40"},
       {:jason, "~> 1.0"},
       {:solid, "~> 0.14"},
       phoenix_dep(),
-      {:phoenix_ecto, "~> 4.4"},
+      {:phoenix_ecto, "~> 4.4.3"},
+      {:phoenix_html, "~> 4.0"},
+      {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
       phoenix_live_view_dep(),
       {:phoenix_pubsub, "~> 2.1"},
@@ -79,7 +81,7 @@ defmodule Beacon.MixProject do
     cond do
       env = System.get_env("PHOENIX_LIVE_VIEW_VERSION") -> {:phoenix_live_view, env}
       path = System.get_env("PHOENIX_LIVE_VIEW_PATH") -> {:phoenix_live_view, path}
-      :default -> {:phoenix_live_view, "~> 0.19"}
+      :default -> {:phoenix_live_view, "~> 0.20"}
     end
   end
 

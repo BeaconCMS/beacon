@@ -14,10 +14,12 @@ defmodule Beacon.Loader.ErrorPageModuleLoader do
     ast =
       quote do
         defmodule unquote(error_module) do
-          use Phoenix.HTML
-          require EEx
-          import Phoenix.Component
           require Logger
+          require EEx
+          use PhoenixHTMLHelpers
+          import Phoenix.HTML
+          import Phoenix.HTML.Form
+          import Phoenix.Component
 
           unquote_splicing(layout_functions)
           unquote_splicing(render_functions)

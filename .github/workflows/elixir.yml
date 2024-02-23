@@ -20,7 +20,7 @@ jobs:
           - otp: "23"
             elixir: "1.13.0"
             phoenix-version: "1.7.0"
-            phoenix-live-view-version: "0.19.0"
+            phoenix-live-view-version: "0.20.2"
 
           # latest
           - otp: "26"

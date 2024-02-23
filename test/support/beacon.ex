@@ -25,8 +25,9 @@ defmodule Beacon.BeaconTest do
 
   defp view_helpers do
     quote do
-      use Phoenix.HTML
-
+      use PhoenixHTMLHelpers
+      import Phoenix.HTML
+      import Phoenix.HTML.Form
       import Phoenix.Component
       import Phoenix.View
 
