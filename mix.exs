@@ -81,7 +81,7 @@ defmodule Beacon.MixProject do
     cond do
       env = System.get_env("PHOENIX_LIVE_VIEW_VERSION") -> {:phoenix_live_view, env}
       path = System.get_env("PHOENIX_LIVE_VIEW_PATH") -> {:phoenix_live_view, path}
-      :default -> {:phoenix_live_view, "~> 0.19"}
+      :default -> {:phoenix_live_view, "~> 0.20"}
     end
   end
 
