@@ -38,7 +38,7 @@ We recommend following the guide thoroughly, but if you want a short version or 
 
 10. Run `mix phx.server`
 
-Visit http://localhost:4000/my_site/home to see the page created from seeds.
+Visit http://localhost:4000/my_site to see the page created from seeds.
 
 ## Steps
 
@@ -339,7 +339,7 @@ Run the Phoenix server:
 mix phx.server
 ```
 
-Open http://localhost:4000/my_site/home and note:
+Open http://localhost:4000/my_site and note:
 
 - The Header and Footer from the layout
 - The list element from the page

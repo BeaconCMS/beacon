@@ -54,9 +54,9 @@ defmodule Mix.Tasks.Beacon.Install do
 
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:site]} and a sample page is available at /#{bindings[:site]}/home
+      A new site has been configured at /#{bindings[:site]}
 
-      Usually it can be accessed at http://localhost:4000/#{bindings[:site]}/home
+      Usually a sample page can be accessed at http://localhost:4000/#{bindings[:site]}
 
       Note that the generator changes existing files and it may not be formatted, please run `mix format` if needed.
 
