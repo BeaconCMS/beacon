@@ -30,28 +30,20 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     assert_equal(~S|<%= _a = true %>|)
     assert_equal(~S|value: <%= 1 %>|)
     assert_equal(~S|<% _a = 1 %>|)
-
-    assert_equal(~S"""
-    <%= if @completed do %>
-      Congrats
-    <% else %>
-      Keep working
-    <% end %>
-    """)
-
-    assert_equal(~S"""
-    <%= case @users do %>
-      <% users when is_list(users) -> %>
-        <div>Users</div>
-      <% :error -> %>
-        <div>Not Found</div>
-      <% _ -> %>
-        <div>Something went wrong</div>
-    <% end %>
-    """)
   end
 
-  test "comprehensions" do
+  test "eex blocks" do
+    assert_equal(
+      ~S"""
+      <%= if @completed do %>
+        Congrats
+      <% else %>
+        Keep working
+      <% end %>
+      """,
+      %{completed: true}
+    )
+
     assert_equal(
       ~S"""
       <%= for val <- @beacon_live_data[:vals] do %>
