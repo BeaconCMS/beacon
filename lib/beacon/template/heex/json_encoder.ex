@@ -34,9 +34,9 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       }
 
       eex_block_node = %{
-       "tag" => "eex_block",
-       "arg" => String.t(),
-       "blocks" => [%{"key" => String.t(), "content" => content()}]
+        "tag" => "eex_block",
+        "arg" => String.t(),
+        "ast" => [eex_node()]
       }
 
       content = [heex_node() | eex_node() | eex_block_node() | String.t()]
@@ -149,7 +149,6 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     %{
       "tag" => "eex_block",
       "arg" => arg,
-      # "blocks" => Enum.map(content, fn block -> transform_block(block, site, assigns) end)
       "rendered_html" => render_eex_block(site, assigns, entry),
       "ast" => entry |> encode_eex_block() |> Jason.encode!()
     }
@@ -229,13 +228,6 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   defp transform_attr({attr_name, nil, _}) do
     {attr_name, true}
   end
-
-  # defp transform_block({content, key}, site, assigns) do
-  #   %{
-  #     "key" => key,
-  #     "content" => encode_tokens(content, site, assigns)
-  #   }
-  # end
 
   defp render_eex_block(site, assigns, {:eex_block, arg, nodes}) do
     arg = ["<%= ", arg, " %>", "\n"]
