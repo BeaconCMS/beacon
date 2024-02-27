@@ -65,7 +65,16 @@ defmodule BeaconWeb.Cache do
   end
 
   defp put_last_modified(conn, modified) do
-    put_resp_header(conn, "last-modified", :cowboy_clock.rfc1123(modified))
+    put_resp_header(conn, "last-modified", Calendar.strftime(modified, "%a, %d %b %Y %H:%M:%S GMT"))
+  end
+
+  def to_rfc1123(%Date{} = modified) do
+    modified = DateTime.new!(modified, Time.new!(0, 0, 0))
+    to_rfc1123(modified)
+  end
+
+  def to_rfc1123(%module{} = modified) when module in [DateTime, NaiveDateTime] do
+    Calendar.strftime(modified, "%a, %d %b %Y %H:%M:%S GMT")
   end
 
   defp fresh?(conn, opts) do
@@ -121,11 +130,6 @@ defmodule BeaconWeb.Cache do
     |> Enum.map(&BeaconWeb.Cache.Stale.last_modified/1)
     |> List.flatten()
     |> Enum.reject(&is_nil/1)
-    |> Enum.map(&time_to_erl/1)
     |> Enum.max()
   end
-
-  defp time_to_erl(%NaiveDateTime{} = datetime), do: NaiveDateTime.to_erl(datetime)
-  defp time_to_erl(%DateTime{} = datetime), do: NaiveDateTime.to_erl(datetime)
-  defp time_to_erl(%Date{} = date), do: {Date.to_erl(date), {0, 0, 0}}
 end
