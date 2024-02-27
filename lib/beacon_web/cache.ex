@@ -65,7 +65,7 @@ defmodule BeaconWeb.Cache do
   end
 
   defp put_last_modified(conn, modified) do
-    put_resp_header(conn, "last-modified", Calendar.strftime(modified, "%a, %d %b %Y %H:%M:%S GMT"))
+    put_resp_header(conn, "last-modified", to_rfc1123(modified))
   end
 
   def to_rfc1123(%Date{} = modified) do
