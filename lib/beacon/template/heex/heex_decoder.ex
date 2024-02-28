@@ -84,7 +84,7 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     key
   end
 
-  # Matches attributes whose values are wrapped in `{` and `}` (eex expressions)
+  # matches attributes whose values are wrapped in `{` and `}` (eex expressions)
   defp transform_attr({key, value})
        when binary_part(value, 0, 1) == "{" and binary_part(value, byte_size(value) - 1, 1) == "}" do
     [key, "=", value]
@@ -149,11 +149,22 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
 
   defp decode_eex_block_node([], acc), do: acc
 
-  defp decode_eex_block_node(%{"type" => "eex", "content" => expr, "metadata" => %{"opt" => ~c"="}}) do
-    ["<%= ", expr, " %>"]
-  end
-
   defp decode_eex_block_node(%{"type" => "text", "content" => content}) do
     [content]
+  end
+
+  defp decode_eex_block_node(%{"type" => "tag_block", "tag" => tag, "attrs" => attrs, "metadata" => _metadata, "children" => children}) do
+    attrs = transform_attrs(attrs)
+    children = decode_eex_block_node(children, [])
+    ["<", tag, " ", attrs, ">", children, "</", tag, ">"]
+  end
+
+  defp decode_eex_block_node(%{"type" => "tag_self_close", "tag" => tag, "attrs" => attrs}) do
+    attrs = transform_attrs(attrs)
+    ["<", tag, " ", attrs, "/>"]
+  end
+
+  defp decode_eex_block_node(%{"type" => "eex", "content" => expr, "metadata" => %{"opt" => ~c"="}}) do
+    ["<%= ", expr, " %>"]
   end
 end

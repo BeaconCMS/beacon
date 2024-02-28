@@ -346,9 +346,9 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     %{type: type, content: content, metadata: metadata}
   end
 
-  def encode_eex_block_node({type, content, attrs}) when is_list(attrs) do
+  def encode_eex_block_node({type, tag, attrs}) when is_list(attrs) do
     attrs = transform_attrs(attrs)
-    %{type: type, content: content, attrs: attrs}
+    %{type: type, tag: tag, attrs: attrs}
   end
 
   def encode_eex_block_node({type, tag, attrs, children, metadata}) do

@@ -62,6 +62,14 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
       """,
       %{beacon_live_data: %{vals: [1]}}
     )
+
+    assert_equal(~S"""
+    <%= if true do %>
+      <.link path="/contact" replace={true}>Book meeting</.link>
+      <Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>
+      <BeaconWeb.Components.image name="logo.jpg" width="200px" />
+    <% end %>
+    """)
   end
 
   test "function components" do

@@ -175,18 +175,6 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   test "function components" do
     assert_output(
-      ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
-      [
-        %{
-          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
-          "content" => [],
-          "tag" => "BeaconWeb.Components.image",
-          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
-        }
-      ]
-    )
-
-    assert_output(
       ~S|<.link path="/contact" replace={true}>Book meeting</.link>|,
       [
         %{
@@ -194,6 +182,30 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
           "content" => ["Book meeting"],
           "tag" => ".link",
           "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>"
+        }
+      ]
+    )
+
+    assert_output(
+      ~S|<Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>|,
+      [
+        %{
+          "attrs" => %{"path" => "/contact", "replace" => "{true}"},
+          "content" => ["Book meeting"],
+          "tag" => "Phoenix.Component.link",
+          "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>"
+        }
+      ]
+    )
+
+    assert_output(
+      ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
+      [
+        %{
+          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
+          "content" => [],
+          "tag" => "BeaconWeb.Components.image",
+          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
         }
       ]
     )
@@ -257,6 +269,50 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   describe "encode_eex_block" do
+    test "components" do
+      template = ~S"""
+      <%= if true do %>
+        <.link path="/contact" replace={true}>Book meeting</.link>
+        <Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>
+        <BeaconWeb.Components.image name="logo.jpg" width="200px" />
+      <% end %>
+      """
+
+      {:ok, [eex_block]} = Beacon.Template.HEEx.Tokenizer.tokenize(template)
+
+      assert JSONEncoder.encode_eex_block(eex_block) == %{
+               type: :eex_block,
+               children: [
+                 %{
+                   type: :eex_block_clause,
+                   children: [
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       tag: ".link",
+                       type: :tag_block,
+                       metadata: %{mode: :inline},
+                       children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "Book meeting"}],
+                       attrs: %{"path" => "/contact", "replace" => "{true}"}
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       tag: "Phoenix.Component.link",
+                       type: :tag_block,
+                       metadata: %{mode: :block},
+                       children: [%{type: :text, metadata: %{newlines: 0}, content: "Book meeting"}],
+                       attrs: %{"path" => "/contact", "replace" => "{true}"}
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{tag: "BeaconWeb.Components.image", type: :tag_self_close, attrs: %{"name" => "logo.jpg", "width" => "200px"}},
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n"}
+                   ],
+                   content: "end"
+                 }
+               ],
+               content: "if true do"
+             }
+    end
+
     test "complex template" do
       template = ~S"""
       <%= if @display do %>
@@ -284,125 +340,124 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
       {:ok, [eex_block]} = Beacon.Template.HEEx.Tokenizer.tokenize(template)
 
-      assert JSONEncoder.encode_eex_block(eex_block) ==
-               %{
-                 type: :eex_block,
-                 children: [
-                   %{
-                     type: :eex_block_clause,
-                     children: [
-                       %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
-                       %{
-                         type: :eex_block,
-                         children: [
-                           %{
-                             type: :eex_block_clause,
-                             children: [%{type: :text, metadata: %{newlines: 1}, content: "\n    "}],
-                             content: "!is_nil(@users) and length(@users) > 1 ->"
-                           },
-                           %{
-                             type: :eex_block_clause,
-                             children: [
-                               %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
-                               %{type: :eex, metadata: %{line: 4, opt: [], column: 7}, content: "[user | _] = @users"},
-                               %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
-                               %{
-                                 type: :eex_block,
-                                 children: [
-                                   %{
-                                     type: :eex_block_clause,
-                                     children: [%{type: :text, metadata: %{newlines: 1}, content: "\n        "}],
-                                     content: "{:ok, user} ->"
-                                   },
-                                   %{
-                                     type: :eex_block_clause,
-                                     children: [
-                                       %{type: :html_comment, children: [%{type: :text, metadata: %{}, content: "<!-- user.name -->"}]},
-                                       %{
-                                         tag: "span",
-                                         type: :tag_block,
-                                         metadata: %{mode: :inline},
-                                         children: [
-                                           %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
-                                           %{type: :eex, metadata: %{line: 9, opt: ~c"=", column: 13}, content: "user.name"},
-                                           %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
-                                           %{
-                                             type: :tag_self_close,
-                                             attrs: %{"src" => "{if user.picture , do: user.picture, else: \"default.jpg\"}", "width" => "200"},
-                                             content: "img"
-                                           },
-                                           %{type: :text, metadata: %{newlines: 1}, content: "\n          "}
-                                         ],
-                                         attrs: %{"class" => "text-xl", "phx-click" => "{JS.exec(\"data-cancel\", to: \"\#{user.id}\")}"}
-                                       },
-                                       %{type: :text, metadata: %{newlines: 1}, content: "\n        "}
-                                     ],
-                                     content: "_ ->"
-                                   },
-                                   %{
-                                     type: :eex_block_clause,
-                                     children: [
-                                       %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
-                                       %{type: :eex_comment, content: " invalid user "},
-                                       %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
-                                       %{
-                                         tag: "span",
-                                         type: :tag_block,
-                                         metadata: %{mode: :inline},
-                                         children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "invalid user"}],
-                                         attrs: %{}
-                                       },
-                                       %{type: :text, metadata: %{newlines: 1}, content: "\n      "}
-                                     ],
-                                     content: "end"
-                                   }
-                                 ],
-                                 content: "case user do"
-                               },
-                               %{type: :text, metadata: %{newlines: 1}, content: "\n    "}
-                             ],
-                             content: ":default ->"
-                           },
-                           %{
-                             type: :eex_block_clause,
-                             children: [
-                               %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
-                               %{
-                                 tag: "span",
-                                 type: :tag_block,
-                                 metadata: %{mode: :inline},
-                                 children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "no users found"}],
-                                 attrs: %{}
-                               },
-                               %{type: :text, metadata: %{newlines: 1}, content: "\n  "}
-                             ],
-                             content: "end"
-                           }
-                         ],
-                         content: "cond do"
-                       },
-                       %{type: :text, metadata: %{newlines: 1}, content: "\n"}
-                     ],
-                     content: "else"
-                   },
-                   %{
-                     type: :eex_block_clause,
-                     children: [
-                       %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
-                       %{
-                         tag: "span",
-                         type: :tag_block,
-                         metadata: %{mode: :inline},
-                         children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "something went wrong"}],
-                         attrs: %{}
-                       },
-                       %{type: :text, metadata: %{newlines: 1}, content: "\n"}
-                     ],
-                     content: "end"
-                   }
-                 ],
-                 content: "if @display do"
-               }
+      assert JSONEncoder.encode_eex_block(eex_block) == %{
+               type: :eex_block,
+               children: [
+                 %{
+                   type: :eex_block_clause,
+                   children: [
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       type: :eex_block,
+                       children: [
+                         %{
+                           type: :eex_block_clause,
+                           children: [%{type: :text, metadata: %{newlines: 1}, content: "\n    "}],
+                           content: "!is_nil(@users) and length(@users) > 1 ->"
+                         },
+                         %{
+                           type: :eex_block_clause,
+                           children: [
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
+                             %{type: :eex, metadata: %{line: 4, opt: [], column: 7}, content: "[user | _] = @users"},
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
+                             %{
+                               type: :eex_block,
+                               children: [
+                                 %{
+                                   type: :eex_block_clause,
+                                   children: [%{type: :text, metadata: %{newlines: 1}, content: "\n        "}],
+                                   content: "{:ok, user} ->"
+                                 },
+                                 %{
+                                   type: :eex_block_clause,
+                                   children: [
+                                     %{type: :html_comment, children: [%{type: :text, metadata: %{}, content: "<!-- user.name -->"}]},
+                                     %{
+                                       tag: "span",
+                                       type: :tag_block,
+                                       metadata: %{mode: :inline},
+                                       children: [
+                                         %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
+                                         %{type: :eex, metadata: %{line: 9, opt: ~c"=", column: 13}, content: "user.name"},
+                                         %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
+                                         %{
+                                           tag: "img",
+                                           type: :tag_self_close,
+                                           attrs: %{"src" => "{if user.picture , do: user.picture, else: \"default.jpg\"}", "width" => "200"}
+                                         },
+                                         %{type: :text, metadata: %{newlines: 1}, content: "\n          "}
+                                       ],
+                                       attrs: %{"class" => "text-xl", "phx-click" => "{JS.exec(\"data-cancel\", to: \"\#{user.id}\")}"}
+                                     },
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n        "}
+                                   ],
+                                   content: "_ ->"
+                                 },
+                                 %{
+                                   type: :eex_block_clause,
+                                   children: [
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
+                                     %{type: :eex_comment, content: " invalid user "},
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
+                                     %{
+                                       tag: "span",
+                                       type: :tag_block,
+                                       metadata: %{mode: :inline},
+                                       children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "invalid user"}],
+                                       attrs: %{}
+                                     },
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n      "}
+                                   ],
+                                   content: "end"
+                                 }
+                               ],
+                               content: "case user do"
+                             },
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n    "}
+                           ],
+                           content: ":default ->"
+                         },
+                         %{
+                           type: :eex_block_clause,
+                           children: [
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
+                             %{
+                               tag: "span",
+                               type: :tag_block,
+                               metadata: %{mode: :inline},
+                               children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "no users found"}],
+                               attrs: %{}
+                             },
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n  "}
+                           ],
+                           content: "end"
+                         }
+                       ],
+                       content: "cond do"
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n"}
+                   ],
+                   content: "else"
+                 },
+                 %{
+                   type: :eex_block_clause,
+                   children: [
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       tag: "span",
+                       type: :tag_block,
+                       metadata: %{mode: :inline},
+                       children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "something went wrong"}],
+                       attrs: %{}
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n"}
+                   ],
+                   content: "end"
+                 }
+               ],
+               content: "if @display do"
+             }
     end
   end
 end
