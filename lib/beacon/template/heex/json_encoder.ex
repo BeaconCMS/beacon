@@ -255,9 +255,15 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     |> Enum.reverse()
   end
 
-  defp extract_node_text(value) when value in ["else", "end"], do: ["<% ", value, " %>"]
-
-  defp extract_node_text(value) when is_binary(value), do: value
+  # TODO: augment tokenizer to mark these nodes as elixir expressions (eex block clauses) currently it's marked as text
+  defp extract_node_text(value) when is_binary(value) do
+    cond do
+      value in ["else", "end"] -> ["<% ", value, " %>"]
+      # ends with ' ->'
+      String.match?(value, ~r/.* ->$/) -> ["<% ", value, " %>"]
+      :default -> value
+    end
+  end
 
   defp extract_node_text({:text, text, _}), do: text
 

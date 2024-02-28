@@ -36,9 +36,19 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     assert_equal(
       ~S"""
       <%= if @completed do %>
-        Congrats
+        congrats
       <% else %>
-        Keep working
+        keep working
+      <% end %>
+      """,
+      %{completed: true}
+    )
+
+    assert_equal(
+      ~S"""
+      <%= case @completed do %>
+        <% true -> %>
+          congrats
       <% end %>
       """,
       %{completed: true}
