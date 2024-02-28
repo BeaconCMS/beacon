@@ -182,23 +182,40 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       "content" => encode_tokens(content, site, assigns)
     }
 
-    case tag do
-      "." <> _rest ->
-        rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
-        Map.put(entry, "rendered_html", rendered_html)
-
-      _ ->
-        entry
-    end
+    maybe_add_rendered_html(site, assigns, node, entry)
   end
 
   defp transform_entry({:tag_self_close, tag, attrs} = node, site, assigns) do
-    %{
+    entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs, true),
-      "content" => [],
-      "rendered_html" => Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
+      "content" => []
     }
+
+    maybe_add_rendered_html(site, assigns, node, entry)
+  end
+
+  defp maybe_add_rendered_html(site, assigns, node, entry) do
+    tag = elem(node, 1)
+    attrs = elem(node, 2)
+
+    add_rendered_html = fn ->
+      rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
+      Map.put(entry, "rendered_html", rendered_html)
+    end
+
+    has_eex_in_attrs? =
+      Enum.reduce_while(attrs, false, fn
+        {_, {:expr, _, _}, _}, _acc -> {:halt, true}
+        _attr, _acc -> {:cont, false}
+      end)
+
+    cond do
+      # start with '.' or a capital letter
+      String.match?(tag, ~r/^[A-Z]|\./) -> add_rendered_html.()
+      has_eex_in_attrs? -> add_rendered_html.()
+      :else -> entry
+    end
   end
 
   defp transform_attrs([]), do: %{}
