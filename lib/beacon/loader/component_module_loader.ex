@@ -53,6 +53,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
   defp function_component(%Content.Component{site: site, name: name, body: body} = component) do
     quote do
+      # TODO: iterate dynamic attributes from %Component{}
       attr.(:name, :string, doc: "hello")
 
       def unquote(String.to_atom(name))(var!(assigns)) do
@@ -67,6 +68,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     ast
   end
 
+  # TODO: remove render_component/1 along with my_component/2
   defp render_component(%Content.Component{site: site, name: name, body: body}) do
     file = "site-#{site}-component-#{name}"
     {:ok, ast} = Beacon.Template.HEEx.compile(site, "", body, file)
