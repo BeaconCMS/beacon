@@ -19,7 +19,7 @@ defmodule BeaconWeb.AssetsController do
 
     conn
     |> put_resp_header("content-type", content_type)
-    |> put_resp_header("cache-control", "public, max-age=31536000")
+    |> put_resp_header("cache-control", "public, max-age=31536000, immutable")
     |> put_resp_header("content-encoding", "br")
     |> send_resp(200, content)
     |> halt()
