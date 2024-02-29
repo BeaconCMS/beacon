@@ -133,7 +133,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: mix compile --warnings-as-errors
+      - run: mix compile --force --warnings-as-errors
 
       - run: mix format --check-formatted
 
