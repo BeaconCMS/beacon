@@ -5,7 +5,7 @@ defmodule Beacon.Authorization.DefaultPolicy do
   That's the default policy used when no other is defined.
   """
 
-  @behaviour Beacon.Authorization.Behaviour
+  @behaviour Beacon.Authorization.Policy
 
   @impl true
   def get_agent(data), do: data

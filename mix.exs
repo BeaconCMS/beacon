@@ -153,7 +153,7 @@ defmodule Beacon.MixProject do
           Beacon.MediaLibrary.UploadMetadata
         ],
         "Authn and Authz": [
-          Beacon.Authorization.Behaviour,
+          Beacon.Authorization.Policy,
           Beacon.Authorization.DefaultPolicy
         ],
         Web: [
