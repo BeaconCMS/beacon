@@ -1,4 +1,4 @@
-defmodule Beacon.PageFieldTest do
+defmodule Beacon.Content.PageFieldTest do
   use Beacon.DataCase, async: true
 
   import Beacon.Fixtures
@@ -85,7 +85,7 @@ defmodule Beacon.PageFieldTest do
     test "build form field" do
       assert %{
                tags: %Phoenix.HTML.FormField{
-                 id: "page_extra_tags",
+                 id: "page-form_extra_tags",
                  name: "page[extra][tags]",
                  errors: [],
                  field: :tags,

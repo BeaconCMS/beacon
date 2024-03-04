@@ -41,10 +41,10 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
     test "interpolates raw_schema snippets" do
       snippet_helper_fixture(%{
         site: "my_site",
-        name: "raw_schema_author_name",
+        name: "raw_schema_blog_post_tags",
         body: ~S"""
-        author_id =  get_in(assigns, ["page", "extra", "author_id"])
-        "author_#{author_id}"
+        tags = get_in(assigns, ["page", "extra", "tags"])
+        String.upcase(tags)
         """
       })
 
@@ -58,17 +58,14 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
           title: "my first page",
           description: "hello world",
           extra: %{
-            "author_id" => 1
+            "tags" => "beacon,test"
           },
           raw_schema: [
             %{
               "@context": "https://schema.org",
               "@type": "BlogPosting",
               headline: "{{ page.description }}",
-              author: %{
-                "@type": "Person",
-                name: "{% helper 'raw_schema_author_name' %}"
-              }
+              keywords: "{% helper 'raw_schema_blog_post_tags' %}"
             }
           ]
         ]
@@ -82,8 +79,8 @@ defmodule Beacon.Loader.PageModuleLoaderTest do
       assert Enum.sort(raw_schema) == [
                "@context": "https://schema.org",
                "@type": "BlogPosting",
-               author: %{name: "author_1", "@type": "Person"},
-               headline: "hello world"
+               headline: "hello world",
+               keywords: "BEACON,TEST"
              ]
     end
   end
