@@ -96,7 +96,7 @@ defmodule Beacon.Content.PageField do
       errors = Map.get(errors, name, [])
 
       Map.put(acc, name, %Phoenix.HTML.FormField{
-        id: "page_extra_#{name}",
+        id: "page-form_extra_#{name}",
         name: "page[extra][#{name}]",
         errors: errors,
         field: name,
@@ -127,7 +127,7 @@ defmodule Beacon.Content.PageField do
   end
 
   @doc false
-  def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_atom(site) and is_nil(params) do
+  def apply_changesets(%Ecto.Changeset{} = page_changeset, site, params) when is_nil(site) or is_nil(params) do
     page_changeset
   end
 
