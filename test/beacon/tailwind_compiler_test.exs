@@ -67,8 +67,6 @@ defmodule Beacon.TailwindCompilerTest do
       """
     )
 
-    Beacon.Loader.load_runtime_css(@site)
-
     :ok
   end
 
