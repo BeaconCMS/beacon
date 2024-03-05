@@ -407,7 +407,6 @@ defmodule Beacon.Loader do
 
   @doc false
   def handle_info({:load_runtime_css, site}, config) do
-    dbg(:load)
     :ok = Beacon.RuntimeCSS.load!(site)
     {:noreply, config}
   end
