@@ -91,34 +91,101 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     <% end %>
     |
 
-    if_ast =
-      "{\"type\":\"eex_block\",\"children\":[{\"type\":\"eex_block_clause\",\"children\":[{\"type\":\"text\",\"metadata\":{\"newlines\":1},\"content\":\"\\n      \"},{\"tag\":\"span\",\"type\":\"tag_block\",\"metadata\":{\"mode\":\"inline\"},\"children\":[{\"type\":\"eex\",\"metadata\":{\"line\":3,\"opt\":[61],\"column\":13},\"content\":\"@completed_message\"}],\"attrs\":{}},{\"type\":\"text\",\"metadata\":{\"newlines\":1},\"content\":\"\\n    \"}],\"content\":\"else\"},{\"type\":\"eex_block_clause\",\"children\":[{\"type\":\"text\",\"metadata\":{\"newlines\":1},\"content\":\"\\n      keep working\\n    \"}],\"content\":\"end\"}],\"content\":\"if @completed do\"}"
+    assert {:ok,
+            [
+              %{
+                "arg" => "if @completed do",
+                "tag" => "eex_block",
+                "rendered_html" => "\n      <span>congrats</span>\n",
+                "ast" => ast
+              }
+            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: true, completed_message: "congrats"})
 
-    assert_output(
-      if_template,
-      [
-        %{
-          "arg" => "if @completed do",
-          "tag" => "eex_block",
-          "rendered_html" => "\n      <span>congrats</span>\n",
-          "ast" => if_ast
-        }
-      ],
-      %{completed: true, completed_message: "congrats"}
-    )
+    assert %{
+             "children" => [
+               %{
+                 "children" => [
+                   %{
+                     "content" => "\n      ",
+                     "metadata" => %{"newlines" => 1},
+                     "type" => "text"
+                   },
+                   %{
+                     "attrs" => %{},
+                     "children" => [
+                       %{
+                         "content" => "@completed_message",
+                         "metadata" => %{"column" => 13, "line" => 3, "opt" => ~c"="},
+                         "type" => "eex"
+                       }
+                     ],
+                     "metadata" => %{"mode" => "inline"},
+                     "tag" => "span",
+                     "type" => "tag_block"
+                   },
+                   %{
+                     "content" => "\n    ",
+                     "metadata" => %{"newlines" => 1},
+                     "type" => "text"
+                   }
+                 ],
+                 "content" => "else",
+                 "type" => "eex_block_clause"
+               },
+               %{
+                 "children" => [
+                   %{
+                     "content" => "\n      keep working\n    ",
+                     "metadata" => %{"newlines" => 1},
+                     "type" => "text"
+                   }
+                 ],
+                 "content" => "end",
+                 "type" => "eex_block_clause"
+               }
+             ],
+             "content" => "if @completed do",
+             "type" => "eex_block"
+           } = Jason.decode!(ast)
 
-    assert_output(
-      if_template,
-      [
-        %{
-          "arg" => "if @completed do",
-          "tag" => "eex_block",
-          "rendered_html" => "\n      keep working\n",
-          "ast" => if_ast
-        }
-      ],
-      %{completed: false, completed_message: "congrats"}
-    )
+    assert {:ok,
+            [
+              %{
+                "arg" => "if @completed do",
+                "tag" => "eex_block",
+                "rendered_html" => "\n      keep working\n",
+                "ast" => ast
+              }
+            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: false, completed_message: "congrats"})
+
+    assert %{
+             "children" => [
+               %{
+                 "children" => [
+                   %{"content" => "\n      ", "metadata" => %{"newlines" => 1}, "type" => "text"},
+                   %{
+                     "attrs" => %{},
+                     "children" => [
+                       %{"content" => "@completed_message", "metadata" => %{"column" => 13, "line" => 3, "opt" => ~c"="}, "type" => "eex"}
+                     ],
+                     "metadata" => %{"mode" => "inline"},
+                     "tag" => "span",
+                     "type" => "tag_block"
+                   },
+                   %{"content" => "\n    ", "metadata" => %{"newlines" => 1}, "type" => "text"}
+                 ],
+                 "content" => "else",
+                 "type" => "eex_block_clause"
+               },
+               %{
+                 "children" => [%{"content" => "\n      keep working\n    ", "metadata" => %{"newlines" => 1}, "type" => "text"}],
+                 "content" => "end",
+                 "type" => "eex_block_clause"
+               }
+             ],
+             "content" => "if @completed do",
+             "type" => "eex_block"
+           } = Jason.decode!(ast)
   end
 
   test "comprehensions" do
