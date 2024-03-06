@@ -321,13 +321,11 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
             <% [user | _] = @users %>
             <%= case user do %>
               <% {:ok, user} -> %>
-                <!-- user.name -->
                 <span class="text-xl" phx-click={JS.exec("data-cancel", to: "#{user.id}")}>
                   <%= user.name %>
                   <img src={if user.picture , do: user.picture, else: "default.jpg"} width="200" />
                 </span>
               <% _ -> %>
-                <%!-- invalid user --%>
                 <span>invalid user</span>
             <% end %>
           <% :default -> %>
@@ -341,7 +339,6 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       {:ok, [eex_block]} = Beacon.Template.HEEx.Tokenizer.tokenize(template)
 
       assert JSONEncoder.encode_eex_block(eex_block) == %{
-               type: :eex_block,
                children: [
                  %{
                    type: :eex_block_clause,
@@ -372,14 +369,14 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                                  %{
                                    type: :eex_block_clause,
                                    children: [
-                                     %{type: :html_comment, children: [%{type: :text, metadata: %{}, content: "<!-- user.name -->"}]},
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
                                      %{
                                        tag: "span",
                                        type: :tag_block,
                                        metadata: %{mode: :inline},
                                        children: [
                                          %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
-                                         %{type: :eex, metadata: %{line: 9, opt: ~c"=", column: 13}, content: "user.name"},
+                                         %{type: :eex, metadata: %{line: 8, opt: ~c"=", column: 13}, content: "user.name"},
                                          %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
                                          %{
                                            tag: "img",
@@ -397,8 +394,6 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                                  %{
                                    type: :eex_block_clause,
                                    children: [
-                                     %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
-                                     %{type: :eex_comment, content: " invalid user "},
                                      %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
                                      %{
                                        tag: "span",
@@ -456,7 +451,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                    content: "end"
                  }
                ],
-               content: "if @display do"
+               content: "if @display do",
+               type: :eex_block
              }
     end
   end
