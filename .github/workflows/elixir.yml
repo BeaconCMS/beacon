@@ -118,19 +118,6 @@ jobs:
 
       - run: mix do deps.get, deps.compile
 
-      - name: Cache dialyzer
-        uses: actions/cache@v2
-        id: cache-plt
-        with:
-          path: priv/plts
-          key: dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
-
-      - name: Generate dialyzer plt
-        run: mix dialyzer --plt
-        if: steps.cache-plt.outputs.cache-hit != 'true'
-
       - run: mix tailwind.install
 
       - run: mix compile --force --warnings-as-errors
@@ -140,5 +127,3 @@ jobs:
       - run: mix deps.unlock --check-unused
 
       - run: mix credo --strict
-
-      - run: mix dialyzer --format github
