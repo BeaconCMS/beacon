@@ -15,7 +15,7 @@ defmodule Beacon.Config do
   @type endpoint :: module()
 
   @typedoc """
-  A module that implements `Beacon.Authorization.Behaviour`, used to provide authorization rules for the admin backend.
+  A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules for the admin backend.
   """
   @type authorization_source :: module()
 
