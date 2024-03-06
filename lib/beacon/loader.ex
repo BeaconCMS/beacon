@@ -137,7 +137,7 @@ defmodule Beacon.Loader do
          :ok <- load_pages(site),
          :ok <- load_error_pages(site),
          :ok <- load_stylesheets(site),
-         :ok <- load_runtime_css(site) do
+         :ok <- async_load_runtime_css(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for site #{site}"
@@ -205,10 +205,13 @@ defmodule Beacon.Loader do
   # too slow to run the css compiler on every test
   if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
     @doc false
-    def load_runtime_css(_site), do: :ok
+    def async_load_runtime_css(_site), do: :ok
   else
     @doc false
-    def load_runtime_css(site), do: Beacon.RuntimeCSS.load!(site)
+    def async_load_runtime_css(site) do
+      send(self(), {:load_runtime_css, site})
+      :ok
+    end
   end
 
   @doc false
@@ -387,7 +390,7 @@ defmodule Beacon.Loader do
   @doc false
   def handle_call({:load_page, page}, _from, config) do
     result = do_load_page!(page)
-    :ok = load_runtime_css(page.site)
+    :ok = async_load_runtime_css(page.site)
     {:reply, result, config}
   end
 
@@ -403,7 +406,13 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def handle_info({:layout_published, %{site: site, id: id}}, state) do
+  def handle_info({:load_runtime_css, site}, config) do
+    :ok = Beacon.RuntimeCSS.load!(site)
+    {:noreply, config}
+  end
+
+  @doc false
+  def handle_info({:layout_published, %{site: site, id: id}}, config) do
     layout = Content.get_published_layout(site, id)
 
     # TODO: load only used components, depends on https://github.com/BeaconCMS/beacon/issues/84
@@ -412,63 +421,63 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(site),
          {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
          :ok <- maybe_reload_error_pages(layout),
-         :ok <- load_runtime_css(site),
+         :ok <- async_load_runtime_css(site),
          :ok <- load_stylesheets(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
     end
 
-    {:noreply, state}
+    {:noreply, config}
   end
 
   @doc false
-  def handle_info({:page_published, %{site: site, id: id}}, state) do
+  def handle_info({:page_published, %{site: site, id: id}}, config) do
     site
     |> Content.get_published_page(id)
     |> do_load_page!()
 
-    :ok = load_runtime_css(site)
+    :ok = async_load_runtime_css(site)
 
-    {:noreply, state}
+    {:noreply, config}
   end
 
   @doc false
-  def handle_info({:pages_published, site, pages}, state) do
+  def handle_info({:pages_published, site, pages}, config) do
     for page <- pages do
       site
       |> Content.get_published_page(page.id)
       |> do_load_page!()
     end
 
-    :ok = load_runtime_css(site)
+    :ok = async_load_runtime_css(site)
 
-    {:noreply, state}
+    {:noreply, config}
   end
 
   @doc false
-  def handle_info({:page_unpublished, %{site: site, id: id}}, state) do
+  def handle_info({:page_unpublished, %{site: site, id: id}}, config) do
     site
     |> Content.get_published_page(id)
     |> PageModuleLoader.unload_page!()
 
-    {:noreply, state}
+    {:noreply, config}
   end
 
   @doc false
-  def handle_info({:component_updated, component}, state) do
+  def handle_info({:component_updated, component}, config) do
     :ok = load_components(component.site)
     :ok = Beacon.PubSub.component_loaded(component)
-    :ok = load_runtime_css(component.site)
-    {:noreply, state}
+    :ok = async_load_runtime_css(component.site)
+    {:noreply, config}
   end
 
   @doc false
-  def handle_info({:error_page_updated, error_page}, state) do
+  def handle_info({:error_page_updated, error_page}, config) do
     :ok = load_error_pages(error_page.site)
     :ok = Beacon.PubSub.error_page_loaded(error_page)
-    :ok = load_runtime_css(error_page.site)
-    {:noreply, state}
+    :ok = async_load_runtime_css(error_page.site)
+    {:noreply, config}
   end
 
   @doc false
@@ -478,8 +487,9 @@ defmodule Beacon.Loader do
   end
 
   @doc false
-  def handle_info(_msg, state) do
-    {:noreply, state}
+  def handle_info(msg, config) do
+    Logger.warning("Beacon.Loader can't handle the message: #{inspect(msg)}")
+    {:noreply, config}
   end
 
   defp do_load_page!(page) when is_nil(page), do: nil

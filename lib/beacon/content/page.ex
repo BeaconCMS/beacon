@@ -64,32 +64,37 @@ defmodule Beacon.Content.Page do
 
   @doc false
   def create_changeset(%__MODULE__{} = page, attrs) do
-    page
-    |> cast(attrs, [
-      :site,
-      :path,
-      :title,
-      :description,
-      :template,
-      :meta_tags,
-      :raw_schema,
-      :order,
-      :layout_id,
-      :format,
-      :extra
-    ])
-    |> cast_embed(:helpers, with: &helpers_changeset/2)
-    |> unique_constraint([:path, :site])
-    |> validate_required([
-      :site,
-      :layout_id,
-      :path,
-      :title,
-      :format
-    ])
-    |> Beacon.Schema.validate_path()
-    |> foreign_key_constraint(:layout_id)
-    |> remove_empty_meta_attributes(:meta_tags)
+    {extra_attrs, attrs} = Map.pop(attrs, "extra")
+
+    changeset =
+      page
+      |> cast(attrs, [
+        :site,
+        :path,
+        :title,
+        :description,
+        :template,
+        :meta_tags,
+        :raw_schema,
+        :order,
+        :layout_id,
+        :format,
+        :extra
+      ])
+      |> cast_embed(:helpers, with: &helpers_changeset/2)
+      |> unique_constraint([:path, :site])
+      |> validate_required([
+        :site,
+        :layout_id,
+        :path,
+        :title,
+        :format
+      ])
+      |> Beacon.Schema.validate_path()
+      |> foreign_key_constraint(:layout_id)
+      |> remove_empty_meta_attributes(:meta_tags)
+
+    Content.PageField.apply_changesets(changeset, get_field(changeset, :site), extra_attrs)
   end
 
   # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we

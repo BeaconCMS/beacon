@@ -22,7 +22,7 @@ defmodule Beacon.RuntimeCSS do
   def fetch(site, :compressed) do
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
       [[css]] -> css
-      _ -> nil
+      _ -> "/* CSS not found for site #{inspect(site)} */"
     end
   end
 

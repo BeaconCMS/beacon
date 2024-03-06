@@ -121,7 +121,6 @@ defmodule BeaconTagsField do
   def changeset(data, attrs, _metadata) do
     data
     |> cast(attrs, [:tags])
-    |> validate_required([:tags])
     |> validate_format(:tags, ~r/,/, message: "invalid format, expected ,")
   end
 end
