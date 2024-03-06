@@ -61,6 +61,18 @@ defmodule Beacon.TailwindCompiler do
     {:ok, output}
   end
 
+  @impl Beacon.RuntimeCSS
+  @spec compile(Beacon.Types.Site.t(), templates :: [String.t()]) :: {:ok, String.t()} | {:error, any()}
+  def compile(site, templates) when is_atom(site) and is_list(templates) do
+    tmp_dir = tmp_dir!()
+    config_file_path = generate_tailwind_config_file(site, tmp_dir, beacon_content(tmp_dir))
+    templates_path = generate_template_files!(tmp_dir, templates)
+    input_css_path = generate_input_css_file!(tmp_dir, site)
+    output = execute(tmp_dir, config_file_path, input_css_path)
+    cleanup(tmp_dir, templates_path)
+    {:ok, output}
+  end
+
   defp generate_tailwind_config_file(site, tmp_dir, content) do
     tailwind_config = tailwind_config!(site)
 
@@ -172,7 +184,7 @@ defmodule Beacon.TailwindCompiler do
     end
   end
 
-  defp generate_template_files!(tmp_dir, site) do
+  defp generate_template_files!(tmp_dir, site) when is_atom(site) do
     [
       Task.async(fn ->
         Enum.map(Beacon.Content.list_components(site, per_page: :infinity), fn component ->
@@ -206,6 +218,15 @@ defmodule Beacon.TailwindCompiler do
     ]
     |> Task.await_many(60_000)
     |> List.flatten()
+  end
+
+  defp generate_template_files!(tmp_dir, templates) when is_list(templates) do
+    Enum.map(templates, fn template ->
+      hash = Base.encode16(:crypto.hash(:md5, template), case: :lower)
+      template_path = Path.join(tmp_dir, "#{hash}.template")
+      File.write!(template_path, template)
+      template_path
+    end)
   end
 
   # import app css into input css used by tailwind-cli to load tailwind functions and directives
