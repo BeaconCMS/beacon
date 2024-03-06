@@ -13,12 +13,7 @@ defmodule Beacon.MixProject do
       deps: deps(),
       aliases: aliases(),
       docs: docs(),
-      elixirc_paths: elixirc_paths(Mix.env()),
-      dialyzer: [
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
-        plt_add_apps: [:mix],
-        list_unused_filters: true
-      ]
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
 
@@ -37,7 +32,6 @@ defmodule Beacon.MixProject do
       {:accent, "~> 1.1"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.5", only: :dev},
       {:ex_brotli, "~> 0.3"},
