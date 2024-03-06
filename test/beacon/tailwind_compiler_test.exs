@@ -117,4 +117,17 @@ defmodule Beacon.TailwindCompilerTest do
       end)
     end
   end
+
+  test "compile templates" do
+    capture_io(fn ->
+      templates = [
+        ~S|<div class="text-gray-50">|,
+        ~S|<div class="font-bold">|
+      ]
+
+      {:ok, css} = TailwindCompiler.compile(@site, templates)
+      assert css =~ "text-gray-50"
+      assert css =~ "font-bold"
+    end)
+  end
 end
