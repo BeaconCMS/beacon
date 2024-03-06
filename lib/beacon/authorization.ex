@@ -38,7 +38,7 @@ defmodule Beacon.Authorization do
       raise """
       authorization source is misconfigured.
 
-      Expected a module implementing Beacon.Authorization.Behaviour callbacks.
+      Expected a module implementing Beacon.Authorization.Policy callbacks.
 
       Got: #{inspect(authorization_source)}
       """

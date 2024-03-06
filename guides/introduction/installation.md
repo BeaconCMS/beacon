@@ -159,7 +159,25 @@ For more details please check out the docs: `mix help beacon.install`
     show_sensitive_data_on_connection_error: true
     ```
 
-3. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
+3. Edit your endpoint configuration `:render_errors` key, like so:
+
+Replace the `[formats: [html: _]]` option with `BeaconWeb.ErrorHTML`.
+
+```diff
+ # Configures the endpoint
+ config :my_app, MyAppWeb.Endpoint,
+   url: [host: "localhost"],
+   adapter: Bandit.PhoenixAdapter,
+   render_errors: [
+-    formats: [html: MyAppWeb.ErrorHTML, json: MyAppWeb.ErrorJSON],
++    formats: [html: BeaconWeb.ErrorHTML, json: MyAppWeb.ErrorJSON],
+     layout: false
+   ],
+   pubsub_server: MyApp.PubSub,
+   live_view: [signing_salt: "j39Y3XwM"]
+```
+
+4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
 
     ```elixir
     use Beacon.Router
@@ -172,7 +190,7 @@ For more details please check out the docs: `mix help beacon.install`
 
 Make sure you're not adding the macro `beacon_site` into the existing `scope "/", MyAppWeb`, otherwise requests will fail.
 
-4. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
+5. Include the `Beacon` supervisor in the list of `children` applications in the file `lib/my_app/application.ex`:
 
     ```elixir
     @impl true
@@ -194,7 +212,7 @@ For more info on site options, check out `Beacon.start_link/1`.
 - The site identification has to be the same across your environment, in configuration and `beacon_site`. In this example we're using `:my_site`.
 - Include it after your app `Endpoint`.
 
-5. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
+6. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
 
     ```elixir
     # Replace "<%= site %>" with your site name.
@@ -317,7 +335,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     })
     ```
 
-6. Include new seeds in the `ecto.setup` alias in `mix.exs`:
+7. Include new seeds in the `ecto.setup` alias in `mix.exs`:
 
     ```elixir
     "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs", "run priv/repo/beacon_seeds.exs"],
