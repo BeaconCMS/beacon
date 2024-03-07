@@ -11,8 +11,13 @@ defmodule BeaconWeb.ErrorHTML do
     conn = Plug.Conn.assign(conn, :__site__, site)
     error_module.render(conn, String.to_integer(status_code))
   rescue
-    _ ->
-      Logger.warning("failed to render error page")
+    error ->
+      Logger.error("""
+      failed to render error page for #{template}, fallbacking to default Phoenix error page
+
+      Got: #{inspect(error)}
+
+      """)
       Phoenix.Controller.status_message_from_template(template)
   end
 end
