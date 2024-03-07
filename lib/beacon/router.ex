@@ -104,6 +104,7 @@ defmodule Beacon.Router do
   end
 
   @doc false
+  @spec __options__(keyword()) :: {atom(), atom(), keyword()}
   def __options__(opts) do
     {site, _opts} = Keyword.pop(opts, :site)
 
@@ -119,15 +120,38 @@ defmodule Beacon.Router do
           raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
       end
 
+    session_opts = build_session_opts(opts, site)
+
     {
       site,
       # TODO: sanitize and format session name
       String.to_atom("beacon_#{site}"),
-      [
-        session: %{"beacon_site" => site},
-        root_layout: {BeaconWeb.Layouts, :runtime}
-      ]
+      session_opts
     }
+  end
+
+  defp build_session_opts(opts, site) do
+    root_layout =
+      case Keyword.pop(opts, :root_layout) do
+        {nil, _opts} ->
+          {BeaconWeb.Layouts, :runtime}
+
+        {root_layout, _opts} ->
+          root_layout
+      end
+
+    default_session_opts = [
+      session: %{"beacon_site" => site},
+      root_layout: root_layout
+    ]
+
+    case Keyword.pop(opts, :on_mount) do
+      {nil, _opts} ->
+        default_session_opts
+
+      {on_mount, _opts} ->
+        Keyword.merge(default_session_opts, on_mount: on_mount)
+    end
   end
 
   @doc """
