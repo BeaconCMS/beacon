@@ -18,6 +18,7 @@ defmodule BeaconWeb.ErrorHTML do
       Got: #{inspect(error)}
 
       """)
+
       Phoenix.Controller.status_message_from_template(template)
   end
 end
