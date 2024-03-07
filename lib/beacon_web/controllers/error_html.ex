@@ -21,4 +21,9 @@ defmodule BeaconWeb.ErrorHTML do
 
       Phoenix.Controller.status_message_from_template(template)
   end
+
+  def render(template, _assigns) do
+    Logger.error("could not find an error page for #{template}, fallbacking to default Phoenix error page")
+    Phoenix.Controller.status_message_from_template(template)
+  end
 end
