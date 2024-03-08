@@ -102,7 +102,7 @@ defmodule Beacon.TailwindCompilerTest do
     end
   end
 
-  describe "compile template" do
+  describe "compile raw template" do
     test "compile a specific template binary with custom tailwind config" do
       capture_io(fn ->
         config = Beacon.Registry.config!(@site)

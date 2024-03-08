@@ -43,7 +43,7 @@ defmodule Beacon.TailwindCompiler do
 
     content = [
       ?{,
-      " raw: ",
+      " raw: String.raw",
       ?`,
       template,
       ?`,
