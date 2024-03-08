@@ -421,8 +421,8 @@ defmodule Beacon.Loader do
          :ok <- load_snippet_helpers(site),
          {:ok, _module, _ast} <- Beacon.Loader.LayoutModuleLoader.load_layout!(layout),
          :ok <- maybe_reload_error_pages(layout),
-         :ok <- async_load_runtime_css(site),
-         :ok <- load_stylesheets(site) do
+         :ok <- load_stylesheets(site),
+         :ok <- async_load_runtime_css(site) do
       :ok
     else
       _ -> raise Beacon.LoaderError, message: "failed to load resources for layout #{layout.title} of site #{layout.site}"
