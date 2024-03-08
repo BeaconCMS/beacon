@@ -175,6 +175,8 @@ defmodule Beacon.Loader do
 
   @doc false
   def reload_module!(module, ast, file \\ "nofile", failure_count \\ 0) do
+    # TODO: telemetry
+    Logger.debug("Beacon.Loader reloading module #{module}")
     :code.delete(module)
     :code.purge(module)
     [{^module, _}] = Code.compile_quoted(ast, file)

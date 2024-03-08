@@ -28,6 +28,8 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   def unload_page!(page) do
+    # TODO: telemetry
+    Logger.debug("Beacon.Loader.PageModuleLoader unloading #{page.id}")
     page_module = Loader.page_module_for_site(page.id)
     :code.delete(page_module)
     :code.purge(page_module)
