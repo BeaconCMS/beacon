@@ -78,9 +78,8 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   end
 
   test "my_component" do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     component_fixture(site: :my_site)
-    Beacon.Loader.load_components(:my_site)
+    Beacon.Loader.fetch_components_module(:my_site)
 
     assert_equal(~S|<%= my_component("sample_component", %{val: 1}) %>|)
   end

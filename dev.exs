@@ -1023,8 +1023,5 @@ Task.start(fn ->
   dev_seeds.()
   dy_seeds.()
 
-  :ok = Beacon.reload_site(:dev)
-  :ok = Beacon.reload_site(:dy)
-
   Process.sleep(:infinity)
 end)

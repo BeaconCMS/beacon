@@ -1,23 +1,13 @@
 defmodule BeaconWeb.Live.PageLiveTest do
   use BeaconWeb.ConnCase, async: false
-
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
-  import Beacon.Fixtures
 
   alias Beacon.Content
 
-  setup_all do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
-    :ok
-  end
-
-  defp create_page(_) do
-    stylesheet_fixture()
-
+  setup do
     live_data = live_data_fixture(site: :my_site, path: "/home")
-    live_data_assign_fixture(live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
-    Beacon.Loader.load_data_source(:my_site)
+    live_data_assign_fixture(live_data: live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
 
     component_fixture(name: "sample_component")
 
@@ -39,7 +29,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
       )
 
     page_home =
-      published_page_fixture(
+      page_fixture(
         layout_id: layout.id,
         path: "/home",
         template: """
@@ -79,8 +69,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
       })
 
     Content.publish_page(page_home)
+    Beacon.Loader.reload_page_module(page_home.site, page_home.id)
 
-    page_without_meta_tags =
+    _page_without_meta_tags =
       published_page_fixture(
         layout_id: layout.id,
         path: "/without_meta_tags",
@@ -91,15 +82,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
         meta_tags: nil
       )
 
-    Beacon.Loader.load_page(page_home)
-    Beacon.Loader.load_page(page_without_meta_tags)
-
     [layout: layout]
   end
 
   test "live data", %{conn: conn} do
-    create_page(:ok)
-
     {:ok, view, _html} = live(conn, "/home")
 
     assert has_element?(view, "#my-component-first", "first")
@@ -108,8 +94,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "meta tags" do
-    setup [:create_page]
-
     test "merge layout, page, and site", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
@@ -154,27 +138,23 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       layout = published_layout_fixture()
 
-      page =
-        [
-          site: "my_site",
-          layout_id: layout.id,
-          path: "/page/meta-tag",
-          title: "my first page",
-          description: "my test page",
-          meta_tags: [
-            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-            %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
-            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
-          ]
+      [
+        site: "my_site",
+        layout_id: layout.id,
+        path: "/page/meta-tag",
+        title: "my first page",
+        description: "my test page",
+        meta_tags: [
+          %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
+          %{"property" => "og:image", "content" => "{{ live_data.image }}"}
         ]
-        |> published_page_fixture()
-        |> Beacon.Repo.preload(:event_handlers)
+      ]
+      |> published_page_fixture()
+      |> Beacon.Repo.preload(:event_handlers)
 
       live_data = live_data_fixture(path: "/page/meta-tag")
-      live_data_assign_fixture(live_data, format: :text, key: "image", value: "http://img.example.com")
-
-      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
-      Beacon.Loader.load_page(page)
+      live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -193,8 +173,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
   end
 
   describe "resource links" do
-    setup [:create_page]
-
     test "render layout resource links on page head", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
@@ -203,22 +181,15 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "update resource links on layout publish", %{conn: conn, layout: layout} do
-      Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
-
       {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
-
-      id = layout.id
-      {:ok, _layout} = Content.publish_layout(layout)
-      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
-
+      {:ok, layout} = Content.publish_layout(layout)
+      Beacon.Loader.reload_layout_module(layout.site, layout.id)
       {:ok, _view, html} = live(conn, "/home")
       assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
     end
   end
 
   describe "render" do
-    setup [:create_page]
-
     test "a given path", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home")
 
@@ -260,77 +231,30 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ ~s(phx-socket="/custom_live")
     end
-
-    test "reload layout", %{conn: conn, layout: layout} do
-      Beacon.PubSub.subscribe_to_layout(layout.site, layout.id)
-
-      {:ok, layout} =
-        Content.update_layout(layout, %{
-          "template" => """
-          <%= @inner_content %>
-          <span>updated_layout</span>
-          """
-        })
-
-      id = layout.id
-      {:ok, _layout} = Content.publish_layout(layout)
-      assert_receive {:layout_loaded, %{id: ^id, site: :my_site}}, 1_000
-
-      {:ok, _view, html} = live(conn, "/home")
-      assert html =~ ~s|updated_layout|
-    end
   end
 
   describe "page title" do
-    test "on page overwrite layout", %{conn: conn} do
-      stylesheet_fixture()
-      layout = published_layout_fixture(title: "layout_title")
-      page = published_page_fixture(layout_id: layout.id, title: "page_title", path: "/page_title")
-      Beacon.Loader.load_page(page)
-
-      {:ok, view, _html} = live(conn, "/page_title")
-
-      assert page_title(view) =~ "page_title"
+    test "with snippet helper from page", %{conn: conn, layout: layout} do
+      published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "/my/:page")
+      {:ok, view, _html} = live(conn, "/my/:page")
+      assert page_title(view) =~ "/my/:page"
     end
 
-    test "with snippet helper from page", %{conn: conn} do
-      stylesheet_fixture()
-      layout = published_layout_fixture(title: "layout_title")
-      page = published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "/foo/bar/:baz")
-      live_data = live_data_fixture(path: "/foo/bar/:baz") |> Beacon.Repo.preload(:assigns)
+    test "with snippet helper from live data assigns", %{conn: conn, layout: layout} do
+      published_page_fixture(layout_id: layout.id, title: "page {{ live_data.test }}", path: "/my/page/:var")
+      live_data = live_data_fixture(path: "/my/page/:var")
+      live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
 
-      Beacon.Loader.DataSourceModuleLoader.load_data_source([live_data], :my_site)
-      Beacon.Loader.load_page(page)
+      {:ok, view, _html} = live(conn, "/my/page/foobar")
 
-      {:ok, view, _html} = live(conn, "/foo/bar/123")
-
-      assert page_title(view) =~ "foo/bar/:baz"
-    end
-
-    test "with snippet helper from live data assigns", %{conn: conn} do
-      stylesheet_fixture()
-      layout = published_layout_fixture(title: "layout_title")
-      page = published_page_fixture(layout_id: layout.id, title: "test {{ live_data.test }}", path: "/foo/bar/:baz")
-      live_data = live_data_fixture(path: "/foo/bar/:baz")
-      live_data_assign_fixture(live_data, format: :elixir, key: "test", value: "baz")
-
-      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
-      Beacon.Loader.load_page(page)
-
-      {:ok, view, _html} = live(conn, "/foo/bar/123")
-
-      assert page_title(view) =~ "test 123"
+      assert page_title(view) =~ "page foobar"
     end
   end
 
   describe "markdown" do
-    test "page template", %{conn: conn} do
-      stylesheet_fixture()
-      layout = published_layout_fixture()
-      page = published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
-      live_data = live_data_fixture(path: "/markdown")
-      Beacon.Loader.DataSourceModuleLoader.load_data_source([Beacon.Repo.preload(live_data, :assigns)], :my_site)
-      Beacon.Loader.load_page(page)
+    test "page template", %{conn: conn, layout: layout} do
+      live_data_fixture(path: "/markdown")
+      published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
 
       {:ok, view, _html} = live(conn, "/markdown")
 
@@ -341,9 +265,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
   describe "components" do
     test "update should reload the resource", %{conn: conn} do
       component = component_fixture(name: "component_test", body: "component_test_v1")
-      id = component.id
-      Beacon.PubSub.subscribe_to_component(component.site, component.id)
-
       layout = published_layout_fixture()
 
       published_page_fixture(
@@ -354,15 +275,12 @@ defmodule BeaconWeb.Live.PageLiveTest do
         layout_id: layout.id
       )
 
-      Beacon.reload_site(:my_site)
-
       {:ok, _view, html} = live(conn, "/component_test")
 
       assert html =~ "component_test_v1"
 
       Content.update_component(component, %{body: "component_test_v2"})
-
-      assert_receive {:component_loaded, %{id: ^id}}
+      Beacon.Loader.reload_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")
       assert html =~ "component_test_v2"

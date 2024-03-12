@@ -4,30 +4,20 @@ defmodule BeaconWeb.DataSource do
   require Logger
 
   def live_data(site, path_info, params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(params) do
-    data_source_module = Beacon.Loader.data_source_module_for_site(site)
-
-    if :erlang.module_loaded(data_source_module) do
-      data_source_module.live_data(path_info, params)
-    else
-      Logger.warning("""
-      data source module #{data_source_module} for site #{site} and path #{inspect(path_info)} is not loaded
-
-      returning empty live data for that page
-      """)
-
-      %{}
-    end
+    site
+    |> Beacon.Loader.fetch_live_data_module()
+    |> Beacon.apply_mfa(:live_data, [path_info, params])
   end
 
-  def page_title(assigns) do
+  def page_title(site, page_id, live_data) do
     page =
-      assigns.__dynamic_page_id__
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
+      site
+      |> Beacon.Loader.fetch_page_module(page_id)
+      |> Beacon.apply_mfa(:page_assigns, [])
 
-    title = BeaconWeb.Layouts.page_title(assigns)
+    title = Map.get(page, :title) || missing_page_title()
 
-    case Beacon.Content.render_snippet(title, %{page: page, live_data: assigns.beacon_live_data}) do
+    case Beacon.Content.render_snippet(title, %{page: page, live_data: live_data}) do
       {:ok, page_title} ->
         page_title
 
@@ -46,11 +36,18 @@ defmodule BeaconWeb.DataSource do
     end
   end
 
+  defp missing_page_title do
+    Logger.warning("no page title was found")
+    ""
+  end
+
   def meta_tags(assigns) do
+    %{__site__: site, __dynamic_page_id__: page_id} = assigns
+
     page =
-      assigns.__dynamic_page_id__
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry!(:page_assigns, [])
+      site
+      |> Beacon.Loader.fetch_page_module(page_id)
+      |> Beacon.apply_mfa(:page_assigns, [])
 
     assigns
     |> BeaconWeb.Layouts.meta_tags()

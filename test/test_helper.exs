@@ -94,7 +94,7 @@ Supervisor.start_link(
            ],
            after_publish_page: [
              maybe_publish_page: fn page ->
-               send(self(), :lifecycle_after_publish_page)
+               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after publish page"})
                {:cont, page}
              end
            ]

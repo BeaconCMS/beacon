@@ -6,8 +6,11 @@ defmodule Beacon.Utils do
     Enum.reduce(list, &{:|, [], [&1, &2]})
   end
 
-  # For debugging - will print module content to the terminal
-  def ast_to_binary(ast) do
+  # For debugging - convert a quoted expression to string
+  # useful to log or write a file, eg:
+  #
+  #  File.write!("module.ex", Beacon.Utils.quoted_to_binary(quoted))
+  def quoted_to_binary(ast) do
     ast
     |> Code.quoted_to_algebra()
     |> Inspect.Algebra.format(:infinity)

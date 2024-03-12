@@ -1,94 +1,38 @@
-defmodule Beacon.Loader.PageModuleLoader do
+defmodule Beacon.Loader.Page do
   @moduledoc false
 
-  alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.Template.HEEx
 
-  require Logger
+  def module_name(site, page_id), do: Loader.module_name(site, "Page#{page_id}")
 
-  @doc """
-  Reload the page module.
-
-  `stage` can be one of:
-
-    - `:boot` - it won't load the template, useful during app booting process
-    - `:request` - it will load the template, useful during a request
-
-  """
-  if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
-    def load_page!(%Content.Page{} = page, stage \\ :request) do
-      do_load_page!(page, stage)
-    end
-  else
-    def load_page!(%Content.Page{} = page, stage \\ :boot) do
-      do_load_page!(page, stage)
-    end
-  end
-
-  def unload_page!(page) do
-    # TODO: telemetry
-    Logger.debug("Beacon.Loader.PageModuleLoader unloading #{page.id}")
-    page_module = Loader.page_module_for_site(page.id)
-    :code.delete(page_module)
-    :code.purge(page_module)
-    Beacon.Router.del_page(page.site, page.path)
-    {:ok, page_module}
-  end
-
-  # TODO: retry
-  @doc "Reload the page module and return the %Rendered{} template"
-  def load_page_template!(%Content.Page{} = page, page_module, assigns) do
-    Logger.debug("compiling #{page_module}")
-
-    with %Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id),
-         {:ok, ^page_module, _ast} <- do_load_page!(page, :request),
-         %Phoenix.LiveView.Rendered{} = rendered <- Beacon.Template.render(page_module, assigns) do
-      rendered
-    else
-      _ ->
-        raise Beacon.LoaderError,
-          message: """
-          failed to load the template for the following page:
-
-            id: #{page.id}
-            title: #{page.title}
-            path: #{page.path}
-
-          """
-    end
-  end
-
-  def do_load_page!(page, stage) do
-    component_module = Loader.component_module_for_site(page.site)
-    page_module = Loader.page_module_for_site(page.id)
+  def build_ast(site, page) do
+    module = module_name(site, page.id)
+    components_module = Loader.Components.module_name(site)
 
     # Group function heads together to avoid compiler warnings
     functions = [
       for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
-      render(page, stage),
+      render(page),
       dynamic_helper()
     ]
 
-    ast = build(page_module, component_module, functions)
-    :ok = Loader.reload_module!(page_module, ast)
-    Beacon.Router.add_page(page.site, page.path, {page.id, page.layout_id, page.format, page_module, component_module})
-    :ok = Beacon.PubSub.page_loaded(page)
+    ast = build(module, components_module, functions)
 
-    {:ok, page_module, ast}
+    {module, ast}
   end
 
-  defp build(module_name, component_module, functions) do
+  defp build(module_name, components_module, functions) do
     quote do
       defmodule unquote(module_name) do
         use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
         import Phoenix.Component
-        unquote(Loader.maybe_import_my_component(component_module, functions))
+        import unquote(components_module), only: [my_component: 2]
 
         unquote_splicing(functions)
       end
@@ -178,16 +122,7 @@ defmodule Beacon.Loader.PageModuleLoader do
     end)
   end
 
-  defp render(_page, :boot) do
-    quote do
-      def render(var!(assigns)) when is_map(var!(assigns)) do
-        _ = var!(assigns)
-        :not_loaded
-      end
-    end
-  end
-
-  defp render(page, :request) do
+  defp render(page) do
     primary_template = Lifecycle.Template.load_template(page)
     {:ok, primary} = HEEx.compile(page.site, page.path, primary_template)
 
@@ -227,7 +162,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   end
 
   defp load_variants(page) do
-    %{variants: variants} = Beacon.Repo.preload(page, :variants)
+    %{variants: variants} = page
 
     for variant <- variants do
       page = %{page | template: variant.template}
@@ -245,7 +180,7 @@ defmodule Beacon.Loader.PageModuleLoader do
   defp dynamic_helper do
     quote do
       def dynamic_helper(helper_name, args) do
-        Loader.call_function_with_retry!(__MODULE__, String.to_atom(helper_name), [args])
+        Beacon.apply_mfa(__MODULE__, String.to_atom(helper_name), [args])
       end
     end
   end
