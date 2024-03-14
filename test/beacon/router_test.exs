@@ -22,6 +22,36 @@ defmodule Beacon.RouterTest do
     end
   end
 
+  describe "__options__/1" do
+    test "returns default session options that include session and root_layout keys when passed a site name as an atom" do
+      assert Router.__options__(site: :my_site) ==
+               {:my_site, :beacon_my_site,
+                [
+                  session: %{"beacon_site" => :my_site},
+                  root_layout: {BeaconWeb.Layouts, :runtime}
+                ]}
+    end
+
+    test "returns custom root_layout value when passed a root_layout value in a keyword list" do
+      assert Router.__options__(site: :my_site, root_layout: {BeaconWeb.Layouts, :app}) ==
+               {:my_site, :beacon_my_site,
+                [
+                  session: %{"beacon_site" => :my_site},
+                  root_layout: {BeaconWeb.Layouts, :app}
+                ]}
+    end
+
+    test "returns custom on_mount value when passed an on_mount value in a keyword list" do
+      assert Router.__options__(site: :my_site, on_mount: {:struct, :atom}) ==
+               {:my_site, :beacon_my_site,
+                [
+                  session: %{"beacon_site" => :my_site},
+                  root_layout: {BeaconWeb.Layouts, :runtime},
+                  on_mount: {:struct, :atom}
+                ]}
+    end
+  end
+
   describe "lookup" do
     # we don't care about values in this test but we create the same structure
     # see Router.add_page/4
