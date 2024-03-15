@@ -1645,16 +1645,19 @@ defmodule Beacon.Content do
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
     * `:query` - search components by title.
+    * `:preloads` - a list of preloads to load.
 
   """
   @doc type: :components
   @spec list_components(Site.t(), keyword()) :: [Component.t()]
   def list_components(site, opts \\ []) do
+    preloads = Keyword.get(opts, :preloads, [])
     per_page = Keyword.get(opts, :per_page, 20)
     search = Keyword.get(opts, :query)
 
     site
     |> query_list_components_base()
+    |> query_list_components_preloads(preloads)
     |> query_list_components_limit(per_page)
     |> query_list_components_search(search)
     |> Repo.all()
@@ -1665,6 +1668,12 @@ defmodule Beacon.Content do
       where: c.site == ^site,
       order_by: [asc: c.name]
   end
+
+  defp query_list_components_preloads(query, [_preload | _] = preloads) do
+    from(q in query, preload: ^preloads)
+  end
+
+  defp query_list_components_preloads(query, _preloads), do: query
 
   defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_components_limit(query, :infinity = _limit), do: query

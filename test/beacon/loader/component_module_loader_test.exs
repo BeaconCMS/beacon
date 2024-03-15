@@ -43,10 +43,16 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
 
   # TODO: store and retrive attrs in %Beacon.Content.Component{}
   test "load component with attrs" do
-    component_fixture(name: "hello", body: "<h1>Hello <%= @name %></h1>")
-    components = Content.list_components(@site, per_page: :infinity)
+    component_fixture(
+      name: "say_hello",
+      body: "<h1>Hello <%= @first_name %> <%= @last_name %></h1>",
+      attrs: [%{name: "first_name", type: "string"}, %{name: "last_name", type: "string"}]
+    )
+
+    components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
 
     {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
-    assert render(mod.hello(%{name: "José"})) == "<h1>Hello José</h1>"
+
+    assert render(mod.say_hello(%{first_name: "José", last_name: "Valim"})) == "<h1>Hello José Valim</h1>"
   end
 end

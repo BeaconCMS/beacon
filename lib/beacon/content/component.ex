@@ -36,6 +36,7 @@ defmodule Beacon.Content.Component do
     component
     |> cast(attrs, [:site, :name, :body, :category, :thumbnail])
     |> validate_required([:site, :name, :body, :category])
+    |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
   end
 
   def categories, do: @categories

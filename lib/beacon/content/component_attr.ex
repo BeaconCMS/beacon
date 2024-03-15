@@ -22,7 +22,7 @@ defmodule Beacon.Content.ComponentAttr do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:name, :type, :opts, :component_id])
-    |> validate_required([:name, :type, :component_id])
+    |> cast(attrs, [:name, :type, :opts])
+    |> validate_required([:name, :type])
   end
 end

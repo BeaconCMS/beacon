@@ -30,7 +30,8 @@ defmodule Beacon.Fixtures do
       body: ~S"""
       <span id={"my-component-#{@val}"}><%= @val %></span>
       """,
-      category: "other"
+      category: "other",
+      attrs: []
     })
     |> Content.create_component!()
   end

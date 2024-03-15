@@ -53,8 +53,13 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
   defp function_component(%Content.Component{site: site, name: name, body: body} = component) do
     quote do
-      # TODO: iterate dynamic attributes from %Component{}
-      attr.(:name, :string, doc: "hello")
+      unquote_splicing(
+        for component_attr <- component.attrs do
+          quote do
+            attr.(unquote(String.to_atom(component_attr.name)), unquote(String.to_atom(component_attr.type)), doc: "hello")
+          end
+        end
+      )
 
       def unquote(String.to_atom(name))(var!(assigns)) do
         unquote(compile_body(component))
