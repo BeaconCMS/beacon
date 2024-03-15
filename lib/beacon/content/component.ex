@@ -13,6 +13,8 @@ defmodule Beacon.Content.Component do
 
   use Beacon.Schema
 
+  alias Beacon.Content.ComponentAttr
+
   @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
 
   @type t :: %__MODULE__{}
@@ -24,6 +26,8 @@ defmodule Beacon.Content.Component do
     field :category, Ecto.Enum, values: @categories, default: :other
     field :thumbnail, :string
 
+    has_many :attrs, ComponentAttr
+
     timestamps()
   end
 
@@ -32,6 +36,7 @@ defmodule Beacon.Content.Component do
     component
     |> cast(attrs, [:site, :name, :body, :category, :thumbnail])
     |> validate_required([:site, :name, :body, :category])
+    |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
   end
 
   def categories, do: @categories
