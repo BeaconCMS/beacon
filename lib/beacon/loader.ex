@@ -104,11 +104,11 @@ defmodule Beacon.Loader do
   end
 
   def reload_runtime_js(site) do
-    GenServer.call(worker(site), :reload_runtime_js, :timer.seconds(10))
+    GenServer.call(worker(site), :reload_runtime_js, :timer.minutes(5))
   end
 
   def reload_runtime_css(site) do
-    GenServer.call(worker(site), :reload_runtime_css, :timer.seconds(10))
+    GenServer.call(worker(site), :reload_runtime_css, :timer.minutes(5))
   end
 
   def fetch_snippets_module(site) do
