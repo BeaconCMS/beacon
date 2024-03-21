@@ -78,14 +78,9 @@ defmodule Beacon.Loader do
 
   defp populate_default_components(site) do
     for attrs <- Content.blueprint_components() do
-      case Content.list_components_by_name(site, attrs.name) do
-        [] ->
-          attrs
-          |> Map.put(:site, site)
-          |> Content.create_component!()
-
-        _ ->
-          :skip
+      case Content.get_component_by(site, name: attrs.name, category: attrs.category) do
+        nil -> attrs |> Map.put(:site, site) |> Content.create_component!()
+        _ -> :skip
       end
     end
 

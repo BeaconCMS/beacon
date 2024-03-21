@@ -13,7 +13,7 @@ defmodule Beacon.Content.Component do
 
   use Beacon.Schema
 
-  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
+  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :component, :other]
 
   @type t :: %__MODULE__{}
 

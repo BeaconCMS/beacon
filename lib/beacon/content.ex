@@ -1489,9 +1489,9 @@ defmodule Beacon.Content do
         category: :basic
       },
       %{
-        name: "Link",
+        name: "Anchor",
         thumbnail: "/component_thumbnails/link.jpg",
-        body: "<a href=\"#\">I'm a sample link</a>",
+        body: ~S|<a href="/">I'm a sample link</a>|,
         category: :basic
       },
       %{
@@ -1505,6 +1505,12 @@ defmodule Beacon.Content do
         thumbnail: "/component_thumbnails/aside.jpg",
         body: "<aside>I'm a sample aside</aside>",
         category: :basic
+      },
+      %{
+        name: "Link",
+        thumbnail: "/component_thumbnails/link.jpg",
+        body: ~S|<.link patch="/">I'm a sample link</.link>|,
+        category: :component
       }
     ]
   end
