@@ -11,25 +11,24 @@ defmodule Beacon.Compiler do
   def compile_module(site, quoted, file \\ "nofile") do
     case module_name(quoted) do
       {:ok, module} ->
-        quoted_md5 = md5(quoted)
-        do_compile_module(site, module, quoted, quoted_md5, file)
+        do_compile_module(site, module, quoted, hash(quoted), file)
 
       {:error, error} ->
         {:error, error}
     end
   end
 
-  defp do_compile_module(site, module, quoted, quoted_md5, file) do
-    case {:erlang.module_loaded(module), current_module_md5(site, module) == quoted_md5} do
+  defp do_compile_module(site, module, quoted, hash, file) do
+    case {:erlang.module_loaded(module), current_hash(site, module) == hash} do
       {true, true} ->
         {:ok, module, []}
 
       {true, _} ->
         unload(module)
-        compile_and_register(site, module, quoted, quoted_md5, file)
+        compile_and_register(site, module, quoted, hash, file)
 
       {false, _} ->
-        compile_and_register(site, module, quoted, quoted_md5, file)
+        compile_and_register(site, module, quoted, hash, file)
     end
   end
 
@@ -57,18 +56,18 @@ defmodule Beacon.Compiler do
     {:error, :invalid_module}
   end
 
-  defp compile_and_register(site, module, quoted, quoted_md5, file) do
+  defp compile_and_register(site, module, quoted, hash, file) do
     case compile_quoted(quoted, file) do
       {:ok, module, diagnostics} ->
-        add_module(site, module, quoted_md5, nil, diagnostics)
+        add_module(site, module, hash, nil, diagnostics)
         {:ok, module, diagnostics}
 
       {:error, error, diagnostics} ->
-        add_module(site, module, quoted_md5, error, diagnostics)
+        add_module(site, module, hash, error, diagnostics)
         {:error, module, {error, diagnostics}}
 
       {:error, error} ->
-        add_module(site, module, quoted_md5, nil, nil)
+        add_module(site, module, hash, nil, nil)
         {:error, error}
     end
   end
@@ -109,26 +108,18 @@ defmodule Beacon.Compiler do
     :code.delete(module)
   end
 
-  defp add_module(site, module, md5, error, diagnostics) do
-    :ok = Loader.add_module(site, module, {md5, error, diagnostics})
+  defp add_module(site, module, hash, error, diagnostics) do
+    :ok = Loader.add_module(site, module, {hash, error, diagnostics})
   end
 
-  defp current_module_md5(site, module) do
+  defp current_hash(site, module) do
     case Loader.lookup_module(site, module) do
-      {^module, {md5, _, _}} -> md5
+      {^module, {hash, _, _}} -> hash
       _ -> nil
     end
   end
 
-  defp md5(quoted) do
-    binary = quoted_to_binary(quoted)
-    Base.encode16(:crypto.hash(:md5, binary), case: :lower)
-  end
-
-  defp quoted_to_binary(quoted) do
-    quoted
-    |> Code.quoted_to_algebra()
-    |> Inspect.Algebra.format(:infinity)
-    |> IO.iodata_to_binary()
+  defp hash(quoted) do
+    :erlang.phash2(quoted)
   end
 end
