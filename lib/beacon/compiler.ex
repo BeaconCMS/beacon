@@ -7,7 +7,7 @@ defmodule Beacon.Compiler do
   @type diagnostics :: [Code.diagnostic(:warning | :error)]
 
   @spec compile_module(Beacon.Site.t(), Macro.t(), String.t()) ::
-          {:ok, module(), diagnostics()} | {:error, module(), {Exception.t(), diagnostics()}} | {:error, :invalid_module}
+          {:ok, module(), diagnostics()} | {:error, module(), {Exception.t(), diagnostics()}} | {:error, Exception.t() | :invalid_module}
   def compile_module(site, quoted, file \\ "nofile") do
     case module_name(quoted) do
       {:ok, module} ->
@@ -67,7 +67,7 @@ defmodule Beacon.Compiler do
         {:error, module, {error, diagnostics}}
 
       {:error, error} ->
-        add_module(site, module, hash, nil, nil)
+        add_module(site, module, hash, error, nil)
         {:error, error}
     end
   end
