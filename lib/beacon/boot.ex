@@ -17,6 +17,7 @@ defmodule Beacon.Boot do
 
   if Beacon.Config.env_test?() do
     def init(config) do
+      # Reloads only the components module because it gets imported into other modules, to avoid compilation issues
       Beacon.Loader.reload_components_module(config.site)
       :ignore
     end
