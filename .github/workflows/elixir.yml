@@ -71,7 +71,7 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
-      - run: mix do deps.get, deps.compile
+      - run: mix deps.get --only-test
 
       - run: mix tailwind.install
 
@@ -116,7 +116,7 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
-      - run: mix do deps.get, deps.compile
+      - run: mix deps.get
 
       - run: mix tailwind.install
 
