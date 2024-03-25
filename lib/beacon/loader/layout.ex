@@ -1,27 +1,25 @@
-defmodule Beacon.Loader.LayoutModuleLoader do
+defmodule Beacon.Loader.Layout do
   @moduledoc false
 
-  alias Beacon.Content
   alias Beacon.Loader
 
-  def load_layout!(%Content.Layout{} = layout) do
-    component_module = Loader.component_module_for_site(layout.site)
-    module = Loader.layout_module_for_site(layout.id)
+  def module_name(site, layout_id), do: Loader.module_name(site, "Layout#{layout_id}")
+
+  def build_ast(site, layout) do
+    module = module_name(site, layout.id)
+    components_module = Loader.Components.module_name(site)
     render_function = render_layout(layout)
-    ast = render(module, render_function, component_module)
-    :ok = Loader.reload_module!(module, ast)
-    :ok = Beacon.PubSub.layout_loaded(layout)
-    {:ok, module, ast}
+    render(module, components_module, render_function)
   end
 
-  defp render(module_name, render_function, component_module) do
+  defp render(module_name, components_module, render_function) do
     quote do
       defmodule unquote(module_name) do
         use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
         import Phoenix.Component
-        unquote(Loader.maybe_import_my_component(component_module, render_function))
+        import unquote(components_module), only: [my_component: 2]
 
         unquote(render_function)
       end

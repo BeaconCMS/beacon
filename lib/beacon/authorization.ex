@@ -13,7 +13,7 @@ defmodule Beacon.Authorization do
   defp do_get_agent(nil = _authorization_source, _data), do: nil
 
   defp do_get_agent(authorization_source, data) do
-    if Beacon.Loader.exported?(authorization_source, :get_agent, 1) do
+    if Beacon.exported?(authorization_source, :get_agent, 1) do
       authorization_source.get_agent(data)
     else
       nil
@@ -32,7 +32,7 @@ defmodule Beacon.Authorization do
   end
 
   defp do_authorized?(authorization_source, agent, operation, context) do
-    if Beacon.Loader.exported?(authorization_source, :authorized?, 3) do
+    if Beacon.exported?(authorization_source, :authorized?, 3) do
       authorization_source.authorized?(agent, operation, context)
     else
       raise """

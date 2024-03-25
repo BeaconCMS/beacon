@@ -539,4 +539,9 @@ defmodule Beacon.Config do
 
     Keyword.put_new(config, :processor, processor)
   end
+
+  @doc false
+  def env_test? do
+    Code.ensure_loaded?(Mix.Project) and Mix.env() == :test
+  end
 end

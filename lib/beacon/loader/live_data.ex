@@ -1,30 +1,26 @@
-defmodule Beacon.Loader.DataSourceModuleLoader do
+defmodule Beacon.Loader.LiveData do
   @moduledoc false
+
   alias Beacon.Loader
 
-  require Logger
+  def module_name(site), do: Loader.module_name(site, "LiveData")
 
-  def load_data_source(data, site) do
-    data_source_module = Loader.data_source_module_for_site(site)
-    live_data_functions = Enum.map(data, &live_data_fn/1)
+  def build_ast(site, live_data) do
+    module = module_name(site)
+    live_data_functions = Enum.map(live_data, &live_data_fn/1)
 
-    ast =
-      quote do
-        defmodule unquote(data_source_module) do
-          require Logger
+    quote do
+      defmodule unquote(module) do
+        require Logger
 
-          unquote_splicing(live_data_functions)
+        unquote_splicing(live_data_functions)
 
-          def live_data(path, params) do
-            Logger.warning("live data not found for site #{unquote(site)} with path #{inspect(path)} and params #{inspect(params)}")
-            %{}
-          end
+        def live_data(path, params) do
+          Logger.warning("live data not found for site #{unquote(site)} with path #{inspect(path)} and params #{inspect(params)}")
+          %{}
         end
       end
-
-    :ok = Loader.reload_module!(data_source_module, ast)
-
-    {:ok, data_source_module, ast}
+    end
   end
 
   # TODO: support glob-like patterns

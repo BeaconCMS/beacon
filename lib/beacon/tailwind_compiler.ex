@@ -194,14 +194,14 @@ defmodule Beacon.TailwindCompiler do
         end)
       end),
       Task.async(fn ->
-        Enum.map(Content.list_layouts(site, per_page: :infinity), fn layout ->
+        Enum.map(Content.list_published_layouts(site), fn layout ->
           layout_path = Path.join(tmp_dir, "#{site}_layout_#{remove_special_chars(layout.title)}.template")
           File.write!(layout_path, layout.template)
           layout_path
         end)
       end),
       Task.async(fn ->
-        Enum.map(Content.list_published_pages(site), fn page ->
+        Enum.map(Content.list_published_pages(site, per_page: :infinity), fn page ->
           page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
           post_processed_template = Beacon.Lifecycle.Template.load_template(page)
           File.write!(page_path, post_processed_template)

@@ -7,11 +7,6 @@ defmodule Beacon.TailwindCompilerTest do
 
   @site :my_site
 
-  setup_all do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(@site)})
-    :ok
-  end
-
   defp create_page(_) do
     stylesheet_fixture()
 

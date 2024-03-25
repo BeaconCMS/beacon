@@ -279,9 +279,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "my_component" do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     component_fixture(site: :my_site)
-    Beacon.Loader.load_components(:my_site)
+    Beacon.Loader.fetch_components_module(:my_site)
 
     assert_output(
       ~S|<%= my_component("sample_component", %{val: 1}) %>|,
