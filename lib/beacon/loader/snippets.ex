@@ -11,13 +11,6 @@ defmodule Beacon.Loader.Snippets do
     render(module, functions)
   end
 
-  defp render(module_name, [] = _functions) do
-    quote do
-      defmodule unquote(module_name) do
-      end
-    end
-  end
-
   defp render(module_name, functions) do
     quote do
       defmodule unquote(module_name) do

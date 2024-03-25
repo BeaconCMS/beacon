@@ -46,12 +46,13 @@ defmodule Beacon.LoaderTest do
   end
 
   describe "snippets" do
-    setup do
-      snippet_helper_fixture()
-      :ok
+    test "loads module even without snippets helpers available" do
+      module = Loader.reload_snippets_module(@site)
+      assert :erlang.module_loaded(module)
     end
 
     test "loads module containing all snippet helpers" do
+      snippet_helper_fixture()
       module = Loader.reload_snippets_module(@site)
       assert module.upcase_title(%{"page" => %{"title" => "Beacon"}}) == "BEACON"
     end

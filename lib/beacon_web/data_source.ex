@@ -15,9 +15,7 @@ defmodule BeaconWeb.DataSource do
       |> Beacon.Loader.fetch_page_module(page_id)
       |> Beacon.apply_mfa(:page_assigns, [])
 
-    title = Map.get(page, :title) || missing_page_title()
-
-    case Beacon.Content.render_snippet(title, %{page: page, live_data: live_data}) do
+    case Beacon.Content.render_snippet(page.title, %{page: page, live_data: live_data}) do
       {:ok, page_title} ->
         page_title
 
@@ -34,11 +32,6 @@ defmodule BeaconWeb.DataSource do
 
         page.title
     end
-  end
-
-  defp missing_page_title do
-    Logger.warning("no page title was found")
-    ""
   end
 
   def meta_tags(assigns) do
