@@ -39,9 +39,6 @@ defmodule Beacon.Boot do
           Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_css(config.site) end)
         ]
 
-        # TODO: revisit this timeout after we upgrade to Tailwind v4
-        Task.await_many(assets, :timer.minutes(5))
-
         # Layouts and pages depend on the components module so we need to load it first
         Beacon.Loader.reload_components_module(config.site)
 
@@ -56,6 +53,9 @@ defmodule Beacon.Boot do
         ]
 
         Task.await_many(modules, :timer.minutes(2))
+
+        # TODO: revisit this timeout after we upgrade to Tailwind v4
+        Task.await_many(assets, :timer.minutes(5))
       end
 
       {time, _} = :timer.tc(boot, :seconds)
