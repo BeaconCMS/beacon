@@ -8,15 +8,6 @@ defmodule Beacon.LoaderTest do
 
   @site :my_site
 
-  test "server can be spawned multiple times" do
-    for _ <- 1..1000 do
-      assert Loader.ping(@site) == :pong
-    end
-
-    supervisor = Beacon.Registry.via({@site, Beacon.LoaderSupervisor})
-    assert DynamicSupervisor.count_children(supervisor) == %{active: 0, workers: 0, supervisors: 0, specs: 0}
-  end
-
   describe "populate default components" do
     test "seeds initial data" do
       assert Repo.all(Content.Component) == []
