@@ -63,23 +63,30 @@ defmodule Beacon.Loader.Worker do
 
   def handle_call(:populate_default_error_pages, _from, config) do
     %{site: site} = config
-
     default_layout = Content.get_layout_by(site, title: "Default")
 
-    for attrs <- Content.default_error_pages() do
-      case Content.get_error_page(site, attrs.status) do
-        nil ->
-          attrs
-          |> Map.put(:site, site)
-          |> Map.put(:layout_id, default_layout.id)
-          |> Content.create_error_page!()
+    populate = fn ->
+      for attrs <- Content.default_error_pages() do
+        case Content.get_error_page(site, attrs.status) do
+          nil ->
+            attrs
+            |> Map.put(:site, site)
+            |> Map.put(:layout_id, default_layout.id)
+            |> Content.create_error_page!()
 
-        _ ->
-          :skip
+          _ ->
+            :skip
+        end
       end
     end
 
-    stop(:ok, config)
+    if default_layout do
+      populate.()
+      stop(:ok, config)
+    else
+      Logger.error("failed to populate default error pages because the default layout is missing.")
+      stop({:error, :missing_default_layout}, config)
+    end
   end
 
   def handle_call(:reload_snippets_module, _from, config) do
