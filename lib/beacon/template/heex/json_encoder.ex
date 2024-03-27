@@ -126,24 +126,6 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     |> cleanup_extra_spaces_trailing()
   end
 
-  # https://github.com/phoenixframework/phoenix_live_view/blob/c87f12d7cc7d74b98183b5fe9f3a6a910c21ce1b/lib/phoenix_live_view/html_formatter.ex#L631
-  defp cleanup_extra_spaces_leading(text) do
-    if :binary.first(text) in ~c"\s\t\n" do
-      " " <> String.trim_leading(text)
-    else
-      text
-    end
-  end
-
-  # https://github.com/phoenixframework/phoenix_live_view/blob/c87f12d7cc7d74b98183b5fe9f3a6a910c21ce1b/lib/phoenix_live_view/html_formatter.ex#L639
-  defp cleanup_extra_spaces_trailing(text) do
-    if :binary.last(text) in ~c"\s\t\n" do
-      String.trim_trailing(text) <> " "
-    else
-      text
-    end
-  end
-
   defp transform_entry({:eex, expr, %{opt: opt}} = node, site, assigns) do
     html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
 
@@ -206,6 +188,24 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     }
 
     maybe_add_rendered_html(site, assigns, node, entry)
+  end
+
+  # https://github.com/phoenixframework/phoenix_live_view/blob/c87f12d7cc7d74b98183b5fe9f3a6a910c21ce1b/lib/phoenix_live_view/html_formatter.ex#L631
+  defp cleanup_extra_spaces_leading(text) do
+    if :binary.first(text) in ~c"\s\t\n" do
+      " " <> String.trim_leading(text)
+    else
+      text
+    end
+  end
+
+  # https://github.com/phoenixframework/phoenix_live_view/blob/c87f12d7cc7d74b98183b5fe9f3a6a910c21ce1b/lib/phoenix_live_view/html_formatter.ex#L639
+  defp cleanup_extra_spaces_trailing(text) do
+    if :binary.last(text) in ~c"\s\t\n" do
+      String.trim_trailing(text) <> " "
+    else
+      text
+    end
   end
 
   defp maybe_add_rendered_html(site, assigns, node, entry) do
