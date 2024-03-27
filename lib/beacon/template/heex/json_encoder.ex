@@ -120,14 +120,27 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   defp transform([], acc, _site, _assigns), do: acc
 
   # strips out blank text nodes and insignificant whitespace before or after text.
-  defp transform_entry({:text, text, _}, _site, _assigns) do
-    cond do
-      :binary.first(text) in ~c"\n" or :binary.last(text) in ~c"\n" ->
-        text = String.trim(text)
-        if text != "", do: text
+  defp transform_entry({:text, text, _metadata}, _site, _assigns) do
+    text
+    |> cleanup_extra_spaces_leading()
+    |> cleanup_extra_spaces_trailing()
+  end
 
-      :default ->
-        text
+  # https://github.com/phoenixframework/phoenix_live_view/blob/c87f12d7cc7d74b98183b5fe9f3a6a910c21ce1b/lib/phoenix_live_view/html_formatter.ex#L631
+  defp cleanup_extra_spaces_leading(text) do
+    if :binary.first(text) in ~c"\s\t\n" do
+      " " <> String.trim_leading(text)
+    else
+      text
+    end
+  end
+
+  # https://github.com/phoenixframework/phoenix_live_view/blob/c87f12d7cc7d74b98183b5fe9f3a6a910c21ce1b/lib/phoenix_live_view/html_formatter.ex#L639
+  defp cleanup_extra_spaces_trailing(text) do
+    if :binary.last(text) in ~c"\s\t\n" do
+      String.trim_trailing(text) <> " "
+    else
+      text
     end
   end
 
