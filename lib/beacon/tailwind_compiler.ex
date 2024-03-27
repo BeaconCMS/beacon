@@ -25,48 +25,23 @@ defmodule Beacon.TailwindCompiler do
   @behaviour Beacon.RuntimeCSS
 
   @impl Beacon.RuntimeCSS
+  @spec config(Beacon.Types.Site.t()) :: String.t()
+  def config(site) when is_atom(site) do
+    tmp_dir = tmp_dir!()
+    content = beacon_content(tmp_dir)
+
+    site
+    |> tailwind_config!()
+    |> EEx.eval_file(assigns: %{beacon_content: content})
+    |> tap(fn _ -> cleanup(tmp_dir, []) end)
+  end
+
+  @impl Beacon.RuntimeCSS
   @spec compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
   def compile(site) when is_atom(site) do
     tmp_dir = tmp_dir!()
     config_file_path = generate_tailwind_config_file(site, tmp_dir, beacon_content(tmp_dir))
     templates_path = generate_template_files!(tmp_dir, site)
-    input_css_path = generate_input_css_file!(tmp_dir, site)
-    output = execute(tmp_dir, config_file_path, input_css_path)
-    cleanup(tmp_dir, templates_path)
-    {:ok, output}
-  end
-
-  @impl Beacon.RuntimeCSS
-  @spec compile(Beacon.Types.Site.t(), template :: String.t()) :: {:ok, String.t()} | {:error, any()}
-  def compile(site, template) when is_atom(site) and is_binary(template) do
-    tmp_dir = tmp_dir!()
-
-    content = [
-      ?{,
-      " raw: String.raw",
-      ?`,
-      template,
-      ?`,
-      ", extension: ",
-      ?',
-      "html",
-      ?',
-      " ",
-      ?}
-    ]
-
-    config_file_path = generate_tailwind_config_file(site, tmp_dir, content)
-    input_css_path = generate_input_css_file!(tmp_dir)
-    output = execute(tmp_dir, config_file_path, input_css_path)
-    {:ok, output}
-  end
-
-  @impl Beacon.RuntimeCSS
-  @spec compile(Beacon.Types.Site.t(), templates :: [String.t()]) :: {:ok, String.t()} | {:error, any()}
-  def compile(site, templates) when is_atom(site) and is_list(templates) do
-    tmp_dir = tmp_dir!()
-    config_file_path = generate_tailwind_config_file(site, tmp_dir, beacon_content(tmp_dir))
-    templates_path = generate_template_files!(tmp_dir, templates)
     input_css_path = generate_input_css_file!(tmp_dir, site)
     output = execute(tmp_dir, config_file_path, input_css_path)
     cleanup(tmp_dir, templates_path)
@@ -227,19 +202,6 @@ defmodule Beacon.TailwindCompiler do
       File.write!(template_path, template)
       template_path
     end)
-  end
-
-  # import app css into input css used by tailwind-cli to load tailwind functions and directives
-  defp generate_input_css_file!(tmp_dir) do
-    content = ~S|
-    @import "tailwindcss/base";
-    @import "tailwindcss/components";
-    @import "tailwindcss/utilities";
-    |
-
-    input_css_path = Path.join(tmp_dir, "input.css")
-    File.write!(input_css_path, content)
-    input_css_path
   end
 
   defp generate_input_css_file!(tmp_dir, site) do

@@ -65,6 +65,10 @@ defmodule Beacon.TailwindCompilerTest do
     :ok
   end
 
+  test "config" do
+    assert TailwindCompiler.config(@site) =~ "module.exports"
+  end
+
   describe "compile site" do
     setup [:create_page]
 
@@ -95,34 +99,5 @@ defmodule Beacon.TailwindCompilerTest do
       assert {:ok, output} = TailwindCompiler.compile(@site)
       assert output =~ "text-blue-200"
     end
-  end
-
-  describe "compile raw template" do
-    test "compile a specific template binary with custom tailwind config" do
-      capture_io(fn ->
-        config = Beacon.Registry.config!(@site)
-        Registry.register(Beacon.Registry, {:site, :test_tailwind_compile_template}, config)
-
-        Beacon.Registry.update_config(:test_tailwind_compile_template, fn config ->
-          %{config | tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.custom.js.eex"])}
-        end)
-
-        {:ok, css} = TailwindCompiler.compile(:test_tailwind_compile_template, ~S|<div class="text-gray-50">|)
-        assert css =~ "text-gray-50"
-      end)
-    end
-  end
-
-  test "compile templates" do
-    capture_io(fn ->
-      templates = [
-        ~S|<div class="text-gray-50">|,
-        ~S|<div class="font-bold">|
-      ]
-
-      {:ok, css} = TailwindCompiler.compile(@site, templates)
-      assert css =~ "text-gray-50"
-      assert css =~ "font-bold"
-    end)
   end
 end
