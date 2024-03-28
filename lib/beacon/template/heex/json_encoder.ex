@@ -121,9 +121,12 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
   # strips out blank text nodes and insignificant whitespace before or after text.
   defp transform_entry({:text, text, _metadata}, _site, _assigns) do
-    text
-    |> cleanup_extra_spaces_leading()
-    |> cleanup_extra_spaces_trailing()
+    text =
+      text
+      |> cleanup_extra_spaces_leading()
+      |> cleanup_extra_spaces_trailing()
+
+    if String.trim(text) != "", do: text
   end
 
   defp transform_entry({:eex, expr, %{opt: opt}} = node, site, assigns) do
