@@ -29,7 +29,7 @@ defmodule Beacon.Loader.Components do
         import Phoenix.Component
 
         def my_component(name, assigns \\ []) do
-          Beaocn.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
+          Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
         end
       end
     end
