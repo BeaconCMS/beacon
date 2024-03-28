@@ -4,6 +4,12 @@ defmodule Beacon.Compiler do
   require Logger
   alias Beacon.Loader
 
+  if Beacon.Config.env_test?() do
+    @max_retries 2
+  else
+    @max_retries 10
+  end
+
   @type diagnostics :: [Code.diagnostic(:warning | :error)]
 
   @spec compile_module(Beacon.Site.t(), Macro.t(), String.t()) ::
@@ -74,16 +80,8 @@ defmodule Beacon.Compiler do
 
   if Version.match?(System.version(), ">= 1.15.0") do
     defp compile_quoted(quoted, file) do
-      {result, diagnostics} =
-        Code.with_diagnostics(fn ->
-          try do
-            [{module, _}] = Code.compile_quoted(quoted, file)
-            {:module, ^module} = Code.ensure_loaded(module)
-            {:ok, module}
-          rescue
-            error -> {:error, error}
-          end
-        end)
+      {result, diagnostics} = Code.with_diagnostics(fn -> do_compile_and_load(quoted, file) end)
+      diagnostics = Enum.uniq(diagnostics)
 
       case result do
         {:ok, module} ->
@@ -95,12 +93,28 @@ defmodule Beacon.Compiler do
     end
   else
     defp compile_quoted(quoted, file) do
-      [{module, _}] = Code.compile_quoted(quoted, file)
-      {:module, ^module} = Code.ensure_loaded(module)
-      {:ok, module, []}
-    rescue
-      error -> {:error, error, []}
+      case do_compile_and_load(quoted, file) do
+        {:ok, module} -> {:ok, module, []}
+        {:error, error} -> {:error, error, []}
+      end
     end
+  end
+
+  defp do_compile_and_load(quoted, file, failure_count \\ 0) do
+    [{module, _}] = Code.compile_quoted(quoted, file)
+    {:module, ^module} = Code.ensure_loaded(module)
+    {:ok, module}
+  rescue
+    error in CompileError ->
+      if failure_count < @max_retries do
+        :timer.sleep(100 * (failure_count * 2))
+        do_compile_and_load(quoted, file, failure_count + 1)
+      else
+        {:error, error}
+      end
+
+    error ->
+      {:error, error}
   end
 
   def unload(module) do
