@@ -16,6 +16,7 @@ Supervisor.start_link(
        [
          site: :my_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
          live_socket_path: "/custom_live",
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
@@ -36,8 +37,14 @@ Supervisor.start_link(
          ]
        ],
        [
+         site: :boot_test,
+         skip_boot?: true,
+         endpoint: Beacon.BeaconTest.Endpoint
+       ],
+       [
          site: :s3_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          assets: [
            {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3, Beacon.MediaLibrary.Backend.Repo], validations: []]}
          ],
@@ -45,10 +52,12 @@ Supervisor.start_link(
        ],
        [
          site: :data_source_test,
+         skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint
        ],
        [
          site: :default_meta_tags_test,
+         skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
          default_meta_tags: [
            %{"name" => "foo", "content" => "bar"}
@@ -57,6 +66,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          lifecycle: [
            load_template: [
              {:markdown,
@@ -103,6 +113,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test_fail,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          lifecycle: [
            render_template: [
              {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}

@@ -4,12 +4,13 @@ defmodule Beacon.SiteSupervisor do
   use Supervisor
 
   def start_link(config) do
-    Supervisor.start_link(__MODULE__, config, name: Beacon.Registry.via({:site, config.site}, config))
+    Supervisor.start_link(__MODULE__, config, name: Beacon.Registry.via({:site, config.site}))
   end
 
   @impl true
   def init(config) do
     children = [
+      {Beacon.Config, config},
       {Task.Supervisor, name: Beacon.Registry.via({config.site, TaskSupervisor})},
       {Beacon.Content, config},
       {Beacon.RouterServer, {config, skip_seed: Beacon.Config.env_test?()}},

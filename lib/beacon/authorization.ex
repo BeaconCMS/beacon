@@ -52,6 +52,6 @@ defmodule Beacon.Authorization do
   end
 
   defp get_authorization_source(site) do
-    Beacon.Registry.config!(site).authorization_source
+    Beacon.Config.fetch!(site).authorization_source
   end
 end
