@@ -2030,6 +2030,7 @@ defmodule Beacon.Content do
       page
       |> Ecto.build_assoc(:event_handlers)
       |> PageEventHandler.changeset(attrs)
+      |> validate_page_event_handler(page)
 
     Repo.transact(fn ->
       with {:ok, %PageEventHandler{}} <- Repo.insert(changeset),
@@ -2046,7 +2047,10 @@ defmodule Beacon.Content do
   @doc type: :page_event_handlers
   @spec update_event_handler_for_page(Page.t(), PageEventHandler.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_event_handler_for_page(page, event_handler, attrs) do
-    changeset = PageEventHandler.changeset(event_handler, attrs)
+    changeset =
+      event_handler
+      |> PageEventHandler.changeset(attrs)
+      |> validate_page_event_handler(page)
 
     Repo.transact(fn ->
       with {:ok, %PageEventHandler{}} <- Repo.update(changeset),
@@ -2055,6 +2059,15 @@ defmodule Beacon.Content do
         {:ok, page}
       end
     end)
+  end
+
+  defp validate_page_event_handler(changeset, page) do
+    code = Changeset.get_field(changeset, :code)
+    metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
+    variable_names = ["socket", "event_params"]
+    imports = ["Phoenix.Socket"]
+
+    do_validate_template(changeset, :code, :elixir, code, metadata, variable_names, imports)
   end
 
   @doc """
@@ -2365,9 +2378,23 @@ defmodule Beacon.Content do
     site = Changeset.get_field(changeset, :site)
     value = Changeset.get_field(changeset, :value)
     format = Changeset.get_field(changeset, :format)
-    path = Changeset.get_field(changeset, :live_data).path
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :value, format, value, metadata, path)
+
+    variable_names =
+      changeset
+      |> Changeset.get_field(:live_data)
+      |> Map.fetch!(:path)
+      |> vars_from_path()
+      |> List.insert_at(0, "params")
+
+    do_validate_template(changeset, :value, format, value, metadata, variable_names)
+  end
+
+  defp vars_from_path(path) do
+    path
+    |> String.split("/")
+    |> Enum.filter(&String.starts_with?(&1, ":"))
+    |> Enum.map(&String.slice(&1, 1..-1//1))
   end
 
   @doc """
@@ -2390,13 +2417,13 @@ defmodule Beacon.Content do
 
   ## Utils
 
-  defp do_validate_template(changeset, field, format, template, metadata, path \\ "")
+  defp do_validate_template(changeset, field, format, template, metadata, vars \\ [], imports \\ [])
 
-  defp do_validate_template(changeset, field, _format, nil = _template, _metadata, _path) do
+  defp do_validate_template(changeset, field, _format, nil = _template, _metadata, _, _) do
     Changeset.add_error(changeset, field, "can't be blank", compilation_error: nil)
   end
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _path) when is_binary(template) do
+  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
         {:ok, _ast} -> []
@@ -2406,7 +2433,7 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp do_validate_template(changeset, field, :markdown = _format, template, metadata, _path) when is_binary(template) do
+  defp do_validate_template(changeset, field, :markdown = _format, template, metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.Markdown.convert_to_html(template, metadata) do
         {:cont, _template} -> []
@@ -2415,32 +2442,28 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata, path) when is_binary(code) do
+  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata, vars, imports) when is_binary(code) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case validate_elixir_code(template, path) do
+      case validate_elixir_code(template, vars, imports) do
         :ok -> []
         {:error, reason, message} -> [{field, {reason, compilation_error: message}}]
       end
     end)
   end
 
-  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _path), do: changeset
+  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _, _), do: changeset
 
   # TODO: expose template validation to custom template formats defined by users
-  defp do_validate_template(changeset, _field, _format, _template, _metadata, _path), do: changeset
+  defp do_validate_template(changeset, _field, _format, _template, _metadata, _, _), do: changeset
 
-  defp validate_elixir_code(code, path) do
+  defp validate_elixir_code(code, vars, imports) do
     Application.put_env(:elixir, :ansi_enabled, false)
 
-    vars =
-      path
-      |> String.split("/")
-      |> Enum.filter(&String.starts_with?(&1, ":"))
-      |> Enum.map(&String.slice(&1, 1..-1//1))
-      |> List.insert_at(0, "params")
-      |> Enum.join(", ")
-
-    full_code = "fn #{vars} ->\n" <> code <> "\nend"
+    full_code =
+      "fn #{Enum.join(vars, ", ")} ->\n" <>
+        Enum.map_join(imports, &"  import #{&1}\n") <>
+        code <>
+        "\nend"
 
     {compilation, diagnostics} =
       with_diagnostics(fn ->
