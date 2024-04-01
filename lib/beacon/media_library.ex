@@ -164,25 +164,80 @@ defmodule Beacon.MediaLibrary do
   end
 
   @doc """
-  Returns the list of all uploaded assetf of `site`.
+  Returns the list of all uploaded assets of `site`.
 
-  ## Examples
+  ## Options
 
-      iex> list_assets(:my_site)
-      [%Asset{}, ...]
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search assets by file name. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load. Defaults to `[:thumbnail]`.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:file_name`.
 
   """
-  @spec list_assets(Site.t()) :: [Asset.t()]
-  def list_assets(site) do
-    Repo.all(
-      from(asset in Asset,
-        where: asset.site == ^site,
-        where: is_nil(asset.deleted_at),
-        where: is_nil(asset.source_id),
-        order_by: [desc: asset.inserted_at],
-        preload: [:thumbnail]
-      )
-    )
+  @doc type: :assets
+  @spec list_assets(Site.t(), keyword()) :: [Asset.t()]
+  def list_assets(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
+    search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [:thumbnail])
+    sort = Keyword.get(opts, :sort, :file_name)
+
+    site
+    |> query_list_assets_base()
+    |> query_list_assets_limit(per_page)
+    |> query_list_assets_offset(per_page, page)
+    |> query_list_assets_search(search)
+    |> query_list_assets_preloads(preloads)
+    |> query_list_assets_sort(sort)
+    |> Repo.all()
+  end
+
+  defp query_list_assets_base(site) do
+    from(asset in Asset, where: asset.site == ^site and is_nil(asset.deleted_at) and is_nil(asset.source_id))
+  end
+
+  defp query_list_assets_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_assets_limit(query, :infinity = _limit), do: query
+  defp query_list_assets_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_assets_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_assets_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
+  defp query_list_assets_search(query, search) when is_binary(search) do
+    from(q in query, where: ilike(q.file_name, ^"%#{search}%"))
+  end
+
+  defp query_list_assets_search(query, _search), do: query
+
+  defp query_list_assets_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_assets_preloads(query, _preloads), do: query
+
+  defp query_list_assets_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of assets based on the amount of pages.
+
+  ## Options
+
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :assets
+  @spec count_assets(Site.t(), keyword()) :: non_neg_integer()
+  def count_assets(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_assets_base()
+    |> query_list_assets_search(search)
+    |> select([q], count(q.id))
+    |> Repo.one()
   end
 
   @doc """
