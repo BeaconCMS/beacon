@@ -518,6 +518,29 @@ defmodule Beacon.ContentTest do
       assert_receive :lifecycle_after_update_page
     end
 
+    test "create validates elixir code" do
+      page = page_fixture(%{format: :heex})
+
+      attrs = %{name: "test", code: "[1)"}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{name: "test", code: "if true, do false"}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected reserved word: do"
+
+      code = ~S|
+      id = String.to_integer(event_params["id"])
+      res = if id < 100, do: "less" <> "than", else: "100"
+      {:noreply, assign(socket, res: res)}
+      |
+
+      attrs = %{name: "test", code: code}
+      assert {:ok, _} = Content.create_event_handler_for_page(page, attrs)
+    end
+
     test "update event handler OK" do
       page = page_fixture(%{format: :heex})
       event_handler = page_event_handler_fixture(%{page: page})
@@ -534,6 +557,30 @@ defmodule Beacon.ContentTest do
       {:ok, %Page{}} = Content.update_event_handler_for_page(page, event_handler, %{name: "Changed"})
 
       assert_receive :lifecycle_after_update_page
+    end
+
+    test "update validates elixir code" do
+      page = page_fixture(%{format: :heex})
+      page_event_handler = page_event_handler_fixture(%{page: page})
+
+      attrs = %{code: "[1)"}
+      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{code: "if true, do false"}
+      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected reserved word: do"
+
+      code = ~S|
+      id = String.to_integer(event_params["id"])
+      res = if id < 100, do: "less" <> "than", else: "100"
+      {:noreply, assign(socket, res: res)}
+      |
+
+      attrs = %{code: code}
+      assert {:ok, _} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
     end
 
     test "delete event handler OK" do
