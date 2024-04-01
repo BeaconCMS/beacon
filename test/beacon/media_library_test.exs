@@ -44,8 +44,8 @@ defmodule Beacon.MediaLibraryTest do
 
   describe "list_assets" do
     test "page and per_page" do
-      asset = media_library_asset_fixture(file_name: "image_a.png")
-      asset = media_library_asset_fixture(file_name: "image_b.png")
+      media_library_asset_fixture(file_name: "image_a.png")
+      media_library_asset_fixture(file_name: "image_b.png")
 
       assert [%Asset{file_name: "image_a.webp"}] = MediaLibrary.list_assets(:my_site, per_page: 1, page: 1, sort: :file_name)
       assert [%Asset{file_name: "image_b.webp"}] = MediaLibrary.list_assets(:my_site, per_page: 1, page: 2, sort: :file_name)
@@ -59,8 +59,8 @@ defmodule Beacon.MediaLibraryTest do
     end
 
     test "filter by file name" do
-      asset = media_library_asset_fixture(file_name: "image_a.png")
-      asset = media_library_asset_fixture(file_name: "image_b.png")
+      media_library_asset_fixture(file_name: "image_a.png")
+      media_library_asset_fixture(file_name: "image_b.png")
 
       assert MediaLibrary.count_assets(:my_site, query: "image_a") == 1
     end
