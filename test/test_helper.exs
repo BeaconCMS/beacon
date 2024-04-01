@@ -37,8 +37,13 @@ Supervisor.start_link(
          ]
        ],
        [
-         site: :boot_test,
+         site: :not_booted,
          skip_boot?: true,
+         endpoint: Beacon.BeaconTest.Endpoint
+       ],
+       [
+         site: :booted,
+         skip_boot?: false,
          endpoint: Beacon.BeaconTest.Endpoint
        ],
        [
@@ -126,6 +131,11 @@ Supervisor.start_link(
   ],
   strategy: :one_for_one
 )
+
+# TODO: better control :booted default data
+Beacon.Repo.delete_all(Beacon.Content.Component)
+Beacon.Repo.delete_all(Beacon.Content.ErrorPage)
+Beacon.Repo.delete_all(Beacon.Content.Layout)
 
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.Repo, :manual)

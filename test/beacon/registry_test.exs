@@ -5,12 +5,13 @@ defmodule Beacon.RegistryTest do
     running_sites = Beacon.Registry.running_sites()
 
     assert Enum.sort(running_sites) == [
-             :boot_test,
+             :booted,
              :data_source_test,
              :default_meta_tags_test,
              :lifecycle_test,
              :lifecycle_test_fail,
              :my_site,
+             :not_booted,
              :s3_site
            ]
   end

@@ -20,7 +20,7 @@ defmodule Beacon.ContentTest do
 
   describe "layouts" do
     test "broadcasts published event" do
-      %{site: site, id: id} = layout = layout_fixture()
+      %{site: site, id: id} = layout = layout_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_layouts(site)
       Content.publish_layout(layout)
       assert_receive {:layout_published, %{site: ^site, id: ^id}}
@@ -100,21 +100,21 @@ defmodule Beacon.ContentTest do
 
   describe "pages" do
     test "broadcasts published event" do
-      %{site: site, id: id} = page = page_fixture()
+      %{site: site, id: id} = page = page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_pages(site)
       Content.publish_page(page)
       assert_receive {:page_published, %{site: ^site, id: ^id}}
     end
 
     test "broadcasts loaded event" do
-      %{site: site, id: id, path: path} = published_page_fixture()
+      %{site: site, id: id, path: path} = published_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_page(site, path)
       Beacon.Loader.reload_page_module(site, id)
       assert_receive {:page_loaded, %{site: ^site, id: ^id}}
     end
 
     test "broadcasts unpublished event" do
-      %{site: site, id: id, path: path} = page = published_page_fixture()
+      %{site: site, id: id, path: path} = page = published_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_pages(site)
       assert {:ok, _} = Content.unpublish_page(page)
       assert_receive {:page_unpublished, %{site: ^site, id: ^id, path: ^path}}
@@ -353,13 +353,13 @@ defmodule Beacon.ContentTest do
 
   describe "stylesheets" do
     test "create broadcasts updated content event" do
-      :ok = Beacon.PubSub.subscribe_to_content(:my_site)
-      %{site: site} = stylesheet_fixture()
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = stylesheet_fixture(site: "booted")
       assert_receive {:content_updated, :stylesheet, %{site: ^site}}
     end
 
     test "update broadcasts updated content event" do
-      %{site: site} = stylesheet = stylesheet_fixture()
+      %{site: site} = stylesheet = stylesheet_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_stylesheet(stylesheet, %{body: "/* test */"})
       assert_receive {:content_updated, :stylesheet, %{site: ^site}}
@@ -368,8 +368,8 @@ defmodule Beacon.ContentTest do
 
   describe "snippets" do
     test "create broadcasts updated content event" do
-      :ok = Beacon.PubSub.subscribe_to_content(:my_site)
-      %{site: site} = snippet_helper_fixture()
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = snippet_helper_fixture(site: "booted")
       assert_receive {:content_updated, :snippet_helper, %{site: ^site}}
     end
 
@@ -557,13 +557,13 @@ defmodule Beacon.ContentTest do
 
   describe "error_pages" do
     test "create broadcasts updated content event" do
-      :ok = Beacon.PubSub.subscribe_to_content(:my_site)
-      %{site: site} = error_page_fixture()
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = error_page_fixture(site: "booted")
       assert_receive {:content_updated, :error_page, %{site: ^site}}
     end
 
     test "update broadcasts updated content event" do
-      %{site: site} = error_page = error_page_fixture()
+      %{site: site} = error_page = error_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_error_page(error_page, %{template: "test"})
       assert_receive {:content_updated, :error_page, %{site: ^site}}
@@ -605,13 +605,13 @@ defmodule Beacon.ContentTest do
 
   describe "components" do
     test "create broadcasts updated content event" do
-      :ok = Beacon.PubSub.subscribe_to_content(:my_site)
-      %{site: site} = component_fixture()
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = component_fixture(site: "booted")
       assert_receive {:content_updated, :component, %{site: ^site}}
     end
 
     test "update broadcasts updated content event" do
-      %{site: site} = component = component_fixture()
+      %{site: site} = component = component_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_component(component, %{body: "<div>test</div>"})
       assert_receive {:content_updated, :component, %{site: ^site}}
@@ -651,8 +651,8 @@ defmodule Beacon.ContentTest do
 
   describe "live data" do
     test "create broadcasts updated content event" do
-      :ok = Beacon.PubSub.subscribe_to_content(:my_site)
-      %{site: site} = live_data_fixture()
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = live_data_fixture(site: "booted")
       assert_receive {:content_updated, :live_data, %{site: ^site}}
     end
 
@@ -687,7 +687,7 @@ defmodule Beacon.ContentTest do
     test "live_data_for_site/1" do
       live_data_1 = live_data_fixture(site: :my_site, path: "/foo")
       live_data_2 = live_data_fixture(site: :my_site, path: "/bar")
-      live_data_3 = live_data_fixture(site: :other_site, path: "/baz")
+      live_data_3 = live_data_fixture(site: :not_booted, path: "/baz")
 
       results = Content.live_data_for_site(:my_site)
 

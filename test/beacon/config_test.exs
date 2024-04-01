@@ -26,7 +26,7 @@ defmodule Beacon.ConfigTest do
     end
 
     test "updates key from config" do
-      assert %Config{live_socket_path: "/new_live"} = Config.update_value(:boot_test, :live_socket_path, "/new_live")
+      assert %Config{live_socket_path: "/new_live"} = Config.update_value(:not_booted, :live_socket_path, "/new_live")
     end
   end
 

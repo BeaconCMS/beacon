@@ -4,12 +4,12 @@ defmodule Beacon.BeaconTest do
   describe "boot" do
     test "disable skip_boot config" do
       assert config().skip_boot?
-      Beacon.boot(:boot_test)
+      Beacon.boot(:not_booted)
       refute config().skip_boot?
     end
   end
 
   defp config do
-    Beacon.Config.fetch!(:boot_test)
+    Beacon.Config.fetch!(:not_booted)
   end
 end
