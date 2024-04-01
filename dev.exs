@@ -179,7 +179,7 @@ dev_seeds = fn ->
       extra: %{"alt" => "logo"}
     )
 
-  img1 = Beacon.MediaLibrary.upload(metadata)
+  _img1 = Beacon.MediaLibrary.upload(metadata)
 
   metadata =
     Beacon.MediaLibrary.UploadMetadata.new(
@@ -190,7 +190,7 @@ dev_seeds = fn ->
       extra: %{"alt" => "alternate logo"}
     )
 
-  img2 = Beacon.MediaLibrary.upload(metadata)
+  _img2 = Beacon.MediaLibrary.upload(metadata)
 
   home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/"})
 

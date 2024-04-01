@@ -88,7 +88,14 @@ defmodule Beacon do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 
-  # FIXME: spec/doc/error handling
+  @doc """
+  Boot a site, populating default data, the router, and loading modules.
+
+  This function is called by the site supervisor, and should not be called directly most of the times,
+  it's useful to seed data where you need to start the Repo but not boot the entire site,
+  and also useful on test environments.
+  """
+  @spec boot(atom) :: :ok
   def boot(site) do
     Beacon.Boot.do_init(Config.fetch!(site))
     Beacon.Config.update_value(site, :skip_boot?, false)

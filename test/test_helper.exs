@@ -132,7 +132,7 @@ Supervisor.start_link(
   strategy: :one_for_one
 )
 
-# TODO: better control :booted default data
+# TODO: better control :booted default data when we introduce Beacon.Test functions
 Beacon.Repo.delete_all(Beacon.Content.Component)
 Beacon.Repo.delete_all(Beacon.Content.ErrorPage)
 Beacon.Repo.delete_all(Beacon.Content.Layout)
