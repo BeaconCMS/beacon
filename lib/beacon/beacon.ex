@@ -88,6 +88,20 @@ defmodule Beacon do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 
+  @doc """
+  Boot a site, populating default data, the router, and loading modules.
+
+  This function is called by the site supervisor, and should not be called directly most of the times,
+  it's useful to seed data where you need to start the Repo but not boot the entire site,
+  and also useful on test environments.
+  """
+  @spec boot(Beacon.Types.Site.t()) :: :ok
+  def boot(site) do
+    Beacon.Boot.do_init(Config.fetch!(site))
+    Beacon.Config.update_value(site, :skip_boot?, false)
+    :ok
+  end
+
   @tailwind_version "3.3.1"
   @doc false
   def tailwind_version, do: @tailwind_version

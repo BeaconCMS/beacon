@@ -1,5 +1,5 @@
 defmodule Beacon.BeaconTest.Router do
-  use Beacon.BeaconTest, :router
+  use Beacon.BeaconWebTest, :router
   use Beacon.Router
 
   pipeline :browser do

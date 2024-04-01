@@ -14,17 +14,15 @@ defmodule Beacon.RouterServer do
     String.to_atom("beacon_router_#{site}")
   end
 
-  def start_link({config, _} = opts) do
-    GenServer.start_link(__MODULE__, opts, name: name(config.site))
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: name(config.site))
   end
 
-  def init({config, opts}) do
-    skip_seed = Keyword.get(opts, :skip_seed, false)
-
+  def init(config) do
     # We store routes by order and length so the most visited pages will likely be in the first rows
     :ets.new(table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
 
-    if skip_seed do
+    if config.skip_boot? do
       {:ok, config}
     else
       {:ok, config, {:continue, :async_init}}

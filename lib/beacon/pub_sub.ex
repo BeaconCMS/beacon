@@ -16,7 +16,7 @@ defmodule Beacon.PubSub do
   def content_updated(site, resource_type) do
     site
     |> topic_content()
-    |> broadcast({:content_updated, resource_type, %{site: site}})
+    |> broadcast({:content_updated, resource_type, %{site: site}}, site)
   end
 
   # Layouts
@@ -30,7 +30,7 @@ defmodule Beacon.PubSub do
   def layout_published(%Content.Layout{} = layout) do
     layout.site
     |> topic_layouts()
-    |> broadcast({:layout_published, layout(layout)})
+    |> broadcast({:layout_published, layout(layout)}, layout.site)
   end
 
   defp layout(layout), do: %{site: layout.site, id: layout.id}
@@ -59,13 +59,13 @@ defmodule Beacon.PubSub do
   def page_loaded(%Content.Page{} = page) do
     page.site
     |> topic_page(page.path)
-    |> local_broadcast({:page_loaded, page(page)})
+    |> local_broadcast({:page_loaded, page(page)}, page.site)
   end
 
   def page_published(%Content.Page{} = page) do
     page.site
     |> topic_pages()
-    |> broadcast({:page_published, page(page)})
+    |> broadcast({:page_published, page(page)}, page.site)
   end
 
   def pages_published(pages) when is_list(pages) do
@@ -77,7 +77,7 @@ defmodule Beacon.PubSub do
 
         site
         |> topic_pages()
-        |> broadcast({:pages_published, site, pages})
+        |> broadcast({:pages_published, site, pages}, site)
       end)
 
     if Enum.all?(messages, &(&1 == :ok)), do: :ok, else: :error
@@ -86,18 +86,26 @@ defmodule Beacon.PubSub do
   def page_unpublished(%Content.Page{} = page) do
     page.site
     |> topic_pages()
-    |> broadcast({:page_unpublished, page(page)})
+    |> broadcast({:page_unpublished, page(page)}, page.site)
   end
 
   defp page(page), do: %{site: page.site, id: page.id, path: page.path}
 
   # Utils
 
-  defp broadcast(topic, message) when is_binary(topic) do
-    Phoenix.PubSub.broadcast(@pubsub, topic, message)
+  defp broadcast(topic, message, site) when is_binary(topic) do
+    if Beacon.Config.fetch!(site).skip_boot? do
+      :ok
+    else
+      Phoenix.PubSub.broadcast(@pubsub, topic, message)
+    end
   end
 
-  defp local_broadcast(topic, message) when is_binary(topic) do
-    Phoenix.PubSub.local_broadcast(@pubsub, topic, message)
+  defp local_broadcast(topic, message, site) when is_binary(topic) do
+    if Beacon.Config.fetch!(site).skip_boot? do
+      :ok
+    else
+      Phoenix.PubSub.local_broadcast(@pubsub, topic, message)
+    end
   end
 end
