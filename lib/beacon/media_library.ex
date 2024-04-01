@@ -170,9 +170,9 @@ defmodule Beacon.MediaLibrary do
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specfic page. Defaults to 1.
-    * `:query` - search pages by path or title.
-    * `:preloads` - a list of preloads to load.
-    * `:sort` - column in which the result will be ordered by.
+    * `:query` - search assets by file name. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load. Defaults to `[:thumbnail]`.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:file_name`.
 
   """
   @doc type: :assets
@@ -182,7 +182,7 @@ defmodule Beacon.MediaLibrary do
     page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [:thumbnail])
-    sort = Keyword.get(opts, :sort, :inserted_at)
+    sort = Keyword.get(opts, :sort, :file_name)
 
     site
     |> query_list_assets_base()
@@ -218,24 +218,25 @@ defmodule Beacon.MediaLibrary do
   defp query_list_assets_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
   defp query_list_assets_preloads(query, _preloads), do: query
 
-  defp query_list_assets_sort(query, sort), do: from(q in query, order_by: [desc: ^sort])
+  defp query_list_assets_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """
   Counts the total number of assets based on the amount of pages.
 
   ## Options
 
-    * `:query` - filter rows count by query
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
 
   """
   @doc type: :assets
-  @spec count_assets(Site.t(), keyword()) :: integer()
+  @spec count_assets(Site.t(), keyword()) :: non_neg_integer()
   def count_assets(site, opts \\ []) do
     search = Keyword.get(opts, :query)
-    base = from asset in Asset, where: asset.site == ^site, select: count(asset.id)
 
-    base
+    site
+    |> query_list_assets_base()
     |> query_list_assets_search(search)
+    |> select([q], count(q.id))
     |> Repo.one()
   end
 
