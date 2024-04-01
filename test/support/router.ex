@@ -1,5 +1,5 @@
 defmodule Beacon.BeaconTest.Router do
-  use Beacon.BeaconTest, :router
+  use Beacon.BeaconWebTest, :router
   use Beacon.Router
 
   pipeline :browser do
@@ -8,16 +8,6 @@ defmodule Beacon.BeaconTest.Router do
     plug :fetch_live_flash
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-  end
-
-  pipeline :api do
-    plug :accepts, ["json"]
-    plug BeaconWeb.API.Plug
-  end
-
-  scope "/api" do
-    pipe_through :api
-    beacon_api "/"
   end
 
   scope "/" do

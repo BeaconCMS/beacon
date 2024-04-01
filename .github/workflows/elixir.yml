@@ -20,11 +20,11 @@ jobs:
           - otp: "23"
             elixir: "1.13.0"
             phoenix-version: "1.7.0"
-            phoenix-live-view-version: "0.19.0"
+            phoenix-live-view-version: "0.20.2"
 
           # latest
           - otp: "26"
-            elixir: "1.15"
+            elixir: "1.16"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
@@ -71,7 +71,7 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
-      - run: mix do deps.get, deps.compile
+      - run: mix deps.get --only-test
 
       - run: mix tailwind.install
 
@@ -85,7 +85,7 @@ jobs:
         include:
           # latest
           - otp: "26"
-            elixir: "1.15"
+            elixir: "1.16"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
@@ -116,29 +116,14 @@ jobs:
           restore-keys: |
             mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
 
-      - run: mix do deps.get, deps.compile
-
-      - name: Cache dialyzer
-        uses: actions/cache@v2
-        id: cache-plt
-        with:
-          path: priv/plts
-          key: dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            dialyzer-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
-
-      - name: Generate dialyzer plt
-        run: mix dialyzer --plt
-        if: steps.cache-plt.outputs.cache-hit != 'true'
+      - run: mix deps.get
 
       - run: mix tailwind.install
 
-      - run: mix compile --warnings-as-errors
+      - run: mix compile --force --warnings-as-errors
 
       - run: mix format --check-formatted
 
       - run: mix deps.unlock --check-unused
 
       - run: mix credo --strict
-
-      - run: mix dialyzer --format github

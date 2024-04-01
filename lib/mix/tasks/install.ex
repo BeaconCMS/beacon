@@ -43,8 +43,6 @@ defmodule Mix.Tasks.Beacon.Install do
     prod_config_file = config_file_path("prod.exs")
     maybe_inject_beacon_repo_config(prod_config_file, bindings)
 
-    maybe_create_beacon_data_source_file(bindings)
-
     maybe_inject_beacon_site_routes(bindings)
 
     maybe_inject_beacon_supervisor(bindings)
@@ -56,9 +54,9 @@ defmodule Mix.Tasks.Beacon.Install do
 
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:site]} and a sample page is available at /#{bindings[:site]}/home
+      A new site has been configured at /#{bindings[:site]}
 
-      Usually it can be accessed at http://localhost:4000/#{bindings[:site]}/home
+      Usually a sample page can be accessed at http://localhost:4000/#{bindings[:site]}
 
       Note that the generator changes existing files and it may not be formatted, please run `mix format` if needed.
 
@@ -108,11 +106,11 @@ defmodule Mix.Tasks.Beacon.Install do
       ])
     else
       regex = ~r/(config.*\.Endpoint,\n)((?:.+\n)*\s*)\n/
-      render_errors_value = [formats: [html: BeaconWeb.ErrorHTML]]
 
       [_header, endpoint_config_str] = Regex.run(regex, config_file_content, capture: :all_but_first)
       {config_list, []} = Code.eval_string("[" <> endpoint_config_str <> "]")
-      updated_config_list = Keyword.update(config_list, :render_errors, render_errors_value, fn _ -> render_errors_value end)
+      updated_config_list = put_in(config_list, [:render_errors, :formats, :html], BeaconWeb.ErrorHTML)
+
       updated_str = inspect(updated_config_list) <> "\n"
 
       new_config_file_content =
@@ -160,20 +158,6 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   @doc false
-  def maybe_create_beacon_data_source_file(bindings) do
-    dest_path = get_in(bindings, [:beacon_data_source, :dest_path])
-    template_path = get_in(bindings, [:beacon_data_source, :template_path])
-
-    if File.exists?(dest_path) do
-      Mix.shell().info([:yellow, "* skip ", :reset, "creating file ", Path.relative_to_cwd(dest_path), " (already exists)"])
-    else
-      File.touch!(dest_path)
-      Mix.shell().info([:green, "* creating ", :reset, Path.relative_to_cwd(dest_path)])
-      File.write!(dest_path, EEx.eval_file(template_path, bindings))
-    end
-  end
-
-  @doc false
   def maybe_inject_beacon_site_routes(bindings) do
     router_file = get_in(bindings, [:router, :path])
     router_file_content = File.read!(router_file)
@@ -204,13 +188,12 @@ defmodule Mix.Tasks.Beacon.Install do
       Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon supervisor into ", Path.relative_to_cwd(application_file), " (already exists)"])
     else
       site = bindings[:site]
-      data_source = bindings |> get_in([:beacon_data_source, :module_name]) |> inspect()
       endpoint = bindings |> get_in([:endpoint, :module_name]) |> inspect()
 
       new_application_file_content =
         application_file_content
         |> String.replace(".Endpoint\n", ".Endpoint,\n")
-        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, endpoint: #{endpoint}, data_source: #{data_source}]]}\n]")
+        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, endpoint: #{endpoint}]]}\n]")
 
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(application_file)])
       File.write!(application_file, new_application_file_content)
@@ -299,11 +282,6 @@ defmodule Mix.Tasks.Beacon.Install do
       templates_path: templates_path,
       site: site,
       path: path,
-      beacon_data_source: %{
-        dest_path: Path.join([root, lib_path, "beacon_data_source.ex"]),
-        template_path: Path.join([templates_path, "install", "beacon_data_source.ex"]),
-        module_name: Module.concat(base_module, "BeaconDataSource")
-      },
       endpoint: %{
         module_name: Module.concat(web_module, "Endpoint")
       },
@@ -332,7 +310,7 @@ defmodule Mix.Tasks.Beacon.Install do
     mix beacon.install expect a site name, for example:
 
         mix beacon.install --site blog
-        or 
+        or
         mix beacon.install --site blog --path "/blog_path"
     """)
   end

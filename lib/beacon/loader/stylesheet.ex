@@ -1,19 +1,14 @@
-defmodule Beacon.Loader.StylesheetModuleLoader do
+defmodule Beacon.Loader.Stylesheet do
   @moduledoc false
 
-  require Logger
+  alias Beacon.Loader
 
-  alias Beacon.Content
+  def module_name(site), do: Loader.module_name(site, "Stylesheet")
 
-  def load_stylesheets(_site, [] = _stylesheets) do
-    :skip
-  end
-
-  def load_stylesheets(site, stylesheets) do
-    stylesheet_module = Beacon.Loader.stylesheet_module_for_site(site)
-    ast = render_module(stylesheet_module, stylesheets)
-    :ok = Beacon.Loader.reload_module!(stylesheet_module, ast)
-    {:ok, ast}
+  def build_ast(site, stylesheets) do
+    site
+    |> module_name()
+    |> render_module(stylesheets)
   end
 
   # TODO: check if we'll be using this module to render stylesheets or if we'll rely on RuntimeCSS
@@ -41,7 +36,7 @@ defmodule Beacon.Loader.StylesheetModuleLoader do
     """
   end
 
-  defp render_stylesheet(%Content.Stylesheet{name: name, content: content}) do
+  defp render_stylesheet(%{name: name, content: content}) do
     """
     /* #{name} */
 

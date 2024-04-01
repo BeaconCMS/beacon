@@ -1,20 +1,14 @@
-defmodule Beacon.Loader.SnippetModuleLoader do
+defmodule Beacon.Loader.Snippets do
   @moduledoc false
-
-  require Logger
 
   alias Beacon.Loader
 
-  def load_helpers(_site, [] = _helpers) do
-    :skip
-  end
+  def module_name(site), do: Loader.module_name(site, "Snippets")
 
-  def load_helpers(site, helpers) do
-    module_name = Loader.snippet_helpers_module_for_site(site)
-    functions = Enum.map(helpers, &helper/1)
-    ast = render(module_name, functions)
-    :ok = Loader.reload_module!(module_name, ast)
-    {:ok, ast}
+  def build_ast(site, snippets) do
+    module = module_name(site)
+    functions = Enum.map(snippets, &helper/1)
+    render(module, functions)
   end
 
   defp render(module_name, functions) do

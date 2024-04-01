@@ -16,8 +16,8 @@ Supervisor.start_link(
        [
          site: :my_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
-         data_source: Beacon.BeaconTest.BeaconDataSource,
          live_socket_path: "/custom_live",
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
          lifecycle: [
@@ -37,8 +37,19 @@ Supervisor.start_link(
          ]
        ],
        [
+         site: :not_booted,
+         skip_boot?: true,
+         endpoint: Beacon.BeaconTest.Endpoint
+       ],
+       [
+         site: :booted,
+         skip_boot?: false,
+         endpoint: Beacon.BeaconTest.Endpoint
+       ],
+       [
          site: :s3_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          assets: [
            {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3, Beacon.MediaLibrary.Backend.Repo], validations: []]}
          ],
@@ -46,13 +57,13 @@ Supervisor.start_link(
        ],
        [
          site: :data_source_test,
-         endpoint: Beacon.BeaconTest.Endpoint,
-         data_source: Beacon.BeaconTest.TestDataSource
+         skip_boot?: true,
+         endpoint: Beacon.BeaconTest.Endpoint
        ],
        [
          site: :default_meta_tags_test,
+         skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
-         data_source: Beacon.BeaconTest.BeaconDataSource,
          default_meta_tags: [
            %{"name" => "foo", "content" => "bar"}
          ]
@@ -60,6 +71,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          lifecycle: [
            load_template: [
              {:markdown,
@@ -97,7 +109,7 @@ Supervisor.start_link(
            ],
            after_publish_page: [
              maybe_publish_page: fn page ->
-               send(self(), :lifecycle_after_publish_page)
+               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after publish page"})
                {:cont, page}
              end
            ]
@@ -106,6 +118,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test_fail,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          lifecycle: [
            render_template: [
              {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}
@@ -118,6 +131,11 @@ Supervisor.start_link(
   ],
   strategy: :one_for_one
 )
+
+# TODO: better control :booted default data when we introduce Beacon.Test functions
+Beacon.Repo.delete_all(Beacon.Content.Component)
+Beacon.Repo.delete_all(Beacon.Content.ErrorPage)
+Beacon.Repo.delete_all(Beacon.Content.Layout)
 
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.Repo, :manual)

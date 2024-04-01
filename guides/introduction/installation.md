@@ -38,7 +38,7 @@ We recommend following the guide thoroughly, but if you want a short version or 
 
 10. Run `mix phx.server`
 
-Visit http://localhost:4000/my_site/home to see the page created from seeds.
+Visit http://localhost:4000/my_site to see the page created from seeds.
 
 ## Steps
 
@@ -159,17 +159,23 @@ For more details please check out the docs: `mix help beacon.install`
     show_sensitive_data_on_connection_error: true
     ```
 
-3. Create a `BeaconDataSource` module that implements `Beacon.DataSource.Behaviour`:
+3. Edit your endpoint configuration `:render_errors` key, like so:
 
-    ```elixir
-    defmodule MyApp.BeaconDataSource do
-      @behaviour Beacon.DataSource.Behaviour
+Replace the `[formats: [html: _]]` option with `BeaconWeb.ErrorHTML`.
 
-      def live_data(:my_site, ["home"], _params), do: %{vals: ["first", "second", "third"]}
-      def live_data(:my_site, ["blog", blog_slug], _params), do: %{blog_slug_uppercase: String.upcase(blog_slug)}
-      def live_data(_, _, _), do: %{}
-    end
-    ```
+```diff
+ # Configures the endpoint
+ config :my_app, MyAppWeb.Endpoint,
+   url: [host: "localhost"],
+   adapter: Bandit.PhoenixAdapter,
+   render_errors: [
+-    formats: [html: MyAppWeb.ErrorHTML, json: MyAppWeb.ErrorJSON],
++    formats: [html: BeaconWeb.ErrorHTML, json: MyAppWeb.ErrorJSON],
+     layout: false
+   ],
+   pubsub_server: MyApp.PubSub,
+   live_view: [signing_salt: "j39Y3XwM"]
+```
 
 4. Edit `lib/my_app_web/router.ex` to add  `use Beacon.Router`, create a new `scope`, and call `beacon_site` in your app router:
 
@@ -192,7 +198,7 @@ Make sure you're not adding the macro `beacon_site` into the existing `scope "/"
       children = [
         # ommited others for brevity
         MyAppWeb.Endpoint,
-        {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint, data_source: MyApp.BeaconDataSource]]}
+        {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint]]}
       ]
 
       opts = [strategy: :one_for_one, name: MyApp.Supervisor]
@@ -203,7 +209,7 @@ Make sure you're not adding the macro `beacon_site` into the existing `scope "/"
 For more info on site options, check out `Beacon.start_link/1`.
 
 **Notes**
-- The site identification has to be the same across your environment, in configuration, `beacon_site`, and `live_data`. In this example we're using `:my_site`.
+- The site identification has to be the same across your environment, in configuration and `beacon_site`. In this example we're using `:my_site`.
 - Include it after your app `Endpoint`.
 
 6. Add some seeds in the seeds file `priv/repo/beacon_seeds.exs`:
@@ -217,7 +223,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     #       name: "sample_stylesheet",
     #       content: "body {cursor: zoom-in;}"
     #     })
-    
+
     alias Beacon.Content
 
     Content.create_stylesheet!(%{
@@ -255,7 +261,7 @@ For more info on site options, check out `Beacon.start_link/1`.
     Content.publish_layout(layout)
 
     %{
-      path: "home",
+      path: "/home",
       site: "<%= site %>",
       layout_id: layout.id,
       template: """
@@ -268,7 +274,7 @@ For more info on site options, check out `Beacon.start_link/1`.
         </ul>
 
         <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-          Name: <%= text_input f, :name %> <%= submit "Hello" %>
+          Name: <.input type="text" field={f[:name]} /> <.button>Hello</.button>
         </.form>
 
         <%= if assigns[:message], do: assigns.message %>
@@ -297,8 +303,14 @@ For more info on site options, check out `Beacon.start_link/1`.
     |> Content.create_page!()
     |> Content.publish_page()
 
+    home_live_data = Content.create_live_data!(%{site: "<%= site %>", path: "/home"})
+
+    Content.create_assign_for_live_data(home_live_data, %{format: :elixir, key: "vals", value: """
+    ["first", "second", "third"]
+    """})
+
     %{
-      path: "blog/:blog_slug",
+      path: "/blog/:blog_slug",
       site: "<%= site %>",
       layout_id: layout.id,
       template: """
@@ -313,9 +325,17 @@ For more info on site options, check out `Beacon.start_link/1`.
     }
     |> Content.create_page!()
     |> Content.publish_page()
+
+    blog_live_data = Content.create_live_data!(%{site: "<%= site %>", path: "/blog/:blog_slug"})
+
+    Content.create_assign_for_live_data(blog_live_data, %{
+      format: :elixir,
+      key: "blog_slug_uppercase",
+      value: "String.upcase(blog_slug)"
+    })
     ```
 
-6. Include new seeds in the `ecto.setup` alias in `mix.exs`:
+7. Include new seeds in the `ecto.setup` alias in `mix.exs`:
 
     ```elixir
     "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs", "run priv/repo/beacon_seeds.exs"],
@@ -337,11 +357,11 @@ Run the Phoenix server:
 mix phx.server
 ```
 
-Open http://localhost:4000/my_site/home and note:
+Open http://localhost:4000/my_site and note:
 
 - The Header and Footer from the layout
 - The list element from the page
-- The three components rendered with the beacon_live_data from your DataSource
+- The three components rendered with live data assigns
 - The zoom in cursor from the stylesheet
 
 Open http://localhost:4000/my_site/blog/my_first_post and note:

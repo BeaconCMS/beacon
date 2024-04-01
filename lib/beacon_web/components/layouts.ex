@@ -27,78 +27,36 @@ defmodule BeaconWeb.Layouts do
   def dynamic_layout?(%{__dynamic_layout_id__: _}), do: true
   def dynamic_layout?(_), do: false
 
-  def render_dynamic_layout(%{__dynamic_layout_id__: layout_id} = assigns) do
-    layout_id
-    |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:render, [assigns])
+  def render_dynamic_layout(%{__site__: site, __dynamic_layout_id__: layout_id} = assigns) do
+    site
+    |> Beacon.Loader.fetch_layout_module(layout_id)
+    |> Beacon.apply_mfa(:render, [assigns])
   end
 
   def live_socket_path(%{__site__: site}) do
     Beacon.Config.fetch!(site).live_socket_path
   end
 
-  defp compiled_page_assigns(page_id) do
-    page_id
-    |> Beacon.Loader.page_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+  defp compiled_page_assigns(site, page_id) do
+    site
+    |> Beacon.Loader.fetch_page_module(page_id)
+    |> Beacon.apply_mfa(:page_assigns, [])
   end
 
-  defp compiled_layout_assigns(layout_id) do
-    layout_id
-    |> Beacon.Loader.layout_module_for_site()
-    |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
+  defp compiled_layout_assigns(site, layout_id) do
+    site
+    |> Beacon.Loader.fetch_layout_module(layout_id)
+    |> Beacon.apply_mfa(:layout_assigns, [])
   end
 
-  def render_page_title(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
-    params = Map.drop(assigns.conn.params, ["path"])
-    Beacon.DataSource.page_title(site, path, params, assigns.beacon_live_data, page_title(assigns))
-  end
-
-  def render_page_title(assigns), do: page_title(assigns)
-
-  def page_title(%{__dynamic_layout_id__: layout_id, __dynamic_page_id__: page_id}) do
-    %{title: page_title} =
-      page_id
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
-
-    if page_title do
-      page_title
-    else
-      %{title: layout_title} =
-        layout_id
-        |> Beacon.Loader.layout_module_for_site()
-        |> Beacon.Loader.call_function_with_retry(:layout_assigns, [])
-
-      layout_title || missing_page_title()
-    end
-  end
-
-  def page_title(_), do: missing_page_title()
-
-  defp missing_page_title do
-    Logger.warning("No page title set")
-    ""
-  end
-
-  def render_meta_tags(%{__dynamic_page_id__: _, __site__: site, __live_path__: path} = assigns) do
-    params = Map.drop(assigns.conn.params, ["path"])
-
-    do_render_meta_tags(
-      assigns,
-      Beacon.DataSource.meta_tags(site, path, params, assigns.beacon_live_data, meta_tags(assigns))
-    )
+  def render_page_title(assigns) do
+    %{__site__: site, __dynamic_page_id__: page_id, beacon_live_data: beacon_live_data} = assigns
+    BeaconWeb.DataSource.page_title(site, page_id, beacon_live_data)
   end
 
   def render_meta_tags(assigns) do
-    do_render_meta_tags(assigns, meta_tags(assigns))
-  end
-
-  defp do_render_meta_tags(assigns, meta_tags) do
-    assigns = assign(assigns, :meta_tags, meta_tags)
-
     ~H"""
-    <%= for meta_attributes <- @meta_tags do %>
+    <%= for meta_attributes <- BeaconWeb.DataSource.meta_tags(assigns) do %>
       <meta {meta_attributes} />
     <% end %>
     """
@@ -123,8 +81,8 @@ defmodule BeaconWeb.Layouts do
     compiled_page_meta_tags(assigns)
   end
 
-  defp compiled_page_meta_tags(%{__dynamic_page_id__: page_id}) do
-    %{meta_tags: meta_tags} = compiled_page_assigns(page_id)
+  defp compiled_page_meta_tags(%{__site__: site, __dynamic_page_id__: page_id}) do
+    %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
     meta_tags
   end
 
@@ -138,16 +96,13 @@ defmodule BeaconWeb.Layouts do
     compiled_layout_meta_tags(assigns)
   end
 
-  defp compiled_layout_meta_tags(%{__dynamic_layout_id__: layout_id}) do
-    %{meta_tags: meta_tags} = compiled_layout_assigns(layout_id)
+  defp compiled_layout_meta_tags(%{__site__: site, __dynamic_layout_id__: layout_id}) do
+    %{meta_tags: meta_tags} = compiled_layout_assigns(site, layout_id)
     meta_tags
   end
 
-  def render_schema(%{__dynamic_page_id__: page_id} = assigns) do
-    %{raw_schema: raw_schema} =
-      page_id
-      |> Beacon.Loader.page_module_for_site()
-      |> Beacon.Loader.call_function_with_retry(:page_assigns, [])
+  def render_schema(assigns) do
+    %{raw_schema: raw_schema} = compiled_page_assigns(assigns.__site__, assigns.__dynamic_page_id__)
 
     is_empty = fn raw_schema ->
       raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []
@@ -189,8 +144,8 @@ defmodule BeaconWeb.Layouts do
     compiled_layout_resource_links(assigns)
   end
 
-  defp compiled_layout_resource_links(%{__dynamic_layout_id__: layout_id}) do
-    %{resource_links: resource_links} = compiled_layout_assigns(layout_id)
+  defp compiled_layout_resource_links(%{__site__: site, __dynamic_layout_id__: layout_id}) do
+    %{resource_links: resource_links} = compiled_layout_assigns(site, layout_id)
     resource_links
   end
 end

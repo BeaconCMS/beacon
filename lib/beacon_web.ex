@@ -45,8 +45,11 @@ defmodule BeaconWeb do
 
   defp html_helpers do
     quote do
-      # HTML escaping functionality
+      # HTML helpers and components
+      use PhoenixHTMLHelpers
       import Phoenix.HTML
+      import Phoenix.HTML.Form
+
       # Core UI components and translation
       import BeaconWeb.CoreComponents
       import BeaconWeb.Gettext

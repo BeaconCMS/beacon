@@ -30,28 +30,30 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     assert_equal(~S|<%= _a = true %>|)
     assert_equal(~S|value: <%= 1 %>|)
     assert_equal(~S|<% _a = 1 %>|)
-
-    assert_equal(~S"""
-    <%= if @completed do %>
-      Congrats
-    <% else %>
-      Keep working
-    <% end %>
-    """)
-
-    assert_equal(~S"""
-    <%= case @users do %>
-      <% users when is_list(users) -> %>
-        <div>Users</div>
-      <% :error -> %>
-        <div>Not Found</div>
-      <% _ -> %>
-        <div>Something went wrong</div>
-    <% end %>
-    """)
   end
 
-  test "comprehensions" do
+  test "eex blocks" do
+    assert_equal(
+      ~S"""
+      <%= if @completed do %>
+        congrats
+      <% else %>
+        keep working
+      <% end %>
+      """,
+      %{completed: true}
+    )
+
+    assert_equal(
+      ~S"""
+      <%= case @completed do %>
+        <% true -> %>
+          congrats
+      <% end %>
+      """,
+      %{completed: true}
+    )
+
     assert_equal(
       ~S"""
       <%= for val <- @beacon_live_data[:vals] do %>
@@ -60,6 +62,14 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
       """,
       %{beacon_live_data: %{vals: [1]}}
     )
+
+    assert_equal(~S"""
+    <%= if true do %>
+      <.link path="/contact" replace={true}>Book meeting</.link>
+      <Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>
+      <BeaconWeb.Components.image name="logo.jpg" width="200px" />
+    <% end %>
+    """)
   end
 
   test "function components" do
@@ -68,9 +78,8 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   end
 
   test "my_component" do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     component_fixture(site: :my_site)
-    Beacon.Loader.load_components(:my_site)
+    Beacon.Loader.fetch_components_module(:my_site)
 
     assert_equal(~S|<%= my_component("sample_component", %{val: 1}) %>|)
   end

@@ -1,38 +1,36 @@
 defmodule Beacon.PubSub do
   @moduledoc false
 
-  require Logger
-  alias Beacon.Content.Component
-  alias Beacon.Content.ErrorPage
-  alias Beacon.Content.Layout
-  alias Beacon.Content.Page
+  alias Beacon.Content
 
   @pubsub __MODULE__
+
+  # Content
+
+  defp topic_content(site), do: "beacon:#{site}:content"
+
+  def subscribe_to_content(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_content(site))
+  end
+
+  def content_updated(site, resource_type) do
+    site
+    |> topic_content()
+    |> broadcast({:content_updated, resource_type, %{site: site}}, site)
+  end
 
   # Layouts
 
   defp topic_layouts(site), do: "beacon:#{site}:layouts"
 
-  defp topic_layout(site, id), do: "beacon:#{site}:layouts:#{id}"
-
   def subscribe_to_layouts(site) do
     Phoenix.PubSub.subscribe(@pubsub, topic_layouts(site))
   end
 
-  def subscribe_to_layout(site, id) do
-    Phoenix.PubSub.subscribe(@pubsub, topic_layout(site, id))
-  end
-
-  def layout_published(%Layout{} = layout) do
+  def layout_published(%Content.Layout{} = layout) do
     layout.site
     |> topic_layouts()
-    |> broadcast({:layout_published, %{site: layout.site, id: layout.id}})
-  end
-
-  def layout_loaded(%Layout{} = layout) do
-    layout.site
-    |> topic_layout(layout.id)
-    |> local_broadcast({:layout_loaded, layout(layout)})
+    |> broadcast({:layout_published, layout(layout)}, layout.site)
   end
 
   defp layout(layout), do: %{site: layout.site, id: layout.id}
@@ -58,22 +56,16 @@ defmodule Beacon.PubSub do
     Phoenix.PubSub.subscribe(@pubsub, topic_page(site, path))
   end
 
-  def page_created(%Page{} = page) do
-    page.site
-    |> topic_pages()
-    |> broadcast({:page_created, page(page)})
-  end
-
-  def page_loaded(%Page{} = page) do
+  def page_loaded(%Content.Page{} = page) do
     page.site
     |> topic_page(page.path)
-    |> local_broadcast({:page_loaded, page(page)})
+    |> local_broadcast({:page_loaded, page(page)}, page.site)
   end
 
-  def page_published(%Page{} = page) do
+  def page_published(%Content.Page{} = page) do
     page.site
     |> topic_pages()
-    |> broadcast({:page_published, page(page)})
+    |> broadcast({:page_published, page(page)}, page.site)
   end
 
   def pages_published(pages) when is_list(pages) do
@@ -85,87 +77,35 @@ defmodule Beacon.PubSub do
 
         site
         |> topic_pages()
-        |> broadcast({:pages_published, site, pages})
+        |> broadcast({:pages_published, site, pages}, site)
       end)
 
     if Enum.all?(messages, &(&1 == :ok)), do: :ok, else: :error
   end
 
-  def page_unpublished(%Page{} = page) do
+  def page_unpublished(%Content.Page{} = page) do
     page.site
     |> topic_pages()
-    |> broadcast({:page_unpublished, page(page)})
+    |> broadcast({:page_unpublished, page(page)}, page.site)
   end
 
   defp page(page), do: %{site: page.site, id: page.id, path: page.path}
 
-  # Components
-
-  defp topic_components(site), do: "beacon:#{site}:components"
-
-  defp topic_component(site, id) when is_binary(id) do
-    "beacon:#{site}:components:#{id}"
-  end
-
-  def subscribe_to_components(site) do
-    Phoenix.PubSub.subscribe(@pubsub, topic_components(site))
-  end
-
-  def subscribe_to_component(site, id) do
-    Phoenix.PubSub.subscribe(@pubsub, topic_component(site, id))
-  end
-
-  def component_updated(%Component{} = component) do
-    component.site
-    |> topic_components()
-    |> broadcast({:component_updated, component(component)})
-  end
-
-  def component_loaded(component) do
-    component.site
-    |> topic_component(component.id)
-    |> local_broadcast({:component_loaded, component(component)})
-  end
-
-  defp component(component), do: %{site: component.site, id: component.id, name: component.name}
-
-  # Error Pages
-
-  defp topic_error_pages(site), do: "beacon:#{site}:error_pages"
-
-  defp topic_error_page(site, id) when is_binary(id) do
-    "beacon:#{site}:error_pages:#{id}"
-  end
-
-  def subscribe_to_error_pages(site) do
-    Phoenix.PubSub.subscribe(@pubsub, topic_error_pages(site))
-  end
-
-  def subscribe_to_error_page(site, id) do
-    Phoenix.PubSub.subscribe(@pubsub, topic_error_page(site, id))
-  end
-
-  def error_page_updated(%ErrorPage{} = error_page) do
-    error_page.site
-    |> topic_error_pages()
-    |> broadcast({:error_page_updated, error_page(error_page)})
-  end
-
-  def error_page_loaded(error_page) do
-    error_page.site
-    |> topic_error_page(error_page.id)
-    |> local_broadcast({:error_page_loaded, error_page(error_page)})
-  end
-
-  defp error_page(error_page), do: %{site: error_page.site, id: error_page.id, status: error_page.status}
-
   # Utils
 
-  defp broadcast(topic, message) when is_binary(topic) do
-    Phoenix.PubSub.broadcast(@pubsub, topic, message)
+  defp broadcast(topic, message, site) when is_binary(topic) do
+    if Beacon.Config.fetch!(site).skip_boot? do
+      :ok
+    else
+      Phoenix.PubSub.broadcast(@pubsub, topic, message)
+    end
   end
 
-  defp local_broadcast(topic, message) when is_binary(topic) do
-    Phoenix.PubSub.local_broadcast(@pubsub, topic, message)
+  defp local_broadcast(topic, message, site) when is_binary(topic) do
+    if Beacon.Config.fetch!(site).skip_boot? do
+      :ok
+    else
+      Phoenix.PubSub.local_broadcast(@pubsub, topic, message)
+    end
   end
 end

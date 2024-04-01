@@ -36,7 +36,9 @@ defmodule Beacon.Repo.Migrations.MigratePagesEventsSnapshots do
     case repo().query(query, [], log: :info) do
       {:ok, result} ->
         Enum.map(result.rows, fn row ->
-          %{site: site, format: format} = repo().load(%{site: :string, format: :string}, {result.columns, row})
+          %{site: site, format: format} =
+            repo().load(%{site: :string, format: :string}, {result.columns, row})
+
           _ = String.to_atom(site)
           _ = String.to_atom(format)
         end)
@@ -76,7 +78,7 @@ defmodule Beacon.Repo.Migrations.MigratePagesEventsSnapshots do
   end
 
   defp update_inserted_at(%schema{id: id}, inserted_at) do
-    query = from s in schema, where: s.id == ^id
+    query = from(s in schema, where: s.id == ^id)
     Repo.update_all(query, set: [inserted_at: inserted_at])
   end
 end

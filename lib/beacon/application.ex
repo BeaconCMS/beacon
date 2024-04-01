@@ -14,8 +14,7 @@ defmodule Beacon.Application do
       Beacon.Repo
     ]
 
-    Beacon.Router.init()
-
+    # TODO: scope by site
     :ets.new(:beacon_assets, [:set, :named_table, :public, read_concurrency: true])
 
     Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)

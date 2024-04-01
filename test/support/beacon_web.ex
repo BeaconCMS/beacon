@@ -1,4 +1,4 @@
-defmodule Beacon.BeaconTest do
+defmodule Beacon.BeaconWebTest do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
@@ -25,8 +25,9 @@ defmodule Beacon.BeaconTest do
 
   defp view_helpers do
     quote do
-      use Phoenix.HTML
-
+      use PhoenixHTMLHelpers
+      import Phoenix.HTML
+      import Phoenix.HTML.Form
       import Phoenix.Component
       import Phoenix.View
 
@@ -36,11 +37,11 @@ defmodule Beacon.BeaconTest do
 end
 
 defmodule Beacon.BeaconTest.LayoutView do
-  use Beacon.BeaconTest, :view
+  use Beacon.BeaconWebTest, :view
 end
 
 defmodule Beacon.BeaconTest.ErrorView do
-  use Beacon.BeaconTest, :view
+  use Beacon.BeaconWebTest, :view
 
   def render(_template, _assigns), do: "Error"
 end

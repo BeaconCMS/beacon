@@ -64,30 +64,37 @@ defmodule Beacon.Content.Page do
 
   @doc false
   def create_changeset(%__MODULE__{} = page, attrs) do
-    page
-    |> cast(attrs, [
-      :site,
-      :title,
-      :description,
-      :template,
-      :meta_tags,
-      :raw_schema,
-      :order,
-      :layout_id,
-      :format,
-      :extra
-    ])
-    |> cast(attrs, [:path], empty_values: [])
-    |> cast_embed(:helpers, with: &helpers_changeset/2)
-    |> unique_constraint([:path, :site])
-    |> validate_required([
-      :site,
-      :layout_id,
-      :format
-    ])
-    |> validate_string([:path])
-    |> foreign_key_constraint(:layout_id)
-    |> remove_empty_meta_attributes(:meta_tags)
+    {extra_attrs, attrs} = Map.pop(attrs, "extra")
+
+    changeset =
+      page
+      |> cast(attrs, [
+        :site,
+        :path,
+        :title,
+        :description,
+        :template,
+        :meta_tags,
+        :raw_schema,
+        :order,
+        :layout_id,
+        :format,
+        :extra
+      ])
+      |> cast_embed(:helpers, with: &helpers_changeset/2)
+      |> unique_constraint([:path, :site])
+      |> validate_required([
+        :site,
+        :layout_id,
+        :path,
+        :title,
+        :format
+      ])
+      |> Beacon.Schema.validate_path()
+      |> foreign_key_constraint(:layout_id)
+      |> remove_empty_meta_attributes(:meta_tags)
+
+    Content.PageField.apply_changesets(changeset, get_field(changeset, :site), extra_attrs)
   end
 
   # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
@@ -122,7 +129,7 @@ defmodule Beacon.Content.Page do
       :layout_id,
       :format
     ])
-    |> validate_string([:path])
+    |> Beacon.Schema.validate_path()
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
@@ -132,15 +139,6 @@ defmodule Beacon.Content.Page do
     schema
     |> cast(params, [:name, :args, :code])
     |> validate_required([:name, :code])
-  end
-
-  defp validate_string(changeset, fields) do
-    Enum.reduce(fields, changeset, fn field, changeset ->
-      case get_field(changeset, field) do
-        val when is_binary(val) -> changeset
-        _ -> add_error(changeset, field, "Not a string")
-      end
-    end)
   end
 
   # For when the UI is a <textarea> but "\n" would cause problems

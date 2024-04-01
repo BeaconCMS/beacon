@@ -33,7 +33,7 @@ defmodule Beacon do
       # config.exs or runtime.exs
       config :my_app, Beacon,
         sites: [
-          [site: :my_site, endpoint: MyAppWeb.Endpoint, data_source: MyApp.BeaconDataSource]
+          [site: :my_site, endpoint: MyAppWeb.Endpoint]
         ],
         authorization_source: MyApp.AuthorizationPolicy
 
@@ -88,20 +88,76 @@ defmodule Beacon do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 
+  @doc """
+  Boot a site, populating default data, the router, and loading modules.
+
+  This function is called by the site supervisor, and should not be called directly most of the times,
+  it's useful to seed data where you need to start the Repo but not boot the entire site,
+  and also useful on test environments.
+  """
+  @spec boot(Beacon.Types.Site.t()) :: :ok
+  def boot(site) do
+    Beacon.Boot.do_init(Config.fetch!(site))
+    Beacon.Config.update_value(site, :skip_boot?, false)
+    :ok
+  end
+
   @tailwind_version "3.3.1"
   @doc false
   def tailwind_version, do: @tailwind_version
 
-  @doc """
-  Reload all resources of `site`.
-  """
-  @spec reload_site(Beacon.Types.Site.t()) :: :ok
-  defdelegate reload_site(site), to: Beacon.Loader
-
   @doc false
   def safe_code_check!(site, code) do
     if Beacon.Config.fetch!(site).safe_code_check do
-      SafeCode.Validator.validate!(code, extra_function_validators: Beacon.Loader.SafeCodeImpl)
+      SafeCode.Validator.validate!(code, extra_function_validators: Beacon.SafeCodeImpl)
     end
+  end
+
+  @doc false
+  # Provides a safer `apply` for cases where `module` is being recompiled,
+  # and also raises with more context about the called mfa.
+  #
+  # This should always be used when calling dynamic modules
+  def apply_mfa(module, function, args, failure_count \\ 0) when is_atom(module) and is_atom(function) and is_list(args) do
+    apply(module, function, args)
+  rescue
+    e in UndefinedFunctionError ->
+      case {failure_count, e} do
+        {x, _} when x >= 10 ->
+          mfa = Exception.format_mfa(module, function, length(args))
+          Logger.debug("failed to call #{mfa} after #{failure_count} tries")
+          reraise e, __STACKTRACE__
+
+        {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
+          mfa = Exception.format_mfa(module, function, length(args))
+          Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
+          :timer.sleep(100 * (failure_count * 2))
+          apply_mfa(module, function, args, failure_count + 1)
+
+        _ ->
+          reraise e, __STACKTRACE__
+      end
+
+    _e in FunctionClauseError ->
+      mfa = Exception.format_mfa(module, function, length(args))
+
+      error_message = """
+      could not call #{mfa} for the given path: #{inspect(List.flatten(args))}.
+
+      Make sure you have created a page for this path.
+
+      See Pages.create_page!/2 for more info.
+      """
+
+      reraise Beacon.LoaderError, [message: error_message], __STACKTRACE__
+
+    e ->
+      reraise e, __STACKTRACE__
+  end
+
+  @doc false
+  # https://github.com/phoenixframework/phoenix_live_view/blob/8fedc6927fd937fe381553715e723754b3596a97/lib/phoenix_live_view/channel.ex#L435-L437
+  def exported?(m, f, a) do
+    function_exported?(m, f, a) || (Code.ensure_loaded?(m) && function_exported?(m, f, a))
   end
 end

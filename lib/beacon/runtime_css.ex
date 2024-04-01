@@ -3,17 +3,17 @@ defmodule Beacon.RuntimeCSS do
   Runtime compilation and processing of CSS files.
   """
 
+  @callback config(Beacon.Types.Site.t()) :: String.t()
   @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
-  @callback compile(Beacon.Types.Site.t(), template :: String.t()) :: {:ok, String.t()} | {:error, any()}
+
+  @doc false
+  def config(site) when is_atom(site) do
+    Beacon.Config.fetch!(site).css_compiler.config(site)
+  end
 
   @doc false
   def compile(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.compile(site)
-  end
-
-  @doc false
-  def compile(site, template) when is_atom(site) and is_binary(template) do
-    Beacon.Config.fetch!(site).css_compiler.compile(site, template)
   end
 
   @doc false
@@ -22,7 +22,7 @@ defmodule Beacon.RuntimeCSS do
   def fetch(site, :compressed) do
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
       [[css]] -> css
-      _ -> nil
+      _ -> "/* CSS not found for site #{inspect(site)} */"
     end
   end
 

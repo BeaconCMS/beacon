@@ -5,6 +5,11 @@ defmodule Beacon.Types.JsonArrayMap do
 
   use Ecto.Type
 
+  @typedoc """
+  List of maps
+  """
+  @type t :: [map()]
+
   def type, do: {:array, :map}
 
   def cast(term) when is_map(term), do: {:ok, [term]}

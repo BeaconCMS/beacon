@@ -6,8 +6,21 @@ defmodule Beacon.Config do
 
   """
 
+  use GenServer
+
   alias Beacon.Content
-  alias Beacon.Registry
+
+  def name(site) do
+    Beacon.Registry.via({site, __MODULE__})
+  end
+
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: Beacon.Registry.via({config.site, __MODULE__}, config))
+  end
+
+  def init(config) do
+    {:ok, config}
+  end
 
   @typedoc """
   Host application endpoint
@@ -15,12 +28,16 @@ defmodule Beacon.Config do
   @type endpoint :: module()
 
   @typedoc """
-  A module that implements `Beacon.DataSource.Behaviour`, used to provide `@assigns` to pages.
+  Disables inserting default data, loading modules, and broadcasting events that trigger assets compilation and module reloading.
+
+  It's useful to disable boot in test environments and to seed initial data.
+
+  Default is `false`.
   """
-  @type data_source :: module() | nil
+  @type skip_boot? :: boolean()
 
   @typedoc """
-  A module that implements `Beacon.Authorization.Behaviour`, used to provide authorization rules for the admin backend.
+  A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules for the admin backend.
   """
   @type authorization_source :: module()
 
@@ -138,7 +155,7 @@ defmodule Beacon.Config do
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
-          data_source: data_source(),
+          skip_boot?: skip_boot?(),
           authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
@@ -170,7 +187,7 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             endpoint: nil,
-            data_source: nil,
+            skip_boot?: false,
             authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.TailwindCompiler,
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
@@ -197,7 +214,7 @@ defmodule Beacon.Config do
   @type option ::
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
-          | {:data_source, data_source()}
+          | {:skip_boot?, skip_boot?()}
           | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
@@ -220,7 +237,7 @@ defmodule Beacon.Config do
 
     * `:endpoint` - `t:endpoint/0` (required)
 
-    * `:data_source` - `t:data_source/0` (optional)
+    * `:skip_boot?` - `t:skip_boot?/0` (optional)
 
     * `:authorization_source` - `t:authorization_source/0` (optional).
     Note this config can't be `nil`. Defaults to `Beacon.Authorization.DefaultPolicy`.
@@ -261,7 +278,6 @@ defmodule Beacon.Config do
       iex> Beacon.Config.new(
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        data_source: MyApp.SiteDataSource,
         authorization_source: MyApp.SiteAuthnPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
         template_formats: [
@@ -288,7 +304,7 @@ defmodule Beacon.Config do
       %Beacon.Config{
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        data_source: MyApp.SiteDataSource,
+        skip_boot?: false,
         authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js.eex",
@@ -384,7 +400,20 @@ defmodule Beacon.Config do
   """
   @spec fetch!(Beacon.Types.Site.t()) :: t()
   def fetch!(site) when is_atom(site) do
-    Registry.config!(site)
+    case Beacon.Registry.lookup({site, __MODULE__}) do
+      {_pid, config} ->
+        config
+
+      _ ->
+        raise RuntimeError, """
+        site #{inspect(site)} was not found. Make sure it's configured and started,
+        see `Beacon.start_link/1` for more info.
+        """
+    end
+  end
+
+  def update_value(site, key, value) do
+    GenServer.call(name(site), {:update_value, key, value})
   end
 
   @doc """
@@ -550,5 +579,24 @@ defmodule Beacon.Config do
       end
 
     Keyword.put_new(config, :processor, processor)
+  end
+
+  @doc false
+  def env_test? do
+    Code.ensure_loaded?(Mix.Project) and Mix.env() == :test
+  end
+
+  # Server
+
+  def handle_call({:update_value, key, value}, _from, config) do
+    %{site: site} = config
+
+    result =
+      case Registry.update_value(Beacon.Registry, {site, __MODULE__}, &%{&1 | key => value}) do
+        {new, _old} -> new
+        error -> error
+      end
+
+    {:reply, result, config}
   end
 end

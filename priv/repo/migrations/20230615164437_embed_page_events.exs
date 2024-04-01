@@ -29,7 +29,9 @@ defmodule Beacon.Repo.Migrations.EmbedPageEvents do
         types = %{id: :binary_id, code: :string, event_name: :string}
 
         Enum.map(result.rows, fn row ->
-          %{id: id, code: code, event_name: event_name} = repo().load(types, {result.columns, row})
+          %{id: id, code: code, event_name: event_name} =
+            repo().load(types, {result.columns, row})
+
           %{id: id, code: code, name: event_name}
         end)
 

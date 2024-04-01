@@ -1,4 +1,4 @@
-defmodule Beacon.Authorization.Behaviour do
+defmodule Beacon.Authorization.Policy do
   @moduledoc """
   Provides hooks into Beacon Authorization.
 

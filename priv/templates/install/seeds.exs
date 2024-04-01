@@ -40,9 +40,10 @@ Content.publish_layout(layout)
 
 page =
   Content.create_page!(%{
-    path: "home",
     site: "<%= site %>",
     layout_id: layout.id,
+    path: "/",
+    title: "Home",
     template: """
     <main>
       <h2>Some Values:</h2>
@@ -82,10 +83,17 @@ page =
 
 Content.publish_page(page)
 
+home_live_data = Content.create_live_data!(%{site: "<%= site %>", path: "/"})
+
+Content.create_assign_for_live_data(home_live_data, %{format: :elixir, key: "vals", value: """
+["first", "second", "third"]
+"""})
+
 %{
-  path: "blog/:blog_slug",
   site: "<%= site %>",
   layout_id: layout.id,
+  path: "/blog/:blog_slug",
+  title: "Blog",
   template: """
   <main>
     <h2>A blog</h2>
@@ -98,3 +106,11 @@ Content.publish_page(page)
 }
 |> Content.create_page!()
 |> Content.publish_page()
+
+blog_live_data = Content.create_live_data!(%{site: "<%= site %>", path: "/blog/:blog_slug"})
+
+Content.create_assign_for_live_data(blog_live_data, %{
+  format: :elixir,
+  key: "blog_slug_uppercase",
+  value: "String.upcase(blog_slug)"
+})
