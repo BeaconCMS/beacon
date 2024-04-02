@@ -13,7 +13,7 @@ defmodule BeaconWeb.CacheTest do
     assert Cache.last_modified(asset) == {{2024, 4, 2}, {20, 32, 12}}
   end
 
-  test "to_rfc1123", %{asset: asset} do
+  test "to_rfc1123" do
     assert Cache.to_rfc1123({{2024, 4, 2}, {20, 32, 12}}) == "Tue, 02 Apr 2024 20:32:12 GMT"
   end
 end
