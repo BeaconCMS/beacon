@@ -17,10 +17,10 @@ defmodule Beacon.MediaLibrary.Asset do
   @type t :: %__MODULE__{}
 
   schema "beacon_assets" do
+    field :site, Beacon.Types.Site
     field :file_name, :string
     field :file_body, :binary
     field :media_type, :string
-    field :site, Beacon.Types.Site
     field :deleted_at, :utc_datetime
     field :keys, :map, default: %{}
     field :usage_tag, :string

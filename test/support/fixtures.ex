@@ -126,11 +126,11 @@ defmodule Beacon.Fixtures do
 
   def media_library_asset_fixture(attrs \\ %{}) do
     attrs
-    |> file_metadata_fixture()
+    |> upload_metadata_fixture()
     |> MediaLibrary.upload()
   end
 
-  def file_metadata_fixture(attrs \\ %{}) do
+  def upload_metadata_fixture(attrs \\ %{}) do
     attrs =
       attrs
       |> Enum.into(%{
