@@ -81,6 +81,8 @@ defmodule Beacon do
     #   {Phoenix.PubSub, name: Beacon.PubSub}
     # ]
 
+    :pg.start_link(:beacon_cluster)
+
     authorization_source = Keyword.get(opts, :authorization_source)
 
     children =

@@ -25,6 +25,7 @@ defmodule Beacon.Config do
 
   @doc false
   def init(config) do
+    :pg.join(:beacon_cluster, config.site, self())
     {:ok, config}
   end
 
@@ -596,6 +597,10 @@ defmodule Beacon.Config do
   end
 
   # Server
+
+  def handle_call(:current_node, _from, config) do
+    {:reply, Node.self(), config}
+  end
 
   @doc false
   def handle_call({:update_value, key, value}, _from, config) do
