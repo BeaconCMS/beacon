@@ -1,4 +1,4 @@
-defmodule Beacon.TailwindCompiler do
+defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @moduledoc """
   Tailwind compiler for runtime CSS, used on all sites.
 

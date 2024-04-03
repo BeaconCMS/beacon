@@ -8,7 +8,7 @@ defmodule Beacon.ConfigTest do
   describe "registry" do
     test "returns the site config" do
       assert %Beacon.Config{
-               css_compiler: Beacon.TailwindCompiler,
+               css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
                authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource,
                live_socket_path: "/custom_live",
                safe_code_check: false,

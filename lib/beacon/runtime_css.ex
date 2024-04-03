@@ -1,9 +1,23 @@
 defmodule Beacon.RuntimeCSS do
   @moduledoc """
-  Runtime compilation and processing of CSS files.
+  Compiles the CSS for a site using the compiler defined in `Beacon.Config` `:css_compiler` option.
+
+  Beacon supports Tailwind by default implemented by `Beacon.RuntimeCSS.TailwindCompiler`,
+  you can use that module as template to implement any ther CSS engine as needed.
+
   """
 
+  @doc """
+  Returns the CSS compiler config.
+
+  For Tailwind that would be the content of the tailwind config file,
+  or return an empty string `""` if the provided engine doesn't have a config file.
+  """
   @callback config(Beacon.Types.Site.t()) :: String.t()
+
+  @doc """
+  Executes the compilation to generate the CSS for the site using the provided `:css_compiler` in `Beacon.Config`.
+  """
   @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
 
   @doc false

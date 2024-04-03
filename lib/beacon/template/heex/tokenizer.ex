@@ -2,6 +2,8 @@
 # It's a copy from https://github.com/phoenixframework/phoenix_live_view/blob/d0e46f5430d113269b8903a8b45b025d77532429/lib/phoenix_live_view/html_formatter.ex
 
 defmodule Beacon.Template.HEEx.Tokenizer do
+  @moduledoc false
+
   # alias Phoenix.LiveView.Tokenizer
   # TODO: use LiveView 0.20+ tokenizer
   alias Beacon.Template.HEEx.LVTokenizer, as: Tokenizer

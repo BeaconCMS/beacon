@@ -147,6 +147,7 @@ defmodule Beacon.MixProject do
           Beacon.MediaLibrary.UploadMetadata
         ],
         "Authn and Authz": [
+          Beacon.Authorization,
           Beacon.Authorization.Policy,
           Beacon.Authorization.DefaultPolicy
         ],
@@ -161,9 +162,10 @@ defmodule Beacon.MixProject do
         Extensibility: [
           Beacon.Config,
           Beacon.Lifecycle,
-          Beacon.Content.PageField,
           Beacon.Template.LoadMetadata,
-          Beacon.Template.RenderMetadata
+          Beacon.Template.RenderMetadata,
+          Beacon.Content.PageField,
+          Beacon.MediaLibrary.AssetField
         ],
         Execution: [
           Beacon.Router,
@@ -171,17 +173,19 @@ defmodule Beacon.MixProject do
           Beacon.Registry,
           Beacon.RuntimeCSS,
           Beacon.RuntimeJS,
-          Beacon.TailwindCompiler
+          Beacon.RuntimeCSS.TailwindCompiler
         ],
         Types: [
           Beacon.Types.Atom,
           Beacon.Types.Binary,
-          Beacon.Types.Site
+          Beacon.Types.Site,
+          Beacon.Types.JsonArrayMap
         ],
         Exceptions: [
           Beacon.LoaderError,
           Beacon.AuthorizationError,
           Beacon.ParserError,
+          Beacon.SnippetError,
           BeaconWeb.NotFoundError
         ]
       ],

@@ -1,10 +1,23 @@
 defmodule Beacon do
   @moduledoc """
-  Beacon is Content Management System built on top of Phoenix LiveView that is focused on:
+  Beacon is a Content Management System built on top of Phoenix LiveView, focused on:
 
-  * Fast rendering to boost SEO scores.
-  * Reloading resources at runtime to avoid deployments.
-  * Seamless integration with existing applications.
+  * Rendering pages fast.
+  * Reloading content at runtime.
+  * Reduced resources usage and scalability.
+  * Integration with existing Phoenix applications.
+
+  You can build virtually any type of website with Beacon, from a simple blog to a complex business site.
+
+  Following are the main APIs provided by Beacon. You can find out more information on each module.
+
+  * `Beacon.Config` - configuration of sites.
+  * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
+  * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
+  * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
+  * `Beacon.Authorization` - define permissions to limit access to content and features, also used on Beacon LiveAdmin.
+
+  Follow along with [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started now and build your first site.
 
   """
 
@@ -16,13 +29,15 @@ defmodule Beacon do
   Start `Beacon` and a supervisor for each site, which will load all layouts, pages, components, and so on.
 
   You must include the `Beacon` supervisor on each application that you want it loaded. For a single Phoenix application
-  that would the in the `children` list on the file `lib/my_app/application.ex`. For Umbrella apps you can have
+  that would go in the `children` list on the file `lib/my_app/application.ex`. For Umbrella apps you can have
   multiple apps running Beacon, suppose your project has 3 apps: core (regular app), blog (phoenix app), and marketing (phoenix app)
   and you want to load one Beacon instance on each Phoenix app, so you would include `Beacon` in the list of `children` applications
-  in both blog and marketing application with their own `:sites` configuration.
+  in both blog and marketing applications with their own `:sites` configuration.
 
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
-  flexibility to plan your architecture from simple to complex environments.
+  flexibility to plan your architecture from simple to complex environments. For example, you can have a single site
+  serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
+  campaing that may receive too much traffic.
 
   ## Options
 
@@ -42,14 +57,13 @@ defmodule Beacon do
         children = [
           MyApp.Repo,
           {Phoenix.PubSub, name: MyApp.PubSub},
-          {Beacon, Application.fetch_env!(:my_app, Beacon)},
+          {Beacon, Application.fetch_env!(:my_app, Beacon)}, # <- added Beacon here
           MyAppWeb.Endpoint
         ]
 
         opts = [strategy: :one_for_one, name: MyApp.Supervisor]
         Supervisor.start_link(children, opts)
       end
-
 
   """
   def start_link(opts) when is_list(opts) do
@@ -89,11 +103,20 @@ defmodule Beacon do
   end
 
   @doc """
-  Boot a site, populating default data, the router, and loading modules.
+  Boot a site executing the initial data population and resources loading.
 
-  This function is called by the site supervisor, and should not be called directly most of the times,
-  it's useful to seed data where you need to start the Repo but not boot the entire site,
-  and also useful on test environments.
+  It will populate default content data and routes in the router table,
+  enable PubSub events broadcasting, and load resource modules for layouts, pages, and others.
+
+  This function is called by the site supervisor when a site is started and should not be called directly most of the times,
+  but in some scenarions, you want to start Beacon and all related process like the Repo without actually booting the site,
+  for example to seed initial data and in tests.
+
+  In those scenarios you'd define the config `skip_boot?` to `true` in your site configuration,
+  execute everything you need and then call `Beacon.boot/1` to finally boot the site if necessary.
+
+  Note that calling this function will update the running `site` config `skip_boot?` to `false` automatically after the site gets booted,
+  so all PubSub events necessary for Beacon to work properly are broadcasted as expected.
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) do

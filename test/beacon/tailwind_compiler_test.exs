@@ -1,9 +1,9 @@
-defmodule Beacon.TailwindCompilerTest do
+defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   use Beacon.DataCase, async: false
 
   import ExUnit.CaptureIO
   import Beacon.Fixtures
-  alias Beacon.TailwindCompiler
+  alias Beacon.RuntimeCSS.TailwindCompiler
 
   @site :my_site
 
