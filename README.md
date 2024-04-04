@@ -9,7 +9,6 @@ Beacon is a content management system (CMS) built with Phoenix LiveView. It brin
 Check out the [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started:
 
 * [Installation](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/installation.md) to get your first site up and running
-* [API](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/api.md) to enable the Beacon API
 * [Deployment on Fly.io](https://github.com/BeaconCMS/beacon/blob/main/guides/deployment/fly.md) to deploy your site on Fly.io
 
 ## Demo
@@ -23,7 +22,7 @@ Pre-release version. You can expect incomplete features and breaking changes bef
 Main components:
 - Core - A functional website can be built and deployed by inserting components in database and running a server, see https://github.com/BeaconCMS/beacon_demo
 - Admin - LiveView UI to manage layouts, pages, and all other resources. See https://github.com/BeaconCMS/beacon_live_admin
-- Page Builder - An easy to use, drag & drop UI for building pages, targeted to non-technical users. Not released yet, in the initial stages of development.
+- Page Builder - An easy to use, drag & drop UI for building pages, targeted to non-technical users. In the initial stages of development.
 
 ## Contributing
 

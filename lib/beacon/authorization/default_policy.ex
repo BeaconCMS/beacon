@@ -1,8 +1,9 @@
 defmodule Beacon.Authorization.DefaultPolicy do
   @moduledoc """
-  Provide a simple authorization policy that allows every operation for any agent.
+  Provides a simple authorization policy that allows every operation for any agent.
 
-  That's the default policy used when no other is defined.
+  That's the default policy used when no other is defined,
+  see `Beacon.Authorization.Policy` for more information.
   """
 
   @behaviour Beacon.Authorization.Policy

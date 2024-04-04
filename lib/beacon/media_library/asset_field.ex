@@ -112,7 +112,7 @@ defmodule Beacon.MediaLibrary.AssetField do
 
     Enum.reduce(mods, %{}, fn mod, acc ->
       name = mod.name()
-      default = if Beacon.Loader.exported?(mod, :default, 0), do: mod.default(), else: nil
+      default = if Beacon.exported?(mod, :default, 0), do: mod.default(), else: nil
       value = Map.get(params, "#{name}", default)
       errors = Map.get(errors, name, [])
 

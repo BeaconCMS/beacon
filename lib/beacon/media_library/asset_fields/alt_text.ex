@@ -1,4 +1,6 @@
 defmodule Beacon.MediaLibrary.AssetFields.AltText do
+  @moduledoc false
+
   use Phoenix.Component
   import BeaconWeb.CoreComponents
   import Ecto.Changeset

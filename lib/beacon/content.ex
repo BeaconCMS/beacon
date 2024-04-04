@@ -25,6 +25,8 @@ defmodule Beacon.Content do
   """
   import Ecto.Query
 
+  use GenServer
+  require Logger
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
@@ -41,11 +43,45 @@ defmodule Beacon.Content do
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
-  alias Beacon.PubSub
   alias Beacon.Repo
   alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
+
+  @doc false
+  def name(site) do
+    Beacon.Registry.via({site, __MODULE__})
+  end
+
+  @doc false
+  def table_name(site) do
+    String.to_atom("beacon_content_#{site}")
+  end
+
+  @doc false
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: name(config.site))
+  end
+
+  @doc false
+  def init(config) do
+    :ets.new(table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
+    {:ok, config}
+  end
+
+  @doc false
+  def terminate(_reason, config) do
+    :ets.delete(table_name(config.site))
+    :ok
+  end
+
+  @doc false
+  def dump_cached_content(site) when is_atom(site) do
+    GenServer.call(name(site), :dump_cached_content)
+  end
+
+  defp maybe_broadcast_updated_content_event({:ok, %{site: site}}, resource_type), do: Beacon.PubSub.content_updated(site, resource_type)
+  defp maybe_broadcast_updated_content_event({:error, _}, _resource_type), do: :skip
 
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
@@ -146,26 +182,13 @@ defmodule Beacon.Content do
   Publishes `layout` and reload resources to render the updated layout and pages.
 
   Event + snapshot
+
+  This operation is serialized.
   """
   @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    publish = fn layout ->
-      changeset = Layout.changeset(layout, %{})
-
-      Repo.transact(fn ->
-        with {:ok, _changeset} <- validate_layout_template(changeset),
-             {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
-          {:ok, layout}
-        end
-      end)
-    end
-
-    with {:ok, layout} <- publish.(layout),
-         :ok <- PubSub.layout_published(layout) do
-      {:ok, layout}
-    end
+    GenServer.call(name(layout.site), {:publish_layout, layout})
   end
 
   @doc type: :layouts
@@ -347,22 +370,28 @@ defmodule Beacon.Content do
 
   @doc """
   Get latest published layout.
+
+  This operation is cached.
   """
   @doc type: :layouts
   @spec get_published_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
   def get_published_layout(site, layout_id) do
-    Repo.one(
-      from snapshot in LayoutSnapshot,
-        join: event in LayoutEvent,
-        on: snapshot.event_id == event.id,
-        preload: [event: event],
-        where: snapshot.site == ^site,
-        where: event.event == :published,
-        where: event.layout_id == ^layout_id and snapshot.layout_id == ^layout_id,
-        distinct: [asc: snapshot.layout_id],
-        order_by: [desc: snapshot.inserted_at]
-    )
-    |> extract_layout_snapshot()
+    get_fun = fn ->
+      Repo.one(
+        from snapshot in LayoutSnapshot,
+          join: event in LayoutEvent,
+          on: snapshot.event_id == event.id,
+          preload: [event: event],
+          where: snapshot.site == ^site,
+          where: event.event == :published,
+          where: event.layout_id == ^layout_id and snapshot.layout_id == ^layout_id,
+          distinct: [asc: snapshot.layout_id],
+          order_by: [desc: snapshot.inserted_at]
+      )
+      |> extract_layout_snapshot()
+    end
+
+    GenServer.call(name(site), {:fetch_cached_content, layout_id, get_fun})
   end
 
   defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
@@ -544,27 +573,13 @@ defmodule Beacon.Content do
   A new snapshot is automatically created to store the page data,
   which is used whenever the site or the page is reloaded. So you
   can keep editing the page as needed without impacting the published page.
+
+  This operation is serialized.
   """
   @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    publish = fn page ->
-      changeset = Page.update_changeset(page, %{})
-
-      Repo.transact(fn ->
-        with {:ok, _changeset} <- validate_page_template(changeset),
-             {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event),
-             %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
-          {:ok, page}
-        end
-      end)
-    end
-
-    with {:ok, page} <- publish.(page),
-         :ok <- PubSub.page_published(page) do
-      {:ok, page}
-    end
+    GenServer.call(name(page.site), {:publish_page, page})
   end
 
   @doc type: :pages
@@ -603,7 +618,7 @@ defmodule Beacon.Content do
       end)
       |> Enum.reject(&is_nil/1)
 
-    :ok = PubSub.pages_published(pages)
+    :ok = Beacon.PubSub.pages_published(pages)
     {:ok, pages}
   end
 
@@ -631,8 +646,7 @@ defmodule Beacon.Content do
   def unpublish_page(%Page{} = page) do
     Repo.transact(fn ->
       with {:ok, _event} <- create_page_event(page, "unpublished") do
-        # TODO: unload page
-        :ok = PubSub.page_unpublished(page)
+        :ok = Beacon.PubSub.page_unpublished(page)
         {:ok, page}
       end
     end)
@@ -841,45 +855,79 @@ defmodule Beacon.Content do
   only the latest status is valid.
 
   Pages are extracted from the latest published `Beacon.Content.PageSnapshot`.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:sort` - column in which the result will be ordered by.
+
   """
   @doc type: :pages
-  @spec list_published_pages(Site.t()) :: [Layout.t()]
-  def list_published_pages(site) do
+  @spec list_published_pages(Site.t(), keyword()) :: [Layout.t()]
+  def list_published_pages(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
+
+    site
+    |> query_list_published_pages_base()
+    |> query_list_published_pages_limit(per_page)
+    |> query_list_published_pages_offset(per_page, page)
+    |> Repo.all()
+    |> Enum.map(&extract_page_snapshot/1)
+  end
+
+  defp query_list_published_pages_base(site) do
     events =
       from event in PageEvent,
         where: event.site == ^site,
         distinct: [asc: event.page_id],
         order_by: fragment("inserted_at desc, case when event = 'published' then 0 else 1 end")
 
-    Repo.all(
-      from snapshot in PageSnapshot,
-        join: event in subquery(events),
-        on: snapshot.event_id == event.id,
-        where: snapshot.site == ^site
-    )
-    |> Enum.map(&extract_page_snapshot/1)
+    from snapshot in PageSnapshot,
+      join: event in subquery(events),
+      on: snapshot.event_id == event.id,
+      where: snapshot.site == ^site,
+      order_by: [desc: snapshot.inserted_at]
   end
+
+  defp query_list_published_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_published_pages_limit(query, :infinity = _limit), do: query
+  defp query_list_published_pages_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_published_pages_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_published_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
   @doc """
   Get latest published page.
+
+  This operation is cached.
   """
   @doc type: :pages
   @spec get_published_page(Site.t(), Ecto.UUID.t()) :: Page.t() | nil
   def get_published_page(site, page_id) do
-    events =
-      from event in PageEvent,
-        where: event.site == ^site,
-        where: event.page_id == ^page_id,
-        distinct: [asc: event.page_id],
-        order_by: [desc: event.inserted_at]
+    get_fun = fn ->
+      events =
+        from event in PageEvent,
+          where: event.site == ^site,
+          where: event.page_id == ^page_id,
+          distinct: [asc: event.page_id],
+          order_by: [desc: event.inserted_at]
 
-    Repo.one(
-      from snapshot in PageSnapshot,
-        join: event in subquery(events),
-        on: snapshot.event_id == event.id,
-        where: snapshot.site == ^site
-    )
-    |> extract_page_snapshot()
+      Repo.one(
+        from snapshot in PageSnapshot,
+          join: event in subquery(events),
+          on: snapshot.event_id == event.id,
+          where: snapshot.site == ^site
+      )
+      |> extract_page_snapshot()
+    end
+
+    GenServer.call(name(site), {:fetch_cached_content, page_id, get_fun})
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
@@ -940,6 +988,7 @@ defmodule Beacon.Content do
     %Stylesheet{}
     |> Stylesheet.changeset(attrs)
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
   @doc type: :stylesheets
@@ -965,6 +1014,7 @@ defmodule Beacon.Content do
     stylesheet
     |> Stylesheet.changeset(attrs)
     |> Repo.update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
   @doc """
@@ -1547,6 +1597,7 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
   @doc type: :components
@@ -1571,11 +1622,8 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.update()
-    |> tap(&maybe_reload_component/1)
+    |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
-
-  def maybe_reload_component({:ok, component}), do: PubSub.component_updated(component)
-  def maybe_reload_component({:error, _component}), do: :noop
 
   defp validate_component_body(changeset) do
     site = Changeset.get_field(changeset, :site)
@@ -1685,6 +1733,7 @@ defmodule Beacon.Content do
     |> Changeset.validate_required([:site, :name, :body])
     |> Changeset.unique_constraint([:site, :name])
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
   end
 
   @doc type: :snippets
@@ -1903,6 +1952,7 @@ defmodule Beacon.Content do
     %ErrorPage{}
     |> ErrorPage.changeset(attrs)
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
 
   @doc """
@@ -1941,11 +1991,8 @@ defmodule Beacon.Content do
     error_page
     |> ErrorPage.changeset(attrs)
     |> Repo.update()
-    |> tap(&maybe_reload_error_page/1)
+    |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
-
-  def maybe_reload_error_page({:ok, error_page}), do: PubSub.error_page_updated(error_page)
-  def maybe_reload_error_page({:error, _error_page}), do: :noop
 
   @doc """
   Deletes an error page.
@@ -1983,6 +2030,7 @@ defmodule Beacon.Content do
       page
       |> Ecto.build_assoc(:event_handlers)
       |> PageEventHandler.changeset(attrs)
+      |> validate_page_event_handler(page)
 
     Repo.transact(fn ->
       with {:ok, %PageEventHandler{}} <- Repo.insert(changeset),
@@ -1999,7 +2047,10 @@ defmodule Beacon.Content do
   @doc type: :page_event_handlers
   @spec update_event_handler_for_page(Page.t(), PageEventHandler.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_event_handler_for_page(page, event_handler, attrs) do
-    changeset = PageEventHandler.changeset(event_handler, attrs)
+    changeset =
+      event_handler
+      |> PageEventHandler.changeset(attrs)
+      |> validate_page_event_handler(page)
 
     Repo.transact(fn ->
       with {:ok, %PageEventHandler{}} <- Repo.update(changeset),
@@ -2008,6 +2059,15 @@ defmodule Beacon.Content do
         {:ok, page}
       end
     end)
+  end
+
+  defp validate_page_event_handler(changeset, page) do
+    code = Changeset.get_field(changeset, :code)
+    metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
+    variable_names = ["socket", "event_params"]
+    imports = ["Phoenix.Socket"]
+
+    do_validate_template(changeset, :code, :elixir, code, metadata, variable_names, imports)
   end
 
   @doc """
@@ -2170,7 +2230,7 @@ defmodule Beacon.Content do
     %LiveData{}
     |> LiveData.changeset(attrs)
     |> Repo.insert()
-    |> tap(&maybe_reload_live_data/1)
+    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
   end
 
   @doc """
@@ -2199,7 +2259,7 @@ defmodule Beacon.Content do
     case Repo.insert(changeset) do
       {:ok, %LiveDataAssign{}} ->
         live_data = Repo.preload(live_data, :assigns, force: true)
-        maybe_reload_live_data({:ok, live_data})
+        maybe_broadcast_updated_content_event({:ok, live_data}, :live_data)
         {:ok, live_data}
 
       {:error, changeset} ->
@@ -2290,7 +2350,7 @@ defmodule Beacon.Content do
     live_data
     |> LiveData.path_changeset(%{path: path})
     |> Repo.update()
-    |> tap(&maybe_reload_live_data/1)
+    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
   end
 
   @doc """
@@ -2308,20 +2368,34 @@ defmodule Beacon.Content do
     |> LiveDataAssign.changeset(attrs)
     |> validate_live_data_code()
     |> Repo.update()
-    |> tap(&maybe_reload_live_data/1)
+    |> tap(fn
+      {:ok, live_data_assign} -> maybe_broadcast_updated_content_event({:ok, live_data_assign.live_data}, :live_data)
+      _error -> :skip
+    end)
   end
 
   defp validate_live_data_code(changeset) do
     site = Changeset.get_field(changeset, :site)
     value = Changeset.get_field(changeset, :value)
     format = Changeset.get_field(changeset, :format)
-    path = Changeset.get_field(changeset, :live_data).path
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :value, format, value, metadata, path)
+
+    variable_names =
+      changeset
+      |> Changeset.get_field(:live_data)
+      |> Map.fetch!(:path)
+      |> vars_from_path()
+      |> List.insert_at(0, "params")
+
+    do_validate_template(changeset, :value, format, value, metadata, variable_names)
   end
 
-  def maybe_reload_live_data({:ok, live_data}), do: PubSub.live_data_updated(live_data)
-  def maybe_reload_live_data({:error, _live_data}), do: :noop
+  defp vars_from_path(path) do
+    path
+    |> String.split("/")
+    |> Enum.filter(&String.starts_with?(&1, ":"))
+    |> Enum.map(&String.slice(&1, 1..-1//1))
+  end
 
   @doc """
   Deletes LiveData.
@@ -2343,13 +2417,13 @@ defmodule Beacon.Content do
 
   ## Utils
 
-  defp do_validate_template(changeset, field, format, template, metadata, path \\ "")
+  defp do_validate_template(changeset, field, format, template, metadata, vars \\ [], imports \\ [])
 
-  defp do_validate_template(changeset, field, _format, nil = _template, _metadata, _path) do
+  defp do_validate_template(changeset, field, _format, nil = _template, _metadata, _, _) do
     Changeset.add_error(changeset, field, "can't be blank", compilation_error: nil)
   end
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _path) when is_binary(template) do
+  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
         {:ok, _ast} -> []
@@ -2359,7 +2433,7 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp do_validate_template(changeset, field, :markdown = _format, template, metadata, _path) when is_binary(template) do
+  defp do_validate_template(changeset, field, :markdown = _format, template, metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.Markdown.convert_to_html(template, metadata) do
         {:cont, _template} -> []
@@ -2368,32 +2442,28 @@ defmodule Beacon.Content do
     end)
   end
 
-  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata, path) when is_binary(code) do
+  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata, vars, imports) when is_binary(code) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case validate_elixir_code(template, path) do
+      case validate_elixir_code(template, vars, imports) do
         :ok -> []
         {:error, reason, message} -> [{field, {reason, compilation_error: message}}]
       end
     end)
   end
 
-  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _path), do: changeset
+  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _, _), do: changeset
 
   # TODO: expose template validation to custom template formats defined by users
-  defp do_validate_template(changeset, _field, _format, _template, _metadata, _path), do: changeset
+  defp do_validate_template(changeset, _field, _format, _template, _metadata, _, _), do: changeset
 
-  defp validate_elixir_code(code, path) do
+  defp validate_elixir_code(code, vars, imports) do
     Application.put_env(:elixir, :ansi_enabled, false)
 
-    vars =
-      path
-      |> String.split("/")
-      |> Enum.filter(&String.starts_with?(&1, ":"))
-      |> Enum.map(&String.slice(&1, 1..-1//1))
-      |> List.insert_at(0, "params")
-      |> Enum.join(", ")
-
-    full_code = "fn #{vars} ->\n" <> code <> "\nend"
+    full_code =
+      "fn #{Enum.join(vars, ", ")} ->\n" <>
+        Enum.map_join(imports, &"  import #{&1}\n") <>
+        code <>
+        "\nend"
 
     {compilation, diagnostics} =
       with_diagnostics(fn ->
@@ -2441,5 +2511,96 @@ defmodule Beacon.Content do
         :erlang.put(:elixir_code_diagnostics, value)
       end
     end
+  end
+
+  @doc false
+  def handle_call({:publish_page, page}, _from, config) do
+    %{site: site} = config
+
+    publish = fn page ->
+      changeset = Page.update_changeset(page, %{})
+
+      Repo.transact(fn ->
+        with {:ok, _changeset} <- validate_page_template(changeset),
+             {:ok, event} <- create_page_event(page, "published"),
+             {:ok, _snapshot} <- create_page_snapshot(page, event),
+             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
+             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
+             true <- :ets.delete(table_name(site), page.id) do
+          {:ok, page}
+        end
+      end)
+    end
+
+    with {:ok, page} <- publish.(page),
+         :ok <- Beacon.PubSub.page_published(page) do
+      {:reply, {:ok, page}, config}
+    else
+      error -> {:reply, error, config}
+    end
+  end
+
+  @doc false
+  def handle_call({:publish_layout, layout}, _from, config) do
+    %{site: site} = config
+
+    publish = fn layout ->
+      changeset = Layout.changeset(layout, %{})
+
+      Repo.transact(fn ->
+        with {:ok, _changeset} <- validate_layout_template(changeset),
+             {:ok, event} <- create_layout_event(layout, "published"),
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
+             true <- :ets.delete(table_name(site), layout.id) do
+          {:ok, layout}
+        end
+      end)
+    end
+
+    with {:ok, layout} <- publish.(layout),
+         :ok <- Beacon.PubSub.layout_published(layout) do
+      {:reply, {:ok, layout}, config}
+    else
+      error -> {:reply, error, config}
+    end
+  end
+
+  @doc false
+  def handle_call({:fetch_cached_content, id, fun}, _from, config) do
+    %{site: site} = config
+    match = {id, :_}
+    guards = []
+    body = [:"$_"]
+
+    cache = fn id, fun ->
+      case fun.() do
+        nil ->
+          nil
+
+        content ->
+          :ets.insert(table_name(site), {id, content})
+          content
+      end
+    end
+
+    content =
+      case :ets.select(table_name(site), [{match, guards, body}]) do
+        [{_id, content}] -> content
+        _ -> cache.(id, fun)
+      end
+
+    {:reply, content, config}
+  end
+
+  @doc false
+  def handle_call(:dump_cached_content, _from, config) do
+    content = config.site |> table_name() |> :ets.match(:"$1") |> List.flatten()
+    {:reply, content, config}
+  end
+
+  @doc false
+  def handle_info(msg, config) do
+    Logger.warning("Beacon.Content can not handle the message: #{inspect(msg)}")
+    {:noreply, config}
   end
 end

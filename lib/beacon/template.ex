@@ -48,14 +48,23 @@ defmodule Beacon.Template do
   # this function is used only for debugging HEEx templates
   # it is NOT supposed to be used to render templates
   def __render__(site, path_list) when is_list(path_list) do
-    case Beacon.Router.lookup_path(site, path_list) do
-      {{^site, path}, {page_id, _layout_id, format, page_module, component_module}} ->
-        assigns = %{__changed__: %{}, __live_path__: [], __beacon_page_module__: page_module, __beacon_component_module__: component_module}
-        page = %Beacon.Content.Page{id: page_id, site: site, path: path, format: format}
-        Beacon.Lifecycle.Template.render_template(page, page_module, assigns, BeaconWeb.PageLive.make_env())
+    raise_not_found = fn -> raise BeaconWeb.NotFoundError, "could not find page #{inspect(path_list)} for site #{site}" end
+
+    case Beacon.RouterServer.lookup_path(site, path_list) do
+      {_path, page_id} ->
+        page =
+          case Beacon.Content.get_published_page(site, page_id) do
+            nil -> raise_not_found.()
+            page -> page
+          end
+
+        components_module = Beacon.Loader.fetch_components_module(site)
+        page_module = Beacon.Loader.fetch_page_module(site, page_id)
+        assigns = %{__changed__: %{}, __live_path__: [], __beacon_page_module__: page_module, __beacon_component_module__: components_module}
+        Beacon.Lifecycle.Template.render_template(page, assigns, BeaconWeb.PageLive.make_env())
 
       _ ->
-        raise BeaconWeb.NotFoundError, "page not found: #{inspect(path_list)}"
+        raise_not_found.()
     end
   end
 

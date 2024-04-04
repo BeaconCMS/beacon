@@ -1,4 +1,4 @@
-defmodule Beacon.Loader.SafeCodeImpl do
+defmodule Beacon.SafeCodeImpl do
   @moduledoc false
 
   @behaviour SafeCode.Validator.FunctionValidators.Behaviour
