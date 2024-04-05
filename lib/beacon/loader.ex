@@ -220,7 +220,7 @@ defmodule Beacon.Loader do
   # TODO: replace my_component in favor of https://github.com/BeaconCMS/beacon/issues/84
   @doc false
   def load_components(site) do
-    ComponentModuleLoader.load_components(site, Content.list_components(site, per_page: :infinity))
+    ComponentModuleLoader.load_components(site, Content.list_components(site, per_page: :infinity, preloads: [:attrs]))
     :ok
   end
 

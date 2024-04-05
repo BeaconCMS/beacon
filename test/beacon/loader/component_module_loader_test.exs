@@ -136,4 +136,17 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
 
     assert render(mod.user_info(%{user: %{name: "Joe", age: 20}})) == "<h1>User info:</h1>\n<p>name: Joe</p><p>age: 20</p>"
   end
+
+  test "load component with struct attrs" do
+    component_fixture(
+      name: "render_component_site",
+      body: "<h1>Component site: <%= @component.site %></h1>",
+      attrs: [%{name: "component", type: "Beacon.Content.Component"}]
+    )
+
+    components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+
+    {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+    assert render(mod.render_component_site(%{component: %Beacon.Content.Component{site: :dy}})) == "<h1>Component site: dy</h1>"
+  end
 end

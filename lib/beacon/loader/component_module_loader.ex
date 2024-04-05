@@ -8,6 +8,8 @@ defmodule Beacon.Loader.ComponentModuleLoader do
   alias Beacon.Content
   alias Beacon.Loader
 
+  @supported_component_types [:any, :atom, :boolean, :float, :global, :integer, :list, :map, :string]
+
   # TODO: remove this guard, it should generate an empty module
   def load_components(_site, [] = _components) do
     :skip
@@ -51,12 +53,12 @@ defmodule Beacon.Loader.ComponentModuleLoader do
     end
   end
 
-  defp function_component(%Content.Component{site: site, name: name, body: body} = component) do
+  defp function_component(%Content.Component{name: name} = component) do
     quote do
       unquote_splicing(
         for component_attr <- component.attrs do
           quote do
-            attr.(unquote(String.to_atom(component_attr.name)), unquote(String.to_atom(component_attr.type)), doc: "hello")
+            attr.(unquote(String.to_atom(component_attr.name)), unquote(convert_component_type(component_attr.type)), doc: "hello")
           end
         end
       )
@@ -66,6 +68,15 @@ defmodule Beacon.Loader.ComponentModuleLoader do
       end
     end
   end
+
+  def convert_component_type(component_type) do
+    component_type
+    |> String.to_atom()
+    |> maybe_convert_to_struct_type()
+  end
+
+  def maybe_convert_to_struct_type(component_type) when component_type in @supported_component_types, do: component_type
+  def maybe_convert_to_struct_type(component_type), do: Module.concat([component_type])
 
   defp compile_body(%Content.Component{site: site, name: name, body: body}) do
     file = "site-#{site}-component-#{name}"
