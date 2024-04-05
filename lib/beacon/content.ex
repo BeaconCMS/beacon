@@ -366,6 +366,25 @@ defmodule Beacon.Content do
   defp query_list_layouts_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """
+  Counts the total number of layouts based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :layouts
+  @spec count_layouts(Site.t(), keyword()) :: non_neg_integer()
+  def count_layouts(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_layouts_base()
+    |> query_list_layouts_search(search)
+    |> select([q], count(q.id))
+    |> Repo.one()
+  end
+
+  @doc """
   Returns all published layouts for `site`.
 
   Layouts are extracted from the latest published `Beacon.Content.LayoutSnapshot`.
