@@ -6,7 +6,7 @@ defmodule Beacon.Repo.Migrations.CreateBeaconComponentAttrs do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :type, :string, null: false
-      add :opts, {:array, :map}, default: []
+      add :opts, :binary
 
       add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id),
         null: false

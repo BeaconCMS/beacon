@@ -149,4 +149,43 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
     {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
     assert render(mod.render_component_site(%{component: %Beacon.Content.Component{site: :dy}})) == "<h1>Component site: dy</h1>"
   end
+
+  describe "function component options" do
+    test "load component with options: required and default" do
+      component_fixture(
+        name: "say_hello",
+        body: "<h1>Hello <%= @first_name %> <%= @last_name %></h1>",
+        attrs: [
+          %{name: "first_name", type: "string", opts: [required: true]},
+          %{name: "last_name", type: "string", opts: [default: "Doe"]}
+        ]
+      )
+
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+
+      {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+      assert render(mod.say_hello(%{first_name: "Jane"})) == "<h1>Hello Jane Doe</h1>"
+      assert render(mod.say_hello(%{first_name: "Jane", last_name: "Foo Bar"})) == "<h1>Hello Jane Foo Bar</h1>"
+
+      assert_raise KeyError, "key :first_name not found in: %{last_name: \"Doe\", __given__: %{}}", fn ->
+        render(mod.say_hello(%{}))
+      end
+    end
+
+    test "load component with options: values and doc" do
+      component_fixture(
+        name: "error_message",
+        body: "<h1 class={@kind}>Failed Operation</h1>",
+        attrs: [
+          %{name: "kind", type: "atom", opts: [values: [:info, :error], doc: "test function component doc"]}
+        ]
+      )
+
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+
+      {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+      assert render(mod.error_message(%{kind: :info})) == "<h1 class=\"info\">Failed Operation</h1>"
+      assert render(mod.error_message(%{kind: :error})) == "<h1 class=\"error\">Failed Operation</h1>"
+    end
+  end
 end

@@ -58,7 +58,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
       unquote_splicing(
         for component_attr <- component.attrs do
           quote do
-            attr.(unquote(String.to_atom(component_attr.name)), unquote(convert_component_type(component_attr.type)), doc: "hello")
+            attr.(unquote(String.to_atom(component_attr.name)), unquote(convert_component_type(component_attr.type)), unquote(component_attr.opts))
           end
         end
       )

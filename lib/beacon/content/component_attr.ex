@@ -12,7 +12,7 @@ defmodule Beacon.Content.ComponentAttr do
   schema "beacon_component_attrs" do
     field :name, :string
     field :type, :string
-    field :opts, Beacon.Types.JsonArrayMap, default: []
+    field :opts, Beacon.Types.Binary, default: []
 
     belongs_to :component, Component
 
