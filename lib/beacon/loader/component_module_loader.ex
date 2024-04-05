@@ -63,6 +63,14 @@ defmodule Beacon.Loader.ComponentModuleLoader do
         end
       )
 
+      unquote_splicing(
+        for component_slot <- component.slots do
+          quote do
+            slot.(unquote(String.to_atom(component_slot.name)), unquote(component_slot.opts))
+          end
+        end
+      )
+
       def unquote(String.to_atom(name))(var!(assigns)) do
         unquote(compile_body(component))
       end

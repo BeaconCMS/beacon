@@ -35,7 +35,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
 
   test "load component without attrs" do
     component_fixture(name: "hello", body: "<h1>Hello</h1>")
-    components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+    components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
     {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
     assert render(mod.hello(%{})) == "<h1>Hello</h1>"
@@ -49,7 +49,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "first_name", type: "string"}, %{name: "last_name", type: "string"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.say_hello(%{first_name: "José", last_name: "Valim"})) == "<h1>Hello José Valim</h1>"
@@ -65,7 +65,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "first_name", type: "string"}, %{name: "ask_question?", type: "boolean"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.say_hello(%{first_name: "José", ask_question?: true})) == "<h1>Hello José</h1>\n<h2>What's up?</h2>"
@@ -82,7 +82,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "erl_version", type: "integer"}, %{name: "elixir_version", type: "float"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.show_versions(%{erl_version: 26, elixir_version: 1.16})) == "<p>Erlang version: 26</p>\n<p>Elixir version: 1.16</p>"
@@ -95,7 +95,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "greeting", type: "atom"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.say_hello(%{greeting: :hello})) == "<p>hello!</p>"
@@ -113,7 +113,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "langs", type: "list"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
 
@@ -131,7 +131,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "user", type: "map"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
 
@@ -145,7 +145,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "component", type: "Beacon.Content.Component"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.render_component_site(%{component: %Beacon.Content.Component{site: :dy}})) == "<h1>Component site: dy</h1>"
@@ -158,7 +158,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "first_name", type: "string"}, %{name: "fn_last_name", type: "any"}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.say_hello(%{first_name: "José", fn_last_name: fn x -> "FnValim #{x}" end})) == "<h1>Hello José FnValim test</h1>"
@@ -176,13 +176,13 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         ]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.say_hello(%{first_name: "Jane"})) == "<h1>Hello Jane Doe</h1>"
       assert render(mod.say_hello(%{first_name: "Jane", last_name: "Foo Bar"})) == "<h1>Hello Jane Foo Bar</h1>"
 
-      assert_raise KeyError, "key :first_name not found in: %{last_name: \"Doe\", __given__: %{}}", fn ->
+      assert_raise KeyError, ~r/^key :first_name not found in:/, fn ->
         render(mod.say_hello(%{}))
       end
     end
@@ -196,11 +196,49 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         ]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.error_message(%{kind: :info})) == "<h1 class=\"info\">Failed Operation</h1>"
       assert render(mod.error_message(%{kind: :error})) == "<h1 class=\"error\">Failed Operation</h1>"
+    end
+  end
+
+  describe "slots" do
+    test "load component with slots" do
+      component_fixture(
+        name: "modal",
+        body: """
+        <div class="modal">
+          <div class="modal-header">
+            <%= render_slot(@header) || "Modal" %>
+          </div>
+          <div class="modal-body">
+            <%= render_slot(@inner_block) %>
+          </div>
+          <div class="modal-footer">
+            <%= render_slot(@footer) %>
+          </div>
+        </div>
+        """,
+        slots: [
+          %{name: "header"},
+          %{name: "inner_block", opts: [required: true]},
+          %{name: "footer", opts: [required: true]}
+        ]
+      )
+
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
+
+      {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+
+      assert render(
+               mod.modal(%{
+                 inner_block: %{inner_block: fn _, _ -> "This is the body, everything not in a named slot is rendered in the default slot." end},
+                 footer: %{inner_block: fn _, _ -> "This is the bottom of the modal." end}
+               })
+             ) ==
+               "<div class=\"modal\">\n  <div class=\"modal-header\">\nModal\n  </div>\n  <div class=\"modal-body\">\nThis is the body, everything not in a named slot is rendered in the default slot.\n  </div>\n  <div class=\"modal-footer\">\nThis is the bottom of the modal.\n  </div>\n</div>"
     end
   end
 end

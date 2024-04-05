@@ -14,6 +14,7 @@ defmodule Beacon.Content.Component do
   use Beacon.Schema
 
   alias Beacon.Content.ComponentAttr
+  alias Beacon.Content.ComponentSlot
 
   @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
 
@@ -27,6 +28,7 @@ defmodule Beacon.Content.Component do
     field :thumbnail, :string
 
     has_many :attrs, ComponentAttr
+    has_many :slots, ComponentSlot
 
     timestamps()
   end
@@ -37,6 +39,7 @@ defmodule Beacon.Content.Component do
     |> cast(attrs, [:site, :name, :body, :category, :thumbnail])
     |> validate_required([:site, :name, :body, :category])
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
+    |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
   end
 
   def categories, do: @categories
