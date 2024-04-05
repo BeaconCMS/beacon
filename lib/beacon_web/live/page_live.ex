@@ -91,7 +91,7 @@ defmodule BeaconWeb.PageLive do
       |> assign(:__site__, site)
       |> assign(:__beacon_page_module__, page_module)
       |> assign(:__beacon_component_module__, components_module)
-      |> assign(:__beacon_page_params__, params)
+      |> assign(:beacon_query_params, params)
 
     socket =
       socket
