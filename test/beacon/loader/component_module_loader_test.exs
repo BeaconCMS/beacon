@@ -150,6 +150,19 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
       assert render(mod.render_component_site(%{component: %Beacon.Content.Component{site: :dy}})) == "<h1>Component site: dy</h1>"
     end
+
+    test "load component with function attr" do
+      component_fixture(
+        name: "say_hello",
+        body: "<h1>Hello <%= @first_name %> <%= @fn_last_name.('test') %></h1>",
+        attrs: [%{name: "first_name", type: "string"}, %{name: "fn_last_name", type: "any"}]
+      )
+
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs])
+
+      {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+      assert render(mod.say_hello(%{first_name: "José", fn_last_name: fn x -> "FnValim #{x}" end})) == "<h1>Hello José FnValim test</h1>"
+    end
   end
 
   describe "function component options" do
