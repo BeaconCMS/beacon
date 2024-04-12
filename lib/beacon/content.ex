@@ -344,7 +344,7 @@ defmodule Beacon.Content do
     |> Repo.all()
   end
 
-  defp query_list_layouts_base(site), do: from(l in Layout, where: l.site == ^site and is_nil(l.deleted_at))
+  defp query_list_layouts_base(site), do: from(l in Layout, where: l.site == ^site)
 
   defp query_list_layouts_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_layouts_limit(query, :infinity = _limit), do: query
@@ -357,7 +357,7 @@ defmodule Beacon.Content do
 
   defp query_list_layouts_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
-  defp query_list_layouts_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.file_name, ^"%#{search}%"))
+  defp query_list_layouts_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.title, ^"%#{search}%"))
   defp query_list_layouts_search(query, _search), do: query
 
   defp query_list_layouts_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)

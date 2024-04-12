@@ -96,6 +96,28 @@ defmodule Beacon.ContentTest do
 
       assert compilation_error =~ "expected closing `>`"
     end
+
+    test "page and per_page" do
+      layout_fixture(title: "first")
+      layout_fixture(title: "second")
+
+      assert [%Layout{title: "first"}] = Content.list_layouts(:my_site, per_page: 1, page: 1, sort: :title)
+      assert [%Layout{title: "second"}] = Content.list_layouts(:my_site, per_page: 1, page: 2, sort: :title)
+      assert [] = Content.list_layouts(:my_site, per_page: 2, page: 2, sort: :title)
+    end
+
+    test "no layouts return 0" do
+      assert Content.count_layouts(:my_site) == 0
+    end
+
+    test "filter by title" do
+      layout_fixture(title: "first")
+      layout_fixture(title: "second")
+
+      assert Content.count_layouts(:my_site, query: "first") == 1
+      assert Content.count_layouts(:my_site, query: "second") == 1
+      assert Content.count_layouts(:my_site, query: "third") == 0
+    end
   end
 
   describe "pages" do
