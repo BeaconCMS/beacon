@@ -205,7 +205,38 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
   end
 
   describe "slots" do
-    test "load component with slots" do
+    # same example as https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-the-default-slot
+    test "load component using the default slot" do
+      component_fixture(
+        name: "unordered_list",
+        body: """
+        <ul>
+          <%= for entry <- @entries do %>
+            <li><%= render_slot(@inner_block, entry) %></li>
+          <% end %>
+        </ul>
+        """,
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        attrs: [%{name: "entries", type: "list", opts: [default: []]}]
+      )
+
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
+
+      {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+
+      assert render(
+               mod.unordered_list(%{
+                 entries: ~w(apples bananas cherries),
+                 inner_block: [%{inner_block: fn _, fruit -> Phoenix.HTML.raw("I like <b>#{fruit}</b>!") end}]
+               })
+             ) ==
+               "<ul>\n\n    <li>I like <b>apples</b>!</li>\n\n    <li>I like <b>bananas</b>!</li>\n\n    <li>I like <b>cherries</b>!</li>\n\n</ul>"
+    end
+
+    # same example as https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-named-slots
+    test "load component using named slots" do
       component_fixture(
         name: "modal",
         body: """
