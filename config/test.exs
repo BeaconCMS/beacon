@@ -8,9 +8,8 @@ case System.get_env("DB_ADAPTER") do
   "mysql" ->
     config :beacon, Beacon.Repo,
       database: "beacon_test",
-      password: "mysql",
       pool: Ecto.Adapters.SQL.Sandbox,
-      username: "mysql",
+      username: "root",
       ownership_timeout: 1_000_000_000,
       port: 3306,
       protocol: :tcp,
