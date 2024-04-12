@@ -102,6 +102,7 @@ jobs:
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
       DB_ADAPTER: mysql
+      MYSQL_UNIX_PORT: 3306
 
     runs-on: ubuntu-20.04
 
