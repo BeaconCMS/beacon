@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
+  test-postgres:
+    name: "test: postgres 13.1 | OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
 
     strategy:
       matrix:
@@ -49,6 +49,134 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache mix deps
+        uses: actions/cache@v3
+        id: cache-deps
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+
+      - run: mix deps.get --only-test
+
+      - run: mix tailwind.install
+
+      - run: mix test
+
+  test-mysql:
+    name: "test: MySQL 5.7 | OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
+    
+    strategy:
+      matrix:
+        include:
+          # minimum required versions
+          - otp: "23"
+            elixir: "1.13.0"
+            phoenix-version: "1.7.0"
+            phoenix-live-view-version: "0.20.2"
+
+          # latest
+          - otp: "26"
+            elixir: "1.16"
+            phoenix-version: "~> 1.7"
+            phoenix-live-view-version: "~> 0.20"
+
+    env:
+      MIX_ENV: test
+      MDEX_BUILD: 1
+      PHOENIX_VERSION: ${{matrix.phoenix-version}}
+      PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+
+    runs-on: ubuntu-20.04
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: your-db_dev
+        ports:
+          - 3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache mix deps
+        uses: actions/cache@v3
+        id: cache-deps
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+
+      - run: mix deps.get --only-test
+
+      - run: mix tailwind.install
+
+      - run: mix test
+
+  test-mssql:
+    name: "test: MS SQL 2019 | OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
+
+    env:
+      MIX_ENV: test
+      MDEX_BUILD: 1
+      PHOENIX_VERSION: ${{matrix.phoenix-version}}
+      PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        include:
+          # minimum required versions
+          - otp: "23"
+            elixir: "1.13.0"
+            phoenix-version: "1.7.0"
+            phoenix-live-view-version: "0.20.2"
+          # latest
+          - otp: "26"
+            elixir: "1.16"
+            phoenix-version: "~> 1.7"
+            phoenix-live-view-version: "~> 0.20"
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: Beacon!CMS!!
 
     steps:
       - name: Checkout code
