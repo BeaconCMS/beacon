@@ -6,7 +6,15 @@ config :beacon, :generators, binary_id: true
 
 config :phoenix, :json_library, Jason
 
-config :beacon, Beacon.Repo, migration_timestamps: [type: :utc_datetime_usec]
+db_adapter = fn
+  "mysql" -> Ecto.Adapters.MyXQL
+  "mssql" -> Ecto.Adapters.Tds
+  _ -> Ecto.Adapters.Postgres
+end
+
+config :beacon, Beacon.Repo,
+  migration_timestamps: [type: :utc_datetime_usec],
+  adapter: db_adapter.(System.get_env("DB_ADAPTER"))
 
 if Mix.env() == :dev do
   esbuild = fn args ->

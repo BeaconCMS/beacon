@@ -159,6 +159,14 @@ For more details please check out the docs: `mix help beacon.install`
     show_sensitive_data_on_connection_error: true
     ```
 
+    If you are using MySQL or MS SQL Server, add either:
+    ```elixir
+    # for MySQL
+    adapter: Ecto.Adapters.MyXQL
+    # for MS SQL Server
+    adapter: Ecto.Adapters.Tds
+    ```
+
 3. Edit your endpoint configuration `:render_errors` key, like so:
 
 Replace the `[formats: [html: _]]` option with `BeaconWeb.ErrorHTML`.

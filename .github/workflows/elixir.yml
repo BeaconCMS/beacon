@@ -142,7 +142,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: mix test
+      - run: DB_ADAPTER=mysql mix test
 
   test-mssql:
     name: "test: MS SQL 2019 | OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
@@ -203,7 +203,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: mix test
+      - run: DB_ADAPTER=mssql mix test
 
   quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
