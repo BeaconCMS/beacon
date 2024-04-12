@@ -33,6 +33,7 @@ jobs:
       MDEX_BUILD: 1
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+      DB_ADAPTER: postgres
 
     runs-on: ubuntu-20.04
 
@@ -100,6 +101,7 @@ jobs:
       MDEX_BUILD: 1
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+      DB_ADAPTER: mysql
 
     runs-on: ubuntu-20.04
 
@@ -115,7 +117,7 @@ jobs:
           --health-cmd="mysqladmin ping"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -142,7 +144,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: DB_ADAPTER=mysql mix test
+      - run: mix test
 
   test-mssql:
     name: "test: MS SQL 2019 | OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
@@ -152,6 +154,7 @@ jobs:
       MDEX_BUILD: 1
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+      DB_ADAPTER: mssql
 
     runs-on: ubuntu-20.04
 
@@ -203,7 +206,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: DB_ADAPTER=mssql mix test
+      - run: mix test
 
   quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
