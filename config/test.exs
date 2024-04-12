@@ -4,31 +4,35 @@ config :phoenix, :json_library, Jason
 
 config :logger, level: :error
 
-db_port = fn
-  "mysql" -> 3306
-  "mssql" -> 1433
-  _ -> 5432
-end
+case System.get_env("DB_ADAPTER") do
+  "mysql" ->
+    config :beacon, Beacon.Repo,
+      database: "beacon_test",
+      password: "mysql",
+      pool: Ecto.Adapters.SQL.Sandbox,
+      username: "mysql",
+      ownership_timeout: 1_000_000_000,
+      port: 3306,
+      protocol: :tcp,
+      hostname: "localhost"
 
-username = fn
-  "mysql" -> nil
-  "mssql" -> nil
-  _ -> "postgres"
-end
+  "mssql" ->
+    config :beacon, Beacon.Repo,
+      database: "beacon_test",
+      password: "Beacon!CMS!!",
+      pool: Ecto.Adapters.SQL.Sandbox,
+      username: "mssql",
+      ownership_timeout: 1_000_000_000,
+      port: 1433
 
-password = fn
-  "mysql" -> nil
-  "mssql" -> "Beacon!CMS!!"
-  _ -> "postgres"
+  _ ->
+    config :beacon, Beacon.Repo,
+      database: "beacon_test",
+      password: "postgres",
+      pool: Ecto.Adapters.SQL.Sandbox,
+      username: "postgres",
+      ownership_timeout: 1_000_000_000
 end
-
-config :beacon, Beacon.Repo,
-  database: "beacon_test",
-  password: password.(System.get_env("DB_ADAPTER")),
-  pool: Ecto.Adapters.SQL.Sandbox,
-  username: username.(System.get_env("DB_ADAPTER")),
-  ownership_timeout: 1_000_000_000,
-  port: db_port.(System.get_env("DB_ADAPTER"))
 
 config :beacon, ecto_repos: [Beacon.Repo]
 
