@@ -108,7 +108,7 @@ jobs:
         image: mysql:5.7
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: your-db_dev
+          MYSQL_DATABASE: beacon_test
         ports:
           - 3306
         options: >-
