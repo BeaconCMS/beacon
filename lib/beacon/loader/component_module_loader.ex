@@ -35,7 +35,7 @@ defmodule Beacon.Loader.ComponentModuleLoader do
           Phoenix.Component.Declarative.__attr__!(__MODULE__, name, type, opts, __ENV__.line, __ENV__.file)
         end
 
-        slot = fn name, opts ->
+        slot = fn name, opts, block ->
           Phoenix.Component.Declarative.__slot__!(__MODULE__, name, opts, __ENV__.line, __ENV__.file, fn -> nil end)
         end
 
@@ -66,7 +66,16 @@ defmodule Beacon.Loader.ComponentModuleLoader do
       unquote_splicing(
         for component_slot <- component.slots do
           quote do
-            slot.(unquote(String.to_atom(component_slot.name)), unquote(component_slot.opts))
+            slot.(unquote(String.to_atom(component_slot.name)), unquote(component_slot.opts),
+              do:
+                unquote_splicing(
+                  for slot_attr <- component_slot.attrs do
+                    quote do
+                      attr.(unquote(String.to_atom(slot_attr.name)), unquote(convert_component_type(slot_attr.type)), unquote(slot_attr.opts))
+                    end
+                  end
+                )
+            )
           end
         end
       )

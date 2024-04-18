@@ -222,7 +222,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         attrs: [%{name: "entries", type: "list", opts: [default: []]}]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
 
@@ -259,7 +259,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
         ]
       )
 
-      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
 
@@ -270,6 +270,52 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
                })
              ) ==
                "<div class=\"modal\">\n  <div class=\"modal-header\">\nModal\n  </div>\n  <div class=\"modal-body\">\nThis is the body, everything not in a named slot is rendered in the default slot.\n  </div>\n  <div class=\"modal-footer\">\nThis is the bottom of the modal.\n  </div>\n</div>"
+    end
+
+    # same example as https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slot-attributes
+    test "load component using slot attributes" do
+      component_fixture(
+        name: "table",
+        body: """
+        <table>
+          <tr>
+            <%= for col <- @column do %>
+              <th><%= col.label %></th>
+            <% end %>
+          </tr>
+          <%= for row <- @rows do %>
+            <tr>
+              <%= for col <- @column do %>
+                <td><%= render_slot(col, row) %></td>
+              <% end %>
+            </tr>
+          <% end %>
+        </table>
+        """,
+        slots: [
+          %{
+            name: "column",
+            opts: [doc: "Columns with column labels"],
+            attrs: [%{name: "label", type: "string", opts: [required: true, doc: "Column label"]}]
+          }
+        ],
+        attrs: [%{name: "rows", type: "list", opts: [default: []]}]
+      )
+
+      components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
+
+      {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
+
+      assert render(
+               mod.table(%{
+                 rows: [%{name: "Jane", age: "34"}, %{name: "Bob", age: "51"}],
+                 column: [
+                   %{label: "Name", inner_block: fn _, user -> "#{user.name}" end},
+                   %{label: "Age", inner_block: fn _, user -> "#{user.age}" end}
+                 ]
+               })
+             ) ==
+               "<table>\n  <tr>\n\n      <th>Name</th>\n\n      <th>Age</th>\n\n  </tr>\n\n    <tr>\n\n        <td>Jane</td>\n\n        <td>34</td>\n\n    </tr>\n\n    <tr>\n\n        <td>Bob</td>\n\n        <td>51</td>\n\n    </tr>\n\n</table>"
     end
   end
 end
