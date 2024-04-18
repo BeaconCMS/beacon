@@ -68,8 +68,17 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
       components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
-      assert render(mod.say_hello(%{first_name: "José", ask_question?: true})) == "<h1>Hello José</h1>\n<h2>What's up?</h2>"
-      assert render(mod.say_hello(%{first_name: "José", ask_question?: false})) == "<h1>Hello José</h1>\n"
+
+      assert render(mod.say_hello(%{first_name: "José", ask_question?: true})) ==
+               """
+               <h1>Hello José</h1>
+               <h2>What's up?</h2>
+               """
+               |> String.replace_suffix("\n", "")
+
+      assert render(mod.say_hello(%{first_name: "José", ask_question?: false})) == """
+             <h1>Hello José</h1>
+             """
     end
 
     test "load component with integer attr" do
@@ -85,7 +94,13 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
       components = Content.list_components(@site, per_page: :infinity, preloads: [:attrs, :slots])
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
-      assert render(mod.show_versions(%{erl_version: 26, elixir_version: 1.16})) == "<p>Erlang version: 26</p>\n<p>Elixir version: 1.16</p>"
+
+      assert render(mod.show_versions(%{erl_version: 26, elixir_version: 1.16})) ==
+               """
+               <p>Erlang version: 26</p>
+               <p>Elixir version: 1.16</p>
+               """
+               |> String.replace_suffix("\n", "")
     end
 
     test "load component with atom attr" do
@@ -118,15 +133,20 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
 
       assert render(mod.advice(%{langs: ["Erlang", "Elixir", "Rust"]})) ==
-               "<p>Some good programming languages:</p>\n<ul>\n  <li>Erlang</li><li>Elixir</li><li>Rust</li>\n</ul>"
+               """
+               <p>Some good programming languages:</p>
+               <ul>
+                 <li>Erlang</li><li>Elixir</li><li>Rust</li>
+               </ul>
+               """
+               |> String.replace_suffix("\n", "")
     end
 
     test "load component with map attr" do
       component_fixture(
         name: "user_info",
         body: """
-        <h1>User info:</h1>
-        <p :for={{key, value} <- @user}><%= key %>: <%= value %></p>
+        <h1>User info:</h1><p :for={{key, value} <- @user}><%= key %>: <%= value %></p>
         """,
         attrs: [%{name: "user", type: "map"}]
       )
@@ -135,7 +155,7 @@ defmodule Beacon.Loader.ComponentModuleLoaderTest do
 
       {:ok, mod} = ComponentModuleLoader.load_components(@site, components)
 
-      assert render(mod.user_info(%{user: %{name: "Joe", age: 20}})) == "<h1>User info:</h1>\n<p>name: Joe</p><p>age: 20</p>"
+      assert render(mod.user_info(%{user: %{name: "Joe", age: 20}})) == "<h1>User info:</h1><p>name: Joe</p><p>age: 20</p>"
     end
 
     test "load component with struct attrs" do
