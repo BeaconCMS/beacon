@@ -433,6 +433,16 @@ defmodule Beacon.ContentTest do
       assert_receive :lifecycle_after_update_page
     end
 
+    test "create variant should validate invalid templates" do
+      page = page_fixture(%{format: :heex})
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.create_variant_for_page(page, attrs)
+
+      assert error =~ "unmatched closing tag"
+    end
+
     test "update variant OK" do
       page = page_fixture(%{format: :heex})
       variant = page_variant_fixture(%{page: page})
@@ -725,6 +735,28 @@ defmodule Beacon.ContentTest do
       assert %{key: "product_id", format: :elixir, value: "123"} = assign
     end
 
+    test "validate assign elixir code on create" do
+      live_data = live_data_fixture()
+
+      attrs = %{key: "foo", value: "[1)", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{key: "foo", value: "if true, do false", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected reserved word: do"
+
+      code = ~S|
+      id = String.to_integer(params["id"])
+      if id < 100, do: "less" <> "than", else: "100"
+      |
+
+      attrs = %{key: "foo", value: code, format: :elixir}
+      assert {:ok, _} = Content.create_assign_for_live_data(live_data, attrs)
+    end
+
     test "get_live_data/2" do
       live_data = live_data_fixture() |> Repo.preload(:assigns)
 
@@ -790,7 +822,7 @@ defmodule Beacon.ContentTest do
       assert updated_assign.format == :elixir
     end
 
-    test "validate assign elixir code" do
+    test "validate assign elixir code on update" do
       live_data = live_data_fixture()
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 

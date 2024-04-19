@@ -2255,6 +2255,7 @@ defmodule Beacon.Content do
     changeset =
       live_data
       |> Ecto.build_assoc(:assigns)
+      |> Map.put(:live_data, live_data)
       |> LiveDataAssign.changeset(attrs)
       |> validate_live_data_code()
 
