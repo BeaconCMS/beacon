@@ -44,6 +44,13 @@ defmodule Beacon.RouterServerTest do
       assert {"/posts/authors/:author_id", "2"} = RouterServer.lookup_path(:my_site, ["posts", "authors", "1"])
     end
 
+    test "static segments with varied size" do
+      RouterServer.add_page(:my_site, "1", "/blog/2020/01/07/hello")
+      refute RouterServer.lookup_path(:my_site, ["blog", "2020"])
+      refute RouterServer.lookup_path(:my_site, ["blog", "2020", "01", "07"])
+      refute RouterServer.lookup_path(:my_site, ["blog", "2020", "01", "07", "hello", "extra"])
+    end
+
     test "catch all" do
       RouterServer.add_page(:my_site, "1", "/posts/*slug")
 

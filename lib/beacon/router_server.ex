@@ -203,7 +203,8 @@ defmodule Beacon.RouterServer do
           is_nil(matching_segment) -> {:halt, {position, false}}
           String.starts_with?(matching_segment, "*") -> {:halt, {position, true}}
           String.starts_with?(matching_segment, ":") -> {:cont, {position + 1, true}}
-          segment == matching_segment -> {:cont, {position + 1, true}}
+          segment == matching_segment && position + 1 == page_path_length -> {:cont, {position + 1, true}}
+          segment == matching_segment -> {:cont, {position + 1, false}}
           :no_match -> {:halt, {position, false}}
         end
       end)
