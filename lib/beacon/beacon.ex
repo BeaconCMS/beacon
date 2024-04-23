@@ -143,11 +143,16 @@ defmodule Beacon do
   # and also raises with more context about the called mfa.
   #
   # This should always be used when calling dynamic modules
-  def apply_mfa(module, function, args, failure_count \\ 0) when is_atom(module) and is_atom(function) and is_list(args) do
+  def apply_mfa(module, function, args, opts \\ []) when is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
+    context = Keyword.get(opts, :context, nil)
+    do_apply_mfa(module, function, args, 0, context)
+  end
+
+  defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
     if :erlang.module_loaded(module) do
       apply(module, function, args)
     else
-      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded")
+      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context)
     end
   rescue
     e in UndefinedFunctionError ->
@@ -155,29 +160,39 @@ defmodule Beacon do
         {failure_count, _} when failure_count >= 10 ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries")], __STACKTRACE__
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context)], __STACKTRACE__
 
         {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
           :timer.sleep(100 * (failure_count * 2))
-          apply_mfa(module, function, args, failure_count + 1)
+          do_apply_mfa(module, function, args, failure_count + 1, context)
 
         {_, e} ->
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "runtime error - #{inspect(e)}")], __STACKTRACE__
+          reraise Beacon.RuntimeError,
+                  [message: apply_mfa_error_message(module, function, args, "runtime error - #{inspect(e)}", context)],
+                  __STACKTRACE__
       end
 
     e ->
-      reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, inspect(e))], __STACKTRACE__
+      reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, inspect(e), context)], __STACKTRACE__
   end
 
-  defp apply_mfa_error_message(module, function, args, reason) do
+  defp apply_mfa_error_message(module, function, args, reason, context) do
     mfa = Exception.format_mfa(module, function, length(args))
+
+    context =
+      case context do
+        nil -> ""
+        _ -> "context: #{inspect(context)}"
+      end
 
     """
     failed to call #{mfa} with args: #{inspect(List.flatten(args))}
 
     reason: #{reason}
+
+    #{context}
 
     Make sure you have created a page for this path.
     See Pages.create_page!/2 for more info.

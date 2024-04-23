@@ -58,7 +58,9 @@ defmodule BeaconWeb.PageLive do
 
   def handle_event(event_name, event_params, socket) do
     socket.assigns.__beacon_page_module__
-    |> Beacon.apply_mfa(:handle_event, [event_name, event_params, socket])
+    |> Beacon.apply_mfa(:handle_event, [event_name, event_params, socket],
+      context: %{site: socket.assigns[:__site__], page_id: socket.assigns[:__dynamic_page_id__], page_path: socket.assigns[:__live_path__]}
+    )
     |> case do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
         {:noreply, socket}
