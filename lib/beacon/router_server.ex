@@ -1,5 +1,6 @@
 defmodule Beacon.RouterServer do
   @moduledoc false
+  # credo:disable-for-this-file
 
   use GenServer
   require Logger
