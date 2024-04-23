@@ -1,6 +1,7 @@
 defmodule Beacon.Loader.Page do
   @moduledoc false
 
+  require Logger
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.Template.HEEx
@@ -161,9 +162,7 @@ defmodule Beacon.Loader.Page do
     end
   end
 
-  defp load_variants(page) do
-    %{variants: variants} = page
-
+  defp load_variants(%{variants: variants} = page) when is_list(variants) do
     for variant <- variants do
       page = %{page | template: variant.template}
       template = Lifecycle.Template.load_template(page)
@@ -176,6 +175,8 @@ defmodule Beacon.Loader.Page do
       ]
     end
   end
+
+  defp load_variants(page), do: raise(Beacon.LoaderError, message: "failed to load variants for page #{page.id} - #{page.path}")
 
   defp dynamic_helper do
     quote do
