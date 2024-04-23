@@ -1,15 +1,17 @@
 defmodule Beacon.LoaderError do
-  # Using `plug_status` for rendering this exception as 404 in production.
-  # More info: https://hexdocs.pm/phoenix/custom_error_pages.html#custom-exceptions
-  defexception message: "Error in Beacon.Loader", plug_status: 404
+  defexception message: "error in Beacon.Loader", plug_status: 404
+end
+
+defmodule Beacon.RuntimeError do
+  defexception message: "runtime error in Beacon", plug_status: 404
 end
 
 defmodule Beacon.AuthorizationError do
-  defexception message: "Error in Beacon.Authorization"
+  defexception message: "error in Beacon.Authorization"
 end
 
 defmodule Beacon.ParserError do
-  defexception message: "Error parsing template"
+  defexception message: "error parsing template"
 end
 
 defmodule Beacon.SnippetError do

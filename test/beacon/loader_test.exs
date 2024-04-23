@@ -71,7 +71,7 @@ defmodule Beacon.LoaderTest do
       Repo.delete_all(Content.Component)
       Loader.reload_components_module(@site)
 
-      assert_raise UndefinedFunctionError, fn ->
+      assert_raise Beacon.RuntimeError, fn ->
         module.my_component("a", %{})
       end
     end

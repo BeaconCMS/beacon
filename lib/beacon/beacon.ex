@@ -144,14 +144,18 @@ defmodule Beacon do
   #
   # This should always be used when calling dynamic modules
   def apply_mfa(module, function, args, failure_count \\ 0) when is_atom(module) and is_atom(function) and is_list(args) do
-    apply(module, function, args)
+    if :erlang.module_loaded(module) do
+      apply(module, function, args)
+    else
+      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded")
+    end
   rescue
     e in UndefinedFunctionError ->
       case {failure_count, e} do
-        {x, _} when x >= 10 ->
+        {failure_count, _} when failure_count >= 10 ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise e, __STACKTRACE__
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries")], __STACKTRACE__
 
         {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
           mfa = Exception.format_mfa(module, function, length(args))
@@ -159,25 +163,25 @@ defmodule Beacon do
           :timer.sleep(100 * (failure_count * 2))
           apply_mfa(module, function, args, failure_count + 1)
 
-        _ ->
-          reraise e, __STACKTRACE__
+        {_, e} ->
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "runtime error - #{inspect(e)}")], __STACKTRACE__
       end
 
-    _e in FunctionClauseError ->
-      mfa = Exception.format_mfa(module, function, length(args))
-
-      error_message = """
-      could not call #{mfa} for the given path: #{inspect(List.flatten(args))}.
-
-      Make sure you have created a page for this path.
-
-      See Pages.create_page!/2 for more info.
-      """
-
-      reraise Beacon.LoaderError, [message: error_message], __STACKTRACE__
-
     e ->
-      reraise e, __STACKTRACE__
+      reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, inspect(e))], __STACKTRACE__
+  end
+
+  defp apply_mfa_error_message(module, function, args, reason) do
+    mfa = Exception.format_mfa(module, function, length(args))
+
+    """
+    failed to call #{mfa} with args: #{inspect(List.flatten(args))}
+
+    reason: #{reason}
+
+    Make sure you have created a page for this path.
+    See Pages.create_page!/2 for more info.
+    """
   end
 
   @doc false
