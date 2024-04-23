@@ -2111,6 +2111,7 @@ defmodule Beacon.Content do
       page
       |> Ecto.build_assoc(:variants)
       |> PageVariant.changeset(attrs)
+      |> validate_variant(page)
 
     Repo.transact(fn ->
       with {:ok, %PageVariant{}} <- Repo.insert(changeset),
@@ -2254,7 +2255,9 @@ defmodule Beacon.Content do
     changeset =
       live_data
       |> Ecto.build_assoc(:assigns)
+      |> Map.put(:live_data, live_data)
       |> LiveDataAssign.changeset(attrs)
+      |> validate_live_data_code()
 
     case Repo.insert(changeset) do
       {:ok, %LiveDataAssign{}} ->
