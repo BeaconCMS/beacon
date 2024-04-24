@@ -940,7 +940,7 @@ defmodule Beacon.Content do
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
     |> Repo.reload()
-    |> Repo.preload(:event_handlers, force: true)
+    |> Repo.preload([:variants, :event_handlers], force: true)
     |> maybe_add_leading_slash()
   end
 
