@@ -92,7 +92,7 @@
           #
           ## Readability Checks
           #
-          {Credo.Check.Readability.AliasOrder, []},
+          # {Credo.Check.Readability.AliasOrder, []},
           {Credo.Check.Readability.FunctionNames, []},
           {Credo.Check.Readability.LargeNumbers, []},
           {Credo.Check.Readability.MaxLineLength, [priority: :low, max_length: 150]},
@@ -103,7 +103,7 @@
           {Credo.Check.Readability.PipeIntoAnonymousFunctions, []},
           {Credo.Check.Readability.PredicateFunctionNames, []},
           {Credo.Check.Readability.PreferImplicitTry, []},
-          {Credo.Check.Readability.RedundantBlankLines, []},
+          # {Credo.Check.Readability.RedundantBlankLines, []},
           {Credo.Check.Readability.Semicolons, []},
           {Credo.Check.Readability.SpaceAfterCommas, []},
           {Credo.Check.Readability.StringSigils, []},

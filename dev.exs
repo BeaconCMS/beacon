@@ -121,7 +121,6 @@ defmodule BeaconTagsField do
   def changeset(data, attrs, _metadata) do
     data
     |> cast(attrs, [:tags])
-    |> validate_required([:tags])
     |> validate_format(:tags, ~r/,/, message: "invalid format, expected ,")
   end
 end
@@ -166,7 +165,7 @@ dev_seeds = fn ->
     site: "dev",
     name: "author_name",
     body: ~S"""
-    author_id =  get_in(assigns, ["page", "extra", "author_id"])
+    author_id = get_in(assigns, ["page", "extra", "author_id"])
     "author_#{author_id}"
     """
   })
@@ -180,7 +179,7 @@ dev_seeds = fn ->
       extra: %{"alt" => "logo"}
     )
 
-  img1 = Beacon.MediaLibrary.upload(metadata)
+  _img1 = Beacon.MediaLibrary.upload(metadata)
 
   metadata =
     Beacon.MediaLibrary.UploadMetadata.new(
@@ -191,7 +190,7 @@ dev_seeds = fn ->
       extra: %{"alt" => "alternate logo"}
     )
 
-  img2 = Beacon.MediaLibrary.upload(metadata)
+  _img2 = Beacon.MediaLibrary.upload(metadata)
 
   home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/"})
 
@@ -981,6 +980,7 @@ end
 dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
+  skip_boot?: true,
   extra_page_fields: [BeaconTagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
@@ -1010,7 +1010,7 @@ Task.start(fn ->
     {Beacon,
      sites: [
        dev_site,
-       [site: :dy, endpoint: SamplePhoenix.Endpoint]
+       [site: :dy, endpoint: SamplePhoenix.Endpoint, skip_boot?: true]
      ]},
     SamplePhoenix.Endpoint
   ]
@@ -1024,8 +1024,8 @@ Task.start(fn ->
   dev_seeds.()
   dy_seeds.()
 
-  :ok = Beacon.reload_site(:dev)
-  :ok = Beacon.reload_site(:dy)
+  Beacon.boot(:dev)
+  Beacon.boot(:dy)
 
   Process.sleep(:infinity)
 end)

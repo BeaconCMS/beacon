@@ -29,20 +29,6 @@ defmodule Beacon.Registry do
   end
 
   @doc false
-  def config!(site) when is_atom(site) do
-    case lookup({:site, site}) do
-      {_pid, config} ->
-        config
-
-      _ ->
-        raise RuntimeError, """
-        site #{inspect(site)} was not found. Make sure it's configured and started,
-        see `Beacon.start_link/1` for more info.
-        """
-    end
-  end
-
-  @doc false
   def update_config(site, fun) when is_atom(site) and is_function(fun, 1) do
     result =
       Registry.update_value(__MODULE__, {:site, site}, fn config ->
@@ -55,9 +41,10 @@ defmodule Beacon.Registry do
     end
   end
 
-  defp lookup(site) do
+  @doc false
+  def lookup(key) do
     __MODULE__
-    |> Registry.lookup(site)
+    |> Registry.lookup(key)
     |> List.first()
   end
 end

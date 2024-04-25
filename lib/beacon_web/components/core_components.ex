@@ -1,7 +1,6 @@
 defmodule BeaconWeb.CoreComponents do
-  @moduledoc """
-  Provides core UI components.
-  """
+  @moduledoc false
+
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS

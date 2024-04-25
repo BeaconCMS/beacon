@@ -3,6 +3,33 @@ defmodule Beacon.ConfigTest do
 
   alias Beacon.Config
 
+  @site :my_site
+
+  describe "registry" do
+    test "returns the site config" do
+      assert %Beacon.Config{
+               css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
+               authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource,
+               live_socket_path: "/custom_live",
+               safe_code_check: false,
+               site: :my_site,
+               tailwind_config: tailwind_config
+             } = Config.fetch!(@site)
+
+      assert tailwind_config =~ "tailwind.config.templates.js.eex"
+    end
+
+    test "raises for non existing site" do
+      assert_raise RuntimeError, ~r/site :invalid was not found/, fn ->
+        Config.fetch!(:invalid)
+      end
+    end
+
+    test "updates key from config" do
+      assert %Config{live_socket_path: "/new_live"} = Config.update_value(:not_booted, :live_socket_path, "/new_live")
+    end
+  end
+
   describe "template_formats" do
     test "preserve default config" do
       assert %{

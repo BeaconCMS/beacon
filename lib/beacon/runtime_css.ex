@@ -1,19 +1,33 @@
 defmodule Beacon.RuntimeCSS do
   @moduledoc """
-  Runtime compilation and processing of CSS files.
+  Compiles the CSS for a site using the compiler defined in `Beacon.Config` `:css_compiler` option.
+
+  Beacon supports Tailwind by default implemented by `Beacon.RuntimeCSS.TailwindCompiler`,
+  you can use that module as template to implement any ther CSS engine as needed.
+
   """
 
+  @doc """
+  Returns the CSS compiler config.
+
+  For Tailwind that would be the content of the tailwind config file,
+  or return an empty string `""` if the provided engine doesn't have a config file.
+  """
+  @callback config(Beacon.Types.Site.t()) :: String.t()
+
+  @doc """
+  Executes the compilation to generate the CSS for the site using the provided `:css_compiler` in `Beacon.Config`.
+  """
   @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
-  @callback compile(Beacon.Types.Site.t(), template :: String.t()) :: {:ok, String.t()} | {:error, any()}
+
+  @doc false
+  def config(site) when is_atom(site) do
+    Beacon.Config.fetch!(site).css_compiler.config(site)
+  end
 
   @doc false
   def compile(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.compile(site)
-  end
-
-  @doc false
-  def compile(site, template) when is_atom(site) and is_binary(template) do
-    Beacon.Config.fetch!(site).css_compiler.compile(site, template)
   end
 
   @doc false
@@ -22,7 +36,7 @@ defmodule Beacon.RuntimeCSS do
   def fetch(site, :compressed) do
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
       [[css]] -> css
-      _ -> nil
+      _ -> "/* CSS not found for site #{inspect(site)} */"
     end
   end
 

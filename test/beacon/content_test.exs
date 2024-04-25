@@ -19,6 +19,13 @@ defmodule Beacon.ContentTest do
   alias Ecto.Changeset
 
   describe "layouts" do
+    test "broadcasts published event" do
+      %{site: site, id: id} = layout = layout_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_layouts(site)
+      Content.publish_layout(layout)
+      assert_receive {:layout_published, %{site: ^site, id: ^id}}
+    end
+
     test "create layout should create a created event" do
       Content.create_layout!(%{
         site: "my_site",
@@ -92,6 +99,27 @@ defmodule Beacon.ContentTest do
   end
 
   describe "pages" do
+    test "broadcasts published event" do
+      %{site: site, id: id} = page = page_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_pages(site)
+      Content.publish_page(page)
+      assert_receive {:page_published, %{site: ^site, id: ^id}}
+    end
+
+    test "broadcasts loaded event" do
+      %{site: site, id: id, path: path} = published_page_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_page(site, path)
+      Beacon.Loader.reload_page_module(site, id)
+      assert_receive {:page_loaded, %{site: ^site, id: ^id}}
+    end
+
+    test "broadcasts unpublished event" do
+      %{site: site, id: id, path: path} = page = published_page_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_pages(site)
+      assert {:ok, _} = Content.unpublish_page(page)
+      assert_receive {:page_unpublished, %{site: ^site, id: ^id, path: ^path}}
+    end
+
     test "count pages" do
       page = page_fixture(title: "title_a")
 
@@ -270,8 +298,7 @@ defmodule Beacon.ContentTest do
 
       Content.publish_page(page)
 
-      assert_receive :lifecycle_after_create_page
-      assert_receive :lifecycle_after_publish_page
+      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.id)
     end
 
     test "save raw_schema" do
@@ -324,7 +351,28 @@ defmodule Beacon.ContentTest do
     end
   end
 
+  describe "stylesheets" do
+    test "create broadcasts updated content event" do
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = stylesheet_fixture(site: "booted")
+      assert_receive {:content_updated, :stylesheet, %{site: ^site}}
+    end
+
+    test "update broadcasts updated content event" do
+      %{site: site} = stylesheet = stylesheet_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_content(site)
+      Content.update_stylesheet(stylesheet, %{body: "/* test */"})
+      assert_receive {:content_updated, :stylesheet, %{site: ^site}}
+    end
+  end
+
   describe "snippets" do
+    test "create broadcasts updated content event" do
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = snippet_helper_fixture(site: "booted")
+      assert_receive {:content_updated, :snippet_helper, %{site: ^site}}
+    end
+
     test "assigns" do
       assert Content.render_snippet(
                "page title is {{ page.title }}",
@@ -360,8 +408,6 @@ defmodule Beacon.ContentTest do
           """)
       )
 
-      Beacon.Loader.load_snippet_helpers(:my_site)
-
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
                %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
@@ -385,6 +431,16 @@ defmodule Beacon.ContentTest do
       {:ok, %Page{}} = Content.create_variant_for_page(page, attrs)
 
       assert_receive :lifecycle_after_update_page
+    end
+
+    test "create variant should validate invalid templates" do
+      page = page_fixture(%{format: :heex})
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.create_variant_for_page(page, attrs)
+
+      assert error =~ "unmatched closing tag"
     end
 
     test "update variant OK" do
@@ -472,6 +528,29 @@ defmodule Beacon.ContentTest do
       assert_receive :lifecycle_after_update_page
     end
 
+    test "create validates elixir code" do
+      page = page_fixture(%{format: :heex})
+
+      attrs = %{name: "test", code: "[1)"}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{name: "test", code: "if true, do false"}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected reserved word: do"
+
+      code = ~S|
+      id = String.to_integer(event_params["id"])
+      res = if id < 100, do: "less" <> "than", else: "100"
+      {:noreply, assign(socket, res: res)}
+      |
+
+      attrs = %{name: "test", code: code}
+      assert {:ok, _} = Content.create_event_handler_for_page(page, attrs)
+    end
+
     test "update event handler OK" do
       page = page_fixture(%{format: :heex})
       event_handler = page_event_handler_fixture(%{page: page})
@@ -488,6 +567,30 @@ defmodule Beacon.ContentTest do
       {:ok, %Page{}} = Content.update_event_handler_for_page(page, event_handler, %{name: "Changed"})
 
       assert_receive :lifecycle_after_update_page
+    end
+
+    test "update validates elixir code" do
+      page = page_fixture(%{format: :heex})
+      page_event_handler = page_event_handler_fixture(%{page: page})
+
+      attrs = %{code: "[1)"}
+      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{code: "if true, do false"}
+      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      {:code, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected reserved word: do"
+
+      code = ~S|
+      id = String.to_integer(event_params["id"])
+      res = if id < 100, do: "less" <> "than", else: "100"
+      {:noreply, assign(socket, res: res)}
+      |
+
+      attrs = %{code: code}
+      assert {:ok, _} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
     end
 
     test "delete event handler OK" do
@@ -509,7 +612,20 @@ defmodule Beacon.ContentTest do
     end
   end
 
-  describe "error_pages:" do
+  describe "error_pages" do
+    test "create broadcasts updated content event" do
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = error_page_fixture(site: "booted")
+      assert_receive {:content_updated, :error_page, %{site: ^site}}
+    end
+
+    test "update broadcasts updated content event" do
+      %{site: site} = error_page = error_page_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_content(site)
+      Content.update_error_page(error_page, %{template: "test"})
+      assert_receive {:content_updated, :error_page, %{site: ^site}}
+    end
+
     test "get_error_page/2" do
       error_page = error_page_fixture(%{site: :my_site, status: 404})
       _other = error_page_fixture(%{site: :my_site, status: 400})
@@ -545,6 +661,19 @@ defmodule Beacon.ContentTest do
   end
 
   describe "components" do
+    test "create broadcasts updated content event" do
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = component_fixture(site: "booted")
+      assert_receive {:content_updated, :component, %{site: ^site}}
+    end
+
+    test "update broadcasts updated content event" do
+      %{site: site} = component = component_fixture(site: "booted")
+      :ok = Beacon.PubSub.subscribe_to_content(site)
+      Content.update_component(component, %{body: "<div>test</div>"})
+      assert_receive {:content_updated, :component, %{site: ^site}}
+    end
+
     test "validate template heex on create" do
       assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.create_component(%{site: :my_site, name: "test", body: "<div"})
@@ -578,6 +707,12 @@ defmodule Beacon.ContentTest do
   end
 
   describe "live data" do
+    test "create broadcasts updated content event" do
+      :ok = Beacon.PubSub.subscribe_to_content(:booted)
+      %{site: site} = live_data_fixture(site: "booted")
+      assert_receive {:content_updated, :live_data, %{site: ^site}}
+    end
+
     test "create_live_data/1" do
       attrs = %{site: :my_site, path: "/foo/:bar"}
 
@@ -600,6 +735,28 @@ defmodule Beacon.ContentTest do
       assert %{key: "product_id", format: :elixir, value: "123"} = assign
     end
 
+    test "validate assign elixir code on create" do
+      live_data = live_data_fixture()
+
+      attrs = %{key: "foo", value: "[1)", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected token: )"
+
+      attrs = %{key: "foo", value: "if true, do false", format: :elixir}
+      assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+      {:value, {_, [compilation_error: compilation_error]}} = error
+      assert compilation_error =~ "unexpected reserved word: do"
+
+      code = ~S|
+      id = String.to_integer(params["id"])
+      if id < 100, do: "less" <> "than", else: "100"
+      |
+
+      attrs = %{key: "foo", value: code, format: :elixir}
+      assert {:ok, _} = Content.create_assign_for_live_data(live_data, attrs)
+    end
+
     test "get_live_data/2" do
       live_data = live_data_fixture() |> Repo.preload(:assigns)
 
@@ -609,7 +766,7 @@ defmodule Beacon.ContentTest do
     test "live_data_for_site/1" do
       live_data_1 = live_data_fixture(site: :my_site, path: "/foo")
       live_data_2 = live_data_fixture(site: :my_site, path: "/bar")
-      live_data_3 = live_data_fixture(site: :other_site, path: "/baz")
+      live_data_3 = live_data_fixture(site: :not_booted, path: "/baz")
 
       results = Content.live_data_for_site(:my_site)
 
@@ -654,7 +811,7 @@ defmodule Beacon.ContentTest do
 
     test "update_live_data_assign/2" do
       live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data)
+      live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{key: "wins", value: "1337", format: :elixir}
       assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, attrs)
@@ -665,9 +822,9 @@ defmodule Beacon.ContentTest do
       assert updated_assign.format == :elixir
     end
 
-    test "validate assign elixir code" do
+    test "validate assign elixir code on update" do
       live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data)
+      live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{value: "[1)", format: :elixir}
       assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
@@ -698,9 +855,9 @@ defmodule Beacon.ContentTest do
 
     test "delete_live_data_assign/1" do
       live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data)
+      live_data_assign = live_data_assign_fixture(live_data: live_data)
+      Repo.preload(live_data, :assigns)
 
-      assert %{assigns: [^live_data_assign]} = Repo.preload(live_data, :assigns)
       assert {:ok, _} = Content.delete_live_data_assign(live_data_assign)
       assert %{assigns: []} = Repo.preload(live_data, :assigns)
     end

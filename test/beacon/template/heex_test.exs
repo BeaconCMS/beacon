@@ -30,9 +30,8 @@ defmodule Beacon.Template.HEExTest do
     end
 
     test "user defined components" do
-      start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
       component_fixture(site: "my_site", name: "sample")
-      Beacon.Loader.load_components(:my_site)
+      Beacon.Loader.fetch_components_module(:my_site)
 
       assert HEEx.render(
                :my_site,

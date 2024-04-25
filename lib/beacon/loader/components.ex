@@ -1,4 +1,4 @@
-defmodule Beacon.Loader.ComponentModuleLoader do
+defmodule Beacon.Loader.Components do
   @moduledoc false
 
   # use the annotated def/defp macros from Declarative
@@ -10,18 +10,37 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
   @supported_component_types [:any, :atom, :boolean, :float, :global, :integer, :list, :map, :string]
 
-  # TODO: remove this guard, it should generate an empty module
-  def load_components(_site, [] = _components) do
-    :skip
+  def module_name(site), do: Loader.module_name(site, "Components")
+
+  def build_ast(site, [] = _components) do
+    site
+    |> module_name()
+    |> render()
   end
 
-  def load_components(site, components) do
-    component_module = Loader.component_module_for_site(site)
+  def build_ast(site, components) do
+    module = module_name(site)
     render_functions = Enum.map(components, &render_component/1)
     function_components = Enum.map(components, &function_component/1)
-    ast = render(component_module, render_functions, function_components)
-    :ok = Loader.reload_module!(component_module, ast)
-    {:ok, component_module}
+    render(module, render_functions, function_components)
+  end
+
+  # generate the module even without functions because it gets
+  # imported into other modules
+  defp render(component_module) do
+    quote do
+      defmodule unquote(component_module) do
+        use PhoenixHTMLHelpers
+        import Phoenix.HTML
+        import Phoenix.HTML.Form
+        import Phoenix.Component
+
+        # TODO: remove my_component/2
+        def my_component(name, assigns \\ []) do
+          Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
+        end
+      end
+    end
   end
 
   defp render(component_module, render_functions, function_components) do
@@ -45,7 +64,9 @@ defmodule Beacon.Loader.ComponentModuleLoader do
         import Phoenix.Component
 
         # TODO: remove my_component/2
-        def my_component(name, assigns \\ []), do: render(name, Enum.into(assigns, %{}))
+        def my_component(name, assigns \\ []) do
+          Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
+        end
 
         unquote_splicing(render_functions)
         unquote_splicing(function_components)
@@ -103,12 +124,9 @@ defmodule Beacon.Loader.ComponentModuleLoader do
 
   # TODO: remove render_component/1 along with my_component/2
   defp render_component(%Content.Component{site: site, name: name, body: body}) do
-    file = "site-#{site}-component-#{name}"
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, "", body, file)
-
     quote do
       def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do
-        unquote(ast)
+        unquote(Beacon.Template.HEEx.compile!(site, "", body, "site-#{site}-component-#{name}"))
       end
     end
   end

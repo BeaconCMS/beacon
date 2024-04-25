@@ -24,14 +24,17 @@ defmodule Beacon.Template.HEEx do
   @spec compile(Beacon.Types.Site.t(), String.t(), String.t()) :: {:ok, Beacon.Template.ast()} | {:error, Exception.t()}
   def compile(site, path, template, file \\ nil) when is_atom(site) and is_binary(path) and is_binary(template) do
     file = if file, do: file, else: "site-#{site}-path-#{path}"
-    ast = compile_template!(file, template)
-    {:ok, ast}
-  rescue
-    exception ->
-      {:error, exception}
+    compile_template(file, template)
   end
 
-  defp compile_template!(file, template) do
+  def compile!(site, path, template, file \\ nil) when is_atom(site) and is_binary(path) and is_binary(template) do
+    case compile(site, path, template, file) do
+      {:ok, ast} -> ast
+      {:error, exception} -> raise exception
+    end
+  end
+
+  defp compile_template(file, template) do
     opts = [
       engine: Phoenix.LiveView.TagEngine,
       line: 1,
@@ -43,7 +46,9 @@ defmodule Beacon.Template.HEEx do
       tag_handler: Phoenix.LiveView.HTMLEngine
     ]
 
-    EEx.compile_string(template, opts)
+    {:ok, EEx.compile_string(template, opts)}
+  rescue
+    error -> {:error, error}
   end
 
   @doc """
@@ -70,7 +75,7 @@ defmodule Beacon.Template.HEEx do
     env = BeaconWeb.PageLive.make_env()
 
     functions = [
-      {Beacon.Loader.component_module_for_site(site), [my_component: 2]}
+      {Beacon.Loader.Components.module_name(site), [my_component: 2]}
       | env.functions
     ]
 

@@ -99,14 +99,10 @@ defmodule Beacon.Lifecycle.Template do
     - It will load and compile the page module if it was not loaded yet.
 
   """
-  @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
-  def render_template(page, page_module, assigns, env) do
-    template =
-      case Beacon.Template.render(page_module, assigns) do
-        %Phoenix.LiveView.Rendered{} = rendered -> rendered
-        :not_loaded -> Beacon.Loader.load_page_template(page, page_module, assigns)
-      end
-
+  @spec render_template(Beacon.Content.Page.t(), map(), Macro.Env.t()) :: Beacon.Template.t()
+  def render_template(page, assigns, env) do
+    page_module = Beacon.Loader.fetch_page_module(page.site, page.id)
+    template = Beacon.Template.render(page_module, assigns)
     context = [path: page.path, assigns: assigns, env: env]
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :render_template, template, sub_key: page.format, context: context)
     lifecycle.output

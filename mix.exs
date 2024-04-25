@@ -13,12 +13,7 @@ defmodule Beacon.MixProject do
       deps: deps(),
       aliases: aliases(),
       docs: docs(),
-      elixirc_paths: elixirc_paths(Mix.env()),
-      dialyzer: [
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
-        plt_add_apps: [:mix],
-        list_unused_filters: true
-      ]
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
 
@@ -37,7 +32,6 @@ defmodule Beacon.MixProject do
       {:accent, "~> 1.1"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.5", only: :dev},
       {:ex_brotli, "~> 0.3"},
@@ -51,7 +45,7 @@ defmodule Beacon.MixProject do
       {:jason, "~> 1.0"},
       {:solid, "~> 0.14"},
       phoenix_dep(),
-      {:phoenix_ecto, "~> 4.4.3"},
+      {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
@@ -153,7 +147,8 @@ defmodule Beacon.MixProject do
           Beacon.MediaLibrary.UploadMetadata
         ],
         "Authn and Authz": [
-          Beacon.Authorization.Behaviour,
+          Beacon.Authorization,
+          Beacon.Authorization.Policy,
           Beacon.Authorization.DefaultPolicy
         ],
         Web: [
@@ -167,9 +162,10 @@ defmodule Beacon.MixProject do
         Extensibility: [
           Beacon.Config,
           Beacon.Lifecycle,
-          Beacon.Content.PageField,
           Beacon.Template.LoadMetadata,
-          Beacon.Template.RenderMetadata
+          Beacon.Template.RenderMetadata,
+          Beacon.Content.PageField,
+          Beacon.MediaLibrary.AssetField
         ],
         Execution: [
           Beacon.Router,
@@ -177,17 +173,19 @@ defmodule Beacon.MixProject do
           Beacon.Registry,
           Beacon.RuntimeCSS,
           Beacon.RuntimeJS,
-          Beacon.TailwindCompiler
+          Beacon.RuntimeCSS.TailwindCompiler
         ],
         Types: [
           Beacon.Types.Atom,
           Beacon.Types.Binary,
-          Beacon.Types.Site
+          Beacon.Types.Site,
+          Beacon.Types.JsonArrayMap
         ],
         Exceptions: [
           Beacon.LoaderError,
           Beacon.AuthorizationError,
           Beacon.ParserError,
+          Beacon.SnippetError,
           BeaconWeb.NotFoundError
         ]
       ],
