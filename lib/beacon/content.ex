@@ -2271,6 +2271,26 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Gets a single `LiveData` entry by `:id`.
+
+  ## Example
+
+      iex> get_live_data("5d5b228c-3a46-4e76-ab27-d3ed3f92ccea")
+      %LiveData{}
+
+  """
+  @doc type: :live_data
+  @spec get_live_data(binary()) :: LiveData.t() | nil
+  def get_live_data(id) do
+    Repo.one(
+      from(ld in LiveData,
+        where: ld.id == ^id,
+        preload: :assigns
+      )
+    )
+  end
+
+  @doc """
   Gets a single `LiveData` entry by `:site` and `:path`.
 
   ## Example
@@ -2288,57 +2308,51 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets all LiveData for a site in one unpaginated query.
-  """
-  @doc type: :live_data
-  @spec live_data_for_site(Site.t()) :: [LiveData.t()]
-  def live_data_for_site(site, opts \\ []) when is_atom(site) and is_list(opts) do
-    select = Keyword.get(opts, :select, nil)
-
-    base_query = from d in LiveData, where: d.site == ^site, preload: :assigns
-
-    base_query
-    |> query_live_data_for_site_select(select)
-    |> Repo.all()
-  end
-
-  defp query_live_data_for_site_select(query, nil = _select), do: query
-  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
-
-  @doc """
-  Query LiveData paths for a given site.
+  Query LiveData for a given site.
 
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
     * `:query` - search records by path.
+    * `:select` - returns only the given field(s)
+    * `:preload` - include given association(s) (defaults to `:assigns`)
 
   """
   @doc type: :live_data
-  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [String.t()]
-  def live_data_paths_for_site(site, opts \\ []) do
+  @spec live_data_for_site(Site.t(), Keyword.t()) :: [String.t()]
+  def live_data_for_site(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, :infinity)
     search = Keyword.get(opts, :query)
+    select = Keyword.get(opts, :select)
+    preload = Keyword.get(opts, :preload, :assigns)
 
     site
-    |> query_live_data_paths_for_site_base()
-    |> query_live_data_paths_for_site_limit(per_page)
-    |> query_live_data_paths_for_site_search(search)
+    |> query_live_data_for_site_base()
+    |> query_live_data_for_site_limit(per_page)
+    |> query_live_data_for_site_search(search)
+    |> query_live_data_for_site_select(select)
+    |> query_live_data_for_site_preload(preload)
     |> Repo.all()
   end
 
-  defp query_live_data_paths_for_site_base(site) do
+  defp query_live_data_for_site_base(site) do
     from ld in LiveData,
       where: ld.site == ^site,
-      select: ld.path,
       order_by: [asc: ld.path]
   end
 
-  defp query_live_data_paths_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
-  defp query_live_data_paths_for_site_limit(query, :infinity = _limit), do: query
-  defp query_live_data_paths_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
-  defp query_live_data_paths_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
-  defp query_live_data_paths_for_site_search(query, _search), do: query
+  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_for_site_search(query, _search), do: query
+
+  defp query_live_data_for_site_select(query, nil = _select), do: query
+  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
+
+  defp query_live_data_for_site_preload(query, nil), do: query
+  defp query_live_data_for_site_preload(query, preload) when is_atom(preload) or is_list(preload), do: from(q in query, preload: ^preload)
 
   @doc """
   Updates LiveDataPath.
