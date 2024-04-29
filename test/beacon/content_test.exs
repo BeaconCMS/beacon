@@ -763,7 +763,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "create_live_data_assign/1 for existing path" do
-      live_data = live_data_fixture(site: "my_site", path: "/foo")
+      live_data_fixture(site: "my_site", path: "/foo")
       attrs = %{key: "product_id", format: :elixir, value: "123"}
       assert {:ok, %LiveData{assigns: [%{key: "product_id", value: "123"}]}} = Content.create_live_data_assign("my_site", "/foo", attrs)
     end
