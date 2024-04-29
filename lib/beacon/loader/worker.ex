@@ -106,7 +106,7 @@ defmodule Beacon.Loader.Worker do
 
   def handle_call(:reload_live_data_module, _from, config) do
     %{site: site} = config
-    live_data = Content.live_data_for_site(site, select: [:id, :site, :path, assigns: [:id, :key, :value, :format]])
+    live_data = Content.live_data_for_site(site)
     ast = Loader.LiveData.build_ast(site, live_data)
     stop(compile_module(site, ast), config)
   end

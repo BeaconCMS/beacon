@@ -797,30 +797,30 @@ defmodule Beacon.ContentTest do
       refute Enum.any?(results, &(&1.id == live_data_3.id))
     end
 
-    test "live_data_paths_for_site/2" do
-      %{path: live_data_path} = live_data_fixture(site: :my_site)
+    test "live_data_for_site/2" do
+      %{id: live_data_id} = live_data_fixture(site: :my_site)
 
-      assert [^live_data_path] = Content.live_data_paths_for_site(:my_site)
+      assert [%LiveData{id: ^live_data_id}] = Content.live_data_for_site(:my_site)
     end
 
-    test "live_data_paths_for_site/2 :query option" do
-      live_data_fixture(site: :my_site, path: "/foo")
-      live_data_fixture(site: :my_site, path: "/bar")
+    test "live_data_for_site/2 :query option" do
+      %{id: foo_id} = live_data_fixture(site: :my_site, path: "/foo")
+      %{id: bar_id} = live_data_fixture(site: :my_site, path: "/bar")
 
-      assert ["/foo"] = Content.live_data_paths_for_site(:my_site, query: "fo")
-      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, query: "ba")
+      assert [%LiveData{id: ^foo_id}] = Content.live_data_for_site(:my_site, query: "fo")
+      assert [%LiveData{id: ^bar_id}] = Content.live_data_for_site(:my_site, query: "ba")
     end
 
-    test "live_data_paths_for_site/2 :per_page option" do
-      live_data_fixture(site: :my_site, path: "/foo")
-      live_data_fixture(site: :my_site, path: "/bar")
-      live_data_fixture(site: :my_site, path: "/baz")
-      live_data_fixture(site: :my_site, path: "/bong")
+    test "live_data_for_site/2 :per_page option" do
+      %{id: foo_id} = live_data_fixture(site: :my_site, path: "/foo")
+      %{id: bar_id} = live_data_fixture(site: :my_site, path: "/bar")
+      %{id: baz_id} = live_data_fixture(site: :my_site, path: "/baz")
+      %{id: bong_id} = live_data_fixture(site: :my_site, path: "/bong")
 
-      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, per_page: 1)
-      assert ["/bar", "/baz"] = Content.live_data_paths_for_site(:my_site, per_page: 2)
-      assert ["/bar", "/baz", "/bong"] = Content.live_data_paths_for_site(:my_site, per_page: 3)
-      assert ["/bar", "/baz", "/bong", "/foo"] = Content.live_data_paths_for_site(:my_site, per_page: 4)
+      assert [%{id: ^bar_id}] = Content.live_data_for_site(:my_site, per_page: 1)
+      assert [%{id: ^bar_id}, %{id: ^baz_id}] = Content.live_data_for_site(:my_site, per_page: 2)
+      assert [%{id: ^bar_id}, %{id: ^baz_id}, %{id: ^bong_id}] = Content.live_data_for_site(:my_site, per_page: 3)
+      assert [%{id: ^bar_id}, %{id: ^baz_id}, %{id: ^bong_id}, %{id: ^foo_id}] = Content.live_data_for_site(:my_site, per_page: 4)
     end
 
     test "update_live_data_path/2" do
