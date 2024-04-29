@@ -30,7 +30,6 @@ jobs:
 
     env:
       MIX_ENV: test
-      MDEX_BUILD: 1
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
 
@@ -91,7 +90,6 @@ jobs:
 
     env:
       MIX_ENV: dev
-      MDEX_BUILD: 1
 
     runs-on: ubuntu-20.04
 
