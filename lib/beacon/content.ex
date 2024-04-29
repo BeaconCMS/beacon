@@ -2222,17 +2222,6 @@ defmodule Beacon.Content do
 
   # LIVE DATA
 
-  @type live_data_attrs :: %{
-          site: String.t(),
-          path: String.t()
-        }
-
-  @type live_data_assign_attrs :: %{
-          key: String.t(),
-          value: String.t(),
-          format: :text | :elixir
-        }
-
   @doc """
   Returns a list of all existing LiveDataAssign formats.
   """
@@ -2250,7 +2239,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :live_data
-  @spec change_live_data_path(LiveData.t(), live_data_attrs()) :: Changeset.t()
+  @spec change_live_data_path(LiveData.t(), map()) :: Changeset.t()
   def change_live_data_path(%LiveData{} = live_data, attrs \\ %{}) do
     LiveData.path_changeset(live_data, attrs)
   end
@@ -2265,7 +2254,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :live_data
-  @spec change_live_data_assign(LiveDataAssign.t(), live_data_attrs()) :: Changeset.t()
+  @spec change_live_data_assign(LiveDataAssign.t(), map()) :: Changeset.t()
   def change_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs \\ %{}) do
     LiveDataAssign.changeset(live_data_assign, attrs)
   end
@@ -2274,7 +2263,7 @@ defmodule Beacon.Content do
   Creates a new LiveData for scoping live data to pages.
   """
   @doc type: :live_data
-  @spec create_live_data(live_data_attrs()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
   def create_live_data(attrs) do
     %LiveData{}
     |> LiveData.changeset(attrs)
@@ -2286,7 +2275,7 @@ defmodule Beacon.Content do
   Creates a new LiveData for scoping live data to pages.
   """
   @doc type: :live_data
-  @spec create_live_data!(live_data_attrs()) :: LiveData.t()
+  @spec create_live_data!(map()) :: LiveData.t()
   def create_live_data!(attrs) do
     case create_live_data(attrs) do
       {:ok, live_data} -> live_data
@@ -2298,7 +2287,7 @@ defmodule Beacon.Content do
   Creates a new LiveDataAssign.
   """
   @doc type: :live_data
-  @spec create_assign_for_live_data(LiveData.t(), live_data_assign_attrs()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  @spec create_assign_for_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
   def create_assign_for_live_data(live_data, attrs) do
     changeset =
       live_data
@@ -2325,7 +2314,7 @@ defmodule Beacon.Content do
   which is useful for seeds and scripts.
   """
   @doc type: :live_data
-  @spec create_live_data_assign(String.t(), String.t(), live_data_assign_attrs()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  @spec create_live_data_assign(String.t(), String.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
   def create_live_data_assign(site, path, attrs) do
     live_data = get_live_data(site, path) || create_live_data!(%{site: site, path: path})
     create_assign_for_live_data(live_data, attrs)
