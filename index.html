@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BeaconCMS</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            .link-animate {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .link-animate::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(
+                    to right,
+                    rgba(30, 27, 75, 0),
+                    rgba(30, 27, 75, 0.8),
+                    rgba(30, 27, 75, 0)
+                );
+                animation: flare 8s infinite;
+            }
+
+            @keyframes flare {
+                0% {
+                    left: -100%;
+                }
+                50% {
+                    left: 100%;
+                }
+                100% {
+                    left: 100%;
+                }
+            }
+
+            /* .feature-card {
+                background-color: rgb(241 245 249);
+                border: 2px solid #f3f4f6;
+                box-shadow:
+                    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                border-radius: 0.75rem;
+                padding: 1.5rem;
+                transition:
+                    border-color 0.5s ease-in-out,
+                    background-color 0.5s ease-in-out;
+                font-family: "Plus Jakarta Sans", sans-serif;
+            } */
+
+            /* .feature-card:hover {
+                border-color: rgb(79 70 229);
+                background-color: rgb(226 232 240);
+            } */
+
+            /* .feature-card h2 {
+                color: #1f2937;
+                font-size: 1.5rem;
+                font-weight: 600;
+            } */
+
+            /* .feature-card p {
+                color: #4b5563;
+                font-size: 1rem;
+            } */
+
+            .hero-title {
+                background: linear-gradient(to right, #ffffff, #8b5cf6);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            body {
+                background: linear-gradient(
+                    to bottom right,
+                    #6366f1,
+                    #8b5cf6,
+                    #9333ea,
+                    #7e22ce,
+                    #1f2937
+                );
+                background-size: 600% 600%;
+                animation: gradient 30s ease infinite;
+                font-family: "Plus Jakarta Sans", sans-serif;
+            }
+
+            @keyframes gradient {
+                0% {
+                    background-position: 0% 0%;
+                }
+                50% {
+                    background-position: 100% 100%;
+                }
+                100% {
+                    background-position: 0% 0%;
+                }
+            }
+
+            .link-animate a {
+                font-weight: 700;
+            }
+
+            footer {
+                padding: 2rem 0;
+                text-align: center;
+                bottom: 0;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            footer div {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="text-white min-h-screen flex items-center justify-center">
+            <div class="max-w-screen-md w-full px-6 py-12">
+                <div class="text-center">
+                    <h1 class="hero-title font-bold text-7xl mb-2">Beacon</h1>
+                    <p class="mb-12 text-3xl">
+                        Performance without compromising productivity
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <div
+                        class="p-4 bg-fuchsia-50 text-black border border-fuchsia-500 rounded-lg shadow-xl shadow-rose-700/40 hover:border-fuchsia-100 hover:shadow-rose-300/40 duration-1000"
+                    >
+                        <h2 class="pb-2 text-base font-bold">SEO-friendly</h2>
+                        <p>
+                            BeaconCMS provides a modern and flexible content
+                            management system to power your digital experiences.
+                        </p>
+                    </div>
+                    <div
+                        class="p-4 bg-fuchsia-50 text-black border border-fuchsia-500 rounded-lg shadow-xl shadow-rose-700/40 hover:border-fuchsia-100 hover:shadow-rose-300/40 duration-1000"
+                    >
+                        <h2 class="pb-2 text-base font-bold">Scalable</h2>
+                        <p>
+                            With a focus on developer experience, BeaconCMS
+                            makes it easy to build and deploy content-driven
+                            applications.
+                        </p>
+                    </div>
+                    <div
+                        class="p-4 bg-fuchsia-50 text-black border border-fuchsia-500 rounded-lg shadow-xl shadow-rose-700/40 hover:border-fuchsia-100 hover:shadow-rose-300/40 duration-1000"
+                    >
+                        <h2 class="pb-2 text-base font-bold">Open-Source</h2>
+                        <p>
+                            Built on a solid foundation, BeaconCMS is designed
+                            to handle high-traffic websites and mission-critical
+                            applications.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-16">
+                    <h2 class="text-4xl font-bold mb-2">Features</h2>
+                    <p class="mb-8">
+                        Visit the
+                        <a
+                            href="/blog"
+                            class="text-sky-200 no-underline py-1 px-2 border border-sky-600 shadow-lg shadow-sky-400/40 rounded-full hover:border-fuchsia-100 hover:shadow-fuchsia-300/40 duration-1000"
+                            >demo blog</a
+                        >
+                        to check out all the features listed below
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="action-card">
+                            <h2 class="mb-2 font-bold text-2xl">Live Data</h2>
+                            <p>Define variable data to your page.</p>
+                        </div>
+                        <div class="action-card">
+                            <h2 class="mb-2 font-bold text-2xl">
+                                A/B Variants
+                            </h2>
+                            <p>
+                                Customize the look and feel of your website or
+                                application with a range of themes and
+                                templates.
+                            </p>
+                        </div>
+                        <div class="action-card">
+                            <h2 class="mb-2 font-bold text-2xl">Components</h2>
+                            <p>creation and management.</p>
+                        </div>
+                        <div class="action-card">
+                            <h2 class="mb-2 font-bold text-2xl">Error Pages</h2>
+                            <p>
+                                Leverage BeaconCMS's scalable infrastructure to
+                                ensure high-performance and reliability.
+                            </p>
+                        </div>
+                        <div class="action-card">
+                            <h2 class="mb-2 font-bold text-2xl">
+                                Media Library
+                            </h2>
+                            <p>
+                                Protect your content and user data with
+                                BeaconCMS's robust security features.
+                            </p>
+                        </div>
+                        <div class="action-card">
+                            <h2 class="mb-2 font-bold text-2xl">And more...</h2>
+                            <p>
+                                Integrate with third-party tools and services to
+                                extend the capabilities of your BeaconCMS
+                                project.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="text-white">
+            <div class="text-center">
+                <a
+                    href="https://beaconcms.org"
+                    class="inline-block text-sky-400 p-4 m-3 font-medium no-underline hover:underline hover:decoration-dashed underline-offset-4 tracking-tight"
+                >
+                    BeaconCMS.org
+                </a>
+                <a
+                    href="https://github.com/BeaconCMS/beacon"
+                    class="inline-block text-sky-400 p-4 m-3 font-medium no-underline hover:underline hover:decoration-dashed underline-offset-4 tracking-tight"
+                >
+                    GitHub Repo
+                </a>
+            </div>
+        </footer>
+    </body>
+</html>
