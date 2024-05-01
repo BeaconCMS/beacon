@@ -103,6 +103,10 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), :populate_default_error_pages)
   end
 
+  def populate_default_home_page(site) do
+    GenServer.call(worker(site), :populate_default_home_page)
+  end
+
   def reload_runtime_js(site) do
     GenServer.call(worker(site), :reload_runtime_js, :timer.minutes(5))
   end
