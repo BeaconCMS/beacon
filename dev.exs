@@ -126,12 +126,6 @@ defmodule BeaconTagsField do
 end
 
 dev_seeds = fn ->
-  Beacon.Content.create_stylesheet!(%{
-    site: "dev",
-    name: "sample_stylesheet",
-    content: "body {cursor: zoom-in;}"
-  })
-
   layout =
     Beacon.Content.create_layout!(%{
       site: "dev",
@@ -192,7 +186,7 @@ dev_seeds = fn ->
 
   _img2 = Beacon.MediaLibrary.upload(metadata)
 
-  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/"})
+  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
 
   Beacon.Content.create_assign_for_live_data(
     home_live_data,
@@ -219,7 +213,7 @@ dev_seeds = fn ->
 
   page_home =
     Beacon.Content.create_page!(%{
-      path: "/",
+      path: "/sample",
       site: "dev",
       title: "dev home",
       description: "page used for development",

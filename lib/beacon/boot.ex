@@ -33,8 +33,9 @@ defmodule Beacon.Boot do
 
     Beacon.Loader.populate_default_layouts(config.site)
 
-    # Error pages depend on default layouts
+    # Pages depend on default layouts
     Beacon.Loader.populate_default_error_pages(config.site)
+    Beacon.Loader.populate_default_home_page(config.site)
 
     assets = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(config.site) end),
