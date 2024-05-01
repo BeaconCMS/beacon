@@ -135,6 +135,7 @@ Supervisor.start_link(
 # TODO: better control :booted default data when we introduce Beacon.Test functions
 Beacon.Repo.delete_all(Beacon.Content.Component)
 Beacon.Repo.delete_all(Beacon.Content.ErrorPage)
+Beacon.Repo.delete_all(Beacon.Content.Page)
 Beacon.Repo.delete_all(Beacon.Content.Layout)
 
 ExUnit.start(exclude: [:skip])
