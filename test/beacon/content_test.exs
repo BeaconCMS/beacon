@@ -663,6 +663,16 @@ defmodule Beacon.ContentTest do
       assert %{site: :my_site, status: 400, template: "Oops!", layout_id: ^layout_id} = error_page
     end
 
+    test "create_error_page should validate invalid templates" do
+      %{id: layout_id} = layout_fixture()
+      attrs = %{site: :my_site, status: 400, template: "<div>invalid</span>", layout_id: layout_id}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.create_error_page(attrs)
+
+      assert error =~ "unmatched closing tag"
+    end
+
     test "create_error_page/1 ERROR (duplicate)" do
       error_page = error_page_fixture()
       bad_attrs = %{site: error_page.site, status: error_page.status, template: "Error", layout_id: layout_fixture().id}
@@ -674,6 +684,17 @@ defmodule Beacon.ContentTest do
     test "update_error_page/2" do
       error_page = error_page_fixture()
       assert {:ok, %ErrorPage{template: "Changed"}} = Content.update_error_page(error_page, %{template: "Changed"})
+    end
+
+    test "update_error_page should validate invalid templates" do
+      error_page = error_page_fixture()
+
+      attrs = %{template: "<div>invalid</span>"}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.update_error_page(error_page, attrs)
+
+      assert error =~ "unmatched closing tag"
     end
 
     test "delete_error_page/1" do
