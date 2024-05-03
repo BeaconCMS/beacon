@@ -1728,34 +1728,71 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search components by title.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search components by title. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:name`.
 
   """
   @doc type: :components
   @spec list_components(Site.t(), keyword()) :: [Component.t()]
   def list_components(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :name)
 
     site
     |> query_list_components_base()
     |> query_list_components_limit(per_page)
+    |> query_list_components_offset(per_page, page)
     |> query_list_components_search(search)
+    |> query_list_components_preloads(preloads)
+    |> query_list_components_sort(sort)
     |> Repo.all()
   end
 
-  defp query_list_components_base(site) do
-    from c in Component,
-      where: c.site == ^site,
-      order_by: [asc: c.name]
-  end
+  defp query_list_components_base(site), do: from(l in Component, where: l.site == ^site)
 
   defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_components_limit(query, :infinity = _limit), do: query
   defp query_list_components_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_components_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_components_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
   defp query_list_components_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.name, ^"%#{search}%"))
   defp query_list_components_search(query, _search), do: query
+
+  defp query_list_components_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_components_preloads(query, _preloads), do: query
+
+  defp query_list_components_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of components based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :components
+  @spec count_components(Site.t(), keyword()) :: non_neg_integer()
+  def count_components(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_components_base()
+    |> query_list_components_search(search)
+    |> select([q], count(q.id))
+    |> Repo.one()
+  end
 
   # SNIPPETS
 
