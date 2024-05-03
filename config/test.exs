@@ -4,12 +4,34 @@ config :phoenix, :json_library, Jason
 
 config :logger, level: :error
 
-config :beacon, Beacon.Repo,
-  database: "beacon_test",
-  password: "postgres",
-  pool: Ecto.Adapters.SQL.Sandbox,
-  username: "postgres",
-  ownership_timeout: 1_000_000_000
+case System.get_env("DB_ADAPTER") do
+  "mysql" ->
+    config :beacon, Beacon.Repo,
+      database: "beacon_test",
+      pool: Ecto.Adapters.SQL.Sandbox,
+      username: "root",
+      ownership_timeout: 1_000_000_000,
+      port: 3306,
+      protocol: :tcp,
+      hostname: "localhost"
+
+  "mssql" ->
+    config :beacon, Beacon.Repo,
+      database: "beacon_test",
+      password: "Beacon!CMS!!",
+      pool: Ecto.Adapters.SQL.Sandbox,
+      username: "mssql",
+      ownership_timeout: 1_000_000_000,
+      port: 1433
+
+  _ ->
+    config :beacon, Beacon.Repo,
+      database: "beacon_test",
+      password: "postgres",
+      pool: Ecto.Adapters.SQL.Sandbox,
+      username: "postgres",
+      ownership_timeout: 1_000_000_000
+end
 
 config :beacon, ecto_repos: [Beacon.Repo]
 
