@@ -1988,6 +1988,7 @@ defmodule Beacon.Content do
   def create_error_page(attrs) do
     %ErrorPage{}
     |> ErrorPage.changeset(attrs)
+    |> validate_error_page()
     |> Repo.insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
@@ -2027,6 +2028,7 @@ defmodule Beacon.Content do
   def update_error_page(error_page, attrs) do
     error_page
     |> ErrorPage.changeset(attrs)
+    |> validate_error_page()
     |> Repo.update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
@@ -2038,6 +2040,15 @@ defmodule Beacon.Content do
   @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def delete_error_page(error_page) do
     Repo.delete(error_page)
+  end
+
+  defp validate_error_page(changeset) do
+    template = Changeset.get_field(changeset, :template)
+    site = Changeset.get_field(changeset, :site)
+    status = Changeset.get_field(changeset, :status)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "/_beacon_error_#{status}"}
+
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   # PAGE EVENT HANDLERS
