@@ -389,6 +389,19 @@ defmodule Beacon.ContentTest do
   end
 
   describe "snippets" do
+    test "create_snippet_helper/1" do
+      attrs = %{site: :my_site, name: "foo_snippet", body: "page title is {{ page.title }}"}
+
+      assert {:ok, _snippet_helper} = Content.create_snippet_helper(attrs)
+    end
+
+    test "create_snippet_helper should validate invalid body" do
+      attrs = %{site: :my_site, name: "foo_snippet", body: "page title is {{ page.title"}
+
+      assert {:error, %Ecto.Changeset{errors: [body: {err, []}], valid?: false}} = Content.create_snippet_helper(attrs)
+      assert err == "Reason: expected end of string, line: 1"
+    end
+
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
       %{site: site} = snippet_helper_fixture(site: "booted")

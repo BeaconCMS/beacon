@@ -1769,8 +1769,18 @@ defmodule Beacon.Content do
     |> Changeset.cast(attrs, [:site, :name, :body])
     |> Changeset.validate_required([:site, :name, :body])
     |> Changeset.unique_constraint([:site, :name])
+    |> validate_snippet_helper()
     |> Repo.insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
+  end
+
+  defp validate_snippet_helper(changeset) do
+    Changeset.validate_change(changeset, :body, fn :body, body ->
+      case Solid.parse(body, parser: Snippets.Parser) do
+        {:ok, _template} -> []
+        {:error, error} -> [{:body, error.message}]
+      end
+    end)
   end
 
   @doc type: :snippets
