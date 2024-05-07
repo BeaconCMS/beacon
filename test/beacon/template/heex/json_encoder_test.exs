@@ -278,6 +278,34 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
+  test "function component with special attribute :let" do
+    template = ~S|
+    <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+      <input
+        id={Phoenix.HTML.Form.input_id(f, :email)}
+        name={Phoenix.HTML.Form.input_name(f, :email)}
+        class="text-sm"
+        placeholder="Enter your email"
+        type="email"
+      />
+      <button type="submit">Join</button>
+    </Phoenix.Component.form>
+    |
+
+    assert_output(
+      template,
+      [
+        %{
+          "attrs" => %{":let" => "{f}", "as" => "{:newsletter}", "for" => "{%{}}", "phx-submit" => "join"},
+          "content" => [],
+          "rendered_html" =>
+            "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
+          "tag" => "Phoenix.Component.form"
+        }
+      ]
+    )
+  end
+
   test "my_component" do
     component_fixture(site: :my_site)
     Beacon.Loader.fetch_components_module(:my_site)
