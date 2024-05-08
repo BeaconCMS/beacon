@@ -17,7 +17,8 @@ defmodule Beacon.Loader.ErrorPage do
         use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
-        import Phoenix.Component
+        import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
 
         unquote_splicing(layout_functions)
         unquote_splicing(render_functions)

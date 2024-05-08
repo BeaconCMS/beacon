@@ -28,7 +28,8 @@ defmodule Beacon.BeaconWebTest do
       use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
-      import Phoenix.Component
+      import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+      import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
       import Phoenix.View
 
       alias Beacon.BeaconTest.Router.Helpers, as: Routes
