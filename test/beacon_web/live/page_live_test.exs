@@ -6,8 +6,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
   alias Beacon.Content
 
   setup do
-    live_data = live_data_fixture(site: :my_site, path: "/home")
-    live_data_assign_fixture(live_data: live_data, format: :elixir, key: "vals", value: "[\"first\", \"second\", \"third\"]")
+    live_data = live_data_fixture(site: :my_site, path: "/home/:greet")
+    live_data_assign_fixture(live_data: live_data, format: :elixir, key: "values", value: "[\"first\", \"second\", \"third\"]")
 
     component_fixture(name: "sample_component")
 
@@ -31,13 +31,18 @@ defmodule BeaconWeb.Live.PageLiveTest do
     page_home =
       page_fixture(
         layout_id: layout.id,
-        path: "/home",
+        path: "/home/:greet",
         template: """
         <main>
           <h2>Some Values:</h2>
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
+          <%= for value <- @beacon_live_data[:values] do %>
+            <%= my_component("sample_component", val: value) %>
           <% end %>
+
+          <h2>Beacon:</h2>
+          @beacon.site=<%= @beacon.site %>
+          @beacon.path_params=<%= @beacon.path_params["greet"] %>
+          @beacon.query_params=<%= @beacon.query_params["query"] %>
 
           <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
             Name: <%= text_input f, :name %>
@@ -85,8 +90,15 @@ defmodule BeaconWeb.Live.PageLiveTest do
     [layout: layout]
   end
 
+  test "@beacon", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/home/hello?query=param")
+    assert html =~ ~r/@beacon.site=my_site/
+    assert html =~ ~r/@beacon.path_params=hello/
+    assert html =~ ~r/@beacon.query_params=param/
+  end
+
   test "live data", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/home")
+    {:ok, view, _html} = live(conn, "/home/hello")
 
     assert has_element?(view, "#my-component-first", "first")
     assert has_element?(view, "#my-component-second", "second")
@@ -95,7 +107,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   describe "meta tags" do
     test "merge layout, page, and site", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       expected =
         ~S"""
@@ -116,7 +128,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "do not overwrite csrf-token", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       refute html =~ "csrf-token-page"
     end
@@ -174,7 +186,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   describe "resource links" do
     test "render layout resource links on page head", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ ~S|<link href="print.css" media="print" rel="stylesheet"/>|
       assert html =~ ~S|<link as="font" crossorigin="anonymous" href="font.woff2" rel="preload" type="font/woff2"/>|
@@ -184,14 +196,14 @@ defmodule BeaconWeb.Live.PageLiveTest do
       {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
       {:ok, layout} = Content.publish_layout(layout)
       Beacon.Loader.reload_layout_module(layout.site, layout.id)
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
       assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
     end
   end
 
   describe "render" do
     test "a given path", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ "<header>Page header</header>"
       assert html =~ ~s"<main><h2>Some Values:</h2>"
@@ -199,7 +211,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "component", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ ~s(<span id="my-component-first">)
       assert html =~ ~s(<span id="my-component-second">)
@@ -207,7 +219,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/home")
+      {:ok, view, _html} = live(conn, "/home/hello")
 
       assert view
              |> form("form", %{greeting: %{name: "Beacon"}})
@@ -215,7 +227,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "helper", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ ~s(TEST_NAME)
     end
@@ -227,7 +239,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "routes to custom live path", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home")
+      {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ ~s(phx-socket="/custom_live")
     end

@@ -47,6 +47,7 @@ defmodule Beacon.Template do
   @doc false
   # this function is used only for debugging HEEx templates
   # it is NOT supposed to be used to render templates
+  # TODO: keep this function?
   def __render__(site, path_list) when is_list(path_list) do
     raise_not_found = fn -> raise BeaconWeb.NotFoundError, "could not find page #{inspect(path_list)} for site #{site}" end
 
@@ -60,7 +61,12 @@ defmodule Beacon.Template do
 
         components_module = Beacon.Loader.fetch_components_module(site)
         page_module = Beacon.Loader.fetch_page_module(site, page_id)
-        assigns = %{__changed__: %{}, __live_path__: [], __beacon_page_module__: page_module, __beacon_component_module__: components_module}
+
+        assigns = %{
+          __changed__: %{},
+          beacon: %BeaconWeb.BeaconAssigns{private: %{live_path: [], page_module: page_module, components_module: components_module}}
+        }
+
         Beacon.Lifecycle.Template.render_template(page, assigns, BeaconWeb.PageLive.make_env())
 
       _ ->
@@ -70,7 +76,7 @@ defmodule Beacon.Template do
 
   @doc false
   def render(page_module, assigns \\ %{}) when is_atom(page_module) and is_map(assigns) do
-    %{__changed__: %{}, __live_path__: [], beacon_path_params: %{}, beacon_live_data: %{}}
+    %{__changed__: %{}, beacon: %BeaconWeb.BeaconAssigns{private: %{live_path: []}}, beacon_path_params: %{}, beacon_live_data: %{}}
     |> Map.merge(assigns)
     |> page_module.render()
   end

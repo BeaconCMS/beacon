@@ -34,9 +34,7 @@ defmodule BeaconWeb.DataSource do
     end
   end
 
-  def meta_tags(assigns) do
-    %{__site__: site, __dynamic_page_id__: page_id} = assigns
-
+  def meta_tags(%{beacon: %{site: site, private: %{page_id: page_id}}} = assigns) do
     page =
       site
       |> Beacon.Loader.fetch_page_module(page_id)

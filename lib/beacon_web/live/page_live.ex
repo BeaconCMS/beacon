@@ -1,24 +1,12 @@
 defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
   require Logger
-  import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
-  import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+  import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false
+  import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3], warn: false
   alias Beacon.Lifecycle
   alias Beacon.RouterServer
+  alias BeaconWeb.BeaconAssigns
   alias Phoenix.Component
-
-  # site             ---> @beacon_page.site
-  # path_params      ---> @beacon_page.path_params
-  # query_params     ---> @beacon_page.query_params
-  # beacon_live_data ---> root @
-  # page_title       ---> @beacon_page.title
-  # __live_path__    ---> @__beacon_private__
-  # __site__         ---> @__beacon_private__
-  # __*              ---> @__beacon_private__
-
-  # live data -> root @
-  # public    -> @beacon
-  # private   -> @__beacon_private__
 
   def mount(:not_mounted_at_router, _params, socket) do
     {:ok, socket}
@@ -30,8 +18,8 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> Component.assign(:beacon, %{site: site})
-      |> Component.assign(:__site__, site)
+      |> Component.assign(:beacon, %BeaconAssigns{})
+      |> BeaconAssigns.update(:site, site)
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
@@ -39,9 +27,18 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    %{__site__: site, __live_path__: live_path} = assigns
+    site = assigns.beacon.site
+    live_path = assigns.beacon.private.live_path
+
     page = RouterServer.lookup_page!(site, live_path)
-    assigns = Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(page.path, live_path))
+    path_params = Beacon.Router.path_params(page.path, live_path)
+
+    assigns =
+      assigns
+      # TODO: remove deprecated @beacon_path_params
+      |> Component.assign(:beacon_path_params, path_params)
+      |> BeaconAssigns.update(:path_params, path_params)
+
     Lifecycle.Template.render_template(page, assigns, __ENV__)
   end
 
@@ -50,7 +47,7 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      # |> assign(:__page_updated_at, DateTime.utc_now())
+      # |> BeaconAssigns.update_private(:page_updated_at, DateTime.utc_now())
       # |> assign(:page_title, page_title(params, socket.assigns))
       |> push_event("beacon:page-updated", %{
         meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)
@@ -72,22 +69,25 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    socket.assigns.__beacon_page_module__
+    site = socket.assigns.beacon.site
+    private = socket.assigns.beacon.private
+
+    private.page_module
     |> Beacon.apply_mfa(:handle_event, [event_name, event_params, socket],
-      context: %{site: socket.assigns[:__site__], page_id: socket.assigns[:__dynamic_page_id__], page_path: socket.assigns[:__live_path__]}
+      context: %{site: site, page_id: private[:page_id], page_path: private[:live_path]}
     )
     |> case do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
         {:noreply, socket}
 
       other ->
-        raise "handle_event for #{socket.assigns.__live_path__} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
+        raise "handle_event for #{private[:live_path]} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
     end
   end
 
   def handle_params(params, _url, socket) do
     %{"path" => path} = params
-    %{__site__: site} = socket.assigns
+    site = socket.assigns.beacon.site
 
     page = RouterServer.lookup_page!(site, path)
     live_data = BeaconWeb.DataSource.live_data(site, path, Map.drop(params, ["path"]))
@@ -101,14 +101,15 @@ defmodule BeaconWeb.PageLive do
     socket =
       socket
       |> Component.assign(:beacon_live_data, live_data)
-      |> Component.assign(:__live_path__, path)
-      |> Component.assign(:__page_updated_at, DateTime.utc_now())
-      |> Component.assign(:__dynamic_layout_id__, page.layout_id)
-      |> Component.assign(:__dynamic_page_id__, page.id)
-      |> Component.assign(:__site__, site)
-      |> Component.assign(:__beacon_page_module__, page_module)
-      |> Component.assign(:__beacon_component_module__, components_module)
+      |> BeaconAssigns.update_private(:live_path, path)
+      |> BeaconAssigns.update_private(:layout_id, page.layout_id)
+      |> BeaconAssigns.update_private(:page_id, page.id)
+      |> BeaconAssigns.update_private(:page_updated_at, DateTime.utc_now())
+      |> BeaconAssigns.update_private(:page_module, page_module)
+      |> BeaconAssigns.update_private(:components_module, components_module)
+      # TODO: remove deprecated @beacon_query_params
       |> Component.assign(:beacon_query_params, params)
+      |> BeaconAssigns.update(:query_params, params)
 
     socket =
       socket
