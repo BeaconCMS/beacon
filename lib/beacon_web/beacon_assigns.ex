@@ -1,6 +1,14 @@
 defmodule BeaconWeb.BeaconAssigns do
   @moduledoc """
-  TODO
+  Container of Beacon assigns related to the current page.
+
+  These assigns can be used in page template or Elixir code, for example in in an event handler,
+  and  they are made available as `@beacon`:
+
+  ## Example
+
+      <h1><%= @beacon.site %></h1>
+
   """
 
   @derive {Inspect, only: [:site, :path_params, :query_params, :page]}
@@ -8,7 +16,6 @@ defmodule BeaconWeb.BeaconAssigns do
   defstruct site: nil,
             path_params: nil,
             query_params: nil,
-            page: %{title: nil},
             private: %{
               live_path: nil,
               layout_id: nil,
