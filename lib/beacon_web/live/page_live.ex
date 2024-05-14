@@ -58,19 +58,18 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    site = socket.assigns.beacon.site
-    private = socket.assigns.beacon.private
+    %{beacon: %{site: site, private: %{page_id: page_id, page_module: page_module, live_path: live_path}}} = socket.assigns
 
-    private.page_module
-    |> Beacon.apply_mfa(:handle_event, [event_name, event_params, socket],
-      context: %{site: site, page_id: private[:page_id], page_path: private[:live_path]}
-    )
-    |> case do
+    result =
+      Beacon.apply_mfa(page_module, :handle_event, [event_name, event_params, socket], context: %{site: site, page_id: page_id, live_path: live_path})
+
+    case result do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
         {:noreply, socket}
 
       other ->
-        raise "handle_event for #{private[:live_path]} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
+        raise BeaconWeb.ServerError,
+              "handle_event for #{live_path} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
     end
   end
 

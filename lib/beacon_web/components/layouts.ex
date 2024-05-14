@@ -7,7 +7,8 @@ defmodule BeaconWeb.Layouts do
   embed_templates "layouts/*"
 
   # TODO: style nonce
-  def asset_path(%{assigns: %{beacon: %{site: site}}} = conn, asset) when asset in [:css, :js] do
+  def asset_path(conn, asset) when asset in [:css, :js] do
+    %{assigns: %{beacon: %{site: site}}} = conn
     prefix = router(conn).__beacon_scoped_prefix_for_site__(site)
 
     hash =

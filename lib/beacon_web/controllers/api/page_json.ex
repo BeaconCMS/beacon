@@ -32,9 +32,6 @@ defmodule BeaconWeb.API.PageJSON do
 
     assigns = Map.put(live_data, :beacon, beacon_assigns)
 
-    dbg(assigns)
-    dbg(assigns.beacon.private)
-
     %{
       id: page.id,
       layout_id: page.layout_id,

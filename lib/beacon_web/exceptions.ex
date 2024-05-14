@@ -34,3 +34,7 @@ end
 defmodule BeaconWeb.NotFoundError do
   defexception [:message, plug_status: 404]
 end
+
+defmodule BeaconWeb.ServerError do
+  defexception [:message, plug_status: 500]
+end
