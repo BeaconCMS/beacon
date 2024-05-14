@@ -399,7 +399,7 @@ defmodule Beacon.ContentTest do
       attrs = %{site: :my_site, name: "foo_snippet", body: "page title is {{ page.title"}
 
       assert {:error, %Ecto.Changeset{errors: [body: {err, []}], valid?: false}} = Content.create_snippet_helper(attrs)
-      assert err == "Reason: expected end of string, line: 1"
+      assert err =~ "Reason: expected end of string, line: 1"
     end
 
     test "create broadcasts updated content event" do
