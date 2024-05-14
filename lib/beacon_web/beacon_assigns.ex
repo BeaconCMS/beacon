@@ -16,6 +16,7 @@ defmodule BeaconWeb.BeaconAssigns do
   defstruct site: nil,
             path_params: nil,
             query_params: nil,
+            page: %{title: nil},
             private: %{
               live_path: nil,
               layout_id: nil,

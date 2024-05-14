@@ -91,9 +91,9 @@ defmodule BeaconWeb.PageLive do
 
     page = RouterServer.lookup_page!(site, path)
     live_data = BeaconWeb.DataSource.live_data(site, path, Map.drop(params, ["path"]))
-
     components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)
+    page_title = BeaconWeb.DataSource.page_title(site, page.id, live_data)
 
     Process.put(:__beacon_site__, site)
     Process.put(:__beacon_page_path__, page.path)
@@ -101,22 +101,19 @@ defmodule BeaconWeb.PageLive do
     socket =
       socket
       |> Component.assign(:beacon_live_data, live_data)
+      |> Component.assign(:page_title, page_title)
       |> BeaconAssigns.update_private(:live_path, path)
       |> BeaconAssigns.update_private(:layout_id, page.layout_id)
       |> BeaconAssigns.update_private(:page_id, page.id)
       |> BeaconAssigns.update_private(:page_updated_at, DateTime.utc_now())
       |> BeaconAssigns.update_private(:page_module, page_module)
       |> BeaconAssigns.update_private(:components_module, components_module)
+      |> BeaconAssigns.update(:query_params, params)
+      |> BeaconAssigns.update(:page, %{title: page_title})
       # TODO: remove deprecated @beacon_query_params
       |> Component.assign(:beacon_query_params, params)
-      |> BeaconAssigns.update(:query_params, params)
 
-    socket =
-      socket
-      |> Component.assign(:page_title, BeaconWeb.DataSource.page_title(site, page.id, live_data))
-      |> push_event("beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})
-
-    {:noreply, socket}
+    {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})}
   end
 
   @doc false
