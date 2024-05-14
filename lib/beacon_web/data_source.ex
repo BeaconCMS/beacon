@@ -34,7 +34,9 @@ defmodule BeaconWeb.DataSource do
     end
   end
 
-  def meta_tags(%{beacon: %{site: site, private: %{page_id: page_id}}} = assigns) do
+  def meta_tags(%{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns) do
+    live_data = Map.take(assigns, live_data_keys)
+
     page =
       site
       |> Beacon.Loader.fetch_page_module(page_id)
@@ -43,7 +45,7 @@ defmodule BeaconWeb.DataSource do
     assigns
     |> BeaconWeb.Layouts.meta_tags()
     |> List.wrap()
-    |> Enum.map(&interpolate_meta_tag(&1, %{page: page, live_data: assigns.beacon_live_data}))
+    |> Enum.map(&interpolate_meta_tag(&1, %{page: page, live_data: live_data}))
   end
 
   defp interpolate_meta_tag(meta_tag, values) when is_map(meta_tag) do

@@ -36,7 +36,7 @@ defmodule BeaconWeb.API.PageJSON do
   end
 
   defp page_ast(page, live_data) do
-    case JSONEncoder.encode(page.site, page.template, %{beacon_live_data: live_data}) do
+    case JSONEncoder.encode(page.site, page.template, live_data) do
       {:ok, ast} -> ast
       _ -> []
     end
@@ -52,11 +52,13 @@ defmodule BeaconWeb.API.PageJSON do
     Map.put(data, :layout, layout)
   end
 
-  defp maybe_include_layout(data, _page, _beacon_live_data), do: data
+  defp maybe_include_layout(data, _page, _live_data), do: data
 
   # TODO: cache layout ast instead of recomputing for every page
   defp layout_ast(layout, page_template, live_data) do
-    case JSONEncoder.encode(layout.site, layout.template, %{inner_content: page_template, beacon_live_data: live_data}) do
+    assigns = Map.put(live_data, :inner_content, page_template)
+
+    case JSONEncoder.encode(layout.site, layout.template, assigns) do
       {:ok, ast} -> ast
       _ -> []
     end

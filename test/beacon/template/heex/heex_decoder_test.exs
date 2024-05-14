@@ -56,11 +56,11 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
 
     assert_equal(
       ~S"""
-      <%= for val <- @beacon_live_data[:vals] do %>
+      <%= for val <- @vals do %>
         <%= val %>
       <% end %>
       """,
-      %{beacon_live_data: %{vals: [1]}}
+      %{vals: [1]}
     )
 
     assert_equal(~S"""
@@ -85,6 +85,6 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   end
 
   test "live data assigns" do
-    assert_equal(~S|<%= @beacon_live_data[:name] %>|, %{beacon_live_data: %{name: "Beacon"}})
+    assert_equal(~S|<%= @name %>|, %{name: "Beacon"})
   end
 end

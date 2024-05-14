@@ -45,8 +45,9 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.apply_mfa(:layout_assigns, [])
   end
 
-  def render_page_title(%{beacon_live_data: beacon_live_data, beacon: %{site: site, private: %{page_id: page_id}}}) do
-    BeaconWeb.DataSource.page_title(site, page_id, beacon_live_data)
+  def render_page_title(%{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns) do
+    live_data = Map.take(assigns, live_data_keys)
+    BeaconWeb.DataSource.page_title(site, page_id, live_data)
   end
 
   def render_meta_tags(assigns) do

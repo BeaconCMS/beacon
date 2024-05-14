@@ -35,7 +35,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
         template: """
         <main>
           <h2>Some Values:</h2>
-          <%= for value <- @beacon_live_data[:values] do %>
+          <%= for value <- @values do %>
             <%= my_component("sample_component", val: value) %>
           <% end %>
 

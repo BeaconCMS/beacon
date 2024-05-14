@@ -100,8 +100,11 @@ defmodule BeaconWeb.PageLive do
 
     socket =
       socket
-      |> Component.assign(:beacon_live_data, live_data)
       |> Component.assign(:page_title, page_title)
+      # TODO: remove deprecated @beacon_live_data
+      |> Component.assign(:beacon_live_data, live_data)
+      |> Component.assign(live_data)
+      |> BeaconAssigns.update_private(:live_data_keys, Map.keys(live_data))
       |> BeaconAssigns.update_private(:live_path, path)
       |> BeaconAssigns.update_private(:layout_id, page.layout_id)
       |> BeaconAssigns.update_private(:page_id, page.id)

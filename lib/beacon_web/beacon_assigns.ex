@@ -14,11 +14,12 @@ defmodule BeaconWeb.BeaconAssigns do
   @derive {Inspect, only: [:site, :path_params, :query_params, :page]}
 
   defstruct site: nil,
-            path_params: nil,
-            query_params: nil,
+            path_params: %{},
+            query_params: %{},
             page: %{title: nil},
             private: %{
-              live_path: nil,
+              live_data_keys: [],
+              live_path: [],
               layout_id: nil,
               page_id: nil,
               page_updated_at: nil,

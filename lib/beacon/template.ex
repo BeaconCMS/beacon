@@ -76,7 +76,7 @@ defmodule Beacon.Template do
 
   @doc false
   def render(page_module, assigns \\ %{}) when is_atom(page_module) and is_map(assigns) do
-    %{__changed__: %{}, beacon: %BeaconWeb.BeaconAssigns{private: %{live_path: []}}, beacon_path_params: %{}, beacon_live_data: %{}}
+    %{__changed__: %{}, beacon: %BeaconWeb.BeaconAssigns{}}
     |> Map.merge(assigns)
     |> page_module.render()
   end
