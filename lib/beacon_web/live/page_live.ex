@@ -24,7 +24,6 @@ defmodule BeaconWeb.PageLive do
   def render(assigns) do
     site = assigns.beacon.site
     live_path = assigns.beacon.private.live_path
-
     page = RouterServer.lookup_page!(site, live_path)
     path_params = Beacon.Router.path_params(page.path, live_path)
 

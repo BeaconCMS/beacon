@@ -10,9 +10,4 @@ defmodule BeaconWeb.BeaconAssignsTest do
     assert %{assigns: %{beacon: %BeaconAssigns{site: "one"}}} = BeaconAssigns.update(socket, :site, "one")
     assert %{assigns: %{beacon: %BeaconAssigns{site: "two"}}} = BeaconAssigns.update(socket, :site, "two")
   end
-
-  test "update_private/3", %{socket: socket} do
-    assert %{assigns: %{beacon: %BeaconAssigns{private: %{page_id: 1}}}} = BeaconAssigns.update_private(socket, :page_id, 1)
-    assert %{assigns: %{beacon: %BeaconAssigns{private: %{page_id: 2}}}} = BeaconAssigns.update_private(socket, :page_id, 2)
-  end
 end

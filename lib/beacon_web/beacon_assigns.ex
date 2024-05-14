@@ -32,7 +32,7 @@ defmodule BeaconWeb.BeaconAssigns do
 
   def build(beacon_assigns = %__MODULE__{}, path_info, query_params) when is_list(path_info) and is_map(query_params) do
     site = beacon_assigns.site
-    %{site: ^site} = page = Beacon.RouterServer.lookup_page!(beacon_assigns.site, path_info)
+    %{site: ^site} = page = Beacon.RouterServer.lookup_page!(site, path_info)
     components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
@@ -70,13 +70,6 @@ defmodule BeaconWeb.BeaconAssigns do
   defp do_update_socket_or_assigns(socket_or_assigns, key, value) do
     Phoenix.Component.update(socket_or_assigns, :beacon, fn beacon ->
       Map.put(beacon, key, value)
-    end)
-  end
-
-  @doc false
-  def update_private(%{assigns: %{beacon: _beacon}} = socket, key, value) do
-    Phoenix.Component.update(socket, :beacon, fn beacon ->
-      put_in(beacon, [Access.key(:private), Access.key(key)], value)
     end)
   end
 end
