@@ -21,11 +21,11 @@ defmodule Beacon.Template.HEExTest do
       assert HEEx.render(
                :my_site,
                ~S|
-                  <%= for val <- @beacon_live_data[:vals] do %>
+                  <%= for val <- @vals do %>
                     <%= val %>
                   <% end %>
                 |,
-               %{beacon_live_data: %{vals: [1, 2]}}
+               %{vals: [1, 2]}
              ) == "\n1\n\n2\n"
     end
 

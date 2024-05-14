@@ -6,7 +6,7 @@ defmodule Beacon.Loader.ErrorPageTest do
 
   defp build_conn(conn) do
     conn
-    |> Plug.Conn.assign(:__site__, @site)
+    |> Plug.Conn.assign(:beacon, %BeaconWeb.BeaconAssigns{site: @site})
     |> Plug.Conn.put_private(:phoenix_router, Beacon.BeaconTest.Router)
   end
 

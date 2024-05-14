@@ -194,8 +194,6 @@ defmodule Beacon do
 
     #{context}
 
-    Make sure you have created a page for this path.
-    See Pages.create_page!/2 for more info.
     """
   end
 

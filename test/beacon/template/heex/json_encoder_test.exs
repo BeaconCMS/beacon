@@ -60,25 +60,25 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert_output(
       ~S|
       <img
-        alt={@beacon_live_data.person.bio}
-        src={@beacon_live_data.person.picture}
+        alt={@person.bio}
+        src={@person.picture}
         class="w-full h-auto max-w-full"
       />
       |,
       [
         %{
           "attrs" => %{
-            "alt" => "{@beacon_live_data.person.bio}",
+            "alt" => "{@person.bio}",
             "class" => "w-full h-auto max-w-full",
             "self_close" => true,
-            "src" => "{@beacon_live_data.person.picture}"
+            "src" => "{@person.picture}"
           },
           "content" => [],
           "rendered_html" => "<img alt=\"person bio\" src=\"profile.jpg\" class=\"w-full h-auto max-w-full\">",
           "tag" => "img"
         }
       ],
-      %{beacon_live_data: %{person: %{bio: "person bio", picture: "profile.jpg"}}}
+      %{person: %{bio: "person bio", picture: "profile.jpg"}}
     )
   end
 
@@ -190,11 +190,11 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   test "comprehensions" do
     template = ~S|
-        <%= for employee <- @beacon_live_data[:employees] do %>
+        <%= for employee <- @employees do %>
           <!-- regular <!-- comment --> -->
           <%= employee.position %>
           <div>
-            <%= for person <- @beacon_live_data[:persons] do %>
+            <%= for person <- @persons do %>
               <%= if person.id == employee.id do %>
                 <span><%= person.name %></span>
                 <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
@@ -207,7 +207,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert {:ok,
             [
               %{
-                "arg" => "for employee <- @beacon_live_data[:employees] do",
+                "arg" => "for employee <- @employees do",
                 "tag" => "eex_block",
                 "rendered_html" =>
                   "\n<!-- regular <!-- comment --> -->\nCEO\n          <div>\n\n\n                <span>José</span>\n                <img width=\"200\" src=\"profile.jpg\">\n\n\n\n\n          </div>\n\n<!-- regular <!-- comment --> -->\nManager\n          <div>\n\n\n\n\n                <span>Chris</span>\n                <img width=\"200\" src=\"default.jpg\">\n\n\n          </div>\n",
@@ -215,10 +215,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
               }
             ]} =
              JSONEncoder.encode(:my_site, template, %{
-               beacon_live_data: %{
-                 employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
-                 persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
-               }
+               employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
+               persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
              })
 
     assert is_binary(ast)
@@ -226,17 +224,17 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   test "live data" do
     assert_output(
-      "<%= inspect(@beacon_live_data[:vals]) %>",
+      "<%= inspect(@vals) %>",
       [
         %{
           "attrs" => %{},
-          "content" => ["inspect(@beacon_live_data[:vals])"],
+          "content" => ["inspect(@vals)"],
           "metadata" => %{"opt" => ~c"="},
           "rendered_html" => "[1, 2, 3]",
           "tag" => "eex"
         }
       ],
-      %{beacon_live_data: %{vals: [1, 2, 3]}}
+      %{vals: [1, 2, 3]}
     )
   end
 

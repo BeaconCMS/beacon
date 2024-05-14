@@ -48,7 +48,7 @@ page =
     <main>
       <h2>Some Values:</h2>
       <ul>
-        <%%= for val <- @beacon_live_data[:vals] do %>
+        <%%= for val <- @vals do %>
           <%%= my_component("sample_component", val: val) %>
         <%% end %>
       </ul>
@@ -99,7 +99,7 @@ Content.create_assign_for_live_data(home_live_data, %{format: :elixir, key: "val
     <h2>A blog</h2>
     <ul>
       <li>Path Params Blog Slug: <%%= @beacon_path_params["blog_slug"] %></li>
-      <li>Live Data blog_slug_uppercase: <%%= @beacon_live_data[:blog_slug_uppercase] %></li>
+      <li>Live Data blog_slug_uppercase: <%%= @blog_slug_uppercase %></li>
     </ul>
   </main>
   """
