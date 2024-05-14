@@ -17,23 +17,18 @@ defmodule BeaconWeb.PageLive do
     %{"beacon_site" => site} = session
 
     socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
+
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
+
     {:ok, socket, layout: {BeaconWeb.Layouts, :dynamic}}
   end
 
   def render(assigns) do
-    site = assigns.beacon.site
-    live_path = assigns.beacon.private.live_path
-    page = RouterServer.lookup_page!(site, live_path)
-    path_params = Beacon.Router.path_params(page.path, live_path)
+    %{beacon: %{site: site, private: %{live_path: live_path}}} = assigns
 
-    assigns =
-      assigns
-      # TODO: remove deprecated @beacon_path_params
-      |> Component.assign(:beacon_path_params, path_params)
-      |> BeaconAssigns.update(:path_params, path_params)
-
-    Lifecycle.Template.render_template(page, assigns, __ENV__)
+    site
+    |> RouterServer.lookup_page!(live_path)
+    |> Lifecycle.Template.render_template(assigns, __ENV__)
   end
 
   def handle_info({:page_loaded, _}, socket) do
@@ -81,7 +76,10 @@ defmodule BeaconWeb.PageLive do
 
   def handle_params(params, _url, socket) do
     %{"path" => path_info} = params
-    %{site: site, page: page, query_params: query_params} = beacon_assigns = BeaconAssigns.build(socket.assigns.beacon, path_info, params)
+
+    %{site: site, page: page, path_params: path_params, query_params: query_params} =
+      beacon_assigns = BeaconAssigns.build(socket.assigns.beacon, path_info, params)
+
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
 
     Process.put(:__beacon_site__, site)
@@ -93,6 +91,8 @@ defmodule BeaconWeb.PageLive do
       |> Component.assign(live_data)
       # TODO: remove deprecated @beacon_live_data
       |> Component.assign(:beacon_live_data, live_data)
+      # TODO: remove deprecated @beacon_path_params
+      |> Component.assign(:beacon_path_params, path_params)
       # TODO: remove deprecated @beacon_query_params
       |> Component.assign(:beacon_query_params, query_params)
       |> Component.assign(:beacon, beacon_assigns)

@@ -2,7 +2,7 @@ defmodule BeaconWeb do
   @non_assignables [:beacon]
 
   @doc """
-  Same as `Phoenix.Component.assign/2` but raises an error if the `key` is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign/2` but raises an error if the key is a reserved assign by Beacon.
   """
   def assign(socket_or_assigns, keyword_or_map) when is_map(keyword_or_map) or is_list(keyword_or_map) do
     Enum.each(keyword_or_map, fn {key, _value} ->
@@ -101,9 +101,7 @@ defmodule BeaconWeb do
     end
   end
 
-  @doc """
-  When used, dispatch to the appropriate controller/view/etc.
-  """
+  @doc false
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end

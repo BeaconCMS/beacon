@@ -23,13 +23,16 @@ defmodule BeaconWeb.Layouts do
   defp router(%Plug.Conn{private: %{phoenix_router: router}}), do: router
   defp router(%Phoenix.LiveView.Socket{router: router}), do: router
 
-  def render_dynamic_layout(%{beacon: %{site: site, private: %{layout_id: layout_id}}} = assigns) do
+  def render_dynamic_layout(assigns) do
+    %{beacon: %{site: site, private: %{layout_id: layout_id}}} = assigns
+
     site
     |> Beacon.Loader.fetch_layout_module(layout_id)
     |> Beacon.apply_mfa(:render, [assigns])
   end
 
-  def live_socket_path(%{beacon: %{site: site}}) do
+  def live_socket_path(assigns) do
+    %{beacon: %{site: site}} = assigns
     Beacon.Config.fetch!(site).live_socket_path
   end
 
@@ -45,7 +48,8 @@ defmodule BeaconWeb.Layouts do
     |> Beacon.apply_mfa(:layout_assigns, [])
   end
 
-  def render_page_title(%{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns) do
+  def render_page_title(assigns) do
+    %{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns
     live_data = Map.take(assigns, live_data_keys)
     BeaconWeb.DataSource.page_title(site, page_id, live_data)
   end
@@ -77,7 +81,8 @@ defmodule BeaconWeb.Layouts do
     compiled_page_meta_tags(assigns)
   end
 
-  defp compiled_page_meta_tags(%{beacon: %{site: site, private: %{page_id: page_id}}}) do
+  defp compiled_page_meta_tags(assigns) do
+    %{beacon: %{site: site, private: %{page_id: page_id}}} = assigns
     %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
     meta_tags
   end
@@ -92,12 +97,14 @@ defmodule BeaconWeb.Layouts do
     compiled_layout_meta_tags(assigns)
   end
 
-  defp compiled_layout_meta_tags(%{beacon: %{site: site, private: %{layout_id: layout_id}}}) do
+  defp compiled_layout_meta_tags(assigns) do
+    %{beacon: %{site: site, private: %{layout_id: layout_id}}} = assigns
     %{meta_tags: meta_tags} = compiled_layout_assigns(site, layout_id)
     meta_tags
   end
 
-  defp render_schema(%{beacon: %{site: site, private: %{page_id: page_id}}} = assigns) do
+  defp render_schema(assigns) do
+    %{beacon: %{site: site, private: %{page_id: page_id}}} = assigns
     %{raw_schema: raw_schema} = compiled_page_assigns(site, page_id)
 
     is_empty = fn raw_schema ->
@@ -138,7 +145,8 @@ defmodule BeaconWeb.Layouts do
     compiled_layout_resource_links(assigns)
   end
 
-  defp compiled_layout_resource_links(%{beacon: %{site: site, private: %{layout_id: layout_id}}}) do
+  defp compiled_layout_resource_links(assigns) do
+    %{beacon: %{site: site, private: %{layout_id: layout_id}}} = assigns
     %{resource_links: resource_links} = compiled_layout_assigns(site, layout_id)
     resource_links
   end

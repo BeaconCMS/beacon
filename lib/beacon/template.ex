@@ -60,13 +60,6 @@ defmodule Beacon.Template do
   end
 
   @doc false
-  def render_page(page_module, assigns \\ %{}) when is_atom(page_module) and is_map(assigns) do
-    %{__changed__: %{}, beacon: %BeaconWeb.BeaconAssigns{}}
-    |> Map.merge(assigns)
-    |> page_module.render()
-  end
-
-  @doc false
   def choose_template([primary]), do: primary
   def choose_template([primary | variants]), do: choose_template(variants, Enum.random(1..100), primary)
 

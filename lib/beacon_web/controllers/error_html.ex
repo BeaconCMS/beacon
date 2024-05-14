@@ -9,7 +9,7 @@ defmodule BeaconWeb.ErrorHTML do
     error_module = Beacon.Loader.fetch_error_page_module(site)
 
     conn
-    |> Plug.Conn.assign(:beacon, %BeaconWeb.BeaconAssigns{site: site})
+    |> Plug.Conn.assign(:beacon, BeaconWeb.BeaconAssigns.build(site))
     |> error_module.render(String.to_integer(status_code))
   rescue
     error ->

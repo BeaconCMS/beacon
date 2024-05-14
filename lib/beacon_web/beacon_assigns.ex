@@ -16,7 +16,7 @@ defmodule BeaconWeb.BeaconAssigns do
   defstruct site: nil,
             path_params: %{},
             query_params: %{},
-            page: %{title: nil},
+            page: %{path: nil, title: nil},
             private: %{
               live_data_keys: [],
               live_path: [],
@@ -36,11 +36,13 @@ defmodule BeaconWeb.BeaconAssigns do
     components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
+    path_params = Beacon.Router.path_params(page.path, path_info)
     page_title = BeaconWeb.DataSource.page_title(site, page.id, live_data)
 
     %{
       beacon_assigns
-      | query_params: query_params,
+      | path_params: path_params,
+        query_params: query_params,
         page: %{path: page.path, title: page_title},
         private: %{
           live_data_keys: Map.keys(live_data),

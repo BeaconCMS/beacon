@@ -34,7 +34,8 @@ defmodule BeaconWeb.DataSource do
     end
   end
 
-  def meta_tags(%{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns) do
+  def meta_tags(assigns) do
+    %{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns
     live_data = Map.take(assigns, live_data_keys)
 
     page =
