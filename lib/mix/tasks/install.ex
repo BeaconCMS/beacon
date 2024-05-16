@@ -49,7 +49,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:site]}
+      A new site has been configured at #{bindings[:path]}
 
       Please check out the guides for more info:
 
