@@ -1,22 +1,29 @@
 # Your First Site
 
-In this guide we'll walk trough all the steps necessary to have a functioning site with components, styles, and a contact form to demonstrate how Beacon works.
+## Pre-requisites
 
-It's required that you have a working Phoenix LiveView with Beacon and Beacon LiveAdmin installed and configured correctly, please follow the [Beacon installation guide](https://github.com/BeaconCMS/beacon/blob/main/guides/installation.md) and [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md) if you're starting from stratch.
+To get your first site up and running, you first need a working Phoenix application with Phoenix LiveView and also the Beacon LiveAdmin to create and manage resources for your site.
+
+You need to follow the two guides below to get started:
+
+- [Install Beacon](https://github.com/BeaconCMS/beacon/blob/main/guides/installation.md)
+- [Install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md)
+
+Beacon can be installed on existing Phoenix applications, but make sure the minimum requirements are met as described in the installation guide.
 
 ## Generating the site
 
-Each site requires some minimal configuratin to run in your application, lets use the built-in `beacon.install` generator to get started quickly. In the root of your application, execute:
+Each site requires some minimal configuratin to run, lets use the built-in `beacon.install` generator to get started quickly. In the root of your application, execute:
 
 ```
 mix beacon.install --site my_site
 ```
 
-You can use whatever name you like as long as you remember to change it in the following steps.
+You can use other name you like as long as you remember to change it in the following steps.
 
 ## Configuring the routes
 
-First of all delete the following scope added by Phoenix automatically:
+In the `router.ex` file,  you'll see the following scope in a new Phoenix application:
 
 ```elixir
 scope "/", MyAppWeb do
@@ -26,7 +33,8 @@ scope "/", MyAppWeb do
 end
 ```
 
-Also feel free to delete page_controller.ex and related files, you won't need those files.
+Or something similar if you have changed it before. For this tutorial we are assuming the Beacon site will be mounted at the root `/` route,
+so you can delete that block or change where the Beacon site is mounted, as long as you keep that in mind and adjust accordingly throughout the tutorial.
 
 And finally change the generated scope created by Beacon to look like:
 
@@ -61,144 +69,220 @@ And now start your Phoenix app:
 mix phx.server
 ```
 
-Visit [http://localhost:4000/admin](http://localhost:4000/admin) and you should see the `my_site` that you just created listed on the admin interface.
+Visit http://localhost:4000/admin and you should see the `my_site` that you just created listed on the admin interface.
 
-
-Now let's create the resources for our first site. Beacon has built-in support for Tailwind and we'll be using the [Flowbite](https://flowbite.com/docs/) components to style our page but you're free to adapt the styles as you want.
-
-## Creating a layout
-
-Click on the "Layouts" button, then "Create New Layout". On this page we'll create the layout where all pages will be rendered. It will contain a footer, header, and the placeholder to render page's content.
-
-Input "Main" for title and the following template:
-
-```heex
-<nav class="bg-white border-gray-200 dark:bg-gray-900">
-  <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-    <a href="/" class="flex items-center">
-      <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">My Site</span>
-    </a>
-    <button data-collapse-toggle="navbar-default" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" aria-controls="navbar-default" aria-expanded="false">
-        <span class="sr-only">Open main menu</span>
-        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
-        </svg>
-    </button>
-    <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-      <ul
-        class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-        <li>
-          <a href="/"
-            class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
-            aria-current="page">Home</a>
-        </li>
-        <li>
-          <a href="/contact"
-            class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
-            aria-current="page">Contact</a>
-        </li>
-      </ul>
-    </div>
-  </div>
-</nav>
-
-<%= @inner_content %>
-```
-
-The `@inner_content` is important here, it's where page's templates will be injected into the layout.
-
-Click on Create Draft Layout, then click on Publish, and Confirm. Done, we have a layout to render the pages.
+Now let's create the resources for our first site.
 
 ## Creating the home page
 
-For the home page we'll display an image uploaded to the Media Library. Firstly, click on Media Library on the sidebar menu, then click "Upload", and upload any image that you like.
+Go to http://localhost:4000/admin/my_site/pages and you should see a page already created for the `/` path. We're going to change it.
 
-On the list of assets, take note of the **Name** of the asset.
-
-Now let's create the page. Click on Pages on the sidebar menu, then click on Create New Page, and input some data into the form:
-
-* Path: leave it empty, that will be the root home page
-* Title: Home - My Site
-* Template:
+Edit the template to replace with this content:
 
 ```heex
-<div class="h-screen mt-20">
-  <BeaconWeb.Components.image name="ASSET_NAME" />
+<div class="relative flex min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-br from-[#0077b6] to-[#00a8e8] text-white">
+  <div class="absolute inset-0 z-[-1] bg-cover bg-center opacity-30 blur-[100px]"></div>
+  <header class="container mx-auto flex items-center justify-between py-6 px-4 md:px-6">
+    <div class="flex items-center gap-2">
+      <.link patch="/" class="flex items-center gap-2">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="h-8 w-8"
+        >
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+          <line x1="4" x2="4" y1="22" y2="15"></line>
+        </svg>
+        <span class="text-2xl font-bold">CMS Platform</span>
+      </.link>
+    </div>
+    <div class="flex items-center gap-4">
+      <.link patch="/blog" class="hidden md:inline-flex text-sm font-medium hover:underline">
+        Blog
+      </.link>
+      <button class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2 hidden md:inline-flex">
+        Sign In
+      </button>
+    </div>
+  </header>
+  <main class="container mx-auto flex-1 px-4 md:px-6">
+    <div class="mx-auto max-w-6xl space-y-6 py-12 md:py-24 lg:py-32">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="space-y-6">
+          <h1 class="text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
+            <span class="bg-gradient-to-r from-[#00a8e8] to-[#0077b6] bg-clip-text text-[#333] dark:text-white">
+              Unlock the power
+            </span>
+            of your content with our CMS platform
+          </h1>
+          <p class="text-lg text-gray-300 md:text-xl">
+            Streamline your content management with our intuitive, high-performance CMS built on Phoenix LiveView.
+          </p>
+          <Phoenix.Component.form :let={f} for={%{}} as={:waitlist} phx-submit="join">
+            <div class="flex w-full max-w-2xl items-center space-x-2">
+              <input
+                id={Phoenix.HTML.Form.input_id(f, :email)}
+                name={Phoenix.HTML.Form.input_name(f, :email)}
+                class="flex h-10 w-full border border-input text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1 rounded-md border-none bg-white/10 py-3 px-4 text-white placeholder:text-gray-300 focus:ring-2 focus:ring-[#00a8e8]"
+                placeholder="Enter your email"
+                type="email"
+              />
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground h-10 rounded-md bg-[#00a8e8] py-3 px-6 font-medium transition-colors hover:bg-[#0077b6]"
+                type="submit"
+              >
+                Join Waitlist
+              </button>
+            </div>
+          </Phoenix.Component.form>
+          <span :if={Map.get(assigns, :joined)} class="text-sm text-gray-300">
+            Congrats! You joined the watchlist.
+          </span>
+        </div>
+        <div class="flex items-center justify-center">
+          <img
+            src="http://localhost:4000/beacon_assets/demo/narwin.webp"
+            alt="CMS Platform"
+            width="600"
+            height="600"
+            style="aspect-ratio: 600 / 600; object-fit: cover;"
+          />
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="container mx-auto border-t border-white/20 py-6 px-4 text-sm text-gray-300 md:px-6">
+    <div class="flex items-center justify-between">
+      <p>© <%= @current_year %> CMS Platform. All rights reserved.</p>
+      <div class="flex space-x-4 items-center">
+        <a class="hover:underline" href="#">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-5 w-5"
+          >
+            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+          </svg>
+          <span class="sr-only">Facebook</span>
+        </a>
+        <a class="hover:underline" href="#">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-5 w-5"
+          >
+            <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z">
+            </path>
+          </svg>
+          <span class="sr-only">Twitter</span>
+        </a>
+        <a class="hover:underline" href="#">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-5 w-5"
+          >
+            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+          </svg>
+          <span class="sr-only">Instagram</span>
+        </a>
+        <a class="hover:underline" href="#">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-5 w-5"
+          >
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z">
+            </path>
+            <rect width="4" height="12" x="2" y="9"></rect>
+            <circle cx="4" cy="4" r="2"></circle>
+          </svg>
+          <span class="sr-only">LinkedIn</span>
+        </a>
+        <a class="hover:underline" href="#">
+          Privacy
+        </a>
+        <a class="hover:underline" href="#">
+          Terms
+        </a>
+        <a class="hover:underline" href="#">
+          Contact
+        </a>
+      </div>
+    </div>
+  </footer>
 </div>
 ```
 
-Replace `ASSET_NAME` with the asset name you just uploaded, it should look something like "my_image.webp". Click on Create Draft Page, then click Publish, and Confirm.
+Save the changes and Publish the page. Go to http://localhost:4000 and you'll see an error! That's because we haven't created all resources used in that page yet. Let's fix it.
 
-Go ahead and visit [http://localhost:4000](http://localhost:4000) - that's your first published page!
+## Live Data
 
-## Creating the contact page
+The current year is displayed at the footer as an assign `<%= @current_year %>` so we need to create such assign for our page.
 
-Let's add some interaction creating a contact form in a new page. Go to [http://localhost:4000/admin/my_site/pages/new](http://localhost:4000/admin/my_site/pages/new) again and input this data:
-
-* Path: contact
-* Title: Contact - My Site
-* Template:
-
-```heex
-TODO
-```
-
-Save the changes and Publish it.
-
-Go ahead and visit [http://localhost:4000](http://localhost:4000/contact). You'll see the form, the frontend is done, but it won't work since it needs to handle the form submit event.
-
-LiveAdmin doesn not support managing Page Events at this moment so let's create it manually. Open another terminal in the root of the project and execute:
-
-```sh
-iex -S mix
-```
-
-And paste this code:
+Go to http://localhost:4000/admin/my_site/live_data to create a new path `/` and then create a new assign named `current_year` with the following value:
 
 ```elixir
-TODO update page event
+Date.utc_today().year
 ```
 
-Done. Go ahead and test the content form.
+Remember to change the Format to Elixir so that content can be evaluated as Elixir code.
 
-## Improving SEO
+Go to the home page again and refresh the page, it should render and you should see the current year displayed at the footer. But trying to submit the form to signup to the newsletter does nothing
+and you can see on the console logs of your Phoenix server that Beacon tries to handle that event but it doesn't find any handler for it. Let's fix that.
 
-Beacon is very focused on SEO and it's optimized to render pages as fast as possible, but that alone is not enough to perform well on search engines. On the Page Editor you can add Meta Tags and a Schema to provide extra info about the page which is used by search engines to extract contextual information.
+## Event Handler
 
-### Meta Tags
+Edit the home page and click on the Events tab. There we'll create a new event handler for the form submission `join` defined in our home page template.
 
-The title and description are two essential pieces of information that every page must have, and even though title is not a meta tag per se it goes along with the description for SEO purposes. Both are automatically added to your page when you fill the Title and Description fields in the Page Editor form.
+The name used in the template must match so create a new Event Handler named `join` with the following content:
 
-Besides those two pieces of meta, it's also important to add [Open Graph](https://ogp.me) meta tags used by social medias to enrich link previews on their platforms, so let's add some meta tags. Edit any page, go to the Meta Tags tab and add a couple of meta tags:
 
-| property       | content                 |
-| -------------- | ----------------------- |
-| og:title       | {{ page.title }}        |
-| og:description | {{ page.description }}  |
-
-Many other meta tags can be added depending on the type and content of the page, but those are a great start.
-
-Save the changes, go to the Page tag, and Publish the changes.
-
-## Schema
-
-[Strutured Data](https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data) can be added to help search engines understand the content of the page. Go to the Schema tab and input this content in the code editor:
-
-```json
-[
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "url": "https://www.my_site.com",
-    "logo": "https://www.my_site.com/images/logo.png"
-  }
-]
+```elixir
+%{"waitlist" => %{"email" => email}} = event_params
+IO.puts("#{email} joined the waitlist")
+{:noreply, assign(socket, :joined, true)}
 ```
 
-These values have no meaning running your site locally but you should replace it accordingly if you plan to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/recipes/deploy-to-flyio.md).
-
-
-Save the changes, go to the Page tag, and Publish the changes.Save the changes.
+As you can see submiting the form will log the email to the console and set the `joined` assign to `true`, which is used to display a message to the user that the email was successfully submitted.
+Let's see it working. Publish the page again and go back to the home page, fill the form and submit it.
 
 --
 
