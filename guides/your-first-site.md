@@ -16,14 +16,14 @@ Beacon can be installed on existing Phoenix applications, but make sure the mini
 Each site requires some minimal configuratin to run, lets use the built-in `beacon.install` generator to get started quickly. In the root of your application, execute:
 
 ```
-mix beacon.install --site my_site
+mix beacon.install --site my_site --path /
 ```
 
-You can use other name you like as long as you remember to change it in the following steps.
+You can use other name and path as needed, as long as you remember to change it in the following steps.
 
 ## Configuring the routes
 
-In the `router.ex` file,  you'll see the following scope in a new Phoenix application:
+In the `router.ex` file, you'll see the following scope in a new Phoenix application:
 
 ```elixir
 scope "/", MyAppWeb do
@@ -33,25 +33,15 @@ scope "/", MyAppWeb do
 end
 ```
 
-Or something similar if you have changed it before. For this tutorial we are assuming the Beacon site will be mounted at the root `/` route,
-so you can delete that block or change where the Beacon site is mounted, as long as you keep that in mind and adjust accordingly throughout the tutorial.
-
-And finally change the generated scope created by Beacon to look like:
-
-```elixir
-scope "/" do
-  pipe_through :browser
-  beacon_site "/", site: :my_site
-end
-```
-
-With this change the site will be served at [http://localhost:4000/](http://localhost:4000/)
+Or something similar if you have changed it before. For this tutorial we are assuming that the Beacon site will be mounted at the root `/` route,
+so you can delete that block or change where the Beacon site is mounted, as long as there's no route conflict since we can't mount a Beacon site and have
+a Phoenix route at the same path.
 
 ## Connecting to a database
 
-The `beacon.install` generator will change and create some files for you but the most important configuration at this point is adjusting the Repo credentials since Beacon requires a database to save layouts, pages, and all the site data.
+The `beacon.install` generator will change and create some files for you but the most important configuration at this point is adjusting the Repo credentials since Beacon requires a database to store site data.
 
-Look for the config `config :beacon, Beacon.Repo` in the files `config/dev.exs` and `config/prod.exs` to make the database configuration looks correct to your environment.
+Look for the config `config :beacon, Beacon.Repo` in the files `config/dev.exs` and `config/prod.exs` to adjust the database configuration to your environment.
 
 ## Acessing LiveAdmin to manage your site
 
@@ -265,15 +255,14 @@ Date.utc_today().year
 
 Remember to change the Format to Elixir so that content can be evaluated as Elixir code.
 
-Go to the home page again and refresh the page, it should render and you should see the current year displayed at the footer. But trying to submit the form to signup to the newsletter does nothing
+Go to the home page again and refresh the page, it should render and you should see the current year displayed at the footer. But you'll notice it fails to load the main image and also trying to submit the form to signup to the newsletter does nothing
 and you can see on the console logs of your Phoenix server that Beacon tries to handle that event but it doesn't find any handler for it. Let's fix that.
 
-## Event Handler
+## Handle the form submission event
 
 Edit the home page and click on the Events tab. There we'll create a new event handler for the form submission `join` defined in our home page template.
 
 The name used in the template must match so create a new Event Handler named `join` with the following content:
-
 
 ```elixir
 %{"waitlist" => %{"email" => email}} = event_params
@@ -281,9 +270,11 @@ IO.puts("#{email} joined the waitlist")
 {:noreply, assign(socket, :joined, true)}
 ```
 
-As you can see submiting the form will log the email to the console and set the `joined` assign to `true`, which is used to display a message to the user that the email was successfully submitted.
-Let's see it working. Publish the page again and go back to the home page, fill the form and submit it.
+Save the change and Publish the page again. You should see a message on the page after submiting the form and also a message on the server console.
 
---
+## Upload an image
 
-Congratulations! You have a site up and running. The next step is to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/recipes/deploy-to-flyio.md).
+
+-----------------------
+
+Congratulations! You have a site up and running. Check out all available [recipes](https://github.com/BeaconCMS/beacon/blob/main/guides/recipes/) to increment your site capabilities and deploy it.
