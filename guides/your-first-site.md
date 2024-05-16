@@ -2,7 +2,7 @@
 
 In this guide we'll walk trough all the steps necessary to have a functioning site with components, styles, and a contact form to demonstrate how Beacon works.
 
-It's required that you have a working Phoenix LiveView with Beacon and Beacon LiveAdmin installed and configured correctly, please follow the [Beacon installation guide](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/installation.md) and [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md) if you're starting from stratch.
+It's required that you have a working Phoenix LiveView with Beacon and Beacon LiveAdmin installed and configured correctly, please follow the [Beacon installation guide](https://github.com/BeaconCMS/beacon/blob/main/guides/installation.md) and [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md) if you're starting from stratch.
 
 ## Generating the site
 
@@ -195,11 +195,11 @@ Save the changes, go to the Page tag, and Publish the changes.
 ]
 ```
 
-These values have no meaning running your site locally but you should replace it accordingly if you plan to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/deployment/fly.md).
+These values have no meaning running your site locally but you should replace it accordingly if you plan to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/recipes/deploy-to-flyio.md).
 
 
 Save the changes, go to the Page tag, and Publish the changes.Save the changes.
 
 --
 
-Congratulations! You have a site up and running. The next step is to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/deployment/fly.md).
+Congratulations! You have a site up and running. The next step is to [deploy your site](https://github.com/BeaconCMS/beacon/blob/main/guides/recipes/deploy-to-flyio.md).

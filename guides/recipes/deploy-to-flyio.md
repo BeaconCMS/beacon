@@ -1,6 +1,6 @@
 # Deploying on Fly.io
 
-Once you have a [Beacon site up and running](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md) locally, you can have it deployed on [Fly.io](https://fly.io) by following this guide.
+Once you have a [Beacon site up and running](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md) locally, you can have it deployed on [Fly.io](https://fly.io) by following this guide.
 
 ## Fly.io CLI
 
@@ -88,4 +88,4 @@ Change the path if you have created a custom page and not followed the guides.
 
 ## More commands
 
-You can find all available commands in the [Fly.io docs](https://fly.io/docs/flyctl) and also find more tips on the official [Phoenix Deploying on Fly.io guide](https://github.com/phoenixframework/phoenix/blob/master/guides/deployment/fly.md).
+You can find all available commands in the [Fly.io docs](https://fly.io/docs/flyctl) and also find more tips on the official [Phoenix Deploying on Fly.io guide](https://fly.io/docs/elixir/getting-started/).

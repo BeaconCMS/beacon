@@ -2,9 +2,9 @@
 
 Beacon is the core application that loads and renders your site pages. It runs as a library in your Phoenix LiveView application, in this guide we'll start from zero initilizating a new Phoenix LiveView application, installing Beacon, and adding a new site.
 
-To create the resources for your site, you'll need an admin interface that can be installed following the [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md).
+To create the resources for your site, you'll need an admin interface that can be installed following the [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md).
 
-We also have prepared the guide [Your First Site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md) to get started into creating the first layout, pages, and components for your site.
+We also have prepared the guide [Your First Site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md) to get your started with a new site.
 
 ## TLDR
 
@@ -38,7 +38,7 @@ Note that the option `override: true` is required if running Beacon and Beacon L
 
 7. Run `mix setup`
 
-Now you can follow the other guides to [install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md) or create [your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md).
+Now you can follow the other guides to [install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md) or create [your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md).
 
 ## Detailed instructions
 
