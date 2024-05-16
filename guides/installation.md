@@ -38,8 +38,6 @@ Note that the option `override: true` is required if running Beacon and Beacon L
 
 7. Run `mix setup`
 
-Now you can follow the other guides to [install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md) or create [your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md).
-
 ## Detailed instructions
 
 ### Elixir 1.13 or later
