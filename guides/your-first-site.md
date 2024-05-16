@@ -137,9 +137,9 @@ Edit the template to replace with this content:
           </span>
         </div>
         <div class="flex items-center justify-center">
-          <img
-            src="http://localhost:4000/beacon_assets/demo/narwin.webp"
-            alt="CMS Platform"
+          <BeaconWeb.Components.image
+            name="image.webp"
+            alt="My Page Image"
             width="600"
             height="600"
             style="aspect-ratio: 600 / 600; object-fit: cover;"
@@ -274,6 +274,18 @@ Save the change and Publish the page again. You should see a message on the page
 
 ## Upload an image
 
+Now let's upload an image on the Media Library to finish our home page. Go to http://localhost:4000/admin/my_site/media_library and upload a new image, anyone that you have available.
+Once it's uploaded, note the image will be converted to a webp format for performance reasons, so given a file logo.jpg it will be converted to logo.webp and that's the name you have to use on your template.
+
+Edit the home page template and replace the image name in the Image component with the name you just uploaded:
+
+```heex
+<BeaconWeb.Components.image
+  name="my_image.webp"
+  ...
+```
+
+Save the changes and Publish the page. Refresh the home page and you should see the image displayed.
 
 -----------------------
 
