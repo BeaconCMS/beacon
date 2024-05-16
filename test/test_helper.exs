@@ -16,14 +16,40 @@ Supervisor.start_link(
        [
          site: :my_site,
          endpoint: Beacon.BeaconTest.Endpoint,
-         tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.js.eex"]),
-         data_source: Beacon.BeaconTest.BeaconDataSource,
+         skip_boot?: true,
+         tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
          live_socket_path: "/custom_live",
-         extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField]
+         extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
+         lifecycle: [
+           load_template: [
+             {:heex,
+              [
+                tailwind_test: fn
+                  template, %{site: :my_site, path: "/tailwind-test-post-process"} ->
+                    template = String.replace(template, "text-gray-200", "text-blue-200")
+                    {:cont, template}
+
+                  template, _metadata ->
+                    {:cont, template}
+                end
+              ]}
+           ]
+         ]
+       ],
+       [
+         site: :not_booted,
+         skip_boot?: true,
+         endpoint: Beacon.BeaconTest.Endpoint
+       ],
+       [
+         site: :booted,
+         skip_boot?: false,
+         endpoint: Beacon.BeaconTest.Endpoint
        ],
        [
          site: :s3_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          assets: [
            {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3, Beacon.MediaLibrary.Backend.Repo], validations: []]}
          ],
@@ -31,22 +57,21 @@ Supervisor.start_link(
        ],
        [
          site: :data_source_test,
-         endpoint: Beacon.BeaconTest.Endpoint,
-         data_source: Beacon.BeaconTest.TestDataSource
+         skip_boot?: true,
+         endpoint: Beacon.BeaconTest.Endpoint
        ],
        [
          site: :default_meta_tags_test,
+         skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
-         data_source: Beacon.BeaconTest.BeaconDataSource,
          default_meta_tags: [
-           %{"name" => "foo_meta_tag"},
-           %{"name" => "bar_meta_tag"},
-           %{"name" => "baz_meta_tag"}
+           %{"name" => "foo", "content" => "bar"}
          ]
        ],
        [
          site: :lifecycle_test,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          lifecycle: [
            load_template: [
              {:markdown,
@@ -60,8 +85,8 @@ Supervisor.start_link(
               [
                 div_to_p: fn template, _metadata -> {:cont, String.replace(template, "div", "p")} end,
                 assigns: fn template, _metadata -> {:cont, String.replace(template, "{ title }", "Beacon")} end,
-                compile: fn template, _metadata ->
-                  ast = Beacon.Template.HEEx.compile_heex_template!("nofile", template)
+                compile: fn template, metadata ->
+                  {:ok, ast} = Beacon.Template.HEEx.compile(metadata.site, metadata.path, template)
                   {:cont, ast}
                 end,
                 eval: fn template, _metadata ->
@@ -84,7 +109,7 @@ Supervisor.start_link(
            ],
            after_publish_page: [
              maybe_publish_page: fn page ->
-               send(self(), :lifecycle_after_publish_page)
+               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after publish page"})
                {:cont, page}
              end
            ]
@@ -93,6 +118,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test_fail,
          endpoint: Beacon.BeaconTest.Endpoint,
+         skip_boot?: true,
          lifecycle: [
            render_template: [
              {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}
@@ -105,6 +131,12 @@ Supervisor.start_link(
   ],
   strategy: :one_for_one
 )
+
+# TODO: better control :booted default data when we introduce Beacon.Test functions
+Beacon.Repo.delete_all(Beacon.Content.Component)
+Beacon.Repo.delete_all(Beacon.Content.ErrorPage)
+Beacon.Repo.delete_all(Beacon.Content.Page)
+Beacon.Repo.delete_all(Beacon.Content.Layout)
 
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.Repo, :manual)

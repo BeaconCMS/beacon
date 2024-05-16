@@ -33,7 +33,8 @@ defmodule Beacon.Lifecycle.Template do
       lifecycle
     else
       raise Beacon.LoaderError, """
-      For site: #{site_config.site}
+      failed to validate lifecycle input for site: #{site_config.site}
+
       #{format_allowed_error_text(format_allowed?, sub_key, allowed_formats)}
 
       #{unconfigured_error_text(format_configured?, sub_key)}
@@ -70,7 +71,7 @@ defmodule Beacon.Lifecycle.Template do
 
   def validate_output!(lifecycle, _site, _type) do
     raise Beacon.LoaderError, """
-    excpected output to be a %Phoenix.LiveView.Rendered{} struct
+    expected output to be a %Phoenix.LiveView.Rendered{} struct
 
     Got:
 
@@ -81,9 +82,9 @@ defmodule Beacon.Lifecycle.Template do
 
   @doc """
   Load a `page` template using the registered format used on the `page`.
-  This stage runs after fetching the page from the database and before storing the template into ETS.
+  This stage runs after fetching the page from the database and before compiling and storing the template into ETS.
   """
-  @spec load_template(Beacon.Content.Page.t()) :: Beacon.Template.t()
+  @spec load_template(Beacon.Content.Page.t()) :: String.t()
   def load_template(page) do
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :load_template, page.template, sub_key: page.format, context: %{path: page.path})
     lifecycle.output
@@ -95,17 +96,13 @@ defmodule Beacon.Lifecycle.Template do
   ## Notes
 
     - This stage runs in the render callback of the LiveView responsible for displaying the page.
-    - It will load and compile the page module if it wasn't not loaded yet.
+    - It will load and compile the page module if it was not loaded yet.
 
   """
-  @spec render_template(Beacon.Content.Page.t(), module(), map(), Macro.Env.t()) :: Beacon.Template.t()
-  def render_template(page, page_module, assigns, env) do
-    template =
-      case page_module.render(assigns) do
-        %Phoenix.LiveView.Rendered{} = rendered -> rendered
-        :not_loaded -> Beacon.Loader.load_page_template(page, page_module, assigns)
-      end
-
+  @spec render_template(Beacon.Content.Page.t(), map(), Macro.Env.t()) :: Beacon.Template.t()
+  def render_template(page, assigns, env) do
+    page_module = Beacon.Loader.fetch_page_module(page.site, page.id)
+    template = page_module.render(assigns)
     context = [path: page.path, assigns: assigns, env: env]
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :render_template, template, sub_key: page.format, context: context)
     lifecycle.output

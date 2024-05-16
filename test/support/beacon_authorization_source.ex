@@ -1,5 +1,5 @@
 defmodule Beacon.BeaconTest.BeaconAuthorizationSource do
-  @behaviour Beacon.Authorization.Behaviour
+  @behaviour Beacon.Authorization.Policy
 
   alias Beacon.Content.Page
 

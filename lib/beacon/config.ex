@@ -2,40 +2,68 @@ defmodule Beacon.Config do
   @moduledoc """
   Configuration for sites.
 
-  See `new/1` for options and examples.
+  Each site is started with this configuration and its values are stored in a registry that can be fetched at runtime
+  or updated with `update_value/3`.
+
+  See `new/1` for available options and examples.
 
   """
 
+  use GenServer
+
   alias Beacon.Content
-  alias Beacon.Registry
+
+  @doc false
+  def name(site) do
+    Beacon.Registry.via({site, __MODULE__})
+  end
+
+  @doc false
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: Beacon.Registry.via({config.site, __MODULE__}, config))
+  end
+
+  @doc false
+  def init(config) do
+    :pg.join(:beacon_cluster, config.site, self())
+    {:ok, config}
+  end
 
   @typedoc """
-  Host application endpoint
+  Host application module endpoint.
+
+
   """
   @type endpoint :: module()
 
   @typedoc """
-  A module that implements `Beacon.DataSource.Behaviour`, used to provide `@assigns` to pages.
+  Disables site booting.
+
+  Disables inserting default content data and routes, loading modules, and broadcasting events that trigger actions in Beacon lifecycle.
+
+  See `Beacon.boot/1` for more info.
   """
-  @type data_source :: module() | nil
+  @type skip_boot? :: boolean()
 
   @typedoc """
-  A module that implements `Beacon.Authorization.Behaviour`, used to provide authorization rules for the admin backend.
+  A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules.
   """
   @type authorization_source :: module()
 
   @typedoc """
-  A module that implements `Beacon.RuntimeCSS`, used to compile CSS for pages.
+  A module that implements `Beacon.RuntimeCSS`.
   """
   @type css_compiler :: module()
 
   @typedoc """
-  Path to a custom tailwind config. Note that this config file must include `<%= @beacon_content %>` in the `content` section, see `Beacon.TailwindCompiler` for more info.
+  Path to a custom tailwind config.
+
+  See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
   """
   @type tailwind_config :: Path.t()
 
   @typedoc """
-  Path of a live socket where Beacon should connect to.
+  Path of a LiveView socket where Beacon should connect to.
   """
   @type live_socket_path :: String.t()
 
@@ -94,7 +122,7 @@ defmodule Beacon.Config do
                 {identifier :: atom(),
                  fun ::
                    (template :: String.t(), Beacon.Template.LoadMetadata.t() ->
-                      {:cont, String.t() | Beacon.Template.t()} | {:halt, String.t() | Beacon.Template.t()} | {:halt, Exception.t()})}
+                      {:cont, String.t()} | {:halt, String.t()} | {:halt, Exception.t()})}
               ]}
            ]}
           | {:render_template,
@@ -138,7 +166,7 @@ defmodule Beacon.Config do
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
-          data_source: data_source(),
+          skip_boot?: skip_boot?(),
           authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
@@ -154,16 +182,10 @@ defmodule Beacon.Config do
         }
 
   @default_load_template [
-    {:heex,
-     [
-       safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-       compile_heex: &Beacon.Template.HEEx.compile/2
-     ]},
+    {:heex, []},
     {:markdown,
      [
-       convert_to_html: &Beacon.Template.Markdown.convert_to_html/2,
-       safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-       compile_heex: &Beacon.Template.HEEx.compile/2
+       convert_to_html: &Beacon.Template.Markdown.convert_to_html/2
      ]}
   ]
 
@@ -176,9 +198,9 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             endpoint: nil,
-            data_source: nil,
+            skip_boot?: false,
             authorization_source: Beacon.Authorization.DefaultPolicy,
-            css_compiler: Beacon.TailwindCompiler,
+            css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
@@ -203,7 +225,7 @@ defmodule Beacon.Config do
   @type option ::
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
-          | {:data_source, data_source()}
+          | {:skip_boot?, skip_boot?()}
           | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
@@ -226,49 +248,45 @@ defmodule Beacon.Config do
 
     * `:endpoint` - `t:endpoint/0` (required)
 
-    * `:data_source` - `t:data_source/0` (optional)
+    * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
 
-    * `:authorization_source` - `t:authorization_source/0` (optional).
-    Note this config can't be `nil`. Defaults to `Beacon.Authorization.DefaultPolicy`.
+    * `:authorization_source` - `t:authorization_source/0` (optional). Defaults to `Beacon.Authorization.DefaultPolicy`.
 
-    * `css_compiler` - `t:css_compiler/0` (optional).
-   Defaults to `Beacon.TailwindCompiler`.
+    * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
-    * `:tailwind_config` - `t:tailwind_config/0` (optional).
-    Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
+    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
 
-    * `:live_socket_path` - `t:live_socket_path/0` (optional).
-    Defaults to `"/live"`.
+    * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 
-    * `:safe_code_check` - `t:safe_code_check/0` (optional).
-    Defaults to `false`.
+    * `:safe_code_check` - `t:safe_code_check/0` (optional). Defaults to `false`.
 
     * `:template_formats` - `t:template_formats/0` (optional).
-    Defaults to:
 
-          [
-            {:heex, "HEEx (HTML)"},
-            {:markdown, "Markdown (GitHub Flavored version)"}
-          ]
+        Defaults to:
+
+              [
+                {:heex, "HEEx (HTML)"},
+                {:markdown, "Markdown (GitHub Flavored version)"}
+              ]
 
     Note that the default config is merged with your config.
 
     * `lifecycle` - `t:lifecycle/0` (optional).
+
     Note that the default config is merged with your config.
 
-    * `:extra_page_fields` - `t:extra_page_fields/0` (optional)
+    * `:extra_page_fields` - `t:extra_page_fields/0` (optional). Defaults to `[]`.
 
-    * `:extra_asset_fields` - `t:extra_asset_fields/0` (optional)
+    * `:extra_asset_fields` - `t:extra_asset_fields/0` (optional). Defaults to `[]`.
 
-    * `:default_meta_tags` - `t:default_meta_tags/0` (optional)
+    * `:default_meta_tags` - `t:default_meta_tags/0` (optional). Defaults to `%{}`.
 
   ## Example
 
       iex> Beacon.Config.new(
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        data_source: MyApp.SiteDataSource,
-        authorization_source: MyApp.SiteAuthnPolicy,
+        authorization_source: MyApp.MySiteAuthzPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
         template_formats: [
           {:custom_format, "My Custom Format"}
@@ -277,8 +295,7 @@ defmodule Beacon.Config do
           load_template: [
             {:custom_format,
              [
-               validate: fn template, _metadata -> MyEngine.validate(template) end,
-               build_rendered: fn template, _metadata -> %Phoenix.LiveView.Rendered{static: template}  end,
+               validate: fn template, _metadata -> MyEngine.validate(template) end
              ]}
           ],
           render_template: [
@@ -288,16 +305,16 @@ defmodule Beacon.Config do
              ]}
           ],
           after_publish_page: [
-            notify_admin: fn page -> {:cont, MyApp.send_email(page)} end
+            notify_admin: fn page -> {:cont, MyApp.Admin.send_email(page)} end
           ]
         ]
       )
       %Beacon.Config{
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        data_source: MyApp.SiteDataSource,
+        skip_boot?: false,
         authorization_source: MyApp.SiteAuthnPolicy,
-        css_compiler: Beacon.TailwindCompiler,
+        css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js.eex",
         live_socket_path: "/live",
         safe_code_check: false,
@@ -312,18 +329,12 @@ defmodule Beacon.Config do
         ]
         lifecycle: [
           load_template: [
-            heex: [
-              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-              compile_heex: &Beacon.Template.HEEx.compile/2
-            ],
+            heex: [],
             markdown: [
               convert_to_html: &Beacon.Template.Markdown.convert_to_html/2,
-              safe_code_check: &Beacon.Template.HEEx.safe_code_check/2,
-              compile_heex: &Beacon.Template.HEEx.compile/2
             ],
             custom_format: [
-              validate: #Function<41.3316493/2 in :erl_eval.expr/6>,
-              build_rendered: #Function<41.3316494/2 in :erl_eval.expr/6>
+              validate: #Function<41.3316493/2 in :erl_eval.expr/6>
             ]
           ],
           render_template: [
@@ -348,7 +359,7 @@ defmodule Beacon.Config do
   """
   @spec new([option]) :: t()
   def new(opts) do
-    # TODO: validate opts
+    # TODO: validate opts, maybe use nimble_options
 
     opts[:site] || raise "missing required option :site"
     opts[:endpoint] || raise "missing required option :endpoint"
@@ -397,7 +408,24 @@ defmodule Beacon.Config do
   """
   @spec fetch!(Beacon.Types.Site.t()) :: t()
   def fetch!(site) when is_atom(site) do
-    Registry.config!(site)
+    case Beacon.Registry.lookup({site, __MODULE__}) do
+      {_pid, config} ->
+        config
+
+      _ ->
+        raise RuntimeError, """
+        site #{inspect(site)} was not found. Make sure it's configured and started,
+        see `Beacon.start_link/1` for more info.
+        """
+    end
+  end
+
+  @doc """
+  Updates `key` with `value` for the `site` configuration, at runtime.
+  """
+  @spec update_value(Beacon.Types.Site.t(), atom(), any()) :: t() | :error
+  def update_value(site, key, value) do
+    GenServer.call(name(site), {:update_value, key, value})
   end
 
   @doc """
@@ -440,11 +468,9 @@ defmodule Beacon.Config do
       Got:
 
       #{inspect(non_config)}
+
     """
   end
-
-  # Dialyzer doesn't like how we "overload" this function by accepting two different types
-  @dialyzer {:no_contracts, get_media_type_config: 2}
 
   @spec get_media_type_config(media_type_configs(), String.t()) :: media_type_config() | nil
   @spec get_media_type_config(extra_asset_fields(), String.t()) :: extra_asset_field() | nil
@@ -563,5 +589,29 @@ defmodule Beacon.Config do
       end
 
     Keyword.put_new(config, :processor, processor)
+  end
+
+  @doc false
+  def env_test? do
+    Code.ensure_loaded?(Mix.Project) and Mix.env() == :test
+  end
+
+  # Server
+
+  def handle_call(:current_node, _from, config) do
+    {:reply, Node.self(), config}
+  end
+
+  @doc false
+  def handle_call({:update_value, key, value}, _from, config) do
+    %{site: site} = config
+
+    result =
+      case Registry.update_value(Beacon.Registry, {site, __MODULE__}, &%{&1 | key => value}) do
+        {new, _old} -> new
+        error -> error
+      end
+
+    {:reply, result, config}
   end
 end

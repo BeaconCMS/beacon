@@ -2,21 +2,23 @@ defmodule Beacon.SiteSupervisor do
   @moduledoc false
 
   use Supervisor
-  alias Beacon.Registry
 
   def start_link(config) do
-    Supervisor.start_link(__MODULE__, config, name: Registry.via({:site, config.site}, config))
+    Supervisor.start_link(__MODULE__, config, name: Beacon.Registry.via({:site, config.site}))
   end
 
   @impl true
   def init(config) do
-    # start Loader process by demand under the test process
-    children =
-      if Code.ensure_loaded?(Mix.Project) and Mix.env() == :test do
-        []
-      else
-        [{Beacon.Loader, config}]
-      end
+    children = [
+      {Beacon.Config, config},
+      {Task.Supervisor, name: Beacon.Registry.via({config.site, TaskSupervisor})},
+      {Beacon.Content, config},
+      {Beacon.RouterServer, config},
+      {DynamicSupervisor,
+       name: Beacon.Registry.via({config.site, Beacon.LoaderSupervisor}), strategy: :one_for_one, max_restarts: 10, max_seconds: 30},
+      {Beacon.Loader, config},
+      {Beacon.Boot, config}
+    ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end

@@ -20,7 +20,8 @@ defmodule Mix.Tasks.Beacon.Install do
   use Mix.Task
 
   @switches [
-    site: :string
+    site: :string,
+    path: :string
   ]
 
   def run(argv) do
@@ -34,6 +35,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
     config_file_path = config_file_path("config.exs")
     maybe_inject_beacon_repo_into_ecto_repos(config_file_path)
+    inject_endpoint_render_errors_config(config_file_path)
 
     dev_config_file = config_file_path("dev.exs")
     maybe_inject_beacon_repo_config(dev_config_file, bindings)
@@ -85,6 +87,37 @@ defmodule Mix.Tasks.Beacon.Install do
       new_config_file_content = Regex.replace(regex, config_file_content, "ecto_repos: [\\1, Beacon.Repo]")
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(config_file_path)])
       File.write!(config_file_path, new_config_file_content)
+    end
+  end
+
+  @doc false
+  def inject_endpoint_render_errors_config(config_file_path) do
+    config_file_content = File.read!(config_file_path)
+
+    if String.contains?(config_file_content, "BeaconWeb.ErrorHTML") do
+      Mix.shell().info([
+        :yellow,
+        "* skip ",
+        :reset,
+        "injecting Beacon.ErrorHTML to render_errors into ",
+        Path.relative_to_cwd(config_file_path),
+        " (already exists)"
+      ])
+    else
+      regex = ~r/(config.*\.Endpoint,\n)((?:.+\n)*\s*)\n/
+
+      [_header, endpoint_config_str] = Regex.run(regex, config_file_content, capture: :all_but_first)
+      {config_list, []} = Code.eval_string("[" <> endpoint_config_str <> "]")
+      updated_config_list = put_in(config_list, [:render_errors, :formats, :html], BeaconWeb.ErrorHTML)
+
+      updated_str = inspect(updated_config_list) <> "\n"
+
+      new_config_file_content =
+        regex
+        |> Regex.replace(config_file_content, "\\1#{updated_str}")
+        |> Code.format_string!(file: config_file_path)
+
+      File.write!(config_file_path, [new_config_file_content, "\n"])
     end
   end
 
@@ -175,7 +208,10 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp build_context_bindings(options) do
-    options = validate_options!(options)
+    options =
+      options
+      |> add_default_options_if_missing()
+      |> validate_options!()
 
     base_module = Mix.Phoenix.base()
     web_module = Mix.Phoenix.web_module(base_module)
@@ -186,6 +222,7 @@ defmodule Mix.Tasks.Beacon.Install do
     templates_path = Path.join([Application.app_dir(:beacon), "priv", "templates"])
     root = root_path()
     site = Keyword.get(options, :site)
+    path = Keyword.get(options, :path)
 
     [
       base_module: base_module,
@@ -194,6 +231,7 @@ defmodule Mix.Tasks.Beacon.Install do
       ctx_app: ctx_app,
       templates_path: templates_path,
       site: site,
+      path: path,
       endpoint: %{
         module_name: Module.concat(web_module, "Endpoint")
       },
@@ -218,6 +256,8 @@ defmodule Mix.Tasks.Beacon.Install do
     mix beacon.install expect a site name, for example:
 
         mix beacon.install --site blog
+        or
+        mix beacon.install --site blog --path "/blog_path"
     """)
   end
 
@@ -226,11 +266,27 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   defp validate_options!(options) do
-    site = String.to_atom(options[:site])
-
     cond do
-      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid?(options[:site]) -> raise_with_help!("Invalid site name. It should not contain special characters.")
+      !Beacon.Types.Site.valid_name?(options[:site]) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".")
+      !Beacon.Types.Site.valid_path?(options[:path]) -> raise_with_help!("Invalid path value. The path value have to start with /.")
       :default -> options
     end
+  end
+
+  defp add_default_options_if_missing(options) do
+    defaults =
+      @switches
+      |> Keyword.keys()
+      |> Enum.reduce([], fn
+        :path, acc ->
+          site = Keyword.get(options, :site)
+          [{:path, "/#{site}"} | acc]
+
+        _key, acc ->
+          acc
+      end)
+
+    Keyword.merge(defaults, options)
   end
 end

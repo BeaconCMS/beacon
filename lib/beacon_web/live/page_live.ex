@@ -1,9 +1,12 @@
 defmodule BeaconWeb.PageLive do
   use BeaconWeb, :live_view
-  use Phoenix.HTML
   require Logger
-  import Phoenix.Component
+  import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false
+  import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3], warn: false
   alias Beacon.Lifecycle
+  alias Beacon.RouterServer
+  alias BeaconWeb.BeaconAssigns
+  alias Phoenix.Component
 
   def mount(:not_mounted_at_router, _params, socket) do
     {:ok, socket}
@@ -13,10 +16,7 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    socket =
-      socket
-      |> assign(:beacon, %{site: site})
-      |> assign(:__site__, site)
+    socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
@@ -24,90 +24,79 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    {{site, path}, {page_id, _layout_id, format, page_module, _component_module}} = lookup_route!(assigns.__site__, assigns.__live_path__)
-    assigns = Phoenix.Component.assign(assigns, :beacon_path_params, Beacon.Router.path_params(path, assigns.__live_path__))
-    page = %Beacon.Content.Page{id: page_id, site: site, path: path, format: format}
-    Lifecycle.Template.render_template(page, page_module, assigns, __ENV__)
-  end
+    %{beacon: %{site: site, private: %{live_path: live_path}}} = assigns
 
-  defp lookup_route!(site, path) do
-    Beacon.Router.lookup_path(site, path) ||
-      raise BeaconWeb.NotFoundError, """
-      route not found for path #{inspect(path)}
-
-      Make sure a page was created for that path.
-      """
+    site
+    |> RouterServer.lookup_page!(live_path)
+    |> Lifecycle.Template.render_template(assigns, __ENV__)
   end
 
   def handle_info({:page_loaded, _}, socket) do
     # TODO: disable automatic template reload (repaint) in favor of https://github.com/BeaconCMS/beacon/issues/179
-    %{assigns: %{__beacon_page_params__: params}} = socket
 
     socket =
       socket
-      # |> assign(:__page_updated_at, DateTime.utc_now())
+      # |> BeaconAssigns.update_private(:page_updated_at, DateTime.utc_now())
       # |> assign(:page_title, page_title(params, socket.assigns))
       |> push_event("beacon:page-updated", %{
-        meta_tags: meta_tags(params, socket.assigns)
+        meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)
         # runtime_css_path: BeaconWeb.Layouts.asset_path(socket, :css)
       })
 
     {:noreply, socket}
   end
 
-  def handle_info(_msg, socket) do
+  def handle_info(msg, socket) do
+    Logger.warning("""
+    unhandled message:
+
+      #{inspect(msg)}
+
+    """)
+
     {:noreply, socket}
   end
 
   def handle_event(event_name, event_params, socket) do
-    socket.assigns.__beacon_page_module__
-    |> Beacon.Loader.call_function_with_retry(
-      :handle_event,
-      [event_name, event_params, socket]
-    )
-    |> case do
+    %{beacon: %{site: site, private: %{page_id: page_id, page_module: page_module, live_path: live_path}}} = socket.assigns
+
+    result =
+      Beacon.apply_mfa(page_module, :handle_event, [event_name, event_params, socket], context: %{site: site, page_id: page_id, live_path: live_path})
+
+    case result do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
         {:noreply, socket}
 
       other ->
-        raise "handle_event for #{socket.assigns.__live_path__} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
+        raise BeaconWeb.ServerError,
+              "handle_event for #{live_path} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
     end
   end
 
   def handle_params(params, _url, socket) do
-    %{"path" => path} = params
-    %{__site__: site} = socket.assigns
-    live_data = Beacon.DataSource.live_data(site, path, Map.drop(params, ["path"]))
-    {{_site, _path}, {page_id, layout_id, _format, page_module, component_module}} = lookup_route!(site, path)
+    %{"path" => path_info} = params
+
+    %{site: site, page: page, path_params: path_params, query_params: query_params} =
+      beacon_assigns = BeaconAssigns.build(socket.assigns.beacon, path_info, params)
+
+    live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
 
     Process.put(:__beacon_site__, site)
+    Process.put(:__beacon_page_path__, page.path)
 
     socket =
       socket
-      |> assign(:beacon_live_data, live_data)
-      |> assign(:__live_path__, path)
-      |> assign(:__page_updated_at, DateTime.utc_now())
-      |> assign(:__dynamic_layout_id__, layout_id)
-      |> assign(:__dynamic_page_id__, page_id)
-      |> assign(:__site__, site)
-      |> assign(:__beacon_page_module__, page_module)
-      |> assign(:__beacon_component_module__, component_module)
-      |> assign(:__beacon_page_params__, params)
+      |> Component.assign(:page_title, page.title)
+      |> Component.assign(live_data)
+      # TODO: remove deprecated @beacon_live_data
+      |> Component.assign(:beacon_live_data, live_data)
+      # TODO: remove deprecated @beacon_path_params
+      |> Component.assign(:beacon_path_params, path_params)
+      # TODO: remove deprecated @beacon_query_params
+      |> Component.assign(:beacon_query_params, query_params)
+      |> Component.assign(:beacon, beacon_assigns)
 
-    socket =
-      socket
-      |> assign(:page_title, page_title(params, socket.assigns))
-      |> push_event("beacon:page-updated", %{meta_tags: meta_tags(params, socket.assigns)})
-
-    {:noreply, socket}
-  end
-
-  defp page_title(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
-    Beacon.DataSource.page_title(site, path, params, live_data, BeaconWeb.Layouts.page_title(assigns))
-  end
-
-  defp meta_tags(params, %{__site__: site, __live_path__: path, beacon_live_data: live_data} = assigns) do
-    Beacon.DataSource.meta_tags(site, path, params, live_data, BeaconWeb.Layouts.meta_tags(assigns))
+    {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})}
   end
 
   @doc false

@@ -31,7 +31,7 @@ We recommend following the guide thoroughly, but if you want a short version or 
   ```elixir
   {:beacon, github: "BeaconCMS/beacon", override: true}
   ```
-  
+
 Note that the option `override: true` is required if running Beacon and Beacon LiveAdmin in the same application.
 
 6. Add `:beacon` into `:import_deps` in file `.formatter.exs`
@@ -106,15 +106,9 @@ Note that the option `override: true` is required if running Beacon and Beacon L
 
 ```elixir
 [
- import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
- # rest of file ommited
+  import_deps: [:ecto, :ecto_sql, :phoenix, :beacon],
+  # rest of file ommited
 ]
 ```
 
 3. Run `mix setup`
-
-Beacon depends on some C libraries to compile correctly, if compilation fails make sure you have a C compiler installed in your environment.
-
---
-
-Now you can follow the other guides to [install Beacon LiveAdmin](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/introduction/installation.md) or create [your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/introduction/your_first_site.md).

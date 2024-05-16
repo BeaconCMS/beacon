@@ -9,7 +9,7 @@ defmodule Beacon.Behaviors.Helpers do
     Could not find #{function_arity} that matches the given args: \
     #{inspect(args)}.
 
-    Make sure you have defined a implemention of Beacon.Authorization.#{function_arity} \
+    Make sure you have defined a implementation of Beacon.Authorization.#{function_arity} \
     that matches these args.\
     """
 

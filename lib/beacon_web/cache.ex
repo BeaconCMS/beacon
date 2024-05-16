@@ -65,7 +65,13 @@ defmodule BeaconWeb.Cache do
   end
 
   defp put_last_modified(conn, modified) do
-    put_resp_header(conn, "last-modified", :cowboy_clock.rfc1123(modified))
+    put_resp_header(conn, "last-modified", to_rfc1123(modified))
+  end
+
+  def to_rfc1123(erl_datetime) when is_tuple(erl_datetime) do
+    erl_datetime
+    |> NaiveDateTime.from_erl!()
+    |> Calendar.strftime("%a, %d %b %Y %H:%M:%S GMT")
   end
 
   defp fresh?(conn, opts) do
@@ -103,20 +109,21 @@ defmodule BeaconWeb.Cache do
     end
   end
 
-  defp etag(schemas) do
+  def etag(entities) do
     binary =
-      schemas
+      entities
       |> List.wrap()
       |> Enum.map(&BeaconWeb.Cache.Stale.etag/1)
       |> List.flatten()
       |> :erlang.term_to_binary()
 
-    :crypto.hash(:md5, binary)
+    :md5
+    |> :crypto.hash(binary)
     |> Base.encode16(case: :lower)
   end
 
-  def last_modified(schemas) do
-    schemas
+  def last_modified(entities) do
+    entities
     |> List.wrap()
     |> Enum.map(&BeaconWeb.Cache.Stale.last_modified/1)
     |> List.flatten()

@@ -12,9 +12,9 @@ defmodule Beacon.Repo.Migrations.AddResourceLinksToLayouts do
       |> update_layout_links(layout_id)
     end
 
-     alter table(:beacon_layouts) do
-       remove :stylesheet_urls
-     end
+    alter table(:beacon_layouts) do
+      remove :stylesheet_urls
+    end
   end
 
   defp layout_ids do

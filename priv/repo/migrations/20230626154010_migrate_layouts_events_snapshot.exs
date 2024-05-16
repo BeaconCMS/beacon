@@ -67,7 +67,7 @@ defmodule Beacon.Repo.Migrations.MigrateLayoutsEventsSnapshots do
   end
 
   defp update_inserted_at(%schema{id: id}, inserted_at) do
-    query = from s in schema, where: s.id == ^id
+    query = from(s in schema, where: s.id == ^id)
     Repo.update_all(query, set: [inserted_at: inserted_at])
   end
 end

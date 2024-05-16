@@ -25,10 +25,15 @@ defmodule Beacon.Content do
   """
   import Ecto.Query
 
+  use GenServer
+  require Logger
   alias Beacon.Content.Component
+  alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
+  alias Beacon.Content.LiveData
+  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageEventHandler
@@ -38,16 +43,50 @@ defmodule Beacon.Content do
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
-  alias Beacon.PubSub
   alias Beacon.Repo
   alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
 
+  @doc false
+  def name(site) do
+    Beacon.Registry.via({site, __MODULE__})
+  end
+
+  @doc false
+  def table_name(site) do
+    String.to_atom("beacon_content_#{site}")
+  end
+
+  @doc false
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, config, name: name(config.site))
+  end
+
+  @doc false
+  def init(config) do
+    :ets.new(table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
+    {:ok, config}
+  end
+
+  @doc false
+  def terminate(_reason, config) do
+    :ets.delete(table_name(config.site))
+    :ok
+  end
+
+  @doc false
+  def dump_cached_content(site) when is_atom(site) do
+    GenServer.call(name(site), :dump_cached_content)
+  end
+
+  defp maybe_broadcast_updated_content_event({:ok, %{site: site}}, resource_type), do: Beacon.PubSub.content_updated(site, resource_type)
+  defp maybe_broadcast_updated_content_event({:error, _}, _resource_type), do: :skip
+
   @doc """
   Returns the list of meta tags that are applied to all pages by default.
 
-  These meta tags can be overwriten or extended on a Layout or Page level.
+  These meta tags can be overwritten or extended on a Layout or Page level.
   """
   @spec default_site_meta_tags() :: [map()]
   def default_site_meta_tags do
@@ -71,6 +110,18 @@ defmodule Beacon.Content do
   @spec change_layout(Layout.t(), map()) :: Changeset.t()
   def change_layout(%Layout{} = layout, attrs \\ %{}) do
     Layout.changeset(layout, attrs)
+  end
+
+  @doc """
+  Returns a map of attrs to load the default layout into new sites.
+  """
+  @spec default_layout() :: map()
+  @doc type: :layouts
+  def default_layout do
+    %{
+      title: "Default",
+      template: "<%= @inner_content %>"
+    }
   end
 
   @doc """
@@ -131,26 +182,13 @@ defmodule Beacon.Content do
   Publishes `layout` and reload resources to render the updated layout and pages.
 
   Event + snapshot
+
+  This operation is serialized.
   """
   @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    publish = fn layout ->
-      changeset = Layout.changeset(layout, %{})
-
-      Repo.transact(fn ->
-        with {:ok, _changeset} <- validate_layout_template(changeset),
-             {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
-          {:ok, layout}
-        end
-      end)
-    end
-
-    with {:ok, layout} <- publish.(layout),
-         :ok <- PubSub.layout_published(layout) do
-      {:ok, layout}
-    end
+    GenServer.call(name(layout.site), {:publish_layout, layout})
   end
 
   @doc type: :layouts
@@ -280,34 +318,71 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search layouts by title.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search layouts by title. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   """
   @doc type: :layouts
   @spec list_layouts(Site.t(), keyword()) :: [Layout.t()]
   def list_layouts(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_layouts_base()
     |> query_list_layouts_limit(per_page)
+    |> query_list_layouts_offset(per_page, page)
     |> query_list_layouts_search(search)
+    |> query_list_layouts_preloads(preloads)
+    |> query_list_layouts_sort(sort)
     |> Repo.all()
   end
 
-  defp query_list_layouts_base(site) do
-    from l in Layout,
-      where: l.site == ^site,
-      order_by: [asc: l.title]
-  end
+  defp query_list_layouts_base(site), do: from(l in Layout, where: l.site == ^site)
 
   defp query_list_layouts_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_layouts_limit(query, :infinity = _limit), do: query
   defp query_list_layouts_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_layouts_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_layouts_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
   defp query_list_layouts_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.title, ^"%#{search}%"))
   defp query_list_layouts_search(query, _search), do: query
+
+  defp query_list_layouts_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_layouts_preloads(query, _preloads), do: query
+
+  defp query_list_layouts_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of layouts based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :layouts
+  @spec count_layouts(Site.t(), keyword()) :: non_neg_integer()
+  def count_layouts(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_layouts_base()
+    |> query_list_layouts_search(search)
+    |> select([q], count(q.id))
+    |> Repo.one()
+  end
 
   @doc """
   Returns all published layouts for `site`.
@@ -332,22 +407,28 @@ defmodule Beacon.Content do
 
   @doc """
   Get latest published layout.
+
+  This operation is cached.
   """
   @doc type: :layouts
   @spec get_published_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
   def get_published_layout(site, layout_id) do
-    Repo.one(
-      from snapshot in LayoutSnapshot,
-        join: event in LayoutEvent,
-        on: snapshot.event_id == event.id,
-        preload: [event: event],
-        where: snapshot.site == ^site,
-        where: event.event == :published,
-        where: event.layout_id == ^layout_id and snapshot.layout_id == ^layout_id,
-        distinct: [asc: snapshot.layout_id],
-        order_by: [desc: snapshot.inserted_at]
-    )
-    |> extract_layout_snapshot()
+    get_fun = fn ->
+      Repo.one(
+        from snapshot in LayoutSnapshot,
+          join: event in LayoutEvent,
+          on: snapshot.event_id == event.id,
+          preload: [event: event],
+          where: snapshot.site == ^site,
+          where: event.event == :published,
+          where: event.layout_id == ^layout_id and snapshot.layout_id == ^layout_id,
+          distinct: [asc: snapshot.layout_id],
+          order_by: [desc: snapshot.inserted_at]
+      )
+      |> extract_layout_snapshot()
+    end
+
+    GenServer.call(name(site), {:fetch_cached_content, layout_id, get_fun})
   end
 
   defp extract_layout_snapshot(%{schema_version: 1, layout: %Layout{} = layout}) do
@@ -441,13 +522,13 @@ defmodule Beacon.Content do
     * `title` - String.t()
     * `description` - String.t()
     * `template` - String.t()
-    * `meta_tags` - list(map()) eg: `[%{"property" => "og:title", "content" => "My New Siste"}]`
+    * `meta_tags` - list(map()) eg: `[%{"property" => "og:title", "content" => "My New Site"}]`
 
   See `Beacon.Content.Page` for more info.
 
   The created page is not published automatically,
   you can make as much changes you need and when the page
-  is ready to be published you can call publish_page/1
+  is ready to be published you can call `publish_page/1`
 
   It will insert a `created` event into the page timeline,
   and no snapshot is created.
@@ -455,16 +536,28 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec create_page(map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def create_page(attrs) when is_map(attrs) do
-    changeset = Page.create_changeset(%Page{}, attrs)
+    attrs =
+      Map.new(attrs, fn
+        {key, val} when is_binary(key) -> {key, val}
+        {key, val} -> {Atom.to_string(key), val}
+      end)
 
     Repo.transact(fn ->
-      with {:ok, changeset} <- validate_page_template(changeset),
+      with {:ok, site} <- Beacon.Types.Site.cast(attrs["site"]),
+           attrs = maybe_put_default_meta_tags(site, attrs),
+           changeset = Page.create_changeset(%Page{}, attrs),
+           {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- Repo.insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
       end
     end)
+  end
+
+  defp maybe_put_default_meta_tags(site, attrs) do
+    default_meta_tags = Beacon.Config.fetch!(site).default_meta_tags
+    Map.put_new(attrs, "meta_tags", default_meta_tags)
   end
 
   @doc """
@@ -517,27 +610,13 @@ defmodule Beacon.Content do
   A new snapshot is automatically created to store the page data,
   which is used whenever the site or the page is reloaded. So you
   can keep editing the page as needed without impacting the published page.
+
+  This operation is serialized.
   """
   @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    publish = fn page ->
-      changeset = Page.update_changeset(page, %{})
-
-      Repo.transact(fn ->
-        with {:ok, _changeset} <- validate_page_template(changeset),
-             {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event),
-             %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
-          {:ok, page}
-        end
-      end)
-    end
-
-    with {:ok, page} <- publish.(page),
-         :ok <- PubSub.page_published(page) do
-      {:ok, page}
-    end
+    GenServer.call(name(page.site), {:publish_page, page})
   end
 
   @doc type: :pages
@@ -576,13 +655,13 @@ defmodule Beacon.Content do
       end)
       |> Enum.reject(&is_nil/1)
 
-    :ok = PubSub.pages_published(pages)
+    :ok = Beacon.PubSub.pages_published(pages)
     {:ok, pages}
   end
 
   defp validate_page_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    path = Changeset.get_field(changeset, :path, "nopath")
+    path = Changeset.get_field(changeset, :path) || "nopath"
     format = Changeset.get_field(changeset, :format)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
@@ -604,8 +683,7 @@ defmodule Beacon.Content do
   def unpublish_page(%Page{} = page) do
     Repo.transact(fn ->
       with {:ok, _event} <- create_page_event(page, "unpublished") do
-        # TODO: unload page
-        :ok = PubSub.page_unpublished(page)
+        :ok = Beacon.PubSub.page_unpublished(page)
         {:ok, page}
       end
     end)
@@ -671,7 +749,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_page_by(site, path: "contact")
+      iex> get_page_by(site, path: "/contact")
       %Page{}
 
   """
@@ -734,35 +812,44 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by.
 
   """
   @doc type: :pages
   @spec list_pages(Site.t(), keyword()) :: [Page.t()]
   def list_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_pages_base()
     |> query_list_pages_limit(per_page)
+    |> query_list_pages_offset(per_page, page)
     |> query_list_pages_search(search)
     |> query_list_pages_preloads(preloads)
+    |> query_list_pages_sort(sort)
     |> Repo.all()
   end
 
-  defp query_list_pages_base(site) do
-    from p in Page,
-      where: p.site == ^site,
-      order_by: [asc: p.order, asc: fragment("length(?)", p.path)]
-  end
+  defp query_list_pages_base(site), do: from(p in Page, where: p.site == ^site)
 
   defp query_list_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_pages_limit(query, :infinity = _limit), do: query
   defp query_list_pages_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_pages_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
   defp query_list_pages_search(query, search) when is_binary(search) do
     from(q in query, where: ilike(q.path, ^"%#{search}%") or ilike(q.title, ^"%#{search}%"))
@@ -776,6 +863,28 @@ defmodule Beacon.Content do
 
   defp query_list_pages_preloads(query, _preloads), do: query
 
+  defp query_list_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of pages based on the amount of pages.
+
+  ## Options
+
+    * `:query` - filter rows count by query
+
+  """
+  @doc type: :pages
+  @spec count_pages(Site.t(), keyword()) :: integer()
+  def count_pages(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    base = from p in Page, where: p.site == ^site, select: count(p.id)
+
+    base
+    |> query_list_pages_search(search)
+    |> Repo.one()
+  end
+
   @doc """
   Returns all published pages for `site`.
 
@@ -783,64 +892,108 @@ defmodule Beacon.Content do
   only the latest status is valid.
 
   Pages are extracted from the latest published `Beacon.Content.PageSnapshot`.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:sort` - column in which the result will be ordered by.
+
   """
   @doc type: :pages
-  @spec list_published_pages(Site.t()) :: [Layout.t()]
-  def list_published_pages(site) do
+  @spec list_published_pages(Site.t(), keyword()) :: [Layout.t()]
+  def list_published_pages(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
+
+    site
+    |> query_list_published_pages_base()
+    |> query_list_published_pages_limit(per_page)
+    |> query_list_published_pages_offset(per_page, page)
+    |> Repo.all()
+    |> Enum.map(&extract_page_snapshot/1)
+  end
+
+  defp query_list_published_pages_base(site) do
     events =
       from event in PageEvent,
         where: event.site == ^site,
         distinct: [asc: event.page_id],
         order_by: fragment("inserted_at desc, case when event = 'published' then 0 else 1 end")
 
-    Repo.all(
-      from snapshot in PageSnapshot,
-        join: event in subquery(events),
-        on: snapshot.event_id == event.id,
-        where: snapshot.site == ^site
-    )
-    |> Enum.map(&extract_page_snapshot/1)
+    from snapshot in PageSnapshot,
+      join: event in subquery(events),
+      on: snapshot.event_id == event.id,
+      where: snapshot.site == ^site,
+      order_by: [desc: snapshot.inserted_at]
   end
+
+  defp query_list_published_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_published_pages_limit(query, :infinity = _limit), do: query
+  defp query_list_published_pages_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_published_pages_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_published_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
   @doc """
   Get latest published page.
+
+  This operation is cached.
   """
   @doc type: :pages
   @spec get_published_page(Site.t(), Ecto.UUID.t()) :: Page.t() | nil
   def get_published_page(site, page_id) do
-    events =
-      from event in PageEvent,
-        where: event.site == ^site,
-        where: event.page_id == ^page_id,
-        distinct: [asc: event.page_id],
-        order_by: [desc: event.inserted_at]
+    get_fun = fn ->
+      events =
+        from event in PageEvent,
+          where: event.site == ^site,
+          where: event.page_id == ^page_id,
+          distinct: [asc: event.page_id],
+          order_by: [desc: event.inserted_at]
 
-    Repo.one(
-      from snapshot in PageSnapshot,
-        join: event in subquery(events),
-        on: snapshot.event_id == event.id,
-        where: snapshot.site == ^site
-    )
-    |> extract_page_snapshot()
+      Repo.one(
+        from snapshot in PageSnapshot,
+          join: event in subquery(events),
+          on: snapshot.event_id == event.id,
+          where: snapshot.site == ^site
+      )
+      |> extract_page_snapshot()
+    end
+
+    GenServer.call(name(site), {:fetch_cached_content, page_id, get_fun})
   end
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
     page
     |> Repo.reload()
     |> Repo.preload([:variants, :event_handlers], force: true)
+    |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
     |> Repo.reload()
-    |> Repo.preload(:event_handlers, force: true)
+    |> Repo.preload([:variants, :event_handlers], force: true)
+    |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page}) do
     page
+    |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(_snapshot), do: nil
+
+  defp maybe_add_leading_slash(%{path: <<"/", _rest::binary>>} = page), do: page
+
+  defp maybe_add_leading_slash(page) do
+    path = "/" <> page.path
+    %{page | path: path}
+  end
 
   @doc """
 
@@ -872,6 +1025,7 @@ defmodule Beacon.Content do
     %Stylesheet{}
     |> Stylesheet.changeset(attrs)
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
   @doc type: :stylesheets
@@ -897,6 +1051,7 @@ defmodule Beacon.Content do
     stylesheet
     |> Stylesheet.changeset(attrs)
     |> Repo.update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
   @doc """
@@ -1479,6 +1634,7 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
   @doc type: :components
@@ -1503,11 +1659,8 @@ defmodule Beacon.Content do
     |> Component.changeset(attrs)
     |> validate_component_body()
     |> Repo.update()
-    |> tap(&maybe_reload_component/1)
+    |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
-
-  def maybe_reload_component({:ok, component}), do: PubSub.component_updated(component)
-  def maybe_reload_component({:error, _component}), do: :noop
 
   defp validate_component_body(changeset) do
     site = Changeset.get_field(changeset, :site)
@@ -1616,7 +1769,18 @@ defmodule Beacon.Content do
     |> Changeset.cast(attrs, [:site, :name, :body])
     |> Changeset.validate_required([:site, :name, :body])
     |> Changeset.unique_constraint([:site, :name])
+    |> validate_snippet_helper()
     |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
+  end
+
+  defp validate_snippet_helper(changeset) do
+    Changeset.validate_change(changeset, :body, fn :body, body ->
+      case Solid.parse(body, parser: Snippets.Parser) do
+        {:ok, _template} -> []
+        {:error, error} -> [{:body, error.message}]
+      end
+    end)
   end
 
   @doc type: :snippets
@@ -1651,7 +1815,7 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %Page{title: "home"}})
+      iex> Beacon.Content.render_snippet("title is {{ page.title }}", %{page: %{title: "home"}})
       {:ok, "title is home"}
 
   Snippets use the [Liquid](https://shopify.github.io/liquid/) template under the hood,
@@ -1675,33 +1839,226 @@ defmodule Beacon.Content do
 
   Note that the `:page` assigns is made available as `assigns["page"]` (String.t) due to how Solid works.
 
-  Snipets can be used in:
+  Snippets can be used in:
 
     * Meta Tag value
     * Page Schema (structured Schema.org tags)
+    * Page Title
 
   Allowed assigns:
 
-    * :page (Beacon.Content.Page.t())
+    * :page (map)
+    * :live_data (map)
 
   """
   @doc type: :snippets
-  @spec render_snippet(String.t(), %{page: Page.t()}) :: {:ok, String.t()} | :error
+  @spec render_snippet(String.t(), %{
+          page: %{
+            site: Beacon.Types.Site.t(),
+            path: String.t(),
+            title: String.t(),
+            description: String.t(),
+            meta_tags: [map()],
+            raw_schema: Beacon.Types.JsonArrayMap.t(),
+            order: integer(),
+            format: atom(),
+            extra: map()
+          },
+          live_data: map()
+        }) :: {:ok, String.t()} | {:error, Beacon.SnippetError.t()}
   def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
-    page =
-      assigns.page
-      |> Map.from_struct()
-      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+    page = Map.get(assigns, :page) || raise "expected assigns.page missing"
+    live_data = Map.get(assigns, :live_data) || raise "expected assigns.live_data missing"
 
-    assigns = %{"page" => page}
+    assigns = %{
+      "page" => deep_stringify(page),
+      "live_data" => deep_stringify(live_data)
+    }
 
     with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
          {:ok, template} <- Solid.render(template, assigns) do
       {:ok, to_string(template)}
     else
-      # TODO: wrap error and return a Beacon exception
-      _error -> :error
+      {:error, error} ->
+        {:error, Beacon.SnippetError.exception(error)}
+
+      error ->
+        message = """
+        failed to render the following snippet
+
+        #{template}
+
+        Got: #{inspect(error)}
+
+        """
+
+        {:error, Beacon.SnippetError.exception(message)}
     end
+  end
+
+  defp deep_stringify(struct) when is_struct(struct), do: deep_stringify(Map.from_struct(struct))
+  defp deep_stringify(map) when is_map(map), do: Map.new(map, fn {k, v} -> {to_string(k), deep_stringify(v)} end)
+  defp deep_stringify(non_map), do: non_map
+
+  # ERROR PAGES
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking error page changes.
+
+  ## Example
+
+      iex> change_error_page(error_page, %{status: 404})
+      %Ecto.Changeset{data: %ErrorPage{}}
+
+  """
+  @doc type: :error_pages
+  @spec change_error_page(ErrorPage.t(), map()) :: Changeset.t()
+  def change_error_page(%ErrorPage{} = error_page, attrs \\ %{}) do
+    ErrorPage.changeset(error_page, attrs)
+  end
+
+  @doc """
+  Returns the error page for a given site and status code, or `nil` if no matching error page exists.
+  """
+  @doc type: :error_pages
+  @spec get_error_page(Site.t(), ErrorPage.error_status()) :: ErrorPage.t() | nil
+  def get_error_page(site, status) do
+    Repo.one(
+      from e in ErrorPage,
+        where: e.site == ^site,
+        where: e.status == ^status
+    )
+  end
+
+  @doc """
+  Lists all error pages for a given site.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:preloads` - a list of preloads to load.
+
+  """
+  @doc type: :error_pages
+  @spec list_error_pages(Site.t(), keyword()) :: [ErrorPage.t()]
+  def list_error_pages(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    site
+    |> query_list_error_pages_base()
+    |> query_list_error_pages_limit(per_page)
+    |> query_list_error_pages_preloads(preloads)
+    |> Repo.all()
+  end
+
+  @doc type: :error_pages
+  @spec list_error_pages_by(Site.t(), keyword(), keyword()) :: Layout.t() | nil
+  def list_error_pages_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    filter_layout_id =
+      if layout_id = clauses[:layout_id] do
+        dynamic([ep], ep.layout_id == ^layout_id)
+      else
+        true
+      end
+
+    site
+    |> query_list_error_pages_base()
+    |> query_list_error_pages_limit(per_page)
+    |> query_list_error_pages_preloads(preloads)
+    |> where(^filter_layout_id)
+    |> Repo.all()
+  end
+
+  defp query_list_error_pages_base(site) do
+    from p in ErrorPage,
+      where: p.site == ^site,
+      order_by: [asc: p.status]
+  end
+
+  defp query_list_error_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_list_error_pages_limit(query, :infinity = _limit), do: query
+  defp query_list_error_pages_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_error_pages_preloads(query, [_preload | _] = preloads) do
+    from(q in query, preload: ^preloads)
+  end
+
+  defp query_list_error_pages_preloads(query, _preloads), do: query
+
+  @doc """
+  Creates a new error page.
+  """
+  @doc type: :error_pages
+  @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+          {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def create_error_page(attrs) do
+    %ErrorPage{}
+    |> ErrorPage.changeset(attrs)
+    |> validate_error_page()
+    |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
+  end
+
+  @doc """
+  Creates a new error page, raising if the operation fails.
+  """
+  @doc type: :error_pages
+  @spec create_error_page!(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+          ErrorPage.t()
+  def create_error_page!(attrs) do
+    case create_error_page(attrs) do
+      {:ok, error_page} -> error_page
+      {:error, changeset} -> raise "failed to create error page, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Returns attr data to load the default error_pages into new sites.
+  """
+  @spec default_error_pages() :: [map()]
+  @doc type: :error_pages
+  def default_error_pages do
+    for status <- [404, 500] do
+      %{
+        status: status,
+        template: Plug.Conn.Status.reason_phrase(status)
+      }
+    end
+  end
+
+  @doc """
+  Updates an error page.
+  """
+  @doc type: :error_pages
+  @spec update_error_page(ErrorPage.t(), map()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def update_error_page(error_page, attrs) do
+    error_page
+    |> ErrorPage.changeset(attrs)
+    |> validate_error_page()
+    |> Repo.update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
+  end
+
+  @doc """
+  Deletes an error page.
+  """
+  @doc type: :error_pages
+  @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
+  def delete_error_page(error_page) do
+    Repo.delete(error_page)
+  end
+
+  defp validate_error_page(changeset) do
+    template = Changeset.get_field(changeset, :template)
+    site = Changeset.get_field(changeset, :site)
+    status = Changeset.get_field(changeset, :status)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "/_beacon_error_#{status}"}
+
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   # PAGE EVENT HANDLERS
@@ -1731,6 +2088,7 @@ defmodule Beacon.Content do
       page
       |> Ecto.build_assoc(:event_handlers)
       |> PageEventHandler.changeset(attrs)
+      |> validate_page_event_handler(page)
 
     Repo.transact(fn ->
       with {:ok, %PageEventHandler{}} <- Repo.insert(changeset),
@@ -1747,7 +2105,10 @@ defmodule Beacon.Content do
   @doc type: :page_event_handlers
   @spec update_event_handler_for_page(Page.t(), PageEventHandler.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_event_handler_for_page(page, event_handler, attrs) do
-    changeset = PageEventHandler.changeset(event_handler, attrs)
+    changeset =
+      event_handler
+      |> PageEventHandler.changeset(attrs)
+      |> validate_page_event_handler(page)
 
     Repo.transact(fn ->
       with {:ok, %PageEventHandler{}} <- Repo.update(changeset),
@@ -1756,6 +2117,15 @@ defmodule Beacon.Content do
         {:ok, page}
       end
     end)
+  end
+
+  defp validate_page_event_handler(changeset, page) do
+    code = Changeset.get_field(changeset, :code)
+    metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
+    variable_names = ["socket", "event_params"]
+    imports = ["Phoenix.Socket"]
+
+    do_validate_template(changeset, :code, :elixir, code, metadata, variable_names, imports)
   end
 
   @doc """
@@ -1799,6 +2169,7 @@ defmodule Beacon.Content do
       page
       |> Ecto.build_assoc(:variants)
       |> PageVariant.changeset(attrs)
+      |> validate_variant(page)
 
     Repo.transact(fn ->
       with {:ok, %PageVariant{}} <- Repo.insert(changeset),
@@ -1870,19 +2241,274 @@ defmodule Beacon.Content do
     end
   end
 
+  # LIVE DATA
+
+  @doc """
+  Returns a list of all existing LiveDataAssign formats.
+  """
+  @doc type: :live_data
+  @spec live_data_assign_formats() :: [atom()]
+  def live_data_assign_formats, do: LiveDataAssign.formats()
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking LiveData `:path` changes.
+
+  ## Example
+
+      iex> change_live_data(live_data, %{path: "/foo/:bar_id"})
+      %Ecto.Changeset{data: %LiveData{}}
+
+  """
+  @doc type: :live_data
+  @spec change_live_data_path(LiveData.t(), map()) :: Changeset.t()
+  def change_live_data_path(%LiveData{} = live_data, attrs \\ %{}) do
+    LiveData.path_changeset(live_data, attrs)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking LiveDataAssign changes.
+
+  ## Example
+
+      iex> change_live_data_assign(live_data_assign, %{format: :elixir, value: "Enum.random(1..100)"})
+      %Ecto.Changeset{data: %LiveDataAssign{}}
+
+  """
+  @doc type: :live_data
+  @spec change_live_data_assign(LiveDataAssign.t(), map()) :: Changeset.t()
+  def change_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs \\ %{}) do
+    LiveDataAssign.changeset(live_data_assign, attrs)
+  end
+
+  @doc """
+  Creates a new LiveData for scoping live data to pages.
+  """
+  @doc type: :live_data
+  @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_live_data(attrs) do
+    %LiveData{}
+    |> LiveData.changeset(attrs)
+    |> Repo.insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
+  end
+
+  @doc """
+  Creates a new LiveData for scoping live data to pages.
+  """
+  @doc type: :live_data
+  @spec create_live_data!(map()) :: LiveData.t()
+  def create_live_data!(attrs) do
+    case create_live_data(attrs) do
+      {:ok, live_data} -> live_data
+      {:error, changeset} -> raise "failed to create live data, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Creates a new LiveDataAssign.
+  """
+  @doc type: :live_data
+  @spec create_assign_for_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def create_assign_for_live_data(live_data, attrs) do
+    changeset =
+      live_data
+      |> Ecto.build_assoc(:assigns)
+      |> Map.put(:live_data, live_data)
+      |> LiveDataAssign.changeset(attrs)
+      |> validate_live_data_code()
+
+    case Repo.insert(changeset) do
+      {:ok, %LiveDataAssign{}} ->
+        live_data = Repo.preload(live_data, :assigns, force: true)
+        maybe_broadcast_updated_content_event({:ok, live_data}, :live_data)
+        {:ok, live_data}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  @doc """
+  Gets a single `LiveData` entry by `:id`.
+
+  ## Example
+
+      iex> get_live_data("5d5b228c-3a46-4e76-ab27-d3ed3f92ccea")
+      %LiveData{}
+
+  """
+  @doc type: :live_data
+  @spec get_live_data(binary()) :: LiveData.t() | nil
+  def get_live_data(id) do
+    Repo.one(
+      from(ld in LiveData,
+        where: ld.id == ^id,
+        preload: :assigns
+      )
+    )
+  end
+
+  @doc """
+  Gets a single `LiveData` entry by `:site` and `:path`.
+
+  ## Example
+
+      iex> get_live_data(:my_site, "/foo/bar/:baz")
+      %LiveData{}
+
+  """
+  @doc type: :live_data
+  @spec get_live_data(Site.t(), String.t()) :: LiveData.t() | nil
+  def get_live_data(site, path) do
+    LiveData
+    |> Repo.get_by(site: site, path: path)
+    |> Repo.preload(:assigns)
+  end
+
+  @doc """
+  Query LiveData for a given site.
+
+  ## Options
+
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
+    * `:query` - search records by path.
+    * `:select` - returns only the given field(s)
+    * `:preload` - include given association(s) (defaults to `:assigns`)
+
+  """
+  @doc type: :live_data
+  @spec live_data_for_site(Site.t(), Keyword.t()) :: [String.t()]
+  def live_data_for_site(site, opts \\ []) do
+    per_page = Keyword.get(opts, :per_page, :infinity)
+    search = Keyword.get(opts, :query)
+    select = Keyword.get(opts, :select)
+    preload = Keyword.get(opts, :preload, :assigns)
+
+    site
+    |> query_live_data_for_site_base()
+    |> query_live_data_for_site_limit(per_page)
+    |> query_live_data_for_site_search(search)
+    |> query_live_data_for_site_select(select)
+    |> query_live_data_for_site_preload(preload)
+    |> Repo.all()
+  end
+
+  defp query_live_data_for_site_base(site) do
+    from ld in LiveData,
+      where: ld.site == ^site,
+      order_by: [asc: ld.path]
+  end
+
+  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_for_site_search(query, _search), do: query
+
+  defp query_live_data_for_site_select(query, nil = _select), do: query
+  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
+
+  defp query_live_data_for_site_preload(query, nil), do: query
+  defp query_live_data_for_site_preload(query, preload) when is_atom(preload) or is_list(preload), do: from(q in query, preload: ^preload)
+
+  @doc """
+  Updates LiveDataPath.
+
+      iex> update_live_data_path(live_data, "/foo/bar/:baz_id")
+      {:ok, %LiveData{}}
+
+  """
+  @doc type: :live_data
+  @spec update_live_data_path(LiveData.t(), String.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def update_live_data_path(%LiveData{} = live_data, path) do
+    live_data
+    |> LiveData.path_changeset(%{path: path})
+    |> Repo.update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
+  end
+
+  @doc """
+  Updates LiveDataAssign.
+
+      iex> update_live_data_assign(live_data_assign, %{code: "true"})
+      {:ok, %LiveDataAssign{}}
+
+  """
+  @doc type: :live_data
+  @spec update_live_data_assign(LiveDataAssign.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs) do
+    live_data_assign
+    |> Repo.preload(:live_data)
+    |> LiveDataAssign.changeset(attrs)
+    |> validate_live_data_code()
+    |> Repo.update()
+    |> tap(fn
+      {:ok, live_data_assign} -> maybe_broadcast_updated_content_event({:ok, live_data_assign.live_data}, :live_data)
+      _error -> :skip
+    end)
+  end
+
+  defp validate_live_data_code(changeset) do
+    site = Changeset.get_field(changeset, :site)
+    value = Changeset.get_field(changeset, :value)
+    format = Changeset.get_field(changeset, :format)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
+
+    variable_names =
+      changeset
+      |> Changeset.get_field(:live_data)
+      |> Map.fetch!(:path)
+      |> vars_from_path()
+      |> List.insert_at(0, "params")
+
+    do_validate_template(changeset, :value, format, value, metadata, variable_names)
+  end
+
+  defp vars_from_path(path) do
+    path
+    |> String.split("/")
+    |> Enum.filter(&String.starts_with?(&1, ":"))
+    |> Enum.map(&String.slice(&1, 1..-1//1))
+  end
+
+  @doc """
+  Deletes LiveData.
+  """
+  @doc type: :live_data
+  @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
+  def delete_live_data(live_data) do
+    Repo.delete(live_data)
+  end
+
+  @doc """
+  Deletes LiveDataAssign.
+  """
+  @doc type: :live_data
+  @spec delete_live_data_assign(LiveDataAssign.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def delete_live_data_assign(live_data_assign) do
+    Repo.delete(live_data_assign)
+  end
+
   ## Utils
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata) when is_binary(template) do
+  defp do_validate_template(changeset, field, format, template, metadata, vars \\ [], imports \\ [])
+
+  defp do_validate_template(changeset, field, _format, nil = _template, _metadata, _, _) do
+    Changeset.add_error(changeset, field, "can't be blank", compilation_error: nil)
+  end
+
+  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case Beacon.Template.HEEx.compile(template, metadata) do
-        {:cont, _ast} -> []
-        {:halt, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
-        {:halt, _} -> [{field, "invalid"}]
+      case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
+        {:ok, _ast} -> []
+        {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:error, _} -> [{field, "invalid"}]
       end
     end)
   end
 
-  defp do_validate_template(changeset, field, :markdown = _format, template, metadata) when is_binary(template) do
+  defp do_validate_template(changeset, field, :markdown = _format, template, metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
       case Beacon.Template.Markdown.convert_to_html(template, metadata) do
         {:cont, _template} -> []
@@ -1891,6 +2517,165 @@ defmodule Beacon.Content do
     end)
   end
 
+  defp do_validate_template(changeset, field, :elixir = _format, code, _metadata, vars, imports) when is_binary(code) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      case validate_elixir_code(template, vars, imports) do
+        :ok -> []
+        {:error, reason, message} -> [{field, {reason, compilation_error: message}}]
+      end
+    end)
+  end
+
+  defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _, _), do: changeset
+
   # TODO: expose template validation to custom template formats defined by users
-  defp do_validate_template(changeset, _field, _format, _template, _metadata), do: changeset
+  defp do_validate_template(changeset, _field, _format, _template, _metadata, _, _), do: changeset
+
+  defp validate_elixir_code(code, vars, imports) do
+    Application.put_env(:elixir, :ansi_enabled, false)
+
+    full_code =
+      "fn #{Enum.join(vars, ", ")} ->\n" <>
+        Enum.map_join(imports, &"  import #{&1}\n") <>
+        code <>
+        "\nend"
+
+    {compilation, diagnostics} =
+      with_diagnostics(fn ->
+        try do
+          Code.compile_string(full_code)
+          :ok
+        rescue
+          error -> {:error, error}
+        end
+      end)
+
+    result =
+      case compilation do
+        :ok ->
+          :ok
+
+        {:error, error} ->
+          message = "#{Exception.message(error)}\n\n#{diagnostic(diagnostics)}"
+          {:error, "invalid", message}
+      end
+
+    Application.put_env(:elixir, :ansi_enabled, true)
+    result
+  end
+
+  defp diagnostic([%{message: message} | _]), do: message
+  defp diagnostic(_diagnostics), do: ""
+
+  # extract elixir code diagnostics
+  # https://github.com/elixir-lang/elixir/blob/38a571b73a59b72b34a6d70501b3e20bda34ae0e/lib/elixir/lib/code.ex#L611
+  # TODO: remove this function after we required Elixir v1.15+
+  defp with_diagnostics(opts \\ [], fun) do
+    value = :erlang.get(:elixir_code_diagnostics)
+    log = Keyword.get(opts, :log, false)
+    :erlang.put(:elixir_code_diagnostics, {[], log})
+
+    try do
+      result = fun.()
+      {diagnostics, _log?} = :erlang.get(:elixir_code_diagnostics)
+      {result, Enum.reverse(diagnostics)}
+    after
+      if value == :undefined do
+        :erlang.erase(:elixir_code_diagnostics)
+      else
+        :erlang.put(:elixir_code_diagnostics, value)
+      end
+    end
+  end
+
+  @doc false
+  def handle_call({:publish_page, page}, _from, config) do
+    %{site: site} = config
+
+    publish = fn page ->
+      changeset = Page.update_changeset(page, %{})
+
+      Repo.transact(fn ->
+        with {:ok, _changeset} <- validate_page_template(changeset),
+             {:ok, event} <- create_page_event(page, "published"),
+             {:ok, _snapshot} <- create_page_snapshot(page, event),
+             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
+             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
+             true <- :ets.delete(table_name(site), page.id) do
+          {:ok, page}
+        end
+      end)
+    end
+
+    with {:ok, page} <- publish.(page),
+         :ok <- Beacon.PubSub.page_published(page) do
+      {:reply, {:ok, page}, config}
+    else
+      error -> {:reply, error, config}
+    end
+  end
+
+  @doc false
+  def handle_call({:publish_layout, layout}, _from, config) do
+    %{site: site} = config
+
+    publish = fn layout ->
+      changeset = Layout.changeset(layout, %{})
+
+      Repo.transact(fn ->
+        with {:ok, _changeset} <- validate_layout_template(changeset),
+             {:ok, event} <- create_layout_event(layout, "published"),
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
+             true <- :ets.delete(table_name(site), layout.id) do
+          {:ok, layout}
+        end
+      end)
+    end
+
+    with {:ok, layout} <- publish.(layout),
+         :ok <- Beacon.PubSub.layout_published(layout) do
+      {:reply, {:ok, layout}, config}
+    else
+      error -> {:reply, error, config}
+    end
+  end
+
+  @doc false
+  def handle_call({:fetch_cached_content, id, fun}, _from, config) do
+    %{site: site} = config
+    match = {id, :_}
+    guards = []
+    body = [:"$_"]
+
+    cache = fn id, fun ->
+      case fun.() do
+        nil ->
+          nil
+
+        content ->
+          :ets.insert(table_name(site), {id, content})
+          content
+      end
+    end
+
+    content =
+      case :ets.select(table_name(site), [{match, guards, body}]) do
+        [{_id, content}] -> content
+        _ -> cache.(id, fun)
+      end
+
+    {:reply, content, config}
+  end
+
+  @doc false
+  def handle_call(:dump_cached_content, _from, config) do
+    content = config.site |> table_name() |> :ets.match(:"$1") |> List.flatten()
+    {:reply, content, config}
+  end
+
+  @doc false
+  def handle_info(msg, config) do
+    Logger.warning("Beacon.Content can not handle the message: #{inspect(msg)}")
+    {:noreply, config}
+  end
 end

@@ -43,6 +43,8 @@ beacon-*.tar
 
 # LSP
 /.elixir_ls
+/.elixir-tools
+/.lexical
 
 # Local iex config
 .iex.exs

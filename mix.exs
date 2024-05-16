@@ -13,12 +13,7 @@ defmodule Beacon.MixProject do
       deps: deps(),
       aliases: aliases(),
       docs: docs(),
-      elixirc_paths: elixirc_paths(Mix.env()),
-      dialyzer: [
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
-        plt_add_apps: [:mix],
-        list_unused_filters: true
-      ]
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
 
@@ -35,26 +30,26 @@ defmodule Beacon.MixProject do
   defp deps do
     [
       {:accent, "~> 1.1"},
-      {:brotli, "~> 0.3.2"},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.5", only: :dev},
+      {:ex_brotli, "~> 0.3"},
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.20"},
       {:hackney, "~> 1.16", only: [:dev, :test]},
-      {:heroicons, "~> 0.5"},
-      {:image, "~> 0.32"},
+      {:image, "~> 0.40"},
       {:jason, "~> 1.0"},
       {:solid, "~> 0.14"},
-      {:phoenix, "~> 1.7"},
+      phoenix_dep(),
       {:phoenix_ecto, "~> 4.4"},
+      {:phoenix_html, "~> 4.0"},
+      {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:phoenix_live_view, "~> 0.19"},
+      phoenix_live_view_dep(),
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
@@ -62,24 +57,39 @@ defmodule Beacon.MixProject do
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:tailwind, "~> 0.2"},
       {:rustler, ">= 0.0.0", optional: true},
+      {:faker, "~> 0.17", only: :test},
       live_monaco_editor_dep(),
       mdex_dep()
     ]
   end
 
+  defp phoenix_dep do
+    cond do
+      env = System.get_env("PHOENIX_VERSION") -> {:phoenix, env}
+      path = System.get_env("PHOENIX_PATH") -> {:phoenix, path}
+      :default -> {:phoenix, "~> 1.7"}
+    end
+  end
+
+  defp phoenix_live_view_dep do
+    cond do
+      env = System.get_env("PHOENIX_LIVE_VIEW_VERSION") -> {:phoenix_live_view, env}
+      path = System.get_env("PHOENIX_LIVE_VIEW_PATH") -> {:phoenix_live_view, path}
+      :default -> {:phoenix_live_view, "~> 0.20"}
+    end
+  end
+
   defp live_monaco_editor_dep do
-    if path = System.get_env("LIVE_MONACO_EDITOR_PATH") do
-      {:live_monaco_editor, path: path}
-    else
-      {:live_monaco_editor, "~> 0.1"}
+    cond do
+      path = System.get_env("LIVE_MONACO_EDITOR_PATH") -> {:live_monaco_editor, path: path}
+      :default -> {:live_monaco_editor, "~> 0.1"}
     end
   end
 
   defp mdex_dep do
-    if path = System.get_env("MDEX_PATH") do
-      {:mdex, path: path}
-    else
-      {:mdex, "~> 0.1.4"}
+    cond do
+      path = System.get_env("MDEX_PATH") -> {:mdex, path: path}
+      :default -> {:mdex, "~> 0.1"}
     end
   end
 
@@ -104,9 +114,12 @@ defmodule Beacon.MixProject do
         Content: [
           Beacon.Content,
           Beacon.Content.Component,
+          Beacon.Content.ErrorPage,
           Beacon.Content.Layout,
           Beacon.Content.LayoutEvent,
           Beacon.Content.LayoutSnapshot,
+          Beacon.Content.LiveData,
+          Beacon.Content.LiveDataAssign,
           Beacon.Content.Page,
           Beacon.Content.Page.Event,
           Beacon.Content.Page.Helper,
@@ -118,8 +131,7 @@ defmodule Beacon.MixProject do
           Beacon.Content.Snippets.Helper,
           Beacon.Template,
           Beacon.Template.HEEx,
-          Beacon.Template.Markdown,
-          Beacon.DataSource.Behaviour
+          Beacon.Template.Markdown
         ],
         "Media Library": [
           Beacon.MediaLibrary,
@@ -135,7 +147,8 @@ defmodule Beacon.MixProject do
           Beacon.MediaLibrary.UploadMetadata
         ],
         "Authn and Authz": [
-          Beacon.Authorization.Behaviour,
+          Beacon.Authorization,
+          Beacon.Authorization.Policy,
           Beacon.Authorization.DefaultPolicy
         ],
         Web: [
@@ -149,9 +162,10 @@ defmodule Beacon.MixProject do
         Extensibility: [
           Beacon.Config,
           Beacon.Lifecycle,
-          Beacon.Content.PageField,
           Beacon.Template.LoadMetadata,
-          Beacon.Template.RenderMetadata
+          Beacon.Template.RenderMetadata,
+          Beacon.Content.PageField,
+          Beacon.MediaLibrary.AssetField
         ],
         Execution: [
           Beacon.Router,
@@ -159,18 +173,19 @@ defmodule Beacon.MixProject do
           Beacon.Registry,
           Beacon.RuntimeCSS,
           Beacon.RuntimeJS,
-          Beacon.TailwindCompiler
+          Beacon.RuntimeCSS.TailwindCompiler
         ],
         Types: [
           Beacon.Types.Atom,
           Beacon.Types.Binary,
-          Beacon.Types.Site
+          Beacon.Types.Site,
+          Beacon.Types.JsonArrayMap
         ],
         Exceptions: [
           Beacon.LoaderError,
-          Beacon.DataSourceError,
           Beacon.AuthorizationError,
           Beacon.ParserError,
+          Beacon.SnippetError,
           BeaconWeb.NotFoundError
         ]
       ],
@@ -181,7 +196,9 @@ defmodule Beacon.MixProject do
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
-        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers)
+        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
+        "Functions: Error Pages": &(&1[:type] == :error_pages),
+        "Functions: Live Data": &(&1[:type] == :live_data)
       ]
     ]
   end

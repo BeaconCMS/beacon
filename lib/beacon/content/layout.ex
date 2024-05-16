@@ -29,7 +29,7 @@ defmodule Beacon.Content.Layout do
   schema "beacon_layouts" do
     field :site, Beacon.Types.Site
     field :title, :string
-    field :template, :string
+    field :template, :string, default: "<%= @inner_content %>"
     field :meta_tags, {:array, :map}, default: []
     field :resource_links, {:array, :map}, default: []
 
@@ -47,6 +47,9 @@ defmodule Beacon.Content.Layout do
   def changeset(%__MODULE__{} = layout, attrs) do
     layout
     |> cast(attrs, [:site, :title, :template, :meta_tags, :resource_links])
-    |> validate_required([:site, :title, :template])
+    |> validate_required([:site, :title])
   end
+
+  @doc false
+  def fetch(layout, key), do: Map.fetch(layout, key)
 end

@@ -1,7 +1,7 @@
 defmodule Beacon.Repo.Migrations.MigrateBeaconPagesMetaTagsInterpolation do
   use Ecto.Migration
 
-  def change do
+  def up do
     query_page_meta_tags = """
     SELECT id, meta_tags FROM beacon_pages
     """

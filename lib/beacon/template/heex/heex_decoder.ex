@@ -55,8 +55,8 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     ["<%!--", content, "--%>"]
   end
 
-  defp transform_node(%{"tag" => "eex_block", "blocks" => blocks, "arg" => arg}) do
-    ["<%=", arg, " %>", Enum.map(blocks, &transform_block/1)]
+  defp transform_node(%{"tag" => "eex_block", "ast" => ast}) do
+    [decode_eex_block(ast)]
   end
 
   defp transform_node(%{"tag" => tag, "attrs" => %{"self_close" => true} = attrs, "content" => []}) do
@@ -76,10 +76,6 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     str
   end
 
-  defp transform_block(%{"content" => content, "key" => key}) do
-    [decode_nodes(content), "<%", key, "%>"]
-  end
-
   defp transform_attrs(attrs) do
     Enum.map_join(attrs, " ", &transform_attr/1)
   end
@@ -88,7 +84,7 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     key
   end
 
-  # Matches attributes whose values are wrapped in `{` and `}` (eex expressions)
+  # matches attributes whose values are wrapped in `{` and `}` (eex expressions)
   defp transform_attr({key, value})
        when binary_part(value, 0, 1) == "{" and binary_part(value, byte_size(value) - 1, 1) == "}" do
     [key, "=", value]
@@ -128,5 +124,47 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
 
   defp reconstruct_attr({name, {:expr, content, _}, _}) do
     [name, "=", ?{, content, ?}]
+  end
+
+  defp decode_eex_block(ast) do
+    %{"type" => "eex_block", "content" => content, "children" => children} = Jason.decode!(ast)
+
+    children =
+      children
+      |> Enum.reduce([], fn node, acc -> decode_eex_block_node(node, acc) end)
+      |> Enum.reverse()
+
+    ["<%= ", content, " %>", children]
+  end
+
+  defp decode_eex_block_node(%{"type" => "eex_block_clause", "content" => clause, "children" => children}, acc) do
+    children = decode_eex_block_node(children, [])
+    [[children, "<% ", clause, " %>"] | acc]
+  end
+
+  defp decode_eex_block_node([head | tail], acc) do
+    head = decode_eex_block_node(head)
+    decode_eex_block_node(tail, acc ++ [head])
+  end
+
+  defp decode_eex_block_node([], acc), do: acc
+
+  defp decode_eex_block_node(%{"type" => "text", "content" => content}) do
+    [content]
+  end
+
+  defp decode_eex_block_node(%{"type" => "tag_block", "tag" => tag, "attrs" => attrs, "metadata" => _metadata, "children" => children}) do
+    attrs = transform_attrs(attrs)
+    children = decode_eex_block_node(children, [])
+    ["<", tag, " ", attrs, ">", children, "</", tag, ">"]
+  end
+
+  defp decode_eex_block_node(%{"type" => "tag_self_close", "tag" => tag, "attrs" => attrs}) do
+    attrs = transform_attrs(attrs)
+    ["<", tag, " ", attrs, "/>"]
+  end
+
+  defp decode_eex_block_node(%{"type" => "eex", "content" => expr, "metadata" => %{"opt" => ~c"="}}) do
+    ["<%= ", expr, " %>"]
   end
 end

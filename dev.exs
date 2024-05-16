@@ -17,12 +17,15 @@ Logger.configure(level: :debug)
 
 Application.put_env(:phoenix, :json_library, Jason)
 
+display_error_pages? = false
+
 Application.put_env(:beacon, SamplePhoenix.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),
-  debug_errors: true,
+  debug_errors: !display_error_pages?,
+  render_errors: [formats: [html: BeaconWeb.ErrorHTML]],
   check_origin: false,
   pubsub_server: SamplePhoenix.PubSub,
   live_reload: [
@@ -91,32 +94,6 @@ defmodule SamplePhoenix.Endpoint do
   plug SamplePhoenixWeb.Router
 end
 
-defmodule BeaconDataSource do
-  @behaviour Beacon.DataSource.Behaviour
-
-  def live_data(:dev, ["home"], _params) do
-    [img1] = Beacon.MediaLibrary.search(:dev, "dockyard_1")
-
-    %{year: Date.utc_today().year, img1: img1}
-  end
-
-  def live_data(:dy, _path, _params) do
-    %{slogan: "Growth, Uninhibited"}
-  end
-
-  def live_data(_, _, _), do: %{}
-
-  def page_title(:dev, %{page_title: page_title}), do: String.upcase(page_title)
-
-  def page_title(:dy, _), do: "dy"
-
-  def meta_tags(:dev, %{beacon_live_data: %{year: year}, meta_tags: meta_tags}) do
-    [%{"name" => "year", "content" => year} | meta_tags]
-  end
-
-  def meta_tags(:dev, %{meta_tags: meta_tags}), do: meta_tags
-end
-
 defmodule BeaconTagsField do
   use Phoenix.Component
   import BeaconWeb.CoreComponents
@@ -144,18 +121,11 @@ defmodule BeaconTagsField do
   def changeset(data, attrs, _metadata) do
     data
     |> cast(attrs, [:tags])
-    |> validate_required([:tags])
     |> validate_format(:tags, ~r/,/, message: "invalid format, expected ,")
   end
 end
 
 dev_seeds = fn ->
-  Beacon.Content.create_stylesheet!(%{
-    site: "dev",
-    name: "sample_stylesheet",
-    content: "body {cursor: zoom-in;}"
-  })
-
   layout =
     Beacon.Content.create_layout!(%{
       site: "dev",
@@ -175,11 +145,21 @@ dev_seeds = fn ->
 
   Beacon.Content.publish_layout(layout)
 
+  Beacon.Content.create_component!(%{
+    site: "dev",
+    name: "sample_component",
+    body: """
+    <li>
+      <%= @val %>
+    </li>
+    """
+  })
+
   Beacon.Content.create_snippet_helper!(%{
     site: "dev",
     name: "author_name",
     body: ~S"""
-    author_id =  get_in(assigns, ["page", "extra", "author_id"])
+    author_id = get_in(assigns, ["page", "extra", "author_id"])
     "author_#{author_id}"
     """
   })
@@ -193,7 +173,7 @@ dev_seeds = fn ->
       extra: %{"alt" => "logo"}
     )
 
-  img1 = Beacon.MediaLibrary.upload(metadata)
+  _img1 = Beacon.MediaLibrary.upload(metadata)
 
   metadata =
     Beacon.MediaLibrary.UploadMetadata.new(
@@ -204,11 +184,36 @@ dev_seeds = fn ->
       extra: %{"alt" => "alternate logo"}
     )
 
-  img2 = Beacon.MediaLibrary.upload(metadata)
+  _img2 = Beacon.MediaLibrary.upload(metadata)
+
+  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
+
+  Beacon.Content.create_assign_for_live_data(
+    home_live_data,
+    %{
+      format: :elixir,
+      key: "year",
+      value: """
+      Date.utc_today().year
+      """
+    }
+  )
+
+  Beacon.Content.create_assign_for_live_data(
+    home_live_data,
+    %{
+      format: :elixir,
+      key: "img1",
+      value: """
+      [img1] = Beacon.MediaLibrary.search(:dev, "dockyard_1")
+      img1
+      """
+    }
+  )
 
   page_home =
     Beacon.Content.create_page!(%{
-      path: "home",
+      path: "/sample",
       site: "dev",
       title: "dev home",
       description: "page used for development",
@@ -251,12 +256,12 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          <BeaconWeb.Components.image_set asset={@beacon_live_data[:img1]} sources={["480w"]} width="200px" />
+          <BeaconWeb.Components.image_set asset={@img1} sources={["480w"]} width="200px" />
         </div>
 
         <div>
           <p>From data source:</p>
-          <%= @beacon_live_data[:year] %>
+          <%= @year %>
         </div>
 
         <div>
@@ -284,7 +289,7 @@ dev_seeds = fn ->
 
   page_author =
     Beacon.Content.create_page!(%{
-      path: "authors/:author_id",
+      path: "/authors/:author_id",
       site: "dev",
       title: "dev author",
       layout_id: layout.id,
@@ -295,7 +300,7 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/home">Home (navigate)</.link></li>
+            <li><.link navigate="/dev">Home (navigate)</.link></li>
             <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
           </ul>
         </div>
@@ -312,7 +317,7 @@ dev_seeds = fn ->
 
   page_post =
     Beacon.Content.create_page!(%{
-      path: "posts/*slug",
+      path: "/posts/*slug",
       site: "dev",
       title: "dev post",
       layout_id: layout.id,
@@ -323,7 +328,7 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev/home">Home (navigate)</.link></li>
+            <li><.link navigate="/dev">Home (navigate)</.link></li>
             <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
           </ul>
         </div>
@@ -340,7 +345,7 @@ dev_seeds = fn ->
 
   page_markdown =
     Beacon.Content.create_page!(%{
-      path: "markdown",
+      path: "/markdown",
       site: "dev",
       title: "dev markdown",
       layout_id: layout.id,
@@ -350,7 +355,7 @@ dev_seeds = fn ->
 
       ## Intro
 
-      Back to [Home](/dev/home)
+      Back to [Home](/dev)
       """
     })
 
@@ -730,7 +735,7 @@ dy_seeds = fn ->
 
   page_home =
     Beacon.Content.create_page!(%{
-      path: "",
+      path: "/",
       site: "dy",
       title: "home",
       description: "home",
@@ -969,9 +974,12 @@ end
 dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
-  data_source: BeaconDataSource,
+  skip_boot?: true,
   extra_page_fields: [BeaconTagsField],
-  lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]]
+  lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
+  default_meta_tags: [
+    %{"name" => "default", "content" => "dev"}
+  ]
 ]
 
 s3_bucket = System.get_env("S3_BUCKET")
@@ -996,7 +1004,7 @@ Task.start(fn ->
     {Beacon,
      sites: [
        dev_site,
-       [site: :dy, endpoint: SamplePhoenix.Endpoint, data_source: BeaconDataSource]
+       [site: :dy, endpoint: SamplePhoenix.Endpoint, skip_boot?: true]
      ]},
     SamplePhoenix.Endpoint
   ]
@@ -1010,8 +1018,8 @@ Task.start(fn ->
   dev_seeds.()
   dy_seeds.()
 
-  :ok = Beacon.reload_site(:dev)
-  :ok = Beacon.reload_site(:dy)
+  Beacon.boot(:dev)
+  Beacon.boot(:dy)
 
   Process.sleep(:infinity)
 end)

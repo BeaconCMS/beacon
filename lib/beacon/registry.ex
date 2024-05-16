@@ -16,20 +16,6 @@ defmodule Beacon.Registry do
   @doc false
   def via(key, value), do: {:via, Registry, {__MODULE__, key, value}}
 
-  @doc false
-  def config!(site) do
-    case lookup({:site, site}) do
-      {_pid, config} ->
-        config
-
-      _ ->
-        raise RuntimeError, """
-        Site #{inspect(site)} was not found. Make sure it's configured and started,
-        see `Beacon.start_link/1` for more info.
-        """
-    end
-  end
-
   @doc """
   Return a list of all running sites in the current node.
   """
@@ -42,9 +28,23 @@ defmodule Beacon.Registry do
     Registry.select(__MODULE__, [{match, guards, body}])
   end
 
-  defp lookup(site) do
+  @doc false
+  def update_config(site, fun) when is_atom(site) and is_function(fun, 1) do
+    result =
+      Registry.update_value(__MODULE__, {:site, site}, fn config ->
+        fun.(config)
+      end)
+
+    case result do
+      {new_value, _old_value} -> new_value
+      error -> error
+    end
+  end
+
+  @doc false
+  def lookup(key) do
     __MODULE__
-    |> Registry.lookup(site)
+    |> Registry.lookup(key)
     |> List.first()
   end
 end

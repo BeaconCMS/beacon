@@ -36,14 +36,14 @@ defmodule Beacon.RuntimeJS do
   def fetch do
     case :ets.match(:beacon_assets, {:js, {:_, :_, :"$1"}}) do
       [[js]] -> js
-      _ -> "// JS not built"
+      _ -> "// JS not found"
     end
   end
 
-  def load do
+  def load! do
     js = build()
 
-    case :brotli.encode(js) do
+    case ExBrotli.compress(js) do
       {:ok, compressed} ->
         hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
         true = :ets.insert(:beacon_assets, {:js, {hash, js, compressed}})

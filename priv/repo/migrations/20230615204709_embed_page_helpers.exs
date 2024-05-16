@@ -29,7 +29,9 @@ defmodule Beacon.Repo.Migrations.EmbedPageHelpers do
         types = %{id: :binary_id, code: :string, helper_name: :string}
 
         Enum.map(result.rows, fn row ->
-          %{id: id, code: code, helper_name: helper_name} = repo().load(types, {result.columns, row})
+          %{id: id, code: code, helper_name: helper_name} =
+            repo().load(types, {result.columns, row})
+
           %{id: id, code: code, name: helper_name}
         end)
 

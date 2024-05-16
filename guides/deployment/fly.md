@@ -78,7 +78,7 @@ fly deploy
 
 ## Open
 
-Finally run the following command to see your site live:
+Finally, run the following command to see your site live:
 
 ```sh
 fly open /

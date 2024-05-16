@@ -9,6 +9,10 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert encoded == expected
   end
 
+  test "nil template cast to empty string" do
+    assert_output(nil, [])
+  end
+
   test "html elements with attrs" do
     assert_output(~S|<div>content</div>|, [%{"attrs" => %{}, "content" => ["content"], "tag" => "div"}])
     assert_output(~S|<a href="/contact">contact</a>|, [%{"attrs" => %{"href" => "/contact"}, "content" => ["contact"], "tag" => "a"}])
@@ -50,139 +54,259 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       ~S|value: <%= 1 %>|,
       ["value: ", %{"attrs" => %{}, "content" => ["1"], "metadata" => %{"opt" => ~c"="}, "rendered_html" => "1", "tag" => "eex"}]
     )
+  end
 
+  test "eex expressions in attrs" do
     assert_output(
-      ~S"""
-      <%= if @completed do %>
-        <div><span><%= @completed_message %></span></div>
-      <% else %>
-        Keep working
-      <% end %>
-      """,
+      ~S|
+      <img
+        alt={@person.bio}
+        src={@person.picture}
+        class="w-full h-auto max-w-full"
+      />
+      |,
       [
         %{
-          "arg" => "if @completed do",
-          "blocks" => [
-            %{
-              "content" => [
-                %{
-                  "attrs" => %{},
-                  "content" => [
-                    %{
-                      "attrs" => %{},
-                      "content" => [
-                        %{
-                          "attrs" => %{},
-                          "content" => ["@completed_message"],
-                          "metadata" => %{"opt" => ~c"="},
-                          "rendered_html" => "Congrats",
-                          "tag" => "eex"
-                        }
-                      ],
-                      "tag" => "span"
-                    }
-                  ],
-                  "tag" => "div"
-                }
-              ],
-              "key" => "else"
-            },
-            %{"content" => ["Keep working"], "key" => "end"}
-          ],
-          "tag" => "eex_block"
+          "attrs" => %{
+            "alt" => "{@person.bio}",
+            "class" => "w-full h-auto max-w-full",
+            "self_close" => true,
+            "src" => "{@person.picture}"
+          },
+          "content" => [],
+          "rendered_html" => "<img alt=\"person bio\" src=\"profile.jpg\" class=\"w-full h-auto max-w-full\">",
+          "tag" => "img"
         }
       ],
-      %{completed_message: "Congrats"}
-    )
-
-    assert_output(
-      ~S"""
-      <%= case @users do %>
-      <% users when is_list(users) -> %>
-        <%= if length(users) == 1 do %>
-          <div>Only 1 found</div>
-        <% else %>
-          <div>Multiple users found</div>
-        <% end %>
-      <% :error -> %>
-        <div>Not Found</div>
-      <% _ -> %>
-        <div>Something went wrong</div>
-      <% end %>
-      """,
-      [
-        %{
-          "arg" => "case @users do",
-          "blocks" => [
-            %{"content" => [], "key" => "users when is_list(users) ->"},
-            %{
-              "content" => [
-                %{
-                  "tag" => "eex_block",
-                  "arg" => "if length(users) == 1 do",
-                  "blocks" => [
-                    %{"content" => [%{"attrs" => %{}, "content" => ["Only 1 found"], "tag" => "div"}], "key" => "else"},
-                    %{"content" => [%{"attrs" => %{}, "content" => ["Multiple users found"], "tag" => "div"}], "key" => "end"}
-                  ]
-                }
-              ],
-              "key" => ":error ->"
-            },
-            %{
-              "content" => [%{"attrs" => %{}, "content" => ["Not Found"], "tag" => "div"}],
-              "key" => "_ ->"
-            },
-            %{
-              "content" => [
-                %{"attrs" => %{}, "content" => ["Something went wrong"], "tag" => "div"}
-              ],
-              "key" => "end"
-            }
-          ],
-          "tag" => "eex_block"
-        }
-      ]
+      %{person: %{bio: "person bio", picture: "profile.jpg"}}
     )
   end
 
-  @tag :skip
+  test "block expressions" do
+    if_template = ~S|
+    <%= if @completed do %>
+      <span><%= @completed_message %></span>
+    <% else %>
+      keep working
+    <% end %>
+    |
+
+    assert {:ok,
+            [
+              %{
+                "arg" => "if @completed do",
+                "tag" => "eex_block",
+                "rendered_html" => "\n      <span>congrats</span>\n",
+                "ast" => ast
+              }
+            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: true, completed_message: "congrats"})
+
+    assert %{
+             "children" => [
+               %{
+                 "children" => [
+                   %{
+                     "content" => "\n      ",
+                     "metadata" => %{"newlines" => 1},
+                     "type" => "text"
+                   },
+                   %{
+                     "attrs" => %{},
+                     "children" => [
+                       %{
+                         "content" => "@completed_message",
+                         "metadata" => %{"column" => 13, "line" => 3, "opt" => ~c"="},
+                         "type" => "eex"
+                       }
+                     ],
+                     "metadata" => %{"mode" => "inline"},
+                     "tag" => "span",
+                     "type" => "tag_block"
+                   },
+                   %{
+                     "content" => "\n    ",
+                     "metadata" => %{"newlines" => 1},
+                     "type" => "text"
+                   }
+                 ],
+                 "content" => "else",
+                 "type" => "eex_block_clause"
+               },
+               %{
+                 "children" => [
+                   %{
+                     "content" => "\n      keep working\n    ",
+                     "metadata" => %{"newlines" => 1},
+                     "type" => "text"
+                   }
+                 ],
+                 "content" => "end",
+                 "type" => "eex_block_clause"
+               }
+             ],
+             "content" => "if @completed do",
+             "type" => "eex_block"
+           } = Jason.decode!(ast)
+
+    assert {:ok,
+            [
+              %{
+                "arg" => "if @completed do",
+                "tag" => "eex_block",
+                "rendered_html" => "\n      keep working\n",
+                "ast" => ast
+              }
+            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: false, completed_message: "congrats"})
+
+    assert %{
+             "children" => [
+               %{
+                 "children" => [
+                   %{"content" => "\n      ", "metadata" => %{"newlines" => 1}, "type" => "text"},
+                   %{
+                     "attrs" => %{},
+                     "children" => [
+                       %{"content" => "@completed_message", "metadata" => %{"column" => 13, "line" => 3, "opt" => ~c"="}, "type" => "eex"}
+                     ],
+                     "metadata" => %{"mode" => "inline"},
+                     "tag" => "span",
+                     "type" => "tag_block"
+                   },
+                   %{"content" => "\n    ", "metadata" => %{"newlines" => 1}, "type" => "text"}
+                 ],
+                 "content" => "else",
+                 "type" => "eex_block_clause"
+               },
+               %{
+                 "children" => [%{"content" => "\n      keep working\n    ", "metadata" => %{"newlines" => 1}, "type" => "text"}],
+                 "content" => "end",
+                 "type" => "eex_block_clause"
+               }
+             ],
+             "content" => "if @completed do",
+             "type" => "eex_block"
+           } = Jason.decode!(ast)
+  end
+
   test "comprehensions" do
+    template = ~S|
+        <%= for employee <- @employees do %>
+          <!-- regular <!-- comment --> -->
+          <%= employee.position %>
+          <div>
+            <%= for person <- @persons do %>
+              <%= if person.id == employee.id do %>
+                <span><%= person.name %></span>
+                <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+        |
+
+    assert {:ok,
+            [
+              %{
+                "arg" => "for employee <- @employees do",
+                "tag" => "eex_block",
+                "rendered_html" =>
+                  "\n<!-- regular <!-- comment --> -->\nCEO\n          <div>\n\n\n                <span>José</span>\n                <img width=\"200\" src=\"profile.jpg\">\n\n\n\n\n          </div>\n\n<!-- regular <!-- comment --> -->\nManager\n          <div>\n\n\n\n\n                <span>Chris</span>\n                <img width=\"200\" src=\"default.jpg\">\n\n\n          </div>\n",
+                "ast" => ast
+              }
+            ]} =
+             JSONEncoder.encode(:my_site, template, %{
+               employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
+               persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
+             })
+
+    assert is_binary(ast)
+  end
+
+  test "live data" do
     assert_output(
-      ~S|
-          <%= for val <- @beacon_live_data[:vals] do %>
-            <%= my_component("sample_component", val: val) %>
-          <% end %>
-        |,
-      [],
-      %{beacon_live_data: %{vals: [1, 2]}}
+      "<%= inspect(@vals) %>",
+      [
+        %{
+          "attrs" => %{},
+          "content" => ["inspect(@vals)"],
+          "metadata" => %{"opt" => ~c"="},
+          "rendered_html" => "[1, 2, 3]",
+          "tag" => "eex"
+        }
+      ],
+      %{vals: [1, 2, 3]}
     )
   end
 
   test "function components" do
-    assert_output(
-      ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
-      [
-        %{"attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"}, "content" => [], "tag" => "BeaconWeb.Components.image"}
-      ]
-    )
-
     assert_output(
       ~S|<.link path="/contact" replace={true}>Book meeting</.link>|,
       [
         %{
           "attrs" => %{"path" => "/contact", "replace" => "{true}"},
           "content" => ["Book meeting"],
-          "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>",
-          "tag" => ".link"
+          "tag" => ".link",
+          "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>"
+        }
+      ]
+    )
+
+    assert_output(
+      ~S|<Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>|,
+      [
+        %{
+          "attrs" => %{"path" => "/contact", "replace" => "{true}"},
+          "content" => ["Book meeting"],
+          "tag" => "Phoenix.Component.link",
+          "rendered_html" => "<a href=\"#\" path=\"/contact\">Book meeting</a>"
+        }
+      ]
+    )
+
+    assert_output(
+      ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
+      [
+        %{
+          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
+          "content" => [],
+          "tag" => "BeaconWeb.Components.image",
+          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
+        }
+      ]
+    )
+  end
+
+  test "function component with special attribute :let" do
+    template = ~S|
+    <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+      <input
+        id={Phoenix.HTML.Form.input_id(f, :email)}
+        name={Phoenix.HTML.Form.input_name(f, :email)}
+        class="text-sm"
+        placeholder="Enter your email"
+        type="email"
+      />
+      <button type="submit">Join</button>
+    </Phoenix.Component.form>
+    |
+
+    assert_output(
+      template,
+      [
+        %{
+          "attrs" => %{":let" => "{f}", "as" => "{:newsletter}", "for" => "{%{}}", "phx-submit" => "join"},
+          "content" => [],
+          "rendered_html" =>
+            "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
+          "tag" => "Phoenix.Component.form"
         }
       ]
     )
   end
 
   test "my_component" do
-    start_supervised!({Beacon.Loader, Beacon.Config.fetch!(:my_site)})
     component_fixture(site: :my_site)
-    Beacon.Loader.load_components(:my_site)
+    Beacon.Loader.fetch_components_module(:my_site)
 
     assert_output(
       ~S|<%= my_component("sample_component", %{val: 1}) %>|,
@@ -191,8 +315,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
           "attrs" => %{},
           "content" => ["my_component(\"sample_component\", %{val: 1})"],
           "metadata" => %{"opt" => ~c"="},
-          "rendered_html" => "<span id=\"my-component-1\">1</span>",
-          "tag" => "eex"
+          "tag" => "eex",
+          "rendered_html" => "<span id=\"my-component-1\">1</span>"
         }
       ]
     )
@@ -233,8 +357,195 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "invalid template" do
-    assert_raise Beacon.ParserError, fn ->
-      JSONEncoder.encode(:my_site, ~S|<%= :error|)
+    assert {:error, _} = JSONEncoder.encode(:my_site, ~S|<%= :error|)
+  end
+
+  describe "encode_eex_block" do
+    test "components" do
+      template = ~S"""
+      <%= if true do %>
+        <.link path="/contact" replace={true}>Book meeting</.link>
+        <Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>
+        <BeaconWeb.Components.image name="logo.jpg" width="200px" />
+      <% end %>
+      """
+
+      {:ok, [eex_block]} = Beacon.Template.HEEx.Tokenizer.tokenize(template)
+
+      assert JSONEncoder.encode_eex_block(eex_block) == %{
+               type: :eex_block,
+               children: [
+                 %{
+                   type: :eex_block_clause,
+                   children: [
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       tag: ".link",
+                       type: :tag_block,
+                       metadata: %{mode: :inline},
+                       children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "Book meeting"}],
+                       attrs: %{"path" => "/contact", "replace" => "{true}"}
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       tag: "Phoenix.Component.link",
+                       type: :tag_block,
+                       metadata: %{mode: :block},
+                       children: [%{type: :text, metadata: %{newlines: 0}, content: "Book meeting"}],
+                       attrs: %{"path" => "/contact", "replace" => "{true}"}
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{tag: "BeaconWeb.Components.image", type: :tag_self_close, attrs: %{"name" => "logo.jpg", "width" => "200px"}},
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n"}
+                   ],
+                   content: "end"
+                 }
+               ],
+               content: "if true do"
+             }
+    end
+
+    test "complex template" do
+      template = ~S"""
+      <%= if @display do %>
+        <%= cond do %>
+          <% !is_nil(@users) and length(@users) > 1 -> %>
+            <% [user | _] = @users %>
+            <%= case user do %>
+              <% {:ok, user} -> %>
+                <span class="text-xl" phx-click={JS.exec("data-cancel", to: "#{user.id}")}>
+                  <%= user.name %>
+                  <img src={if user.picture , do: user.picture, else: "default.jpg"} width="200" />
+                </span>
+              <% _ -> %>
+                <span>invalid user</span>
+            <% end %>
+          <% :default -> %>
+            <span>no users found</span>
+        <% end %>
+      <% else %>
+        <span>something went wrong</span>
+      <% end %>
+      """
+
+      {:ok, [eex_block]} = Beacon.Template.HEEx.Tokenizer.tokenize(template)
+
+      assert JSONEncoder.encode_eex_block(eex_block) == %{
+               children: [
+                 %{
+                   type: :eex_block_clause,
+                   children: [
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       type: :eex_block,
+                       children: [
+                         %{
+                           type: :eex_block_clause,
+                           children: [%{type: :text, metadata: %{newlines: 1}, content: "\n    "}],
+                           content: "!is_nil(@users) and length(@users) > 1 ->"
+                         },
+                         %{
+                           type: :eex_block_clause,
+                           children: [
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
+                             %{type: :eex, metadata: %{line: 4, opt: [], column: 7}, content: "[user | _] = @users"},
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
+                             %{
+                               type: :eex_block,
+                               children: [
+                                 %{
+                                   type: :eex_block_clause,
+                                   children: [%{type: :text, metadata: %{newlines: 1}, content: "\n        "}],
+                                   content: "{:ok, user} ->"
+                                 },
+                                 %{
+                                   type: :eex_block_clause,
+                                   children: [
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
+                                     %{
+                                       tag: "span",
+                                       type: :tag_block,
+                                       metadata: %{mode: :inline},
+                                       children: [
+                                         %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
+                                         %{type: :eex, metadata: %{line: 8, opt: ~c"=", column: 13}, content: "user.name"},
+                                         %{type: :text, metadata: %{newlines: 1}, content: "\n            "},
+                                         %{
+                                           tag: "img",
+                                           type: :tag_self_close,
+                                           attrs: %{"src" => "{if user.picture , do: user.picture, else: \"default.jpg\"}", "width" => "200"}
+                                         },
+                                         %{type: :text, metadata: %{newlines: 1}, content: "\n          "}
+                                       ],
+                                       attrs: %{"class" => "text-xl", "phx-click" => "{JS.exec(\"data-cancel\", to: \"\#{user.id}\")}"}
+                                     },
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n        "}
+                                   ],
+                                   content: "_ ->"
+                                 },
+                                 %{
+                                   type: :eex_block_clause,
+                                   children: [
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n          "},
+                                     %{
+                                       tag: "span",
+                                       type: :tag_block,
+                                       metadata: %{mode: :inline},
+                                       children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "invalid user"}],
+                                       attrs: %{}
+                                     },
+                                     %{type: :text, metadata: %{newlines: 1}, content: "\n      "}
+                                   ],
+                                   content: "end"
+                                 }
+                               ],
+                               content: "case user do"
+                             },
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n    "}
+                           ],
+                           content: ":default ->"
+                         },
+                         %{
+                           type: :eex_block_clause,
+                           children: [
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n      "},
+                             %{
+                               tag: "span",
+                               type: :tag_block,
+                               metadata: %{mode: :inline},
+                               children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "no users found"}],
+                               attrs: %{}
+                             },
+                             %{type: :text, metadata: %{newlines: 1}, content: "\n  "}
+                           ],
+                           content: "end"
+                         }
+                       ],
+                       content: "cond do"
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n"}
+                   ],
+                   content: "else"
+                 },
+                 %{
+                   type: :eex_block_clause,
+                   children: [
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
+                     %{
+                       tag: "span",
+                       type: :tag_block,
+                       metadata: %{mode: :inline},
+                       children: [%{type: :text, metadata: %{mode: :normal, newlines: 0}, content: "something went wrong"}],
+                       attrs: %{}
+                     },
+                     %{type: :text, metadata: %{newlines: 1}, content: "\n"}
+                   ],
+                   content: "end"
+                 }
+               ],
+               content: "if @display do",
+               type: :eex_block
+             }
     end
   end
 end
