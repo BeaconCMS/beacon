@@ -41,7 +41,7 @@ a Phoenix route at the same path.
 
 The `beacon.install` generator will change and create some files for you but the most important configuration at this point is adjusting the Repo credentials since Beacon requires a database to store site data.
 
-Look for the config `config :beacon, Beacon.Repo` in the files `config/dev.exs` and `config/prod.exs` to adjust the database configuration to your environment.
+Look for the config `config :beacon, Beacon.Repo` in the file `config/dev.exs` to adjust the database configuration to your environment.
 
 ## Acessing LiveAdmin to manage your site
 

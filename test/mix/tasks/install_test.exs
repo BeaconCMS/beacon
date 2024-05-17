@@ -9,7 +9,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
   @config_path "config/config.exs"
   @dev_path "config/dev.exs"
-  @prod_path "config/prod.exs"
   @application_path "lib/my_app/application.ex"
   @router_path "lib/my_app_web/router.ex"
   @mixfile_path "mix.exs"
@@ -294,7 +293,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       # Content after first run
       config = File.read!(@config_path)
       dev = File.read!(@dev_path)
-      prod = File.read!(@prod_path)
       app = File.read!(@application_path)
       router = File.read!(@router_path)
       mixfile = File.read!(@mixfile_path)
@@ -304,7 +302,6 @@ defmodule Mix.Tasks.Beacon.InstallTest do
       # File contents have not changed after second run
       assert File.read!(@config_path) == config
       assert File.read!(@dev_path) == dev
-      assert File.read!(@prod_path) == prod
       assert File.read!(@application_path) == app
       assert File.read!(@router_path) == router
       assert File.read!(@mixfile_path) == mixfile
