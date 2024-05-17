@@ -756,6 +756,28 @@ defmodule Beacon.ContentTest do
       refute Enum.member?(components, component_a)
     end
 
+    test "page and per_page" do
+      component_fixture(name: "first")
+      component_fixture(name: "second")
+
+      assert [%Component{name: "first"}] = Content.list_components(:my_site, per_page: 1, page: 1, sort: :name)
+      assert [%Component{name: "second"}] = Content.list_components(:my_site, per_page: 1, page: 2, sort: :name)
+      assert [] = Content.list_components(:my_site, per_page: 2, page: 2, sort: :name)
+    end
+
+    test "no layouts return 0" do
+      assert Content.count_components(:my_site) == 0
+    end
+
+    test "filter by title" do
+      component_fixture(name: "first")
+      component_fixture(name: "second")
+
+      assert Content.count_components(:my_site, query: "first") == 1
+      assert Content.count_components(:my_site, query: "second") == 1
+      assert Content.count_components(:my_site, query: "third") == 0
+    end
+
     test "update_component" do
       component = component_fixture(name: "new_component", body: "old_body")
       assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
