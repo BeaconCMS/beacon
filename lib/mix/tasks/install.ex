@@ -40,9 +40,6 @@ defmodule Mix.Tasks.Beacon.Install do
     dev_config_file = config_file_path("dev.exs")
     maybe_inject_beacon_repo_config(dev_config_file, bindings)
 
-    prod_config_file = config_file_path("prod.exs")
-    maybe_inject_beacon_repo_config(prod_config_file, bindings)
-
     maybe_inject_beacon_site_routes(bindings)
 
     maybe_inject_beacon_supervisor(bindings)
@@ -126,12 +123,7 @@ defmodule Mix.Tasks.Beacon.Install do
     config_file_content = File.read!(config_file_path)
     templates_path = get_in(bindings, [:templates_path])
 
-    beacon_repo_config =
-      if Path.basename(config_file_path) == "prod.exs" do
-        EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_prod.exs"]), bindings)
-      else
-        EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_dev.exs"]), bindings)
-      end
+    beacon_repo_config = EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_dev.exs"]), bindings)
 
     if String.contains?(config_file_content, beacon_repo_config) do
       Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon repo config into ", Path.relative_to_cwd(config_file_path), " (already exists)"])
