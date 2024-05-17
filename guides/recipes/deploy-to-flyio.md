@@ -35,7 +35,7 @@ Edit the generated `Dockerfile` file and make two changes:
 1. Add the following code before `RUN mix assets.deploy`:
 
 ```
-RUN mix tailwind.install
+RUN mix tailwind.install --no-assets
 ```
 
 2. Add the following code after `USER nobody`:
