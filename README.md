@@ -10,19 +10,20 @@ Check out the [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to 
 
 If you're new to Beacon you probably want to start with [creating your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md).
 
-
 ## Demo
 
 A sample application running latest Beacon is available at https://github.com/BeaconCMS/beacon_demo
 
-## Status
+## Status and Roadmap
 
 Pre-release version. You can expect incomplete features and breaking changes before a stable v0.1.0 is released.
 
 Main components:
-- Core - A functional website can be built and deployed by inserting components in database and running a server, see https://github.com/BeaconCMS/beacon_demo
-- Admin - LiveView UI to manage layouts, pages, and all other resources. See https://github.com/BeaconCMS/beacon_live_admin
-- Page Builder - An easy to use, drag & drop UI for building pages, targeted to non-technical users. In the initial stages of development.
+- [Beacon](https://github.com/BeaconCMS/beacon) is the **core** engine responsible for storing data and running sites
+- [BeaconLiveAdmin](https://github.com/BeaconCMS/beacon_live_admin) is the web interface to manage sites
+- Visual Page Builder - An easy to use, drag & drop UI for building pages, targeted to non-technical users. In the initial stages of development.
+
+The roadmap is available at https://github.com/BeaconCMS/beacon_live_admin/blob/main/ROADMAP.md
 
 ## Contributing
 

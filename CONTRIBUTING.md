@@ -1,8 +1,15 @@
-# How to Contribute
+# Contributing to Beacon
 
-## Issue Tags
+## Guidelines
 
-The tag [good first issue](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) is recommended for fist time contributors, they are usually small fixes or improvements that don't require too much knowledge of the project. The tag [help wanted](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22good+first+issue%22+) represents issues that would benefit from contributors but may need more knowledge or discussion over the requirements.
+First some guidelines that we follow to keep the project organized:
+
+* Issues aligned with our [roadmap](https://github.com/BeaconCMS/beacon_live_admin/blob/main/ROADMAP.md) have higher priority
+  and those are [labeled as roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap)
+* [Bugs](https://github.com/BeaconCMS/beacon/labels/bug) tend to have higher priority unless they are of minor impact
+* If unsure where to start, look for issues tagged as [good first issue](https://github.com/BeaconCMS/beacon/labels/good%20first%20issue) to find good candidates of issues to start contributing
+* Issues tagged [help wanted](https://github.com/BeaconCMS/beacon/labels/help%20wanted) are also good candidates but may require more knowledge of the project and time
+* Issues are usually tagged by type and area to help identify their priority aligned to our roadmap
 
 ## Improve documentation
 
