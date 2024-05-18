@@ -813,6 +813,17 @@ defmodule Beacon.ContentTest do
       assert %{key: "product_id", format: :elixir, value: "123"} = assign
     end
 
+    test "blocks assigning reserved keys" do
+      live_data = live_data_fixture()
+      invalid_keys = [:beacon, :uploads, :streams, :socket, :myself, :flash]
+
+      for invalid_key <- invalid_keys do
+        attrs = %{key: to_string(invalid_key), format: :text, value: "foo"}
+        assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+        assert {:key, {"is reserved", _}} = error
+      end
+    end
+
     test "validate assign elixir code on create" do
       live_data = live_data_fixture()
 
