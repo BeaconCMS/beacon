@@ -358,7 +358,6 @@ defmodule Beacon.Config do
 
   """
   @spec new([option]) :: t()
-  # credo:disable-for-lines:46
   def new(opts) do
     # TODO: validate opts, maybe use nimble_options
 
