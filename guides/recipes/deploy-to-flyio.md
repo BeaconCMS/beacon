@@ -1,10 +1,10 @@
 # Deploying on Fly.io
 
-Once you have a [Beacon site up and running](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md) locally, you can have it deployed on [Fly.io](https://fly.io) by following this guide.
+Once you have a [Beacon site up and running](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md) locally, you can deploy it on [Fly.io](https://fly.io) by following this guide.
 
 ## Fly.io CLI
 
-Firstly instal the fly cli tool as described at [Install flyctl](https://fly.io/docs/hands-on/install-flyctl), you'll need it to deploy your site.
+First, install the fly cli tool, as described at [Install flyctl](https://fly.io/docs/hands-on/install-flyctl). You'll need it to deploy your site.
 
 ## Sign in or sign up
 
@@ -22,7 +22,7 @@ fly auth login
 
 ## Dockerfile
 
-Aplications on Fly run on containers, let's generate a Dockerfile and then make a couple of changes on that file:
+Applications on Fly run in containers. Let's generate a Dockerfile and make a couple of changes to that file:
 
 Run:
 
@@ -30,7 +30,7 @@ Run:
 mix phx.gen.release --docker
 ```
 
-Edit the generated `Dockerfile` file and make two changes:
+Edit the generated `Dockerfile` and make two changes:
 
 1. Add the following code before `RUN mix assets.deploy`:
 
@@ -47,7 +47,7 @@ COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
 
 ## Database connection
 
-Edit `config/runtime.exs` and add the following config after `config :my_app, MyApp.Repo, ...`:
+In `config/runtime.exs` add the following config after `config :my_app, MyApp.Repo, ...`:
 
 ```elixir
 config :beacon, Beacon.Repo,
@@ -58,7 +58,7 @@ config :beacon, Beacon.Repo,
 
 ## Launch
 
-With your account in place and all files updated, it's time to launch your application. Run and follow the instructions:
+With your account in place and all files updated, it's time to launch your application. Run:
 
 ```sh
 fly launch
@@ -70,7 +70,7 @@ When asked if you would like to deploy, answer YES or run `fly deploy` afterward
 
 ## Deploy
 
-Beacon is designed to minimize deployments as much as possible but eventually you can trigger new deployments by running:
+Beacon is designed to minimize deployments as much as possible, but eventually you can trigger new deployments by running:
 
 ```sh
 fly deploy
@@ -78,13 +78,13 @@ fly deploy
 
 ## Open
 
-Finally, run the following command to see your site live:
+Finally, if you followed the guides to setup your site, run the following command to see it live:
 
 ```sh
 fly open /
 ```
 
-Change the path if you have created a custom page and not followed the guides.
+If you have created a custom page, simply replace `/` in the above command to match its path
 
 ## More commands
 

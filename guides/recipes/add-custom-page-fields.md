@@ -1,8 +1,8 @@
 # Add Custom Page Fields
 
-Every Beacon page contains a set of pre-defined fields that behaves the same way across all pages, for example the Title and Description fields are used to fill meta tags for SEO purposes, and so on. And that's the same behavior on all pages.
+Every Beacon page contains a set of pre-defined fields which behave the same way across all pages. For example, the Title and Description fields are used to fill meta tags for SEO purposes;  that's the same behavior regardless of whether the page is your homepage, a blog post, or something else.
 
-But often you need to store custom data, perform some logic on that data, or display extra information on the page. Some examples include tags for blog posts, authors, links, and so on.
+However, you often need to store custom data, perform some logic on that data, or display extra information on the page. Some examples include tags for blog posts, authors, links, and so on.
 
 In this recipe we'll add a custom page field `Type` to allow users identify the type of the page on the admin interface and use that data to list recent blog posts.
 
@@ -46,16 +46,35 @@ end
 
 Let's break down each part of the module:
 
-* `name` can be any atom that represents the field name, for example `:tags` for a lists of tags or `:author_id` to store a reference to the page author.
-* `type` any valid [Ecto Schema type](https://hexdocs.pm/ecto/Ecto.Schema.html#module-types-and-casting)
-* `default` pre-populate the field with this value
-* `changeset` is where you can add your own validation logic to that field, `page_changeset` is the changeset for the `%Beacon.Content.Page{}` itself
-* `render` implement the template to display the field on the page editor on the admin interface
+* `name/0` - can be any atom that represents the field name, for example `:tags` for a lists of tags or `:author_id` to store a reference to the page author.
+* `type/0` - any valid [Ecto Schema type](https://hexdocs.pm/ecto/Ecto.Schema.html#module-types-and-casting)
+* `default/0` - the value with which to pre-populate the field
+* `changeset/3` - this is where you can add your own validation logic to that field (note: `page_changeset` is the changeset for the `%Beacon.Content.Page{}` itself)
+* `render/1` - the template to display the field on the page editor in Beacon LiveAdmin
+
+## Add the first to Beacon.Config
+
+Next we'll configure Beacon to include this type for your pages.  In `application.ex` add to your
+existing Beacon config:
+
+```elixir
+sites: [
+  [
+    name: :my_site,
+    ...
+    extra_page_fields: [
+      ...
+      MyApp.Beacon.PageFields.Type
+    ]
+  ]
+]
+```
 
 ## Access the field content
 
-Once a page is created or updated with that custom field, the content will be stored in the `:extra` field of the `%Beacon.Content.Page{}` record under the name of the custom field,
-in our example a page with type `blog_post` would look like this:
+Now, when a page is created or updated with your custom field, the content will be stored in the `:extra` field of the `%Beacon.Content.Page{}` record, under the name of the custom field.
+
+With the example code above, a page with type `blog_post` will look like this:
 
 ```elixir
 %Beacon.Content.Page{
@@ -64,4 +83,4 @@ in our example a page with type `blog_post` would look like this:
 }
 ```
 
-You can make use of that field to filter pages or display that extra information on the page template.
+You can make use of this field to filter pages on the backend or display that extra information in the page template!
