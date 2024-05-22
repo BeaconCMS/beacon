@@ -24,6 +24,7 @@ Those issues have priority over the rest and will be included in the next releas
 
 ## Tooling, Integration, and Extensibility
 
+* Beacon as part of your Phoenix app
 * Built-in SEO tools
 * Create new sites at runtime on the admin interface
 * Enable extensibility with plugins
