@@ -1,6 +1,10 @@
 defmodule Beacon.Content.PageSnapshot do
   @moduledoc """
-  Page snapshots
+  Page snapshots are copy of the page content at a specific point in time.
+
+  They are mostly used to load pages so once you publish a page,
+  the same content is rendered every time. That also means the
+  `Beacon.Content.Page` is essentially a draft of the page.
 
   > #### Do not create or edit page snapshots manually {: .warning}
   >
