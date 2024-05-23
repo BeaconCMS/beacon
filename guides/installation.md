@@ -2,10 +2,6 @@
 
 Beacon is the core application that loads and renders your site pages. It runs as a library in your Phoenix LiveView application, in this guide we'll start from zero initilizating a new Phoenix LiveView application, installing Beacon, and adding a new site.
 
-To create the resources for your site, you'll need an admin interface that can be installed following the [Beacon LiveAdmin installation guide](https://github.com/BeaconCMS/beacon_live_admin/blob/main/guides/installation.md).
-
-We also have prepared the guide [Your First Site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md) to get your started with a new site.
-
 ## TLDR
 
 We recommend following the guide thoroughly, but if you want a short version or to just recap the main steps:
@@ -36,7 +32,7 @@ Note that the option `override: true` is required if running Beacon and Beacon L
 
 6. Add `:beacon` into `:import_deps` in file `.formatter.exs`
 
-7. Run `mix setup`
+7. Run `mix deps.get`
 
 ## Detailed instructions
 
@@ -68,11 +64,11 @@ mix archive.install hex phx_new
 
 ### Database
 
-[PostgresSQL](https://www.postgresql.org) is the default database used by Beacon but it also supports MySQL and SQLServer through [ecto adapters](https://github.com/elixir-ecto/ecto#usage). Make sure one of them is up and running in your environment.
+Beacon supports [PostgresSQL](https://www.postgresql.org). Make sure a PostgreSQL server is running and you have the necessary credentials to create a new database.
 
 ### Generate a new application
 
-We'll be using `phx_new` to generate a new application. You can run `mix help phx.new` to show the full documentation with more options, but let's use the default values for our new site:
+We'll be using `phx_new` to generate a new application. You can run `mix help phx.new` to show the full documentation with more options, but let's use the default config for our new site. Execute:
 
 ```sh
 mix phx.new --install my_app
@@ -100,7 +96,7 @@ Or add to both apps `my_app` and `my_app_web` if running in an Umbrella app.
 
 Note that the option `override: true` is required if running Beacon and Beacon LiveAdmin in the same application.
 
-2. Add `:beacon` to `import_deps` in the .formatter.exs file:
+2. Add `:beacon` to `import_deps` in the `.formatter.exs` file:
 
 ```elixir
 [
@@ -109,4 +105,4 @@ Note that the option `override: true` is required if running Beacon and Beacon L
 ]
 ```
 
-3. Run `mix setup`
+3. Run `mix deps.get`
