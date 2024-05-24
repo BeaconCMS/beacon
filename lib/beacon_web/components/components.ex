@@ -34,6 +34,7 @@ defmodule BeaconWeb.Components do
 
   @doc """
   Renders an iframe of the embedded resource.
+
   ## Examples
       BeaconWeb.Components.embed url="https://www.youtube.com/watch?v=giYbq4HmfGA"
   """
