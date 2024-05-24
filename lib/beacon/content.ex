@@ -1015,8 +1015,20 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_stylesheet(%{field: value})
+      iex >create_stylesheet(%{
+        site: :my_site,
+        name: "override",
+        content: ~S|
+        @media (min-width: 768px) {
+          .md\:text-red-400 {
+            color: red;
+          }
+        }
+        |
+      })
       {:ok, %Stylesheet{}}
+
+  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
 
   """
   @doc type: :stylesheets
