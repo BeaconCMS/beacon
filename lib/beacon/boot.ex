@@ -52,7 +52,7 @@ defmodule Beacon.Boot do
       # TODO: load main pages (order_by: path, per_page: 10) to avoid SEO issues
     ]
 
-    Task.await_many(modules, :timer.minutes(2))
+    Task.await_many(modules, :timer.minutes(5))
 
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))
