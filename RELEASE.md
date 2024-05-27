@@ -6,7 +6,7 @@
 * Each project has its own lifecycle and releases, one may evolve faster than others
 * A release once a month on every first Wednesday of the month including all merged work since last release,
   unless there's no substantial changes to justify a release  (this policy will be valid only after v0.1 is released)
-* The planned monthly release may be either major, minor, or patch version
+* Breaking changes can be released as a minor version before we reach a v1.0 release
 * Bug fixes and security patches may be released early as needed
 
 ## Process
