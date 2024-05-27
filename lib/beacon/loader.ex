@@ -8,7 +8,7 @@ defmodule Beacon.Loader do
   alias Beacon.PubSub
   alias Beacon.RouterServer
 
-  @timeout :timer.seconds(10)
+  @timeout :timer.seconds(15)
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
