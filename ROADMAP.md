@@ -31,3 +31,5 @@ Those issues have priority over the rest and will be included in the next releas
 * Extract AWS Provider into a plugin
 * Create a Plausible plugin
 * LiveView Native integration
+* Tailwind v4
+* Beacon.Test
