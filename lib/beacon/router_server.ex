@@ -213,9 +213,12 @@ defmodule Beacon.RouterServer do
     match?
   end
 
-  # FIXME: map events
-  def handle_info(msg, config) do
-    Logger.warning("Beacon.RouterServer can not handle the message: #{inspect(msg)}")
+  def handle_info({:page_loaded, %{site: site, id: id, path: path}}, config) do
+    :ok = do_add_page(site, id, path)
+    {:noreply, config}
+  end
+
+  def handle_info(_msg, config) do
     {:noreply, config}
   end
 end
