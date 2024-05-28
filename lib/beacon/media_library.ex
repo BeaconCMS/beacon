@@ -138,6 +138,7 @@ defmodule Beacon.MediaLibrary do
 
   defp get_url_for(backend, asset), do: {backend.backend_key(), backend.url_for(asset)}
 
+  # credo:disable-for-next-line
   def is_image?(%{file_name: file_name}) do
     ext = Path.extname(file_name)
     Enum.any?([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp"], &(&1 == ext))

@@ -175,7 +175,8 @@ defmodule Beacon do
       end
 
     e ->
-      reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, inspect(e), context)], __STACKTRACE__
+      Logger.debug(apply_mfa_error_message(module, function, args, inspect(e), context))
+      reraise e, __STACKTRACE__
   end
 
   defp apply_mfa_error_message(module, function, args, reason, context) do
@@ -194,8 +195,6 @@ defmodule Beacon do
 
     #{context}
 
-    Make sure you have created a page for this path.
-    See Pages.create_page!/2 for more info.
     """
   end
 

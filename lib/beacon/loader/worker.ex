@@ -89,6 +89,251 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
+  def handle_call(:populate_default_home_page, _from, config) do
+    %{site: site} = config
+    default_layout = Content.get_layout_by(site, title: "Default")
+
+    populate = fn ->
+      case Content.get_page_by(site, path: "/") do
+        nil ->
+          Content.create_stylesheet(%{
+            site: site,
+            name: "beacon-demo",
+            content: ~S"""
+            .beacon-demo-home {
+                background: rgb(50,163,252);
+                background: linear-gradient(145deg, rgba(50,163,252,1) 0%, rgba(99,102,241,1) 26%, rgba(138,55,214,1) 55%, rgba(100,37,181,1) 76%, rgba(31,41,55,1) 100%);
+                background-size: 400% 400%;
+                animation: beacon-demo-home-gradient 30s ease infinite;
+                height: 100vh;
+                font-family: "Plus Jakarta Sans", sans-serif;
+            }
+
+            @keyframes beacon-demo-home-gradient {
+                0% {
+                    background-position: 0% 0%;
+                }
+                50% {
+                    background-position: 100% 100%;
+                }
+                100% {
+                    background-position: 0% 0%;
+                }
+            }
+            .beacon-demo-home-title {
+                background: linear-gradient(
+                    to right,
+                    rgb(186, 230, 253),
+                    rgb(221, 214, 254)
+                );
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+            }
+            """
+          })
+
+          %{
+            site: site,
+            layout_id: default_layout.id,
+            path: "/",
+            title: "My Home Page",
+            template: ~S"""
+            <div class="beacon-demo-home">
+              <div class="text-white min-h-fit flex items-center justify-center">
+                <div class="max-w-screen-lg w-full px-6 py-12">
+                  <div class="text-center">
+                    <h1 class="beacon-demo-home-title font-bold text-7xl mb-2">
+                      Beacon
+                    </h1>
+                    <p class="mb-12 text-3xl">
+                      Performance without compromising productivity
+                    </p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
+                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
+                      <h2 class="pb-2 text-base font-bold">
+                        SEO-friendly
+                      </h2>
+                      <p>
+                        Out-of-the-box fast page rendering and high
+                        scores, even with dynamic data.
+                      </p>
+                    </div>
+                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
+                      <h2 class="pb-2 text-base font-bold">Practical</h2>
+                      <p>
+                        Updating your site is a click away, without slow
+                        deployments.
+                      </p>
+                    </div>
+                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
+                      <h2 class="pb-2 text-base font-bold">Scalable</h2>
+                      <p>
+                        Start serving thousands of requests and upgrade
+                        to a cluster to go far beyond.
+                      </p>
+                    </div>
+                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
+                      <h2 class="pb-2 text-base font-bold">
+                        Open-Source
+                      </h2>
+                      <p>
+                        Verify, contribute, and adapt to your needs. A
+                        project for the community.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-16 leading-loose">
+                    <h2 class="text-4xl font-bold mb-2">Features</h2>
+                    <p class="mb-8">
+                      Check out the
+                      <a
+                        href="https://github.com/BeaconCMS/beacon_demo"
+                        class="text-sky-200 no-underline py-1 px-2 mx-1 border border-sky-600 shadow-lg shadow-sky-400/40 rounded-full hover:border-fuchsia-100 hover:shadow-fuchsia-300/40 duration-1000"
+                      >
+                        demo application
+                      </a>
+                      to learn about the features listed below. Run it,
+                      change it, and deploy your site.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          Visual Page Builder
+                        </h2>
+                        <p>
+                          Drag and drop HTML elements and Components
+                          into your page template, and change
+                          attributes and classes. Works with HTML and
+                          HEEx templates.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          Components
+                        </h2>
+                        <p>
+                          Reuse Phoenix Components to speed up the
+                          development of pages. Common components are
+                          already integrated and you can create more.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          Media Library
+                        </h2>
+                        <p>
+                          Upload images, videos, documents, and
+                          virtually any kind of media. Process the
+                          files, store them in a cloud provider, and
+                          render them in your pages.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          Live Data
+                        </h2>
+                        <p>
+                          Execute Elixir code to load data from your
+                          app, third-party APIs, or any other source.
+                          Updates are made available at runtime
+                          without the need for deployments.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          A/B Variants
+                        </h2>
+                        <p>
+                          Create N versions of a page, and tell a
+                          story in different perspectives and styles
+                          to measure conversion. Each version has a
+                          weight to be served more or less.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          Error Pages
+                        </h2>
+                        <p>
+                          Sometimes error happens but you can create
+                          personalized and informative error pages to
+                          guide your visitors back to finding the
+                          right page and increase engagement.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          Built-in TailwindCSS
+                        </h2>
+                        <p>
+                          Start prototyping your site right away with
+                          tailwind utility classes on the code editor
+                          or the visual page builder. The compiler
+                          generates compact assets to keep your site
+                          fast.
+                        </p>
+                      </div>
+
+                      <div class="py-2 pr-4">
+                        <h2 class="mb-2 font-bold text-2xl">
+                          And more...
+                        </h2>
+                        <p>
+                          Much more is available: meta tags,
+                          Schema.org support, authorization,
+                          authentication, custom page fields, custom
+                          admin pages, and more. Beacon is constantly
+                          evolving.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <footer class="text-center mt-6 w-full flex flex-col items-center text-sm font-bold text-sky-300 tracking-wide">
+                <div class="flex justify-center items-center">
+                  <a href="https://beaconcms.org" class="inline-block p-4 m-3 no-underline hover:underline hover:decoration-dashed underline-offset-4">
+                    BeaconCMS.org
+                  </a>
+                  <a
+                    href="https://github.com/BeaconCMS/beacon"
+                    class="inline-block p-4 m-3 no-underline hover:underline hover:decoration-dashed underline-offset-4"
+                  >
+                    GitHub Repo
+                  </a>
+                </div>
+              </footer>
+            </div>
+            """
+          }
+          |> Content.create_page!()
+          |> Content.publish_page()
+
+        _ ->
+          :skip
+      end
+    end
+
+    if default_layout do
+      populate.()
+      stop(:ok, config)
+    else
+      Logger.error("failed to populate default error pages because the default layout is missing.")
+      stop({:error, :missing_default_layout}, config)
+    end
+  end
+
   def handle_call(:reload_snippets_module, _from, config) do
     %{site: site} = config
     snippets = Content.list_snippet_helpers(site)
@@ -106,7 +351,7 @@ defmodule Beacon.Loader.Worker do
 
   def handle_call(:reload_live_data_module, _from, config) do
     %{site: site} = config
-    live_data = Content.live_data_for_site(site, select: [:id, :site, :path, assigns: [:id, :key, :value, :format]])
+    live_data = Content.live_data_for_site(site)
     ast = Loader.LiveData.build_ast(site, live_data)
     stop(compile_module(site, ast), config)
   end

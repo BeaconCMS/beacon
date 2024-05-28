@@ -33,8 +33,9 @@ defmodule Beacon.Boot do
 
     Beacon.Loader.populate_default_layouts(config.site)
 
-    # Error pages depend on default layouts
+    # Pages depend on default layouts
     Beacon.Loader.populate_default_error_pages(config.site)
+    Beacon.Loader.populate_default_home_page(config.site)
 
     assets = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(config.site) end),
@@ -51,7 +52,7 @@ defmodule Beacon.Boot do
       # TODO: load main pages (order_by: path, per_page: 10) to avoid SEO issues
     ]
 
-    Task.await_many(modules, :timer.minutes(2))
+    Task.await_many(modules, :timer.minutes(10))
 
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))

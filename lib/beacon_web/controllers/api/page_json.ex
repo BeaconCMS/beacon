@@ -4,6 +4,7 @@ defmodule BeaconWeb.API.PageJSON do
   alias Beacon.Content.Layout
   alias Beacon.Content.Page
   alias Beacon.Template.HEEx.JSONEncoder
+  alias BeaconWeb.BeaconAssigns
 
   @doc """
   Renders a list of pages.
@@ -21,7 +22,15 @@ defmodule BeaconWeb.API.PageJSON do
 
   defp data(%Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
+
+    beacon_assigns =
+      page.site
+      |> BeaconAssigns.build()
+      |> BeaconAssigns.build(path_info, %{})
+
     live_data = BeaconWeb.DataSource.live_data(page.site, path_info, %{})
+
+    assigns = Map.put(live_data, :beacon, beacon_assigns)
 
     %{
       id: page.id,
@@ -30,33 +39,35 @@ defmodule BeaconWeb.API.PageJSON do
       site: page.site,
       template: page.template,
       format: page.format,
-      ast: page_ast(page, live_data)
+      ast: page_ast(page, assigns)
     }
-    |> maybe_include_layout(page, live_data)
+    |> maybe_include_layout(page, assigns)
   end
 
-  defp page_ast(page, live_data) do
-    case JSONEncoder.encode(page.site, page.template, %{beacon_live_data: live_data}) do
+  defp page_ast(page, assigns) do
+    case JSONEncoder.encode(page.site, page.template, assigns) do
       {:ok, ast} -> ast
       _ -> []
     end
   end
 
-  defp maybe_include_layout(%{template: page_template} = data, %Page{layout: %Layout{} = layout}, live_data) do
+  defp maybe_include_layout(%{template: page_template} = data, %Page{layout: %Layout{} = layout}, assigns) do
     layout =
       layout
       |> Map.from_struct()
       |> Map.drop([:__meta__])
-      |> Map.put(:ast, layout_ast(layout, page_template, live_data))
+      |> Map.put(:ast, layout_ast(layout, page_template, assigns))
 
     Map.put(data, :layout, layout)
   end
 
-  defp maybe_include_layout(data, _page, _beacon_live_data), do: data
+  defp maybe_include_layout(data, _page, _assigns), do: data
 
   # TODO: cache layout ast instead of recomputing for every page
-  defp layout_ast(layout, page_template, live_data) do
-    case JSONEncoder.encode(layout.site, layout.template, %{inner_content: page_template, beacon_live_data: live_data}) do
+  defp layout_ast(layout, page_template, assigns) do
+    assigns = Map.put(assigns, :inner_content, page_template)
+
+    case JSONEncoder.encode(layout.site, layout.template, assigns) do
       {:ok, ast} -> ast
       _ -> []
     end

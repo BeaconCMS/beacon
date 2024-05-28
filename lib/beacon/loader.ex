@@ -8,6 +8,8 @@ defmodule Beacon.Loader do
   alias Beacon.PubSub
   alias Beacon.RouterServer
 
+  @timeout :timer.seconds(15)
+
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
   end
@@ -68,7 +70,7 @@ defmodule Beacon.Loader do
   end
 
   def ping(site) do
-    GenServer.call(worker(site), :ping)
+    GenServer.call(worker(site), :ping, @timeout)
   end
 
   def add_module(site, module, {_md5, _error, _diagnostics} = metadata) when is_atom(site) do
@@ -92,23 +94,27 @@ defmodule Beacon.Loader do
   end
 
   def populate_default_components(site) do
-    GenServer.call(worker(site), :populate_default_components)
+    GenServer.call(worker(site), :populate_default_components, @timeout)
   end
 
   def populate_default_layouts(site) do
-    GenServer.call(worker(site), :populate_default_layouts)
+    GenServer.call(worker(site), :populate_default_layouts, @timeout)
   end
 
   def populate_default_error_pages(site) do
-    GenServer.call(worker(site), :populate_default_error_pages)
+    GenServer.call(worker(site), :populate_default_error_pages, @timeout)
+  end
+
+  def populate_default_home_page(site) do
+    GenServer.call(worker(site), :populate_default_home_page, @timeout)
   end
 
   def reload_runtime_js(site) do
-    GenServer.call(worker(site), :reload_runtime_js, :timer.minutes(5))
+    GenServer.call(worker(site), :reload_runtime_js, :timer.minutes(2))
   end
 
   def reload_runtime_css(site) do
-    GenServer.call(worker(site), :reload_runtime_css, :timer.minutes(5))
+    GenServer.call(worker(site), :reload_runtime_css, :timer.minutes(2))
   end
 
   def fetch_snippets_module(site) do
@@ -152,23 +158,23 @@ defmodule Beacon.Loader do
   end
 
   def reload_snippets_module(site) do
-    GenServer.call(worker(site), :reload_snippets_module)
+    GenServer.call(worker(site), :reload_snippets_module, @timeout)
   end
 
   def reload_components_module(site) do
-    GenServer.call(worker(site), :reload_components_module)
+    GenServer.call(worker(site), :reload_components_module, @timeout)
   end
 
   def reload_live_data_module(site) do
-    GenServer.call(worker(site), :reload_live_data_module)
+    GenServer.call(worker(site), :reload_live_data_module, @timeout)
   end
 
   def reload_error_page_module(site) do
-    GenServer.call(worker(site), :reload_error_page_module)
+    GenServer.call(worker(site), :reload_error_page_module, @timeout)
   end
 
   def reload_stylesheet_module(site) do
-    GenServer.call(worker(site), :reload_stylesheet_module)
+    GenServer.call(worker(site), :reload_stylesheet_module, @timeout)
   end
 
   def reload_layouts_modules(site) do
@@ -176,7 +182,7 @@ defmodule Beacon.Loader do
   end
 
   def reload_layout_module(site, layout_id) do
-    GenServer.call(worker(site), {:reload_layout_module, layout_id})
+    GenServer.call(worker(site), {:reload_layout_module, layout_id}, @timeout)
   end
 
   def reload_pages_modules(site, opts \\ []) do
@@ -185,11 +191,11 @@ defmodule Beacon.Loader do
   end
 
   def reload_page_module(site, page_id) do
-    GenServer.call(worker(site), {:reload_page_module, page_id})
+    GenServer.call(worker(site), {:reload_page_module, page_id}, @timeout)
   end
 
   def unload_page_module(site, page_id) do
-    GenServer.call(worker(site), {:unload_page_module, page_id})
+    GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
   defp maybe_reload(module, reload_fun) do

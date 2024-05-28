@@ -33,7 +33,8 @@ defmodule Beacon.Loader.Components do
         use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
-        import Phoenix.Component
+        import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
 
         # TODO: remove my_component/2
         def my_component(name, assigns \\ []) do
@@ -61,7 +62,8 @@ defmodule Beacon.Loader.Components do
         use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
-        import Phoenix.Component
+        import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
 
         # TODO: remove my_component/2
         def my_component(name, assigns \\ []) do

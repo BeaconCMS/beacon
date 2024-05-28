@@ -201,7 +201,7 @@ defmodule Beacon.Config do
             skip_boot?: false,
             authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
-            tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
+            tailwind_config: nil,
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,
@@ -393,6 +393,7 @@ defmodule Beacon.Config do
 
     opts =
       opts
+      |> Keyword.put(:tailwind_config, opts[:tailwind_config] || Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"))
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
       |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)

@@ -96,6 +96,28 @@ defmodule Beacon.ContentTest do
 
       assert compilation_error =~ "expected closing `>`"
     end
+
+    test "page and per_page" do
+      layout_fixture(title: "first")
+      layout_fixture(title: "second")
+
+      assert [%Layout{title: "first"}] = Content.list_layouts(:my_site, per_page: 1, page: 1, sort: :title)
+      assert [%Layout{title: "second"}] = Content.list_layouts(:my_site, per_page: 1, page: 2, sort: :title)
+      assert [] = Content.list_layouts(:my_site, per_page: 2, page: 2, sort: :title)
+    end
+
+    test "no layouts return 0" do
+      assert Content.count_layouts(:my_site) == 0
+    end
+
+    test "filter by title" do
+      layout_fixture(title: "first")
+      layout_fixture(title: "second")
+
+      assert Content.count_layouts(:my_site, query: "first") == 1
+      assert Content.count_layouts(:my_site, query: "second") == 1
+      assert Content.count_layouts(:my_site, query: "third") == 0
+    end
   end
 
   describe "pages" do
@@ -367,6 +389,19 @@ defmodule Beacon.ContentTest do
   end
 
   describe "snippets" do
+    test "create_snippet_helper/1" do
+      attrs = %{site: :my_site, name: "foo_snippet", body: "page title is {{ page.title }}"}
+
+      assert {:ok, _snippet_helper} = Content.create_snippet_helper(attrs)
+    end
+
+    test "create_snippet_helper should validate invalid body" do
+      attrs = %{site: :my_site, name: "foo_snippet", body: "page title is {{ page.title"}
+
+      assert {:error, %Ecto.Changeset{errors: [body: {err, []}], valid?: false}} = Content.create_snippet_helper(attrs)
+      assert err =~ "Reason: expected end of string, line: 1"
+    end
+
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
       %{site: site} = snippet_helper_fixture(site: "booted")
@@ -641,6 +676,16 @@ defmodule Beacon.ContentTest do
       assert %{site: :my_site, status: 400, template: "Oops!", layout_id: ^layout_id} = error_page
     end
 
+    test "create_error_page should validate invalid templates" do
+      %{id: layout_id} = layout_fixture()
+      attrs = %{site: :my_site, status: 400, template: "<div>invalid</span>", layout_id: layout_id}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.create_error_page(attrs)
+
+      assert error =~ "unmatched closing tag"
+    end
+
     test "create_error_page/1 ERROR (duplicate)" do
       error_page = error_page_fixture()
       bad_attrs = %{site: error_page.site, status: error_page.status, template: "Error", layout_id: layout_fixture().id}
@@ -652,6 +697,17 @@ defmodule Beacon.ContentTest do
     test "update_error_page/2" do
       error_page = error_page_fixture()
       assert {:ok, %ErrorPage{template: "Changed"}} = Content.update_error_page(error_page, %{template: "Changed"})
+    end
+
+    test "update_error_page should validate invalid templates" do
+      error_page = error_page_fixture()
+
+      attrs = %{template: "<div>invalid</span>"}
+
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
+               Content.update_error_page(error_page, attrs)
+
+      assert error =~ "unmatched closing tag"
     end
 
     test "delete_error_page/1" do
@@ -700,6 +756,28 @@ defmodule Beacon.ContentTest do
       refute Enum.member?(components, component_a)
     end
 
+    test "page and per_page" do
+      component_fixture(name: "first")
+      component_fixture(name: "second")
+
+      assert [%Component{name: "first"}] = Content.list_components(:my_site, per_page: 1, page: 1, sort: :name)
+      assert [%Component{name: "second"}] = Content.list_components(:my_site, per_page: 1, page: 2, sort: :name)
+      assert [] = Content.list_components(:my_site, per_page: 2, page: 2, sort: :name)
+    end
+
+    test "no layouts return 0" do
+      assert Content.count_components(:my_site) == 0
+    end
+
+    test "filter by title" do
+      component_fixture(name: "first")
+      component_fixture(name: "second")
+
+      assert Content.count_components(:my_site, query: "first") == 1
+      assert Content.count_components(:my_site, query: "second") == 1
+      assert Content.count_components(:my_site, query: "third") == 0
+    end
+
     test "update_component" do
       component = component_fixture(name: "new_component", body: "old_body")
       assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
@@ -733,6 +811,17 @@ defmodule Beacon.ContentTest do
 
       assert {:ok, %LiveData{assigns: [assign]}} = Content.create_assign_for_live_data(live_data, attrs)
       assert %{key: "product_id", format: :elixir, value: "123"} = assign
+    end
+
+    test "blocks assigning reserved keys" do
+      live_data = live_data_fixture()
+      invalid_keys = [:beacon, :uploads, :streams, :socket, :myself, :flash]
+
+      for invalid_key <- invalid_keys do
+        attrs = %{key: to_string(invalid_key), format: :text, value: "foo"}
+        assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+        assert {:key, {"is reserved", _}} = error
+      end
     end
 
     test "validate assign elixir code on create" do
@@ -775,30 +864,30 @@ defmodule Beacon.ContentTest do
       refute Enum.any?(results, &(&1.id == live_data_3.id))
     end
 
-    test "live_data_paths_for_site/2" do
-      %{path: live_data_path} = live_data_fixture(site: :my_site)
+    test "live_data_for_site/2" do
+      %{id: live_data_id} = live_data_fixture(site: :my_site)
 
-      assert [^live_data_path] = Content.live_data_paths_for_site(:my_site)
+      assert [%LiveData{id: ^live_data_id}] = Content.live_data_for_site(:my_site)
     end
 
-    test "live_data_paths_for_site/2 :query option" do
-      live_data_fixture(site: :my_site, path: "/foo")
-      live_data_fixture(site: :my_site, path: "/bar")
+    test "live_data_for_site/2 :query option" do
+      %{id: foo_id} = live_data_fixture(site: :my_site, path: "/foo")
+      %{id: bar_id} = live_data_fixture(site: :my_site, path: "/bar")
 
-      assert ["/foo"] = Content.live_data_paths_for_site(:my_site, query: "fo")
-      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, query: "ba")
+      assert [%LiveData{id: ^foo_id}] = Content.live_data_for_site(:my_site, query: "fo")
+      assert [%LiveData{id: ^bar_id}] = Content.live_data_for_site(:my_site, query: "ba")
     end
 
-    test "live_data_paths_for_site/2 :per_page option" do
-      live_data_fixture(site: :my_site, path: "/foo")
-      live_data_fixture(site: :my_site, path: "/bar")
-      live_data_fixture(site: :my_site, path: "/baz")
-      live_data_fixture(site: :my_site, path: "/bong")
+    test "live_data_for_site/2 :per_page option" do
+      %{id: foo_id} = live_data_fixture(site: :my_site, path: "/foo")
+      %{id: bar_id} = live_data_fixture(site: :my_site, path: "/bar")
+      %{id: baz_id} = live_data_fixture(site: :my_site, path: "/baz")
+      %{id: bong_id} = live_data_fixture(site: :my_site, path: "/bong")
 
-      assert ["/bar"] = Content.live_data_paths_for_site(:my_site, per_page: 1)
-      assert ["/bar", "/baz"] = Content.live_data_paths_for_site(:my_site, per_page: 2)
-      assert ["/bar", "/baz", "/bong"] = Content.live_data_paths_for_site(:my_site, per_page: 3)
-      assert ["/bar", "/baz", "/bong", "/foo"] = Content.live_data_paths_for_site(:my_site, per_page: 4)
+      assert [%{id: ^bar_id}] = Content.live_data_for_site(:my_site, per_page: 1)
+      assert [%{id: ^bar_id}, %{id: ^baz_id}] = Content.live_data_for_site(:my_site, per_page: 2)
+      assert [%{id: ^bar_id}, %{id: ^baz_id}, %{id: ^bong_id}] = Content.live_data_for_site(:my_site, per_page: 3)
+      assert [%{id: ^bar_id}, %{id: ^baz_id}, %{id: ^bong_id}, %{id: ^foo_id}] = Content.live_data_for_site(:my_site, per_page: 4)
     end
 
     test "update_live_data_path/2" do

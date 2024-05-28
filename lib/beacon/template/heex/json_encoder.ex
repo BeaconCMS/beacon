@@ -174,10 +174,18 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_entry({:tag_block, tag, attrs, content, _} = node, site, assigns) do
+    has_let_in_attrs? =
+      Enum.reduce_while(attrs, false, fn
+        {":let", {:expr, _, _}, _}, _acc -> {:halt, true}
+        _attr, _acc -> {:cont, false}
+      end)
+
+    content = if has_let_in_attrs?, do: [], else: encode_tokens(content, site, assigns)
+
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
-      "content" => encode_tokens(content, site, assigns)
+      "content" => content
     }
 
     maybe_add_rendered_html(site, assigns, node, entry)

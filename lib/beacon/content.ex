@@ -318,34 +318,71 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search layouts by title.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search layouts by title. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   """
   @doc type: :layouts
   @spec list_layouts(Site.t(), keyword()) :: [Layout.t()]
   def list_layouts(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_layouts_base()
     |> query_list_layouts_limit(per_page)
+    |> query_list_layouts_offset(per_page, page)
     |> query_list_layouts_search(search)
+    |> query_list_layouts_preloads(preloads)
+    |> query_list_layouts_sort(sort)
     |> Repo.all()
   end
 
-  defp query_list_layouts_base(site) do
-    from l in Layout,
-      where: l.site == ^site,
-      order_by: [asc: l.title]
-  end
+  defp query_list_layouts_base(site), do: from(l in Layout, where: l.site == ^site)
 
   defp query_list_layouts_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_layouts_limit(query, :infinity = _limit), do: query
   defp query_list_layouts_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_layouts_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_layouts_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
   defp query_list_layouts_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.title, ^"%#{search}%"))
   defp query_list_layouts_search(query, _search), do: query
+
+  defp query_list_layouts_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_layouts_preloads(query, _preloads), do: query
+
+  defp query_list_layouts_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of layouts based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :layouts
+  @spec count_layouts(Site.t(), keyword()) :: non_neg_integer()
+  def count_layouts(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_layouts_base()
+    |> query_list_layouts_search(search)
+    |> select([q], count(q.id))
+    |> Repo.one()
+  end
 
   @doc """
   Returns all published layouts for `site`.
@@ -978,8 +1015,20 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_stylesheet(%{field: value})
+      iex >create_stylesheet(%{
+        site: :my_site,
+        name: "override",
+        content: ~S|
+        @media (min-width: 768px) {
+          .md\:text-red-400 {
+            color: red;
+          }
+        }
+        |
+      })
       {:ok, %Stylesheet{}}
+
+  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
 
   """
   @doc type: :stylesheets
@@ -1691,9 +1740,11 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search components by title.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search components by title. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:name`.
 
   """
   @doc type: :components
@@ -1701,21 +1752,23 @@ defmodule Beacon.Content do
   def list_components(site, opts \\ []) do
     preloads = Keyword.get(opts, :preloads, [])
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :name)
 
     site
     |> query_list_components_base()
     |> query_list_components_preloads(preloads)
     |> query_list_components_limit(per_page)
+    |> query_list_components_offset(per_page, page)
     |> query_list_components_search(search)
+    |> query_list_components_preloads(preloads)
+    |> query_list_components_sort(sort)
     |> Repo.all()
   end
 
-  defp query_list_components_base(site) do
-    from c in Component,
-      where: c.site == ^site,
-      order_by: [asc: c.name]
-  end
+  defp query_list_components_base(site), do: from(l in Component, where: l.site == ^site)
 
   defp query_list_components_preloads(query, [_preload | _] = preloads) do
     from(q in query, preload: ^preloads)
@@ -1726,8 +1779,40 @@ defmodule Beacon.Content do
   defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_components_limit(query, :infinity = _limit), do: query
   defp query_list_components_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_components_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_components_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
   defp query_list_components_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.name, ^"%#{search}%"))
   defp query_list_components_search(query, _search), do: query
+
+  defp query_list_components_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_components_preloads(query, _preloads), do: query
+
+  defp query_list_components_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of components based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :components
+  @spec count_components(Site.t(), keyword()) :: non_neg_integer()
+  def count_components(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_components_base()
+    |> query_list_components_search(search)
+    |> select([q], count(q.id))
+    |> Repo.one()
+  end
 
   # SNIPPETS
 
@@ -1741,8 +1826,18 @@ defmodule Beacon.Content do
     |> Changeset.cast(attrs, [:site, :name, :body])
     |> Changeset.validate_required([:site, :name, :body])
     |> Changeset.unique_constraint([:site, :name])
+    |> validate_snippet_helper()
     |> Repo.insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
+  end
+
+  defp validate_snippet_helper(changeset) do
+    Changeset.validate_change(changeset, :body, fn :body, body ->
+      case Solid.parse(body, parser: Snippets.Parser) do
+        {:ok, _template} -> []
+        {:error, error} -> [{:body, error.message}]
+      end
+    end)
   end
 
   @doc type: :snippets
@@ -1960,6 +2055,7 @@ defmodule Beacon.Content do
   def create_error_page(attrs) do
     %ErrorPage{}
     |> ErrorPage.changeset(attrs)
+    |> validate_error_page()
     |> Repo.insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
@@ -1999,6 +2095,7 @@ defmodule Beacon.Content do
   def update_error_page(error_page, attrs) do
     error_page
     |> ErrorPage.changeset(attrs)
+    |> validate_error_page()
     |> Repo.update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
@@ -2010,6 +2107,15 @@ defmodule Beacon.Content do
   @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def delete_error_page(error_page) do
     Repo.delete(error_page)
+  end
+
+  defp validate_error_page(changeset) do
+    template = Changeset.get_field(changeset, :template)
+    site = Changeset.get_field(changeset, :site)
+    status = Changeset.get_field(changeset, :status)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "/_beacon_error_#{status}"}
+
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   # PAGE EVENT HANDLERS
@@ -2280,6 +2386,26 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Gets a single `LiveData` entry by `:id`.
+
+  ## Example
+
+      iex> get_live_data("5d5b228c-3a46-4e76-ab27-d3ed3f92ccea")
+      %LiveData{}
+
+  """
+  @doc type: :live_data
+  @spec get_live_data(binary()) :: LiveData.t() | nil
+  def get_live_data(id) do
+    Repo.one(
+      from(ld in LiveData,
+        where: ld.id == ^id,
+        preload: :assigns
+      )
+    )
+  end
+
+  @doc """
   Gets a single `LiveData` entry by `:site` and `:path`.
 
   ## Example
@@ -2297,57 +2423,51 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets all LiveData for a site in one unpaginated query.
-  """
-  @doc type: :live_data
-  @spec live_data_for_site(Site.t()) :: [LiveData.t()]
-  def live_data_for_site(site, opts \\ []) when is_atom(site) and is_list(opts) do
-    select = Keyword.get(opts, :select, nil)
-
-    base_query = from d in LiveData, where: d.site == ^site, preload: :assigns
-
-    base_query
-    |> query_live_data_for_site_select(select)
-    |> Repo.all()
-  end
-
-  defp query_live_data_for_site_select(query, nil = _select), do: query
-  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
-
-  @doc """
-  Query LiveData paths for a given site.
+  Query LiveData for a given site.
 
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
     * `:query` - search records by path.
+    * `:select` - returns only the given field(s)
+    * `:preload` - include given association(s) (defaults to `:assigns`)
 
   """
   @doc type: :live_data
-  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [String.t()]
-  def live_data_paths_for_site(site, opts \\ []) do
+  @spec live_data_for_site(Site.t(), Keyword.t()) :: [String.t()]
+  def live_data_for_site(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, :infinity)
     search = Keyword.get(opts, :query)
+    select = Keyword.get(opts, :select)
+    preload = Keyword.get(opts, :preload, :assigns)
 
     site
-    |> query_live_data_paths_for_site_base()
-    |> query_live_data_paths_for_site_limit(per_page)
-    |> query_live_data_paths_for_site_search(search)
+    |> query_live_data_for_site_base()
+    |> query_live_data_for_site_limit(per_page)
+    |> query_live_data_for_site_search(search)
+    |> query_live_data_for_site_select(select)
+    |> query_live_data_for_site_preload(preload)
     |> Repo.all()
   end
 
-  defp query_live_data_paths_for_site_base(site) do
+  defp query_live_data_for_site_base(site) do
     from ld in LiveData,
       where: ld.site == ^site,
-      select: ld.path,
       order_by: [asc: ld.path]
   end
 
-  defp query_live_data_paths_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
-  defp query_live_data_paths_for_site_limit(query, :infinity = _limit), do: query
-  defp query_live_data_paths_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
-  defp query_live_data_paths_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
-  defp query_live_data_paths_for_site_search(query, _search), do: query
+  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_for_site_search(query, _search), do: query
+
+  defp query_live_data_for_site_select(query, nil = _select), do: query
+  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
+
+  defp query_live_data_for_site_preload(query, nil), do: query
+  defp query_live_data_for_site_preload(query, preload) when is_atom(preload) or is_list(preload), do: from(q in query, preload: ^preload)
 
   @doc """
   Updates LiveDataPath.

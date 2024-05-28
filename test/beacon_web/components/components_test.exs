@@ -25,6 +25,20 @@ defmodule BeaconWeb.ComponentsTest do
     end
   end
 
+  describe "embed" do
+    test "displays youtube video", %{conn: conn} do
+      create_page_with_component("""
+      <main>
+        <BeaconWeb.Components.embed url="https://www.youtube.com/watch?v=giYbq4HmfGA" />
+      </main>
+      """)
+
+      {:ok, view, _html} = live(conn, "/home")
+
+      assert has_element?(view, ~s(iframe[src*="https://www.youtube.com/embed/giYbq4HmfGA?feature=oembed"]))
+    end
+  end
+
   describe "featured_pages" do
     setup context do
       create_page_with_component("""

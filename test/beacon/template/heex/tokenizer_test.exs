@@ -37,11 +37,11 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
 
   test "comprehension" do
     assert Tokenizer.tokenize(~S|
-      <%= for employee <- @beacon_live_data[:employees] do %>
+      <%= for employee <- @employees do %>
         <!-- regular <!-- comment --> -->
         <%= employee.position %>
         <div>
-          <%= for person <- @beacon_live_data[:persons] do %>
+          <%= for person <- @persons do %>
             <%= if person.id == employee.id do %>
               <span><%= person.name %></span>
               <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
@@ -54,7 +54,7 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
              [
                {
                  :eex_block,
-                 "for employee <- @beacon_live_data[:employees] do",
+                 "for employee <- @employees do",
                  [
                    {
                      [
@@ -67,7 +67,7 @@ defmodule Beacon.Template.HEEx.TokenizerTest do
                          [],
                          [
                            {:text, "\n          ", %{newlines: 1}},
-                           {:eex_block, "for person <- @beacon_live_data[:persons] do",
+                           {:eex_block, "for person <- @persons do",
                             [
                               {[
                                  {:text, "\n            ", %{newlines: 1}},
