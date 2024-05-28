@@ -37,7 +37,7 @@ defmodule Beacon.Fixtures do
       body: ~S"""
       <span id={"my-component-#{@val}"}><%= @val %></span>
       """,
-      category: "other"
+      category: "component"
     })
     |> Content.create_component!()
     |> tap(fn component -> Beacon.Loader.reload_components_module(component.site) end)

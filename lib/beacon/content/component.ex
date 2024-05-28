@@ -13,7 +13,7 @@ defmodule Beacon.Content.Component do
 
   use Beacon.Schema
 
-  @categories [:nav, :header, :sign_in, :sign_up, :stats, :footer, :basic, :other]
+  @categories [:data, :element, :media]
 
   @type t :: %__MODULE__{}
 
@@ -21,7 +21,7 @@ defmodule Beacon.Content.Component do
     field :site, Beacon.Types.Site
     field :name, :string
     field :body, :string
-    field :category, Ecto.Enum, values: @categories, default: :other
+    field :category, Ecto.Enum, values: @categories, default: :element
     field :thumbnail, :string
 
     timestamps()

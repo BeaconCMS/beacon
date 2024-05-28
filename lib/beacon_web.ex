@@ -93,6 +93,9 @@ defmodule BeaconWeb do
       import BeaconWeb.CoreComponents
       import BeaconWeb.Gettext
 
+      # Beacon UI components
+      import BeaconWeb.Components
+
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
 

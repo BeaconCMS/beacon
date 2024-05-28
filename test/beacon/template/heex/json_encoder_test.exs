@@ -262,6 +262,48 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         }
       ]
     )
+  end
+
+  test "core components" do
+    assert_output(
+      ~S|<.button phx-click="go" class="ml-2">Send!</.button>|,
+      [
+        %{
+          "attrs" => %{"class" => "ml-2", "phx-click" => "go"},
+          "content" => ["Send!"],
+          "rendered_html" =>
+            "<button class=\"phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 ml-2\" phx-click=\"go\">\n  Send!\n</button>",
+          "tag" => ".button"
+        }
+      ]
+    )
+
+    assert_output(
+      ~S|<BeaconWeb.CoreComponents.button phx-click="go" class="ml-2">Send!</BeaconWeb.CoreComponents.button>|,
+      [
+        %{
+          "attrs" => %{"class" => "ml-2", "phx-click" => "go"},
+          "content" => ["Send!"],
+          "rendered_html" =>
+            "<button class=\"phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 ml-2\" phx-click=\"go\">\n  Send!\n</button>",
+          "tag" => "BeaconWeb.CoreComponents.button"
+        }
+      ]
+    )
+  end
+
+  test "beacon components" do
+    assert_output(
+      ~S|<.image name="logo.jpg" width="200px" />|,
+      [
+        %{
+          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
+          "content" => [],
+          "tag" => ".image",
+          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
+        }
+      ]
+    )
 
     assert_output(
       ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,

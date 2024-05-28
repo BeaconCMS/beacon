@@ -28,6 +28,8 @@ defmodule Beacon.Loader.Components do
         import Phoenix.HTML.Form
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb.CoreComponents
+        import BeaconWeb.Components
 
         def my_component(name, assigns \\ []) do
           Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
@@ -44,6 +46,8 @@ defmodule Beacon.Loader.Components do
         import Phoenix.HTML.Form
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb.CoreComponents
+        import BeaconWeb.Components
 
         def my_component(name, assigns \\ []) do
           Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
