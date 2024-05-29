@@ -1821,9 +1821,7 @@ defmodule Beacon.Content do
   """
   @doc type: :components
   @spec change_component_attr(ComponentAttr.t(), map()) :: Changeset.t()
-  def change_component_attr(component, attrs \\ %{})
-
-  def change_component_attr(%ComponentAttr{} = component, attrs) do
+  def change_component_attr(%ComponentAttr{} = component, attrs \\ %{}) do
     ComponentAttr.changeset(component, attrs)
   end
 

@@ -8,7 +8,7 @@ defmodule Beacon.Loader.Components do
   alias Beacon.Content
   alias Beacon.Loader
 
-  @supported_component_types [:any, :atom, :boolean, :float, :global, :integer, :list, :map, :string]
+  @supported_attr_types ~w(any string atom boolean integer float list map global)
 
   def module_name(site), do: Loader.module_name(site, "Components")
 
@@ -83,7 +83,7 @@ defmodule Beacon.Loader.Components do
       unquote_splicing(
         for component_attr <- component.attrs do
           quote do
-            attr.(unquote(String.to_atom(component_attr.name)), unquote(convert_component_type(component_attr.type)), unquote(component_attr.opts))
+            attr.(unquote(String.to_atom(component_attr.name)), unquote(att_type_to_atom(component_attr.type)), unquote(component_attr.opts))
           end
         end
       )
@@ -96,7 +96,7 @@ defmodule Beacon.Loader.Components do
                 unquote_splicing(
                   for slot_attr <- component_slot.attrs do
                     quote do
-                      attr.(unquote(String.to_atom(slot_attr.name)), unquote(convert_component_type(slot_attr.type)), unquote(slot_attr.opts))
+                      attr.(unquote(String.to_atom(slot_attr.name)), unquote(att_type_to_atom(slot_attr.type)), unquote(slot_attr.opts))
                     end
                   end
                 )
@@ -107,24 +107,17 @@ defmodule Beacon.Loader.Components do
 
       def unquote(String.to_atom(component.name))(var!(assigns)) do
         unquote(Code.string_to_quoted!(component.body))
-        unquote(compile_template(component))
+        unquote(compile_template!(component))
       end
     end
   end
 
-  def convert_component_type(component_type) do
-    component_type
-    |> String.to_atom()
-    |> maybe_convert_to_struct_type()
+  def att_type_to_atom(component_type) when component_type in @supported_attr_types do
+    String.to_atom(component_type)
   end
 
-  def maybe_convert_to_struct_type(component_type) when component_type in @supported_component_types, do: component_type
-  def maybe_convert_to_struct_type(component_type), do: Module.concat([component_type])
-
-  defp compile_template(%Content.Component{site: site, name: name, template: template}) do
-    file = "site-#{site}-component-#{name}"
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, "", template, file)
-    ast
+  def att_type_to_atom(component_type) do
+    Module.concat([component_type])
   end
 
   # TODO: remove render_component/1 along with my_component/2
@@ -134,8 +127,13 @@ defmodule Beacon.Loader.Components do
     quote do
       def render(unquote(component.name), var!(assigns)) when is_map(var!(assigns)) do
         unquote(Code.string_to_quoted!(component.body))
-        unquote(Beacon.Template.HEEx.compile!(component.site, "", component.template, "site-#{component.site}-component-#{component.name}"))
+        unquote(compile_template!(component))
       end
     end
+  end
+
+  defp compile_template!(%Content.Component{site: site, name: name, template: template}) do
+    file = "site-#{site}-component-#{name}"
+    Beacon.Template.HEEx.compile!(site, "", template, file)
   end
 end

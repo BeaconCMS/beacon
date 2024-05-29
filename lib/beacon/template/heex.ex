@@ -40,7 +40,7 @@ defmodule Beacon.Template.HEEx do
       line: 1,
       indentation: 0,
       file: file,
-      caller: __ENV__,
+      caller: BeaconWeb.PageLive.make_env(),
       source: template,
       trim: true,
       tag_handler: Phoenix.LiveView.HTMLEngine
