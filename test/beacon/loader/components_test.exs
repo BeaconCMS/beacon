@@ -24,6 +24,12 @@ defmodule Beacon.Loader.ComponentsTest do
     assert render(mod.hello(%{})) == "my_site"
   end
 
+  test "body" do
+    component_fixture(name: "hello", body: ~S|assigns = Map.put(assigns, :id, 1)|, template: ~S|<%= @id %>|)
+    mod = Loader.reload_components_module(@site)
+    assert render(mod.hello(%{})) == "1"
+  end
+
   test "load component without attrs" do
     component_fixture(name: "hello", template: "<h1>hello</h1>")
     mod = Loader.reload_components_module(@site)

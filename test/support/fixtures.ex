@@ -34,9 +34,8 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       name: "sample_component",
-      template: ~S"""
-      <span id={"my-component-#{@val}"}><%= @val %></span>
-      """,
+      body: ~S|assigns = Map.put(assigns, :id, "my-component")|,
+      template: ~S|<span id={@id}><%= @val %></span>|,
       category: "other",
       attrs: []
     })

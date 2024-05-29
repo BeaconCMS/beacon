@@ -76,7 +76,9 @@ defmodule Beacon.Loader.Components do
     end
   end
 
-  defp function_component(%Content.Component{name: name} = component) do
+  defp function_component(%Content.Component{} = component) do
+    Beacon.safe_code_check!(component.site, component.body)
+
     quote do
       unquote_splicing(
         for component_attr <- component.attrs do
@@ -103,7 +105,8 @@ defmodule Beacon.Loader.Components do
         end
       )
 
-      def unquote(String.to_atom(name))(var!(assigns)) do
+      def unquote(String.to_atom(component.name))(var!(assigns)) do
+        unquote(Code.string_to_quoted!(component.body))
         unquote(compile_template(component))
       end
     end
@@ -125,10 +128,13 @@ defmodule Beacon.Loader.Components do
   end
 
   # TODO: remove render_component/1 along with my_component/2
-  defp render_component(%Content.Component{site: site, name: name, template: template}) do
+  defp render_component(%Content.Component{} = component) do
+    Beacon.safe_code_check!(component.site, component.body)
+
     quote do
-      def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do
-        unquote(Beacon.Template.HEEx.compile!(site, "", template, "site-#{site}-component-#{name}"))
+      def render(unquote(component.name), var!(assigns)) when is_map(var!(assigns)) do
+        unquote(Code.string_to_quoted!(component.body))
+        unquote(Beacon.Template.HEEx.compile!(component.site, "", component.template, "site-#{component.site}-component-#{component.name}"))
       end
     end
   end

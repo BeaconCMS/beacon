@@ -100,9 +100,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
   test "live data", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/home/hello")
 
-    assert has_element?(view, "#my-component-first", "first")
-    assert has_element?(view, "#my-component-second", "second")
-    assert has_element?(view, "#my-component-third", "third")
+    assert has_element?(view, "#my-component", "first")
+    assert has_element?(view, "#my-component", "second")
+    assert has_element?(view, "#my-component", "third")
   end
 
   describe "meta tags" do
@@ -213,9 +213,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home/hello")
 
-      assert html =~ ~s(<span id="my-component-first">)
-      assert html =~ ~s(<span id="my-component-second">)
-      assert html =~ ~s(<span id="my-component-third">)
+      assert html =~ ~s(<span id="my-component">)
     end
 
     test "event", %{conn: conn} do

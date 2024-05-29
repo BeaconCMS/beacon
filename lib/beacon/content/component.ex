@@ -23,6 +23,7 @@ defmodule Beacon.Content.Component do
   schema "beacon_components" do
     field :site, Beacon.Types.Site
     field :name, :string
+    field :body, :string
     field :template, :string
     field :category, Ecto.Enum, values: @categories, default: :other
     field :thumbnail, :string
@@ -36,7 +37,7 @@ defmodule Beacon.Content.Component do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:site, :name, :template, :category, :thumbnail])
+    |> cast(attrs, [:site, :name, :body, :template, :category, :thumbnail])
     |> validate_required([:site, :name, :template, :category])
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
     |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
