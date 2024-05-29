@@ -28,6 +28,7 @@ defmodule Beacon.Content do
   use GenServer
   require Logger
   alias Beacon.Content.Component
+  alias Beacon.Content.ComponentAttr
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -1184,7 +1185,7 @@ defmodule Beacon.Content do
   def create_component(attrs \\ %{}) do
     %Component{}
     |> Component.changeset(attrs)
-    |> validate_component_body()
+    |> validate_component_template()
     |> Repo.insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
@@ -1209,16 +1210,16 @@ defmodule Beacon.Content do
   def update_component(%Component{} = component, attrs) do
     component
     |> Component.changeset(attrs)
-    |> validate_component_body()
+    |> validate_component_template()
     |> Repo.update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
-  defp validate_component_body(changeset) do
+  defp validate_component_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body)
+    template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :body, :heex, body, metadata)
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   @doc """
@@ -1254,7 +1255,7 @@ defmodule Beacon.Content do
   @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
   def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Component, clauses, opts)
+    Repo.get_by(Component, clauses, opts) |> Repo.preload(:attrs)
   end
 
   @doc """
@@ -1298,6 +1299,7 @@ defmodule Beacon.Content do
 
     site
     |> query_list_components_base()
+    |> query_list_components_preloads(preloads)
     |> query_list_components_limit(per_page)
     |> query_list_components_offset(per_page, page)
     |> query_list_components_search(search)
@@ -1344,6 +1346,23 @@ defmodule Beacon.Content do
     |> query_list_components_search(search)
     |> select([q], count(q.id))
     |> Repo.one()
+  end
+
+  # COMPONENT ATTR
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking component_attr changes.
+
+  ## Example
+
+      iex> change_component(component, %{name: "Header"})
+      %Ecto.Changeset{data: %Component{}}
+
+  """
+  @doc type: :components
+  @spec change_component_attr(ComponentAttr.t(), map()) :: Changeset.t()
+  def change_component_attr(%ComponentAttr{} = component, attrs \\ %{}) do
+    ComponentAttr.changeset(component, attrs)
   end
 
   # SNIPPETS

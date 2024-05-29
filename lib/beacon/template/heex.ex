@@ -35,17 +35,16 @@ defmodule Beacon.Template.HEEx do
   end
 
   defp compile_template(file, template) do
-    opts =
-      [
-        engine: Phoenix.LiveView.TagEngine,
-        line: 1,
-        indentation: 0,
-        file: file,
-        caller: __ENV__,
-        source: template,
-        trim: true,
-        tag_handler: Phoenix.LiveView.HTMLEngine
-      ]
+    opts = [
+      engine: Phoenix.LiveView.TagEngine,
+      line: 1,
+      indentation: 0,
+      file: file,
+      caller: BeaconWeb.PageLive.make_env(),
+      source: template,
+      trim: true,
+      tag_handler: Phoenix.LiveView.HTMLEngine
+    ]
 
     {:ok, EEx.compile_string(template, opts)}
   rescue

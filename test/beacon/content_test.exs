@@ -726,13 +726,13 @@ defmodule Beacon.ContentTest do
     test "update broadcasts updated content event" do
       %{site: site} = component = component_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
-      Content.update_component(component, %{body: "<div>test</div>"})
+      Content.update_component(component, %{template: "<div>test</div>"})
       assert_receive {:content_updated, :component, %{site: ^site}}
     end
 
     test "validate template heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_component(%{site: :my_site, name: "test", body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_component(%{site: :my_site, name: "test", template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -740,8 +740,8 @@ defmodule Beacon.ContentTest do
     test "validate template heex on update" do
       component = component_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_component(component, %{body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_component(component, %{template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -750,7 +750,7 @@ defmodule Beacon.ContentTest do
       component_a = component_fixture(name: "component_a")
       component_b = component_fixture(name: "component_b")
 
-      components = Content.list_components(component_b.site, query: "_b")
+      components = Content.list_components(component_b.site, query: "_b", preloads: [:attrs])
 
       assert Enum.member?(components, component_b)
       refute Enum.member?(components, component_a)
@@ -779,8 +779,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update_component" do
-      component = component_fixture(name: "new_component", body: "old_body")
-      assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
+      component = component_fixture(name: "new_component", template: "old_body")
+      assert {:ok, %Component{template: "new_body"}} = Content.update_component(component, %{template: "new_body"})
     end
   end
 

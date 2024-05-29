@@ -13,6 +13,9 @@ defmodule Beacon.Content.Component do
 
   use Beacon.Schema
 
+  alias Beacon.Content.ComponentAttr
+  alias Beacon.Content.ComponentSlot
+
   @categories [:data, :element, :media]
 
   @type t :: %__MODULE__{}
@@ -21,8 +24,12 @@ defmodule Beacon.Content.Component do
     field :site, Beacon.Types.Site
     field :name, :string
     field :body, :string
+    field :template, :string
     field :category, Ecto.Enum, values: @categories, default: :element
     field :thumbnail, :string
+
+    has_many :attrs, ComponentAttr, on_replace: :delete
+    has_many :slots, ComponentSlot, on_replace: :delete
 
     timestamps()
   end
@@ -30,8 +37,10 @@ defmodule Beacon.Content.Component do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:site, :name, :body, :category, :thumbnail])
-    |> validate_required([:site, :name, :body, :category])
+    |> cast(attrs, [:site, :name, :body, :template, :category, :thumbnail])
+    |> validate_required([:site, :name, :template, :category])
+    |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
+    |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
   end
 
   def categories, do: @categories
