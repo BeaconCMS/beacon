@@ -11,7 +11,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
     stylesheet_fixture()
 
     component_fixture(
-      body: ~S"""
+      template: ~S"""
       <li id={"my-component-#{@val}"}>
         <span class="text-gray-50"><%= @val %></span>
       </li>

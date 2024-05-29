@@ -316,7 +316,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
           "content" => ["my_component(\"sample_component\", %{val: 1})"],
           "metadata" => %{"opt" => ~c"="},
           "tag" => "eex",
-          "rendered_html" => "<span id=\"my-component-1\">1</span>"
+          "rendered_html" => "<span id=\"my-component\">1</span>"
         }
       ]
     )

@@ -12,7 +12,7 @@ defmodule BeaconWeb.API.ComponentJSON do
   end
 
   def show_ast(%{component: component, assigns: assigns}) do
-    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(component.site, component.body, assigns)
+    {:ok, ast} = Beacon.Template.HEEx.JSONEncoder.encode(component.site, component.template, assigns)
     data = Map.put(data(component), :ast, ast)
     %{data: data}
   end
@@ -21,7 +21,7 @@ defmodule BeaconWeb.API.ComponentJSON do
     %{
       id: component.id,
       name: component.name,
-      body: component.body,
+      template: component.template,
       category: component.category,
       thumbnail: component.thumbnail
     }

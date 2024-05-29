@@ -34,10 +34,10 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       name: "sample_component",
-      body: ~S"""
-      <span id={"my-component-#{@val}"}><%= @val %></span>
-      """,
-      category: "other"
+      body: ~S|assigns = Map.put(assigns, :id, "my-component")|,
+      template: ~S|<span id={@id}><%= @val %></span>|,
+      category: "other",
+      attrs: []
     })
     |> Content.create_component!()
     |> tap(fn component -> Beacon.Loader.reload_components_module(component.site) end)

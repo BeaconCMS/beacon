@@ -287,8 +287,7 @@ defmodule Beacon.Template.HEEx.LVTokenizer do
         end
 
       :error ->
-        message =
-          "expected tag name after <. If you meant to use < as part of a text, use &lt; instead"
+        message = "expected tag name after <. If you meant to use < as part of a text, use &lt; instead"
 
         meta = %{line: line, column: column}
 

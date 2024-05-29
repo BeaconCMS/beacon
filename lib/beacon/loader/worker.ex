@@ -343,7 +343,7 @@ defmodule Beacon.Loader.Worker do
 
   def handle_call(:reload_components_module, _from, config) do
     %{site: site} = config
-    components = Content.list_components(site, per_page: :infinity)
+    components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
     ast = Loader.Components.build_ast(site, components)
     result = compile_module(site, ast)
     stop(result, config)

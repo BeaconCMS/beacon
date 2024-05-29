@@ -37,7 +37,7 @@ defmodule Beacon.Template.HEExTest do
                :my_site,
                ~S|<%= my_component("sample", %{val: 1}) %>|,
                %{}
-             ) == ~S|<span id="my-component-1">1</span>|
+             ) == ~S|<span id="my-component">1</span>|
     end
   end
 end

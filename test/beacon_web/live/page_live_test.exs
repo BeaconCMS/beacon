@@ -100,9 +100,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
   test "live data", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/home/hello")
 
-    assert has_element?(view, "#my-component-first", "first")
-    assert has_element?(view, "#my-component-second", "second")
-    assert has_element?(view, "#my-component-third", "third")
+    assert has_element?(view, "#my-component", "first")
+    assert has_element?(view, "#my-component", "second")
+    assert has_element?(view, "#my-component", "third")
   end
 
   describe "meta tags" do
@@ -213,9 +213,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home/hello")
 
-      assert html =~ ~s(<span id="my-component-first">)
-      assert html =~ ~s(<span id="my-component-second">)
-      assert html =~ ~s(<span id="my-component-third">)
+      assert html =~ ~s(<span id="my-component">)
     end
 
     test "event", %{conn: conn} do
@@ -276,7 +274,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   describe "components" do
     test "update should reload the resource", %{conn: conn} do
-      component = component_fixture(name: "component_test", body: "component_test_v1")
+      component = component_fixture(name: "component_test", template: "component_test_v1")
       layout = published_layout_fixture()
 
       published_page_fixture(
@@ -291,7 +289,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ "component_test_v1"
 
-      Content.update_component(component, %{body: "component_test_v2"})
+      Content.update_component(component, %{template: "component_test_v2"})
       Beacon.Loader.reload_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")
