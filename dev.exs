@@ -148,7 +148,7 @@ dev_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
-    body: """
+    template: """
     <li>
       <%= @val %>
     </li>
@@ -366,7 +366,7 @@ dy_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dy",
     name: "header",
-    body: """
+    template: """
     <header class="sticky top-0 left-0 z-50 w-full px-4 bg-white font-body">
       <nav class="flex items-center justify-between mx-auto lg:h-25 h-21 gap-x-3 max-w-7xl" aria-label="Main" id="nav-main">
       <.link navigate="/" class="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-8">
@@ -439,7 +439,7 @@ dy_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dy",
     name: "footer",
-    body: """
+    template: """
     <footer class="py-15 pb-15 font-body md:py-20 lg:py-24 xl:py-30 text-gray-50 px-4 bg-gray-700">
       <%!-- Footer CTA --%>
       <div class="max-w-7xl mx-auto">

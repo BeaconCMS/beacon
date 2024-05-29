@@ -1465,145 +1465,145 @@ defmodule Beacon.Content do
       %{
         name: "Navigation 1",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/01_2be7c9d07f.png",
-        body: nav_1,
+        template: nav_1,
         category: :nav
       },
       %{
         name: "Navigation 2",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
-        body: nav_2,
+        template: nav_2,
         category: :nav
       },
       %{
         name: "Navigation 3",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/03_e244675766.png",
-        body: nav_1,
+        template: nav_1,
         category: :nav
       },
       %{
         name: "Navigation 4",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/04_64390b9975.png",
-        body: nav_1,
+        template: nav_1,
         category: :nav
       },
       %{
         name: "Header 1",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        body: header_1,
+        template: header_1,
         category: :header
       },
       %{
         name: "Header 2",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :header
       },
       %{
         name: "Header 3",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :header
       },
       %{
         name: "Sign Up 1",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :sign_up
       },
       %{
         name: "Sign Up 2",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :sign_up
       },
       %{
         name: "Sign Up 3",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :sign_up
       },
       %{
         name: "Stats 1",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :stats
       },
       %{
         name: "Stats 2",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :stats
       },
       %{
         name: "Stats 3",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :stats
       },
       %{
         name: "Footer 1",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :footer
       },
       %{
         name: "Footer 2",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :footer
       },
       %{
         name: "Footer 3",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :footer
       },
       %{
         name: "Sign In 1",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :sign_in
       },
       %{
         name: "Sign In 2",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :sign_in
       },
       %{
         name: "Sign In 3",
         thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        body: "<div>Default definition for components</div>",
+        template: "<div>Default definition for components</div>",
         category: :sign_in
       },
       %{
         name: "Title",
         thumbnail: "/component_thumbnails/title.jpg",
-        body: "<header>I'm a sample title</header>",
+        template: "<header>I'm a sample title</header>",
         category: :basic
       },
       %{
         name: "Button",
         thumbnail: "/component_thumbnails/button.jpg",
-        body: "<button>I'm a sample button</button>",
+        template: "<button>I'm a sample button</button>",
         category: :basic
       },
       %{
         name: "Link",
         thumbnail: "/component_thumbnails/link.jpg",
-        body: "<a href=\"#\">I'm a sample link</a>",
+        template: "<a href=\"#\">I'm a sample link</a>",
         category: :basic
       },
       %{
         name: "Paragraph",
         thumbnail: "/component_thumbnails/paragraph.jpg",
-        body: "<p>I'm a sample paragraph</p>",
+        template: "<p>I'm a sample paragraph</p>",
         category: :basic
       },
       %{
         name: "Aside",
         thumbnail: "/component_thumbnails/aside.jpg",
-        body: "<aside>I'm a sample aside</aside>",
+        template: "<aside>I'm a sample aside</aside>",
         category: :basic
       }
     ]
@@ -1645,7 +1645,7 @@ defmodule Beacon.Content do
   def create_component(attrs \\ %{}) do
     %Component{}
     |> Component.changeset(attrs)
-    |> validate_component_body()
+    |> validate_component_template()
     |> Repo.insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
@@ -1670,16 +1670,16 @@ defmodule Beacon.Content do
   def update_component(%Component{} = component, attrs) do
     component
     |> Component.changeset(attrs)
-    |> validate_component_body()
+    |> validate_component_template()
     |> Repo.update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
-  defp validate_component_body(changeset) do
+  defp validate_component_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body)
+    template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :body, :heex, body, metadata)
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   @doc """
@@ -1751,7 +1751,6 @@ defmodule Beacon.Content do
   @doc type: :components
   @spec list_components(Site.t(), keyword()) :: [Component.t()]
   def list_components(site, opts \\ []) do
-    preloads = Keyword.get(opts, :preloads, [])
     per_page = Keyword.get(opts, :per_page, 20)
     page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
@@ -1770,12 +1769,6 @@ defmodule Beacon.Content do
   end
 
   defp query_list_components_base(site), do: from(l in Component, where: l.site == ^site)
-
-  defp query_list_components_preloads(query, [_preload | _] = preloads) do
-    from(q in query, preload: ^preloads)
-  end
-
-  defp query_list_components_preloads(query, _preloads), do: query
 
   defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_components_limit(query, :infinity = _limit), do: query

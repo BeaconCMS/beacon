@@ -276,7 +276,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   describe "components" do
     test "update should reload the resource", %{conn: conn} do
-      component = component_fixture(name: "component_test", body: "component_test_v1")
+      component = component_fixture(name: "component_test", template: "component_test_v1")
       layout = published_layout_fixture()
 
       published_page_fixture(
@@ -291,7 +291,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       assert html =~ "component_test_v1"
 
-      Content.update_component(component, %{body: "component_test_v2"})
+      Content.update_component(component, %{template: "component_test_v2"})
       Beacon.Loader.reload_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")

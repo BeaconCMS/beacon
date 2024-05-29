@@ -34,7 +34,7 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       name: "sample_component",
-      body: ~S"""
+      template: ~S"""
       <span id={"my-component-#{@val}"}><%= @val %></span>
       """,
       category: "other",

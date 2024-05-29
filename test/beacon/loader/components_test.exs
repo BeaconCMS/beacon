@@ -2,7 +2,6 @@ defmodule Beacon.Loader.ComponentsTest do
   use Beacon.DataCase, async: false
 
   import Beacon.Fixtures
-  alias Beacon.Content
   alias Beacon.Loader
 
   @site :my_site
@@ -20,13 +19,13 @@ defmodule Beacon.Loader.ComponentsTest do
 
   @tag :skip
   test "inject beacon site into assigns" do
-    component_fixture(name: "hello", body: "<%= @beacon_site %>")
+    component_fixture(name: "hello", template: "<%= @beacon_site %>")
     mod = Loader.reload_components_module(@site)
     assert render(mod.hello(%{})) == "my_site"
   end
 
   test "load component without attrs" do
-    component_fixture(name: "hello", body: "<h1>hello</h1>")
+    component_fixture(name: "hello", template: "<h1>hello</h1>")
     mod = Loader.reload_components_module(@site)
     assert render(mod.hello(%{})) == "<h1>hello</h1>"
   end
@@ -35,7 +34,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with string attrs" do
       component_fixture(
         name: "say_hello",
-        body: "<h1>Hello <%= @first_name %> <%= @last_name %></h1>",
+        template: "<h1>Hello <%= @first_name %> <%= @last_name %></h1>",
         attrs: [%{name: "first_name", type: "string"}, %{name: "last_name", type: "string"}]
       )
 
@@ -46,7 +45,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with boolean attr" do
       component_fixture(
         name: "say_hello",
-        body: """
+        template: """
         <h1>Hello <%= @first_name %></h1>
         <h2 :if={@ask_question?}>What's up?</h2>
         """,
@@ -70,7 +69,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with integer attr" do
       component_fixture(
         name: "show_versions",
-        body: """
+        template: """
         <p>Erlang version: <%= @erl_version %></p>
         <p>Elixir version: <%= @elixir_version %></p>
         """,
@@ -90,7 +89,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with atom attr" do
       component_fixture(
         name: "say_hello",
-        body: "<p><%= @greeting %>!</p>",
+        template: "<p><%= @greeting %>!</p>",
         attrs: [%{name: "greeting", type: "atom"}]
       )
 
@@ -101,7 +100,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with list attr" do
       component_fixture(
         name: "advice",
-        body: """
+        template: """
         <p>Some good programming languages:</p>
         <ul>
           <li :for={lang <- @langs}><%= lang %></li>
@@ -125,7 +124,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with map attr" do
       component_fixture(
         name: "user_info",
-        body: """
+        template: """
         <h1>User info:</h1><p :for={{key, value} <- @user}><%= key %>: <%= value %></p>
         """,
         attrs: [%{name: "user", type: "map"}]
@@ -139,7 +138,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with struct attrs" do
       component_fixture(
         name: "render_component_site",
-        body: "<h1>Component site: <%= @component.site %></h1>",
+        template: "<h1>Component site: <%= @component.site %></h1>",
         attrs: [%{name: "component", type: "Beacon.Content.Component"}]
       )
 
@@ -150,7 +149,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with function attr" do
       component_fixture(
         name: "say_hello",
-        body: "<h1>Hello <%= @first_name %> <%= @fn_last_name.('test') %></h1>",
+        template: "<h1>Hello <%= @first_name %> <%= @fn_last_name.('test') %></h1>",
         attrs: [%{name: "first_name", type: "string"}, %{name: "fn_last_name", type: "any"}]
       )
 
@@ -163,7 +162,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with options: required and default" do
       component_fixture(
         name: "say_hello",
-        body: "<h1>Hello <%= @first_name %> <%= @last_name %></h1>",
+        template: "<h1>Hello <%= @first_name %> <%= @last_name %></h1>",
         attrs: [
           %{name: "first_name", type: "string", opts: [required: true]},
           %{name: "last_name", type: "string", opts: [default: "Doe"]}
@@ -182,7 +181,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component with options: values and doc" do
       component_fixture(
         name: "error_message",
-        body: "<h1 class={@kind}>Failed Operation</h1>",
+        template: "<h1 class={@kind}>Failed Operation</h1>",
         attrs: [
           %{name: "kind", type: "atom", opts: [values: [:info, :error], doc: "test function component doc"]}
         ]
@@ -199,7 +198,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component using the default slot" do
       component_fixture(
         name: "unordered_list",
-        body: """
+        template: """
         <ul>
           <%= for entry <- @entries do %>
             <li><%= render_slot(@inner_block, entry) %></li>
@@ -227,7 +226,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component using named slots" do
       component_fixture(
         name: "modal",
-        body: """
+        template: """
         <div class="modal">
           <div class="modal-header">
             <%= render_slot(@header) || "Modal" %>
@@ -262,7 +261,7 @@ defmodule Beacon.Loader.ComponentsTest do
     test "load component using slot attributes" do
       component_fixture(
         name: "table",
-        body: """
+        template: """
         <table>
           <tr>
             <%= for col <- @column do %>

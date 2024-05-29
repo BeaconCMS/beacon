@@ -104,7 +104,7 @@ defmodule Beacon.Loader.Components do
       )
 
       def unquote(String.to_atom(name))(var!(assigns)) do
-        unquote(compile_body(component))
+        unquote(compile_template(component))
       end
     end
   end
@@ -118,17 +118,17 @@ defmodule Beacon.Loader.Components do
   def maybe_convert_to_struct_type(component_type) when component_type in @supported_component_types, do: component_type
   def maybe_convert_to_struct_type(component_type), do: Module.concat([component_type])
 
-  defp compile_body(%Content.Component{site: site, name: name, body: body}) do
+  defp compile_template(%Content.Component{site: site, name: name, template: template}) do
     file = "site-#{site}-component-#{name}"
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, "", body, file)
+    {:ok, ast} = Beacon.Template.HEEx.compile(site, "", template, file)
     ast
   end
 
   # TODO: remove render_component/1 along with my_component/2
-  defp render_component(%Content.Component{site: site, name: name, body: body}) do
+  defp render_component(%Content.Component{site: site, name: name, template: template}) do
     quote do
       def render(unquote(name), var!(assigns)) when is_map(var!(assigns)) do
-        unquote(Beacon.Template.HEEx.compile!(site, "", body, "site-#{site}-component-#{name}"))
+        unquote(Beacon.Template.HEEx.compile!(site, "", template, "site-#{site}-component-#{name}"))
       end
     end
   end
