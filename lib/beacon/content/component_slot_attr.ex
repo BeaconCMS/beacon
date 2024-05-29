@@ -1,7 +1,5 @@
-defmodule Beacon.Content.SlotAttr do
-  @moduledoc """
-  beacon_slot_attrs
-  """
+defmodule Beacon.Content.ComponentSlotAttr do
+  @moduledoc false
 
   use Beacon.Schema
 
@@ -9,7 +7,7 @@ defmodule Beacon.Content.SlotAttr do
 
   @type t :: %__MODULE__{}
 
-  schema "beacon_slot_attrs" do
+  schema "beacon_component_slot_attrs" do
     field :name, :string
     field :type, :string
     field :opts, Beacon.Types.Binary, default: []

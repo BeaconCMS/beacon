@@ -1,7 +1,5 @@
 defmodule Beacon.Content.ComponentAttr do
-  @moduledoc """
-  beacon_component_attrs
-  """
+  @moduledoc false
 
   use Beacon.Schema
 
