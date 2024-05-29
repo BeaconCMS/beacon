@@ -1113,37 +1113,37 @@ defmodule Beacon.Content do
       %{
         name: "Assign",
         thumbnail: "https://placehold.co/400x75?text=assign",
-        body: ~S|<%= @assign %>|,
+        template: ~S|<%= @assign %>|,
         category: :data
       },
       %{
         name: "Dynamic Tag",
         thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
-        body: ~S|<.dynamic_tag name="p" class="text-xl">content</.dynamic_tag>|,
+        template: ~S|<.dynamic_tag name="p" class="text-xl">content</.dynamic_tag>|,
         category: :element
       },
       %{
         name: "Link",
         thumbnail: "https://placehold.co/400x75?text=link",
-        body: ~S|<.link patch="/link">click here</.link>|,
+        template: ~S|<.link patch="/link">click here</.link>|,
         category: :element
       },
       %{
         name: "Button",
         thumbnail: "https://placehold.co/400x75?text=button",
-        body: ~S|<.button phx-click="go" class="ml-2">Send!</.button>|,
+        template: ~S|<.button phx-click="go" class="ml-2">Send!</.button>|,
         category: :element
       },
       %{
         name: "Icon",
         thumbnail: "https://placehold.co/400x75?text=icon",
-        body: ~S|<.icon name="hero-information-circle-mini" class="w-4 h-4" />|,
+        template: ~S|<.icon name="hero-information-circle-mini" class="w-4 h-4" />|,
         category: :element
       },
       %{
         name: "Embedded Media",
         thumbnail: "https://placehold.co/400x75?text=embedded",
-        body: ~S|<.embed url="https://www.youtube.com/watch?v=giYbq4HmfGA" class="w-32 h-32" />|,
+        template: ~S|<.embed url="https://www.youtube.com/watch?v=giYbq4HmfGA" class="w-32 h-32" />|,
         category: :media
       }
     ]

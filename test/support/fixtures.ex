@@ -36,7 +36,7 @@ defmodule Beacon.Fixtures do
       name: "sample_component",
       body: ~S|assigns = Map.put(assigns, :id, "my-component")|,
       template: ~S|<span id={@id}><%= @val %></span>|,
-      category: "component"
+      category: "element",
       attrs: []
     })
     |> Content.create_component!()
