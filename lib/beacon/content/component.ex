@@ -27,8 +27,8 @@ defmodule Beacon.Content.Component do
     field :category, Ecto.Enum, values: @categories, default: :other
     field :thumbnail, :string
 
-    has_many :attrs, ComponentAttr
-    has_many :slots, ComponentSlot
+    has_many :attrs, ComponentAttr, on_replace: :delete
+    has_many :slots, ComponentSlot, on_replace: :delete
 
     timestamps()
   end
