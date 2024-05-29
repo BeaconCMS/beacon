@@ -131,14 +131,14 @@ defmodule Beacon.Loader.ComponentsTest do
       component_fixture(
         name: "user_info",
         template: """
-        <h1>User info:</h1><p :for={{key, value} <- @user}><%= key %>: <%= value %></p>
+        <%= @user.name %>:<%= @user.age %>
         """,
         attrs: [%{name: "user", type: "map"}]
       )
 
       mod = Loader.reload_components_module(@site)
 
-      assert render(mod.user_info(%{user: %{name: "Joe", age: 20}})) == "<h1>User info:</h1><p>name: Joe</p><p>age: 20</p>"
+      assert render(mod.user_info(%{user: %{name: "Joe", age: 20}})) == "Joe:20"
     end
 
     test "load component with struct attrs" do
