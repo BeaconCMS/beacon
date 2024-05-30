@@ -38,8 +38,8 @@ defmodule Beacon.Content.Component do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:site, :name, :body, :template, :category, :thumbnail])
-    |> validate_required([:site, :name, :template, :category])
+    |> cast(attrs, [:site, :name, :body, :template, :example, :category, :thumbnail])
+    |> validate_required([:site, :name, :template, :example, :category])
     |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
     |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
