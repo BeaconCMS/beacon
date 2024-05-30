@@ -39,6 +39,7 @@ defmodule Beacon.Content.Component do
     component
     |> cast(attrs, [:site, :name, :body, :template, :category, :thumbnail])
     |> validate_required([:site, :name, :template, :category])
+    |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
     |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
   end

@@ -746,6 +746,14 @@ defmodule Beacon.ContentTest do
       assert compilation_error =~ "expected closing `>`"
     end
 
+    test "validate name format as valid function name" do
+      assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
+               Content.create_component(%{site: :my_site, name: "my component", template: "test"})
+
+      assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
+               Content.create_component(%{site: :my_site, name: "my_component$", template: "test"})
+    end
+
     test "list components" do
       component_a = component_fixture(name: "component_a")
       component_b = component_fixture(name: "component_b")
