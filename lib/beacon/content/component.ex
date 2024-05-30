@@ -25,6 +25,7 @@ defmodule Beacon.Content.Component do
     field :name, :string
     field :body, :string
     field :template, :string
+    field :example, :string
     field :category, Ecto.Enum, values: @categories, default: :element
     field :thumbnail, :string
 
