@@ -1103,47 +1103,43 @@ defmodule Beacon.Content do
 
   # COMPONENTS
 
-  @doc """
-  Returns the list of components that are loaded by default into new sites.
-  """
+  @doc false
+  #  Returns the list of components that are loaded by default into new sites.
   @spec blueprint_components() :: [map()]
-  @doc type: :components
   def blueprint_components do
     [
       %{
-        name: "Assign",
-        thumbnail: "https://placehold.co/400x75?text=assign",
-        template: ~S|<%= @assign %>|,
-        category: :data
-      },
-      %{
-        name: "Dynamic Tag",
+        name: "tag",
         thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
-        template: ~S|<.dynamic_tag name="p" class="text-xl">content</.dynamic_tag>|,
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]}
+        ],
+        template: ~S|<.dynamic_tag name={@name} class={@class}>content</.dynamic_tag>|,
+        example: ~S|<.dynamic_tag name="p" class="text-xl">content</.dynamic_tag>|,
         category: :element
       },
       %{
-        name: "Link",
-        thumbnail: "https://placehold.co/400x75?text=link",
-        template: ~S|<.link patch="/link">click here</.link>|,
-        category: :element
-      },
-      %{
-        name: "Button",
-        thumbnail: "https://placehold.co/400x75?text=button",
-        template: ~S|<.button phx-click="go" class="ml-2">Send!</.button>|,
-        category: :element
-      },
-      %{
-        name: "Icon",
+        name: "icon",
         thumbnail: "https://placehold.co/400x75?text=icon",
-        template: ~S|<.icon name="hero-information-circle-mini" class="w-4 h-4" />|,
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]}
+        ],
+        template: ~S|<span class={[@name, @class]} />|,
+        example: ~S|<Components.icon name="hero-x-mark-solid" />|,
         category: :element
       },
       %{
-        name: "Embedded Media",
-        thumbnail: "https://placehold.co/400x75?text=embedded",
-        template: ~S|<.embed url="https://www.youtube.com/watch?v=giYbq4HmfGA" class="w-32 h-32" />|,
+        name: "media",
+        thumbnail: "https://placehold.co/400x75?text=media",
+        attrs: [%{name: "url", type: "string", opts: [required: true]}],
+        body: ~S|
+        {:ok, %{html: html}} = OEmbed.for(assigns.url)
+        assigns = Map.put(assigns, :html, html)
+        |,
+        template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
+        example: ~S|<Components.media url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
         category: :media
       }
     ]
