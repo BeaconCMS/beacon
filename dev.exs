@@ -152,7 +152,8 @@ dev_seeds = fn ->
     <li>
       <%= @val %>
     </li>
-    """
+    """,
+    example: "<Components.sample_component val={1} />"
   })
 
   Beacon.Content.create_snippet_helper!(%{
@@ -433,7 +434,8 @@ dy_seeds = fn ->
       </div>
       </nav>
     </header>
-    """
+    """,
+    example: "<Components.header />"
   })
 
   Beacon.Content.create_component!(%{
@@ -717,7 +719,8 @@ dy_seeds = fn ->
         </div>
       </div>
     </footer>
-    """
+    """,
+    example: "<Components.footer />"
   })
 
   layout =

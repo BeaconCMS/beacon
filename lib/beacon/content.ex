@@ -1115,8 +1115,11 @@ defmodule Beacon.Content do
           %{name: "name", type: "string", opts: [required: true]},
           %{name: "class", type: "string", opts: [default: nil]}
         ],
-        template: ~S|<.dynamic_tag name={@name} class={@class}>content</.dynamic_tag>|,
-        example: ~S|<.dynamic_tag name="p" class="text-xl">content</.dynamic_tag>|,
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        example: ~S|<Components.tag name="p" class="text-xl">content</Components.tag>|  ,
         category: :element
       },
       %{
@@ -1126,7 +1129,7 @@ defmodule Beacon.Content do
           %{name: "name", type: "string", opts: [required: true]},
           %{name: "class", type: "string", opts: [default: nil]}
         ],
-        template: ~S|<span class={[@name, @class]} />|,
+        template: ~S|<BeaconWeb.CoreComponents.icon name={@name} class={@class} />|,
         example: ~S|<Components.icon name="hero-x-mark-solid" />|,
         category: :element
       },
