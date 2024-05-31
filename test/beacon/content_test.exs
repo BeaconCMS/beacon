@@ -732,7 +732,7 @@ defmodule Beacon.ContentTest do
 
     test "validate template heex on create" do
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_component(%{site: :my_site, name: "test", template: "<div"})
+               Content.create_component(%{site: :my_site, name: "test", template: "<div", example: "test"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -748,20 +748,20 @@ defmodule Beacon.ContentTest do
 
     test "validate name format as valid function name" do
       assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
-               Content.create_component(%{site: :my_site, name: "my component", template: "test"})
+               Content.create_component(%{site: :my_site, name: "my component", template: "test", example: "test"})
 
       assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
-               Content.create_component(%{site: :my_site, name: "my_component$", template: "test"})
+               Content.create_component(%{site: :my_site, name: "my_component$", template: "test", example: "test"})
     end
 
     test "list components" do
-      component_a = component_fixture(name: "component_a")
-      component_b = component_fixture(name: "component_b")
+      component_fixture(name: "component_a")
+      component_fixture(name: "component_b")
 
       components = Content.list_components(component_b.site, query: "_b", preloads: [:attrs])
 
-      assert Enum.member?(components, component_b)
-      refute Enum.member?(components, component_a)
+      assert Enum.find(components, &(&1.name == "component_b"))
+      refute Enum.find(components, &(&1.name == "component_a"))
     end
 
     test "page and per_page" do

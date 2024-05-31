@@ -34,7 +34,7 @@ defmodule Beacon.Loader.Page do
         import Phoenix.HTML.Form
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
-        import unquote(components_module), only: [my_component: 2]
+        import unquote(components_module)
         alias unquote(components_module), as: Components
 
         unquote_splicing(functions)
