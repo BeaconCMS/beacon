@@ -22,7 +22,13 @@ We recommend following the guide thoroughly, but if you want a short version or 
   mix phx.new --install my_app
   ```
 
-5. Add `:beacon` dependency to `mix.exs`
+5. Install `:floki` dependency in all environments, change it to:
+
+  ```elixir
+  {:floki, ">= 0.30.0"}
+  ```
+
+6. Add `:beacon` dependency to `mix.exs`
 
   ```elixir
   {:beacon, github: "BeaconCMS/beacon", override: true}
@@ -30,9 +36,13 @@ We recommend following the guide thoroughly, but if you want a short version or 
 
 Note that the option `override: true` is required if running Beacon and Beacon LiveAdmin in the same application.
 
-6. Add `:beacon` into `:import_deps` in file `.formatter.exs`
+7. Add `:beacon` into `:import_deps` in file `.formatter.exs`
 
-7. Run `mix deps.get`
+8. Install deps
+
+  ```sh
+  mix deps.get
+  ```
 
 ## Detailed instructions
 
@@ -86,7 +96,13 @@ After it finishes you can open the generated directory: `cd my_app`
 
 ### Install Beacon
 
-1. Edit `mix.exs` to add `:beacon` as a dependency:
+1. Edit `mix.exs` to install `:floki` in all environments, change it to:
+
+```elixir
+{:floki, ">= 0.30.0"}
+```
+
+2. Still in `mix.exs`, add `:beacon` as a dependency:
 
 ```elixir
 {:beacon, github: "BeaconCMS/beacon", override: true}
@@ -96,7 +112,7 @@ Or add to both apps `my_app` and `my_app_web` if running in an Umbrella app.
 
 Note that the option `override: true` is required if running Beacon and Beacon LiveAdmin in the same application.
 
-2. Add `:beacon` to `import_deps` in the `.formatter.exs` file:
+3. Add `:beacon` to `import_deps` in the `.formatter.exs` file:
 
 ```elixir
 [
@@ -105,4 +121,4 @@ Note that the option `override: true` is required if running Beacon and Beacon L
 ]
 ```
 
-3. Run `mix deps.get`
+4. Run `mix deps.get`

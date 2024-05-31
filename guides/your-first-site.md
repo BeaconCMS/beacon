@@ -72,7 +72,7 @@ If you're installing Beacon in an existing Phoenix application, you may have man
 
 The next step is to configure a database connection to store your site's pages, layouts, and other resources. We'll use the same datatbase as your application.
 
-Open the file `config.exs` and look for the line `config :beacon, Beacon.Repo`. That's the config used by Beacon and most of the times the default configuration
+Open the file `dev.exs` and look for the line `config :beacon, Beacon.Repo`. That's the config used by Beacon and most of the times the default configuration
 is enough for your local environment, but change it if needed. Since your application and Beacon are connecting to the same database, your `config :my_app, MyApp.Repo`
 should match Beacon's config:
 
