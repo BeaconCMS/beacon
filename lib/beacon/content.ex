@@ -1109,6 +1109,19 @@ defmodule Beacon.Content do
   def blueprint_components do
     [
       %{
+        name: "live_data",
+        description: "Fetch and render a Live Data",
+        thumbnail: "https://placehold.co/400x75?text=live_data",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "raise", type: "boolean", opts: [required: false, default: false]},
+          %{name: "default", type: "any", opts: [required: false, default: nil]}
+        ],
+        template: ~S|<%= if @raise, do: Map.fetch!(assigns, @name), else: Map.get(assigns, @name, @default) %>|,
+        example: ~S|<.live_data name="username" />|,
+        category: :data
+      },
+      %{
         name: "tag",
         description: "Renders a HTML tag",
         thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
