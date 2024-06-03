@@ -85,10 +85,6 @@ defmodule BeaconWeb do
       use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
-
-      import BeaconWeb.CoreComponents
-      import BeaconWeb.Gettext
-
       alias Phoenix.LiveView.JS
     end
   end

@@ -1131,8 +1131,8 @@ defmodule Beacon.Content do
           %{name: "name", type: "string", opts: [required: true]},
           %{name: "class", type: "string", opts: [default: nil]}
         ],
-        template: ~S|<BeaconWeb.CoreComponents.icon name={@name} class={@class} />|,
-        example: ~S|<Core.icon name="hero-x-mark-solid" />|,
+        template: ~S|<span class={[@name, @class]} />|,
+        example: ~S|<.icon name="hero-x-mark-solid" />|,
         category: :element
       },
       %{
