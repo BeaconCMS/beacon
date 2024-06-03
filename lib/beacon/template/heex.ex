@@ -72,14 +72,16 @@ defmodule Beacon.Template.HEEx do
       |> Map.new()
       |> Map.put_new(:__changed__, %{})
 
+    components_module = Beacon.Loader.fetch_components_module(site)
     env = BeaconWeb.PageLive.make_env()
 
-    functions = [
-      {Beacon.Loader.Components.module_name(site), [my_component: 2]}
-      | env.functions
-    ]
+    env = %{
+      env
+      | functions: [
+          {components_module, components_module.__info__(:functions)} | env.functions
+        ]
+    }
 
-    env = %{env | functions: functions}
     {:ok, ast} = compile(site, "", template)
     {rendered, _} = Code.eval_quoted(ast, [assigns: assigns], env)
 

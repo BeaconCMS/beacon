@@ -1119,7 +1119,7 @@ defmodule Beacon.Content do
           %{name: "inner_block", opts: [required: true]}
         ],
         template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
-        example: ~S|<Components.tag name="p" class="text-xl">content</Components.tag>|  ,
+        example: ~S|<.tag name="p" class="text-xl">content</.tag>|,
         category: :element
       },
       %{
@@ -1130,19 +1130,33 @@ defmodule Beacon.Content do
           %{name: "class", type: "string", opts: [default: nil]}
         ],
         template: ~S|<BeaconWeb.CoreComponents.icon name={@name} class={@class} />|,
-        example: ~S|<Components.icon name="hero-x-mark-solid" />|,
+        example: ~S|<Core.icon name="hero-x-mark-solid" />|,
         category: :element
       },
       %{
-        name: "media",
-        thumbnail: "https://placehold.co/400x75?text=media",
+        name: "image",
+        description: "Renders a image previously uploaded in Admin Media Library.",
+        thumbnail: "https://placehold.co/400x75?text=image",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global"}
+        ],
+        body: ~S|assigns = Map.put(assigns, :beacon_site, Process.get(:__beacon_site__))|,
+        template: ~S|<img src={beacon_asset_path(@beacon_site, @name)} class={@class} {@rest} />|,
+        example: ~S|<.image name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        category: :media
+      },
+      %{
+        name: "embedded",
+        thumbnail: "https://placehold.co/400x75?text=embedded",
         attrs: [%{name: "url", type: "string", opts: [required: true]}],
         body: ~S|
         {:ok, %{html: html}} = OEmbed.for(assigns.url)
         assigns = Map.put(assigns, :html, html)
         |,
         template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
-        example: ~S|<Components.media url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
+        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
         category: :media
       }
     ]

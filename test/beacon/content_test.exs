@@ -755,10 +755,10 @@ defmodule Beacon.ContentTest do
     end
 
     test "list components" do
-      component_fixture(name: "component_a")
-      component_fixture(name: "component_b")
+      component_fixture(site: "my_site", name: "component_a")
+      component_fixture(site: "my_site", name: "component_b")
 
-      components = Content.list_components(component_b.site, query: "_b", preloads: [:attrs])
+      components = Content.list_components(:my_site, query: "_b", preloads: [:attrs])
 
       assert Enum.find(components, &(&1.name == "component_b"))
       refute Enum.find(components, &(&1.name == "component_a"))

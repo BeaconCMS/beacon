@@ -62,26 +62,15 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
       """,
       %{vals: [1]}
     )
-
-    assert_equal(~S"""
-    <%= if true do %>
-      <.link path="/contact" replace={true}>Book meeting</.link>
-      <Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>
-      <BeaconWeb.Components.image name="logo.jpg" width="200px" />
-    <% end %>
-    """)
   end
 
-  test "function components" do
-    assert_equal(~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|)
+  test "phoenix components" do
     assert_equal(~S|<.link path="/contact" replace={true}>Book meeting</.link>|)
   end
 
-  test "my_component" do
-    component_fixture(site: :my_site)
-    Beacon.Loader.fetch_components_module(:my_site)
-
-    assert_equal(~S|<%= my_component("sample_component", %{val: 1}) %>|)
+  test "beacon components" do
+    component_fixture(name: "heex_test")
+    assert_equal(~S|<.heex_test class="w-4" val="test" />|)
   end
 
   test "live data assigns" do

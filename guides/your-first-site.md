@@ -188,7 +188,7 @@ Edit the template to replace with this content:
           </span>
         </div>
         <div class="flex items-center justify-center">
-          <BeaconWeb.Components.image
+          <.image
             name="image.webp"
             alt="My Page Image"
             width="600"
@@ -334,7 +334,7 @@ Now let's upload an image on the Media Library to finish our home page. Go to ht
 Once it's uploaded, note the image will be converted to a webp format for performance reasons, for example uploading a file logo.jpg it will be converted to logo.webp and we must use the new name on our template. Take note of the file name you just uploaded and edit the home page template, look for the image component `BeaconWeb.Components.image` in the template and update the name attribute:
 
 ```heex
-<BeaconWeb.Components.image
+<.image
   name="my_image.webp"
   ...
 ```

@@ -2,9 +2,10 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   use Beacon.DataCase
 
   alias Beacon.Template.HEEx.JSONEncoder
-  import Beacon.Fixtures
 
-  defp assert_output(template, expected, assigns \\ %{}, site \\ :my_site) do
+  @site :my_site
+
+  defp assert_output(template, expected, assigns \\ %{}, site \\ @site) do
     assert {:ok, encoded} = JSONEncoder.encode(site, template, assigns)
     assert encoded == expected
   end
@@ -99,7 +100,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                 "rendered_html" => "\n      <span>congrats</span>\n",
                 "ast" => ast
               }
-            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: true, completed_message: "congrats"})
+            ]} = JSONEncoder.encode(@site, if_template, %{completed: true, completed_message: "congrats"})
 
     assert %{
              "children" => [
@@ -156,7 +157,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                 "rendered_html" => "\n      keep working\n",
                 "ast" => ast
               }
-            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: false, completed_message: "congrats"})
+            ]} = JSONEncoder.encode(@site, if_template, %{completed: false, completed_message: "congrats"})
 
     assert %{
              "children" => [
@@ -214,7 +215,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                 "ast" => ast
               }
             ]} =
-             JSONEncoder.encode(:my_site, template, %{
+             JSONEncoder.encode(@site, template, %{
                employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
                persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
              })
@@ -238,7 +239,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
-  test "function components" do
+  test "phoenix components" do
     assert_output(
       ~S|<.link path="/contact" replace={true}>Book meeting</.link>|,
       [
@@ -264,55 +265,17 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
-  test "core components" do
-    assert_output(
-      ~S|<.button phx-click="go" class="ml-2">Send!</.button>|,
-      [
-        %{
-          "attrs" => %{"class" => "ml-2", "phx-click" => "go"},
-          "content" => ["Send!"],
-          "rendered_html" =>
-            "<button class=\"phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 ml-2\" phx-click=\"go\">\n  Send!\n</button>",
-          "tag" => ".button"
-        }
-      ]
-    )
+  test "built-in beacon components" do
+    component_fixture(name: "json_test")
 
     assert_output(
-      ~S|<BeaconWeb.CoreComponents.button phx-click="go" class="ml-2">Send!</BeaconWeb.CoreComponents.button>|,
+      ~S|<.json_test class="w-4" val="test" />|,
       [
         %{
-          "attrs" => %{"class" => "ml-2", "phx-click" => "go"},
-          "content" => ["Send!"],
-          "rendered_html" =>
-            "<button class=\"phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 ml-2\" phx-click=\"go\">\n  Send!\n</button>",
-          "tag" => "BeaconWeb.CoreComponents.button"
-        }
-      ]
-    )
-  end
-
-  test "beacon components" do
-    assert_output(
-      ~S|<.image name="logo.jpg" width="200px" />|,
-      [
-        %{
-          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
+          "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "test"},
           "content" => [],
-          "tag" => ".image",
-          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
-        }
-      ]
-    )
-
-    assert_output(
-      ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
-      [
-        %{
-          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
-          "content" => [],
-          "tag" => "BeaconWeb.Components.image",
-          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
+          "rendered_html" => "<span id=\"my-component\">test</span>",
+          "tag" => ".json_test"
         }
       ]
     )
@@ -341,24 +304,6 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
           "rendered_html" =>
             "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
           "tag" => "Phoenix.Component.form"
-        }
-      ]
-    )
-  end
-
-  test "my_component" do
-    component_fixture(site: :my_site)
-    Beacon.Loader.fetch_components_module(:my_site)
-
-    assert_output(
-      ~S|<%= my_component("sample_component", %{val: 1}) %>|,
-      [
-        %{
-          "attrs" => %{},
-          "content" => ["my_component(\"sample_component\", %{val: 1})"],
-          "metadata" => %{"opt" => ~c"="},
-          "tag" => "eex",
-          "rendered_html" => "<span id=\"my-component\">1</span>"
         }
       ]
     )
@@ -399,7 +344,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "invalid template" do
-    assert {:error, _} = JSONEncoder.encode(:my_site, ~S|<%= :error|)
+    assert {:error, _} = JSONEncoder.encode(@site, ~S|<%= :error|)
   end
 
   describe "encode_eex_block" do

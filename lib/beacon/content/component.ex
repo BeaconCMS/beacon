@@ -23,6 +23,8 @@ defmodule Beacon.Content.Component do
   schema "beacon_components" do
     field :site, Beacon.Types.Site
     field :name, :string
+    # FIXME: add component description
+    # field :description, :string
     field :body, :string
     field :template, :string
     field :example, :string
