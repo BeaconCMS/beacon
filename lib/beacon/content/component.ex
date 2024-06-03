@@ -23,8 +23,7 @@ defmodule Beacon.Content.Component do
   schema "beacon_components" do
     field :site, Beacon.Types.Site
     field :name, :string
-    # FIXME: add component description
-    # field :description, :string
+    field :description, :string
     field :body, :string
     field :template, :string
     field :example, :string
@@ -40,7 +39,7 @@ defmodule Beacon.Content.Component do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:site, :name, :body, :template, :example, :category, :thumbnail])
+    |> cast(attrs, [:site, :name, :description, :body, :template, :example, :category, :thumbnail])
     |> validate_required([:site, :name, :template, :example, :category])
     |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)

@@ -1,8 +1,9 @@
-defmodule Beacon.Repo.Migrations.AddExampleToComponents do
+defmodule Beacon.Repo.Migrations.AddDescriptionAndExampleToComponents do
   use Ecto.Migration
 
   def up do
     alter table(:beacon_components) do
+      add :description, :text
       add :example, :text, null: true
     end
 

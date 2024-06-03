@@ -1110,6 +1110,7 @@ defmodule Beacon.Content do
     [
       %{
         name: "tag",
+        description: "Renders a HTML tag",
         thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
@@ -1124,6 +1125,7 @@ defmodule Beacon.Content do
       },
       %{
         name: "icon",
+        description: "Renders a Hero icon",
         thumbnail: "https://placehold.co/400x75?text=icon",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
@@ -1135,7 +1137,7 @@ defmodule Beacon.Content do
       },
       %{
         name: "image",
-        description: "Renders a image previously uploaded in Admin Media Library.",
+        description: "Renders a image previously uploaded in Admin Media Library",
         thumbnail: "https://placehold.co/400x75?text=image",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
@@ -1149,6 +1151,7 @@ defmodule Beacon.Content do
       },
       %{
         name: "embedded",
+        description: "Renders embedded content like an YouTube video",
         thumbnail: "https://placehold.co/400x75?text=embedded",
         attrs: [%{name: "url", type: "string", opts: [required: true]}],
         body: ~S|
