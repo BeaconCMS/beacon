@@ -1109,8 +1109,16 @@ defmodule Beacon.Content do
   def blueprint_components do
     [
       %{
+        name: "div",
+        description: "div",
+        thumbnail: "https://placehold.co/400x75?text=div",
+        template: ~S|<div>content</div>|,
+        example: ~S|<div>content</div>|,
+        category: :basic
+      },
+      %{
         name: "live_data",
-        description: "Fetch and render a Live Data",
+        description: "Fetches and render Live Data assign",
         thumbnail: "https://placehold.co/400x75?text=live_data",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
@@ -1122,8 +1130,8 @@ defmodule Beacon.Content do
         category: :data
       },
       %{
-        name: "tag",
-        description: "Renders a HTML tag",
+        name: "html_tag",
+        description: "Renders a HTML tag dynamically",
         thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
@@ -1133,19 +1141,7 @@ defmodule Beacon.Content do
           %{name: "inner_block", opts: [required: true]}
         ],
         template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
-        example: ~S|<.tag name="p" class="text-xl">content</.tag>|,
-        category: :element
-      },
-      %{
-        name: "icon",
-        description: "Renders a Hero icon",
-        thumbnail: "https://placehold.co/400x75?text=icon",
-        attrs: [
-          %{name: "name", type: "string", opts: [required: true]},
-          %{name: "class", type: "string", opts: [default: nil]}
-        ],
-        template: ~S|<span class={[@name, @class]} />|,
-        example: ~S|<.icon name="hero-x-mark-solid" />|,
+        example: ~S|<.html_tag name="p" class="text-xl">content</.tag>|,
         category: :element
       },
       %{
@@ -1157,8 +1153,8 @@ defmodule Beacon.Content do
           %{name: "class", type: "string", opts: [default: nil]},
           %{name: "rest", type: "global"}
         ],
-        body: ~S|assigns = Map.put(assigns, :beacon_site, Process.get(:__beacon_site__))|,
-        template: ~S|<img src={beacon_asset_path(@beacon_site, @name)} class={@class} {@rest} />|,
+        body: ~S|assigns = Map.put(assigns, :beacon_site, :dev)|,
+        template: ~S|<img src={beacon_asset_url(@beacon_site, @name)} class={@class} {@rest} />|,
         example: ~S|<.image name="logo.webp" class="w-24 h-24" alt="logo" />|,
         category: :media
       },
@@ -1174,6 +1170,77 @@ defmodule Beacon.Content do
         template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
         example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
         category: :media
+      },
+      %{
+        name: "table",
+        description: "Renders a table with generic styling",
+        thumbnail: "https://placehold.co/400x75?text=table",
+        attrs: [
+          %{name: "id", type: "string", opts: [required: true]},
+          %{name: "rows", type: "list", opts: [required: true]},
+          %{name: "row_id", type: "any", opts: [default: nil]},
+          %{name: "row_click", type: "any", opts: [default: nil]},
+          %{name: "row_item", type: "any", opts: [default: &Function.identity/1]}
+        ],
+        slots: [
+          %{name: "col", opts: [required: true], attrs: [%{name: "label", type: "string"}]},
+          %{name: "action"}
+        ],
+        body: ~S"""
+        assigns =
+            with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
+              assign(assigns, row_id: assigns.row_id || fn {id, _item} -> id end)
+            end
+        """,
+        template: ~S"""
+        <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
+          <table class="w-[40rem] mt-11 sm:w-full">
+            <thead class="text-sm text-left leading-6 text-zinc-500">
+              <tr>
+                <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal"><%= col[:label] %></th>
+                <th :if={@action != []} class="relative p-0 pb-4">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id={@id}
+              phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
+              class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
+            >
+              <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
+                <td
+                  :for={{col, i} <- Enum.with_index(@col)}
+                  phx-click={@row_click && @row_click.(row)}
+                  class={["relative p-0", @row_click && "hover:cursor-pointer"]}
+                >
+                  <div class="block py-4 pr-6">
+                    <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
+                    <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
+                      <%= render_slot(col, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+                <td :if={@action != []} class="relative w-14 p-0">
+                  <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
+                    <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
+                    <span :for={action <- @action} class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700">
+                      <%= render_slot(action, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """,
+        example: ~S|
+        <.table id="users" rows={[%{id: 1, username: "admin"}]}>
+          <:col :let={user} label="id"><%= user.id %></:col>
+          <:col :let={user} label="username"><%= user.username %></:col>
+        </.table>
+        |,
+        category: :element
       }
     ]
   end

@@ -64,13 +64,82 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     )
   end
 
-  test "phoenix components" do
-    assert_equal(~S|<.link path="/contact" replace={true}>Book meeting</.link>|)
-  end
+  describe "components" do
+    test "phoenix components" do
+      assert_equal(~S|<.link path="/contact" replace={true}>Book meeting</.link>|)
+    end
 
-  test "beacon components" do
-    component_fixture(name: "heex_test")
-    assert_equal(~S|<.heex_test class="w-4" val="test" />|)
+    test "beacon components" do
+      component_fixture(name: "heex_test")
+      assert_equal(~S|<.heex_test class="w-4" val="test" />|)
+    end
+
+    @tag :skip
+    test "with special attribute :let" do
+      template = ~S|
+      <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+        <input
+          id={Phoenix.HTML.Form.input_id(f, :email)}
+          name={Phoenix.HTML.Form.input_name(f, :email)}
+          class="text-sm"
+          placeholder="Enter your email"
+          type="email"
+        />
+        <button type="submit">Join</button>
+      </Phoenix.Component.form>
+      |
+
+      assert_equal(template)
+    end
+
+    @tag :skip
+    test "with :slot" do
+      component_fixture(
+        name: "table",
+        attrs: [
+          %{name: "id", type: "string", opts: [required: true]},
+          %{name: "rows", type: "list", opts: [required: true]},
+          %{name: "row_id", type: "any", opts: [default: nil]},
+          %{name: "row_item", type: "any", opts: [default: &Function.identity/1]}
+        ],
+        slots: [
+          %{
+            name: "col",
+            opts: [required: true],
+            attrs: [%{name: "label", type: "string"}]
+          }
+        ],
+        template: """
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th :for={col <- @col}><%= col[:label] %></th>
+              </tr>
+            </thead>
+            <tbody id={@id}>
+              <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
+                <td :for={col <- @col}>
+                  <div>
+                    <span>
+                      <%= render_slot(col, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """
+      )
+
+      assert_equal(~S"""
+      <.table id="users" rows={[%{id: 1, username: "foo"}]}>
+        <:col :let={user} label="id"><%= user.id %></:col>
+        <:col :let={user} label="username"><%= user.username %></:col>
+      </.table>
+      """)
+    end
   end
 
   test "live data assigns" do
