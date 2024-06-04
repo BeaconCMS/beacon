@@ -1153,60 +1153,6 @@ defmodule Beacon.Content do
         category: :element
       },
       %{
-        name: "image",
-        description: "Renders a image previously uploaded in Admin Media Library",
-        thumbnail: "https://placehold.co/400x75?text=image",
-        attrs: [
-          %{name: "name", type: "string", opts: [required: true]},
-          %{name: "class", type: "string", opts: [default: nil]},
-          %{name: "rest", type: "global"}
-        ],
-        body: ~S|assigns = Map.put(assigns, :beacon_site, :dev)|,
-        template: ~S|<img src={beacon_asset_url(@beacon_site, @name)} class={@class} {@rest} />|,
-        example: ~S|<.image name="logo.webp" class="w-24 h-24" alt="logo" />|,
-        category: :media
-      },
-      %{
-        name: "embedded",
-        description: "Renders embedded content like an YouTube video",
-        thumbnail: "https://placehold.co/400x75?text=embedded",
-        attrs: [%{name: "url", type: "string", opts: [required: true]}],
-        body: ~S|
-        {:ok, %{html: html}} = OEmbed.for(assigns.url)
-        assigns = Map.put(assigns, :html, html)
-        |,
-        template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
-        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
-        category: :media
-      },
-      %{
-        name: "reading_time",
-        description: "Renders the estimated time in minutes to read the current page.",
-        thumbnail: "https://placehold.co/400x75?text=reading_time",
-        attrs: [
-          %{name: "site", type: "atom", opts: [required: true]},
-          %{name: "path", type: "string", opts: [required: true]}
-        ],
-        body: ~S"""
-        estimated_time_in_minutes =
-          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) |> dbg do
-            nil ->
-              0
-
-            %{template: template} ->
-              template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
-              words_per_minute = 270
-              words = String.split(template_without_html_tags, " ") |> length()
-              Enum.max([Kernel.trunc(words / words_per_minute), 1])
-          end
-
-        assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
-        """,
-        template: ~S|<%= @estimated_time_in_minutes %>|,
-        example: ~S|<.reading_time site={@beacon.site} path={@beacon.page.path} />|,
-        category: :element
-      },
-      %{
         name: "table",
         description: "Renders a table with generic styling",
         thumbnail: "https://placehold.co/400x75?text=table",
@@ -1270,12 +1216,125 @@ defmodule Beacon.Content do
         </div>
         """,
         example: ~S|
-        <.table id="users" rows={[%{id: 1, username: "admin"}]}>
-          <:col :let={user} label="id"><%= user.id %></:col>
-          <:col :let={user} label="username"><%= user.username %></:col>
-        </.table>
-        |,
+              <.table id="users" rows={[%{id: 1, username: "admin"}]}>
+                <:col :let={user} label="id"><%= user.id %></:col>
+                <:col :let={user} label="username"><%= user.username %></:col>
+              </.table>
+              |,
         category: :element
+      },
+      %{
+        name: "image",
+        description: "Renders a image previously uploaded in Admin Media Library",
+        thumbnail: "https://placehold.co/400x75?text=image",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global"}
+        ],
+        body: ~S|assigns = Map.put(assigns, :beacon_site, :dev)|,
+        template: ~S|<img src={beacon_asset_url(@beacon_site, @name)} class={@class} {@rest} />|,
+        example: ~S|<.image name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        category: :media
+      },
+      %{
+        name: "embedded",
+        description: "Renders embedded content like an YouTube video",
+        thumbnail: "https://placehold.co/400x75?text=embedded",
+        attrs: [%{name: "url", type: "string", opts: [required: true]}],
+        body: ~S|
+        {:ok, %{html: html}} = OEmbed.for(assigns.url)
+        assigns = Map.put(assigns, :html, html)
+        |,
+        template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
+        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
+        category: :media
+      },
+      %{
+        name: "reading_time",
+        description: "Renders the estimated time in minutes to read the current page.",
+        thumbnail: "https://placehold.co/400x75?text=reading_time",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "path", type: "string", opts: [required: true]}
+        ],
+        body: ~S"""
+        estimated_time_in_minutes =
+          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) |> dbg do
+            nil ->
+              0
+
+            %{template: template} ->
+              template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
+              words_per_minute = 270
+              words = String.split(template_without_html_tags, " ") |> length()
+              Enum.max([Kernel.trunc(words / words_per_minute), 1])
+          end
+
+        assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
+        """,
+        template: ~S|<%= @estimated_time_in_minutes %>|,
+        example: ~S|<.reading_time site={@beacon.site} path={@beacon.page.path} />|,
+        category: :element
+      },
+      %{
+        name: "featured_pages",
+        description: "Renders a block of featured pages.",
+        thumbnail: "https://placehold.co/400x75?text=featured_pages",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "pages", type: "list", opts: [default: []]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [default: nil]}
+        ],
+        body: ~S"""
+        assigns =
+          if Enum.empty?(assigns.pages),
+            do: Map.put(assigns, :pages, Beacon.Content.list_published_pages(assigns.site, per_page: 3)),
+            else: assigns
+        """,
+        template: ~S"""
+        <div class="max-w-7xl mx-auto">
+          <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
+            <%= if Enum.empty?(@inner_block) do %>
+              <div :for={page <- @pages}>
+                <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
+                  <div class="flex flex-col">
+                    <div>
+                      <p class="font-bold text-gray-700"></p>
+                      <p class="text-eyebrow font-medium text-gray-500 text-sm text-left">
+                        <%= Calendar.strftime(page.updated_at, "%d %B %Y") %>
+                      </p>
+                    </div>
+
+                    <div class="-order-1 flex gap-x-2 items-center mb-3">
+                      <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
+                        <.link
+                          patch={page.path}
+                          class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
+                          <%= page.title %>
+                        </.link>
+                      </h3>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            <% else %>
+              <%= for page <- @pages do %>
+                <%= render_slot(@inner_block, page) %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+        """,
+        example: ~S"""
+        <.featured_pages :let={page} pages={Beacon.Content.list_published_pages(@beacon.site, per_page: 3)}>
+          <article >
+            <%= page.title %>
+          </article>
+        </.featured_pages>
+        """
       }
     ]
   end
