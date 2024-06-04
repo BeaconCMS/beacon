@@ -1256,19 +1256,19 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=reading_time",
         attrs: [
           %{name: "site", type: "atom", opts: [required: true]},
-          %{name: "path", type: "string", opts: [required: true]}
+          %{name: "path", type: "string", opts: [required: true]},
+          %{name: "words_per_minute", type: "integer", opts: [default: 270]}
         ],
         body: ~S"""
         estimated_time_in_minutes =
-          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) |> dbg do
+          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) do
             nil ->
               0
 
             %{template: template} ->
               template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
-              words_per_minute = 270
               words = String.split(template_without_html_tags, " ") |> length()
-              Enum.max([Kernel.trunc(words / words_per_minute), 1])
+              Kernel.trunc(words / assigns.words_per_minute)
           end
 
         assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
