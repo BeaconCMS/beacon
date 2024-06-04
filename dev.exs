@@ -257,7 +257,7 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          <BeaconWeb.Components.image_set asset={@img1} sources={["480w"]} width="200px" />
+          <%!--  <BeaconWeb.Components.image_set asset={@img1} sources={["480w"]} width="200px" /> --%>
         </div>
 
         <div>

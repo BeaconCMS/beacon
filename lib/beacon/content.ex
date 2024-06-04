@@ -1112,17 +1112,25 @@ defmodule Beacon.Content do
         name: "div",
         description: "div",
         thumbnail: "https://placehold.co/400x75?text=div",
-        template: ~S|<div>block</div>|,
-        example: ~S|<div>block</div>|,
-        category: :html_tag
+        template: "<div>block</div>",
+        example: "<div>block</div>",
+        category: :basic
       },
       %{
         name: "p",
         description: "p",
         thumbnail: "https://placehold.co/400x75?text=p",
-        template: ~S|<p>paragraph</p>|,
-        example: ~S|<p>paragraph</p>|,
-        category: :html_tag
+        template: "<p>paragraph</p>",
+        example: "p>paragraph</p>",
+        category: :basic
+      },
+      %{
+        name: "header",
+        description: "header",
+        thumbnail: "https://placehold.co/400x75?text=header",
+        template: "<header>title</header>",
+        example: "<header>title</header>",
+        category: :basic
       },
       %{
         name: "live_data",
