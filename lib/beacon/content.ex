@@ -1112,9 +1112,17 @@ defmodule Beacon.Content do
         name: "div",
         description: "div",
         thumbnail: "https://placehold.co/400x75?text=div",
-        template: ~S|<div>content</div>|,
-        example: ~S|<div>content</div>|,
-        category: :basic
+        template: ~S|<div>block</div>|,
+        example: ~S|<div>block</div>|,
+        category: :html_tag
+      },
+      %{
+        name: "p",
+        description: "p",
+        thumbnail: "https://placehold.co/400x75?text=p",
+        template: ~S|<p>paragraph</p>|,
+        example: ~S|<p>paragraph</p>|,
+        category: :html_tag
       },
       %{
         name: "live_data",
@@ -1170,6 +1178,33 @@ defmodule Beacon.Content do
         template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
         example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
         category: :media
+      },
+      %{
+        name: "reading_time",
+        description: "Renders the estimated time in minutes to read the current page.",
+        thumbnail: "https://placehold.co/400x75?text=reading_time",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "path", type: "string", opts: [required: true]}
+        ],
+        body: ~S"""
+        estimated_time_in_minutes =
+          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) |> dbg do
+            nil ->
+              0
+
+            %{template: template} ->
+              template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
+              words_per_minute = 270
+              words = String.split(template_without_html_tags, " ") |> length()
+              Enum.max([Kernel.trunc(words / words_per_minute), 1])
+          end
+
+        assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
+        """,
+        template: ~S|<%= @estimated_time_in_minutes %>|,
+        example: ~S|<.reading_time site={@beacon.site} path={@beacon.page.path} />|,
+        category: :element
       },
       %{
         name: "table",

@@ -266,7 +266,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   describe "components" do
-    test "built-in beacon components" do
+    test "beacon components" do
       component_fixture(name: "json_test")
 
       assert_output(
@@ -366,6 +366,45 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
             "rendered_html" =>
               "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>",
             "tag" => ".table"
+          }
+        ]
+      )
+    end
+
+    test "nested in slot" do
+      component_fixture(
+        name: "html_tag",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        example: ~S|<.html_tag name="p">content</.tag>|
+      )
+
+      assert_output(
+        ~S"""
+        <.html_tag name="div">
+          <.html_tag name="span">
+            nested
+          </.html_tag>
+        </.html_tag>
+        """,
+        [
+          %{
+            "tag" => ".html_tag",
+            "attrs" => %{"name" => "div"},
+            "rendered_html" => "<div>\n  <span>\n    nested\n  </span>\n</div>",
+            "content" => [
+              %{
+                "tag" => ".html_tag",
+                "attrs" => %{"name" => "span"},
+                "rendered_html" => "<span>\n  nested\n</span>",
+                "content" => [" nested "]
+              }
+            ]
           }
         ]
       )

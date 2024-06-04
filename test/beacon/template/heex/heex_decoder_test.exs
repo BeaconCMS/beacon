@@ -140,6 +140,26 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
       </.table>
       """)
     end
+
+    test "nested in slot" do
+      component_fixture(
+        name: "html_tag",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        example: ~S|<.html_tag name="p">content</.tag>|
+      )
+
+      assert_equal(~S"""
+      <.html_tag name="div">
+        <.html_tag name="span">nested</.html_tag>
+      </.html_tag>
+      """)
+    end
   end
 
   test "live data assigns" do
