@@ -265,48 +265,111 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     )
   end
 
-  test "built-in beacon components" do
-    component_fixture(name: "json_test")
+  describe "components" do
+    test "built-in beacon components" do
+      component_fixture(name: "json_test")
 
-    assert_output(
-      ~S|<.json_test class="w-4" val="test" />|,
-      [
-        %{
-          "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "test"},
-          "content" => [],
-          "rendered_html" => "<span id=\"my-component\">test</span>",
-          "tag" => ".json_test"
-        }
-      ]
-    )
-  end
+      assert_output(
+        ~S|<.json_test class="w-4" val="test" />|,
+        [
+          %{
+            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "test"},
+            "content" => [],
+            "rendered_html" => "<span id=\"my-component\">test</span>",
+            "tag" => ".json_test"
+          }
+        ]
+      )
+    end
 
-  test "function component with special attribute :let" do
-    template = ~S|
-    <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
-      <input
-        id={Phoenix.HTML.Form.input_id(f, :email)}
-        name={Phoenix.HTML.Form.input_name(f, :email)}
-        class="text-sm"
-        placeholder="Enter your email"
-        type="email"
-      />
-      <button type="submit">Join</button>
-    </Phoenix.Component.form>
-    |
+    test "with special attribute :let" do
+      template = ~S|
+      <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+        <input
+          id={Phoenix.HTML.Form.input_id(f, :email)}
+          name={Phoenix.HTML.Form.input_name(f, :email)}
+          class="text-sm"
+          placeholder="Enter your email"
+          type="email"
+        />
+        <button type="submit">Join</button>
+      </Phoenix.Component.form>
+      |
 
-    assert_output(
-      template,
-      [
-        %{
-          "attrs" => %{":let" => "{f}", "as" => "{:newsletter}", "for" => "{%{}}", "phx-submit" => "join"},
-          "content" => [],
-          "rendered_html" =>
-            "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
-          "tag" => "Phoenix.Component.form"
-        }
-      ]
-    )
+      assert_output(
+        template,
+        [
+          %{
+            "attrs" => %{":let" => "{f}", "as" => "{:newsletter}", "for" => "{%{}}", "phx-submit" => "join"},
+            "content" => [],
+            "rendered_html" =>
+              "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
+            "tag" => "Phoenix.Component.form"
+          }
+        ]
+      )
+    end
+
+    test "with :slot" do
+      component_fixture(
+        name: "table",
+        attrs: [
+          %{name: "id", type: "string", opts: [required: true]},
+          %{name: "rows", type: "list", opts: [required: true]},
+          %{name: "row_id", type: "any", opts: [default: nil]},
+          %{name: "row_item", type: "any", opts: [default: &Function.identity/1]}
+        ],
+        slots: [
+          %{
+            name: "col",
+            opts: [required: true],
+            attrs: [%{name: "label", type: "string"}]
+          }
+        ],
+        template: """
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th :for={col <- @col}><%= col[:label] %></th>
+              </tr>
+            </thead>
+            <tbody id={@id}>
+              <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
+                <td :for={col <- @col}>
+                  <div>
+                    <span>
+                      <%= render_slot(col, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """
+      )
+
+      template = ~S|
+      <.table id="users" rows={[%{id: 1, username: "foo"}]}>
+        <:col :let={user} label="id"><%= user.id %></:col>
+        <:col :let={user} label="username"><%= user.username %></:col>
+      </.table>
+      |
+
+      assert_output(
+        template,
+        [
+          %{
+            "attrs" => %{"id" => "users", "rows" => "{[%{id: 1, username: \"foo\"}]}"},
+            "content" => [],
+            "rendered_html" =>
+              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>",
+            "tag" => ".table"
+          }
+        ]
+      )
+    end
   end
 
   test "assigns" do

@@ -36,6 +36,7 @@ defmodule Beacon.Fixtures do
       name: "sample_component",
       category: "element",
       attrs: [%{name: "val", type: "any", opts: [required: true]}],
+      slots: [],
       body: ~S|assigns = Map.put(assigns, :id, "my-component")|,
       template: ~S|<span id={@id}><%= @val %></span>|,
       example: ~S|<.sample_component val={@val} />|

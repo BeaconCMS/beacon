@@ -174,13 +174,31 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_entry({:tag_block, tag, attrs, content, _} = node, site, assigns) do
-    has_let_in_attrs? =
+    has_let_in_attrs? = fn attrs ->
       Enum.reduce_while(attrs, false, fn
         {":let", {:expr, _, _}, _}, _acc -> {:halt, true}
         _attr, _acc -> {:cont, false}
       end)
+    end
 
-    content = if has_let_in_attrs?, do: [], else: encode_tokens(content, site, assigns)
+    has_let_in_children? = fn children ->
+      Enum.reduce_while(children, false, fn
+        {_tag, _name, attrs, _children, _metadata}, _acc -> if has_let_in_attrs?.(attrs), do: {:halt, true}, else: {:cont, false}
+        _child, _acc -> {:cont, false}
+      end)
+    end
+
+    # special cases where we have to encode the entire wrapping element instead of traversing the children
+    #
+    # that's the case when children depend on the context of the wrapping parent element,
+    # for example a component where the children use :let expressions to fetch data
+    # defined in the parent
+    content =
+      cond do
+        has_let_in_attrs?.(attrs) -> []
+        has_let_in_children?.(content) -> []
+        :else -> encode_tokens(content, site, assigns)
+      end
 
     entry = %{
       "tag" => tag,
@@ -235,7 +253,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       end)
 
     cond do
-      # start with '.' or a capital letter
+      # start with '.' or a capital letter, we consider it a component call
       String.match?(tag, ~r/^[A-Z]|\./) -> add_rendered_html.()
       has_eex_in_attrs? -> add_rendered_html.()
       :else -> entry
