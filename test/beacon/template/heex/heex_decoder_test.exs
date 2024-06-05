@@ -74,25 +74,22 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
       assert_equal(~S|<.heex_test class="w-4" val="test" />|)
     end
 
-    @tag :skip
     test "with special attribute :let" do
-      template = ~S|
-      <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+      template = ~S"""
+      <Phoenix.Component.form :let={f} as={:newsletter} for={%{}} phx-submit="join">
         <input
+          class="text-sm"
           id={Phoenix.HTML.Form.input_id(f, :email)}
           name={Phoenix.HTML.Form.input_name(f, :email)}
-          class="text-sm"
           placeholder="Enter your email"
           type="email"
-        />
-        <button type="submit">Join</button>
+        /><button type="submit">Join</button>
       </Phoenix.Component.form>
-      |
+      """
 
       assert_equal(template)
     end
 
-    @tag :skip
     test "with :slot" do
       component_fixture(
         name: "table",

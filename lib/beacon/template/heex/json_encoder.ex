@@ -1,6 +1,7 @@
 defmodule Beacon.Template.HEEx.JSONEncoder do
   @moduledoc false
 
+  require Logger
   alias Beacon.Template.HEEx.HEExDecoder
 
   @type token :: map()
@@ -130,15 +131,17 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_entry({:eex, expr, %{opt: opt}} = node, site, assigns) do
-    html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
-
-    %{
+    entry = %{
       "tag" => "eex",
       "metadata" => %{"opt" => opt},
       "attrs" => %{},
-      "content" => [expr],
-      "rendered_html" => html
+      "content" => [expr]
     }
+
+    case maybe_render_heex(site, node, assigns) do
+      nil -> entry
+      html -> Map.put(entry, "rendered_html", html)
+    end
   end
 
   defp transform_entry({:eex_block, arg, _content} = entry, site, assigns) do
@@ -174,36 +177,10 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_entry({:tag_block, tag, attrs, content, _} = node, site, assigns) do
-    has_let_in_attrs? = fn attrs ->
-      Enum.reduce_while(attrs, false, fn
-        {":let", {:expr, _, _}, _}, _acc -> {:halt, true}
-        _attr, _acc -> {:cont, false}
-      end)
-    end
-
-    has_let_in_children? = fn children ->
-      Enum.reduce_while(children, false, fn
-        {_tag, _name, attrs, _children, _metadata}, _acc -> if has_let_in_attrs?.(attrs), do: {:halt, true}, else: {:cont, false}
-        _child, _acc -> {:cont, false}
-      end)
-    end
-
-    # special cases where we have to encode the entire wrapping element instead of traversing the children
-    #
-    # that's the case when children depend on the context of the wrapping parent element,
-    # for example a component where the children use :let expressions to fetch data
-    # defined in the parent
-    content =
-      cond do
-        has_let_in_attrs?.(attrs) -> []
-        has_let_in_children?.(content) -> []
-        :else -> encode_tokens(content, site, assigns)
-      end
-
     entry = %{
       "tag" => tag,
       "attrs" => transform_attrs(attrs),
-      "content" => content
+      "content" => encode_tokens(content, site, assigns)
     }
 
     maybe_add_rendered_html(site, assigns, node, entry)
@@ -237,13 +214,41 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
+  defp maybe_render_heex(site, node, assigns) do
+    Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
+  rescue
+    e ->
+      Logger.debug("""
+      failed to render node heex
+
+      Got:
+
+        #{inspect(e)}
+
+      Context:
+
+        node:
+
+          #{inspect(node)}
+
+        assigns:
+
+          #{inspect(assigns)}
+
+      """)
+
+      nil
+  end
+
   defp maybe_add_rendered_html(site, assigns, node, entry) do
     tag = elem(node, 1)
     attrs = elem(node, 2)
 
     add_rendered_html = fn ->
-      rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
-      Map.put(entry, "rendered_html", rendered_html)
+      case maybe_render_heex(site, node, assigns) do
+        nil -> entry
+        html -> Map.put(entry, "rendered_html", html)
+      end
     end
 
     has_eex_in_attrs? =

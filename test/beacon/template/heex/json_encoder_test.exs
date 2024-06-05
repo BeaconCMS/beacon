@@ -301,7 +301,21 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         [
           %{
             "attrs" => %{":let" => "{f}", "as" => "{:newsletter}", "for" => "{%{}}", "phx-submit" => "join"},
-            "content" => [],
+            "content" => [
+              %{
+                "attrs" => %{
+                  "class" => "text-sm",
+                  "id" => "{Phoenix.HTML.Form.input_id(f, :email)}",
+                  "name" => "{Phoenix.HTML.Form.input_name(f, :email)}",
+                  "placeholder" => "Enter your email",
+                  "self_close" => true,
+                  "type" => "email"
+                },
+                "content" => [],
+                "tag" => "input"
+              },
+              %{"attrs" => %{"type" => "submit"}, "content" => ["Join"], "tag" => "button"}
+            ],
             "rendered_html" =>
               "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
             "tag" => "Phoenix.Component.form"
@@ -361,11 +375,24 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         template,
         [
           %{
+            "tag" => ".table",
             "attrs" => %{"id" => "users", "rows" => "{[%{id: 1, username: \"foo\"}]}"},
-            "content" => [],
+            "content" => [
+              %{
+                "attrs" => %{":let" => "{user}", "label" => "id"},
+                "content" => [%{"attrs" => %{}, "content" => ["user.id"], "metadata" => %{"opt" => ~c"="}, "tag" => "eex"}],
+                "tag" => ":col"
+              },
+              %{
+                "attrs" => %{":let" => "{user}", "label" => "username"},
+                "content" => [
+                  %{"attrs" => %{}, "content" => ["user.username"], "metadata" => %{"opt" => ~c"="}, "tag" => "eex"}
+                ],
+                "tag" => ":col"
+              }
+            ],
             "rendered_html" =>
-              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>",
-            "tag" => ".table"
+              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>"
           }
         ]
       )
