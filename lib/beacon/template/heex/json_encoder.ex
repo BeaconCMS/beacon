@@ -216,6 +216,16 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
 
   defp maybe_render_heex(site, node, assigns) do
     Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
+    # TODO: let it raise
+    # For context, we rescue it for now so we avoid crashing when rendering nexted :eex expressions,
+    # for example take this template:
+    #
+    #  <.table id="users" rows={[%{iusername: "foo"}]}>
+    #    <:col :let={user} label="username"><%= user.username %></:col>
+    #  </.table>
+    #
+    # When HEEx.render gets called to resolve <%= user.username %> we don't have the assign `user` available,
+    # since that's introduced in the child element/slot by `:let` and defined in the outer scope in the parent element `table`.
   rescue
     e ->
       Logger.debug("""
