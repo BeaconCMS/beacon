@@ -122,8 +122,10 @@ defmodule Beacon do
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) do
-    Beacon.Boot.do_init(Config.fetch!(site))
-    Beacon.Config.update_value(site, :skip_boot?, false)
+    site
+    |> Config.fetch!()
+    |> Beacon.Boot.do_init()
+
     :ok
   end
 

@@ -1103,508 +1103,285 @@ defmodule Beacon.Content do
 
   # COMPONENTS
 
-  @doc """
-  Returns the list of components that are loaded into new sites.
-
-  Those include basic elements like buttons and links as sample components like header and navbars.
-  """
+  @doc false
+  #  Returns the list of components that are loaded by default into new sites.
   @spec blueprint_components() :: [map()]
-  @doc type: :components
   def blueprint_components do
-    nav_1 = """
-    <nav>
-      <div class="flex justify-between px-8 py-5 bg-white">
-        <div class="w-auto mr-14">
-          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" /></a>
-        </div>
-        <div class="w-auto flex flex-wrap items-center">
-          <ul class="flex items-center mr-10">
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Features</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Solutions</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Resources</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Pricing</a>
-            </li>
-          </ul>
-          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-            Start Free Trial
-          </button>
-        </div>
-      </div>
-    </nav>
-    """
-
-    nav_2 = """
-    <nav>
-      <div class="flex justify-between px-8 py-5 bg-white">
-        <div class="w-auto mr-14">
-          <a href="#">
-            <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" />
-          </a>
-        </div>
-        <div class="w-auto flex flex-wrap items-center">
-          <ul class="flex items-center mr-10">
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Features</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Solutions</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Resources</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Pricing</a>
-            </li>
-          </ul>
-        </div>
-        <div class="w-auto flex flex-wrap items-center">
-          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-            Start Free Trial
-          </button>
-        </div>
-      </div>
-    </nav>
-    """
-
-    header_1 = """
-    <div class="container mx-auto px-4">
-      <div class="max-w-xl">
-        <span class="inline-block mb-3 text-gray-600 text-base">
-          Flexible Pricing Plan
-        </span>
-        <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
-          Everything you need to launch a website
-        </h2>
-      </div>
-      <div class="flex flex-wrap">
-        <div class="w-full md:w-1/3">
-          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
-            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-              Basic
-            </h3>
-            <p class="mb-5 text-gray-600 text-sm">
-              Best for freelancers
-            </p>
-            <div class="mb-9 flex">
-              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
-              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
-              <span class="font-heading font-semibold self-end">/ m</span>
-            </div>
-            <div class="p-1">
-              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-                </div>
-                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-                  <p class="relative z-10">
-                    Join now
-                  </p>
-                </div>
-              </button>
-            </div>
-            <ul>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.0.0.4.0.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  100GB Cloud Storage
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.0.0.4.1.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  10 Email Connection
-                </p>
-              </li>
-              <li class="flex items-center font-heading font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.0.0.4.2.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Daily Analytics
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="w-full md:w-1/3">
-          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
-            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-              Premium
-            </h3>
-            <p class="mb-5 text-gray-600 text-sm">
-              Best for small agency
-            </p>
-            <div class="mb-9 flex">
-              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-                $
-              </span>
-              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-                99
-              </span>
-              <span class="font-heading font-semibold self-end">
-                / m
-              </span>
-            </div>
-            <div class="p-1">
-              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-                </div>
-                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-                  <p class="relative z-10">Join now</p>
-                </div>
-              </button>
-            </div>
-            <ul>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.0.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  500GB Cloud Storage
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.1.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  50 Email Connection
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.2.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Daily Analytics
-                </p>
-              </li>
-              <li class="flex items-center font-heading font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.3.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Premium Support
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="w-full md:w-1/3">
-          <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
-            <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
-              Popular choice
-            </p>
-            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-              Enterprise
-            </h3>
-            <p class="mb-5 text-gray-600 text-sm">
-              Best for large agency
-            </p>
-            <div class="mb-9 flex">
-              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-                $
-              </span>
-              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-                199
-              </span>
-              <span class="font-heading font-semibold self-end">
-                / m
-              </span>
-            </div>
-            <div class="group relative mb-9">
-              <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
-              </div>
-              <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
-                <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
-                  <p>
-                    Join now
-                  </p>
-                </div>
-              </button>
-            </div>
-            <ul>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.0.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  2TB Cloud Storage
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.1.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Unlimited Email Connection
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.2.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Daily Analytics
-                </p>
-              </li>
-              <li class="flex items-center font-heading font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.3.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Premium Support
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    """
-
     [
       %{
-        name: "Navigation 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/01_2be7c9d07f.png",
-        template: nav_1,
-        category: :nav
-      },
-      %{
-        name: "Navigation 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
-        template: nav_2,
-        category: :nav
-      },
-      %{
-        name: "Navigation 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/03_e244675766.png",
-        template: nav_1,
-        category: :nav
-      },
-      %{
-        name: "Navigation 4",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/04_64390b9975.png",
-        template: nav_1,
-        category: :nav
-      },
-      %{
-        name: "Header 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        template: header_1,
-        category: :header
-      },
-      %{
-        name: "Header 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        template: "<div>Default definition for components</div>",
-        category: :header
-      },
-      %{
-        name: "Header 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        template: "<div>Default definition for components</div>",
-        category: :header
-      },
-      %{
-        name: "Sign Up 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        template: "<div>Default definition for components</div>",
-        category: :sign_up
-      },
-      %{
-        name: "Sign Up 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        template: "<div>Default definition for components</div>",
-        category: :sign_up
-      },
-      %{
-        name: "Sign Up 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        template: "<div>Default definition for components</div>",
-        category: :sign_up
-      },
-      %{
-        name: "Stats 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        template: "<div>Default definition for components</div>",
-        category: :stats
-      },
-      %{
-        name: "Stats 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        template: "<div>Default definition for components</div>",
-        category: :stats
-      },
-      %{
-        name: "Stats 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        template: "<div>Default definition for components</div>",
-        category: :stats
-      },
-      %{
-        name: "Footer 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        template: "<div>Default definition for components</div>",
-        category: :footer
-      },
-      %{
-        name: "Footer 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        template: "<div>Default definition for components</div>",
-        category: :footer
-      },
-      %{
-        name: "Footer 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        template: "<div>Default definition for components</div>",
-        category: :footer
-      },
-      %{
-        name: "Sign In 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        template: "<div>Default definition for components</div>",
-        category: :sign_in
-      },
-      %{
-        name: "Sign In 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        template: "<div>Default definition for components</div>",
-        category: :sign_in
-      },
-      %{
-        name: "Sign In 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        template: "<div>Default definition for components</div>",
-        category: :sign_in
-      },
-      %{
-        name: "Title",
-        thumbnail: "/component_thumbnails/title.jpg",
-        template: "<header>I'm a sample title</header>",
+        name: "div",
+        description: "div",
+        thumbnail: "https://placehold.co/400x75?text=div",
+        template: "<div>block</div>",
+        example: "<div>block</div>",
         category: :basic
       },
       %{
-        name: "Button",
-        thumbnail: "/component_thumbnails/button.jpg",
-        template: "<button>I'm a sample button</button>",
+        name: "p",
+        description: "p",
+        thumbnail: "https://placehold.co/400x75?text=p",
+        template: "<p>paragraph</p>",
+        example: "<p>paragraph</p>",
         category: :basic
       },
       %{
-        name: "Link",
-        thumbnail: "/component_thumbnails/link.jpg",
-        template: "<a href=\"#\">I'm a sample link</a>",
+        name: "h1",
+        description: "header 1",
+        thumbnail: "https://placehold.co/400x75?text=h1",
+        template: "<h1>h1</h1>",
+        example: "<h1>h1</h1>",
         category: :basic
       },
       %{
-        name: "Paragraph",
-        thumbnail: "/component_thumbnails/paragraph.jpg",
-        template: "<p>I'm a sample paragraph</p>",
+        name: "h2",
+        description: "header 2",
+        thumbnail: "https://placehold.co/400x75?text=h2",
+        template: "<h2>h2</h2>",
+        example: "<h2>h2</h2>",
         category: :basic
       },
       %{
-        name: "Aside",
-        thumbnail: "/component_thumbnails/aside.jpg",
-        template: "<aside>I'm a sample aside</aside>",
+        name: "h3",
+        description: "header 3",
+        thumbnail: "https://placehold.co/400x75?text=h3",
+        template: "<h3>h3</h3>",
+        example: "<h3>h3</h3>",
         category: :basic
+      },
+      %{
+        name: "h4",
+        description: "header 4",
+        thumbnail: "https://placehold.co/400x75?text=h4",
+        template: "<h4>h4</h4>",
+        example: "<h4>h4</h4>",
+        category: :basic
+      },
+      %{
+        name: "h5",
+        description: "header 5",
+        thumbnail: "https://placehold.co/400x75?text=h5",
+        template: "<h5>h5</h5>",
+        example: "<h5>h5</h5>",
+        category: :basic
+      },
+      %{
+        name: "h6",
+        description: "header 6",
+        thumbnail: "https://placehold.co/400x75?text=h6",
+        template: "<h6>h6</h6>",
+        example: "<h6>h6</h6>",
+        category: :basic
+      },
+      # %{
+      #   name: "live_data",
+      #   description: "Fetches and render Live Data assign",
+      #   thumbnail: "https://placehold.co/400x75?text=live_data",
+      #   attrs: [
+      #     %{name: "assign", type: "any", opts: [required: true]},
+      #     %{name: "default", type: "any", opts: [required: false, default: nil]}
+      #   ],
+      #   template: "<%= @assign || @default %>",
+      #   example: ~S|<.live_data assign={assigns[:username]} default="default" />|,
+      #   category: :data
+      # },
+      %{
+        name: "html_tag",
+        description: "Renders a HTML tag dynamically",
+        thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        example: ~S|<.html_tag name="p" class="text-xl">content</.tag>|,
+        category: :element
+      },
+      %{
+        name: "table",
+        description: "Renders a table with generic styling",
+        thumbnail: "https://placehold.co/400x75?text=table",
+        attrs: [
+          %{name: "id", type: "string", opts: [required: true]},
+          %{name: "rows", type: "list", opts: [required: true]},
+          %{name: "row_id", type: "any", opts: [default: nil]},
+          %{name: "row_click", type: "any", opts: [default: nil]},
+          %{name: "row_item", type: "any", opts: [default: &Function.identity/1]}
+        ],
+        slots: [
+          %{name: "col", opts: [required: true], attrs: [%{name: "label", type: "string"}]},
+          %{name: "action"}
+        ],
+        body: ~S"""
+        assigns =
+            with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
+              assign(assigns, row_id: assigns.row_id || fn {id, _item} -> id end)
+            end
+        """,
+        template: ~S"""
+        <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
+          <table class="w-[40rem] mt-11 sm:w-full">
+            <thead class="text-sm text-left leading-6 text-zinc-500">
+              <tr>
+                <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal"><%= col[:label] %></th>
+                <th :if={@action != []} class="relative p-0 pb-4">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id={@id}
+              phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
+              class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
+            >
+              <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
+                <td
+                  :for={{col, i} <- Enum.with_index(@col)}
+                  phx-click={@row_click && @row_click.(row)}
+                  class={["relative p-0", @row_click && "hover:cursor-pointer"]}
+                >
+                  <div class="block py-4 pr-6">
+                    <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
+                    <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
+                      <%= render_slot(col, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+                <td :if={@action != []} class="relative w-14 p-0">
+                  <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
+                    <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
+                    <span :for={action <- @action} class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700">
+                      <%= render_slot(action, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """,
+        example: ~S|
+              <.table id="users" rows={[%{id: 1, username: "admin"}]}>
+                <:col :let={user} label="id"><%= user.id %></:col>
+                <:col :let={user} label="username"><%= user.username %></:col>
+              </.table>
+              |,
+        category: :element
+      },
+      %{
+        name: "image",
+        description: "Renders a image previously uploaded in Admin Media Library",
+        thumbnail: "https://placehold.co/400x75?text=image",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global"}
+        ],
+        template: ~S|<img src={beacon_asset_url(@site, @name)} class={@class} {@rest} />|,
+        example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        category: :media
+      },
+      %{
+        name: "embedded",
+        description: "Renders embedded content like an YouTube video",
+        thumbnail: "https://placehold.co/400x75?text=embedded",
+        attrs: [%{name: "url", type: "string", opts: [required: true]}],
+        body: ~S|
+        {:ok, %{html: html}} = OEmbed.for(assigns.url)
+        assigns = Map.put(assigns, :html, html)
+        |,
+        template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
+        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
+        category: :media
+      },
+      %{
+        name: "reading_time",
+        description: "Renders the estimated time in minutes to read the current page.",
+        thumbnail: "https://placehold.co/400x75?text=reading_time",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "path", type: "string", opts: [required: true]},
+          %{name: "words_per_minute", type: "integer", opts: [default: 270]}
+        ],
+        body: ~S"""
+        estimated_time_in_minutes =
+          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) do
+            nil ->
+              0
+
+            %{template: template} ->
+              template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
+              words = String.split(template_without_html_tags, " ") |> length()
+              Kernel.trunc(words / assigns.words_per_minute)
+          end
+
+        assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
+        """,
+        template: ~S|<%= @estimated_time_in_minutes %>|,
+        example: ~S|<.reading_time site={@beacon.site} path={@beacon.page.path} />|,
+        category: :element
+      },
+      %{
+        name: "featured_pages",
+        description: "Renders a block of featured pages.",
+        thumbnail: "https://placehold.co/400x75?text=featured_pages",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "pages", type: "list", opts: [default: []]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [default: nil]}
+        ],
+        body: ~S"""
+        assigns =
+          if Enum.empty?(assigns.pages),
+            do: Map.put(assigns, :pages, Beacon.Content.list_published_pages(assigns.site, per_page: 3)),
+            else: assigns
+        """,
+        template: ~S"""
+        <div class="max-w-7xl mx-auto">
+          <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
+            <%= if Enum.empty?(@inner_block) do %>
+              <div :for={page <- @pages}>
+                <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
+                  <div class="flex flex-col">
+                    <div>
+                      <p class="font-bold text-gray-700"></p>
+                      <p class="text-eyebrow font-medium text-gray-500 text-sm text-left">
+                        <%= Calendar.strftime(page.updated_at, "%d %B %Y") %>
+                      </p>
+                    </div>
+
+                    <div class="-order-1 flex gap-x-2 items-center mb-3">
+                      <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
+                        <.link
+                          patch={page.path}
+                          class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
+                          <%= page.title %>
+                        </.link>
+                      </h3>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            <% else %>
+              <%= for page <- @pages do %>
+                <%= render_slot(@inner_block, page) %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+        """,
+        example: ~S"""
+        <.featured_pages :let={page} pages={Beacon.Content.list_published_pages(@beacon.site, per_page: 3)}>
+          <article >
+            <%= page.title %>
+          </article>
+        </.featured_pages>
+        """
       }
     ]
   end

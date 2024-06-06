@@ -72,11 +72,9 @@ defmodule BeaconWeb do
     quote do
       use Phoenix.Component
 
-      # Import convenience functions from controllers
       import Phoenix.Controller,
         only: [get_csrf_token: 0, view_module: 1, view_template: 1]
 
-      # Include general helpers for rendering HTML
       unquote(html_helpers())
     end
   end
@@ -84,20 +82,10 @@ defmodule BeaconWeb do
   @doc false
   defp html_helpers do
     quote do
-      # HTML helpers and components
       use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
-
-      # Core UI components and translation
-      import BeaconWeb.CoreComponents
-      import BeaconWeb.Gettext
-
-      # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
-
-      # Router helpers
-      alias BeaconWeb.Router.Helpers, as: Routes
     end
   end
 

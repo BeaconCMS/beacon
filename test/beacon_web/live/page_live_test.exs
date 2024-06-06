@@ -36,7 +36,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
         <main>
           <h2>Some Values:</h2>
           <%= for value <- @values do %>
-            <%= my_component("sample_component", val: value) %>
+            <.sample_component val={value} />
           <% end %>
 
           <h2>Beacon:</h2>

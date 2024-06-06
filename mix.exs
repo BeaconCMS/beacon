@@ -38,7 +38,6 @@ defmodule Beacon.MixProject do
       {:ex_doc, "~> 0.29", only: :docs},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
-      {:faker, "~> 0.17", only: :test},
       {:floki, ">= 0.30.0"},
       {:gettext, "~> 0.20"},
       {:hackney, "~> 1.16"},
