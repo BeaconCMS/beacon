@@ -189,6 +189,7 @@ Edit the template to replace with this content:
         </div>
         <div class="flex items-center justify-center">
           <.image
+            site={@beacon.site}
             name="image.webp"
             alt="My Page Image"
             width="600"
