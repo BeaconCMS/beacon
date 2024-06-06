@@ -1121,30 +1121,69 @@ defmodule Beacon.Content do
         description: "p",
         thumbnail: "https://placehold.co/400x75?text=p",
         template: "<p>paragraph</p>",
-        example: "p>paragraph</p>",
+        example: "<p>paragraph</p>",
         category: :basic
       },
       %{
-        name: "header",
-        description: "header",
-        thumbnail: "https://placehold.co/400x75?text=header",
-        template: "<header>title</header>",
-        example: "<header>title</header>",
+        name: "h1",
+        description: "header 1",
+        thumbnail: "https://placehold.co/400x75?text=h1",
+        template: "<h1>h1</h1>",
+        example: "<h1>h1</h1>",
         category: :basic
       },
       %{
-        name: "live_data",
-        description: "Fetches and render Live Data assign",
-        thumbnail: "https://placehold.co/400x75?text=live_data",
-        attrs: [
-          %{name: "name", type: "string", opts: [required: true]},
-          %{name: "raise", type: "boolean", opts: [required: false, default: false]},
-          %{name: "default", type: "any", opts: [required: false, default: nil]}
-        ],
-        template: ~S|<%= if @raise, do: Map.fetch!(assigns, @name), else: Map.get(assigns, @name, @default) %>|,
-        example: ~S|<.live_data name="username" />|,
-        category: :data
+        name: "h2",
+        description: "header 2",
+        thumbnail: "https://placehold.co/400x75?text=h2",
+        template: "<h2>h2</h2>",
+        example: "<h2>h2</h2>",
+        category: :basic
       },
+      %{
+        name: "h3",
+        description: "header 3",
+        thumbnail: "https://placehold.co/400x75?text=h3",
+        template: "<h3>h3</h3>",
+        example: "<h3>h3</h3>",
+        category: :basic
+      },
+      %{
+        name: "h4",
+        description: "header 4",
+        thumbnail: "https://placehold.co/400x75?text=h4",
+        template: "<h4>h4</h4>",
+        example: "<h4>h4</h4>",
+        category: :basic
+      },
+      %{
+        name: "h5",
+        description: "header 5",
+        thumbnail: "https://placehold.co/400x75?text=h5",
+        template: "<h5>h5</h5>",
+        example: "<h5>h5</h5>",
+        category: :basic
+      },
+      %{
+        name: "h6",
+        description: "header 6",
+        thumbnail: "https://placehold.co/400x75?text=h6",
+        template: "<h6>h6</h6>",
+        example: "<h6>h6</h6>",
+        category: :basic
+      },
+      # %{
+      #   name: "live_data",
+      #   description: "Fetches and render Live Data assign",
+      #   thumbnail: "https://placehold.co/400x75?text=live_data",
+      #   attrs: [
+      #     %{name: "assign", type: "any", opts: [required: true]},
+      #     %{name: "default", type: "any", opts: [required: false, default: nil]}
+      #   ],
+      #   template: "<%= @assign || @default %>",
+      #   example: ~S|<.live_data assign={assigns[:username]} default="default" />|,
+      #   category: :data
+      # },
       %{
         name: "html_tag",
         description: "Renders a HTML tag dynamically",
@@ -1236,13 +1275,13 @@ defmodule Beacon.Content do
         description: "Renders a image previously uploaded in Admin Media Library",
         thumbnail: "https://placehold.co/400x75?text=image",
         attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
           %{name: "name", type: "string", opts: [required: true]},
           %{name: "class", type: "string", opts: [default: nil]},
           %{name: "rest", type: "global"}
         ],
-        body: ~S|assigns = Map.put(assigns, :beacon_site, :dev)|,
-        template: ~S|<img src={beacon_asset_url(@beacon_site, @name)} class={@class} {@rest} />|,
-        example: ~S|<.image name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        template: ~S|<img src={beacon_asset_url(@site, @name)} class={@class} {@rest} />|,
+        example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
         category: :media
       },
       %{
