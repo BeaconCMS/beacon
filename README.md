@@ -50,7 +50,7 @@ On Ubuntu look for the `build_essential` package, on macOS install utilities wit
 2. Execute the dev script:
 
 ```sh
-iex --sname core -S mix dev
+iex --sname core@localhost -S mix dev
 ```
 
 Note that running a named node isn't required unless you're running Beacon LiveAdmin too.
