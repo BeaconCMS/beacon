@@ -30,7 +30,11 @@ defmodule BeaconWeb.API.PageJSON do
 
     live_data = BeaconWeb.DataSource.live_data(page.site, path_info, %{})
 
-    assigns = Map.put(live_data, :beacon, beacon_assigns)
+    assigns =
+      live_data
+      |> Map.put(:beacon, beacon_assigns)
+      # TODO: remove deprecated @beacon_live_data
+      |> Map.put(:beacon_live_data, live_data)
 
     %{
       id: page.id,
