@@ -1114,7 +1114,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=div",
         template: "<div>block</div>",
         example: "<div>block</div>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "p",
@@ -1122,7 +1122,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=p",
         template: "<p>paragraph</p>",
         example: "<p>paragraph</p>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "h1",
@@ -1130,7 +1130,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=h1",
         template: "<h1>h1</h1>",
         example: "<h1>h1</h1>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "h2",
@@ -1138,7 +1138,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=h2",
         template: "<h2>h2</h2>",
         example: "<h2>h2</h2>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "h3",
@@ -1146,7 +1146,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=h3",
         template: "<h3>h3</h3>",
         example: "<h3>h3</h3>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "h4",
@@ -1154,7 +1154,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=h4",
         template: "<h4>h4</h4>",
         example: "<h4>h4</h4>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "h5",
@@ -1162,7 +1162,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=h5",
         template: "<h5>h5</h5>",
         example: "<h5>h5</h5>",
-        category: :basic
+        category: :html_tag
       },
       %{
         name: "h6",
@@ -1170,7 +1170,7 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=h6",
         template: "<h6>h6</h6>",
         example: "<h6>h6</h6>",
-        category: :basic
+        category: :html_tag
       },
       # %{
       #   name: "live_data",

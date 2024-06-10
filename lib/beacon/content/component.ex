@@ -16,7 +16,7 @@ defmodule Beacon.Content.Component do
   alias Beacon.Content.ComponentAttr
   alias Beacon.Content.ComponentSlot
 
-  @categories [:html_tag, :basic, :data, :element, :media]
+  @categories [:html_tag, :data, :element, :media]
 
   @type t :: %__MODULE__{}
 
@@ -38,10 +38,13 @@ defmodule Beacon.Content.Component do
 
   @doc false
   def changeset(component, attrs) do
+    reserved_names = for {name, _arity} <- Phoenix.Component.__info__(:functions) ++ Phoenix.Component.__info__(:macros), do: Atom.to_string(name)
+
     component
     |> cast(attrs, [:site, :name, :description, :body, :template, :example, :category, :thumbnail])
     |> validate_required([:site, :name, :template, :example, :category])
     |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
+    |> validate_exclusion(:name, reserved_names)
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
     |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
   end
