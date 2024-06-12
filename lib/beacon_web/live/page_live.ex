@@ -16,7 +16,12 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
+    beacon =
+      site
+      |> BeaconAssigns.build()
+      |> BeaconAssigns.build(socket.endpoint, socket.router)
+
+    socket = Component.assign(socket, :beacon, beacon)
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 

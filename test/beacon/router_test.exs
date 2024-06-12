@@ -3,6 +3,9 @@ defmodule Beacon.RouterTest do
 
   import Beacon.Router, only: [beacon_path: 2, beacon_path: 3]
   alias Beacon.Router
+  alias BeaconWeb.BeaconAssigns
+
+  @endpoit Beacon.BeaconTest.Endpoint
 
   defmodule RouterSimple do
     use Phoenix.Router
@@ -58,19 +61,17 @@ defmodule Beacon.RouterTest do
 
   describe "beacon_path" do
     test "plain route" do
-      beacon_assigns = BeaconWeb.BeaconAssigns.build(:my_site)
-      socket = %Phoenix.LiveView.Socket{endpoint: Beacon.BeaconTest.Endpoint, router: RouterSimple, assigns: %{beacon: beacon_assigns}}
+      beacon_assigns = :my_site |> BeaconAssigns.build() |> BeaconAssigns.build(@endpoit, RouterSimple)
 
-      assert beacon_path(socket, "/contact") == "/my_site/contact"
-      assert beacon_path(socket, "/contact", %{source: :search}) == "/my_site/contact?source=search"
+      assert beacon_path(beacon_assigns, "/contact") == "/my_site/contact"
+      assert beacon_path(beacon_assigns, "/contact", %{source: :search}) == "/my_site/contact?source=search"
     end
 
     test "nested route" do
-      beacon_assigns = BeaconWeb.BeaconAssigns.build(:my_site)
-      socket = %Phoenix.LiveView.Socket{endpoint: Beacon.BeaconTest.Endpoint, router: RouterNested, assigns: %{beacon: beacon_assigns}}
+      beacon_assigns = :my_site |> BeaconAssigns.build() |> BeaconAssigns.build(@endpoit, RouterNested)
 
-      assert beacon_path(socket, "/contact") == "/parent/nested/contact"
-      assert beacon_path(socket, "/contact", %{source: :search}) == "/parent/nested/contact?source=search"
+      assert beacon_path(beacon_assigns, "/contact") == "/parent/nested/contact"
+      assert beacon_path(beacon_assigns, "/contact", %{source: :search}) == "/parent/nested/contact?source=search"
     end
   end
 end

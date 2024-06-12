@@ -140,8 +140,8 @@ defmodule Beacon.Router do
     end
   end
 
-  def beacon_path(%Phoenix.LiveView.Socket{} = socket, path, params \\ %{}) when is_binary(path) do
-    %{router: router, assigns: %{beacon: %{site: site}}} = socket
+  def beacon_path(%BeaconWeb.BeaconAssigns{} = beacon, path, params \\ %{}) when is_binary(path) do
+    %{site: site, private: %{endpoint: endpoint, router: router}} = beacon
 
     path =
       site
@@ -150,7 +150,7 @@ defmodule Beacon.Router do
 
     params = for {key, val} <- params, do: {key, val}
 
-    Phoenix.VerifiedRoutes.unverified_path(socket, router, path, params)
+    Phoenix.VerifiedRoutes.unverified_path(endpoint, router, path, params)
   end
 
   # TODO: secure cross site assets
