@@ -542,11 +542,10 @@ defmodule Beacon.Content do
       end)
 
     {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
+    changeset = Page.create_changeset(%Page{}, maybe_put_default_meta_tags(site, attrs))
 
     transact(repo(site), fn ->
-      with attrs = maybe_put_default_meta_tags(site, attrs),
-           changeset = Page.create_changeset(%Page{}, attrs),
-           {:ok, changeset} <- validate_page_template(changeset),
+      with {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- repo(site).insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
