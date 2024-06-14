@@ -24,7 +24,7 @@ defmodule BeaconWeb.API.PageJSON do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
 
     beacon_assigns =
-      page.site
+      page
       |> BeaconAssigns.build()
       |> BeaconAssigns.build(path_info, %{})
 
