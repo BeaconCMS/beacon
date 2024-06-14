@@ -111,7 +111,7 @@ defmodule Beacon.Migration do
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
-    create_if_not_exists constraint(:beacon_layout_events, :event, check: "event = 'created' or event = 'published'")
+    create constraint(:beacon_layout_events, :beacon_layout_events_event_validate, check: "event = 'created' or event = 'published'")
 
     create_if_not_exists table(:beacon_layout_snapshots, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -135,7 +135,9 @@ defmodule Beacon.Migration do
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
-    create_if_not_exists constraint(:beacon_page_events, :event, check: "event = 'created' or event = 'published' or event = 'unpublished'")
+    create constraint(:beacon_page_events, :beacon_page_events_event_validate,
+             check: "event = 'created' or event = 'published' or event = 'unpublished'"
+           )
 
     create_if_not_exists table(:beacon_page_snapshots, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -259,8 +261,10 @@ defmodule Beacon.Migration do
     drop_if_exists table(:beacon_assets)
     drop_if_exists table(:beacon_snippet_helpers)
     drop_if_exists table(:beacon_layout_events)
+    drop_if_exists constraint(:beacon_layout_events, :event)
     drop_if_exists table(:beacon_layout_snapshots)
     drop_if_exists table(:beacon_page_events)
+    drop_if_exists constraint(:beacon_page_events, :event)
     drop_if_exists table(:beacon_page_snapshots)
     drop_if_exists table(:beacon_page_variants)
     drop_if_exists table(:beacon_page_event_handlers)
