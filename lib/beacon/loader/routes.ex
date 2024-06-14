@@ -2,6 +2,7 @@
 
 defmodule Beacon.Loader.Routes do
   @moduledoc false
+  # TODO: validate paths
 
   alias Beacon.Loader
 

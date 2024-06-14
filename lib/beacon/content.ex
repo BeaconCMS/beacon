@@ -2363,6 +2363,7 @@ defmodule Beacon.Content do
       case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
         {:ok, _ast} -> []
         {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:error, %_{} = exception} -> [{field, {"invalid", compilation_error: Exception.message(exception)}}]
         {:error, _} -> [{field, "invalid"}]
       end
     end)
