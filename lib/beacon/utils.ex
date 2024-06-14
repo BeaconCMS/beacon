@@ -26,4 +26,14 @@ defmodule Beacon.Utils do
     |> Inspect.Algebra.format(:infinity)
     |> IO.iodata_to_binary()
   end
+
+  def repo(%{site: site}) do
+    repo(site)
+  end
+
+  def repo(site) do
+    site
+    |> Beacon.Config.fetch!()
+    |> Map.fetch!(:repo)
+  end
 end

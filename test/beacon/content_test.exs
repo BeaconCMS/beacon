@@ -911,7 +911,7 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{key: "wins", value: "1337", format: :elixir}
-      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
 
       assert updated_assign.id == live_data_assign.id
       assert updated_assign.key == "wins"
@@ -924,12 +924,12 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{value: "[1)", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
       attrs = %{value: "if true, do false", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -939,7 +939,7 @@ defmodule Beacon.ContentTest do
       |
 
       attrs = %{value: code, format: :elixir}
-      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
     end
 
     test "delete_live_data/1" do
