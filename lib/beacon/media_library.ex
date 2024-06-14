@@ -4,17 +4,17 @@ defmodule Beacon.MediaLibrary do
   """
   import Ecto.Query
   import Ecto.Changeset
+  import Beacon.Utils, only: [repo: 1]
 
   alias Beacon.Lifecycle
   alias Beacon.MediaLibrary.Asset
   alias Beacon.MediaLibrary.Backend
-  alias Beacon.Repo
   alias Beacon.Types.Site
 
-  def upload(metadata) do
+  def upload(metadata, site) do
     with metadata <- Backend.process!(metadata),
          metadata <- send_to_cdns(metadata),
-         {:ok, asset} <- save_asset(metadata) do
+         {:ok, asset} <- save_asset(metadata, site) do
       Lifecycle.Asset.upload_asset(metadata, asset)
     end
   end
@@ -25,16 +25,16 @@ defmodule Beacon.MediaLibrary do
     |> Backend.send_to_cdns()
   end
 
-  def save_asset(metadata) do
+  def save_asset(metadata, site) do
     metadata
     |> prep_save_asset()
-    |> Repo.insert()
+    |> repo(site).insert()
   end
 
-  def save_asset!(metadata) do
+  def save_asset!(metadata, site) do
     metadata
     |> prep_save_asset()
-    |> Repo.insert!()
+    |> repo(site).insert!()
   end
 
   defp prep_save_asset(metadata) do
@@ -104,7 +104,7 @@ defmodule Beacon.MediaLibrary do
   end
 
   def srcset_for_image(%Asset{} = asset, sources) do
-    asset = Repo.preload(asset, :assets)
+    asset = repo(asset).preload(asset, :assets)
 
     asset.assets
     |> filter_sources(sources)
@@ -161,7 +161,7 @@ defmodule Beacon.MediaLibrary do
     |> where([a], a.site == ^site)
     |> where([a], is_nil(a.deleted_at))
     |> where([_a], ^Enum.to_list(clauses))
-    |> Repo.one()
+    |> repo(site).one()
   end
 
   @doc """
@@ -192,7 +192,7 @@ defmodule Beacon.MediaLibrary do
     |> query_list_assets_search(search)
     |> query_list_assets_preloads(preloads)
     |> query_list_assets_sort(sort)
-    |> Repo.all()
+    |> repo(site).all()
   end
 
   defp query_list_assets_base(site) do
@@ -238,7 +238,7 @@ defmodule Beacon.MediaLibrary do
     |> query_list_assets_base()
     |> query_list_assets_search(search)
     |> select([q], count(q.id))
-    |> Repo.one()
+    |> repo(site).one()
   end
 
   @doc """
@@ -249,7 +249,7 @@ defmodule Beacon.MediaLibrary do
     query = query |> String.split() |> Enum.join("%")
     query = "%#{query}%"
 
-    Repo.all(
+    repo(site).all(
       from(asset in Asset,
         where: asset.site == ^site,
         where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query),
@@ -271,13 +271,13 @@ defmodule Beacon.MediaLibrary do
   @spec soft_delete(Asset.t()) :: {:ok, Asset.t()} | :error
   def soft_delete(%Asset{} = asset) do
     update =
-      Repo.update_all(
+      repo(asset).update_all(
         from(asset in Asset, where: asset.id == ^asset.id),
         set: [deleted_at: DateTime.utc_now()]
       )
 
     case update do
-      {1, _} -> {:ok, Repo.reload(asset)}
+      {1, _} -> {:ok, repo(asset).reload(asset)}
       _ -> :error
     end
   end

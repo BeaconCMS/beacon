@@ -68,7 +68,7 @@ end
 
 If you're installing Beacon in an existing Phoenix application, you may have many other routes but as long as there's on conflict you can mount multiple sites along with existing routes.
 
-## Connecting to a database
+## Connecting to a database (TODO)
 
 The next step is to configure a database connection to store your site's pages, layouts, and other resources. We'll use the same datatbase as your application.
 

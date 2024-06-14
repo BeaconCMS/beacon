@@ -8,8 +8,8 @@ defmodule Beacon.MediaLibraryTest do
   import Beacon.Support.BypassHelpers
 
   test "search by file name" do
-    media_library_asset_fixture(file_name: "my_file.webp")
-    media_library_asset_fixture(file_name: "other_file.webp")
+    media_library_asset_fixture(file_name: "my_file.webp", site: :my_site)
+    media_library_asset_fixture(file_name: "other_file.webp", site: :my_site)
 
     hits = MediaLibrary.search(:my_site, "my")
 
@@ -17,7 +17,7 @@ defmodule Beacon.MediaLibraryTest do
   end
 
   test "soft delete" do
-    asset = media_library_asset_fixture(file_name: "my_file.png")
+    asset = media_library_asset_fixture(file_name: "my_file.png", site: :my_site)
 
     assert {:ok, %Asset{deleted_at: deleted_at, updated_at: updated_at}} = MediaLibrary.soft_delete(asset)
     assert deleted_at
@@ -31,21 +31,21 @@ defmodule Beacon.MediaLibraryTest do
       setup_multipart_upload_backend(bypass, self(), "s3_site/image.webp")
 
       metadata = upload_metadata_fixture(file_name: "image.png", site: :s3_site)
-      assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata)
+      assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata, :my_site)
       assert "http://beacon-media-library.localhost/s3_site/image.webp" = MediaLibrary.url_for(asset)
     end
 
     test "upload asset, converts to webp by default, repo store" do
       metadata = upload_metadata_fixture(file_name: "image.png", site: :my_site)
-      assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata)
+      assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata, :my_site)
       assert "http://localhost:4000/beacon_assets/my_site/image.webp" = MediaLibrary.url_for(asset)
     end
   end
 
   describe "list_assets" do
     test "page and per_page" do
-      media_library_asset_fixture(file_name: "image_a.png")
-      media_library_asset_fixture(file_name: "image_b.png")
+      media_library_asset_fixture(file_name: "image_a.png", site: :my_site)
+      media_library_asset_fixture(file_name: "image_b.png", site: :my_site)
 
       assert [%Asset{file_name: "image_a.webp"}] = MediaLibrary.list_assets(:my_site, per_page: 1, page: 1, sort: :file_name)
       assert [%Asset{file_name: "image_b.webp"}] = MediaLibrary.list_assets(:my_site, per_page: 1, page: 2, sort: :file_name)
@@ -59,8 +59,8 @@ defmodule Beacon.MediaLibraryTest do
     end
 
     test "filter by file name" do
-      media_library_asset_fixture(file_name: "image_a.png")
-      media_library_asset_fixture(file_name: "image_b.png")
+      media_library_asset_fixture(file_name: "image_a.png", site: :my_site)
+      media_library_asset_fixture(file_name: "image_b.png", site: :my_site)
 
       assert MediaLibrary.count_assets(:my_site, query: "image_a") == 1
     end

@@ -34,11 +34,7 @@ defmodule Mix.Tasks.Beacon.Install do
     bindings = build_context_bindings(options)
 
     config_file_path = config_file_path("config.exs")
-    maybe_inject_beacon_repo_into_ecto_repos(config_file_path)
     inject_endpoint_render_errors_config(config_file_path)
-
-    dev_config_file = config_file_path("dev.exs")
-    maybe_inject_beacon_repo_config(dev_config_file, bindings)
 
     maybe_inject_beacon_site_routes(bindings)
 
@@ -64,27 +60,6 @@ defmodule Mix.Tasks.Beacon.Install do
       Note that the generator changes existing files which may not be formatted correctly, please run `mix format` if needed.
 
     """)
-  end
-
-  @doc false
-  def maybe_inject_beacon_repo_into_ecto_repos(config_file_path) do
-    config_file_content = File.read!(config_file_path)
-
-    if String.contains?(config_file_content, "Beacon.Repo") do
-      Mix.shell().info([
-        :yellow,
-        "* skip ",
-        :reset,
-        "injecting Beacon.Repo to ecto_repos into ",
-        Path.relative_to_cwd(config_file_path),
-        " (already exists)"
-      ])
-    else
-      regex = ~r/ecto_repos: \[(.*)\]/
-      new_config_file_content = Regex.replace(regex, config_file_content, "ecto_repos: [\\1, Beacon.Repo]")
-      Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(config_file_path)])
-      File.write!(config_file_path, new_config_file_content)
-    end
   end
 
   @doc false
@@ -116,32 +91,6 @@ defmodule Mix.Tasks.Beacon.Install do
 
       File.write!(config_file_path, [new_config_file_content, "\n"])
     end
-  end
-
-  @doc false
-  def maybe_inject_beacon_repo_config(config_file_path, bindings) do
-    config_file_content = File.read!(config_file_path)
-    templates_path = get_in(bindings, [:templates_path])
-
-    beacon_repo_config = EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_dev.exs"]), bindings)
-
-    if String.contains?(config_file_content, beacon_repo_config) do
-      Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon repo config into ", Path.relative_to_cwd(config_file_path), " (already exists)"])
-    else
-      new_config_content = add_to_config(config_file_content, beacon_repo_config)
-
-      Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(config_file_path)])
-      File.write!(config_file_path, new_config_content)
-    end
-  end
-
-  defp add_to_config(config_content, data_to_add) do
-    Regex.replace(
-      ~r/(use Mix\.Config|import Config)(\r\n|\n|$)/,
-      config_content,
-      "\\0\\2#{String.trim_trailing(data_to_add)}\\2",
-      global: false
-    )
   end
 
   defp config_file_path(file_name) do

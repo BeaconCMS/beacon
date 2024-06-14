@@ -1,4 +1,4 @@
-defmodule Beacon.Repo.Migrations.AddBeaconTables do
+defmodule Beacon.BeaconTest.Repo.Migrations.AddBeaconTables do
   use Ecto.Migration
 
   defdelegate up, to: Beacon.Migration

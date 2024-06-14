@@ -8,7 +8,7 @@ defmodule Beacon.Lifecycle.AssetTest do
 
     %{site: :lifecycle_test, file_name: "image.webp"}
     |> upload_metadata_fixture()
-    |> Beacon.MediaLibrary.upload()
+    |> Beacon.MediaLibrary.upload(:lifecycle_test)
 
     assert %Beacon.MediaLibrary.Asset{} = Beacon.MediaLibrary.get_asset_by(:lifecycle_test, file_name: "image.webp")
     assert %Beacon.MediaLibrary.Asset{} = Beacon.MediaLibrary.get_asset_by(:lifecycle_test, file_name: "image-thumb.webp")

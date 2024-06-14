@@ -45,7 +45,7 @@ RUN mkdir -p /app/bin/_build
 COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
 ```
 
-## Database connection
+## Database connection (TODO)
 
 In `config/runtime.exs` add the following config after `config :my_app, MyApp.Repo, ...`:
 

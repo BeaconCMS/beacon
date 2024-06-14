@@ -36,4 +36,15 @@ defmodule Beacon.Utils do
     |> Beacon.Config.fetch!()
     |> Map.fetch!(:repo)
   end
+
+  # https://medium.com/very-big-things/towards-maintainable-elixir-the-core-and-the-interface-c267f0da43
+  def transact(repo, fun) when is_function(fun) do
+    repo.transaction(fn ->
+      case fun.() do
+        {:ok, result} -> result
+        {:error, reason} -> repo.rollback(reason)
+        reason -> repo.rollback(reason)
+      end
+    end)
+  end
 end

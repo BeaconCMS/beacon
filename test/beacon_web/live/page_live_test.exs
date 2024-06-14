@@ -163,7 +163,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
         ]
       ]
       |> published_page_fixture()
-      |> Beacon.Repo.preload(:event_handlers)
+      |> Beacon.BeaconTest.Repo.preload(:event_handlers)
 
       live_data = live_data_fixture(path: "/page/meta-tag")
       live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")

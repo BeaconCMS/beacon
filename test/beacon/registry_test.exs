@@ -12,6 +12,7 @@ defmodule Beacon.RegistryTest do
              :lifecycle_test_fail,
              :my_site,
              :not_booted,
+             :raw_schema_test,
              :s3_site
            ]
   end

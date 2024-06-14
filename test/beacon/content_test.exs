@@ -15,7 +15,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
-  alias Beacon.Repo
+  alias Beacon.BeaconTest.Repo
   alias Ecto.Changeset
 
   describe "layouts" do
@@ -236,14 +236,14 @@ defmodule Beacon.ContentTest do
 
     test "list_published_pages with same inserted_at missing usec" do
       page = page_fixture(path: "/d", title: "page v1")
-      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
-      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert Content.list_published_pages(:my_site) == []
 
       {:ok, _page} = Content.publish_page(page)
-      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
-      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
     end
@@ -320,7 +320,7 @@ defmodule Beacon.ContentTest do
 
       Content.publish_page(page)
 
-      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.id)
+      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.id, page.site)
     end
 
     test "save raw_schema" do
@@ -955,7 +955,7 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
       Repo.preload(live_data, :assigns)
 
-      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign)
+      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign, live_data.site)
       assert %{assigns: []} = Repo.preload(live_data, :assigns)
     end
   end

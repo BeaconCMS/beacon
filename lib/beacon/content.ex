@@ -26,7 +26,7 @@ defmodule Beacon.Content do
   use GenServer
 
   import Ecto.Query
-  import Beacon.Utils, only: [repo: 1]
+  import Beacon.Utils, only: [repo: 1, transact: 2]
 
   alias Beacon.Content.Component
   alias Beacon.Content.ComponentAttr
@@ -142,7 +142,7 @@ defmodule Beacon.Content do
     changeset = Layout.changeset(%Layout{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    repo(site).transact(fn ->
+    transact(repo(site), fn ->
       with {:ok, changeset} <- validate_layout_template(changeset),
            {:ok, layout} <- repo(site).insert(changeset),
            {:ok, _event} <- create_layout_event(layout, "created") do
@@ -543,7 +543,7 @@ defmodule Beacon.Content do
 
     {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
 
-    repo(site).transact(fn ->
+    transact(repo(site), fn ->
       with attrs = maybe_put_default_meta_tags(site, attrs),
            changeset = Page.create_changeset(%Page{}, attrs),
            {:ok, changeset} <- validate_page_template(changeset),
@@ -595,7 +595,7 @@ defmodule Beacon.Content do
 
     changeset = Page.update_changeset(page, attrs)
 
-    repo(page).transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, changeset} <- validate_page_template(changeset),
            {:ok, page} <- repo(page.site).update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -638,7 +638,7 @@ defmodule Beacon.Content do
   @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
   def publish_pages(pages) when is_list(pages) do
     publish = fn page ->
-      repo(page).transact(fn ->
+      transact(repo(page), fn ->
         with {:ok, event} <- create_page_event(page, "published"),
              {:ok, _snapshot} <- create_page_snapshot(page, event) do
           {:ok, page}
@@ -681,7 +681,7 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def unpublish_page(%Page{} = page) do
-    repo(page).transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, _event} <- create_page_event(page, "unpublished") do
         :ok = Beacon.PubSub.page_unpublished(page)
         {:ok, page}
@@ -1925,7 +1925,7 @@ defmodule Beacon.Content do
       |> PageEventHandler.changeset(attrs)
       |> validate_page_event_handler(page)
 
-    repo(page).transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, %PageEventHandler{}} <- repo(page).insert(changeset),
            %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -1945,7 +1945,7 @@ defmodule Beacon.Content do
       |> PageEventHandler.changeset(attrs)
       |> validate_page_event_handler(page)
 
-    repo(page).transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, %PageEventHandler{}} <- repo(page).update(changeset),
            %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -2006,7 +2006,7 @@ defmodule Beacon.Content do
       |> PageVariant.changeset(attrs)
       |> validate_variant(page)
 
-    repo(page).transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, %PageVariant{}} <- repo(page).insert(changeset),
            %Page{} = page <- repo(page).preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -2026,7 +2026,7 @@ defmodule Beacon.Content do
       |> PageVariant.changeset(attrs)
       |> validate_variant(page)
 
-    repo(page).transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, %PageVariant{}} <- repo(page).update(changeset),
            %Page{} = page <- repo(page).preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
@@ -2412,7 +2412,7 @@ defmodule Beacon.Content do
     publish = fn page ->
       changeset = Page.update_changeset(page, %{})
 
-      repo(site).transact(fn ->
+      transact(repo(site), fn ->
         with {:ok, _changeset} <- validate_page_template(changeset),
              {:ok, event} <- create_page_event(page, "published"),
              {:ok, _snapshot} <- create_page_snapshot(page, event),
@@ -2439,7 +2439,7 @@ defmodule Beacon.Content do
     publish = fn layout ->
       changeset = Layout.changeset(layout, %{})
 
-      repo(site).transact(fn ->
+      transact(repo(site), fn ->
         with {:ok, _changeset} <- validate_layout_template(changeset),
              {:ok, event} <- create_layout_event(layout, "published"),
              {:ok, _snapshot} <- create_layout_snapshot(layout, event),

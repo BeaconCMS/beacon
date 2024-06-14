@@ -1015,8 +1015,8 @@ Task.start(fn ->
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
   # TODO: revert this change and remove ecto.reset from mix dev alias
-  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :down, all: true))
-  # Ecto.Migrator.with_repo(Beacon.Repo, &Ecto.Migrator.run(&1, :up, all: true))
+  # Ecto.Migrator.with_repo(Beacon.BeaconTest.Repo, &Ecto.Migrator.run(&1, :down, all: true))
+  # Ecto.Migrator.with_repo(Beacon.BeaconTest.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
   dev_seeds.()
   dy_seeds.()

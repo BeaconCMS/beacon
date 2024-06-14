@@ -3,7 +3,7 @@ defmodule Beacon.LoaderTest do
   import Beacon.Fixtures
   alias Beacon.Content
   alias Beacon.Loader
-  alias Beacon.Repo
+  alias Beacon.BeaconTest.Repo
   alias Phoenix.LiveView.Rendered
 
   @site :my_site

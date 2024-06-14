@@ -31,7 +31,7 @@ defmodule Beacon.MediaLibrary.Processors.Image do
     metadata
     |> create_thumbnail(asset)
     |> MediaLibrary.send_to_cdns()
-    |> MediaLibrary.save_asset!()
+    |> MediaLibrary.save_asset!(asset.site)
 
     metadata
   end
@@ -60,7 +60,7 @@ defmodule Beacon.MediaLibrary.Processors.Image do
     metadata
     |> create_480w(asset)
     |> MediaLibrary.send_to_cdns()
-    |> MediaLibrary.save_asset!()
+    |> MediaLibrary.save_asset!(asset.site)
 
     metadata
   end

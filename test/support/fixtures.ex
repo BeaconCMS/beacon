@@ -13,7 +13,7 @@ defmodule Beacon.Fixtures do
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
-  alias Beacon.Repo
+  alias Beacon.Utils
 
   defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
   defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
@@ -127,9 +127,11 @@ defmodule Beacon.Fixtures do
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do
+    attrs = Map.new(attrs)
+
     attrs
     |> upload_metadata_fixture()
-    |> MediaLibrary.upload()
+    |> MediaLibrary.upload(attrs.site)
   end
 
   def upload_metadata_fixture(attrs \\ %{}) do
@@ -174,7 +176,7 @@ defmodule Beacon.Fixtures do
     page
     |> Ecto.build_assoc(:variants)
     |> PageVariant.changeset(full_attrs)
-    |> Repo.insert!()
+    |> Utils.repo(page).insert!()
   end
 
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
@@ -200,7 +202,7 @@ defmodule Beacon.Fixtures do
     page
     |> Ecto.build_assoc(:event_handlers)
     |> PageEventHandler.changeset(full_attrs)
-    |> Repo.insert!()
+    |> Utils.repo(page).insert!()
   end
 
   def error_page_fixture(attrs \\ %{}) do
@@ -241,7 +243,7 @@ defmodule Beacon.Fixtures do
       live_data
       |> Ecto.build_assoc(:assigns)
       |> Content.LiveDataAssign.changeset(attrs)
-      |> Repo.insert!()
+      |> Utils.repo(site).insert!()
 
     Beacon.Loader.reload_live_data_module(site)
 

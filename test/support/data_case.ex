@@ -3,7 +3,7 @@ defmodule Beacon.DataCase do
 
   using do
     quote do
-      alias Beacon.Repo
+      alias Beacon.BeaconTest.Repo
 
       import Ecto
       import Ecto.Changeset
@@ -22,7 +22,7 @@ defmodule Beacon.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Beacon.Repo, shared: not tags[:async])
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Beacon.BeaconTest.Repo, shared: not tags[:async])
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
   end
 end
