@@ -28,22 +28,25 @@ defmodule BeaconWeb.BeaconAssigns do
             }
 
   @doc false
-  def build(site) when is_atom(site), do: %__MODULE__{site: site}
+  def build(%{site: site} = page) when is_atom(site), do: %__MODULE__{site: site, page: page}
 
   def build(beacon_assigns = %__MODULE__{}, path_info, query_params) when is_list(path_info) and is_map(query_params) do
     site = beacon_assigns.site
-    %{site: ^site} = page = Beacon.RouterServer.lookup_page!(site, path_info)
+    page = beacon_assigns.page
+
+    # TODO: The page doesn't exist yet, so we need a way to access the page
+    # %{site: ^site} = page = Beacon.RouterServer.lookup_page!(site, path_info)
     components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
     path_params = Beacon.Router.path_params(page.path, path_info)
-    page_title = BeaconWeb.DataSource.page_title(site, page.id, live_data)
+    # page_title = BeaconWeb.DataSource.page_title(site, page.id, live_data)
 
     %{
       beacon_assigns
       | path_params: path_params,
         query_params: query_params,
-        page: %{path: page.path, title: page_title},
+        page: %{path: page.path, title: page.title},
         private: %{
           live_data_keys: Map.keys(live_data),
           live_path: path_info,
