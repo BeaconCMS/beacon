@@ -44,16 +44,13 @@ The file `dev.exs` is a self-contained Phoenix application running Beacon with s
 mix setup
 ```
 
-If deps compilation fails, make sure your environment has the compilers installed.
-On Ubuntu look for the `build_essential` package, on macOS install utilities with `xcode-select --install`
-
 2. Execute the dev script:
 
 ```sh
 iex --sname core@localhost -S mix dev
 ```
 
-Note that running a named node isn't required unless you're running Beacon LiveAdmin too.
+Note that running a named node isn't required unless you're running Beacon LiveAdmin for local development as well.
 
 Finally, visit any of the routes defined in `dev.exs`, eg: http://localhost:4001/dev or http://localhost:4001/dev/sample
 
