@@ -27,6 +27,9 @@ defmodule Beacon.Boot do
 
     task_supervisor = Beacon.Registry.via({config.site, TaskSupervisor})
 
+    # Sigils and router helpers
+    Beacon.Loader.reload_routes_module(config.site)
+
     # Layouts and pages depend on the components module so we need to load it first
     Beacon.Loader.populate_default_components(config.site)
     Beacon.Loader.reload_components_module(config.site)

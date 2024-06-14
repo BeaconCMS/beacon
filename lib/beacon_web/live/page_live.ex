@@ -16,12 +16,7 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    beacon =
-      site
-      |> BeaconAssigns.build()
-      |> BeaconAssigns.build(socket.endpoint, socket.router)
-
-    socket = Component.assign(socket, :beacon, beacon)
+    socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
@@ -105,5 +100,11 @@ defmodule BeaconWeb.PageLive do
   end
 
   @doc false
-  def make_env, do: __ENV__
+  def make_env(site) do
+    routes_module = Beacon.Loader.fetch_routes_module(site)
+    components_module = Beacon.Loader.fetch_components_module(site)
+    {:ok, env} = Macro.Env.define_import(__ENV__, [], routes_module)
+    {:ok, env} = Macro.Env.define_import(env, [], components_module)
+    env
+  end
 end

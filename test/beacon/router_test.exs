@@ -1,11 +1,7 @@
 defmodule Beacon.RouterTest do
   use ExUnit.Case, async: true
 
-  import Beacon.Router, only: [beacon_path: 2, beacon_path: 3]
   alias Beacon.Router
-  alias BeaconWeb.BeaconAssigns
-
-  @endpoit Beacon.BeaconTest.Endpoint
 
   defmodule RouterSimple do
     use Phoenix.Router
@@ -57,21 +53,5 @@ defmodule Beacon.RouterTest do
     assert Router.path_params("/posts/*slug", ["posts", "2023", "my-post"]) == %{"slug" => ["2023", "my-post"]}
     assert Router.path_params("/posts/:author", ["posts", "1-author"]) == %{"author" => "1-author"}
     assert Router.path_params("/posts/:author/:category", ["posts", "1-author", "test"]) == %{"author" => "1-author", "category" => "test"}
-  end
-
-  describe "beacon_path" do
-    test "plain route" do
-      beacon_assigns = :my_site |> BeaconAssigns.build() |> BeaconAssigns.build(@endpoit, RouterSimple)
-
-      assert beacon_path(beacon_assigns, "/contact") == "/my_site/contact"
-      assert beacon_path(beacon_assigns, "/contact", %{source: :search}) == "/my_site/contact?source=search"
-    end
-
-    test "nested route" do
-      beacon_assigns = :my_site |> BeaconAssigns.build() |> BeaconAssigns.build(@endpoit, RouterNested)
-
-      assert beacon_path(beacon_assigns, "/contact") == "/parent/nested/contact"
-      assert beacon_path(beacon_assigns, "/contact", %{source: :search}) == "/parent/nested/contact?source=search"
-    end
   end
 end

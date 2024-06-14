@@ -55,20 +55,10 @@ defmodule SamplePhoenixWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :api do
-    plug :accepts, ["json"]
-    plug BeaconWeb.API.Plug
-  end
-
   scope "/" do
     pipe_through :browser
     beacon_site "/dev", site: :dev
     beacon_site "/dy", site: :dy
-  end
-
-  scope "/" do
-    pipe_through :api
-    beacon_api "/api"
   end
 end
 
@@ -246,9 +236,9 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
-            <li><.link navigate="/dev/markdown">Markdown Page</.link></li>
+            <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
+            <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
+            <li><.link navigate={~p"/markdown"}>Markdown Page</.link></li>
           </ul>
         </div>
 
@@ -301,14 +291,14 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev">Home (navigate)</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
+            <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
+            <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
           </ul>
         </div>
 
         <div>
           <p>path params:</p>
-          <p><%= inspect @beacon_path_params %></p>
+          <p><%= inspect @beacon.path_params %></p>
         </div>
       </main>
       """
@@ -329,14 +319,14 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev">Home (navigate)</.link></li>
-            <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
+            <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
+            <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
           </ul>
         </div>
 
         <div>
           <p>path params:</p>
-          <p><%= inspect @beacon_path_params %></p>
+          <p><%= inspect @beacon.path_params %></p>
         </div>
       </main>
       """
@@ -977,6 +967,7 @@ end
 dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
+  router: SamplePhoenixWeb.Router,
   skip_boot?: true,
   extra_page_fields: [BeaconTagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
@@ -1007,7 +998,12 @@ Task.start(fn ->
     {Beacon,
      sites: [
        dev_site,
-       [site: :dy, endpoint: SamplePhoenix.Endpoint, skip_boot?: true]
+       [
+         site: :dy,
+         endpoint: SamplePhoenix.Endpoint,
+         router: SamplePhoenixWeb.Router,
+         skip_boot?: true
+       ]
      ]},
     SamplePhoenix.Endpoint
   ]

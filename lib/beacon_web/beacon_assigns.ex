@@ -24,18 +24,27 @@ defmodule BeaconWeb.BeaconAssigns do
               page_id: nil,
               page_updated_at: nil,
               page_module: nil,
-              components_module: nil,
-              endpoint: nil,
-              router: nil
+              components_module: nil
             }
 
   @doc false
-  def build(site) when is_atom(site), do: %__MODULE__{site: site}
+  def build(site) when is_atom(site) do
+    beacon_assigns = %__MODULE__{}
+    components_module = Beacon.Loader.Components.module_name(site)
+
+    %{
+      beacon_assigns
+      | site: site,
+        private: %{
+          beacon_assigns.private
+          | components_module: components_module
+        }
+    }
+  end
 
   def build(beacon_assigns = %__MODULE__{private: private}, path_info, query_params) when is_list(path_info) and is_map(query_params) do
     site = beacon_assigns.site
     %{site: ^site} = page = Beacon.RouterServer.lookup_page!(site, path_info)
-    components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
     path_params = Beacon.Router.path_params(page.path, path_info)
@@ -53,14 +62,9 @@ defmodule BeaconWeb.BeaconAssigns do
             layout_id: page.layout_id,
             page_id: page.id,
             page_updated_at: DateTime.utc_now(),
-            page_module: page_module,
-            components_module: components_module
+            page_module: page_module
         }
     }
-  end
-
-  def build(beacon_assigns = %__MODULE__{private: private}, endpoint, router) when is_atom(endpoint) and is_atom(router) do
-    %{beacon_assigns | private: %{private | endpoint: endpoint, router: router}}
   end
 
   @doc false

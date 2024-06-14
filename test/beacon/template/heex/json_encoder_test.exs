@@ -45,6 +45,13 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     end
   end
 
+  test "links with sigil_p" do
+    assert_output(
+      ~S|<.link patch={~p"/details"}>view details</.link>|,
+      [%{"attrs" => %{"patch" => "{~p\"/details\"}"}, "content" => ["view details"], "tag" => ".link"}]
+    )
+  end
+
   test "eex expressions" do
     assert_output(
       ~S|<% _name = "Beacon" %>|,
@@ -270,15 +277,16 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       component_fixture(name: "json_test")
 
       assert_output(
-        ~S|<.json_test class="w-4" val="test" />|,
+        ~S|<.json_test class="w-4" val={@val} />|,
         [
           %{
-            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "test"},
+            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "{@val}"},
             "content" => [],
             "rendered_html" => "<span id=\"my-component\">test</span>",
             "tag" => ".json_test"
           }
-        ]
+        ],
+        %{val: "test"}
       )
     end
 

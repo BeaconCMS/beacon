@@ -140,19 +140,6 @@ defmodule Beacon.Router do
     end
   end
 
-  def beacon_path(%BeaconWeb.BeaconAssigns{} = beacon, path, params \\ %{}) when is_binary(path) do
-    %{site: site, private: %{endpoint: endpoint, router: router}} = beacon
-
-    path =
-      site
-      |> router.__beacon_scoped_prefix_for_site__()
-      |> build_path_with_prefix(path)
-
-    params = for {key, val} <- params, do: {key, val}
-
-    Phoenix.VerifiedRoutes.unverified_path(endpoint, router, path, params)
-  end
-
   # TODO: secure cross site assets
   @doc """
   Router helper to generate the asset path.

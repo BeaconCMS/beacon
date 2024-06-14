@@ -1205,13 +1205,13 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=page_link",
         attrs: [
           %{name: "path", type: "string", opts: [required: true]},
-          %{name: "rest", type: "global"},
+          %{name: "rest", type: "global"}
         ],
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
         template: ~S|<.link patch={@path} {@rest}><%= render_slot(@inner_block) %></.link>|,
-        example: ~S|<.page_link path={beacon_path(@beacon, "/contact")} class="text-xl">Contact Us</.page_link>|,
+        example: ~S|<.page_link path={~p"/contact"} class="text-xl">Contact Us</.page_link>|,
         category: :element
       },
       %{
