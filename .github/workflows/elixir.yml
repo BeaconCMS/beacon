@@ -39,6 +39,7 @@ jobs:
       postgres:
         image: postgres:13.1
         env:
+          POSTGRES_DB: beacon_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -74,7 +75,11 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: mix test
+      - name: mix test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
+        run: mix test
+
 
   quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
