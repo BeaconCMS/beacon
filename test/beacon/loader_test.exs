@@ -62,9 +62,9 @@ defmodule Beacon.LoaderTest do
     end
 
     test "adding or removing components reloads the component module" do
-      module = Loader.reload_components_module(@site)
-
       component_fixture(name: "b", template: "<h1>B</h1>")
+
+      module = Loader.reload_components_module(@site)
       assert %Rendered{static: ["<h1>A</h1>"]} = module.my_component("a", %{})
       assert %Rendered{static: ["<h1>B</h1>"]} = module.my_component("b", %{})
 

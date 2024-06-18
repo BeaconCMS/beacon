@@ -229,7 +229,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   rescue
     e ->
       Logger.debug("""
-      failed to render node heex
+      failed to render heex
 
       Got:
 

@@ -154,15 +154,15 @@ defmodule Beacon do
     if :erlang.module_loaded(module) do
       apply(module, function, args)
     else
-      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context)
+      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
     end
   rescue
-    e in UndefinedFunctionError ->
-      case {failure_count, e} do
+    error in UndefinedFunctionError ->
+      case {failure_count, error} do
         {failure_count, _} when failure_count >= 10 ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context)], __STACKTRACE__
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
 
         {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
           mfa = Exception.format_mfa(module, function, length(args))
@@ -170,32 +170,31 @@ defmodule Beacon do
           :timer.sleep(100 * (failure_count * 2))
           do_apply_mfa(module, function, args, failure_count + 1, context)
 
-        {_, e} ->
+        {_, error} ->
           reraise Beacon.RuntimeError,
-                  [message: apply_mfa_error_message(module, function, args, "runtime error - #{inspect(e)}", context)],
+                  [message: apply_mfa_error_message(module, function, args, nil, context, error)],
                   __STACKTRACE__
       end
 
-    e ->
-      Logger.debug(apply_mfa_error_message(module, function, args, inspect(e), context))
-      reraise e, __STACKTRACE__
+    error ->
+      Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
+      reraise error, __STACKTRACE__
   end
 
-  defp apply_mfa_error_message(module, function, args, reason, context) do
+  defp apply_mfa_error_message(module, function, args, reason, context, error) do
     mfa = Exception.format_mfa(module, function, length(args))
-
-    context =
-      case context do
-        nil -> ""
-        _ -> "context: #{inspect(context)}"
-      end
+    reason = if reason, do: "reason: #{reason}"
+    context = if context, do: "context: #{inspect(context)}"
+    error = if error, do: Exception.message(error)
 
     """
     failed to call #{mfa} with args: #{inspect(List.flatten(args))}
 
-    reason: #{reason}
+    #{reason}
 
     #{context}
+
+    #{error}
 
     """
   end

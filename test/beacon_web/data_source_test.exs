@@ -1,12 +1,14 @@
 defmodule BeaconWeb.DataSourceTest do
   use Beacon.DataCase, async: false
   alias BeaconWeb.DataSource
+  alias Beacon.Loader
 
   @site :my_site
 
   test "live_data" do
     live_data = live_data_fixture(site: @site)
     live_data_assign_fixture(live_data: live_data, format: :text, key: "name", value: "beacon")
+    Loader.reload_live_data_module(@site)
     assert DataSource.live_data(@site, ["foo", "bar"], %{}) == %{name: "beacon"}
   end
 

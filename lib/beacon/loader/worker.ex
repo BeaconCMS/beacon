@@ -341,6 +341,13 @@ defmodule Beacon.Loader.Worker do
     stop(compile_module(site, ast), config)
   end
 
+  def handle_call(:reload_routes_module, _from, config) do
+    %{site: site} = config
+    ast = Loader.Routes.build_ast(site)
+    result = compile_module(site, ast)
+    stop(result, config)
+  end
+
   def handle_call(:reload_components_module, _from, config) do
     %{site: site} = config
     components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])

@@ -10,6 +10,7 @@ defmodule Beacon.Loader.Page do
 
   def build_ast(site, page) do
     module = module_name(site, page.id)
+    routes_module = Loader.Routes.module_name(site)
     components_module = Loader.Components.module_name(site)
 
     # Group function heads together to avoid compiler warnings
@@ -21,12 +22,12 @@ defmodule Beacon.Loader.Page do
       dynamic_helper()
     ]
 
-    ast = build(module, components_module, functions)
+    ast = build(module, routes_module, components_module, functions)
 
     {module, ast}
   end
 
-  defp build(module_name, components_module, functions) do
+  defp build(module_name, routes_module, components_module, functions) do
     quote do
       defmodule unquote(module_name) do
         use PhoenixHTMLHelpers
@@ -34,6 +35,8 @@ defmodule Beacon.Loader.Page do
         import Phoenix.HTML.Form
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
         import unquote(components_module)
 
         unquote_splicing(functions)

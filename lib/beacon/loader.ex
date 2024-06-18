@@ -121,6 +121,10 @@ defmodule Beacon.Loader do
     maybe_reload(Loader.Snippets.module_name(site), fn -> reload_snippets_module(site) end)
   end
 
+  def fetch_routes_module(site) do
+    maybe_reload(Loader.Routes.module_name(site), fn -> reload_routes_module(site) end)
+  end
+
   def fetch_components_module(site) do
     maybe_reload(Loader.Components.module_name(site), fn -> reload_components_module(site) end)
   end
@@ -159,6 +163,10 @@ defmodule Beacon.Loader do
 
   def reload_snippets_module(site) do
     GenServer.call(worker(site), :reload_snippets_module, @timeout)
+  end
+
+  def reload_routes_module(site) do
+    GenServer.call(worker(site), :reload_routes_module, @timeout)
   end
 
   def reload_components_module(site) do
