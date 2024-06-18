@@ -3,30 +3,6 @@ defmodule Beacon.RouterTest do
 
   alias Beacon.Router
 
-  defmodule RouterSimple do
-    use Phoenix.Router
-    use Beacon.Router
-    import Plug.Conn
-    import Phoenix.LiveView.Router
-
-    scope "/" do
-      beacon_site "/my_site", site: :my_site
-    end
-  end
-
-  defmodule RouterNested do
-    use Phoenix.Router
-    use Beacon.Router
-    import Plug.Conn
-    import Phoenix.LiveView.Router
-
-    scope "/parent" do
-      scope "/nested" do
-        beacon_site "/", site: :my_site
-      end
-    end
-  end
-
   test "live_session name" do
     assert {:test, :beacon_test, _} = Router.__options__(site: :test)
   end
