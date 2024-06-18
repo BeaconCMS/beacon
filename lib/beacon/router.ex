@@ -140,35 +140,6 @@ defmodule Beacon.Router do
     end
   end
 
-  # TODO: secure cross site assets
-  @doc """
-  Router helper to generate the asset path.
-
-  ## Example
-
-      iex> beacon_asset_path(:my_site_com, "logo.jpg")
-      "/beacon_assets/my_site_com/logo.jpg"
-
-  """
-  @spec beacon_asset_path(Beacon.Types.Site.t(), Path.t()) :: String.t()
-  def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    sanitize_path("/beacon_assets/#{site}/#{file_name}")
-  end
-
-  @doc """
-  Router helper to generate the asset url.
-
-  ## Example
-
-      iex> beacon_asset_url(:my_site_com, "logo.jpg")
-      "https://site.com/beacon_assets/my_site_com/logo.jpg"
-
-  """
-  @spec beacon_asset_url(Beacon.Types.Site.t(), Path.t()) :: String.t()
-  def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
-    Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
-  end
-
   @doc false
   def build_path_with_prefix(prefix, "/") do
     prefix

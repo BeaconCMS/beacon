@@ -85,7 +85,6 @@ defmodule BeaconWeb do
       use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
-      import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
       alias Phoenix.LiveView.JS
     end
   end

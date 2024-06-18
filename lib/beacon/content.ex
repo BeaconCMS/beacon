@@ -1295,7 +1295,7 @@ defmodule Beacon.Content do
           %{name: "class", type: "string", opts: [default: nil]},
           %{name: "rest", type: "global"}
         ],
-        template: ~S|<img src={beacon_asset_url(@site, @name)} class={@class} {@rest} />|,
+        template: ~S|<img src={beacon_asset_url(@name)} class={@class} {@rest} />|,
         example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
         category: :media
       },

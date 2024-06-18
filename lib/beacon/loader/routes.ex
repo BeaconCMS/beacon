@@ -19,23 +19,33 @@ defmodule Beacon.Loader.Routes do
   defp render(routes_module, site, endpoint, router) do
     quote do
       defmodule unquote(routes_module) do
-        defp site, do: unquote(site)
-        defp endpoint, do: unquote(endpoint)
-        defp router, do: unquote(router)
+        Module.put_attribute(__MODULE__, :site, unquote(site))
+        Module.put_attribute(__MODULE__, :endpoint, unquote(endpoint))
+        Module.put_attribute(__MODULE__, :router, unquote(router))
 
-        defmacro sigil_P({:<<>>, _meta, _segments} = route, extra) do
-          validate_sigil_p!(extra)
-          site = site()
-          endpoint = endpoint()
-          router = router()
-          prefix = router.__beacon_scoped_prefix_for_site__(site)
-          build_route(route, __CALLER__, prefix, endpoint, router)
+        # TODO: secure cross site assets
+        def beacon_asset_path(file_name) when is_binary(file_name) do
+          sanitize_path("/beacon_assets/#{unquote(site)}/#{file_name}")
         end
 
-        defp validate_sigil_p!([]), do: :ok
+        def beacon_asset_url(file_name) when is_binary(file_name) do
+          @endpoint.url() <> beacon_asset_path(file_name)
+        end
 
-        defp validate_sigil_p!(extra) do
-          raise ArgumentError, "~p does not support modifiers after closing, got: #{extra}"
+        defp sanitize_path(path) do
+          String.replace(path, "//", "/")
+        end
+
+        defmacro sigil_P({:<<>>, _meta, _segments} = route, extra) do
+          validate_sigil_P!(extra)
+          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
+          build_route(route, __CALLER__, prefix, @endpoint, @router)
+        end
+
+        defp validate_sigil_P!([]), do: :ok
+
+        defp validate_sigil_P!(extra) do
+          raise ArgumentError, "~P does not support modifiers after closing, got: #{extra}"
         end
 
         defp build_route(route_ast, env, prefix, endpoint, router) do
