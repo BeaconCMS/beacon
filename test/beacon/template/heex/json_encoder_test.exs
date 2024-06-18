@@ -1,6 +1,7 @@
 defmodule Beacon.Template.HEEx.JSONEncoderTest do
   use Beacon.DataCase
 
+  alias Beacon.Loader
   alias Beacon.Template.HEEx.JSONEncoder
 
   @site :my_site
@@ -48,7 +49,14 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   test "links with sigil_p" do
     assert_output(
       ~S|<.link patch={~p"/details"}>view details</.link>|,
-      [%{"attrs" => %{"patch" => "{~p\"/details\"}"}, "content" => ["view details"], "tag" => ".link"}]
+      [
+        %{
+          "attrs" => %{"patch" => "{~p\"/details\"}"},
+          "content" => ["view details"],
+          "tag" => ".link",
+          "rendered_html" => "<a href=\"/details\" data-phx-link=\"patch\" data-phx-link-state=\"push\">view details</a>"
+        }
+      ]
     )
   end
 
@@ -275,6 +283,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   describe "components" do
     test "beacon components" do
       component_fixture(name: "json_test")
+      Loader.reload_components_module(@site)
 
       assert_output(
         ~S|<.json_test class="w-4" val={@val} />|,
@@ -372,6 +381,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         """
       )
 
+      Loader.reload_components_module(@site)
+
       template = ~S|
       <.table id="users" rows={[%{id: 1, username: "foo"}]}>
         <:col :let={user} label="id"><%= user.id %></:col>
@@ -418,6 +429,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
         example: ~S|<.html_tag name="p">content</.tag>|
       )
+
+      Loader.reload_components_module(@site)
 
       assert_output(
         ~S"""

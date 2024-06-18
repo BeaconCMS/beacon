@@ -60,6 +60,7 @@ defmodule Beacon.Boot do
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))
 
+    # Reset option to enable event broadcasting even after booting manually
     Beacon.Config.update_value(config.site, :skip_boot?, false)
 
     # TODO: add telemetry to measure booting time

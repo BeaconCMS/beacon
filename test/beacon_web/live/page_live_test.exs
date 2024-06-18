@@ -4,6 +4,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.LiveViewTest
 
   alias Beacon.Content
+  alias Beacon.Loader
 
   setup do
     live_data = live_data_fixture(site: :my_site, path: "/home/:greet")
@@ -74,7 +75,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
       })
 
     Content.publish_page(page_home)
-    Beacon.Loader.reload_page_module(page_home.site, page_home.id)
 
     _page_without_meta_tags =
       published_page_fixture(
@@ -86,6 +86,12 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """,
         meta_tags: nil
       )
+
+    Loader.reload_live_data_module(:my_site)
+    Loader.reload_snippets_module(:my_site)
+    Loader.reload_components_module(:my_site)
+    Loader.reload_layouts_modules(:my_site)
+    Loader.reload_pages_modules(:my_site)
 
     [layout: layout]
   end
@@ -167,6 +173,10 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       live_data = live_data_fixture(path: "/page/meta-tag")
       live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
+
+      Beacon.Loader.reload_snippets_module(:my_site)
+      Beacon.Loader.reload_live_data_module(:my_site)
+      Beacon.Loader.reload_pages_modules(:my_site)
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -255,6 +265,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
       live_data = live_data_fixture(path: "/my/page/:var")
       live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
 
+      Loader.reload_live_data_module(:my_site)
+
       {:ok, view, _html} = live(conn, "/my/page/foobar")
 
       assert page_title(view) =~ "page foobar"
@@ -284,6 +296,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """,
         layout_id: layout.id
       )
+
+      Beacon.Loader.reload_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")
 

@@ -140,11 +140,29 @@ Supervisor.start_link(
   strategy: :one_for_one
 )
 
-# TODO: better control :booted default data when we introduce Beacon.Test functions
+# TODO: better control :booted default data when we introduce Beacon.Testing functions
 Beacon.Repo.delete_all(Beacon.Content.Component)
 Beacon.Repo.delete_all(Beacon.Content.ErrorPage)
 Beacon.Repo.delete_all(Beacon.Content.Page)
 Beacon.Repo.delete_all(Beacon.Content.Layout)
+
+# TODO: add hooks into Beacon.Testing to reload these shared/global modules
+Beacon.Loader.reload_routes_module(:my_site)
+Beacon.Loader.reload_routes_module(:not_booted)
+Beacon.Loader.reload_routes_module(:booted)
+Beacon.Loader.reload_routes_module(:s3_site)
+Beacon.Loader.reload_routes_module(:data_source_test)
+Beacon.Loader.reload_routes_module(:default_meta_tags_test)
+Beacon.Loader.reload_routes_module(:lifecycle_test)
+Beacon.Loader.reload_routes_module(:lifecycle_test_fail)
+Beacon.Loader.reload_components_module(:my_site)
+Beacon.Loader.reload_components_module(:not_booted)
+Beacon.Loader.reload_components_module(:booted)
+Beacon.Loader.reload_components_module(:s3_site)
+Beacon.Loader.reload_components_module(:data_source_test)
+Beacon.Loader.reload_components_module(:default_meta_tags_test)
+Beacon.Loader.reload_components_module(:lifecycle_test)
+Beacon.Loader.reload_components_module(:lifecycle_test_fail)
 
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.Repo, :manual)

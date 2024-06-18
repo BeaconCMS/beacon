@@ -101,10 +101,15 @@ defmodule BeaconWeb.PageLive do
 
   @doc false
   def make_env(site) do
-    routes_module = Beacon.Loader.Routes.module_name(site)
-    components_module = Beacon.Loader.Components.module_name(site)
-    {:ok, env} = Macro.Env.define_import(__ENV__, [], routes_module)
-    {:ok, env} = Macro.Env.define_import(env, [], components_module)
-    env
+    imports = [Beacon.Loader.Routes.module_name(site), Beacon.Loader.Components.module_name(site)]
+
+    Enum.reduce(imports, __ENV__, fn module, env ->
+      if :erlang.module_loaded(module) do
+        {:ok, env} = Macro.Env.define_import(env, [], module)
+        env
+      else
+        env
+      end
+    end)
   end
 end
