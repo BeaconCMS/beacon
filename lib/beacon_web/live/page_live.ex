@@ -101,15 +101,35 @@ defmodule BeaconWeb.PageLive do
 
   @doc false
   def make_env(site) do
-    imports = [Beacon.Loader.Routes.module_name(site), Beacon.Loader.Components.module_name(site)]
+    imports = [
+      Beacon.Loader.Routes.module_name(site),
+      Beacon.Loader.Components.module_name(site)
+    ]
 
     Enum.reduce(imports, __ENV__, fn module, env ->
-      if :erlang.module_loaded(module) do
-        {:ok, env} = Macro.Env.define_import(env, [], module)
+      with true <- :erlang.module_loaded(module),
+           {:ok, env} <- define_import(env, module) do
         env
       else
-        env
+        {:error, error} -> raise Beacon.LoaderError, "failed to import #{module}: #{error}"
+        _ -> env
       end
     end)
+  end
+
+  # TODO: remove after requiring Elixir 1.17+
+  if Version.match?(System.version(), ">= 1.17.0") do
+    defp define_import(env, module) do
+      meta = []
+      Macro.Env.define_import(env, meta, module)
+    end
+  else
+    defp define_import(env, module) do
+      meta = []
+      opts = []
+      {functions, macros} = :elixir_import.import(meta, module, opts, env)
+      env = %{env | functions: functions, macros: macros, requires: [module | env.requires]}
+      {:ok, env}
+    end
   end
 end
