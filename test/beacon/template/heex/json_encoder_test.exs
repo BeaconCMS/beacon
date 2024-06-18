@@ -48,10 +48,10 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   test "links with sigil_p" do
     assert_output(
-      ~S|<.link patch={~p"/details"}>view details</.link>|,
+      ~S|<.link patch={~P"/details"}>view details</.link>|,
       [
         %{
-          "attrs" => %{"patch" => "{~p\"/details\"}"},
+          "attrs" => %{"patch" => "{~P\"/details\"}"},
           "content" => ["view details"],
           "tag" => ".link",
           "rendered_html" => "<a href=\"/details\" data-phx-link=\"patch\" data-phx-link-state=\"push\">view details</a>"

@@ -24,7 +24,7 @@ defmodule Beacon.Lifecycle.TemplateTest do
   end
 
   # test "render sigil_p" do
-  #   page = published_page_fixture(site: "my_site", template: ~S|<.link patch={~p"/contact"}>Contact</.link>|)
+  #   page = published_page_fixture(site: "my_site", template: ~S|<.link patch={~P"/contact"}>Contact</.link>|)
   #   env = BeaconWeb.PageLive.make_env(:my_site)
 
   #   assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} =
