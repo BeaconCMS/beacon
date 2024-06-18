@@ -443,6 +443,8 @@ defmodule Beacon.ContentTest do
           """)
       )
 
+      Beacon.Loader.reload_snippets_module(:my_site)
+
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
                %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
