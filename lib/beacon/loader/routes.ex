@@ -1,5 +1,7 @@
 # https://github.com/phoenixframework/phoenix/blob/d8f7144971c3e0bb9e9e07eb5532e9fc49d2d053/lib/phoenix/verified_routes.ex
 
+# credo:disable-for-this-file
+
 defmodule Beacon.Loader.Routes do
   @moduledoc false
   # TODO: validate paths
