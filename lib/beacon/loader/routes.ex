@@ -23,7 +23,7 @@ defmodule Beacon.Loader.Routes do
         defp endpoint, do: unquote(endpoint)
         defp router, do: unquote(router)
 
-        defmacro sigil_p({:<<>>, _meta, _segments} = route, extra) do
+        defmacro sigil_P({:<<>>, _meta, _segments} = route, extra) do
           validate_sigil_p!(extra)
           site = site()
           endpoint = endpoint()

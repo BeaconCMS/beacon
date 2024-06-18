@@ -46,7 +46,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     end
   end
 
-  test "links with sigil_p" do
+  test "links with sigil_P" do
     assert_output(
       ~S|<.link patch={~P"/details"}>view details</.link>|,
       [
