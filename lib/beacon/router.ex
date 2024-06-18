@@ -141,6 +141,16 @@ defmodule Beacon.Router do
   end
 
   @doc false
+  def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
+    sanitize_path("/beacon_assets/#{site}/#{file_name}")
+  end
+
+  @doc false
+  def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
+    Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
+  end
+
+  @doc false
   def build_path_with_prefix(prefix, "/") do
     prefix
   end
