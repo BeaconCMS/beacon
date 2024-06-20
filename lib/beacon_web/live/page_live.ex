@@ -16,7 +16,7 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
+    socket = Component.assign(socket, :beacon, BeaconAssigns.new(site))
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
@@ -75,11 +75,10 @@ defmodule BeaconWeb.PageLive do
 
   def handle_params(params, _url, socket) do
     %{"path" => path_info} = params
-
-    %{site: site, page: page, path_params: path_params, query_params: query_params} =
-      beacon_assigns = BeaconAssigns.build(socket.assigns.beacon, path_info, params)
-
+    %{beacon: %{site: site}} = socket.assigns
+    page = RouterServer.lookup_page!(site, path_info)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
+    beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
     Process.put(:__beacon_site__, site)
     Process.put(:__beacon_page_path__, page.path)
@@ -91,9 +90,9 @@ defmodule BeaconWeb.PageLive do
       # TODO: remove deprecated @beacon_live_data
       |> Component.assign(:beacon_live_data, live_data)
       # TODO: remove deprecated @beacon_path_params
-      |> Component.assign(:beacon_path_params, path_params)
+      |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
       # TODO: remove deprecated @beacon_query_params
-      |> Component.assign(:beacon_query_params, query_params)
+      |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
       |> Component.assign(:beacon, beacon_assigns)
 
     {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})}

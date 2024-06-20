@@ -3,39 +3,91 @@ defmodule BeaconWeb.BeaconAssignsTest do
   alias BeaconWeb.BeaconAssigns
   import Beacon.Fixtures
 
+  @site :my_site
+
   setup do
     [socket: %Phoenix.LiveView.Socket{assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}}]
   end
 
   test "build with site" do
     assert %BeaconAssigns{
-             private: %{components_module: :"Elixir.BeaconWeb.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components"},
-             site: :my_site,
-             page: %{path: nil, title: nil},
-             path_params: %{},
-             query_params: %{}
-           } = BeaconAssigns.build(:my_site)
+             site: @site,
+             private: %{components_module: :"Elixir.BeaconWeb.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components"}
+           } = BeaconAssigns.new(@site)
+  end
+
+  test "build with unpublished page" do
+    Beacon.Loader.reload_components_module(@site)
+    page = page_fixture(site: @site, path: "/blog")
+
+    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
+
+    assert %BeaconAssigns{
+             site: @site,
+             page: %{path: "/blog", title: ""},
+             private: %{
+               live_path: ["blog"]
+             }
+           } = assigns
+  end
+
+  test "build with published page resolves page title" do
+    Beacon.Loader.reload_components_module(@site)
+    page = published_page_fixture(site: @site, path: "/blog", title: "blog index")
+
+    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
+
+    assert %BeaconAssigns{
+             site: @site,
+             page: %{path: "/blog", title: "blog index"},
+             private: %{
+               live_path: ["blog"]
+             }
+           } = assigns
   end
 
   test "build with path info and query params" do
-    Beacon.Loader.reload_components_module(:my_site)
-    published_page_fixture(path: "/blog")
+    Beacon.Loader.reload_components_module(@site)
+    page = page_fixture(site: @site, path: "/blog")
 
-    assigns =
-      :my_site
-      |> BeaconAssigns.build()
-      |> BeaconAssigns.build(["/blog"], %{source: "search"})
+    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{source: "search"})
 
     assert %BeaconAssigns{
-             private: %{
-               components_module: :"Elixir.BeaconWeb.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components",
-               live_data_keys: [],
-               live_path: ["/blog"]
-             },
-             site: :my_site,
-             path_params: %{},
+             site: @site,
              query_params: %{source: "search"},
-             page: %{path: "/blog", title: "home"}
+             private: %{
+               live_path: ["blog"]
+             }
+           } = assigns
+  end
+
+  test "build with path params" do
+    Beacon.Loader.reload_components_module(@site)
+    page = page_fixture(site: @site, path: "/blog/:post")
+
+    assigns = BeaconAssigns.new(@site, page, %{}, ["blog", "hello"], %{})
+
+    assert %BeaconAssigns{
+             site: @site,
+             path_params: %{"post" => "hello"}
+           } = assigns
+  end
+
+  test "build with live data" do
+    Beacon.Loader.reload_components_module(@site)
+    page = page_fixture(site: @site, path: "/blog")
+
+    live_data = live_data_fixture(site: @site, path: "/blog")
+    live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
+    Beacon.Loader.reload_live_data_module(@site)
+
+    assigns = BeaconAssigns.new(@site, page, live_data, ["blog"], %{})
+
+    assert %BeaconAssigns{
+             site: @site,
+             private: %{
+               live_data_keys: [:customer_id]
+             }
            } = assigns
   end
 
