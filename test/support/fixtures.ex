@@ -120,7 +120,7 @@ defmodule Beacon.Fixtures do
 
     attrs
     |> upload_metadata_fixture()
-    |> MediaLibrary.upload(attrs.site)
+    |> MediaLibrary.upload()
   end
 
   def upload_metadata_fixture(attrs \\ %{}) do

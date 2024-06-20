@@ -320,7 +320,7 @@ defmodule Beacon.ContentTest do
 
       Content.publish_page(page)
 
-      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.id, page.site)
+      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.site, page.id)
     end
 
     test "save raw_schema" do

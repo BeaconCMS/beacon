@@ -11,10 +11,10 @@ defmodule Beacon.MediaLibrary do
   alias Beacon.MediaLibrary.Backend
   alias Beacon.Types.Site
 
-  def upload(metadata, site) do
+  def upload(metadata) do
     with metadata <- Backend.process!(metadata),
          metadata <- send_to_cdns(metadata),
-         {:ok, asset} <- save_asset(metadata, site) do
+         {:ok, asset} <- save_asset(metadata) do
       Lifecycle.Asset.upload_asset(metadata, asset)
     end
   end
@@ -25,13 +25,17 @@ defmodule Beacon.MediaLibrary do
     |> Backend.send_to_cdns()
   end
 
-  def save_asset(metadata, site) do
+  def save_asset(metadata) do
+    %{site: site} = metadata
+
     metadata
     |> prep_save_asset()
     |> repo(site).insert()
   end
 
-  def save_asset!(metadata, site) do
+  def save_asset!(metadata) do
+    %{site: site} = metadata
+
     metadata
     |> prep_save_asset()
     |> repo(site).insert!()

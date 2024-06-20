@@ -197,10 +197,10 @@ defmodule Beacon.Content do
   end
 
   @doc type: :layouts
-  @spec publish_layout(Ecto.UUID.t(), Site.t()) :: {:ok, Layout.t()} | any()
-  def publish_layout(id, site) when is_binary(id) do
-    id
-    |> get_layout(site)
+  @spec publish_layout(Site.t(), Ecto.UUID.t()) :: {:ok, Layout.t()} | any()
+  def publish_layout(site, id) when is_atom(site) and is_binary(id) do
+    site
+    |> get_layout(id)
     |> publish_layout()
   end
 
@@ -240,18 +240,19 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_layout("fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
+      iex> get_layout(:my_site, "fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
       %Layout{}
 
   """
   @doc type: :layouts
-  @spec get_layout(Ecto.UUID.t(), Site.t()) :: Layout.t() | nil
-  def get_layout(id, site) do
+  @spec get_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
+  def get_layout(site, id) when is_atom(site) and is_binary(id) do
     repo(site).get(Layout, id)
   end
 
   @doc type: :layouts
-  def get_layout!(id, site) when is_binary(id) do
+  @spec get_layout!(Site.t(), Ecto.UUID.t()) :: Layout.t()
+  def get_layout!(site, id) when is_atom(site) and is_binary(id) do
     repo(site).get!(Layout, id)
   end
 
@@ -619,10 +620,10 @@ defmodule Beacon.Content do
   end
 
   @doc type: :pages
-  @spec publish_page(Ecto.UUID.t(), Site.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def publish_page(id, site) when is_binary(id) do
-    id
-    |> get_page(site)
+  @spec publish_page(Site.t(), Ecto.UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def publish_page(site, id) when is_atom(site) and is_binary(id) do
+    site
+    |> get_page(id)
     |> publish_page()
   end
 
@@ -718,16 +719,16 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
+      iex> get_page(:my_site, "dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
 
-      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", preloads: [:layout])
+      iex> get_page(:my_site, "dba8a99e-311a-4806-af04-dd968c7e5dae", preloads: [:layout])
       %Page{layout: %Layout{}}
 
   """
   @doc type: :pages
-  @spec get_page(Ecto.UUID.t(), keyword()) :: Page.t() | nil
-  def get_page(id, site, opts \\ []) when is_binary(id) and is_list(opts) do
+  @spec get_page(Site.t(), Ecto.UUID.t(), keyword()) :: Page.t() | nil
+  def get_page(site, id, opts \\ []) when is_atom(site) and is_binary(id) and is_list(opts) do
     preloads = Keyword.get(opts, :preloads, [])
 
     Page
