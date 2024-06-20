@@ -11,8 +11,6 @@ defmodule BeaconWeb.BeaconAssigns do
 
   """
 
-  alias Beacon.Content.Page
-
   @derive {Inspect, only: [:site, :path_params, :query_params, :page]}
 
   defstruct site: nil,
@@ -35,7 +33,8 @@ defmodule BeaconWeb.BeaconAssigns do
     %__MODULE__{site: site, private: %{components_module: components_module}}
   end
 
-  def new(site, page = %Page{}, live_data, path_info, query_params)
+  @doc false
+  def new(site, page = %Beacon.Content.Page{}, live_data, path_info, query_params)
       when is_atom(site) and is_map(live_data) and is_list(path_info) and is_map(query_params) do
     %{site: ^site} = page
     page_module = Beacon.Loader.Page.module_name(site, page.id)
