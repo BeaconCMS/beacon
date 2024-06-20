@@ -217,7 +217,7 @@ defmodule Beacon.Fixtures do
   end
 
   def live_data_assign_fixture(attrs \\ %{}) do
-    live_data = get_lazy(attrs, :live_data, fn -> live_data_fixture() end)
+    %{site: site} = live_data = get_lazy(attrs, :live_data, fn -> live_data_fixture() end)
 
     attrs =
       Enum.into(attrs, %{
