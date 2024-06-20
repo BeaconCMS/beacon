@@ -1,6 +1,7 @@
 defmodule Beacon.Template.HEEx.JSONEncoderTest do
   use Beacon.DataCase
 
+  alias Beacon.Loader
   alias Beacon.Template.HEEx.JSONEncoder
 
   @site :my_site
@@ -43,6 +44,20 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       assert_output(~S|<%!-- comment --%>|, [%{"attrs" => %{}, "content" => [" comment "], "tag" => "eex_comment"}])
       assert_output(~S|<%!-- <%= :expr %> --%>|, [%{"attrs" => %{}, "content" => [" <%= :expr %> "], "tag" => "eex_comment"}])
     end
+  end
+
+  test "links with sigil_P" do
+    assert_output(
+      ~S|<.link patch={~P"/details"}>view details</.link>|,
+      [
+        %{
+          "attrs" => %{"patch" => "{~P\"/details\"}"},
+          "content" => ["view details"],
+          "tag" => ".link",
+          "rendered_html" => "<a href=\"/details\" data-phx-link=\"patch\" data-phx-link-state=\"push\">view details</a>"
+        }
+      ]
+    )
   end
 
   test "eex expressions" do
@@ -268,17 +283,19 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   describe "components" do
     test "beacon components" do
       component_fixture(name: "json_test")
+      Loader.reload_components_module(@site)
 
       assert_output(
-        ~S|<.json_test class="w-4" val="test" />|,
+        ~S|<.json_test class="w-4" val={@val} />|,
         [
           %{
-            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "test"},
+            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "{@val}"},
             "content" => [],
             "rendered_html" => "<span id=\"my-component\">test</span>",
             "tag" => ".json_test"
           }
-        ]
+        ],
+        %{val: "test"}
       )
     end
 
@@ -364,6 +381,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         """
       )
 
+      Loader.reload_components_module(@site)
+
       template = ~S|
       <.table id="users" rows={[%{id: 1, username: "foo"}]}>
         <:col :let={user} label="id"><%= user.id %></:col>
@@ -410,6 +429,8 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
         example: ~S|<.html_tag name="p">content</.tag>|
       )
+
+      Loader.reload_components_module(@site)
 
       assert_output(
         ~S"""

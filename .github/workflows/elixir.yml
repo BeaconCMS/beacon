@@ -23,8 +23,8 @@ jobs:
             phoenix-live-view-version: "0.20.2"
 
           # latest
-          - otp: "26"
-            elixir: "1.16"
+          - otp: "27"
+            elixir: "1.17"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
@@ -88,8 +88,8 @@ jobs:
       matrix:
         include:
           # latest
-          - otp: "26"
-            elixir: "1.16"
+          - otp: "27"
+            elixir: "1.17"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 

@@ -1200,6 +1200,21 @@ defmodule Beacon.Content do
         category: :element
       },
       %{
+        name: "page_link",
+        description: "Renders a link to another Beacon page",
+        thumbnail: "https://placehold.co/400x75?text=page_link",
+        attrs: [
+          %{name: "path", type: "string", opts: [required: true]},
+          %{name: "rest", type: "global"}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.link patch={@path} {@rest}><%= render_slot(@inner_block) %></.link>|,
+        example: ~S|<.page_link path={~P"/contact"} class="text-xl">Contact Us</.page_link>|,
+        category: :element
+      },
+      %{
         name: "table",
         description: "Renders a table with generic styling",
         thumbnail: "https://placehold.co/400x75?text=table",
@@ -1280,7 +1295,7 @@ defmodule Beacon.Content do
           %{name: "class", type: "string", opts: [default: nil]},
           %{name: "rest", type: "global"}
         ],
-        template: ~S|<img src={beacon_asset_url(@site, @name)} class={@class} {@rest} />|,
+        template: ~S|<img src={beacon_asset_url(@name)} class={@class} {@rest} />|,
         example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
         category: :media
       },
@@ -2319,6 +2334,7 @@ defmodule Beacon.Content do
       case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
         {:ok, _ast} -> []
         {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:error, %_{} = exception} -> [{field, {"invalid", compilation_error: Exception.message(exception)}}]
         {:error, _} -> [{field, "invalid"}]
       end
     end)

@@ -20,6 +20,7 @@ Supervisor.start_link(
        [
          site: :my_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
          skip_boot?: true,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
@@ -45,17 +46,20 @@ Supervisor.start_link(
          site: :not_booted,
          skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :booted,
          skip_boot?: false,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :s3_site,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
          skip_boot?: true,
          assets: [
@@ -67,18 +71,21 @@ Supervisor.start_link(
          site: :data_source_test,
          skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :raw_schema_test,
          skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :default_meta_tags_test,
          skip_boot?: true,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
          default_meta_tags: [
            %{"name" => "foo", "content" => "bar"}
@@ -87,6 +94,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
          skip_boot?: true,
          lifecycle: [
@@ -135,6 +143,7 @@ Supervisor.start_link(
        [
          site: :lifecycle_test_fail,
          endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
          skip_boot?: true,
          lifecycle: [
@@ -155,6 +164,24 @@ Beacon.BeaconTest.Repo.delete_all(Beacon.Content.Component)
 Beacon.BeaconTest.Repo.delete_all(Beacon.Content.ErrorPage)
 Beacon.BeaconTest.Repo.delete_all(Beacon.Content.Page)
 Beacon.BeaconTest.Repo.delete_all(Beacon.Content.Layout)
+
+# TODO: add hooks into Beacon.Testing to reload these shared/global modules
+Beacon.Loader.reload_routes_module(:my_site)
+Beacon.Loader.reload_routes_module(:not_booted)
+Beacon.Loader.reload_routes_module(:booted)
+Beacon.Loader.reload_routes_module(:s3_site)
+Beacon.Loader.reload_routes_module(:data_source_test)
+Beacon.Loader.reload_routes_module(:default_meta_tags_test)
+Beacon.Loader.reload_routes_module(:lifecycle_test)
+Beacon.Loader.reload_routes_module(:lifecycle_test_fail)
+Beacon.Loader.reload_components_module(:my_site)
+Beacon.Loader.reload_components_module(:not_booted)
+Beacon.Loader.reload_components_module(:booted)
+Beacon.Loader.reload_components_module(:s3_site)
+Beacon.Loader.reload_components_module(:data_source_test)
+Beacon.Loader.reload_components_module(:default_meta_tags_test)
+Beacon.Loader.reload_components_module(:lifecycle_test)
+Beacon.Loader.reload_components_module(:lifecycle_test_fail)
 
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.BeaconTest.Repo, :manual)

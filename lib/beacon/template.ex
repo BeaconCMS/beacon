@@ -56,7 +56,7 @@ defmodule Beacon.Template do
     page = Beacon.RouterServer.lookup_page!(site, path_info)
     live_data = BeaconWeb.DataSource.live_data(site, path_info)
 
-    Beacon.Lifecycle.Template.render_template(page, Map.put(live_data, :beacon, beacon_assigns), BeaconWeb.PageLive.make_env())
+    Beacon.Lifecycle.Template.render_template(page, Map.put(live_data, :beacon, beacon_assigns), BeaconWeb.PageLive.make_env(site))
   end
 
   @doc false

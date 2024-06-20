@@ -27,6 +27,9 @@ defmodule Beacon.Boot do
 
     task_supervisor = Beacon.Registry.via({config.site, TaskSupervisor})
 
+    # Sigils and router helpers
+    Beacon.Loader.reload_routes_module(config.site)
+
     # Layouts and pages depend on the components module so we need to load it first
     Beacon.Loader.populate_default_components(config.site)
     Beacon.Loader.reload_components_module(config.site)
@@ -57,6 +60,7 @@ defmodule Beacon.Boot do
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))
 
+    # Reset option to enable event broadcasting even after booting manually
     Beacon.Config.update_value(config.site, :skip_boot?, false)
 
     # TODO: add telemetry to measure booting time

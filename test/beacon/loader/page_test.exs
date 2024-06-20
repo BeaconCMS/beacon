@@ -30,6 +30,8 @@ defmodule Beacon.Loader.PageTest do
         """
       })
 
+      Loader.reload_snippets_module(:my_site)
+
       layout = published_layout_fixture()
 
       page =

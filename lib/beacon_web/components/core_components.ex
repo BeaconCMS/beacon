@@ -20,7 +20,7 @@ defmodule BeaconWeb.CoreComponents do
   JS commands may be passed to the `:on_cancel` to configure
   the closing/cancel event, for example:
 
-      <.modal id="confirm" on_cancel={JS.navigate(~p"/posts")}>
+      <.modal id="confirm" on_cancel={JS.navigate(~P"/posts")}>
         This is another modal.
       </.modal>
 
@@ -526,7 +526,7 @@ defmodule BeaconWeb.CoreComponents do
 
   ## Examples
 
-      <.back navigate={~p"/posts"}>Back to posts</.back>
+      <.back navigate={~P"/posts"}>Back to posts</.back>
   """
   attr :navigate, :any, required: true
   slot :inner_block, required: true

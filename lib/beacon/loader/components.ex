@@ -13,29 +13,33 @@ defmodule Beacon.Loader.Components do
   def module_name(site), do: Loader.module_name(site, "Components")
 
   def build_ast(site, [] = _components) do
+    routes_module = Loader.Routes.module_name(site)
+
     site
     |> module_name()
-    |> render()
+    |> render(routes_module)
   end
 
   def build_ast(site, components) do
     module = module_name(site)
+    routes_module = Loader.Routes.module_name(site)
     render_functions = Enum.map(components, &render_component/1)
     function_components = Enum.map(components, &function_component/1)
-    render(module, render_functions, function_components)
+    render(module, routes_module, render_functions, function_components)
   end
 
   # generate the module even without functions because it gets
   # imported into other modules
-  defp render(component_module) do
+  defp render(component_module, routes_module) do
     quote do
       defmodule unquote(component_module) do
         use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
-        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
 
         # TODO: remove my_component/2
         def my_component(name, assigns \\ []) do
@@ -45,7 +49,7 @@ defmodule Beacon.Loader.Components do
     end
   end
 
-  defp render(component_module, render_functions, function_components) do
+  defp render(component_module, routes_module, render_functions, function_components) do
     quote do
       defmodule unquote(component_module) do
         import Phoenix.Component.Declarative
@@ -64,8 +68,9 @@ defmodule Beacon.Loader.Components do
         import Phoenix.HTML
         import Phoenix.HTML.Form
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
-        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
 
         # TODO: remove my_component/2
         def my_component(name, assigns \\ []) do

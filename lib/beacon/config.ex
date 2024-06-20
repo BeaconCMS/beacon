@@ -35,6 +35,11 @@ defmodule Beacon.Config do
   @type endpoint :: module()
 
   @typedoc """
+  Host application Router module.
+  """
+  @type router :: module()
+
+  @typedoc """
   Host application Repo module.
   """
   @type repo :: module()
@@ -169,6 +174,7 @@ defmodule Beacon.Config do
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
+          router: router(),
           repo: repo(),
           skip_boot?: skip_boot?(),
           authorization_source: authorization_source(),
@@ -202,6 +208,7 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             endpoint: nil,
+            router: nil,
             repo: nil,
             skip_boot?: false,
             authorization_source: Beacon.Authorization.DefaultPolicy,
@@ -230,6 +237,7 @@ defmodule Beacon.Config do
   @type option ::
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
+          | {:router, router()}
           | {:repo, repo()}
           | {:skip_boot?, skip_boot?()}
           | {:authorization_source, authorization_source()}
@@ -253,6 +261,8 @@ defmodule Beacon.Config do
     * `:site` - `t:Beacon.Types.Site.t/0` (required)
 
     * `:endpoint` - `t:endpoint/0` (required)
+
+    * `:router` - `t:router/0` (required)
 
     * `:repo` - `t:repo/0` (required)
 
@@ -294,6 +304,7 @@ defmodule Beacon.Config do
       iex> Beacon.Config.new(
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
+        router: MyAppWeb.Router,
         repo: MyApp.Repo,
         authorization_source: MyApp.MySiteAuthzPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
@@ -321,6 +332,7 @@ defmodule Beacon.Config do
       %Beacon.Config{
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
+        router: MyAppWeb.Router,
         repo: MyApp.Repo,
         skip_boot?: false,
         authorization_source: MyApp.SiteAuthnPolicy,
@@ -373,6 +385,7 @@ defmodule Beacon.Config do
 
     opts[:site] || raise "missing required option :site"
     opts[:endpoint] || raise "missing required option :endpoint"
+    opts[:router] || raise "missing required option :router"
     opts[:repo] || raise "missing required option :repo"
 
     template_formats =
