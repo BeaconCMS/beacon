@@ -22,13 +22,8 @@ defmodule BeaconWeb.API.PageJSON do
 
   defp data(%Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
-
-    beacon_assigns =
-      page.site
-      |> BeaconAssigns.build()
-      |> BeaconAssigns.build(path_info, %{})
-
     live_data = BeaconWeb.DataSource.live_data(page.site, path_info, %{})
+    beacon_assigns = BeaconAssigns.new(page.site, page, live_data, path_info, %{})
 
     assigns =
       live_data
