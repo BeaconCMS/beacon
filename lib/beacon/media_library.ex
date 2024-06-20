@@ -26,19 +26,15 @@ defmodule Beacon.MediaLibrary do
   end
 
   def save_asset(metadata) do
-    %{site: site} = metadata
-
     metadata
     |> prep_save_asset()
-    |> repo(site).insert()
+    |> repo(metadata).insert()
   end
 
   def save_asset!(metadata) do
-    %{site: site} = metadata
-
     metadata
     |> prep_save_asset()
-    |> repo(site).insert!()
+    |> repo(metadata).insert!()
   end
 
   defp prep_save_asset(metadata) do
