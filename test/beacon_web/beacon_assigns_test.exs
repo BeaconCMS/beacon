@@ -31,6 +31,24 @@ defmodule BeaconWeb.BeaconAssignsTest do
            } = assigns
   end
 
+  test "build with non-persisted page" do
+    page_id = Ecto.UUID.generate()
+    layout_id = Ecto.UUID.generate()
+    page = %Beacon.Content.Page{id: page_id, layout_id: layout_id, site: @site, path: "/blog"}
+
+    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
+
+    assert %BeaconAssigns{
+             site: @site,
+             page: %{path: "/blog", title: ""},
+             private: %{
+               page_id: ^page_id,
+               layout_id: ^layout_id,
+               live_path: ["blog"]
+             }
+           } = assigns
+  end
+
   test "build with published page resolves page title" do
     Beacon.Loader.reload_components_module(@site)
     page = published_page_fixture(site: @site, path: "/blog", title: "blog index")
