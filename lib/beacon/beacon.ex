@@ -37,7 +37,7 @@ defmodule Beacon do
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
   flexibility to plan your architecture from simple to complex environments. For example, you can have a single site
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
-  campaing that may receive too much traffic.
+  campaign that may receive too much traffic.
 
   ## Options
 
