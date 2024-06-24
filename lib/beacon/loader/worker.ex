@@ -338,7 +338,8 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     snippets = Content.list_snippet_helpers(site)
     ast = Loader.Snippets.build_ast(site, snippets)
-    stop(compile_module(site, ast), config)
+    result = compile_module(site, ast)
+    stop(result, config)
   end
 
   def handle_call(:reload_routes_module, _from, config) do
@@ -360,7 +361,8 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     live_data = Content.live_data_for_site(site)
     ast = Loader.LiveData.build_ast(site, live_data)
-    stop(compile_module(site, ast), config)
+    result = compile_module(site, ast)
+    stop(result, config)
   end
 
   def handle_call(:reload_error_page_module, _from, config) do
@@ -375,7 +377,8 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     stylesheets = Content.list_stylesheets(site)
     ast = Loader.Stylesheet.build_ast(site, stylesheets)
-    stop(compile_module(site, ast), config)
+    result = compile_module(site, ast)
+    stop(result, config)
   end
 
   def handle_call({:reload_layout_module, layout_id}, _from, config) do
@@ -405,7 +408,7 @@ defmodule Beacon.Loader.Worker do
         ast = Loader.Page.build_ast(site, page)
         result = compile_module(site, ast)
         :ok = Beacon.PubSub.page_loaded(page)
-        stop({:ok, result}, config)
+        stop(result, config)
     end
   end
 
@@ -445,7 +448,7 @@ defmodule Beacon.Loader.Worker do
   defp compile_module(site, ast) do
     case Compiler.compile_module(site, ast) do
       {:ok, module, []} ->
-        module
+        {:ok, module}
 
       {:ok, module, diagnostics} ->
         Logger.warning("""
@@ -455,15 +458,15 @@ defmodule Beacon.Loader.Worker do
 
         """)
 
+        {:ok, module}
+
       {:error, module, {error, diagnostics}} ->
         raise """
         failed to compile module #{module}
 
-          Got:
+          Error: #{inspect(error)}
 
-            Error: #{inspect(error)}
-
-            Diagnostics: #{inspect(diagnostics)}
+          Diagnostics: #{inspect(diagnostics)}
 
         """
 
@@ -471,7 +474,7 @@ defmodule Beacon.Loader.Worker do
         raise """
         failed to compile module
 
-          Got: #{inspect(error)}
+          Error: #{inspect(error)}
 
         """
     end
