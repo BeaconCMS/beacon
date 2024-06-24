@@ -7,7 +7,7 @@ defmodule Beacon.Compiler do
   if Beacon.Config.env_test?() do
     @max_retries 2
   else
-    @max_retries 10
+    @max_retries 4
   end
 
   @type diagnostics :: [Code.diagnostic(:warning | :error)]

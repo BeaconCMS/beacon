@@ -1,5 +1,5 @@
 defmodule Beacon.RegistryTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   test "running_sites" do
     running_sites = Beacon.Registry.running_sites()

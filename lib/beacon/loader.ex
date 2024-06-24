@@ -212,7 +212,7 @@ defmodule Beacon.Loader do
 
   defp maybe_reload(module, reload_fun) do
     if :erlang.module_loaded(module) do
-      module
+      {:ok, module}
     else
       reload_fun.()
     end
