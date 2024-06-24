@@ -183,20 +183,13 @@ defmodule Beacon do
 
   defp apply_mfa_error_message(module, function, args, reason, context, error) do
     mfa = Exception.format_mfa(module, function, length(args))
+    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
     reason = if reason, do: "reason: #{reason}"
     context = if context, do: "context: #{inspect(context)}"
     error = if error, do: Exception.message(error)
 
-    """
-    failed to call #{mfa} with args: #{inspect(List.flatten(args))}
-
-    #{reason}
-
-    #{context}
-
-    #{error}
-
-    """
+    lines = for line <- [summary, reason, context, error], line != nil, do: line
+    Enum.join(lines, "\n\n")
   end
 
   @doc false

@@ -76,9 +76,12 @@ defmodule BeaconWeb.DataSource do
   # which is what we need for sites to work properly but
   # the page builder could use this data as well
   defp page_assigns(site, page_id) do
-    case Beacon.Loader.fetch_page_module(site, page_id) do
-      {:error, _} -> {:error, :page_module_not_found}
-      page_module -> {:ok, Beacon.apply_mfa(page_module, :page_assigns, [])}
+    page_module = Beacon.Loader.fetch_page_module(site, page_id)
+
+    if :erlang.module_loaded(page_module) do
+      {:ok, Beacon.apply_mfa(page_module, :page_assigns, [])}
+    else
+      {:error, :page_module_not_found}
     end
   end
 end

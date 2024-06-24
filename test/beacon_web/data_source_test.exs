@@ -15,11 +15,14 @@ defmodule BeaconWeb.DataSourceTest do
   describe "page_title" do
     test "renders static content" do
       page = published_page_fixture(site: @site, title: "my title")
+      Loader.reload_page_module(page.site, page.id)
       assert DataSource.page_title(page.site, page.id, %{}) == "my title"
     end
 
     test "renders snippet" do
       page = published_page_fixture(site: @site, title: "{{ page.path | upcase }}")
+      Loader.reload_snippets_module(@site)
+      Loader.reload_page_module(page.site, page.id)
       assert DataSource.page_title(page.site, page.id, %{}) == "/HOME"
     end
   end

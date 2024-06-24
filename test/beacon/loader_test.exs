@@ -149,7 +149,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "unload page", %{page_a: page} do
-      module = Loader.fetch_page_module(page.site, page.id)
+      module = Loader.reload_page_module(page.site, page.id)
       assert :erlang.module_loaded(module)
       Loader.unload_page_module(page.site, page.id)
       refute :erlang.module_loaded(module)
