@@ -405,7 +405,7 @@ defmodule Beacon.Loader.Worker do
         ast = Loader.Page.build_ast(site, page)
         result = compile_module(site, ast)
         :ok = Beacon.PubSub.page_loaded(page)
-        stop(result, config)
+        stop({:ok, result}, config)
     end
   end
 

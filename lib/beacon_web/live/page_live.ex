@@ -17,9 +17,10 @@ defmodule BeaconWeb.PageLive do
     %{"beacon_site" => site} = session
 
     # TODO: handle back pressure on simualtaneous calls to reload the same page
-    with {path, page_id} <- RouterServer.lookup_path(site, path),
-         %Beacon.Content.Page{path: ^path} = page <- Beacon.Content.get_published_page(site, page_id) do
-      Beacon.Loader.maybe_reload_page_module(page.site, page.id)
+    with {_path, page_id} <- RouterServer.lookup_path(site, path),
+         {:ok, _module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
+      # %Beacon.Content.Page{path: ^path} = page <- Beacon.Content.get_published_page(site, page_id) do
+      :ok
     else
       _ ->
         raise BeaconWeb.NotFoundError, """

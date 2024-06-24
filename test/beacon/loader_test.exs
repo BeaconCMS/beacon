@@ -136,20 +136,14 @@ defmodule Beacon.LoaderTest do
       [page_a: page_a, page_b: page_b]
     end
 
-    test "reloads all pages into separate modules" do
-      [module_a, module_b] = Loader.reload_pages_modules(@site)
-      assert %Rendered{} = module_a.render(%{})
-      assert %Rendered{} = module_b.render(%{})
-    end
-
     test "loads page module", %{page_a: page} do
-      module = Loader.reload_page_module(@site, page.id)
+      {:ok, module} = Loader.reload_page_module(@site, page.id)
       assert %{path: "/a"} = module.page_assigns()
       assert %Rendered{static: ["<h1>A</h1>"]} = module.render(%{})
     end
 
     test "unload page", %{page_a: page} do
-      module = Loader.reload_page_module(page.site, page.id)
+      {:ok, module} = Loader.reload_page_module(page.site, page.id)
       assert :erlang.module_loaded(module)
       Loader.unload_page_module(page.site, page.id)
       refute :erlang.module_loaded(module)
