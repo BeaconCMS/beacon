@@ -338,14 +338,14 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     snippets = Content.list_snippet_helpers(site)
     ast = Loader.Snippets.build_ast(site, snippets)
-    result = compile_module(site, ast)
+    result = compile_module(site, ast, "snippets")
     stop(result, config)
   end
 
   def handle_call(:reload_routes_module, _from, config) do
     %{site: site} = config
     ast = Loader.Routes.build_ast(site)
-    result = compile_module(site, ast)
+    result = compile_module(site, ast, "routes")
     stop(result, config)
   end
 
@@ -353,7 +353,7 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
     ast = Loader.Components.build_ast(site, components)
-    result = compile_module(site, ast)
+    result = compile_module(site, ast, "components")
     stop(result, config)
   end
 
@@ -361,7 +361,7 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     live_data = Content.live_data_for_site(site)
     ast = Loader.LiveData.build_ast(site, live_data)
-    result = compile_module(site, ast)
+    result = compile_module(site, ast, "live_data")
     stop(result, config)
   end
 
@@ -369,7 +369,7 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     error_pages = Content.list_error_pages(site, preloads: [:layout])
     ast = Loader.ErrorPage.build_ast(site, error_pages)
-    result = compile_module(site, ast)
+    result = compile_module(site, ast, "error_pages")
     stop(result, config)
   end
 
@@ -377,7 +377,7 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     stylesheets = Content.list_stylesheets(site)
     ast = Loader.Stylesheet.build_ast(site, stylesheets)
-    result = compile_module(site, ast)
+    result = compile_module(site, ast, "stylesheets")
     stop(result, config)
   end
 
@@ -391,7 +391,7 @@ defmodule Beacon.Loader.Worker do
 
       layout ->
         ast = Loader.Layout.build_ast(site, layout)
-        result = compile_module(site, ast)
+        result = compile_module(site, ast, "layout")
         stop(result, config)
     end
   end
@@ -406,7 +406,7 @@ defmodule Beacon.Loader.Worker do
 
       page ->
         ast = Loader.Page.build_ast(site, page)
-        result = compile_module(site, ast)
+        result = compile_module(site, ast, "page")
         :ok = Beacon.PubSub.page_loaded(page)
         stop(result, config)
     end
@@ -445,8 +445,8 @@ defmodule Beacon.Loader.Worker do
     {:stop, :shutdown, reply, state}
   end
 
-  defp compile_module(site, ast) do
-    case Compiler.compile_module(site, ast) do
+  defp compile_module(site, ast, file) do
+    case Compiler.compile_module(site, ast, file) do
       {:ok, module, []} ->
         {:ok, module}
 
