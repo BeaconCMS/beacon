@@ -61,7 +61,9 @@ defmodule BeaconWeb.ComponentsTest do
         template: template
       )
 
+    Beacon.Loader.reload_live_data_module(:my_site)
     Beacon.Loader.reload_components_module(:my_site)
+    Beacon.Loader.reload_layout_module(layout.site, layout.id)
     Beacon.Loader.reload_page_module(page.site, page.id)
   end
 end

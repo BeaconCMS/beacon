@@ -16,6 +16,19 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
+    # TODO: handle back pressure on simualtaneous calls to reload the same page
+    with {path, page_id} <- RouterServer.lookup_path(site, path),
+         %Beacon.Content.Page{path: ^path} = page <- Beacon.Content.get_published_page(site, page_id) do
+      Beacon.Loader.maybe_reload_page_module(page.site, page.id)
+    else
+      _ ->
+        raise BeaconWeb.NotFoundError, """
+        no page was found for site #{site} and path #{inspect(path)}
+
+        Make sure a page was created for that path.
+        """
+    end
+
     socket = Component.assign(socket, :beacon, BeaconAssigns.new(site))
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
