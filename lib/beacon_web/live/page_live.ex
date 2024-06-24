@@ -4,6 +4,7 @@ defmodule BeaconWeb.PageLive do
   import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false
   import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3], warn: false
   alias Beacon.Lifecycle
+  alias Beacon.Loader
   alias Beacon.RouterServer
   alias BeaconWeb.BeaconAssigns
   alias Phoenix.Component
@@ -18,7 +19,7 @@ defmodule BeaconWeb.PageLive do
 
     # TODO: handle back pressure on simualtaneous calls to reload the same page
     with {_path, page_id} <- RouterServer.lookup_path(site, path),
-         {:ok, _module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
+         {:ok, _module} <- Loader.maybe_reload_page_module(site, page_id) do
       :ok
     else
       _ ->
@@ -114,8 +115,8 @@ defmodule BeaconWeb.PageLive do
   @doc false
   def make_env(site) do
     imports = [
-      Beacon.Loader.Routes.module_name(site),
-      Beacon.Loader.Components.module_name(site)
+      Loader.Routes.module_name(site),
+      Loader.Components.module_name(site)
     ]
 
     Enum.reduce(imports, __ENV__, fn module, env ->
