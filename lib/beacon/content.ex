@@ -898,7 +898,6 @@ defmodule Beacon.Content do
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specfic page. Defaults to 1.
-    * `:sort` - column in which the result will be ordered by.
 
   """
   @doc type: :pages
