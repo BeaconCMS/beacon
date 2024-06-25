@@ -7,7 +7,7 @@ defmodule Beacon.Compiler do
   if Beacon.Config.env_test?() do
     @max_retries 2
   else
-    @max_retries 10
+    @max_retries 4
   end
 
   @type diagnostics :: [Code.diagnostic(:warning | :error)]
@@ -63,6 +63,8 @@ defmodule Beacon.Compiler do
   end
 
   defp compile_and_register(site, module, quoted, hash, file) do
+    Code.put_compiler_option(:ignore_module_conflict, true)
+
     case compile_quoted(quoted, file) do
       {:ok, module, diagnostics} ->
         add_module(site, module, hash, nil, diagnostics)

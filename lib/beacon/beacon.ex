@@ -37,7 +37,7 @@ defmodule Beacon do
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
   flexibility to plan your architecture from simple to complex environments. For example, you can have a single site
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
-  campaing that may receive too much traffic.
+  campaign that may receive too much traffic.
 
   ## Options
 
@@ -122,8 +122,10 @@ defmodule Beacon do
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) do
-    Beacon.Boot.do_init(Config.fetch!(site))
-    Beacon.Config.update_value(site, :skip_boot?, false)
+    site
+    |> Config.fetch!()
+    |> Beacon.Boot.do_init()
+
     :ok
   end
 
@@ -152,15 +154,15 @@ defmodule Beacon do
     if :erlang.module_loaded(module) do
       apply(module, function, args)
     else
-      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context)
+      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
     end
   rescue
-    e in UndefinedFunctionError ->
-      case {failure_count, e} do
+    error in UndefinedFunctionError ->
+      case {failure_count, error} do
         {failure_count, _} when failure_count >= 10 ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context)], __STACKTRACE__
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
 
         {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
           mfa = Exception.format_mfa(module, function, length(args))
@@ -168,33 +170,26 @@ defmodule Beacon do
           :timer.sleep(100 * (failure_count * 2))
           do_apply_mfa(module, function, args, failure_count + 1, context)
 
-        {_, e} ->
+        {_, error} ->
           reraise Beacon.RuntimeError,
-                  [message: apply_mfa_error_message(module, function, args, "runtime error - #{inspect(e)}", context)],
+                  [message: apply_mfa_error_message(module, function, args, nil, context, error)],
                   __STACKTRACE__
       end
 
-    e ->
-      reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, inspect(e), context)], __STACKTRACE__
+    error ->
+      Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
+      reraise error, __STACKTRACE__
   end
 
-  defp apply_mfa_error_message(module, function, args, reason, context) do
+  defp apply_mfa_error_message(module, function, args, reason, context, error) do
     mfa = Exception.format_mfa(module, function, length(args))
+    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
+    reason = if reason, do: "reason: #{reason}"
+    context = if context, do: "context: #{inspect(context)}"
+    error = if error, do: Exception.message(error)
 
-    context =
-      case context do
-        nil -> ""
-        _ -> "context: #{inspect(context)}"
-      end
-
-    """
-    failed to call #{mfa} with args: #{inspect(List.flatten(args))}
-
-    reason: #{reason}
-
-    #{context}
-
-    """
+    lines = for line <- [summary, reason, context, error], line != nil, do: line
+    Enum.join(lines, "\n\n")
   end
 
   @doc false

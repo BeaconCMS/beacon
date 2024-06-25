@@ -1,5 +1,5 @@
 defmodule Beacon.MediaLibraryTest do
-  use Beacon.DataCase, async: false
+  use Beacon.DataCase, async: true
 
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Asset

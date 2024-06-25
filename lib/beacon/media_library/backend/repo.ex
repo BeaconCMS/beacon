@@ -26,7 +26,8 @@ defmodule Beacon.MediaLibrary.Backend.Repo do
   def url_for(asset, _), do: url_for(asset)
 
   def url_for(asset) do
-    Beacon.Router.beacon_asset_url(asset.site, asset.file_name)
+    routes = Beacon.Loader.fetch_routes_module(asset.site)
+    Beacon.apply_mfa(routes, :beacon_asset_url, [asset.file_name])
   end
 
   def backend_key, do: @backend_key

@@ -37,7 +37,7 @@ defmodule Beacon.ConfigTest do
                  {:heex, "HEEx (HTML)"},
                  {:markdown, "Markdown (GitHub Flavored version)"}
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, template_formats: [])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, template_formats: [])
     end
 
     test "merge existing config" do
@@ -46,7 +46,7 @@ defmodule Beacon.ConfigTest do
                  {:markdown, "Markdown (GitHub Flavored version)"},
                  {:heex, "Custom HEEx description"}
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, template_formats: [{:heex, "Custom HEEx description"}])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, template_formats: [{:heex, "Custom HEEx description"}])
     end
 
     test "add config" do
@@ -56,7 +56,7 @@ defmodule Beacon.ConfigTest do
                  {:markdown, "Markdown (GitHub Flavored version)"},
                  {:custom_format, "Custom Format"}
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, template_formats: [{:custom_format, "Custom Format"}])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, template_formats: [{:custom_format, "Custom Format"}])
     end
   end
 
@@ -71,7 +71,7 @@ defmodule Beacon.ConfigTest do
                  after_publish_page: [],
                  upload_asset: [{:thumbnail, _}]
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, lifecycle: [load_template: []])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, lifecycle: [load_template: []])
     end
   end
 
@@ -108,14 +108,14 @@ defmodule Beacon.ConfigTest do
                   {:validations, []},
                   {:backends, [Beacon.MediaLibrary.Backend.Repo]}
                 ]}
-             ] = Config.new(site: :site, endpoint: :endpoint).assets
+             ] = Config.new(site: :site, endpoint: :endpoint, router: :router).assets
     end
   end
 
   describe "config_for_media_type/2" do
     test "retrieves" do
       media_type = "image/jpeg"
-      config = Config.new(site: :site, endpoint: :endpoint)
+      config = Config.new(site: :site, endpoint: :endpoint, router: :router)
 
       assert [
                {:processor, _},

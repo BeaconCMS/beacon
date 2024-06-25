@@ -93,7 +93,7 @@
           ## Readability Checks
           #
           # {Credo.Check.Readability.AliasOrder, []},
-          {Credo.Check.Readability.FunctionNames, []},
+          {Credo.Check.Readability.FunctionNames, [allow_acronyms: true]},
           {Credo.Check.Readability.LargeNumbers, []},
           {Credo.Check.Readability.MaxLineLength, [priority: :low, max_length: 150]},
           {Credo.Check.Readability.ModuleAttributeNames, []},
@@ -125,7 +125,7 @@
           {Credo.Check.Refactor.MapJoin, []},
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.NegatedConditionsWithElse, []},
-          {Credo.Check.Refactor.Nesting, []},
+          {Credo.Check.Refactor.Nesting, [max_nesting: 3]},
           {Credo.Check.Refactor.UnlessWithElse, []},
           {Credo.Check.Refactor.WithClauses, []},
           {Credo.Check.Refactor.FilterFilter, []},

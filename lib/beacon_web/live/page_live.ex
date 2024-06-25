@@ -4,6 +4,7 @@ defmodule BeaconWeb.PageLive do
   import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false
   import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3], warn: false
   alias Beacon.Lifecycle
+  alias Beacon.Loader
   alias Beacon.RouterServer
   alias BeaconWeb.BeaconAssigns
   alias Phoenix.Component
@@ -16,7 +17,20 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
+    # TODO: handle back pressure on simualtaneous calls to reload the same page
+    with {_path, page_id} <- RouterServer.lookup_path(site, path),
+         {:ok, _module} <- Loader.maybe_reload_page_module(site, page_id) do
+      :ok
+    else
+      _ ->
+        raise BeaconWeb.NotFoundError, """
+        no page was found for site #{site} and path #{inspect(path)}
+
+        Make sure a page was created for that path.
+        """
+    end
+
+    socket = Component.assign(socket, :beacon, BeaconAssigns.new(site))
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
@@ -75,11 +89,10 @@ defmodule BeaconWeb.PageLive do
 
   def handle_params(params, _url, socket) do
     %{"path" => path_info} = params
-
-    %{site: site, page: page, path_params: path_params, query_params: query_params} =
-      beacon_assigns = BeaconAssigns.build(socket.assigns.beacon, path_info, params)
-
+    %{beacon: %{site: site}} = socket.assigns
+    page = RouterServer.lookup_page!(site, path_info)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
+    beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
     Process.put(:__beacon_site__, site)
     Process.put(:__beacon_page_path__, page.path)
@@ -91,14 +104,45 @@ defmodule BeaconWeb.PageLive do
       # TODO: remove deprecated @beacon_live_data
       |> Component.assign(:beacon_live_data, live_data)
       # TODO: remove deprecated @beacon_path_params
-      |> Component.assign(:beacon_path_params, path_params)
+      |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
       # TODO: remove deprecated @beacon_query_params
-      |> Component.assign(:beacon_query_params, query_params)
+      |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
       |> Component.assign(:beacon, beacon_assigns)
 
     {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})}
   end
 
   @doc false
-  def make_env, do: __ENV__
+  def make_env(site) do
+    imports = [
+      Loader.Routes.module_name(site),
+      Loader.Components.module_name(site)
+    ]
+
+    Enum.reduce(imports, __ENV__, fn module, env ->
+      with true <- :erlang.module_loaded(module),
+           {:ok, env} <- define_import(env, module) do
+        env
+      else
+        {:error, error} -> raise Beacon.LoaderError, "failed to import #{module}: #{error}"
+        _ -> env
+      end
+    end)
+  end
+
+  # TODO: remove after requiring Elixir 1.17+
+  if Version.match?(System.version(), ">= 1.17.0") do
+    defp define_import(env, module) do
+      meta = []
+      Macro.Env.define_import(env, meta, module)
+    end
+  else
+    defp define_import(env, module) do
+      meta = []
+      opts = []
+      {functions, macros} = :elixir_import.import(meta, module, opts, env)
+      env = %{env | functions: functions, macros: macros, requires: [module | env.requires]}
+      {:ok, env}
+    end
+  end
 end

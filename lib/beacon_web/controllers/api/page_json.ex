@@ -22,15 +22,14 @@ defmodule BeaconWeb.API.PageJSON do
 
   defp data(%Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
-
-    beacon_assigns =
-      page.site
-      |> BeaconAssigns.build()
-      |> BeaconAssigns.build(path_info, %{})
-
     live_data = BeaconWeb.DataSource.live_data(page.site, path_info, %{})
+    beacon_assigns = BeaconAssigns.new(page.site, page, live_data, path_info, %{})
 
-    assigns = Map.put(live_data, :beacon, beacon_assigns)
+    assigns =
+      live_data
+      |> Map.put(:beacon, beacon_assigns)
+      # TODO: remove deprecated @beacon_live_data
+      |> Map.put(:beacon_live_data, live_data)
 
     %{
       id: page.id,

@@ -4,6 +4,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
   import Phoenix.LiveViewTest
 
   alias Beacon.Content
+  alias Beacon.Loader
 
   setup do
     live_data = live_data_fixture(site: :my_site, path: "/home/:greet")
@@ -36,7 +37,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
         <main>
           <h2>Some Values:</h2>
           <%= for value <- @values do %>
-            <%= my_component("sample_component", val: value) %>
+            <.sample_component val={value} />
           <% end %>
 
           <h2>Beacon:</h2>
@@ -74,7 +75,6 @@ defmodule BeaconWeb.Live.PageLiveTest do
       })
 
     Content.publish_page(page_home)
-    Beacon.Loader.reload_page_module(page_home.site, page_home.id)
 
     _page_without_meta_tags =
       published_page_fixture(
@@ -86,6 +86,12 @@ defmodule BeaconWeb.Live.PageLiveTest do
         """,
         meta_tags: nil
       )
+
+    Loader.reload_live_data_module(:my_site)
+    Loader.reload_snippets_module(:my_site)
+    Loader.reload_components_module(:my_site)
+    Loader.reload_layouts_modules(:my_site)
+    Loader.reload_pages_modules(:my_site)
 
     [layout: layout]
   end
@@ -100,9 +106,9 @@ defmodule BeaconWeb.Live.PageLiveTest do
   test "live data", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/home/hello")
 
-    assert has_element?(view, "#my-component-first", "first")
-    assert has_element?(view, "#my-component-second", "second")
-    assert has_element?(view, "#my-component-third", "third")
+    assert has_element?(view, "#my-component", "first")
+    assert has_element?(view, "#my-component", "second")
+    assert has_element?(view, "#my-component", "third")
   end
 
   describe "meta tags" do
@@ -150,23 +156,29 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       layout = published_layout_fixture()
 
-      [
-        site: "my_site",
-        layout_id: layout.id,
-        path: "/page/meta-tag",
-        title: "my first page",
-        description: "my test page",
-        meta_tags: [
-          %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
-          %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+      page =
+        [
+          site: "my_site",
+          layout_id: layout.id,
+          path: "/page/meta-tag",
+          title: "my first page",
+          description: "my test page",
+          meta_tags: [
+            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+            %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
+            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+          ]
         ]
-      ]
-      |> published_page_fixture()
-      |> Beacon.Repo.preload(:event_handlers)
+        |> published_page_fixture()
+        |> Beacon.Repo.preload(:event_handlers)
 
       live_data = live_data_fixture(path: "/page/meta-tag")
       live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
+
+      Beacon.Loader.reload_snippets_module(:my_site)
+      Beacon.Loader.reload_live_data_module(:my_site)
+      Beacon.Loader.reload_layout_module(layout.site, layout.id)
+      Beacon.Loader.reload_page_module(page.site, page.id)
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -213,9 +225,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     test "component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home/hello")
 
-      assert html =~ ~s(<span id="my-component-first">)
-      assert html =~ ~s(<span id="my-component-second">)
-      assert html =~ ~s(<span id="my-component-third">)
+      assert html =~ ~s(<span id="my-component">)
     end
 
     test "event", %{conn: conn} do
@@ -257,6 +267,8 @@ defmodule BeaconWeb.Live.PageLiveTest do
       live_data = live_data_fixture(path: "/my/page/:var")
       live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
 
+      Loader.reload_live_data_module(:my_site)
+
       {:ok, view, _html} = live(conn, "/my/page/foobar")
 
       assert page_title(view) =~ "page foobar"
@@ -276,22 +288,27 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
   describe "components" do
     test "update should reload the resource", %{conn: conn} do
-      component = component_fixture(name: "component_test", body: "component_test_v1")
+      component = component_fixture(name: "component_test", template: "component_test_v1")
       layout = published_layout_fixture()
 
-      published_page_fixture(
-        path: "/component_test",
-        template: """
-        <%= my_component("component_test", []) %>
-        """,
-        layout_id: layout.id
-      )
+      page =
+        published_page_fixture(
+          path: "/component_test",
+          template: """
+          <%= my_component("component_test", []) %>
+          """,
+          layout_id: layout.id
+        )
+
+      Beacon.Loader.reload_components_module(component.site)
+      Beacon.Loader.reload_layout_module(layout.site, layout.id)
+      Beacon.Loader.reload_page_module(page.site, page.id)
 
       {:ok, _view, html} = live(conn, "/component_test")
 
       assert html =~ "component_test_v1"
 
-      Content.update_component(component, %{body: "component_test_v2"})
+      Content.update_component(component, %{template: "component_test_v2"})
       Beacon.Loader.reload_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")

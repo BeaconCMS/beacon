@@ -443,6 +443,8 @@ defmodule Beacon.ContentTest do
           """)
       )
 
+      Beacon.Loader.reload_snippets_module(:my_site)
+
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
                %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
@@ -726,13 +728,13 @@ defmodule Beacon.ContentTest do
     test "update broadcasts updated content event" do
       %{site: site} = component = component_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
-      Content.update_component(component, %{body: "<div>test</div>"})
+      Content.update_component(component, %{template: "<div>test</div>"})
       assert_receive {:content_updated, :component, %{site: ^site}}
     end
 
     test "validate template heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_component(%{site: :my_site, name: "test", body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_component(%{site: :my_site, name: "test", template: "<div", example: "test"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -740,20 +742,28 @@ defmodule Beacon.ContentTest do
     test "validate template heex on update" do
       component = component_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_component(component, %{body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_component(component, %{template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
 
+    test "validate name format as valid function name" do
+      assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
+               Content.create_component(%{site: :my_site, name: "my component", template: "test", example: "test"})
+
+      assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
+               Content.create_component(%{site: :my_site, name: "my_component$", template: "test", example: "test"})
+    end
+
     test "list components" do
-      component_a = component_fixture(name: "component_a")
-      component_b = component_fixture(name: "component_b")
+      component_fixture(site: "my_site", name: "component_a")
+      component_fixture(site: "my_site", name: "component_b")
 
-      components = Content.list_components(component_b.site, query: "_b")
+      components = Content.list_components(:my_site, query: "_b", preloads: [:attrs])
 
-      assert Enum.member?(components, component_b)
-      refute Enum.member?(components, component_a)
+      assert Enum.find(components, &(&1.name == "component_b"))
+      refute Enum.find(components, &(&1.name == "component_a"))
     end
 
     test "page and per_page" do
@@ -779,8 +789,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update_component" do
-      component = component_fixture(name: "new_component", body: "old_body")
-      assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
+      component = component_fixture(name: "new_component", template: "old_body")
+      assert {:ok, %Component{template: "new_body"}} = Content.update_component(component, %{template: "new_body"})
     end
   end
 

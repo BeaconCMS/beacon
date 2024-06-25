@@ -72,7 +72,7 @@ If you're installing Beacon in an existing Phoenix application, you may have man
 
 The next step is to configure a database connection to store your site's pages, layouts, and other resources. We'll use the same datatbase as your application.
 
-Open the file `config.exs` and look for the line `config :beacon, Beacon.Repo`. That's the config used by Beacon and most of the times the default configuration
+Open the file `dev.exs` and look for the line `config :beacon, Beacon.Repo`. That's the config used by Beacon and most of the times the default configuration
 is enough for your local environment, but change it if needed. Since your application and Beacon are connecting to the same database, your `config :my_app, MyApp.Repo`
 should match Beacon's config:
 
@@ -188,7 +188,8 @@ Edit the template to replace with this content:
           </span>
         </div>
         <div class="flex items-center justify-center">
-          <BeaconWeb.Components.image
+          <.image
+            site={@beacon.site}
             name="image.webp"
             alt="My Page Image"
             width="600"
@@ -334,7 +335,7 @@ Now let's upload an image on the Media Library to finish our home page. Go to ht
 Once it's uploaded, note the image will be converted to a webp format for performance reasons, for example uploading a file logo.jpg it will be converted to logo.webp and we must use the new name on our template. Take note of the file name you just uploaded and edit the home page template, look for the image component `BeaconWeb.Components.image` in the template and update the name attribute:
 
 ```heex
-<BeaconWeb.Components.image
+<.image
   name="my_image.webp"
   ...
 ```

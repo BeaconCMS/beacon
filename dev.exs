@@ -55,20 +55,10 @@ defmodule SamplePhoenixWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :api do
-    plug :accepts, ["json"]
-    plug BeaconWeb.API.Plug
-  end
-
   scope "/" do
     pipe_through :browser
     beacon_site "/dev", site: :dev
     beacon_site "/dy", site: :dy
-  end
-
-  scope "/" do
-    pipe_through :api
-    beacon_api "/api"
   end
 end
 
@@ -148,11 +138,12 @@ dev_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
-    body: """
+    template: """
     <li>
       <%= @val %>
     </li>
-    """
+    """,
+    example: "<.sample_component val={1} />"
   })
 
   Beacon.Content.create_snippet_helper!(%{
@@ -245,9 +236,9 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
-            <li><.link navigate="/dev/markdown">Markdown Page</.link></li>
+            <li><.link patch={~P"/authors/1-author"}>Author (patch)</.link></li>
+            <li><.link navigate={~P"/posts/2023/my-post"}>Post (navigate)</.link></li>
+            <li><.link navigate={~P"/markdown"}>Markdown Page</.link></li>
           </ul>
         </div>
 
@@ -256,7 +247,7 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          <BeaconWeb.Components.image_set asset={@img1} sources={["480w"]} width="200px" />
+          <%!--  <BeaconWeb.Components.image_set asset={@img1} sources={["480w"]} width="200px" /> --%>
         </div>
 
         <div>
@@ -300,14 +291,14 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev">Home (navigate)</.link></li>
-            <li><.link navigate="/dev/posts/2023/my-post">Post (navigate)</.link></li>
+            <li><.link navigate={~P"/"}>Home (navigate)</.link></li>
+            <li><.link navigate={~P"/posts/2023/my-post"}>Post (navigate)</.link></li>
           </ul>
         </div>
 
         <div>
           <p>path params:</p>
-          <p><%= inspect @beacon_path_params %></p>
+          <p><%= inspect @beacon.path_params %></p>
         </div>
       </main>
       """
@@ -328,14 +319,14 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate="/dev">Home (navigate)</.link></li>
-            <li><.link patch="/dev/authors/1-author">Author (patch)</.link></li>
+            <li><.link navigate={~P"/"}>Home (navigate)</.link></li>
+            <li><.link patch={~P"/authors/1-author"}>Author (patch)</.link></li>
           </ul>
         </div>
 
         <div>
           <p>path params:</p>
-          <p><%= inspect @beacon_path_params %></p>
+          <p><%= inspect @beacon.path_params %></p>
         </div>
       </main>
       """
@@ -366,7 +357,7 @@ dy_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dy",
     name: "header",
-    body: """
+    template: """
     <header class="sticky top-0 left-0 z-50 w-full px-4 bg-white font-body">
       <nav class="flex items-center justify-between mx-auto lg:h-25 h-21 gap-x-3 max-w-7xl" aria-label="Main" id="nav-main">
       <.link navigate="/" class="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-8">
@@ -433,13 +424,14 @@ dy_seeds = fn ->
       </div>
       </nav>
     </header>
-    """
+    """,
+    example: "<.header />"
   })
 
   Beacon.Content.create_component!(%{
     site: "dy",
     name: "footer",
-    body: """
+    template: """
     <footer class="py-15 pb-15 font-body md:py-20 lg:py-24 xl:py-30 text-gray-50 px-4 bg-gray-700">
       <%!-- Footer CTA --%>
       <div class="max-w-7xl mx-auto">
@@ -717,7 +709,8 @@ dy_seeds = fn ->
         </div>
       </div>
     </footer>
-    """
+    """,
+    example: "<.footer />"
   })
 
   layout =
@@ -974,6 +967,7 @@ end
 dev_site = [
   site: :dev,
   endpoint: SamplePhoenix.Endpoint,
+  router: SamplePhoenixWeb.Router,
   skip_boot?: true,
   extra_page_fields: [BeaconTagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
@@ -1004,7 +998,12 @@ Task.start(fn ->
     {Beacon,
      sites: [
        dev_site,
-       [site: :dy, endpoint: SamplePhoenix.Endpoint, skip_boot?: true]
+       [
+         site: :dy,
+         endpoint: SamplePhoenix.Endpoint,
+         router: SamplePhoenixWeb.Router,
+         skip_boot?: true
+       ]
      ]},
     SamplePhoenix.Endpoint
   ]
