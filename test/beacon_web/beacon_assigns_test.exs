@@ -33,9 +33,7 @@ defmodule BeaconWeb.BeaconAssignsTest do
   end
 
   test "build with non-persisted page" do
-    page_id = Ecto.UUID.generate()
-    layout_id = Ecto.UUID.generate()
-    page = %Beacon.Content.Page{id: page_id, layout_id: layout_id, site: @site, path: "/blog"}
+    page = %Beacon.Content.Page{site: @site, path: "/blog"}
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
 
@@ -43,8 +41,6 @@ defmodule BeaconWeb.BeaconAssignsTest do
              site: @site,
              page: %{path: "/blog", title: ""},
              private: %{
-               page_id: ^page_id,
-               layout_id: ^layout_id,
                live_path: ["blog"]
              }
            } = assigns

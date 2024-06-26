@@ -150,6 +150,8 @@ defmodule Beacon do
     do_apply_mfa(module, function, args, 0, context)
   end
 
+  @max_retries 5
+
   defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
     if :erlang.module_loaded(module) do
       apply(module, function, args)
@@ -159,7 +161,7 @@ defmodule Beacon do
   rescue
     error in UndefinedFunctionError ->
       case {failure_count, error} do
-        {failure_count, _} when failure_count >= 10 ->
+        {failure_count, _} when failure_count >= @max_retries ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
           reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__

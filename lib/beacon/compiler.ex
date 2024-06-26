@@ -67,16 +67,12 @@ defmodule Beacon.Compiler do
 
     case compile_quoted(quoted, file) do
       {:ok, module, diagnostics} ->
-        add_module(site, module, hash, nil, diagnostics)
+        :ok = Loader.add_module(site, module, {hash, nil, diagnostics})
         {:ok, module, diagnostics}
 
       {:error, error, diagnostics} ->
-        add_module(site, module, hash, error, diagnostics)
+        :ok = Loader.add_module(site, module, {hash, error, diagnostics})
         {:error, module, {error, diagnostics}}
-
-      {:error, error} ->
-        add_module(site, module, hash, error, nil)
-        {:error, error}
     end
   end
 
@@ -104,8 +100,11 @@ defmodule Beacon.Compiler do
 
   defp do_compile_and_load(quoted, file, failure_count \\ 0) do
     [{module, _}] = Code.compile_quoted(quoted, file)
-    {:module, ^module} = Code.ensure_loaded(module)
-    {:ok, module}
+
+    case Code.ensure_loaded(module) do
+      {:module, ^module} -> {:ok, module}
+      error -> error
+    end
   rescue
     error in CompileError ->
       if failure_count < @max_retries do
@@ -122,10 +121,6 @@ defmodule Beacon.Compiler do
   def unload(module) do
     :code.purge(module)
     :code.delete(module)
-  end
-
-  defp add_module(site, module, hash, error, diagnostics) do
-    :ok = Loader.add_module(site, module, {hash, error, diagnostics})
   end
 
   defp current_hash(site, module) do
