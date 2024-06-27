@@ -145,7 +145,7 @@ defmodule Beacon.Loader.ComponentsTest do
       component_fixture(
         name: "render_component_site",
         template: "<h1>Component site: <%= @component.site %></h1>",
-        attrs: [%{name: "component", type: "Beacon.Content.Component"}]
+        attrs: [%{name: "component", type: "struct", struct_name: "Beacon.Content.Component"}]
       )
 
       mod = Loader.reload_components_module(@site)

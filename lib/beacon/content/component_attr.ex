@@ -23,7 +23,7 @@ defmodule Beacon.Content.ComponentAttr do
     component
     |> cast(attrs, [:name, :type, :struct_name, :opts, :component_id])
     |> validate_required([:name, :type])
-    |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
+    |> validate_format(:name, ~r/^[a-zA-Z0-9_!?]+$/, message: "can only contain letters, numbers, and underscores")
     |> validate_struct_name_required()
   end
 
