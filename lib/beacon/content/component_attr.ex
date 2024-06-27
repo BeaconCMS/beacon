@@ -10,6 +10,7 @@ defmodule Beacon.Content.ComponentAttr do
   schema "beacon_component_attrs" do
     field :name, :string
     field :type, :string
+    field :struct_name, :string
     field :opts, Beacon.Types.Binary, default: []
 
     belongs_to :component, Component
@@ -20,7 +21,20 @@ defmodule Beacon.Content.ComponentAttr do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:name, :type, :opts])
+    |> cast(attrs, [:name, :type, :struct_name, :opts, :component_id])
     |> validate_required([:name, :type])
+    |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
+    |> validate_struct_name_required()
+  end
+
+  def validate_struct_name_required(changeset) do
+    type = get_field(changeset, :type)
+    struct_name = get_field(changeset, :struct_name)
+
+    if type == "struct" and is_nil(struct_name) do
+      add_error(changeset, :struct_name, "is required when type is 'struct'")
+    else
+      changeset
+    end
   end
 end
