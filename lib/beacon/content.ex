@@ -908,7 +908,7 @@ defmodule Beacon.Content do
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specfic page. Defaults to 1.
-    * `:search` - search by one or more fields: `path`, `title`, `format`, `extra`.
+    * `:search` - search by one or more fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (no filter).
     * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   ## Examples
@@ -924,7 +924,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec list_published_pages(Site.t(), keyword()) :: [PageSnapshot.t()]
+  @spec list_published_pages(Site.t(), keyword()) :: [Page.t()]
   def list_published_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     page = Keyword.get(opts, :page, 1)
