@@ -37,7 +37,7 @@ defmodule Beacon do
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
   flexibility to plan your architecture from simple to complex environments. For example, you can have a single site
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
-  campaing that may receive too much traffic.
+  campaign that may receive too much traffic.
 
   ## Options
 
@@ -150,6 +150,8 @@ defmodule Beacon do
     do_apply_mfa(module, function, args, 0, context)
   end
 
+  @max_retries 5
+
   defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
     if :erlang.module_loaded(module) do
       apply(module, function, args)
@@ -159,7 +161,7 @@ defmodule Beacon do
   rescue
     error in UndefinedFunctionError ->
       case {failure_count, error} do
-        {failure_count, _} when failure_count >= 10 ->
+        {failure_count, _} when failure_count >= @max_retries ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
           reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
@@ -183,20 +185,13 @@ defmodule Beacon do
 
   defp apply_mfa_error_message(module, function, args, reason, context, error) do
     mfa = Exception.format_mfa(module, function, length(args))
+    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
     reason = if reason, do: "reason: #{reason}"
     context = if context, do: "context: #{inspect(context)}"
     error = if error, do: Exception.message(error)
 
-    """
-    failed to call #{mfa} with args: #{inspect(List.flatten(args))}
-
-    #{reason}
-
-    #{context}
-
-    #{error}
-
-    """
+    lines = for line <- [summary, reason, context, error], line != nil, do: line
+    Enum.join(lines, "\n\n")
   end
 
   @doc false

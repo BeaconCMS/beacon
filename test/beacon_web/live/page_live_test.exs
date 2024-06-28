@@ -156,27 +156,29 @@ defmodule BeaconWeb.Live.PageLiveTest do
 
       layout = published_layout_fixture()
 
-      [
-        site: "my_site",
-        layout_id: layout.id,
-        path: "/page/meta-tag",
-        title: "my first page",
-        description: "my test page",
-        meta_tags: [
-          %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
-          %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+      page =
+        [
+          site: "my_site",
+          layout_id: layout.id,
+          path: "/page/meta-tag",
+          title: "my first page",
+          description: "my test page",
+          meta_tags: [
+            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+            %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
+            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+          ]
         ]
-      ]
-      |> published_page_fixture()
-      |> Beacon.BeaconTest.Repo.preload(:event_handlers)
+        |> published_page_fixture()
+        |> Beacon.BeaconTest.Repo.preload(:event_handlers)
 
       live_data = live_data_fixture(path: "/page/meta-tag")
       live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
 
       Beacon.Loader.reload_snippets_module(:my_site)
       Beacon.Loader.reload_live_data_module(:my_site)
-      Beacon.Loader.reload_pages_modules(:my_site)
+      Beacon.Loader.reload_layout_module(layout.site, layout.id)
+      Beacon.Loader.reload_page_module(page.site, page.id)
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -289,15 +291,18 @@ defmodule BeaconWeb.Live.PageLiveTest do
       component = component_fixture(name: "component_test", template: "component_test_v1")
       layout = published_layout_fixture()
 
-      published_page_fixture(
-        path: "/component_test",
-        template: """
-        <%= my_component("component_test", []) %>
-        """,
-        layout_id: layout.id
-      )
+      page =
+        published_page_fixture(
+          path: "/component_test",
+          template: """
+          <%= my_component("component_test", []) %>
+          """,
+          layout_id: layout.id
+        )
 
       Beacon.Loader.reload_components_module(component.site)
+      Beacon.Loader.reload_layout_module(layout.site, layout.id)
+      Beacon.Loader.reload_page_module(page.site, page.id)
 
       {:ok, _view, html} = live(conn, "/component_test")
 

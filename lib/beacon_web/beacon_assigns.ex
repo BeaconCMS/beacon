@@ -1,6 +1,6 @@
 defmodule BeaconWeb.BeaconAssigns do
   @moduledoc """
-  Container of Beacon assigns related to the current page.
+  Read-only container of Beacon assigns related to the current page.
 
   These assigns can be used in page template or Elixir code, for example in in an event handler,
   and  they are made available as `@beacon`:
@@ -18,52 +18,45 @@ defmodule BeaconWeb.BeaconAssigns do
             query_params: %{},
             page: %{path: nil, title: nil},
             private: %{
-              live_data_keys: [],
-              live_path: [],
-              layout_id: nil,
-              page_id: nil,
-              page_updated_at: nil,
               page_module: nil,
-              components_module: nil
+              components_module: nil,
+              live_data_keys: [],
+              live_path: []
             }
 
   @doc false
-  def build(site) when is_atom(site) do
-    beacon_assigns = %__MODULE__{}
+  def new(site) when is_atom(site) do
     components_module = Beacon.Loader.Components.module_name(site)
-
-    %{
-      beacon_assigns
-      | site: site,
-        private: %{
-          beacon_assigns.private
-          | components_module: components_module
-        }
-    }
+    %__MODULE__{site: site, private: %{components_module: components_module}}
   end
 
-  def build(beacon_assigns = %__MODULE__{private: private}, path_info, query_params) when is_list(path_info) and is_map(query_params) do
-    site = beacon_assigns.site
-    %{site: ^site} = page = Beacon.RouterServer.lookup_page!(site, path_info)
+  def new(site, %Beacon.Content.Page{} = page) do
+    components_module = Beacon.Loader.Components.module_name(site)
+    page_module = Beacon.Loader.Page.module_name(site, page.id)
+    %__MODULE__{site: site, private: %{components_module: components_module, page_module: page_module}}
+  end
+
+  @doc false
+  def new(site, %Beacon.Content.Page{} = page, live_data, path_info, query_params)
+      when is_atom(site) and is_map(live_data) and is_list(path_info) and is_map(query_params) do
+    %{site: ^site} = page
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
     path_params = Beacon.Router.path_params(page.path, path_info)
     page_title = BeaconWeb.DataSource.page_title(site, page.id, live_data)
+    components_module = Beacon.Loader.Components.module_name(site)
 
-    %{
-      beacon_assigns
-      | path_params: path_params,
-        query_params: query_params,
-        page: %{path: page.path, title: page_title},
-        private: %{
-          private
-          | live_data_keys: Map.keys(live_data),
-            live_path: path_info,
-            layout_id: page.layout_id,
-            page_id: page.id,
-            page_updated_at: DateTime.utc_now(),
-            page_module: page_module
-        }
+    %__MODULE__{
+      site: page.site,
+      path_params: path_params,
+      query_params: query_params,
+      page: %{path: page.path, title: page_title},
+      private: %{
+        page_module: page_module,
+        components_module: components_module,
+        live_data_keys: Map.keys(live_data),
+        live_path: path_info
+      }
     }
   end
 

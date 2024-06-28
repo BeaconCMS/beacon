@@ -4,6 +4,7 @@ defmodule BeaconWeb.PageLive do
   import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false
   import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3], warn: false
   alias Beacon.Lifecycle
+  alias Beacon.Loader
   alias Beacon.RouterServer
   alias BeaconWeb.BeaconAssigns
   alias Phoenix.Component
@@ -16,7 +17,10 @@ defmodule BeaconWeb.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    socket = Component.assign(socket, :beacon, BeaconAssigns.build(site))
+    # TODO: handle back pressure on simualtaneous calls to reload the same page
+    page = RouterServer.lookup_page!(site, path)
+
+    socket = Component.assign(socket, beacon: BeaconAssigns.new(site, page))
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
@@ -24,10 +28,10 @@ defmodule BeaconWeb.PageLive do
   end
 
   def render(assigns) do
-    %{beacon: %{site: site, private: %{live_path: live_path}}} = assigns
+    %{beacon: %{private: %{page_module: page_module}}} = assigns
 
-    site
-    |> RouterServer.lookup_page!(live_path)
+    page_module
+    |> Beacon.apply_mfa(:page, [])
     |> Lifecycle.Template.render_template(assigns, __ENV__)
   end
 
@@ -58,10 +62,16 @@ defmodule BeaconWeb.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    %{beacon: %{site: site, private: %{page_id: page_id, page_module: page_module, live_path: live_path}}} = socket.assigns
+    %{beacon: %{private: %{page_module: page_module, live_path: live_path}}} = socket.assigns
+    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
 
     result =
-      Beacon.apply_mfa(page_module, :handle_event, [event_name, event_params, socket], context: %{site: site, page_id: page_id, live_path: live_path})
+      Beacon.apply_mfa(
+        page_module,
+        :handle_event,
+        [event_name, event_params, socket],
+        context: %{site: site, page_id: page_id, live_path: live_path}
+      )
 
     case result do
       {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
@@ -75,14 +85,11 @@ defmodule BeaconWeb.PageLive do
 
   def handle_params(params, _url, socket) do
     %{"path" => path_info} = params
-
-    %{site: site, page: page, path_params: path_params, query_params: query_params} =
-      beacon_assigns = BeaconAssigns.build(socket.assigns.beacon, path_info, params)
-
+    %{beacon: %{private: %{page_module: page_module}}} = socket.assigns
+    %{site: site} = Beacon.apply_mfa(page_module, :page_assigns, [[:site]])
+    page = Beacon.apply_mfa(page_module, :page, [])
     live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
-
-    Process.put(:__beacon_site__, site)
-    Process.put(:__beacon_page_path__, page.path)
+    beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
     socket =
       socket
@@ -91,9 +98,9 @@ defmodule BeaconWeb.PageLive do
       # TODO: remove deprecated @beacon_live_data
       |> Component.assign(:beacon_live_data, live_data)
       # TODO: remove deprecated @beacon_path_params
-      |> Component.assign(:beacon_path_params, path_params)
+      |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
       # TODO: remove deprecated @beacon_query_params
-      |> Component.assign(:beacon_query_params, query_params)
+      |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
       |> Component.assign(:beacon, beacon_assigns)
 
     {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})}
@@ -102,8 +109,8 @@ defmodule BeaconWeb.PageLive do
   @doc false
   def make_env(site) do
     imports = [
-      Beacon.Loader.Routes.module_name(site),
-      Beacon.Loader.Components.module_name(site)
+      Loader.Routes.module_name(site),
+      Loader.Components.module_name(site)
     ]
 
     Enum.reduce(imports, __ENV__, fn module, env ->

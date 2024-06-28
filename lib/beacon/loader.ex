@@ -118,27 +118,27 @@ defmodule Beacon.Loader do
   end
 
   def fetch_snippets_module(site) do
-    maybe_reload(Loader.Snippets.module_name(site), fn -> reload_snippets_module(site) end)
+    Loader.Snippets.module_name(site)
   end
 
   def fetch_routes_module(site) do
-    maybe_reload(Loader.Routes.module_name(site), fn -> reload_routes_module(site) end)
+    Loader.Routes.module_name(site)
   end
 
   def fetch_components_module(site) do
-    maybe_reload(Loader.Components.module_name(site), fn -> reload_components_module(site) end)
+    Loader.Components.module_name(site)
   end
 
   def fetch_live_data_module(site) do
-    maybe_reload(Loader.LiveData.module_name(site), fn -> reload_live_data_module(site) end)
+    Loader.LiveData.module_name(site)
   end
 
   def fetch_error_page_module(site) do
-    maybe_reload(Loader.ErrorPage.module_name(site), fn -> reload_error_page_module(site) end)
+    Loader.ErrorPage.module_name(site)
   end
 
   def fetch_stylesheet_module(site) do
-    maybe_reload(Loader.Stylesheet.module_name(site), fn -> reload_stylesheet_module(site) end)
+    Loader.Stylesheet.module_name(site)
   end
 
   def fetch_layouts_modules(site) do
@@ -148,7 +148,7 @@ defmodule Beacon.Loader do
   end
 
   def fetch_layout_module(site, layout_id) do
-    maybe_reload(Loader.Layout.module_name(site, layout_id), fn -> reload_layout_module(site, layout_id) end)
+    Loader.Layout.module_name(site, layout_id)
   end
 
   def fetch_pages_modules(site) do
@@ -158,6 +158,10 @@ defmodule Beacon.Loader do
   end
 
   def fetch_page_module(site, page_id) do
+    Loader.Page.module_name(site, page_id)
+  end
+
+  def maybe_reload_page_module(site, page_id) do
     maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
   end
 
@@ -208,7 +212,7 @@ defmodule Beacon.Loader do
 
   defp maybe_reload(module, reload_fun) do
     if :erlang.module_loaded(module) do
-      module
+      {:ok, module}
     else
       reload_fun.()
     end

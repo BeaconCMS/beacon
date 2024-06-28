@@ -15,7 +15,7 @@ defmodule Beacon.Loader.Page do
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
+      for fun <- [&page/1, &page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
       render(page),
@@ -44,22 +44,43 @@ defmodule Beacon.Loader.Page do
     end
   end
 
+  defp page(page) do
+    quote do
+      def page do
+        %Beacon.Content.Page{
+          site: unquote(page.site),
+          id: unquote(page.id),
+          layout_id: unquote(page.layout_id),
+          path: unquote(page.path),
+          title: unquote(page.title),
+          format: unquote(page.format)
+        }
+      end
+    end
+  end
+
   defp page_assigns(page) do
     raw_schema = interpolate_raw_schema(page)
 
     quote do
       def page_assigns do
         %{
+          id: unquote(page.id),
+          site: unquote(page.site),
+          layout_id: unquote(page.layout_id),
           title: unquote(page.title),
           meta_tags: unquote(Macro.escape(page.meta_tags)),
           raw_schema: unquote(Macro.escape(raw_schema)),
-          site: unquote(page.site),
           path: unquote(page.path),
           description: unquote(page.description),
           order: unquote(page.order),
           format: unquote(page.format),
           extra: unquote(Macro.escape(page.extra))
         }
+      end
+
+      def page_assigns(keys) when is_list(keys) do
+        Map.take(page_assigns(), keys)
       end
     end
   end
