@@ -21,7 +21,7 @@ defmodule Beacon.Content.ComponentSlotAttr do
   @doc false
   def changeset(component, attrs) do
     component
-    |> cast(attrs, [:name, :type, :struct_name, :opts])
+    |> cast(attrs, [:name, :type, :struct_name, :opts, :slot_id])
     |> validate_required([:name, :type])
     |> validate_struct_name_required()
   end

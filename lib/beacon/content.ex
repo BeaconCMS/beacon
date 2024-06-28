@@ -29,6 +29,8 @@ defmodule Beacon.Content do
   require Logger
   alias Beacon.Content.Component
   alias Beacon.Content.ComponentAttr
+  alias Beacon.Content.ComponentSlot
+  alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -1507,7 +1509,11 @@ defmodule Beacon.Content do
   @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
   def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Component, clauses, opts) |> Repo.preload(:attrs)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    Component
+    |> Repo.get_by(clauses, opts)
+    |> Repo.preload(preloads)
   end
 
   @doc """
@@ -1607,11 +1613,11 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> change_component(component, %{name: "Header"})
-      %Ecto.Changeset{data: %Component{}}
+      iex> change_component_attr(component_attr, %{name: "Header"})
+      %Ecto.Changeset{data: %ComponentAttr{}}
 
   """
-  @doc type: :components
+  @doc type: :component_attrs
   @spec change_component_attr(ComponentAttr.t(), map()) :: Changeset.t()
   def change_component_attr(%ComponentAttr{} = component_attr, attrs \\ %{}) do
     ComponentAttr.changeset(component_attr, attrs)
@@ -1640,7 +1646,7 @@ defmodule Beacon.Content do
   @doc """
   Updates a component attr.
 
-      iex> update_component(component, %{name: "new_component"})
+      iex> update_component(component_attr, %{name: "new_component"})
       {:ok, %ComponentAttr{}}
 
   """
@@ -1709,6 +1715,125 @@ defmodule Beacon.Content do
   defp query_list_component_attrs_search(query, _search), do: query
 
   defp query_list_component_attrs_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  # COMPONENT SLOTS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking slot changes.
+
+  ## Example
+
+      iex> change_component_slot(component_slot, %{name: "Slot A"})
+      %Ecto.Changeset{data: %ComponentSlot{}}
+
+  """
+  @doc type: :component_slots
+  @spec change_component_slot(ComponentSlot.t(), map()) :: Changeset.t()
+  def change_component_slot(%ComponentSlot{} = slot, attrs \\ %{}) do
+    ComponentSlot.changeset(slot, attrs)
+  end
+
+  @doc """
+  Creates a new component slot and returns the component with updated `:slots` association.
+  """
+  @doc type: :component_slots
+  @spec create_slot_for_component(Component.t(), %{name: binary()}) ::
+          {:ok, Component.t()} | {:error, Changeset.t()}
+  def create_slot_for_component(component, attrs) do
+    changeset =
+      component
+      |> Ecto.build_assoc(:slots)
+      |> ComponentSlot.changeset(attrs)
+
+    with {:ok, %ComponentSlot{}} <- Repo.insert(changeset),
+         %Component{} = component <- Repo.preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc """
+  Updates a component slot and returns the component with updated `:slots` association.
+  """
+  @doc type: :component_slots
+  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def update_slot_for_component(component, slot, attrs) do
+    changeset = ComponentSlot.changeset(slot, attrs)
+
+    with {:ok, %ComponentSlot{}} <- Repo.update(changeset),
+         %Component{} = component <- Repo.preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc """
+  Deletes a component slot and returns the component with updated slots association.
+  """
+  @doc type: :component_slots
+  @spec delete_slot_from_component(Component.t(), ComponentSlot.t()) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def delete_slot_from_component(component, slot) do
+    with {:ok, %ComponentSlot{}} <- Repo.delete(slot),
+         %Component{} = component <- Repo.preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  # COMPONENT SLOT ATTR
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking slot_attr changes.
+
+  ## Example
+
+      iex> change_slot_attr(slot_attr, %{name: "Header"})
+      %Ecto.Changeset{data: %ComponentSlotAttr{}}
+
+  """
+  @doc type: :slot_attrs
+  @spec change_slot_attr(ComponentSlotAttr.t(), map()) :: Changeset.t()
+  def change_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs \\ %{}) do
+    ComponentSlotAttr.changeset(slot_attr, attrs)
+  end
+
+  @doc """
+  Creates a slot attr.
+
+  ## Example
+
+      iex> create_slot_attr(attrs)
+      {:ok, %ComponentSlotAttr{}}
+
+  """
+  @spec create_slot_attr(map()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  @doc type: :slot_attrs
+  def create_slot_attr(attrs \\ %{}) do
+    %ComponentSlotAttr{}
+    |> ComponentSlotAttr.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a slot attr.
+
+      iex> update_slot(slot_attr, %{name: "new_slot"})
+      {:ok, %ComponentSlotAttr{}}
+
+  """
+  @doc type: :slot_attrs
+  @spec update_slot_attr(ComponentSlotAttr.t(), map()) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
+  def update_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs) do
+    slot_attr
+    |> ComponentSlotAttr.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a slot attr.
+  """
+  @doc type: :slot_attrs
+  @spec delete_slot_attr(ComponentSlotAttr.t()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  def delete_slot_attr(slot_attr) do
+    Repo.delete(slot_attr)
+  end
 
   # SNIPPETS
 
