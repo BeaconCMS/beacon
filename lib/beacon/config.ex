@@ -30,14 +30,19 @@ defmodule Beacon.Config do
   end
 
   @typedoc """
-  Host application module endpoint.
+  Host application Endpoint module.
   """
   @type endpoint :: module()
 
   @typedoc """
-  Host application module router.
+  Host application Router module.
   """
   @type router :: module()
+
+  @typedoc """
+  Host application Repo module.
+  """
+  @type repo :: module()
 
   @typedoc """
   Disables site booting.
@@ -170,6 +175,7 @@ defmodule Beacon.Config do
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
           router: router(),
+          repo: repo(),
           skip_boot?: skip_boot?(),
           authorization_source: authorization_source(),
           css_compiler: css_compiler(),
@@ -203,6 +209,7 @@ defmodule Beacon.Config do
   defstruct site: nil,
             endpoint: nil,
             router: nil,
+            repo: nil,
             skip_boot?: false,
             authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
@@ -231,6 +238,7 @@ defmodule Beacon.Config do
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
           | {:router, router()}
+          | {:repo, repo()}
           | {:skip_boot?, skip_boot?()}
           | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
@@ -255,6 +263,8 @@ defmodule Beacon.Config do
     * `:endpoint` - `t:endpoint/0` (required)
 
     * `:router` - `t:router/0` (required)
+
+    * `:repo` - `t:repo/0` (required)
 
     * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
 
@@ -295,6 +305,7 @@ defmodule Beacon.Config do
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
+        repo: MyApp.Repo,
         authorization_source: MyApp.MySiteAuthzPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
         template_formats: [
@@ -322,6 +333,7 @@ defmodule Beacon.Config do
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
+        repo: MyApp.Repo,
         skip_boot?: false,
         authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
@@ -374,6 +386,7 @@ defmodule Beacon.Config do
     opts[:site] || raise "missing required option :site"
     opts[:endpoint] || raise "missing required option :endpoint"
     opts[:router] || raise "missing required option :router"
+    opts[:repo] || raise "missing required option :repo"
 
     template_formats =
       Keyword.merge(

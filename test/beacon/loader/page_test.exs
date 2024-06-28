@@ -2,7 +2,7 @@ defmodule Beacon.Loader.PageTest do
   use Beacon.DataCase, async: false
   import Beacon.Fixtures
   alias Beacon.Loader
-  alias Beacon.Repo
+  alias Beacon.BeaconTest.Repo
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
