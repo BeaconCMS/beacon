@@ -90,7 +90,11 @@ defmodule Beacon.Loader.Components do
       unquote_splicing(
         for component_attr <- component.attrs do
           quote do
-            attr.(unquote(String.to_atom(component_attr.name)), unquote(att_type_to_atom(component_attr.type)), unquote(component_attr.opts))
+            attr.(
+              unquote(String.to_atom(component_attr.name)),
+              unquote(att_type_to_atom(component_attr.type, component_attr.struct_name)),
+              unquote(component_attr.opts)
+            )
           end
         end
       )
@@ -103,7 +107,11 @@ defmodule Beacon.Loader.Components do
                 unquote_splicing(
                   for slot_attr <- component_slot.attrs do
                     quote do
-                      attr.(unquote(String.to_atom(slot_attr.name)), unquote(att_type_to_atom(slot_attr.type)), unquote(slot_attr.opts))
+                      attr.(
+                        unquote(String.to_atom(slot_attr.name)),
+                        unquote(att_type_to_atom(slot_attr.type, slot_attr.struct_name)),
+                        unquote(slot_attr.opts)
+                      )
                     end
                   end
                 )
@@ -119,12 +127,12 @@ defmodule Beacon.Loader.Components do
     end
   end
 
-  def att_type_to_atom(component_type) when component_type in @supported_attr_types do
-    String.to_atom(component_type)
+  def att_type_to_atom(component_type, struct_name) when component_type == "struct" do
+    Module.concat([struct_name])
   end
 
-  def att_type_to_atom(component_type) do
-    Module.concat([component_type])
+  def att_type_to_atom(component_type, _struct_name) when component_type in @supported_attr_types do
+    String.to_atom(component_type)
   end
 
   # TODO: remove render_component/1 along with my_component/2
