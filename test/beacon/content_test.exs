@@ -272,6 +272,15 @@ defmodule Beacon.ContentTest do
       assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{path: "%me%"})
     end
 
+    test "list_published_pages search with function" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+
+      assert [%Page{path: "/with-tags"}] =
+               Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%tag%'")) end)
+
+      assert [] = Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%other%'")) end)
+    end
+
     test "list_published_pages search by path and title" do
       published_page_fixture(path: "/home-1", title: "Home")
       published_page_fixture(path: "/home-2", title: "Home")
@@ -283,7 +292,7 @@ defmodule Beacon.ContentTest do
       assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{format: "heex"})
     end
 
-    test "list_published_pages query by extra field" do
+    test "list_published_pages query by extra field with string value" do
       published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
       assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
     end

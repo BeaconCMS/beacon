@@ -908,7 +908,8 @@ defmodule Beacon.Content do
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specfic page. Defaults to 1.
-    * `:search` - search by one or more fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (no filter).
+    * `:search` - search by either one or more fields or dynamic query function.
+                  Available fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (do not apply search filter).
     * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   ## Examples
@@ -919,8 +920,8 @@ defmodule Beacon.Content do
       iex> list_published_pages(:my_site, search: %{extra: %{"tags" => "press"}})
       [%Page{}]
 
-  Note that `:extra` is a custom `Beacon.Content.PageField` and in order to query extra fields you must pass the field name in the map,
-  for example `%{extra: %{"type" => "blog_post"}}` searchs for all pages where the extra field `type` is `blog_post`.
+      iex> list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike 'year-20%'")) end)
+      [%Page{}]
 
   """
   @doc type: :pages
@@ -965,19 +966,17 @@ defmodule Beacon.Content do
 
   defp query_list_published_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
+  defp query_list_published_pages_search(query, search) when is_function(search, 0) do
+    from(q in query, where: ^search.())
+  end
+
   defp query_list_published_pages_search(query, search) when is_map(search) do
     where =
       Enum.reduce(search, dynamic(true), fn
-        {:path, path}, dynamic ->
-          dynamic([q], ^dynamic and ilike(q.path, ^path))
+        {field, value}, dynamic when field in [:path, :title, :format] and is_binary(value) ->
+          dynamic([q], ^dynamic and ilike(field(q, ^field), ^value))
 
-        {:title, title}, dynamic ->
-          dynamic([q], ^dynamic and ilike(q.title, ^title))
-
-        {:format, format}, dynamic ->
-          dynamic([q], ^dynamic and ilike(q.format, ^format))
-
-        {:extra, {field, value}}, dynamic ->
+        {:extra, {field, value}}, dynamic when is_binary(value) ->
           dynamic([q], ^dynamic and ilike(json_extract_path(q.extra, [^field]), ^value))
 
         _, dynamic ->
