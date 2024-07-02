@@ -39,8 +39,6 @@ defmodule Beacon.Repo.Migrations.MigratePageSnapshots do
 
   defp update_snapshot(id, page) do
     id = Ecto.UUID.dump!(id)
-    layout_id = Ecto.UUID.dump!(page.layout_id)
-    site = Atom.to_string(page.site)
     format = Atom.to_string(page.format)
 
     execute(fn ->
