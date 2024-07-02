@@ -703,11 +703,24 @@ defmodule Beacon.Content do
   @doc false
   def create_page_snapshot(page, event) do
     page = Repo.preload(page, [:variants, :event_handlers])
-    attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
+
+    attrs = %{
+      "site" => page.site,
+      "schema_version" => Page.version(),
+      "event_id" => event.id,
+      "page" => page,
+      "page_id" => page.id,
+      "path" => page.path,
+      "title" => page.title,
+      "format" => page.format,
+      "extra" => page.extra
+    }
+
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :format, :extra]
 
     %PageSnapshot{}
-    |> Changeset.cast(attrs, [:site, :schema_version, :page_id, :page, :event_id])
-    |> Changeset.validate_required([:site, :schema_version, :page_id, :page, :event_id])
+    |> Changeset.cast(attrs, fields)
+    |> Changeset.validate_required(fields)
     |> Repo.insert()
   end
 
@@ -817,7 +830,7 @@ defmodule Beacon.Content do
     * `:page` - returns records from a specfic page. Defaults to 1.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
-    * `:sort` - column in which the result will be ordered by.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   """
   @doc type: :pages
@@ -887,29 +900,44 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Returns all published pages for `site`.
+  Lists and search all published pages for `site`.
 
-  Unpublished pages are not returned even if it was once published before,
-  only the latest status is valid.
-
-  Pages are extracted from the latest published `Beacon.Content.PageSnapshot`.
+  Note that unpublished pages are not returned even if it was once published before, only the latest snapshot is considered.
 
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:search` - search by either one or more fields or dynamic query function.
+                  Available fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (do not apply search filter).
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
+
+  ## Examples
+
+      iex> list_published_pages(:my_site, search: %{path: "/home", title: "Home Page"})
+      [%Page{}]
+
+      iex> list_published_pages(:my_site, search: %{extra: %{"tags" => "press"}})
+      [%Page{}]
+
+      iex> list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike 'year-20%'")) end)
+      [%Page{}]
 
   """
   @doc type: :pages
-  @spec list_published_pages(Site.t(), keyword()) :: [Layout.t()]
+  @spec list_published_pages(Site.t(), keyword()) :: [Page.t()]
   def list_published_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     page = Keyword.get(opts, :page, 1)
+    search = Keyword.get(opts, :search)
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_published_pages_base()
     |> query_list_published_pages_limit(per_page)
     |> query_list_published_pages_offset(per_page, page)
+    |> query_list_published_pages_search(search)
+    |> query_list_published_pages_sort(sort)
     |> Repo.all()
     |> Enum.map(&extract_page_snapshot/1)
   end
@@ -924,8 +952,7 @@ defmodule Beacon.Content do
     from snapshot in PageSnapshot,
       join: event in subquery(events),
       on: snapshot.event_id == event.id,
-      where: snapshot.site == ^site,
-      order_by: [desc: snapshot.inserted_at]
+      where: snapshot.site == ^site
   end
 
   defp query_list_published_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
@@ -938,6 +965,30 @@ defmodule Beacon.Content do
   end
 
   defp query_list_published_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
+  defp query_list_published_pages_search(query, search) when is_function(search, 0) do
+    from(q in query, where: ^search.())
+  end
+
+  defp query_list_published_pages_search(query, search) when is_map(search) do
+    where =
+      Enum.reduce(search, dynamic(true), fn
+        {field, value}, dynamic when field in [:path, :title, :format] and is_binary(value) ->
+          dynamic([q], ^dynamic and ilike(field(q, ^field), ^value))
+
+        {:extra, {field, value}}, dynamic when is_binary(value) ->
+          dynamic([q], ^dynamic and ilike(json_extract_path(q.extra, [^field]), ^value))
+
+        _, dynamic ->
+          dynamic
+      end)
+
+    from(q in query, where: ^where)
+  end
+
+  defp query_list_published_pages_search(query, _search), do: query
+
+  defp query_list_published_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """
   Get latest published page.
