@@ -48,7 +48,7 @@ defmodule Beacon.Repo.Migrations.MigratePageSnapshots do
            SET path = $2,
                title = $3,
                format = $4,
-               extra = $5,
+               extra = $5
          WHERE id = $1
         """,
         [
