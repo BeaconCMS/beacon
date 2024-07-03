@@ -135,7 +135,10 @@ defmodule Mix.Tasks.Beacon.Install do
       new_application_file_content =
         application_file_content
         |> String.replace(".Endpoint\n", ".Endpoint,\n")
-        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, repo: #{repo}, endpoint: #{endpoint}, router: #{router}]]}\n]")
+        |> String.replace(
+          ~r/(children = [^]]*)]/,
+          "\\1 {Beacon, sites: [[site: :#{site}, repo: #{repo}, endpoint: #{endpoint}, router: #{router}]]}\n]"
+        )
 
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(application_file)])
       File.write!(application_file, new_application_file_content)
