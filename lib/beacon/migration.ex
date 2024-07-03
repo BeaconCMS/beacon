@@ -104,10 +104,10 @@ defmodule Beacon.Migration do
     create_if_not_exists table(:beacon_layout_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
+      add :event, :text, null: false
 
       add :layout_id, references(:beacon_layouts, on_delete: :delete_all, type: :binary_id), null: false
 
-      add :event, :text, null: false
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
@@ -120,18 +120,18 @@ defmodule Beacon.Migration do
       add :layout, :binary, null: false
 
       add :layout_id, references(:beacon_layouts, on_delete: :delete_all, type: :binary_id), null: false
-
       add :event_id, references(:beacon_layout_events, on_delete: :delete_all, type: :binary_id)
+
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
     create_if_not_exists table(:beacon_page_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
+      add :event, :text, null: false
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
 
-      add :event, :text, null: false
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
@@ -144,10 +144,14 @@ defmodule Beacon.Migration do
       add :schema_version, :integer, null: false, comment: "data structure version"
       add :site, :text, null: false
       add :page, :binary, null: false
+      add :path, :text, null: false
+      add :title, :text, null: false
+      add :format, :text, null: false
+      add :extra, :map, null: false, default: %{}
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
-
       add :event_id, references(:beacon_page_events, on_delete: :delete_all, type: :binary_id)
+
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
