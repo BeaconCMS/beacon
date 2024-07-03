@@ -5,61 +5,6 @@ defmodule Beacon.Migration do
   use Ecto.Migration
 
   def up do
-    create_if_not_exists table(:beacon_layouts, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :site, :text, null: false
-      add :title, :text
-      add :template, :text, null: false
-      add :meta_tags, {:array, :map}, default: []
-      add :resource_links, :map, default: %{}, null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists table(:beacon_pages, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :site, :text, null: false
-      add :path, :text, null: false
-      add :template, :text, null: false
-      add :order, :integer, default: 1
-      add :meta_tags, {:array, :map}, default: []
-      add :title, :text
-      add :description, :text
-      add :format, :text, null: false, default: "heex"
-      add :extra, :map, default: %{}
-      add :raw_schema, {:array, :map}, default: []
-      add :helpers, :map
-
-      add :layout_id, references(:beacon_layouts, type: :binary_id), null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists unique_index(:beacon_pages, [:path, :site])
-
-    create_if_not_exists table(:beacon_components, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :site, :text, null: false
-      add :name, :text, null: false
-      add :description, :text
-      add :thumbnail, :string
-      add :body, :text
-      add :template, :text, null: false
-      add :example, :text, null: false
-      add :category, :string, null: false, default: "element"
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists table(:beacon_stylesheets, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :site, :text, null: false
-      add :name, :text, null: false
-      add :content, :text, null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
     create_if_not_exists table(:beacon_assets, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
@@ -80,6 +25,38 @@ defmodule Beacon.Migration do
     create_if_not_exists index(:beacon_assets, [:source_id])
     create_if_not_exists index(:beacon_assets, [:usage_tag])
 
+    create_if_not_exists table(:beacon_stylesheets, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :name, :text, null: false
+      add :content, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists table(:beacon_live_data, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :path, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists index(:beacon_live_data, [:site])
+
+    create_if_not_exists table(:beacon_live_data_assigns, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :key, :text, null: false
+      add :value, :text, null: false
+      add :format, :string, null: false
+
+      add :live_data_id, references(:beacon_live_data, on_delete: :delete_all, type: :binary_id), null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists index(:beacon_live_data_assigns, [:live_data_id])
+
     create_if_not_exists table(:beacon_snippet_helpers, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
@@ -90,6 +67,71 @@ defmodule Beacon.Migration do
     end
 
     create_if_not_exists unique_index(:beacon_snippet_helpers, [:site, :name])
+
+    create_if_not_exists table(:beacon_components, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :name, :text, null: false
+      add :description, :text
+      add :thumbnail, :string
+      add :body, :text
+      add :template, :text, null: false
+      add :example, :text, null: false
+      add :category, :string, null: false, default: "element"
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists table(:beacon_component_attrs, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :name, :string, null: false
+      add :type, :string, null: false
+      add :opts, :binary
+
+      add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists index(:beacon_component_attrs, [:component_id])
+
+    create_if_not_exists table(:beacon_component_slots, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :name, :string, null: false
+      add :opts, :binary
+
+      add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists index(:beacon_component_slots, [:component_id])
+
+    create_if_not_exists table(:beacon_component_slot_attrs, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :name, :string, null: false
+      add :type, :string, null: false
+      add :opts, :binary
+
+      add :slot_id,
+          references(:beacon_component_slots, on_delete: :delete_all, type: :binary_id),
+          null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists index(:beacon_component_slot_attrs, [:slot_id])
+
+    create_if_not_exists table(:beacon_layouts, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :title, :text
+      add :template, :text, null: false
+      add :meta_tags, {:array, :map}, default: []
+      add :resource_links, :map, default: %{}, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
 
     create_if_not_exists table(:beacon_layout_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -114,6 +156,27 @@ defmodule Beacon.Migration do
 
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
+
+    create_if_not_exists table(:beacon_pages, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :path, :text, null: false
+      add :template, :text, null: false
+      add :order, :integer, default: 1
+      add :meta_tags, {:array, :map}, default: []
+      add :title, :text
+      add :description, :text
+      add :format, :text, null: false, default: "heex"
+      add :extra, :map, default: %{}
+      add :raw_schema, {:array, :map}, default: []
+      add :helpers, :map
+
+      add :layout_id, references(:beacon_layouts, type: :binary_id), null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create_if_not_exists unique_index(:beacon_pages, [:path, :site])
 
     create_if_not_exists table(:beacon_page_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -182,91 +245,28 @@ defmodule Beacon.Migration do
     end
 
     create_if_not_exists unique_index(:beacon_error_pages, [:status, :site])
-
-    create_if_not_exists table(:beacon_live_data, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :site, :text, null: false
-      add :path, :text, null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists index(:beacon_live_data, [:site])
-
-    create_if_not_exists table(:beacon_live_data_assigns, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :key, :text, null: false
-      add :value, :text, null: false
-      add :format, :string, null: false
-
-      add :live_data_id, references(:beacon_live_data, on_delete: :delete_all, type: :binary_id), null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists index(:beacon_live_data_assigns, [:live_data_id])
-
-    create_if_not_exists table(:beacon_component_attrs, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :name, :string, null: false
-      add :type, :string, null: false
-      add :opts, :binary
-
-      add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists index(:beacon_component_attrs, [:component_id])
-
-    create_if_not_exists table(:beacon_component_slots, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :name, :string, null: false
-      add :opts, :binary
-
-      add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists index(:beacon_component_slots, [:component_id])
-
-    create_if_not_exists table(:beacon_component_slot_attrs, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :name, :string, null: false
-      add :type, :string, null: false
-      add :opts, :binary
-
-      add :slot_id,
-          references(:beacon_component_slots, on_delete: :delete_all, type: :binary_id),
-          null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists index(:beacon_component_slot_attrs, [:slot_id])
   end
 
   def down do
-    drop_if_exists table(:beacon_layouts)
-    drop_if_exists table(:beacon_pages)
-    drop_if_exists table(:beacon_components)
-    drop_if_exists table(:beacon_stylesheets)
     drop_if_exists table(:beacon_assets)
+    drop_if_exists table(:beacon_stylesheets)
+    drop_if_exists table(:beacon_live_data)
+    drop_if_exists table(:beacon_live_data_assigns)
     drop_if_exists table(:beacon_snippet_helpers)
+    drop_if_exists table(:beacon_components)
+    drop_if_exists table(:beacon_component_attrs)
+    drop_if_exists table(:beacon_component_slots)
+    drop_if_exists table(:beacon_component_slot_attrs)
+    drop_if_exists table(:beacon_layouts)
     drop_if_exists table(:beacon_layout_events)
     drop_if_exists constraint(:beacon_layout_events, :event)
     drop_if_exists table(:beacon_layout_snapshots)
+    drop_if_exists table(:beacon_pages)
     drop_if_exists table(:beacon_page_events)
     drop_if_exists constraint(:beacon_page_events, :event)
     drop_if_exists table(:beacon_page_snapshots)
     drop_if_exists table(:beacon_page_variants)
     drop_if_exists table(:beacon_page_event_handlers)
     drop_if_exists table(:beacon_error_pages)
-    drop_if_exists table(:beacon_live_data)
-    drop_if_exists table(:beacon_live_data_assigns)
-    drop_if_exists table(:beacon_component_attrs)
-    drop_if_exists table(:beacon_component_slots)
-    drop_if_exists table(:beacon_component_slot_attrs)
   end
 end
