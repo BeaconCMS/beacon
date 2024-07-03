@@ -18,14 +18,14 @@ defmodule Beacon.Migration do
 
     create_if_not_exists table(:beacon_pages, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :path, :text, null: false
       add :site, :text, null: false
+      add :path, :text, null: false
       add :template, :text, null: false
       add :order, :integer, default: 1
       add :meta_tags, {:array, :map}, default: []
       add :title, :text
       add :description, :text
-      add :format, :text, null: false
+      add :format, :text, null: false, default: "heex"
       add :extra, :map, default: %{}
       add :raw_schema, {:array, :map}, default: []
       add :helpers, :map
@@ -41,32 +41,21 @@ defmodule Beacon.Migration do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
       add :name, :text, null: false
-      add :template, :text, null: false
-      add :thumbnail, :string
-      add :category, :string, null: false, default: "other"
-      add :body, :text
       add :description, :text
+      add :thumbnail, :string
+      add :body, :text
+      add :template, :text, null: false
       add :example, :text, null: false
+      add :category, :string, null: false, default: "element"
 
       timestamps(type: :utc_datetime_usec)
     end
-
-    create_if_not_exists table(:beacon_page_versions, primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :version, :integer
-      add :template, :text
-      add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id)
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create_if_not_exists index(:beacon_page_versions, [:page_id])
 
     create_if_not_exists table(:beacon_stylesheets, primary_key: false) do
       add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
       add :name, :text, null: false
       add :content, :text, null: false
-      add :site, :text, null: false
 
       timestamps(type: :utc_datetime_usec)
     end
@@ -77,12 +66,13 @@ defmodule Beacon.Migration do
       add :file_name, :string, null: false
       add :media_type, :string, null: false
       add :file_body, :binary, null: false
-      add :deleted_at, :utc_datetime
       add :keys, :map, default: %{}
       add :usage_tag, :text
       add :extra, :map, default: %{}, null: false
 
       add :source_id, references(:beacon_assets, type: :binary_id)
+
+      add :deleted_at, :utc_datetime
 
       timestamps(type: :utc_datetime_usec)
     end
@@ -93,8 +83,8 @@ defmodule Beacon.Migration do
     create_if_not_exists table(:beacon_snippet_helpers, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
-      add :body, :text, null: false
       add :name, :text, null: false
+      add :body, :text, null: false
 
       timestamps(type: :utc_datetime_usec)
     end
@@ -111,12 +101,12 @@ defmodule Beacon.Migration do
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
-    create constraint(:beacon_layout_events, :beacon_layout_events_event_validate, check: "event = 'created' or event = 'published'")
+    create constraint(:beacon_layout_events, :beacon_layout_events_check_event, check: "event = 'created' or event = 'published'")
 
     create_if_not_exists table(:beacon_layout_snapshots, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :schema_version, :integer, null: false, comment: "data structure version"
       add :site, :text, null: false
+      add :schema_version, :integer, null: false, comment: "data structure version"
       add :layout, :binary, null: false
 
       add :layout_id, references(:beacon_layouts, on_delete: :delete_all, type: :binary_id), null: false
@@ -135,19 +125,19 @@ defmodule Beacon.Migration do
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
-    create constraint(:beacon_page_events, :beacon_page_events_event_validate,
+    create constraint(:beacon_page_events, :beacon_page_events_check_event,
              check: "event = 'created' or event = 'published' or event = 'unpublished'"
            )
 
     create_if_not_exists table(:beacon_page_snapshots, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :schema_version, :integer, null: false, comment: "data structure version"
       add :site, :text, null: false
+      add :schema_version, :integer, null: false, comment: "data structure version"
       add :page, :binary, null: false
       add :path, :text, null: false
       add :title, :text, null: false
       add :format, :text, null: false
-      add :extra, :map, null: false, default: %{}
+      add :extra, :map, null: false
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
       add :event_id, references(:beacon_page_events, on_delete: :delete_all, type: :binary_id)
@@ -185,6 +175,7 @@ defmodule Beacon.Migration do
       add :site, :text, null: false
       add :status, :integer, null: false
       add :template, :text, null: false
+
       add :layout_id, references(:beacon_layouts, type: :binary_id)
 
       timestamps(type: :utc_datetime_usec)
@@ -260,7 +251,6 @@ defmodule Beacon.Migration do
     drop_if_exists table(:beacon_layouts)
     drop_if_exists table(:beacon_pages)
     drop_if_exists table(:beacon_components)
-    drop_if_exists table(:beacon_page_versions)
     drop_if_exists table(:beacon_stylesheets)
     drop_if_exists table(:beacon_assets)
     drop_if_exists table(:beacon_snippet_helpers)
