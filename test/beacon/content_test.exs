@@ -202,18 +202,23 @@ defmodule Beacon.ContentTest do
       assert compilation_error =~ "unmatched closing tag"
     end
 
-    test "publish page should create a published event" do
+    test "publish page creates a published event" do
       page = page_fixture()
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert [_created, %PageEvent{event: :published}] = Repo.all(PageEvent)
     end
 
-    test "publish page should create a snapshot" do
+    test "publish page creates a snapshot" do
       page = page_fixture(title: "snapshot test")
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
+    end
+
+    test "publish page normalizes most used columns" do
+      published_page_fixture(path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"})
+      assert %PageSnapshot{path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"}} = Repo.one(PageSnapshot)
     end
 
     test "list_published_pages" do
@@ -246,6 +251,50 @@ defmodule Beacon.ContentTest do
       Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
+    end
+
+    test "list_published_pages query latest snapshot" do
+      # publish page_a twice
+      page_a = page_fixture(path: "/a", title: "page_a v1")
+      {:ok, page_a} = Content.publish_page(page_a)
+      {:ok, page_a} = Content.update_page(page_a, %{"title" => "page_a v2"})
+      {:ok, _page_a} = Content.publish_page(page_a)
+
+      assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site, query: "page_a")
+    end
+
+    test "list_published_pages search returns empty with no pages" do
+      assert [] = Content.list_published_pages(:my_site, search: %{path: "not-found"})
+    end
+
+    test "list_published_pages search by parts of path" do
+      published_page_fixture(path: "/home")
+      assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{path: "%me%"})
+    end
+
+    test "list_published_pages search with function" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+
+      assert [%Page{path: "/with-tags"}] =
+               Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%tag%'")) end)
+
+      assert [] = Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%other%'")) end)
+    end
+
+    test "list_published_pages search by path and title" do
+      published_page_fixture(path: "/home-1", title: "Home")
+      published_page_fixture(path: "/home-2", title: "Home")
+      assert [%Page{path: "/home-1"}] = Content.list_published_pages(:my_site, search: %{path: "/home-1", title: "Home"})
+    end
+
+    test "list_published_pages search by format" do
+      published_page_fixture(path: "/home", format: :heex)
+      assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{format: "heex"})
+    end
+
+    test "list_published_pages query by extra field with string value" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+      assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
     end
 
     test "list_page_events" do
