@@ -209,7 +209,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
                      MyAppWeb.Endpoint,
                      # Start a worker by calling: MyApp.Worker.start_link(arg)
                      # {MyApp.Worker, arg}
-                    {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint]]}
+                    {Beacon, sites: [[site: :my_site, endpoint: MyAppWeb.Endpoint, router: MyAppWeb.Router]]}
                ]
 
                    # See https://hexdocs.pm/elixir/Supervisor.html
