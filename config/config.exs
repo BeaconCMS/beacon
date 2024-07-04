@@ -1,20 +1,8 @@
 import Config
 
-config :beacon, ecto_repos: [Beacon.BeaconTest.Repo]
-
 config :beacon, :generators, binary_id: true
 
 config :phoenix, :json_library, Jason
-
-config :beacon, Beacon.BeaconTest.Repo,
-  migration_lock: false,
-  name: Beacon.BeaconTest.Repo,
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2,
-  priv: "priv/repo",
-  stacktrace: true,
-  migration_timestamps: [type: :utc_datetime_usec],
-  url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/beacon_test"
 
 if Mix.env() == :dev do
   esbuild = fn args ->

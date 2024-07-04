@@ -19,6 +19,27 @@ Application.put_env(:phoenix, :json_library, Jason)
 
 display_error_pages? = false
 
+Application.put_env(:beacon, :ecto_repos, [SamplePhoenix.Repo])
+
+Application.put_env(:beacon, SamplePhoenix.Repo,
+  url: "ecto://postgres:postgres@127.0.0.1/beacon_dev",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: System.schedulers_online() * 2,
+  priv: "test/support",
+  stacktrace: true,
+  migration_lock: false,
+  migration_timestamps: [type: :utc_datetime_usec]
+)
+
+defmodule SamplePhoenix.Repo do
+  use Ecto.Repo, otp_app: :beacon, adapter: Ecto.Adapters.Postgres
+end
+
+Application.ensure_all_started(:postgrex) |> dbg
+SamplePhoenix.Repo.start_link() |> dbg
+
+_ = Ecto.Adapters.Postgres.storage_up(SamplePhoenix.Repo.config()) |> dbg
+
 Application.put_env(:beacon, SamplePhoenix.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
@@ -966,6 +987,7 @@ end
 
 dev_site = [
   site: :dev,
+  repo: SamplePhoenix.Repo,
   endpoint: SamplePhoenix.Endpoint,
   router: SamplePhoenixWeb.Router,
   skip_boot?: true,
@@ -1000,6 +1022,7 @@ Task.start(fn ->
        dev_site,
        [
          site: :dy,
+         repo: SamplePhoenix.Repo,
          endpoint: SamplePhoenix.Endpoint,
          router: SamplePhoenixWeb.Router,
          skip_boot?: true
