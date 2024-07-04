@@ -68,26 +68,38 @@ end
 
 If you're installing Beacon in an existing Phoenix application, you may have many other routes but as long as there's on conflict you can mount multiple sites along with existing routes.
 
-## Connecting to a database
+## Setting the Repo (optional)
 
 The next step is to configure a database connection to store your site's pages, layouts, and other resources. We'll use the same datatbase as your application.
 
-Open the file `dev.exs` and look for the line `config :beacon, Beacon.Repo`. That's the config used by Beacon and most of the times the default configuration
-is enough for your local environment, but change it if needed. Since your application and Beacon are connecting to the same database, your `config :my_app, MyApp.Repo`
-should match Beacon's config:
+By default, the beacon installer will infer your repo based on the default naming pattern
+`MyApp.Repo`.  If you have customized your app's repo module, you can change it in `application.ex`:
 
 ```elixir
-config :my_app, MyApp.Repo,
-  username: "postgres",
-  password: "postgres",
-  # omitted
-  # ...
+children = [
+  ...
+  {Beacon: sites: [[... repo: YourCustomRepo, ...]]}
+]
+```
 
-config :beacon, Beacon.Repo,
-  username: "postgres",
-  password: "postgres",
-  # omitted
-  # ...
+## Add Beacon Migration
+
+Beacon requires some database tables to be setup via Ecto Migration.  First run
+
+```
+mix ecto.gen.migration create_beacon_tables
+```
+
+Then go to the generated migration (usually in `/priv/repo/migrations`) and add the following:
+
+```elixir
+defmodule MyApp.Repo.Migrations.CreateBeaconTables do
+  use Ecto.Migration
+
+  defdelegate up, to: Beacon.Migration
+
+  defdelegate down, to: Beacon.Migration
+end
 ```
 
 ## Starting the application

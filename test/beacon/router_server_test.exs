@@ -5,6 +5,7 @@ defmodule Beacon.RouterServerTest do
 
   setup do
     RouterServer.del_pages(:my_site)
+    on_exit(fn -> RouterServer.del_pages(:my_site) end)
   end
 
   describe "lookup by path" do

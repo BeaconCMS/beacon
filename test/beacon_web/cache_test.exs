@@ -4,7 +4,7 @@ defmodule BeaconWeb.CacheTest do
   alias BeaconWeb.Cache
 
   setup do
-    asset = media_library_asset_fixture()
+    asset = media_library_asset_fixture(site: :my_site)
     asset = %{asset | id: "9272fab9-0369-4394-8458-380b889600fd", updated_at: ~U[2024-04-02 20:32:12Z]}
     [asset: asset]
   end
