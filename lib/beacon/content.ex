@@ -2231,20 +2231,22 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single `LiveData` entry by `:site` and `:path`.
+  Gets a single live data by `clauses`.
 
   ## Example
 
-      iex> get_live_data(:my_site, "/foo/bar/:baz")
+      iex> get_live_data_by(site, id: "cba9ee2e-d40e-48af-9704-1237e4c23bde")
+      %LiveData{}
+
+      iex> get_live_data_by(site, path: "/blog")
       %LiveData{}
 
   """
   @doc type: :live_data
-  @spec get_live_data(Site.t(), String.t()) :: LiveData.t() | nil
-  def get_live_data(site, path) do
-    LiveData
-    |> repo(site).get_by(site: site, path: path)
-    |> repo(site).preload(:assigns)
+  @spec get_live_data_by(Site.t(), keyword(), keyword()) :: LiveData.t() | nil
+  def get_live_data_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    clauses = Keyword.put(clauses, :site, site)
+    repo(site).get_by(LiveData, clauses, opts) |> repo(site).preload(:assigns)
   end
 
   @doc """

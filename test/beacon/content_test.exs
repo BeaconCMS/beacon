@@ -908,7 +908,7 @@ defmodule Beacon.ContentTest do
     test "get_live_data/2" do
       live_data = live_data_fixture() |> Repo.preload(:assigns)
 
-      assert Content.get_live_data(live_data.site, live_data.path) == live_data
+      assert Content.get_live_data_by(live_data.site, path: live_data.path) == live_data
     end
 
     test "live_data_for_site/1" do
