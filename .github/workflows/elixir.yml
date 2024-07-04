@@ -32,6 +32,7 @@ jobs:
       MIX_ENV: test
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+      DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
 
     runs-on: ubuntu-20.04
 
@@ -75,11 +76,10 @@ jobs:
 
       - run: mix tailwind.install
 
-      - name: mix test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
-        run: mix test
+      - name: ecto setup
+        run: mix do ecto.create, ecto.migrate
 
+      - run: mix test
 
   quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
