@@ -103,9 +103,9 @@ defmodule Beacon.Compiler do
   defp do_compile_and_load(quoted, file, failure_count \\ 0) do
     [{module, _}] = Code.compile_quoted(quoted, file)
 
-    case Code.ensure_loaded(module) do
-      {:module, ^module} -> {:ok, module}
-      error -> error
+    case :code.ensure_modules_loaded([module]) do
+      :ok -> {:ok, module}
+      {:error, [{_, error}]} -> {:error, error}
     end
   rescue
     error in CompileError ->
