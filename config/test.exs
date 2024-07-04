@@ -7,13 +7,12 @@ config :logger, level: :error
 config :beacon, ecto_repos: [Beacon.BeaconTest.Repo]
 
 config :beacon, Beacon.BeaconTest.Repo,
-  url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/beacon_test",
+  url: "postgres://localhost:5432/beacon_test",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2,
   priv: "test/support",
   stacktrace: true,
-  migration_lock: false,
-  migration_timestamps: [type: :utc_datetime_usec]
+  show_sensitive_data_on_connection_error: true
 
 # Fake Key Values. We're not putting real creds here.
 config :ex_aws,
