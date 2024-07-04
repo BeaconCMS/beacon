@@ -19,7 +19,29 @@ Application.put_env(:phoenix, :json_library, Jason)
 
 display_error_pages? = false
 
-Application.put_env(:beacon, SamplePhoenix.Endpoint,
+defmodule Demo.Repo do
+  use Ecto.Repo, otp_app: :beacon, adapter: Ecto.Adapters.Postgres
+end
+
+Application.put_env(:beacon, :ecto_repos, [Demo.Repo])
+
+Application.put_env(:beacon, Demo.Repo,
+  url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/beacon_dev",
+  pool_size: System.schedulers_online() * 2,
+  priv: "test/support",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true
+)
+
+Application.ensure_all_started(:postgrex)
+_ = Ecto.Adapters.Postgres.storage_up(Demo.Repo.config())
+path = Path.join([Path.dirname(__ENV__.file), "test", "support", "migrations"])
+Demo.Repo.start_link()
+Ecto.Migrator.run(Demo.Repo, path, :down, all: true, log_migrations_sql: true)
+Ecto.Migrator.run(Demo.Repo, path, :up, all: true, log_migrations_sql: true)
+Demo.Repo.stop()
+
+Application.put_env(:beacon, DemoWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
@@ -27,7 +49,7 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
   debug_errors: !display_error_pages?,
   render_errors: [formats: [html: BeaconWeb.ErrorHTML]],
   check_origin: false,
-  pubsub_server: SamplePhoenix.PubSub,
+  pubsub_server: Demo.PubSub,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
@@ -37,12 +59,12 @@ Application.put_env(:beacon, SamplePhoenix.Endpoint,
   ]
 )
 
-defmodule SamplePhoenix.ErrorView do
+defmodule DemoWeb.ErrorView do
   use Phoenix.View, root: ""
   def render(_, _), do: "error"
 end
 
-defmodule SamplePhoenixWeb.Router do
+defmodule DemoWeb.Router do
   use Phoenix.Router
   use Beacon.Router
   import Phoenix.LiveView.Router
@@ -62,7 +84,7 @@ defmodule SamplePhoenixWeb.Router do
   end
 end
 
-defmodule SamplePhoenix.Endpoint do
+defmodule DemoWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :beacon
 
   @session_options [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"]
@@ -81,10 +103,10 @@ defmodule SamplePhoenix.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug SamplePhoenixWeb.Router
+  plug DemoWeb.Router
 end
 
-defmodule BeaconTagsField do
+defmodule Demo.Beacon.TagsField do
   use Phoenix.Component
   import BeaconWeb.CoreComponents
   import Ecto.Changeset
@@ -124,10 +146,10 @@ dev_seeds = fn ->
         %{"name" => "layout-meta-tag-one", "content" => "value"},
         %{"name" => "layout-meta-tag-two", "content" => "value"}
       ],
-      resource_links: [
-        %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
-        %{"rel" => "stylesheet", "href" => "alternative.css"}
-      ],
+      # resource_links: [
+      #   %{"rel" => "stylesheet", "href" => "print.css", "media" => "print"},
+      #   %{"rel" => "stylesheet", "href" => "alternative.css"}
+      # ],
       template: """
       <%= @inner_content %>
       """
@@ -966,10 +988,11 @@ end
 
 dev_site = [
   site: :dev,
-  endpoint: SamplePhoenix.Endpoint,
-  router: SamplePhoenixWeb.Router,
+  repo: Demo.Repo,
+  endpoint: DemoWeb.Endpoint,
+  router: DemoWeb.Router,
   skip_boot?: true,
-  extra_page_fields: [BeaconTagsField],
+  extra_page_fields: [Demo.Beacon.TagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
     %{"name" => "default", "content" => "dev"}
@@ -994,25 +1017,23 @@ dev_site =
 
 Task.start(fn ->
   children = [
-    {Phoenix.PubSub, [name: SamplePhoenix.PubSub]},
+    Demo.Repo,
+    {Phoenix.PubSub, [name: Demo.PubSub]},
+    DemoWeb.Endpoint,
     {Beacon,
      sites: [
        dev_site,
        [
          site: :dy,
-         endpoint: SamplePhoenix.Endpoint,
-         router: SamplePhoenixWeb.Router,
+         repo: Demo.Repo,
+         endpoint: DemoWeb.Endpoint,
+         router: DemoWeb.Router,
          skip_boot?: true
        ]
-     ]},
-    SamplePhoenix.Endpoint
+     ]}
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
-
-  # TODO: revert this change and remove ecto.reset from mix dev alias
-  # Ecto.Migrator.with_repo(Beacon.BeaconTest.Repo, &Ecto.Migrator.run(&1, :down, all: true))
-  # Ecto.Migrator.with_repo(Beacon.BeaconTest.Repo, &Ecto.Migrator.run(&1, :up, all: true))
 
   dev_seeds.()
   dy_seeds.()
