@@ -76,8 +76,7 @@ jobs:
 
       - run: mix tailwind.install
 
-      - name: ecto setup
-        run: mix do ecto.create, ecto.migrate
+      - run: mix do ecto.create, ecto.migrate
 
       - run: mix test
 
