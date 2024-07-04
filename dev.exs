@@ -14,7 +14,6 @@
 
 require Logger
 Logger.configure(level: :debug)
-Application.ensure_all_started(:postgrex)
 
 Application.put_env(:phoenix, :json_library, Jason)
 
@@ -34,6 +33,7 @@ Application.put_env(:beacon, Demo.Repo,
   show_sensitive_data_on_connection_error: true
 )
 
+Application.ensure_all_started(:postgrex)
 _ = Ecto.Adapters.Postgres.storage_up(Demo.Repo.config())
 path = Path.join([Path.dirname(__ENV__.file), "test", "support", "migrations"])
 Demo.Repo.start_link()
@@ -1033,9 +1033,7 @@ Task.start(fn ->
      ]}
   ]
 
-  Supervisor.start_link(children, strategy: :one_for_one) |> dbg
-
-  # Ecto.Migrator.with_repo(Beacon.BeaconTest.Repo, &Ecto.Migrator.run(&1, :up, all: true))
+  {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
   dev_seeds.()
   dy_seeds.()
