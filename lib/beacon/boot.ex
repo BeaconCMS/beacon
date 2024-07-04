@@ -17,6 +17,10 @@ defmodule Beacon.Boot do
 
   def init(%{site: site, skip_boot?: true}) do
     Logger.debug("Beacon.Boot is disabled on site #{site}")
+
+    # Router helpers are always available
+    Beacon.Loader.reload_routes_module(site)
+
     :ignore
   end
 
