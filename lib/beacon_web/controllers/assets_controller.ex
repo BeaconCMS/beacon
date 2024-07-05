@@ -32,4 +32,8 @@ defmodule BeaconWeb.AssetsController do
   defp content_and_type(_site, :js) do
     {Beacon.RuntimeJS.fetch(), "text/javascript"}
   end
+
+  defp content_and_type(_site, :tailwind_config) do
+    {Beacon.RuntimeTailwind.fetch(), "text/javascript"}
+  end
 end

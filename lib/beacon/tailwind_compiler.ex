@@ -15,7 +15,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
         ]
         ```
 
-       You're allowed to include more entries per Tailwind specification, but don't remove that special `<%= @beacon_content` placeholder.
+       You're allowed to include more entries per Tailwind specification, but don't remove that special `<%= @beacon_content %>` placeholder.
 
   """
 
@@ -49,6 +49,10 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   end
 
   defp generate_tailwind_config_file(site, tmp_dir, content) do
+    # Copy tailwind base config so the generated file can use it
+    assets_dir = Path.expand("../../assets/", __DIR__)
+    File.copy(Path.join(assets_dir, "tailwind.base.config.js"), Path.join(tmp_dir, "tailwind.base.config.js"))
+
     tailwind_config = tailwind_config!(site)
 
     unless Application.get_env(:tailwind, :version) do
