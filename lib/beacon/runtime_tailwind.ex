@@ -20,7 +20,7 @@ defmodule Beacon.RuntimeTailwind do
   end
 
   def load! do
-    config = build() |> IO.inspect(label: "### Tailwind")
+    config = build()
 
     hash = Base.encode16(:crypto.hash(:md5, config), case: :lower)
     true = :ets.insert(:beacon_assets, {:tailwind_config, {hash, config, config}})
