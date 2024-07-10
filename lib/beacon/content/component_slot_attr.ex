@@ -118,7 +118,7 @@ defmodule Beacon.Content.ComponentSlotAttr do
     type = get_field(changeset, :type)
     examples_opts = get_field(changeset, :opts) |> maybe_binary_to_term() |> Keyword.get(:examples, [])
 
-    Enum.reduce(examples_opts, changeset, fn value, changeset -> Content.validate(changeset, type, value, :opts_examples) end)
+    Enum.reduce(examples_opts, changeset, fn value, changeset -> Content.validate_if_value_matches_type(changeset, type, value, :opts_examples) end)
   end
 
   def validate_type_and_values_opts(%Changeset{valid?: false} = changeset), do: changeset
@@ -127,7 +127,7 @@ defmodule Beacon.Content.ComponentSlotAttr do
     type = get_field(changeset, :type)
     values_opts = get_field(changeset, :opts) |> maybe_binary_to_term() |> Keyword.get(:values, [])
 
-    Enum.reduce(values_opts, changeset, fn value, changeset -> Content.validate(changeset, type, value, :opts_values) end)
+    Enum.reduce(values_opts, changeset, fn value, changeset -> Content.validate_if_value_matches_type(changeset, type, value, :opts_values) end)
   end
 
   defp get_field_from_opts(changeset, field) do

@@ -1713,7 +1713,11 @@ defmodule Beacon.Content do
     end
   end
 
-  def validate(changeset, type, value, field) do
+  @doc """
+  Add a changeset error if the option value doesn't matches the type.
+  """
+  @spec validate_if_value_matches_type(Changeset.t(), String.t(), any(), atom()) :: Changeset.t()
+  def validate_if_value_matches_type(changeset, type, value, field) do
     cond do
       value == nil -> changeset
       type == "any" or type == "global" -> changeset
