@@ -1684,6 +1684,29 @@ defmodule Beacon.Content do
     end
   end
 
+  def validate(changeset, type, value, field) do
+    cond do
+      value == nil -> changeset
+      type == "any" or type == "global" -> changeset
+      type == "string" and is_binary(value) -> changeset
+      type == "string" -> Changeset.add_error(changeset, field, "it must be a string when type is 'string'")
+      type == "atom" and is_atom(value) -> changeset
+      type == "atom" -> Changeset.add_error(changeset, field, "it must be an atom when type is 'atom'")
+      type == "boolean" and is_boolean(value) -> changeset
+      type == "boolean" -> Changeset.add_error(changeset, field, "it must be a boolean when type is 'boolean'")
+      type == "integer" and is_integer(value) -> changeset
+      type == "integer" -> Changeset.add_error(changeset, field, "it must be a integer when type is 'integer'")
+      type == "float" and is_float(value) -> changeset
+      type == "float" -> Changeset.add_error(changeset, field, "it must be a float when type is 'float'")
+      type == "list" and is_list(value) -> changeset
+      type == "list" -> Changeset.add_error(changeset, field, "it must be a list when type is 'list'")
+      type == "map" and is_map(value) -> changeset
+      type == "map" -> Changeset.add_error(changeset, field, "it must be a map when type is 'map'")
+      type == "struct" and is_struct(value) -> changeset
+      type == "struct" -> Changeset.add_error(changeset, field, "it must be a struct when type is 'struct'")
+    end
+  end
+
   # COMPONENT SLOT ATTR
 
   @doc """

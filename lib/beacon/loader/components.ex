@@ -93,7 +93,7 @@ defmodule Beacon.Loader.Components do
             attr.(
               unquote(String.to_atom(component_attr.name)),
               unquote(att_type_to_atom(component_attr.type, component_attr.struct_name)),
-              unquote(component_attr.opts)
+              unquote(Macro.escape(component_attr.opts))
             )
           end
         end
@@ -110,7 +110,7 @@ defmodule Beacon.Loader.Components do
                       attr.(
                         unquote(String.to_atom(slot_attr.name)),
                         unquote(att_type_to_atom(slot_attr.type, slot_attr.struct_name)),
-                        unquote(slot_attr.opts)
+                        unquote(Macro.escape(slot_attr.opts))
                       )
                     end
                   end
