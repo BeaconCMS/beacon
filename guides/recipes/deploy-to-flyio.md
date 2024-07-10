@@ -45,17 +45,6 @@ RUN mkdir -p /app/bin/_build
 COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
 ```
 
-## Database connection
-
-In `config/runtime.exs` add the following config after `config :my_app, MyApp.Repo, ...`:
-
-```elixir
-config :beacon, Beacon.Repo,
-  url: database_url,
-  pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-  socket_options: maybe_ipv6
-```
-
 ## Launch
 
 With your account in place and all files updated, it's time to launch your application. Run:

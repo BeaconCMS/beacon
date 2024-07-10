@@ -1,5 +1,5 @@
 defmodule Beacon.RuntimeCSSTest do
-  use BeaconWeb.ConnCase, async: false
+  use BeaconWeb.ConnCase, async: true
 
   alias Beacon.RuntimeCSS
 

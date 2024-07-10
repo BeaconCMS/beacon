@@ -13,26 +13,26 @@ defmodule Beacon.Loader.ComponentsTest do
   end
 
   test "load empty module without components" do
-    mod = Loader.reload_components_module(@site)
+    {:ok, mod} = Loader.reload_components_module(@site)
     assert mod.__info__(:functions) == [{:my_component, 1}, {:my_component, 2}]
   end
 
   @tag :skip
   test "inject beacon site into assigns" do
     component_fixture(name: "hello", template: "<%= @beacon_site %>")
-    mod = Loader.reload_components_module(@site)
+    {:ok, mod} = Loader.reload_components_module(@site)
     assert render(mod.hello(%{})) == "my_site"
   end
 
   test "body" do
     component_fixture(name: "hello", body: ~S|assigns = Map.put(assigns, :id, 1)|, template: ~S|<%= @id %>|)
-    mod = Loader.reload_components_module(@site)
+    {:ok, mod} = Loader.reload_components_module(@site)
     assert render(mod.hello(%{})) == "1"
   end
 
   test "load component without attrs" do
     component_fixture(name: "hello", template: "<h1>hello</h1>")
-    mod = Loader.reload_components_module(@site)
+    {:ok, mod} = Loader.reload_components_module(@site)
     assert render(mod.hello(%{})) == "<h1>hello</h1>"
   end
 
@@ -44,7 +44,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "first_name", type: "string"}, %{name: "last_name", type: "string"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
       assert render(mod.say_hello(%{first_name: "José", last_name: "Valim"})) == "<h1>Hello José Valim</h1>"
     end
 
@@ -58,7 +58,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "first_name", type: "string"}, %{name: "ask_question?", type: "boolean"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(mod.say_hello(%{first_name: "José", ask_question?: true})) ==
                """
@@ -82,7 +82,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "erl_version", type: "integer"}, %{name: "elixir_version", type: "float"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(mod.show_versions(%{erl_version: 26, elixir_version: 1.16})) ==
                """
@@ -99,7 +99,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "greeting", type: "atom"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
       assert render(mod.say_hello(%{greeting: :hello})) == "<p>hello!</p>"
     end
 
@@ -115,7 +115,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "langs", type: "list"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(mod.advice(%{langs: ["Erlang", "Elixir", "Rust"]})) ==
                """
@@ -136,7 +136,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "user", type: "map"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(mod.user_info(%{user: %{name: "Joe", age: 20}})) == "Joe:20"
     end
@@ -148,7 +148,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "component", type: "struct", struct_name: "Beacon.Content.Component"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
       assert render(mod.render_component_site(%{component: %Beacon.Content.Component{site: :dy}})) == "<h1>Component site: dy</h1>"
     end
 
@@ -159,7 +159,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "first_name", type: "string"}, %{name: "fn_last_name", type: "any"}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
       assert render(mod.say_hello(%{first_name: "José", fn_last_name: fn x -> "FnValim #{x}" end})) == "<h1>Hello José FnValim test</h1>"
     end
   end
@@ -175,7 +175,7 @@ defmodule Beacon.Loader.ComponentsTest do
         ]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
       assert render(mod.say_hello(%{first_name: "Jane"})) == "<h1>Hello Jane Doe</h1>"
       assert render(mod.say_hello(%{first_name: "Jane", last_name: "Foo Bar"})) == "<h1>Hello Jane Foo Bar</h1>"
 
@@ -193,7 +193,7 @@ defmodule Beacon.Loader.ComponentsTest do
         ]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
       assert render(mod.error_message(%{kind: :info})) == "<h1 class=\"info\">Failed Operation</h1>"
       assert render(mod.error_message(%{kind: :error})) == "<h1 class=\"error\">Failed Operation</h1>"
     end
@@ -217,7 +217,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "entries", type: "list", opts: [default: []]}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(
                mod.unordered_list(%{
@@ -252,7 +252,7 @@ defmodule Beacon.Loader.ComponentsTest do
         ]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(
                mod.modal(%{
@@ -293,7 +293,7 @@ defmodule Beacon.Loader.ComponentsTest do
         attrs: [%{name: "rows", type: "list", opts: [default: []]}]
       )
 
-      mod = Loader.reload_components_module(@site)
+      {:ok, mod} = Loader.reload_components_module(@site)
 
       assert render(
                mod.table(%{

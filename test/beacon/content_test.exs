@@ -15,7 +15,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
-  alias Beacon.Repo
+  alias Beacon.BeaconTest.Repo
   alias Ecto.Changeset
 
   describe "layouts" do
@@ -202,18 +202,23 @@ defmodule Beacon.ContentTest do
       assert compilation_error =~ "unmatched closing tag"
     end
 
-    test "publish page should create a published event" do
+    test "publish page creates a published event" do
       page = page_fixture()
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert [_created, %PageEvent{event: :published}] = Repo.all(PageEvent)
     end
 
-    test "publish page should create a snapshot" do
+    test "publish page creates a snapshot" do
       page = page_fixture(title: "snapshot test")
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
+    end
+
+    test "publish page normalizes most used columns" do
+      published_page_fixture(path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"})
+      assert %PageSnapshot{path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"}} = Repo.one(PageSnapshot)
     end
 
     test "list_published_pages" do
@@ -236,16 +241,60 @@ defmodule Beacon.ContentTest do
 
     test "list_published_pages with same inserted_at missing usec" do
       page = page_fixture(path: "/d", title: "page v1")
-      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
-      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert Content.list_published_pages(:my_site) == []
 
       {:ok, _page} = Content.publish_page(page)
-      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
-      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
+    end
+
+    test "list_published_pages query latest snapshot" do
+      # publish page_a twice
+      page_a = page_fixture(path: "/a", title: "page_a v1")
+      {:ok, page_a} = Content.publish_page(page_a)
+      {:ok, page_a} = Content.update_page(page_a, %{"title" => "page_a v2"})
+      {:ok, _page_a} = Content.publish_page(page_a)
+
+      assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site, query: "page_a")
+    end
+
+    test "list_published_pages search returns empty with no pages" do
+      assert [] = Content.list_published_pages(:my_site, search: %{path: "not-found"})
+    end
+
+    test "list_published_pages search by parts of path" do
+      published_page_fixture(path: "/home")
+      assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{path: "%me%"})
+    end
+
+    test "list_published_pages search with function" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+
+      assert [%Page{path: "/with-tags"}] =
+               Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%tag%'")) end)
+
+      assert [] = Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%other%'")) end)
+    end
+
+    test "list_published_pages search by path and title" do
+      published_page_fixture(path: "/home-1", title: "Home")
+      published_page_fixture(path: "/home-2", title: "Home")
+      assert [%Page{path: "/home-1"}] = Content.list_published_pages(:my_site, search: %{path: "/home-1", title: "Home"})
+    end
+
+    test "list_published_pages search by format" do
+      published_page_fixture(path: "/home", format: :heex)
+      assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{format: "heex"})
+    end
+
+    test "list_published_pages query by extra field with string value" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+      assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
     end
 
     test "list_page_events" do
@@ -320,7 +369,7 @@ defmodule Beacon.ContentTest do
 
       Content.publish_page(page)
 
-      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.id)
+      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.site, page.id)
     end
 
     test "save raw_schema" do
@@ -859,7 +908,7 @@ defmodule Beacon.ContentTest do
     test "get_live_data/2" do
       live_data = live_data_fixture() |> Repo.preload(:assigns)
 
-      assert Content.get_live_data(live_data.site, live_data.path) == live_data
+      assert Content.get_live_data_by(live_data.site, path: live_data.path) == live_data
     end
 
     test "live_data_for_site/1" do
@@ -913,7 +962,7 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{key: "wins", value: "1337", format: :elixir}
-      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
 
       assert updated_assign.id == live_data_assign.id
       assert updated_assign.key == "wins"
@@ -926,12 +975,12 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{value: "[1)", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
       attrs = %{value: "if true, do false", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -941,7 +990,7 @@ defmodule Beacon.ContentTest do
       |
 
       attrs = %{value: code, format: :elixir}
-      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
     end
 
     test "delete_live_data/1" do
@@ -957,7 +1006,7 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
       Repo.preload(live_data, :assigns)
 
-      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign)
+      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign, live_data.site)
       assert %{assigns: []} = Repo.preload(live_data, :assigns)
     end
   end

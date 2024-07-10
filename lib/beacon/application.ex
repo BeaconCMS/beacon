@@ -10,8 +10,7 @@ defmodule Beacon.Application do
     # - Loading repo allows to run seeds without triggering module and css recompilation.
     children = [
       Beacon.Registry,
-      {Phoenix.PubSub, name: Beacon.PubSub},
-      Beacon.Repo
+      {Phoenix.PubSub, name: Beacon.PubSub}
     ]
 
     # TODO: scope by site

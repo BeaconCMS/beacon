@@ -1,5 +1,5 @@
 defmodule Beacon.MediaLibraryTest do
-  use Beacon.DataCase, async: false
+  use Beacon.DataCase, async: true
 
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Asset
@@ -8,8 +8,8 @@ defmodule Beacon.MediaLibraryTest do
   import Beacon.Support.BypassHelpers
 
   test "search by file name" do
-    media_library_asset_fixture(file_name: "my_file.webp")
-    media_library_asset_fixture(file_name: "other_file.webp")
+    media_library_asset_fixture(file_name: "my_file.webp", site: :my_site)
+    media_library_asset_fixture(file_name: "other_file.webp", site: :my_site)
 
     hits = MediaLibrary.search(:my_site, "my")
 
@@ -17,7 +17,7 @@ defmodule Beacon.MediaLibraryTest do
   end
 
   test "soft delete" do
-    asset = media_library_asset_fixture(file_name: "my_file.png")
+    asset = media_library_asset_fixture(file_name: "my_file.png", site: :my_site)
 
     assert {:ok, %Asset{deleted_at: deleted_at, updated_at: updated_at}} = MediaLibrary.soft_delete(asset)
     assert deleted_at
@@ -44,8 +44,8 @@ defmodule Beacon.MediaLibraryTest do
 
   describe "list_assets" do
     test "page and per_page" do
-      media_library_asset_fixture(file_name: "image_a.png")
-      media_library_asset_fixture(file_name: "image_b.png")
+      media_library_asset_fixture(file_name: "image_a.png", site: :my_site)
+      media_library_asset_fixture(file_name: "image_b.png", site: :my_site)
 
       assert [%Asset{file_name: "image_a.webp"}] = MediaLibrary.list_assets(:my_site, per_page: 1, page: 1, sort: :file_name)
       assert [%Asset{file_name: "image_b.webp"}] = MediaLibrary.list_assets(:my_site, per_page: 1, page: 2, sort: :file_name)
@@ -59,8 +59,8 @@ defmodule Beacon.MediaLibraryTest do
     end
 
     test "filter by file name" do
-      media_library_asset_fixture(file_name: "image_a.png")
-      media_library_asset_fixture(file_name: "image_b.png")
+      media_library_asset_fixture(file_name: "image_a.png", site: :my_site)
+      media_library_asset_fixture(file_name: "image_b.png", site: :my_site)
 
       assert MediaLibrary.count_assets(:my_site, query: "image_a") == 1
     end

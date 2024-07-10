@@ -1,3 +1,7 @@
+defmodule Beacon.ConfigError do
+  defexception message: "error in Beacon.Config"
+end
+
 defmodule Beacon.LoaderError do
   defexception message: "error in Beacon.Loader", plug_status: 404
 end

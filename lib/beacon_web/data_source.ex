@@ -21,23 +21,34 @@ defmodule BeaconWeb.DataSource do
         ""
 
       {:error, error} ->
+        {path, original_title} =
+          case page_assigns do
+            {:ok, page_assigns} -> {page_assigns.path, page_assigns.title}
+            _ -> {nil, ""}
+          end
+
         Logger.error("""
-        failed to interpolate page title variables, returning original page title
+        failed to interpolate page title variables
 
-        Site: #{page_assigns.site}
-        Page path: #{page_assigns.path}
+        will return the original unmodified page title
 
-        Got: #{inspect(error)}
+        site: #{site}
+        page path: #{path}
+
+        Got:
+
+          #{inspect(error)}
 
         """)
 
-        page_assigns.title
+        original_title
     end
   end
 
   # TODO: revisit this logic to evaluate meta_tags for unpublished pages
   def meta_tags(assigns) do
-    %{beacon: %{site: site, page: page, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns
+    %{beacon: %{page: page, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
+    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
     live_data = Map.take(assigns, live_data_keys)
 
     case page_assigns(site, page_id) do
@@ -76,9 +87,12 @@ defmodule BeaconWeb.DataSource do
   # which is what we need for sites to work properly but
   # the page builder could use this data as well
   defp page_assigns(site, page_id) do
-    case Beacon.Loader.fetch_page_module(site, page_id) do
-      {:error, _} -> {:error, :page_module_not_found}
-      page_module -> {:ok, Beacon.apply_mfa(page_module, :page_assigns, [])}
+    page_module = Beacon.Loader.fetch_page_module(site, page_id)
+
+    if :erlang.module_loaded(page_module) do
+      {:ok, Beacon.apply_mfa(page_module, :page_assigns, [])}
+    else
+      {:error, :page_module_not_found}
     end
   end
 end

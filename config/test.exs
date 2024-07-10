@@ -4,14 +4,15 @@ config :phoenix, :json_library, Jason
 
 config :logger, level: :error
 
-config :beacon, Beacon.Repo,
-  database: "beacon_test",
-  password: "postgres",
-  pool: Ecto.Adapters.SQL.Sandbox,
-  username: "postgres",
-  ownership_timeout: 1_000_000_000
+config :beacon, ecto_repos: [Beacon.BeaconTest.Repo]
 
-config :beacon, ecto_repos: [Beacon.Repo]
+config :beacon, Beacon.BeaconTest.Repo,
+  url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/beacon_test",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: System.schedulers_online() * 2,
+  priv: "test/support",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true
 
 # Fake Key Values. We're not putting real creds here.
 config :ex_aws,

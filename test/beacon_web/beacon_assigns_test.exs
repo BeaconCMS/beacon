@@ -6,6 +6,7 @@ defmodule BeaconWeb.BeaconAssignsTest do
   @site :my_site
 
   setup do
+    Beacon.Loader.reload_live_data_module(@site)
     [socket: %Phoenix.LiveView.Socket{assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}}]
   end
 
@@ -32,9 +33,7 @@ defmodule BeaconWeb.BeaconAssignsTest do
   end
 
   test "build with non-persisted page" do
-    page_id = Ecto.UUID.generate()
-    layout_id = Ecto.UUID.generate()
-    page = %Beacon.Content.Page{id: page_id, layout_id: layout_id, site: @site, path: "/blog"}
+    page = %Beacon.Content.Page{site: @site, path: "/blog"}
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
 
@@ -42,8 +41,6 @@ defmodule BeaconWeb.BeaconAssignsTest do
              site: @site,
              page: %{path: "/blog", title: ""},
              private: %{
-               page_id: ^page_id,
-               layout_id: ^layout_id,
                live_path: ["blog"]
              }
            } = assigns
@@ -52,6 +49,7 @@ defmodule BeaconWeb.BeaconAssignsTest do
   test "build with published page resolves page title" do
     Beacon.Loader.reload_components_module(@site)
     page = published_page_fixture(site: @site, path: "/blog", title: "blog index")
+    Beacon.Loader.reload_page_module(@site, page.id)
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
 
