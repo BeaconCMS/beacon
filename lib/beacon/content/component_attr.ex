@@ -27,12 +27,14 @@ defmodule Beacon.Content.ComponentAttr do
     |> validate_required([:name, :type])
     |> validate_format(:name, ~r/^[a-zA-Z0-9_!?]+$/, message: "can only contain letters, numbers, and underscores")
     |> validate_if_struct_name_required()
+    |> validate_struct_name()
     |> validate_non_empty_examples_opts()
     |> validate_non_empty_values_opts()
     |> validate_equivalent_options()
     |> validate_default_opts_is_in_values_opts()
     |> validate_type_and_values_opts()
     |> validate_type_and_default_opts()
+    |> validate_struct_name_and_default_opts()
     |> validate_type_and_examples_opts()
   end
 
@@ -42,6 +44,23 @@ defmodule Beacon.Content.ComponentAttr do
 
     if type == "struct" and is_nil(struct_name) do
       add_error(changeset, :struct_name, "is required when type is 'struct'")
+    else
+      changeset
+    end
+  end
+
+  def validate_struct_name(changeset) do
+    struct_name = get_field(changeset, :struct_name)
+
+    if struct_name do
+      struct = Module.concat([struct_name])
+
+      try do
+        Code.eval_string("%#{struct}{}")
+        changeset
+      rescue
+        _ -> add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
+      end
     else
       changeset
     end
@@ -74,14 +93,14 @@ defmodule Beacon.Content.ComponentAttr do
   end
 
   def validate_equivalent_options(changeset) do
+    opts = get_field(changeset, :opts) |> maybe_binary_to_term()
     required_opts = get_field_from_opts(changeset, :required)
-    default_opts = get_field_from_opts(changeset, :default)
 
     values_opts = get_field_from_opts(changeset, :values)
     examples_opts = get_field_from_opts(changeset, :examples)
 
     cond do
-      not is_nil(required_opts) and not is_nil(default_opts) ->
+      not is_nil(required_opts) and :default in Keyword.keys(opts) ->
         add_error(changeset, :opts_default, "only one of 'Required' or 'Default' attribute must be given")
 
       not is_nil(values_opts) and not is_nil(examples_opts) ->
@@ -95,11 +114,12 @@ defmodule Beacon.Content.ComponentAttr do
   def validate_default_opts_is_in_values_opts(%Changeset{valid?: false} = changeset), do: changeset
 
   def validate_default_opts_is_in_values_opts(%Changeset{valid?: true} = changeset) do
+    opts = get_field(changeset, :opts) |> maybe_binary_to_term()
     values_opts = get_field_from_opts(changeset, :values)
     default_opts = get_field_from_opts(changeset, :default)
 
     cond do
-      is_nil(default_opts) or is_nil(values_opts) -> changeset
+      :default not in Keyword.keys(opts) or is_nil(values_opts) -> changeset
       default_opts in values_opts -> changeset
       true -> add_error(changeset, :opts_default, "expected the default value to be one of the Accepted Values list")
     end
@@ -110,6 +130,24 @@ defmodule Beacon.Content.ComponentAttr do
     default_opts = get_field_from_opts(changeset, :default)
 
     Content.validate_if_value_matches_type(changeset, type, default_opts, :opts_default)
+  end
+
+  def validate_struct_name_and_default_opts(%Changeset{valid?: false} = changeset), do: changeset
+
+  def validate_struct_name_and_default_opts(%Changeset{valid?: true} = changeset) do
+    struct_name = get_field(changeset, :struct_name)
+    default_opts = get_field_from_opts(changeset, :default)
+
+    if is_nil(struct_name) or is_nil(default_opts) do
+      changeset
+    else
+      struct = Module.concat([struct_name])
+
+      case struct(struct) == default_opts do
+        true -> changeset
+        _ -> add_error(changeset, :opts_default, "expected the default value to be a #{struct_name} struct")
+      end
+    end
   end
 
   def validate_type_and_examples_opts(%Changeset{valid?: false} = changeset), do: changeset
