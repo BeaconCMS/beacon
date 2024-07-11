@@ -28,7 +28,7 @@ defmodule Beacon.Loader.Routes do
         # TODO: secure cross site assets
         # TODO: asset_path sigil
         def beacon_asset_path(file_name) when is_binary(file_name) do
-          sanitize_path("/beacon_assets/#{unquote(site)}/#{file_name}")
+          sanitize_path("/__beacon_assets__/#{unquote(site)}/#{file_name}")
         end
 
         # TODO: asset_url sigil

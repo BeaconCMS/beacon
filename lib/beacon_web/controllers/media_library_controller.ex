@@ -9,7 +9,7 @@ defmodule BeaconWeb.MediaLibraryController do
   def show(conn, %{"file_name" => file_name}) do
     site =
       case conn.path_info do
-        ["beacon_assets", site | _] -> String.to_existing_atom(site)
+        ["__beacon_assets__", site | _] -> String.to_existing_atom(site)
         _ -> nil
       end
 
