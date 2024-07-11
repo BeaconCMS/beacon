@@ -109,7 +109,7 @@ defmodule Beacon.Content.ComponentSlotAttr do
     type = get_field(changeset, :type)
     default_opts = get_field_from_opts(changeset, :default)
 
-    Content.validate(changeset, type, default_opts, :opts_default)
+    Content.validate_if_value_matches_type(changeset, type, default_opts, :opts_default)
   end
 
   def validate_type_and_examples_opts(%Changeset{valid?: false} = changeset), do: changeset

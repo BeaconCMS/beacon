@@ -1542,7 +1542,11 @@ defmodule Beacon.Content do
   @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
   def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    repo(site).get_by(Component, clauses, opts) |> repo(site).preload(:attrs)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    Component
+    |> repo(site).get_by(clauses, opts)
+    |> repo(site).preload(preloads)
   end
 
   @doc """
@@ -1646,7 +1650,7 @@ defmodule Beacon.Content do
       %Ecto.Changeset{data: %ComponentAttr{}}
 
   """
-  @doc type: :component_attrs
+  @doc type: :components
   @spec change_component_attr(ComponentAttr.t(), map()) :: Changeset.t()
   def change_component_attr(%ComponentAttr{} = component_attr, attrs \\ %{}) do
     ComponentAttr.changeset(component_attr, attrs)
@@ -1663,7 +1667,7 @@ defmodule Beacon.Content do
       %Ecto.Changeset{data: %ComponentSlot{}}
 
   """
-  @doc type: :component_slots
+  @doc type: :components
   @spec change_component_slot(ComponentSlot.t(), map()) :: Changeset.t()
   def change_component_slot(%ComponentSlot{} = slot, attrs \\ %{}) do
     ComponentSlot.changeset(slot, attrs)
@@ -1672,7 +1676,7 @@ defmodule Beacon.Content do
   @doc """
   Creates a new component slot and returns the component with updated `:slots` association.
   """
-  @doc type: :component_slots
+  @doc type: :components
   @spec create_slot_for_component(Component.t(), %{name: binary()}) ::
           {:ok, Component.t()} | {:error, Changeset.t()}
   def create_slot_for_component(component, attrs) do
@@ -1681,8 +1685,8 @@ defmodule Beacon.Content do
       |> Ecto.build_assoc(:slots)
       |> ComponentSlot.changeset(attrs)
 
-    with {:ok, %ComponentSlot{}} <- Repo.insert(changeset),
-         %Component{} = component <- Repo.preload(component, [slots: [:attrs]], force: true) do
+    with {:ok, %ComponentSlot{}} <- repo(component).insert(changeset),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
       {:ok, component}
     end
   end
@@ -1690,13 +1694,13 @@ defmodule Beacon.Content do
   @doc """
   Updates a component slot and returns the component with updated `:slots` association.
   """
-  @doc type: :component_slots
+  @doc type: :components
   @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   def update_slot_for_component(component, slot, attrs) do
     changeset = ComponentSlot.changeset(slot, attrs)
 
-    with {:ok, %ComponentSlot{}} <- Repo.update(changeset),
-         %Component{} = component <- Repo.preload(component, [slots: [:attrs]], force: true) do
+    with {:ok, %ComponentSlot{}} <- repo(component).update(changeset),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
       {:ok, component}
     end
   end
@@ -1704,19 +1708,16 @@ defmodule Beacon.Content do
   @doc """
   Deletes a component slot and returns the component with updated slots association.
   """
-  @doc type: :component_slots
+  @doc type: :components
   @spec delete_slot_from_component(Component.t(), ComponentSlot.t()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   def delete_slot_from_component(component, slot) do
-    with {:ok, %ComponentSlot{}} <- Repo.delete(slot),
-         %Component{} = component <- Repo.preload(component, [slots: [:attrs]], force: true) do
+    with {:ok, %ComponentSlot{}} <- repo(component).delete(slot),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
       {:ok, component}
     end
   end
 
-  @doc """
-  Add a changeset error if the option value doesn't matches the type.
-  """
-  @spec validate_if_value_matches_type(Changeset.t(), String.t(), any(), atom()) :: Changeset.t()
+  @doc false
   def validate_if_value_matches_type(changeset, type, value, field) do
     cond do
       value == nil -> changeset
@@ -1751,7 +1752,7 @@ defmodule Beacon.Content do
       %Ecto.Changeset{data: %ComponentSlotAttr{}}
 
   """
-  @doc type: :slot_attrs
+  @doc type: :components
   @spec change_slot_attr(ComponentSlotAttr.t(), map()) :: Changeset.t()
   def change_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs \\ %{}) do
     ComponentSlotAttr.changeset(slot_attr, attrs)
@@ -1762,16 +1763,16 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_slot_attr(attrs)
+      iex> create_slot_attr(site, attrs)
       {:ok, %ComponentSlotAttr{}}
 
   """
-  @spec create_slot_attr(map()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
-  @doc type: :slot_attrs
-  def create_slot_attr(attrs \\ %{}) do
+  @spec create_slot_attr(Site.t(), map()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  @doc type: :components
+  def create_slot_attr(site, attrs \\ %{}) do
     %ComponentSlotAttr{}
     |> ComponentSlotAttr.changeset(attrs)
-    |> Repo.insert()
+    |> repo(site).insert()
   end
 
   @doc """
@@ -1781,21 +1782,21 @@ defmodule Beacon.Content do
       {:ok, %ComponentSlotAttr{}}
 
   """
-  @doc type: :slot_attrs
-  @spec update_slot_attr(ComponentSlotAttr.t(), map()) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
-  def update_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs) do
+  @doc type: :components
+  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map()) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
+  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs) do
     slot_attr
     |> ComponentSlotAttr.changeset(attrs)
-    |> Repo.update()
+    |> repo(site).update()
   end
 
   @doc """
   Deletes a slot attr.
   """
-  @doc type: :slot_attrs
-  @spec delete_slot_attr(ComponentSlotAttr.t()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
-  def delete_slot_attr(slot_attr) do
-    Repo.delete(slot_attr)
+  @doc type: :components
+  @spec delete_slot_attr(Site.t(), ComponentSlotAttr.t()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  def delete_slot_attr(site, slot_attr) do
+    repo(site).delete(slot_attr)
   end
 
   # SNIPPETS
