@@ -273,7 +273,7 @@ defmodule Beacon.Config do
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
-    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
+    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js")`.
 
     * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 
@@ -308,7 +308,7 @@ defmodule Beacon.Config do
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
         authorization_source: MyApp.MySiteAuthzPolicy,
-        tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
+        tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js"),
         template_formats: [
           {:custom_format, "My Custom Format"}
         ],
@@ -338,7 +338,7 @@ defmodule Beacon.Config do
         skip_boot?: false,
         authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
-        tailwind_config: "/my_app/priv/tailwind.config.js.eex",
+        tailwind_config: "/my_app/priv/tailwind.config.js",
         live_socket_path: "/live",
         safe_code_check: false,
         template_formats: [
@@ -418,7 +418,7 @@ defmodule Beacon.Config do
 
     opts =
       opts
-      |> Keyword.put(:tailwind_config, opts[:tailwind_config] || Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"))
+      |> Keyword.put(:tailwind_config, opts[:tailwind_config] || Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js"))
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
       |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)

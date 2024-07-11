@@ -1,5 +1,4 @@
 module.exports = {
   content: [
-    <%= @beacon_content %>
   ]
 }

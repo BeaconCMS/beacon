@@ -14,7 +14,7 @@ if Mix.env() == :dev do
   end
 
   config :esbuild,
-    version: "0.17.18",
+    version: "0.23.0",
     cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
     cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
 end
