@@ -83,6 +83,7 @@ defmodule Beacon.Migrations.V001 do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :type, :string, null: false
+      add :struct_name, :string
       add :opts, :binary
 
       add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
@@ -108,6 +109,7 @@ defmodule Beacon.Migrations.V001 do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :type, :string, null: false
+      add :struct_name, :string
       add :opts, :binary
 
       add :slot_id,
@@ -240,14 +242,6 @@ defmodule Beacon.Migrations.V001 do
     end
 
     create_if_not_exists unique_index(:beacon_error_pages, [:status, :site])
-
-    alter table(:beacon_component_attrs) do
-      add :struct_name, :string
-    end
-
-    alter table(:beacon_component_slot_attrs) do
-      add :struct_name, :string
-    end
   end
 
   def down do
