@@ -74,8 +74,6 @@ defmodule Beacon.Compiler do
         :ok = Loader.add_module(site, module, {hash, error, diagnostics})
         {:error, module, {error, diagnostics}}
     end
-  after
-    {:ok, _} = Code.purge_compiler_modules()
   end
 
   if Version.match?(System.version(), ">= 1.15.0") do
