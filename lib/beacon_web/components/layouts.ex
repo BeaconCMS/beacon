@@ -17,7 +17,7 @@ defmodule BeaconWeb.Layouts do
         asset == :js -> Beacon.RuntimeJS.current_hash()
       end
 
-    path = Beacon.Router.sanitize_path("#{prefix}/beacon_assets/#{asset}-#{hash}")
+    path = Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/#{asset}-#{hash}")
     Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
   end
 

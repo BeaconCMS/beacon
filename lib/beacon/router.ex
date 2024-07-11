@@ -80,13 +80,13 @@ defmodule Beacon.Router do
 
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
 
-      get "/beacon_assets/#{site}/:file_name", BeaconWeb.MediaLibraryController, :show
+      get "/__beacon_assets__/#{site}/:file_name", BeaconWeb.MediaLibraryController, :show
 
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
-          get "/beacon_assets/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/beacon_assets/js:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/beacon_assets/:file_name", BeaconWeb.MediaLibraryController, :show
+          get "/__beacon_assets__/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/js-:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/:file_name", BeaconWeb.MediaLibraryController, :show
           live "/*path", BeaconWeb.PageLive, :path
         end
       end
@@ -142,7 +142,7 @@ defmodule Beacon.Router do
 
   @doc false
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    sanitize_path("/beacon_assets/#{site}/#{file_name}")
+    sanitize_path("/__beacon_assets__/#{site}/#{file_name}")
   end
 
   @doc false

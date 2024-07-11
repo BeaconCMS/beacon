@@ -26,8 +26,8 @@ defmodule Beacon.Loader.ErrorPageTest do
         <head>
           <meta name="csrf-token" content=.* />
           <title>Error</title>
-          <link rel="stylesheet" href=/beacon_assets/css.* />
-          <script defer src=/beacon_assets/js.*>
+          <link rel="stylesheet" href=/__beacon_assets__/css-.* />
+          <script defer src=/__beacon_assets__/js-.*>
           </script>
         </head>
         <body>
@@ -62,8 +62,8 @@ defmodule Beacon.Loader.ErrorPageTest do
         <head>
           <meta name="csrf-token" content=.* />
           <title>Error</title>
-          <link rel="stylesheet" href=/beacon_assets/css.* />
-          <script defer src=/beacon_assets/js.*>
+          <link rel="stylesheet" href=/__beacon_assets__/css-.* />
+          <script defer src=/__beacon_assets__/js-.*>
           </script>
         </head>
         <body>
@@ -83,8 +83,8 @@ defmodule Beacon.Loader.ErrorPageTest do
         <head>
           <meta name="csrf-token" content=.* />
           <title>Error</title>
-          <link rel="stylesheet" href=/beacon_assets/css.* />
-          <script defer src=/beacon_assets/js.*>
+          <link rel="stylesheet" href=/__beacon_assets__/css-.* />
+          <script defer src=/__beacon_assets__/js-.*>
           </script>
         </head>
         <body>
@@ -110,8 +110,8 @@ defmodule Beacon.Loader.ErrorPageTest do
         <head>
           <meta name="csrf-token" content=.* />
           <title>Error</title>
-          <link rel="stylesheet" href=/beacon_assets/css.* />
-          <script defer src=/beacon_assets/js.*>
+          <link rel="stylesheet" href=/__beacon_assets__/css-.* />
+          <script defer src=/__beacon_assets__/js-.*>
           </script>
         </head>
         <body>
