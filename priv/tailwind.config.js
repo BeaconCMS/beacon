@@ -5,7 +5,6 @@
 
 module.exports = {
   content: [
-    <%= @beacon_content %>
   ],
   theme: {
     extend: {},

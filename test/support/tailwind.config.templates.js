@@ -1,7 +1,6 @@
 module.exports = {
   content: [
     'test/support/templates/*.ex',
-    'test/support/templates/*.heex',
-    <%= @beacon_content %>
+    'test/support/templates/*.heex'
   ]
 }

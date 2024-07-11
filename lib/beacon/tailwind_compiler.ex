@@ -58,8 +58,20 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
     Application.put_env(:tailwind, :beacon_runtime, [])
 
+    tailwind_config = """
+    const userConfig = require(\"#{tailwind_config}\")
+
+    module.exports = {
+      ...userConfig,
+      content: [
+        <%= @beacon_content %>,
+        ...(userConfig.content || [])
+      ]
+    }
+    """
+
     tailwind_config
-    |> EEx.eval_file(assigns: %{beacon_content: content})
+    |> EEx.eval_string(assigns: %{beacon_content: content})
     |> write_file!(tmp_dir, "tailwind.config.js")
   end
 
@@ -146,13 +158,13 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   defp tailwind_config!(site) do
     tailwind_config = Beacon.Config.fetch!(site).tailwind_config
 
-    if File.exists?(tailwind_config) && File.read!(tailwind_config) =~ "<%= @beacon_content %>" do
+    if File.exists?(tailwind_config) do
       tailwind_config
     else
       raise """
       Tailwind config not found or invalid.
 
-      Make sure the provided file exists at #{inspect(tailwind_config)} and it contains <%= @beacon_content %> in the `content` section.
+      Make sure the provided file exists at #{inspect(tailwind_config)}
 
       See Beacon.Config for more info.
       """

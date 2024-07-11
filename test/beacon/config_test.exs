@@ -17,7 +17,7 @@ defmodule Beacon.ConfigTest do
                tailwind_config: tailwind_config
              } = Config.fetch!(@site)
 
-      assert tailwind_config =~ "tailwind.config.templates.js.eex"
+      assert tailwind_config =~ "tailwind.config.templates.js"
     end
 
     test "raises for non existing site" do

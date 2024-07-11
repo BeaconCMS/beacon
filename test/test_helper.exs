@@ -23,7 +23,7 @@ Supervisor.start_link(
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
          skip_boot?: true,
-         tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js.eex"]),
+         tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js"]),
          live_socket_path: "/custom_live",
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
          lifecycle: [
