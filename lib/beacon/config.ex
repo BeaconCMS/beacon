@@ -418,7 +418,7 @@ defmodule Beacon.Config do
 
     opts =
       opts
-      |> Keyword.put(:tailwind_config, opts[:tailwind_config] || Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js"))
+      |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
       |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)
@@ -638,6 +638,29 @@ defmodule Beacon.Config do
         Could not load #{inspect(repo)}, error: #{inspect(error)}
         """
     end
+  end
+
+  defp ensure_tailwind_config(nil = _config), do: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js")
+
+  defp ensure_tailwind_config(config) when is_binary(config) do
+    if Path.extname(config) == ".js" do
+      config
+    else
+      invalid_tailwind_config!(config)
+    end
+  end
+
+  defp ensure_tailwind_config(config), do: invalid_tailwind_config!(config)
+
+  defp invalid_tailwind_config!(config) do
+    raise ConfigError, """
+    invalid tailwind config
+
+    Expected an existing .js file, got:
+
+      #{inspect(config)}
+
+    """
   end
 
   @doc false
