@@ -3,17 +3,13 @@ defmodule Beacon.Migration do
   Functions which can be called in an Ecto migration for Beacon installation and upgrades.
   """
 
-  @migrations [Beacon.Migrations.V001, Beacon.Migrations.V002]
+  @latest Beacon.Migrations.V001
 
   def up do
-    for migration <- @migrations do
-      migration.up()
-    end
+    @latest.up()
   end
 
   def down do
-    for migration <- Enum.reverse(@migrations) do
-      migration.down()
-    end
+    @latest.down()
   end
 end

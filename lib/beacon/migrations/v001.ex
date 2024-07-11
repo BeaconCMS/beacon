@@ -185,9 +185,7 @@ defmodule Beacon.Migrations.V001 do
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
-    create constraint(:beacon_page_events, :beacon_page_events_check_event,
-             check: "event = 'created' or event = 'published' or event = 'unpublished'"
-           )
+    create constraint(:beacon_page_events, :beacon_page_events_check_event, check: "event = 'created' or event = 'published' or event = 'unpublished'")
 
     create_if_not_exists table(:beacon_page_snapshots, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -242,6 +240,14 @@ defmodule Beacon.Migrations.V001 do
     end
 
     create_if_not_exists unique_index(:beacon_error_pages, [:status, :site])
+
+    alter table(:beacon_component_attrs) do
+      add :struct_name, :string
+    end
+
+    alter table(:beacon_component_slot_attrs) do
+      add :struct_name, :string
+    end
   end
 
   def down do
