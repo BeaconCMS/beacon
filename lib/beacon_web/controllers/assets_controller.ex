@@ -33,6 +33,7 @@ defmodule BeaconWeb.AssetsController do
 
     conn
     |> put_resp_header("content-type", content_type)
+    |> put_resp_header("access-control-allow-origin", "*")
     |> send_resp(200, content)
     |> halt()
   end
