@@ -6,6 +6,8 @@ config :logger, level: :error
 
 config :beacon, ecto_repos: [Beacon.BeaconTest.Repo]
 
+config :tailwind, version: "3.4.4"
+
 config :beacon, Beacon.BeaconTest.Repo,
   url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/beacon_test",
   pool: Ecto.Adapters.SQL.Sandbox,
