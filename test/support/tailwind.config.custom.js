@@ -1,4 +1,3 @@
-module.exports = {
-  content: [
-  ]
+export default {
+  content: []
 }

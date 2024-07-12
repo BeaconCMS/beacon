@@ -67,7 +67,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
 
                # Configure tailwind (the version is required)
                config :tailwind,
-                 version: "3.2.7",
+                 version: "3.4.4",
                  default: [
                    args: ~w(
                      --config=tailwind.config.js

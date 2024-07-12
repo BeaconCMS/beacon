@@ -66,7 +66,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   end
 
   test "config" do
-    assert TailwindCompiler.config(@site) =~ "module.exports"
+    assert TailwindCompiler.config(@site) =~ "export default"
   end
 
   describe "compile site" do
