@@ -1268,6 +1268,34 @@ defmodule Beacon.Content do
         category: :element
       },
       %{
+        name: "button",
+        description: "Renders a button",
+        thumbnail: "https://placehold.co/400x75?text=button",
+        attrs: [
+          %{name: "type", type: "string", opts: [default: nil]},
+          %{name: "class", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global", opts: [include: ~w(disabled form name value)]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <button
+          type={@type}
+          class={[
+            "phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3",
+            "text-sm font-semibold leading-6 text-white active:text-white/80",
+            @class
+          ]}
+          {@rest}
+        >
+          <%= render_slot(@inner_block) %>
+        </button>
+        |,
+        example: ~S|<.button phx-click="go" class="ml-2">Send!</.button>|,
+        category: :element
+      },
+      %{
         name: "table",
         description: "Renders a table with generic styling",
         thumbnail: "https://placehold.co/400x75?text=table",
