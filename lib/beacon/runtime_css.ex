@@ -26,6 +26,16 @@ defmodule Beacon.RuntimeCSS do
     Beacon.Config.fetch!(site).css_compiler.config(site)
   end
 
+  @doc """
+  Returns the URL to fetch the CSS config used to generate the site stylesheet.
+  """
+  def asset_url(site) do
+    endpoint = Beacon.Config.fetch!(site).endpoint
+    router = Beacon.Config.fetch!(site).router
+    prefix = router.__beacon_scoped_prefix_for_site__(site)
+    endpoint.url() <> Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/css_config")
+  end
+
   @doc false
   def compile(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.compile(site)

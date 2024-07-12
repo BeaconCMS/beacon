@@ -4,7 +4,7 @@ defmodule BeaconWeb.AssetsController do
 
   import Plug.Conn
 
-  def init(asset) when asset in [:css, :js, :tailwind_config], do: asset
+  def init(asset) when asset in [:css_config, :css, :js], do: asset
 
   def call(%{assigns: %{site: site}} = conn, asset) when asset in [:css, :js] do
     {content, content_type} = content_and_type(site, asset)
@@ -23,8 +23,8 @@ defmodule BeaconWeb.AssetsController do
   end
 
   # TODO: encoding (compress) and caching
-  def call(%{assigns: %{site: site}} = conn, :tailwind_config) do
-    {content, content_type} = content_and_type(site, :tailwind_config)
+  def call(%{assigns: %{site: site}} = conn, :css_config) do
+    {content, content_type} = content_and_type(site, :css_config)
 
     # The static files are served for sites,
     # and we need to disable csrf protection because
@@ -45,7 +45,7 @@ defmodule BeaconWeb.AssetsController do
     {Beacon.RuntimeJS.fetch(), "text/javascript"}
   end
 
-  defp content_and_type(site, :tailwind_config) do
+  defp content_and_type(site, :css_config) do
     {Beacon.RuntimeCSS.config(site), "text/javascript"}
   end
 end
