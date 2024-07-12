@@ -30,6 +30,8 @@ defmodule Beacon.Content do
 
   alias Beacon.Content.Component
   alias Beacon.Content.ComponentAttr
+  alias Beacon.Content.ComponentSlot
+  alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -1540,7 +1542,11 @@ defmodule Beacon.Content do
   @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
   def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    repo(site).get_by(Component, clauses, opts) |> repo(site).preload(:attrs)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    Component
+    |> repo(site).get_by(clauses, opts)
+    |> repo(site).preload(preloads)
   end
 
   @doc """
@@ -1640,14 +1646,157 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> change_component(component, %{name: "Header"})
-      %Ecto.Changeset{data: %Component{}}
+      iex> change_component_attr(component_attr, %{name: "Header"})
+      %Ecto.Changeset{data: %ComponentAttr{}}
 
   """
   @doc type: :components
   @spec change_component_attr(ComponentAttr.t(), map()) :: Changeset.t()
-  def change_component_attr(%ComponentAttr{} = component, attrs \\ %{}) do
-    ComponentAttr.changeset(component, attrs)
+  def change_component_attr(%ComponentAttr{} = component_attr, attrs \\ %{}) do
+    ComponentAttr.changeset(component_attr, attrs)
+  end
+
+  # COMPONENT SLOTS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking slot changes.
+
+  ## Example
+
+      iex> change_component_slot(component_slot, %{name: "Slot A"})
+      %Ecto.Changeset{data: %ComponentSlot{}}
+
+  """
+  @doc type: :components
+  @spec change_component_slot(ComponentSlot.t(), map()) :: Changeset.t()
+  def change_component_slot(%ComponentSlot{} = slot, attrs \\ %{}) do
+    ComponentSlot.changeset(slot, attrs)
+  end
+
+  @doc """
+  Creates a new component slot and returns the component with updated `:slots` association.
+  """
+  @doc type: :components
+  @spec create_slot_for_component(Component.t(), %{name: binary()}) ::
+          {:ok, Component.t()} | {:error, Changeset.t()}
+  def create_slot_for_component(component, attrs) do
+    changeset =
+      component
+      |> Ecto.build_assoc(:slots)
+      |> ComponentSlot.changeset(attrs)
+
+    with {:ok, %ComponentSlot{}} <- repo(component).insert(changeset),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc """
+  Updates a component slot and returns the component with updated `:slots` association.
+  """
+  @doc type: :components
+  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def update_slot_for_component(component, slot, attrs) do
+    changeset = ComponentSlot.changeset(slot, attrs)
+
+    with {:ok, %ComponentSlot{}} <- repo(component).update(changeset),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc """
+  Deletes a component slot and returns the component with updated slots association.
+  """
+  @doc type: :components
+  @spec delete_slot_from_component(Component.t(), ComponentSlot.t()) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def delete_slot_from_component(component, slot) do
+    with {:ok, %ComponentSlot{}} <- repo(component).delete(slot),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc false
+  def validate_if_value_matches_type(changeset, type, value, field) do
+    cond do
+      value == nil -> changeset
+      type == "any" or type == "global" -> changeset
+      type == "string" and is_binary(value) -> changeset
+      type == "string" -> Changeset.add_error(changeset, field, "it must be a string when type is 'string'")
+      type == "atom" and is_atom(value) -> changeset
+      type == "atom" -> Changeset.add_error(changeset, field, "it must be an atom when type is 'atom'")
+      type == "boolean" and is_boolean(value) -> changeset
+      type == "boolean" -> Changeset.add_error(changeset, field, "it must be a boolean when type is 'boolean'")
+      type == "integer" and is_integer(value) -> changeset
+      type == "integer" -> Changeset.add_error(changeset, field, "it must be a integer when type is 'integer'")
+      type == "float" and is_float(value) -> changeset
+      type == "float" -> Changeset.add_error(changeset, field, "it must be a float when type is 'float'")
+      type == "list" and is_list(value) -> changeset
+      type == "list" -> Changeset.add_error(changeset, field, "it must be a list when type is 'list'")
+      type == "map" and is_map(value) -> changeset
+      type == "map" -> Changeset.add_error(changeset, field, "it must be a map when type is 'map'")
+      type == "struct" and is_struct(value) -> changeset
+      type == "struct" -> Changeset.add_error(changeset, field, "it must be a struct when type is 'struct'")
+    end
+  end
+
+  # COMPONENT SLOT ATTR
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking slot_attr changes.
+
+  ## Example
+
+      iex> change_slot_attr(slot_attr, %{name: "Header"})
+      %Ecto.Changeset{data: %ComponentSlotAttr{}}
+
+  """
+  @doc type: :components
+  @spec change_slot_attr(ComponentSlotAttr.t(), map()) :: Changeset.t()
+  def change_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs \\ %{}) do
+    ComponentSlotAttr.changeset(slot_attr, attrs)
+  end
+
+  @doc """
+  Creates a slot attr.
+
+  ## Example
+
+      iex> create_slot_attr(site, attrs)
+      {:ok, %ComponentSlotAttr{}}
+
+  """
+  @spec create_slot_attr(Site.t(), map()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  @doc type: :components
+  def create_slot_attr(site, attrs \\ %{}) do
+    %ComponentSlotAttr{}
+    |> ComponentSlotAttr.changeset(attrs)
+    |> repo(site).insert()
+  end
+
+  @doc """
+  Updates a slot attr.
+
+      iex> update_slot(slot_attr, %{name: "new_slot"})
+      {:ok, %ComponentSlotAttr{}}
+
+  """
+  @doc type: :components
+  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map()) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
+  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs) do
+    slot_attr
+    |> ComponentSlotAttr.changeset(attrs)
+    |> repo(site).update()
+  end
+
+  @doc """
+  Deletes a slot attr.
+  """
+  @doc type: :components
+  @spec delete_slot_attr(Site.t(), ComponentSlotAttr.t()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  def delete_slot_attr(site, slot_attr) do
+    repo(site).delete(slot_attr)
   end
 
   # SNIPPETS
