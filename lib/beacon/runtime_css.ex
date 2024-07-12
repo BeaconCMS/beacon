@@ -21,6 +21,7 @@ defmodule Beacon.RuntimeCSS do
   @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
 
   @doc false
+  # TODO: compress and fetch from ETS
   def config(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.config(site)
   end

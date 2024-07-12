@@ -129,7 +129,7 @@ defmodule Beacon do
     :ok
   end
 
-  @tailwind_version "3.3.1"
+  @tailwind_version "3.4.4"
   @doc false
   def tailwind_version, do: @tailwind_version
 

@@ -27,13 +27,9 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @impl Beacon.RuntimeCSS
   @spec config(Beacon.Types.Site.t()) :: String.t()
   def config(site) when is_atom(site) do
-    tmp_dir = tmp_dir!()
-    content = beacon_content(tmp_dir)
-
     site
     |> tailwind_config!()
-    |> EEx.eval_file(assigns: %{beacon_content: content})
-    |> tap(fn _ -> cleanup(tmp_dir, []) end)
+    |> File.read!()
   end
 
   @impl Beacon.RuntimeCSS
@@ -119,17 +115,29 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   # Note that `:cd` is the root dir for regular and umbrella projects so the paths have to be defined accordingly.
   # https://github.com/phoenixframework/tailwind/blob/8cf9810474bf37c1b1dd821503d756885534d2ba/lib/tailwind.ex#L192
   def run_cli(profile, extra_args) when is_atom(profile) and is_list(extra_args) do
-    if Tailwind.bin_version() == :error do
-      message = """
-      tailwind-cli binary not found or the installation is invalid.
+    version =
+      case Tailwind.bin_version() do
+        {:ok, version} ->
+          version
 
-      Execute the following command to install the binary used to compile CSS:
+        :error ->
+          raise Beacon.LoaderError, """
+          tailwind-cli binary not found or the installation is invalid.
 
-          mix tailwind.install
+          Execute the following command to install the binary used to compile CSS:
+
+              mix tailwind.install
+
+          """
+      end
+
+    if Version.compare(version, "3.3.0") == :lt do
+      raise Beacon.LoaderError, """
+      Beacon requires Tailwind CSS 3.3.0 or higher.
+
+      Please update your Tailwind CSS binary to the latest version.
 
       """
-
-      raise Beacon.LoaderError, message
     end
 
     config = Tailwind.config_for!(profile)

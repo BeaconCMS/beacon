@@ -86,6 +86,7 @@ defmodule Beacon.Router do
         live_session session_name, session_opts do
           get "/__beacon_assets__/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
           get "/__beacon_assets__/js-:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/tailwind_config", BeaconWeb.AssetsController, :tailwind_config, as: :beacon_asset, assigns: %{site: opts[:site]}
           get "/__beacon_assets__/:file_name", BeaconWeb.MediaLibraryController, :show
           live "/*path", BeaconWeb.PageLive, :path
         end
