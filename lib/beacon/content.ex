@@ -1544,8 +1544,23 @@ defmodule Beacon.Content do
     clauses = Keyword.put(clauses, :site, site)
     preloads = Keyword.get(opts, :preloads, [])
 
+    preloads =
+      Enum.reduce(preloads, [], fn
+        :attrs, acc ->
+          attrs_query = from ca in ComponentAttr, order_by: [asc: ca.name]
+          [{:attrs, attrs_query} | acc]
+
+        :slots, acc ->
+          slots_query = from ca in ComponentSlot, order_by: [asc: ca.name]
+          [{:slots, slots_query} | acc]
+
+        {:slots, :attrs}, acc ->
+          slots_query = from ca in ComponentSlot, order_by: [asc: ca.name]
+          [{:slots, {slots_query, [:attrs]}} | acc]
+      end)
+
     Component
-    |> repo(site).get_by(clauses, opts)
+    |> repo(site).get_by(clauses)
     |> repo(site).preload(preloads)
   end
 
