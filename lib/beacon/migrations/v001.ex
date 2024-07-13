@@ -1,4 +1,5 @@
 defmodule Beacon.Migrations.V001 do
+  @moduledoc false
   use Ecto.Migration
 
   def up do

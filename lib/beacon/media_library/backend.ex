@@ -1,4 +1,5 @@
 defmodule Beacon.MediaLibrary.Backend do
+  @moduledoc false
   alias Beacon.MediaLibrary.UploadMetadata
 
   def process!(%UploadMetadata{} = metadata) do

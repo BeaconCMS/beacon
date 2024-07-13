@@ -1,4 +1,5 @@
 defmodule Beacon.MediaLibrary.Backend.S3.Unsigned do
+  @moduledoc false
   alias Beacon.MediaLibrary.Backend.S3
 
   defdelegate send_to_cdn(metadata, config \\ []), to: S3

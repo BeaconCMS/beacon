@@ -1,4 +1,5 @@
 defmodule Beacon.MediaLibrary.Backend.Repo do
+  @moduledoc false
   import Ecto.Changeset
 
   alias Beacon.MediaLibrary.Asset

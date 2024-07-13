@@ -50,6 +50,7 @@ defmodule Beacon.Content do
   alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
+  alias Ecto.UUID
 
   require Logger
 
@@ -199,7 +200,7 @@ defmodule Beacon.Content do
   end
 
   @doc type: :layouts
-  @spec publish_layout(Site.t(), Ecto.UUID.t()) :: {:ok, Layout.t()} | any()
+  @spec publish_layout(Site.t(), UUID.t()) :: {:ok, Layout.t()} | any()
   def publish_layout(site, id) when is_atom(site) and is_binary(id) do
     site
     |> get_layout(id)
@@ -247,13 +248,16 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec get_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
+  @spec get_layout(Site.t(), UUID.t()) :: Layout.t() | nil
   def get_layout(site, id) when is_atom(site) and is_binary(id) do
     repo(site).get(Layout, id)
   end
 
+  @doc """
+  Same as `get_layout/2` but raises an error if no result is found.
+  """
   @doc type: :layouts
-  @spec get_layout!(Site.t(), Ecto.UUID.t()) :: Layout.t()
+  @spec get_layout!(Site.t(), UUID.t()) :: Layout.t()
   def get_layout!(site, id) when is_atom(site) and is_binary(id) do
     repo(site).get!(Layout, id)
   end
@@ -287,7 +291,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec list_layout_events(Site.t(), Ecto.UUID.t()) :: [LayoutEvent.t()]
+  @spec list_layout_events(Site.t(), UUID.t()) :: [LayoutEvent.t()]
   def list_layout_events(site, layout_id) when is_atom(site) and is_binary(layout_id) do
     repo(site).all(
       from event in LayoutEvent,
@@ -419,7 +423,7 @@ defmodule Beacon.Content do
   This operation is cached.
   """
   @doc type: :layouts
-  @spec get_published_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
+  @spec get_published_layout(Site.t(), UUID.t()) :: Layout.t() | nil
   def get_published_layout(site, layout_id) do
     get_fun = fn ->
       repo(site).one(
@@ -564,6 +568,8 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a page.
+
+  Raises an error if unsuccessful.
   """
   @doc type: :pages
   @spec create_page!(map()) :: Page.t()
@@ -621,11 +627,14 @@ defmodule Beacon.Content do
     GenServer.call(name(page.site), {:publish_page, page})
   end
 
+  @doc """
+  Same as `publish_page/1` but accepts a `site` and `page_id` with which to lookup the page.
+  """
   @doc type: :pages
-  @spec publish_page(Site.t(), Ecto.UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def publish_page(site, id) when is_atom(site) and is_binary(id) do
+  @spec publish_page(Site.t(), UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def publish_page(site, page_id) when is_atom(site) and is_binary(page_id) do
     site
-    |> get_page(id)
+    |> get_page(page_id)
     |> publish_page()
   end
 
@@ -634,7 +643,6 @@ defmodule Beacon.Content do
 
   Similar to `publish_page/1` but defers loading dependent resources
   as late as possible making the process faster.
-
   """
   @doc type: :pages
   @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
@@ -742,7 +750,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec get_page(Site.t(), Ecto.UUID.t(), keyword()) :: Page.t() | nil
+  @spec get_page(Site.t(), UUID.t(), keyword()) :: Page.t() | nil
   def get_page(site, id, opts \\ []) when is_atom(site) and is_binary(id) and is_list(opts) do
     preloads = Keyword.get(opts, :preloads, [])
 
@@ -751,9 +759,13 @@ defmodule Beacon.Content do
     |> repo(site).preload(preloads)
   end
 
+  @doc """
+  Same as `get_page/3` but raises an error if no result is found.
+  """
   @doc type: :pages
-  def get_page!(id, opts \\ []) when is_binary(id) and is_list(opts) do
-    case get_page(id, opts) do
+  @spec get_page!(Site.t(), UUID.t(), keyword()) :: Page.t()
+  def get_page!(site, id, opts \\ []) when is_atom(site) and is_binary(id) and is_list(opts) do
+    case get_page(site, id, opts) do
       %Page{} = page -> page
       nil -> raise "page #{id} not found"
     end
@@ -788,7 +800,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec list_page_events(Site.t(), Ecto.UUID.t()) :: [PageEvent.t()]
+  @spec list_page_events(Site.t(), UUID.t()) :: [PageEvent.t()]
   def list_page_events(site, page_id) when is_atom(site) and is_binary(page_id) do
     repo(site).all(
       from event in PageEvent,
@@ -812,7 +824,7 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec get_latest_page_event(Site.t(), Ecto.UUID.t()) :: PageEvent.t() | nil
+  @spec get_latest_page_event(Site.t(), UUID.t()) :: PageEvent.t() | nil
   def get_latest_page_event(site, page_id) when is_atom(site) and is_binary(page_id) do
     repo(site).one(
       from event in PageEvent,
@@ -997,7 +1009,7 @@ defmodule Beacon.Content do
   This operation is cached.
   """
   @doc type: :pages
-  @spec get_published_page(Site.t(), Ecto.UUID.t()) :: Page.t() | nil
+  @spec get_published_page(Site.t(), UUID.t()) :: Page.t() | nil
   def get_published_page(site, page_id) do
     get_fun = fn ->
       events =
@@ -1048,7 +1060,9 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Given a map of fields, stores this map as `:extra` fields in a `Page`.
 
+  Any existing `:extra` data for that Page will be overwritten!
   """
   @doc type: :pages
   @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
@@ -1064,6 +1078,8 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a stylesheet.
+
+  Returns `{:ok, stylesheet}` if successful, otherwise `{:error, changeset}`.
 
   ## Example
 
@@ -1094,7 +1110,30 @@ defmodule Beacon.Content do
     |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
+  @doc """
+  Creates a stylesheet.
+
+  Returns the new stylesheet if successful, otherwise raises an error.
+
+  ## Example
+
+      iex >create_stylesheet(%{
+        site: :my_site,
+        name: "override",
+        content: ~S|
+        @media (min-width: 768px) {
+          .md\:text-red-400 {
+            color: red;
+          }
+        }
+        |
+      })
+      %Stylesheet{}
+
+  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
+  """
   @doc type: :stylesheets
+  @spec create_stylesheet(map()) :: Stylesheet.t()
   def create_stylesheet!(attrs \\ %{}) do
     case create_stylesheet(attrs) do
       {:ok, stylesheet} -> stylesheet
@@ -1479,6 +1518,8 @@ defmodule Beacon.Content do
   @doc """
   Creates a component.
 
+  Returns `{:ok, component}` if successful, otherwise `{:error, changeset}`.
+
   ## Example
 
       iex> create_component(attrs)
@@ -1497,7 +1538,13 @@ defmodule Beacon.Content do
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
+  @doc """
+  Creates a component.
+
+  Returns the new component if successful, otherwise raises an error.
+  """
   @doc type: :components
+  @spec create_component!(map()) :: Component.t()
   def create_component!(attrs \\ %{}) do
     case create_component(attrs) do
       {:ok, component} -> component
@@ -1802,7 +1849,9 @@ defmodule Beacon.Content do
   # SNIPPETS
 
   @doc """
-  Creates a snippet helper
+  Creates a snippet helper.
+
+  Returns `{:ok, helper}` if successful, otherwise `{:error, changeset}`
   """
   @doc type: :snippets
   @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Changeset.t()}
@@ -1830,7 +1879,13 @@ defmodule Beacon.Content do
     end)
   end
 
+  @doc """
+  Creates a snippet helper.
+
+  Returns the new helper if successful, otherwise raises an error.
+  """
   @doc type: :snippets
+  @spec create_snippet_helper!(map()) :: Snippets.Helper.t()
   def create_snippet_helper!(attrs) do
     case create_snippet_helper(attrs) do
       {:ok, helper} -> helper
@@ -2331,6 +2386,8 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new LiveData for scoping live data to pages.
+
+  Returns `{:ok, live_data}` if successful, otherwise `{:error, changeset}`
   """
   @doc type: :live_data
   @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
@@ -2345,6 +2402,8 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new LiveData for scoping live data to pages.
+
+  Returns the new LiveData if successful, otherwise raises an error.
   """
   @doc type: :live_data
   @spec create_live_data!(map()) :: LiveData.t()
