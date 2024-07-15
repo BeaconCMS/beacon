@@ -46,12 +46,30 @@ defmodule Beacon.Content.Component do
     |> validate_required([:site, :name, :template, :example, :category])
     |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
     |> validate_exclusion(:name, reserved_names)
+    |> validate_unique_attr_name(attrs)
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
     |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)
   end
 
+  defp validate_unique_attr_name(changeset, attrs) do
+    component_attrs = attrs["attrs"] || []
+
+    attr_names =
+      Enum.map(component_attrs, fn
+        %{name: name} -> name
+        {_index, attr} -> attr["name"]
+      end)
+
+    if Enum.uniq(attr_names) == attr_names do
+      changeset
+    else
+      add_error(changeset, :attrs, "component attribute list contains duplicate names")
+    end
+  end
+
   def categories, do: @categories
 
+  @doc false
   def validate_if_struct_name_required(changeset) do
     type = get_field(changeset, :type)
     struct_name = get_field(changeset, :struct_name)
@@ -63,6 +81,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_struct_name(changeset) do
     struct_name = get_field(changeset, :struct_name)
 
@@ -80,6 +99,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_non_empty_examples_opts(changeset) do
     opts = get_field(changeset, :opts) |> maybe_binary_to_term()
 
@@ -93,6 +113,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_non_empty_values_opts(changeset) do
     opts = get_field(changeset, :opts) |> maybe_binary_to_term()
 
@@ -106,6 +127,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_equivalent_options(changeset) do
     opts = get_field(changeset, :opts) |> maybe_binary_to_term()
     required_opts = get_field_from_opts(changeset, :required)
@@ -125,6 +147,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_default_opts_is_in_values_opts(%Changeset{valid?: false} = changeset), do: changeset
 
   def validate_default_opts_is_in_values_opts(%Changeset{valid?: true} = changeset) do
@@ -139,6 +162,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_type_and_default_opts(changeset) do
     type = get_field(changeset, :type)
     default_opts = get_field_from_opts(changeset, :default)
@@ -146,6 +170,7 @@ defmodule Beacon.Content.Component do
     Content.validate_if_value_matches_type(changeset, type, default_opts, :opts_default)
   end
 
+  @doc false
   def validate_struct_name_and_default_opts(%Changeset{valid?: false} = changeset), do: changeset
 
   def validate_struct_name_and_default_opts(%Changeset{valid?: true} = changeset) do
@@ -164,6 +189,7 @@ defmodule Beacon.Content.Component do
     end
   end
 
+  @doc false
   def validate_type_and_examples_opts(%Changeset{valid?: false} = changeset), do: changeset
 
   def validate_type_and_examples_opts(%Changeset{valid?: true} = changeset) do
@@ -173,6 +199,7 @@ defmodule Beacon.Content.Component do
     Enum.reduce(examples_opts, changeset, fn value, changeset -> Content.validate_if_value_matches_type(changeset, type, value, :opts_examples) end)
   end
 
+  @doc false
   def validate_type_and_values_opts(%Changeset{valid?: false} = changeset), do: changeset
 
   def validate_type_and_values_opts(%Changeset{valid?: true} = changeset) do

@@ -1664,11 +1664,14 @@ defmodule Beacon.Content do
       iex> change_component_attr(component_attr, %{name: "Header"})
       %Ecto.Changeset{data: %ComponentAttr{}}
 
+      iex> change_component_attr(component_attr, %{name: "Header"}, ["sites", ["pages"]])
+      %Ecto.Changeset{data: %ComponentAttr{}}
+
   """
   @doc type: :components
-  @spec change_component_attr(ComponentAttr.t(), map()) :: Changeset.t()
-  def change_component_attr(%ComponentAttr{} = component_attr, attrs \\ %{}) do
-    ComponentAttr.changeset(component_attr, attrs)
+  @spec change_component_attr(ComponentAttr.t(), map(), list(String.t())) :: Changeset.t()
+  def change_component_attr(%ComponentAttr{} = component_attr, attrs, component_attr_names) do
+    ComponentAttr.changeset(component_attr, attrs, component_attr_names)
   end
 
   # COMPONENT SLOTS
@@ -1678,14 +1681,14 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> change_component_slot(component_slot, %{name: "Slot A"})
+      iex> change_component_slot(component_slot, %{name: "slot_a"}, ["slot_name_1])
       %Ecto.Changeset{data: %ComponentSlot{}}
 
   """
   @doc type: :components
-  @spec change_component_slot(ComponentSlot.t(), map()) :: Changeset.t()
-  def change_component_slot(%ComponentSlot{} = slot, attrs \\ %{}) do
-    ComponentSlot.changeset(slot, attrs)
+  @spec change_component_slot(ComponentSlot.t(), map(), list(String.t())) :: Changeset.t()
+  def change_component_slot(%ComponentSlot{} = slot, attrs, component_slots_names) do
+    ComponentSlot.changeset(slot, attrs, component_slots_names)
   end
 
   @doc """
@@ -1710,9 +1713,9 @@ defmodule Beacon.Content do
   Updates a component slot and returns the component with updated `:slots` association.
   """
   @doc type: :components
-  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
-  def update_slot_for_component(component, slot, attrs) do
-    changeset = ComponentSlot.changeset(slot, attrs)
+  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map(), list(String.t())) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def update_slot_for_component(component, slot, attrs, component_slots_names) do
+    changeset = ComponentSlot.changeset(slot, attrs, component_slots_names)
 
     with {:ok, %ComponentSlot{}} <- repo(component).update(changeset),
          %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
@@ -1763,14 +1766,14 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> change_slot_attr(slot_attr, %{name: "Header"})
+      iex> change_slot_attr(slot_attr, %{name: "Header"}, [])
       %Ecto.Changeset{data: %ComponentSlotAttr{}}
 
   """
   @doc type: :components
-  @spec change_slot_attr(ComponentSlotAttr.t(), map()) :: Changeset.t()
-  def change_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs \\ %{}) do
-    ComponentSlotAttr.changeset(slot_attr, attrs)
+  @spec change_slot_attr(ComponentSlotAttr.t(), map(), list(String.t())) :: Changeset.t()
+  def change_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs, slot_attr_names) do
+    ComponentSlotAttr.changeset(slot_attr, attrs, slot_attr_names)
   end
 
   @doc """
@@ -1782,11 +1785,11 @@ defmodule Beacon.Content do
       {:ok, %ComponentSlotAttr{}}
 
   """
-  @spec create_slot_attr(Site.t(), map()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  @spec create_slot_attr(Site.t(), map(), list(String.t())) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
   @doc type: :components
-  def create_slot_attr(site, attrs \\ %{}) do
+  def create_slot_attr(site, attrs, slot_attr_names) do
     %ComponentSlotAttr{}
-    |> ComponentSlotAttr.changeset(attrs)
+    |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
     |> repo(site).insert()
   end
 
@@ -1798,10 +1801,10 @@ defmodule Beacon.Content do
 
   """
   @doc type: :components
-  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map()) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
-  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs) do
+  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map(), list(String.t())) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
+  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs, slot_attr_names) do
     slot_attr
-    |> ComponentSlotAttr.changeset(attrs)
+    |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
     |> repo(site).update()
   end
 
