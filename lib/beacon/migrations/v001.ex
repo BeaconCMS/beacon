@@ -82,6 +82,7 @@ defmodule Beacon.Migrations.V001 do
 
     create_if_not_exists table(:beacon_component_attrs, primary_key: false) do
       add :id, :binary_id, primary_key: true
+      add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
       timestamps(type: :utc_datetime_usec)
     end
 
@@ -92,8 +93,6 @@ defmodule Beacon.Migrations.V001 do
       add_if_not_exists :opts, :binary
     end
 
-    create_if_not_exists index(:beacon_component_attrs, [:component_id])
-
     create_if_not_exists table(:beacon_component_slots, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
@@ -103,8 +102,6 @@ defmodule Beacon.Migrations.V001 do
 
       timestamps(type: :utc_datetime_usec)
     end
-
-    create_if_not_exists index(:beacon_component_slots, [:component_id])
 
     create_if_not_exists table(:beacon_component_slot_attrs, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -118,8 +115,6 @@ defmodule Beacon.Migrations.V001 do
       add_if_not_exists :struct_name, :string
       add_if_not_exists :opts, :binary
     end
-
-    create_if_not_exists index(:beacon_component_slot_attrs, [:slot_id])
 
     create_if_not_exists table(:beacon_layouts, primary_key: false) do
       add :id, :binary_id, primary_key: true
