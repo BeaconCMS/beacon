@@ -1307,6 +1307,44 @@ defmodule Beacon.Content do
         category: :element
       },
       %{
+        name: "button",
+        description: "Renders a button",
+        thumbnail: "https://placehold.co/400x75?text=button",
+        attrs: [
+          %{name: "type", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global", opts: [include: ~w(disabled form name value)]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <button
+          type={@type}
+          class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80",
+          {@rest}
+        >
+          <%= render_slot(@inner_block) %>
+        </button>
+        |,
+        example: ~S|<.button phx-click="go">Send!</.button>|,
+        category: :element
+      },
+      %{
+        name: "error",
+        description: "Generates a generic error message",
+        thumbnail: "https://placehold.co/400x75?text=error",
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <p class="mt-3 flex gap-3 text-sm leading-6 text-rose-600 phx-no-feedback:hidden">
+          <%= render_slot(@inner_block) %>
+        </p>
+        |,
+        example: ~S|<.error><p>Something went wrong</p></.error>|,
+        category: :element
+      },
+      %{
         name: "table",
         description: "Renders a table with generic styling",
         thumbnail: "https://placehold.co/400x75?text=table",
@@ -1375,6 +1413,183 @@ defmodule Beacon.Content do
                 <:col :let={user} label="username"><%= user.username %></:col>
               </.table>
               |,
+        category: :element
+      },
+      %{
+        name: "simple_form",
+        description: "Renders a simple form",
+        thumbnail: "https://placehold.co/400x75?text=simple_form",
+        attrs: [
+          %{name: "for", type: "any", opts: [required: true]},
+          %{name: "as", type: "any", opts: [default: nil]},
+          %{name: "rest", type: "global", opts: [include: ~w(autocomplete name rel action enctype method novalidate target multipart)]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]},
+          %{name: "actions"}
+        ],
+        template: ~S|
+        <.form :let={f} for={@for} as={@as} {@rest}>
+          <div class="mt-10 space-y-8 bg-white">
+            <%= render_slot(@inner_block, f) %>
+            <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
+              <%= render_slot(action, f) %>
+            </div>
+          </div>
+        </.form>
+        |,
+        example: ~S|
+        <.simple_form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+          <.input field={f[:name]} label="Name"/>
+          <.input field={f[:email]} label="Email"/>
+          <:actions>
+            <.button>Join</.button>
+          </:actions>
+        </.simple_form>
+        |,
+        category: :element
+      },
+      %{
+        name: "input",
+        description: "Renders an input with label and error messages",
+        thumbnail: "https://placehold.co/400x75?text=input",
+        attrs: [
+          %{name: "id", type: "any", opts: [default: nil]},
+          %{name: "name", type: "any"},
+          %{name: "label", type: "string", opts: [default: nil]},
+          %{name: "value", type: "any"},
+          %{
+            name: "type",
+            type: "string",
+            opts: [
+              default: "text",
+              values: ~w(checkbox color date datetime-local email file month number password range search select tel text textarea time url week)
+            ]
+          },
+          %{name: "field", type: "struct", struct_name: "Phoenix.HTML.FormField", opts: [default: nil]},
+          %{name: "errors", type: "list", opts: [default: []]},
+          %{name: "checked", type: "boolean"},
+          %{name: "prompt", type: "string", opts: [default: nil]},
+          %{name: "options", type: "list"},
+          %{name: "multiple", type: "boolean", opts: [default: false]},
+          %{
+            name: "rest",
+            type: "global",
+            opts: [
+              include:
+                ~w(accept autocomplete capture cols disabled form list max maxlength min minlength multiple pattern placeholder readonly required rows size step)
+            ]
+          }
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        body: ~S"""
+        %{type: type, field: field} = assigns
+
+        assigns =
+          cond do
+            match?(%Phoenix.HTML.FormField{}, field) ->
+              assigns
+              |> assign(field: nil, id: assigns.id || field.id)
+              |> assign(:errors, Enum.map(field.errors, & &1))
+              |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
+              |> assign_new(:value, fn -> field.value end)
+
+            type == "checkbox" ->
+              assign_new(assigns, :checked, fn -> Phoenix.HTML.Form.normalize_value("checkbox", assigns.value) end)
+
+            :else ->
+              assigns
+          end
+        """,
+        template: ~S"""
+        <%= cond do %>
+          <% @type == "checkbox" -> %>
+            <div phx-feedback-for={@name}>
+              <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
+                <input type="hidden" name={@name} value="false" />
+                <input type="checkbox" id={@id} name={@name} value="true" checked={@checked} class="rounded border-zinc-300 text-zinc-900 focus:ring-0" {@rest} />
+                <%= @label %>
+              </label>
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+
+          <% @type == "select" -> %>
+            <div phx-feedback-for={@name}>
+              <.label for={@id}><%= @label %></.label>
+              <select
+                id={@id}
+                name={@name}
+                class="mt-2 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm"
+                multiple={@multiple}
+                {@rest}
+              >
+                <option :if={@prompt} value=""><%= @prompt %></option>
+                <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
+              </select>
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+
+          <% @type == "textarea" -> %>
+            <div phx-feedback-for={@name}>
+              <.label for={@id}><%= @label %></.label>
+              <textarea
+                id={@id}
+                name={@name}
+                class={[
+                  "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
+                  "min-h-[6rem] phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
+                  @errors == [] && "border-zinc-300 focus:border-zinc-400",
+                  @errors != [] && "border-rose-400 focus:border-rose-400"
+                ]}
+                {@rest}
+              ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+
+          <% :else -> %>
+            <div phx-feedback-for={@name}>
+              <.label for={@id}><%= @label %></.label>
+              <input
+                type={@type}
+                name={@name}
+                id={@id}
+                value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+                class={[
+                  "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
+                  "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
+                  @errors == [] && "border-zinc-300 focus:border-zinc-400",
+                  @errors != [] && "border-rose-400 focus:border-rose-400"
+                ]}
+                {@rest}
+              />
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+        <% end %>
+        """,
+        example: ~S|<.input field={@form[:email]} type="email" />|
+      },
+      %{
+        name: "label",
+        description: "Render a label",
+        thumbnail: "https://placehold.co/400x75?text=label",
+        attrs: [
+          %{name: "for", type: "string", opts: [default: nil]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
+          <%= render_slot(@inner_block) %>
+        </label>
+        |,
+        example: ~S|
+        <.label for={"newsletter_email"}>
+          Email
+        </.label>
+        |,
         category: :element
       },
       %{
@@ -1547,8 +1762,11 @@ defmodule Beacon.Content do
   @spec create_component!(map()) :: Component.t()
   def create_component!(attrs \\ %{}) do
     case create_component(attrs) do
-      {:ok, component} -> component
-      {:error, changeset} -> raise "failed to create component: #{inspect(changeset.errors)}"
+      {:ok, component} ->
+        component
+
+      {:error, changeset} ->
+        raise "failed to create component: #{inspect(changeset.errors)}"
     end
   end
 

@@ -15,9 +15,12 @@ defmodule Beacon.Loader.ErrorPage do
       defmodule unquote(module) do
         require Logger
         require EEx
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]

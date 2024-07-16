@@ -86,13 +86,12 @@ defmodule Beacon.Content.Component do
     struct_name = get_field(changeset, :struct_name)
 
     if struct_name do
-      struct = Module.concat([struct_name])
+      loaded = [struct_name] |> Module.concat() |> :erlang.module_loaded()
 
-      try do
-        Code.eval_string("%#{struct}{}")
+      if loaded do
         changeset
-      rescue
-        _ -> add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
+      else
+        add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
       end
     else
       changeset

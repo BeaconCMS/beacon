@@ -33,9 +33,13 @@ defmodule Beacon.Loader.Components do
   defp render(component_module, routes_module) do
     quote do
       defmodule unquote(component_module) do
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
+
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
@@ -64,9 +68,12 @@ defmodule Beacon.Loader.Components do
           Phoenix.Component.Declarative.__slot__!(__MODULE__, name, opts, __ENV__.line, __ENV__.file, fn -> nil end)
         end
 
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]

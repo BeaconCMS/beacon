@@ -30,9 +30,12 @@ defmodule Beacon.Loader.Page do
   defp build(module_name, routes_module, components_module, functions) do
     quote do
       defmodule unquote(module_name) do
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
