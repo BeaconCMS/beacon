@@ -149,9 +149,9 @@ defmodule Beacon.Fixtures do
 
   def page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: page_variant_fixture(page, attrs)
 
-  def page_variant_fixture(%{page_id: page_id} = attrs) do
-    page_id
-    |> Content.get_page!()
+  def page_variant_fixture(%{site: site, page_id: page_id} = attrs) do
+    site
+    |> Content.get_page!(page_id)
     |> page_variant_fixture(attrs)
   end
 
@@ -176,9 +176,9 @@ defmodule Beacon.Fixtures do
   def page_event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
     do: page_event_handler_fixture(page, attrs)
 
-  def page_event_handler_fixture(%{page_id: page_id} = attrs) do
-    page_id
-    |> Content.get_page!()
+  def page_event_handler_fixture(%{site: site, page_id: page_id} = attrs) do
+    site
+    |> Content.get_page!(page_id)
     |> page_event_handler_fixture(attrs)
   end
 
