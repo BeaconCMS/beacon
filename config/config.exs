@@ -19,4 +19,6 @@ if Mix.env() == :dev do
     cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
 end
 
+config :tailwind, version: "3.4.4"
+
 if config_env() == :test, do: import_config("test.exs")

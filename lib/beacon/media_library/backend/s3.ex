@@ -1,4 +1,5 @@
 defmodule Beacon.MediaLibrary.Backend.S3 do
+  @moduledoc false
   alias Beacon.MediaLibrary.Asset
   alias Beacon.MediaLibrary.UploadMetadata
 

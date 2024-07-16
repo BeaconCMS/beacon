@@ -1,4 +1,5 @@
 defmodule Beacon.Migrations.V001 do
+  @moduledoc false
   use Ecto.Migration
 
   def up do
@@ -81,17 +82,16 @@ defmodule Beacon.Migrations.V001 do
 
     create_if_not_exists table(:beacon_component_attrs, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :name, :string, null: false
-      add :type, :string, null: false
-      add :struct_name, :string
-      add :opts, :binary
-
       add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
-
       timestamps(type: :utc_datetime_usec)
     end
 
-    create_if_not_exists index(:beacon_component_attrs, [:component_id])
+    alter table(:beacon_component_attrs, primary_key: false) do
+      add_if_not_exists :name, :string, null: false
+      add_if_not_exists :type, :string, null: false
+      add_if_not_exists :struct_name, :string
+      add_if_not_exists :opts, :binary
+    end
 
     create_if_not_exists table(:beacon_component_slots, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -103,23 +103,18 @@ defmodule Beacon.Migrations.V001 do
       timestamps(type: :utc_datetime_usec)
     end
 
-    create_if_not_exists index(:beacon_component_slots, [:component_id])
-
     create_if_not_exists table(:beacon_component_slot_attrs, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :name, :string, null: false
-      add :type, :string, null: false
-      add :struct_name, :string
-      add :opts, :binary
-
-      add :slot_id,
-          references(:beacon_component_slots, on_delete: :delete_all, type: :binary_id),
-          null: false
-
+      add :slot_id, references(:beacon_component_slots, on_delete: :delete_all, type: :binary_id), null: false
       timestamps(type: :utc_datetime_usec)
     end
 
-    create_if_not_exists index(:beacon_component_slot_attrs, [:slot_id])
+    alter table(:beacon_component_slot_attrs, primary_key: false) do
+      add_if_not_exists :name, :string, null: false
+      add_if_not_exists :type, :string, null: false
+      add_if_not_exists :struct_name, :string
+      add_if_not_exists :opts, :binary
+    end
 
     create_if_not_exists table(:beacon_layouts, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -142,6 +137,7 @@ defmodule Beacon.Migrations.V001 do
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
 
+    drop_if_exists constraint(:beacon_layout_events, :beacon_layout_events_check_event, check: "event = 'created' or event = 'published'")
     create constraint(:beacon_layout_events, :beacon_layout_events_check_event, check: "event = 'created' or event = 'published'")
 
     create_if_not_exists table(:beacon_layout_snapshots, primary_key: false) do
@@ -186,6 +182,10 @@ defmodule Beacon.Migrations.V001 do
 
       timestamps(updated_at: false, type: :utc_datetime_usec)
     end
+
+    drop_if_exists constraint(:beacon_page_events, :beacon_page_events_check_event,
+                     check: "event = 'created' or event = 'published' or event = 'unpublished'"
+                   )
 
     create constraint(:beacon_page_events, :beacon_page_events_check_event,
              check: "event = 'created' or event = 'published' or event = 'unpublished'"
