@@ -82,9 +82,12 @@ defmodule BeaconWeb do
   @doc false
   defp html_helpers do
     quote do
-      use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
+      import PhoenixHTMLHelpers.Form, except: [label: 1]
+      import PhoenixHTMLHelpers.Link
+      import PhoenixHTMLHelpers.Tag
+      import PhoenixHTMLHelpers.Format
       alias Phoenix.LiveView.JS
     end
   end

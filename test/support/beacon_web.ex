@@ -25,9 +25,12 @@ defmodule Beacon.BeaconWebTest do
 
   defp view_helpers do
     quote do
-      use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
+      import PhoenixHTMLHelpers.Form, except: [label: 1]
+      import PhoenixHTMLHelpers.Link
+      import PhoenixHTMLHelpers.Tag
+      import PhoenixHTMLHelpers.Format
       import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
       import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
       import Phoenix.View
