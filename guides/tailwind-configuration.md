@@ -68,8 +68,6 @@ config :esbuild,
 
 Now you can execute `mix esbuild tailwind_config` to generate the file `priv/tailwind.config.bundle.js` which will bundle the config in `assets/tailwind.config.js` with all plugins.
 
-You can see a demo at https://github.com/BeaconCMS/beacon_demo/tree/main/assets
-
 The last step is using the bundled file as the `tailwind_config` in your site configuration:
 
 ```elixir
@@ -77,3 +75,5 @@ tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.confi
 ```
 
 Remember to replace `:my_app` with your actual app name.
+
+You can see a demo of this setup at https://github.com/BeaconCMS/beacon_demo/tree/main/assets
