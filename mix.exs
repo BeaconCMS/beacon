@@ -37,8 +37,8 @@ defmodule Beacon.MixProject do
       {:ex_brotli, "~> 0.3"},
       {:ex_doc, "~> 0.29", only: :docs},
       # FIXME: multipart copy in ex_aws_s3 2.5.0
-      {:ex_aws, "~> 2.4.0"},
-      {:ex_aws_s3, "~> 2.4.0"},
+      {:ex_aws, "~> 2.5.4"},
+      {:ex_aws_s3, "~> 2.5.3"},
       {:floki, ">= 0.30.0"},
       {:gettext, "~> 0.20"},
       {:hackney, "~> 1.16"},
