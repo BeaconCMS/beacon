@@ -3,6 +3,7 @@ defmodule Beacon.Migration do
   Functions which can be called in an Ecto migration for Beacon installation and upgrades.
   """
 
+  # TODO: `up/1` should execute all migrations from v001 up to `@latest`
   @latest Beacon.Migrations.V001
 
   def up do

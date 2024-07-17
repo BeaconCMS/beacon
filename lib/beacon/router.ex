@@ -3,7 +3,7 @@
 
 defmodule Beacon.Router do
   @moduledoc """
-  Provides routing helpers to instantiate sites, or api endpoints.
+  Routing helpers
 
   In your app router, add `use Beacon.Router` and call one the of the available macros.
   """
@@ -124,9 +124,7 @@ defmodule Beacon.Router do
     }
   end
 
-  @doc """
-  API routes.
-  """
+  @doc false
   defmacro beacon_api(path) do
     quote bind_quoted: binding() do
       scope path, BeaconWeb.API do

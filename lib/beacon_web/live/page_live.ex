@@ -1,4 +1,6 @@
 defmodule BeaconWeb.PageLive do
+  @moduledoc false
+
   use BeaconWeb, :live_view
   require Logger
   import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false

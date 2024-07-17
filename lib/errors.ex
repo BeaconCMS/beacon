@@ -1,24 +1,48 @@
 defmodule Beacon.ConfigError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception message: "error in Beacon.Config"
 end
 
 defmodule Beacon.LoaderError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception message: "error in Beacon.Loader", plug_status: 404
 end
 
 defmodule Beacon.RuntimeError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception message: "runtime error in Beacon", plug_status: 404
 end
 
 defmodule Beacon.AuthorizationError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception message: "error in Beacon.Authorization"
 end
 
 defmodule Beacon.ParserError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception message: "error parsing template"
 end
 
 defmodule Beacon.SnippetError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception [:message]
 
   @type t() :: %__MODULE__{
@@ -36,9 +60,17 @@ defmodule Beacon.SnippetError do
 end
 
 defmodule BeaconWeb.NotFoundError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception [:message, plug_status: 404]
 end
 
 defmodule BeaconWeb.ServerError do
+  @moduledoc """
+  TODO: doc
+  """
+
   defexception [:message, plug_status: 500]
 end

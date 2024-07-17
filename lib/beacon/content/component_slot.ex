@@ -1,4 +1,8 @@
 defmodule Beacon.Content.ComponentSlot do
+  @moduledoc """
+  TODO: doc
+  """
+
   use Beacon.Schema
 
   alias Beacon.Content.Component

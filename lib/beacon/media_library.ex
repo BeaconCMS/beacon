@@ -2,6 +2,7 @@ defmodule Beacon.MediaLibrary do
   @moduledoc """
   Media Library to upload and serve assets.
   """
+
   import Ecto.Query
   import Ecto.Changeset
   import Beacon.Utils, only: [repo: 1]
