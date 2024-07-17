@@ -69,8 +69,8 @@ defmodule Beacon.Router do
 
   ## Options
 
-    * `:site` (required) `t:Beacon.Config.site/0` - register your site with a unique name,
-      note that has to be the same name used for configuration, see `Beacon.Config` for more info.
+    * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name,
+      note that it has to be the same name used for configuration, see `Beacon.Config` for more info.
   """
   defmacro beacon_site(prefix, opts) do
     # TODO: raise on duplicated sites defined on the same prefix

@@ -1,6 +1,4 @@
 defmodule Beacon.Content.ComponentAttr do
-  @moduledoc false
-
   use Beacon.Schema
 
   alias Beacon.Content.Component
