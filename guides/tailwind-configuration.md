@@ -38,13 +38,15 @@ mix run -e "IO.inspect Esbuild.bin_version()"
 ```
 
 If it fails then follow the [esbuild install guide](https://github.com/phoenixframework/esbuild?tab=readme-ov-file#installation) to get it installed.
+Any recent version that is installed should work just fine.
 
 ### Config in the ESM format
 
-We need the config in the ESM formst, ie: `default export` instead of `module.exports`. That's because Beacon uses Tailwind to generate stylesheets for published pages (your deployed site) and also to preview pages in the Visual Editor (in your admin interface).
-The former uses the tailwind-cli binary (a node application) while the latter compiles the stylesheet in the browser, so we need to reuse the same config in both environments and ESM is the format that works in both environments.
+We need the tailwind config file in the ESM format, ie: `default export` instead of `module.exports`.
+That's because Beacon uses Tailwind to generate stylesheets for published pages (your deployed site) and also to preview pages in the Visual Editor (in your admin interface).
+The former uses the tailwind-cli binary (a node application) while the latter compiles the stylesheet in the browser, so we need to reuse the same config file in both environments and ESM is the format that works in this scenario.
 
-Most likely the existing config `assets/tailwind.config.js` will be in the CommonJS format, so given a file like this:
+Most likely the existing config `assets/tailwind.config.js` was created in the CommonJS format, so given a file like this:
 
 ```js
 module.exports = {
@@ -141,6 +143,9 @@ end
 
 ## Site Configuration
 
+**Note** that if you're setting up the environment for the first time and have no site created yet, for example if you're following the "Your first site" or the "Create a blog" guide,
+you won't have any site configuration to update. In this case, you can skip this step and come back to it later after executing the `beacon.install` command.
+
 Open the file `lib/my_app/application.ex` (replace my_app with your actual application name), find the configuration of the site you'll be using
 this Tailwind config and add the `tailwind_config` key pointing to the bundled file:
 
@@ -172,4 +177,4 @@ def start(_type, _args) do
 end
 ```
 
-**Note:** Remeber to replace _my_app_ with the actual name of your application.
+**Remember** to replace _my_app_ with the actual name of your application.
