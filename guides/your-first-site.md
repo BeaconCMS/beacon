@@ -86,7 +86,7 @@ children = [
 
 Beacon requires some database tables to be setup via Ecto Migration.  First run
 
-```
+```sh
 mix ecto.gen.migration create_beacon_tables
 ```
 
@@ -95,9 +95,7 @@ Then go to the generated migration (usually in `/priv/repo/migrations`) and add 
 ```elixir
 defmodule MyApp.Repo.Migrations.CreateBeaconTables do
   use Ecto.Migration
-
   defdelegate up, to: Beacon.Migration
-
   defdelegate down, to: Beacon.Migration
 end
 ```

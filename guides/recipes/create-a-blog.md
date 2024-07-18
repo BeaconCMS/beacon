@@ -18,7 +18,6 @@ Skip if Beacon and Beacon LiveAdmin are already installed.
 Tailwind must be updated and the config file must be in the ESM format.
 
 Follow the [Tailwind configuration guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md) to set up it properly.
-Just make sure to follow the whole guide because we'll be using Tailwind plugins in our blog.
 
 2. Esbuild
 
