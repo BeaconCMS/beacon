@@ -40,16 +40,16 @@ defmodule Beacon.Loader.Routes do
           String.replace(path, "//", "/")
         end
 
-        defmacro sigil_P({:<<>>, _meta, _segments} = route, extra) do
-          validate_sigil_P!(extra)
+        defmacro sigil_p({:<<>>, _meta, _segments} = route, extra) do
+          validate_sigil_p!(extra)
           prefix = @router.__beacon_scoped_prefix_for_site__(@site)
           build_route(route, __CALLER__, prefix, @endpoint, @router)
         end
 
-        defp validate_sigil_P!([]), do: :ok
+        defp validate_sigil_p!([]), do: :ok
 
-        defp validate_sigil_P!(extra) do
-          raise ArgumentError, "~P does not support modifiers after closing, got: #{extra}"
+        defp validate_sigil_p!(extra) do
+          raise ArgumentError, "~p does not support modifiers after closing, got: #{extra}"
         end
 
         defp build_route(route_ast, env, prefix, endpoint, router) do
@@ -89,6 +89,21 @@ defmodule Beacon.Loader.Routes do
           quote generated: true do
             Phoenix.VerifiedRoutes.unverified_path(unquote_splicing([endpoint, router, rewrite_route]))
           end
+        end
+
+        @doc false
+        def __encode_segment__(data) do
+          case data do
+            [] -> ""
+            [str | _] when is_binary(str) -> Enum.map_join(data, "/", &encode_segment/1)
+            _ -> encode_segment(data)
+          end
+        end
+
+        defp encode_segment(data) do
+          data
+          |> Phoenix.Param.to_param()
+          |> URI.encode(&URI.char_unreserved?/1)
         end
 
         defp verify_segment(["/" <> _ | _] = segments, route), do: verify_segment(segments, route, [])

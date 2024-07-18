@@ -172,3 +172,8 @@ defmodule Beacon.Content.Page do
     |> Map.new()
   end
 end
+
+defimpl Phoenix.Param, for: Beacon.Content.Page do
+  # we don't want to encode the leading slash
+  def to_param(%{path: <<"/", rest::binary>>}), do: rest
+end

@@ -1,18 +1,36 @@
 defmodule Beacon.Loader.RoutesTest do
-  use ExUnit.Case, async: true
+  use Beacon.DataCase, async: true
 
-  # Beacon.Loader.fetch_routes_module(:my_site)
-  import :"Elixir.BeaconWeb.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Routes"
+  import Beacon.Fixtures
+
+  @site :booted
+
+  # Beacon.Loader.fetch_routes_module(:booted)
+  import :"Elixir.BeaconWeb.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"
 
   test "beacon_asset_path" do
-    assert beacon_asset_path("logo.webp") == "/__beacon_assets__/my_site/logo.webp"
+    assert beacon_asset_path("logo.webp") == "/__beacon_assets__/booted/logo.webp"
   end
 
   test "beacon_asset_url" do
-    assert beacon_asset_url("logo.webp") == "http://localhost:4000/__beacon_assets__/my_site/logo.webp"
+    assert beacon_asset_url("logo.webp") == "http://localhost:4000/__beacon_assets__/booted/logo.webp"
   end
 
-  test "sigil_P" do
-    assert ~P"/contact" == "/contact"
+  describe "sigil_p" do
+    test "static" do
+      assert ~p"/contact" == "/nested/site/contact"
+    end
+
+    test "derive path from page" do
+      page = page_fixture(site: @site, path: "/elixir-lang")
+      assert ~p"/posts/#{page}" == "/nested/site/posts/elixir-lang"
+    end
+
+    test "with dynamic segments" do
+      page = %{id: 1}
+      assert ~p|/posts/#{page.id}| == "/nested/site/posts/1"
+
+      assert ~p|/posts/#{"a b"}| == "/nested/site/posts/a%20b"
+    end
   end
 end
