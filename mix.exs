@@ -36,14 +36,17 @@ defmodule Beacon.MixProject do
       {:esbuild, "~> 0.5", only: :dev},
       {:ex_brotli, "~> 0.3"},
       {:ex_doc, "~> 0.29", only: :docs},
-      {:ex_aws, "~> 2.4"},
-      {:ex_aws_s3, "~> 2.4"},
-      {:floki, ">= 0.30.0", only: :test},
+      # FIXME: multipart copy in ex_aws_s3 2.5.0
+      {:ex_aws, "~> 2.4.0"},
+      {:ex_aws_s3, "~> 2.4.0"},
+      {:floki, ">= 0.30.0"},
       {:gettext, "~> 0.20"},
-      {:hackney, "~> 1.16", only: [:dev, :test]},
+      {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
       {:jason, "~> 1.0"},
-      {:solid, "~> 0.14"},
+      live_monaco_editor_dep(),
+      mdex_dep(),
+      {:oembed, "~> 0.4.1"},
       phoenix_dep(),
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
@@ -54,12 +57,10 @@ defmodule Beacon.MixProject do
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:postgrex, "~> 0.16"},
-      {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:tailwind, "~> 0.2"},
       {:rustler, ">= 0.0.0", optional: true},
-      {:faker, "~> 0.17", only: :test},
-      live_monaco_editor_dep(),
-      mdex_dep()
+      {:safe_code, github: "TheFirstAvenger/safe_code"},
+      {:solid, "~> 0.14"},
+      {:tailwind, "~> 0.2"}
     ]
   end
 
@@ -95,10 +96,8 @@ defmodule Beacon.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      dev: ["ecto.reset", "run --no-halt dev.exs"],
+      setup: ["deps.get", "assets.setup", "assets.build"],
+      dev: ["run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
       "assets.build": ["esbuild cdn", "esbuild cdn_min"]

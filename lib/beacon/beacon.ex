@@ -37,7 +37,7 @@ defmodule Beacon do
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
   flexibility to plan your architecture from simple to complex environments. For example, you can have a single site
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
-  campaing that may receive too much traffic.
+  campaign that may receive too much traffic.
 
   ## Options
 
@@ -122,12 +122,14 @@ defmodule Beacon do
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) do
-    Beacon.Boot.do_init(Config.fetch!(site))
-    Beacon.Config.update_value(site, :skip_boot?, false)
+    site
+    |> Config.fetch!()
+    |> Beacon.Boot.do_init()
+
     :ok
   end
 
-  @tailwind_version "3.3.1"
+  @tailwind_version "3.4.4"
   @doc false
   def tailwind_version, do: @tailwind_version
 
@@ -143,41 +145,53 @@ defmodule Beacon do
   # and also raises with more context about the called mfa.
   #
   # This should always be used when calling dynamic modules
-  def apply_mfa(module, function, args, failure_count \\ 0) when is_atom(module) and is_atom(function) and is_list(args) do
-    apply(module, function, args)
+  def apply_mfa(module, function, args, opts \\ []) when is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
+    context = Keyword.get(opts, :context, nil)
+    do_apply_mfa(module, function, args, 0, context)
+  end
+
+  @max_retries 5
+
+  defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
+    if :erlang.module_loaded(module) do
+      apply(module, function, args)
+    else
+      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
+    end
   rescue
-    e in UndefinedFunctionError ->
-      case {failure_count, e} do
-        {x, _} when x >= 10 ->
+    error in UndefinedFunctionError ->
+      case {failure_count, error} do
+        {failure_count, _} when failure_count >= @max_retries ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise e, __STACKTRACE__
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
 
         {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
           :timer.sleep(100 * (failure_count * 2))
-          apply_mfa(module, function, args, failure_count + 1)
+          do_apply_mfa(module, function, args, failure_count + 1, context)
 
-        _ ->
-          reraise e, __STACKTRACE__
+        {_, error} ->
+          reraise Beacon.RuntimeError,
+                  [message: apply_mfa_error_message(module, function, args, nil, context, error)],
+                  __STACKTRACE__
       end
 
-    _e in FunctionClauseError ->
-      mfa = Exception.format_mfa(module, function, length(args))
+    error ->
+      Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
+      reraise error, __STACKTRACE__
+  end
 
-      error_message = """
-      could not call #{mfa} for the given path: #{inspect(List.flatten(args))}.
+  defp apply_mfa_error_message(module, function, args, reason, context, error) do
+    mfa = Exception.format_mfa(module, function, length(args))
+    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
+    reason = if reason, do: "reason: #{reason}"
+    context = if context, do: "context: #{inspect(context)}"
+    error = if error, do: Exception.message(error)
 
-      Make sure you have created a page for this path.
-
-      See Pages.create_page!/2 for more info.
-      """
-
-      reraise Beacon.LoaderError, [message: error_message], __STACKTRACE__
-
-    e ->
-      reraise e, __STACKTRACE__
+    lines = for line <- [summary, reason, context, error], line != nil, do: line
+    Enum.join(lines, "\n\n")
   end
 
   @doc false

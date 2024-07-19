@@ -21,23 +21,20 @@ defmodule Beacon.Template.HEExTest do
       assert HEEx.render(
                :my_site,
                ~S|
-                  <%= for val <- @beacon_live_data[:vals] do %>
+                  <%= for val <- @vals do %>
                     <%= val %>
                   <% end %>
                 |,
-               %{beacon_live_data: %{vals: [1, 2]}}
+               %{vals: [1, 2]}
              ) == "\n1\n\n2\n"
     end
 
     test "user defined components" do
       component_fixture(site: "my_site", name: "sample")
-      Beacon.Loader.fetch_components_module(:my_site)
+      Beacon.Loader.reload_components_module(:my_site)
 
-      assert HEEx.render(
-               :my_site,
-               ~S|<%= my_component("sample", %{val: 1}) %>|,
-               %{}
-             ) == ~S|<span id="my-component-1">1</span>|
+      assert HEEx.render(:my_site, ~S|<%= my_component("sample", %{val: 1}) %>|, %{}) == ~S|<span id="my-component">1</span>|
+      assert HEEx.render(:my_site, ~S|<.sample val={1} />|, %{}) == ~S|<span id="my-component">1</span>|
     end
   end
 end

@@ -23,11 +23,15 @@ defmodule Beacon.Content do
     * Page - only applies to the specific page.
 
   """
-  import Ecto.Query
-
   use GenServer
-  require Logger
+
+  import Ecto.Query
+  import Beacon.Utils, only: [repo: 1, transact: 2]
+
   alias Beacon.Content.Component
+  alias Beacon.Content.ComponentAttr
+  alias Beacon.Content.ComponentSlot
+  alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
@@ -43,10 +47,12 @@ defmodule Beacon.Content do
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
-  alias Beacon.Repo
   alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
+  alias Ecto.UUID
+
+  require Logger
 
   @doc false
   def name(site) do
@@ -137,10 +143,11 @@ defmodule Beacon.Content do
   @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
   def create_layout(attrs) do
     changeset = Layout.changeset(%Layout{}, attrs)
+    site = Changeset.get_field(changeset, :site)
 
-    Repo.transact(fn ->
+    transact(repo(site), fn ->
       with {:ok, changeset} <- validate_layout_template(changeset),
-           {:ok, layout} <- Repo.insert(changeset),
+           {:ok, layout} <- repo(site).insert(changeset),
            {:ok, _event} <- create_layout_event(layout, "created") do
         {:ok, layout}
       end
@@ -172,9 +179,10 @@ defmodule Beacon.Content do
   @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
   def update_layout(%Layout{} = layout, attrs) do
     changeset = Layout.changeset(layout, attrs)
+    site = Changeset.get_field(changeset, :site)
 
     with {:ok, changeset} <- validate_layout_template(changeset) do
-      Repo.update(changeset)
+      repo(site).update(changeset)
     end
   end
 
@@ -192,10 +200,10 @@ defmodule Beacon.Content do
   end
 
   @doc type: :layouts
-  @spec publish_layout(Ecto.UUID.t()) :: {:ok, Layout.t()} | any()
-  def publish_layout(id) when is_binary(id) do
-    id
-    |> get_layout()
+  @spec publish_layout(Site.t(), UUID.t()) :: {:ok, Layout.t()} | any()
+  def publish_layout(site, id) when is_atom(site) and is_binary(id) do
+    site
+    |> get_layout(id)
     |> publish_layout()
   end
 
@@ -217,7 +225,7 @@ defmodule Beacon.Content do
     %LayoutEvent{}
     |> Changeset.cast(attrs, [:site, :layout_id, :event])
     |> Changeset.validate_required([:site, :layout_id, :event])
-    |> Repo.insert()
+    |> repo(layout).insert()
   end
 
   @doc false
@@ -227,7 +235,7 @@ defmodule Beacon.Content do
     %LayoutSnapshot{}
     |> Changeset.cast(attrs, [:site, :schema_version, :layout_id, :layout, :event_id])
     |> Changeset.validate_required([:site, :schema_version, :layout_id, :layout, :event_id])
-    |> Repo.insert()
+    |> repo(layout).insert()
   end
 
   @doc """
@@ -235,19 +243,23 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> get_layout("fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
+      iex> get_layout(:my_site, "fd70e5fe-9bd8-41ed-94eb-5459c9bb05fc")
       %Layout{}
 
   """
   @doc type: :layouts
-  @spec get_layout(Ecto.UUID.t()) :: Layout.t() | nil
-  def get_layout(id) do
-    Repo.get(Layout, id)
+  @spec get_layout(Site.t(), UUID.t()) :: Layout.t() | nil
+  def get_layout(site, id) when is_atom(site) and is_binary(id) do
+    repo(site).get(Layout, id)
   end
 
+  @doc """
+  Same as `get_layout/2` but raises an error if no result is found.
+  """
   @doc type: :layouts
-  def get_layout!(id) when is_binary(id) do
-    Repo.get!(Layout, id)
+  @spec get_layout!(Site.t(), UUID.t()) :: Layout.t()
+  def get_layout!(site, id) when is_atom(site) and is_binary(id) do
+    repo(site).get!(Layout, id)
   end
 
   @doc """
@@ -263,7 +275,7 @@ defmodule Beacon.Content do
   @spec get_layout_by(Site.t(), keyword(), keyword()) :: Layout.t() | nil
   def get_layout_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Layout, clauses, opts)
+    repo(site).get_by(Layout, clauses, opts)
   end
 
   @doc """
@@ -279,9 +291,9 @@ defmodule Beacon.Content do
 
   """
   @doc type: :layouts
-  @spec list_layout_events(Site.t(), Ecto.UUID.t()) :: [LayoutEvent.t()]
+  @spec list_layout_events(Site.t(), UUID.t()) :: [LayoutEvent.t()]
   def list_layout_events(site, layout_id) when is_atom(site) and is_binary(layout_id) do
-    Repo.all(
+    repo(site).all(
       from event in LayoutEvent,
         left_join: snapshot in LayoutSnapshot,
         on: snapshot.event_id == event.id,
@@ -305,7 +317,7 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec get_latest_layout_event(Site.t(), Ecto.UUID.t()) :: LayoutEvent.t() | nil
   def get_latest_layout_event(site, layout_id) when is_atom(site) and is_binary(layout_id) do
-    Repo.one(
+    repo(site).one(
       from event in LayoutEvent,
         where: event.site == ^site and event.layout_id == ^layout_id,
         limit: 1,
@@ -318,34 +330,71 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search layouts by title.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search layouts by title. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   """
   @doc type: :layouts
   @spec list_layouts(Site.t(), keyword()) :: [Layout.t()]
   def list_layouts(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_layouts_base()
     |> query_list_layouts_limit(per_page)
+    |> query_list_layouts_offset(per_page, page)
     |> query_list_layouts_search(search)
-    |> Repo.all()
+    |> query_list_layouts_preloads(preloads)
+    |> query_list_layouts_sort(sort)
+    |> repo(site).all()
   end
 
-  defp query_list_layouts_base(site) do
-    from l in Layout,
-      where: l.site == ^site,
-      order_by: [asc: l.title]
-  end
+  defp query_list_layouts_base(site), do: from(l in Layout, where: l.site == ^site)
 
   defp query_list_layouts_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_layouts_limit(query, :infinity = _limit), do: query
   defp query_list_layouts_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_layouts_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_layouts_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
   defp query_list_layouts_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.title, ^"%#{search}%"))
   defp query_list_layouts_search(query, _search), do: query
+
+  defp query_list_layouts_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_layouts_preloads(query, _preloads), do: query
+
+  defp query_list_layouts_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of layouts based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :layouts
+  @spec count_layouts(Site.t(), keyword()) :: non_neg_integer()
+  def count_layouts(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_layouts_base()
+    |> query_list_layouts_search(search)
+    |> select([q], count(q.id))
+    |> repo(site).one()
+  end
 
   @doc """
   Returns all published layouts for `site`.
@@ -355,7 +404,7 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec list_published_layouts(Site.t()) :: [Layout.t()]
   def list_published_layouts(site) do
-    Repo.all(
+    repo(site).all(
       from snapshot in LayoutSnapshot,
         join: event in LayoutEvent,
         on: snapshot.event_id == event.id,
@@ -374,10 +423,10 @@ defmodule Beacon.Content do
   This operation is cached.
   """
   @doc type: :layouts
-  @spec get_published_layout(Site.t(), Ecto.UUID.t()) :: Layout.t() | nil
+  @spec get_published_layout(Site.t(), UUID.t()) :: Layout.t() | nil
   def get_published_layout(site, layout_id) do
     get_fun = fn ->
-      Repo.one(
+      repo(site).one(
         from snapshot in LayoutSnapshot,
           join: event in LayoutEvent,
           on: snapshot.event_id == event.id,
@@ -427,12 +476,6 @@ defmodule Beacon.Content do
       end)
 
     Map.put(layout, :resource_links, resource_links)
-  end
-
-  # deprecated: to be removed
-  @doc false
-  def list_distinct_sites_from_layouts do
-    Repo.all(from l in Layout, distinct: true, select: l.site, order_by: l.site)
   end
 
   ## PAGES
@@ -505,12 +548,12 @@ defmodule Beacon.Content do
         {key, val} -> {Atom.to_string(key), val}
       end)
 
-    Repo.transact(fn ->
-      with {:ok, site} <- Beacon.Types.Site.cast(attrs["site"]),
-           attrs = maybe_put_default_meta_tags(site, attrs),
-           changeset = Page.create_changeset(%Page{}, attrs),
-           {:ok, changeset} <- validate_page_template(changeset),
-           {:ok, page} <- Repo.insert(changeset),
+    {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
+    changeset = Page.create_changeset(%Page{}, maybe_put_default_meta_tags(site, attrs))
+
+    transact(repo(site), fn ->
+      with {:ok, changeset} <- validate_page_template(changeset),
+           {:ok, page} <- repo(site).insert(changeset),
            {:ok, _event} <- create_page_event(page, "created"),
            %Page{} = page <- Lifecycle.Page.after_create_page(page) do
         {:ok, page}
@@ -525,6 +568,8 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a page.
+
+  Raises an error if unsuccessful.
   """
   @doc type: :pages
   @spec create_page!(map()) :: Page.t()
@@ -558,9 +603,9 @@ defmodule Beacon.Content do
 
     changeset = Page.update_changeset(page, attrs)
 
-    Repo.transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, changeset} <- validate_page_template(changeset),
-           {:ok, page} <- Repo.update(changeset),
+           {:ok, page} <- repo(page.site).update(changeset),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -582,11 +627,14 @@ defmodule Beacon.Content do
     GenServer.call(name(page.site), {:publish_page, page})
   end
 
+  @doc """
+  Same as `publish_page/1` but accepts a `site` and `page_id` with which to lookup the page.
+  """
   @doc type: :pages
-  @spec publish_page(Ecto.UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def publish_page(id) when is_binary(id) do
-    id
-    |> get_page()
+  @spec publish_page(Site.t(), UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def publish_page(site, page_id) when is_atom(site) and is_binary(page_id) do
+    site
+    |> get_page(page_id)
     |> publish_page()
   end
 
@@ -595,13 +643,12 @@ defmodule Beacon.Content do
 
   Similar to `publish_page/1` but defers loading dependent resources
   as late as possible making the process faster.
-
   """
   @doc type: :pages
   @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
   def publish_pages(pages) when is_list(pages) do
     publish = fn page ->
-      Repo.transact(fn ->
+      transact(repo(page), fn ->
         with {:ok, event} <- create_page_event(page, "published"),
              {:ok, _snapshot} <- create_page_snapshot(page, event) do
           {:ok, page}
@@ -644,7 +691,7 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def unpublish_page(%Page{} = page) do
-    Repo.transact(fn ->
+    transact(repo(page), fn ->
       with {:ok, _event} <- create_page_event(page, "unpublished") do
         :ok = Beacon.PubSub.page_unpublished(page)
         {:ok, page}
@@ -659,18 +706,31 @@ defmodule Beacon.Content do
     %PageEvent{}
     |> Changeset.cast(attrs, [:site, :page_id, :event])
     |> Changeset.validate_required([:site, :page_id, :event])
-    |> Repo.insert()
+    |> repo(page).insert()
   end
 
   @doc false
   def create_page_snapshot(page, event) do
-    page = Repo.preload(page, [:variants, :event_handlers])
-    attrs = %{"site" => page.site, "schema_version" => Page.version(), "page_id" => page.id, "page" => page, "event_id" => event.id}
+    page = repo(page).preload(page, [:variants, :event_handlers])
+
+    attrs = %{
+      "site" => page.site,
+      "schema_version" => Page.version(),
+      "event_id" => event.id,
+      "page" => page,
+      "page_id" => page.id,
+      "path" => page.path,
+      "title" => page.title,
+      "format" => page.format,
+      "extra" => page.extra
+    }
+
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :format, :extra]
 
     %PageSnapshot{}
-    |> Changeset.cast(attrs, [:site, :schema_version, :page_id, :page, :event_id])
-    |> Changeset.validate_required([:site, :schema_version, :page_id, :page, :event_id])
-    |> Repo.insert()
+    |> Changeset.cast(attrs, fields)
+    |> Changeset.validate_required(fields)
+    |> repo(page).insert()
   end
 
   @doc """
@@ -682,26 +742,30 @@ defmodule Beacon.Content do
 
   ## Examples
 
-      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae")
+      iex> get_page(:my_site, "dba8a99e-311a-4806-af04-dd968c7e5dae")
       %Page{}
 
-      iex> get_page("dba8a99e-311a-4806-af04-dd968c7e5dae", preloads: [:layout])
+      iex> get_page(:my_site, "dba8a99e-311a-4806-af04-dd968c7e5dae", preloads: [:layout])
       %Page{layout: %Layout{}}
 
   """
   @doc type: :pages
-  @spec get_page(Ecto.UUID.t(), keyword()) :: Page.t() | nil
-  def get_page(id, opts \\ []) when is_binary(id) and is_list(opts) do
+  @spec get_page(Site.t(), UUID.t(), keyword()) :: Page.t() | nil
+  def get_page(site, id, opts \\ []) when is_atom(site) and is_binary(id) and is_list(opts) do
     preloads = Keyword.get(opts, :preloads, [])
 
     Page
-    |> Repo.get(id)
-    |> Repo.preload(preloads)
+    |> repo(site).get(id)
+    |> repo(site).preload(preloads)
   end
 
+  @doc """
+  Same as `get_page/3` but raises an error if no result is found.
+  """
   @doc type: :pages
-  def get_page!(id, opts \\ []) when is_binary(id) and is_list(opts) do
-    case get_page(id, opts) do
+  @spec get_page!(Site.t(), UUID.t(), keyword()) :: Page.t()
+  def get_page!(site, id, opts \\ []) when is_atom(site) and is_binary(id) and is_list(opts) do
+    case get_page(site, id, opts) do
       %Page{} = page -> page
       nil -> raise "page #{id} not found"
     end
@@ -720,7 +784,7 @@ defmodule Beacon.Content do
   @spec get_page_by(Site.t(), keyword(), keyword()) :: Page.t() | nil
   def get_page_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Page, clauses, opts)
+    repo(site).get_by(Page, clauses, opts)
   end
 
   @doc """
@@ -736,9 +800,9 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec list_page_events(Site.t(), Ecto.UUID.t()) :: [PageEvent.t()]
+  @spec list_page_events(Site.t(), UUID.t()) :: [PageEvent.t()]
   def list_page_events(site, page_id) when is_atom(site) and is_binary(page_id) do
-    Repo.all(
+    repo(site).all(
       from event in PageEvent,
         left_join: snapshot in PageSnapshot,
         on: snapshot.event_id == event.id,
@@ -760,9 +824,9 @@ defmodule Beacon.Content do
 
   """
   @doc type: :pages
-  @spec get_latest_page_event(Site.t(), Ecto.UUID.t()) :: PageEvent.t() | nil
+  @spec get_latest_page_event(Site.t(), UUID.t()) :: PageEvent.t() | nil
   def get_latest_page_event(site, page_id) when is_atom(site) and is_binary(page_id) do
-    Repo.one(
+    repo(site).one(
       from event in PageEvent,
         where: event.site == ^site and event.page_id == ^page_id,
         limit: 1,
@@ -779,7 +843,7 @@ defmodule Beacon.Content do
     * `:page` - returns records from a specfic page. Defaults to 1.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
-    * `:sort` - column in which the result will be ordered by.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
 
   """
   @doc type: :pages
@@ -798,7 +862,7 @@ defmodule Beacon.Content do
     |> query_list_pages_search(search)
     |> query_list_pages_preloads(preloads)
     |> query_list_pages_sort(sort)
-    |> Repo.all()
+    |> repo(site).all()
   end
 
   defp query_list_pages_base(site), do: from(p in Page, where: p.site == ^site)
@@ -845,35 +909,49 @@ defmodule Beacon.Content do
 
     base
     |> query_list_pages_search(search)
-    |> Repo.one()
+    |> repo(site).one()
   end
 
   @doc """
-  Returns all published pages for `site`.
+  Lists and search all published pages for `site`.
 
-  Unpublished pages are not returned even if it was once published before,
-  only the latest status is valid.
-
-  Pages are extracted from the latest published `Beacon.Content.PageSnapshot`.
+  Note that unpublished pages are not returned even if it was once published before, only the latest snapshot is considered.
 
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specfic page. Defaults to 1.
-    * `:sort` - column in which the result will be ordered by.
+    * `:search` - search by either one or more fields or dynamic query function.
+                  Available fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (do not apply search filter).
+    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
+
+  ## Examples
+
+      iex> list_published_pages(:my_site, search: %{path: "/home", title: "Home Page"})
+      [%Page{}]
+
+      iex> list_published_pages(:my_site, search: %{extra: %{"tags" => "press"}})
+      [%Page{}]
+
+      iex> list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike 'year-20%'")) end)
+      [%Page{}]
 
   """
   @doc type: :pages
-  @spec list_published_pages(Site.t(), keyword()) :: [Layout.t()]
+  @spec list_published_pages(Site.t(), keyword()) :: [Page.t()]
   def list_published_pages(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
     page = Keyword.get(opts, :page, 1)
+    search = Keyword.get(opts, :search)
+    sort = Keyword.get(opts, :sort, :title)
 
     site
     |> query_list_published_pages_base()
     |> query_list_published_pages_limit(per_page)
     |> query_list_published_pages_offset(per_page, page)
-    |> Repo.all()
+    |> query_list_published_pages_search(search)
+    |> query_list_published_pages_sort(sort)
+    |> repo(site).all()
     |> Enum.map(&extract_page_snapshot/1)
   end
 
@@ -887,8 +965,7 @@ defmodule Beacon.Content do
     from snapshot in PageSnapshot,
       join: event in subquery(events),
       on: snapshot.event_id == event.id,
-      where: snapshot.site == ^site,
-      order_by: [desc: snapshot.inserted_at]
+      where: snapshot.site == ^site
   end
 
   defp query_list_published_pages_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
@@ -902,13 +979,37 @@ defmodule Beacon.Content do
 
   defp query_list_published_pages_offset(query, _per_page, _page), do: from(q in query, offset: 0)
 
+  defp query_list_published_pages_search(query, search) when is_function(search, 0) do
+    from(q in query, where: ^search.())
+  end
+
+  defp query_list_published_pages_search(query, search) when is_map(search) do
+    where =
+      Enum.reduce(search, dynamic(true), fn
+        {field, value}, dynamic when field in [:path, :title, :format] and is_binary(value) ->
+          dynamic([q], ^dynamic and ilike(field(q, ^field), ^value))
+
+        {:extra, {field, value}}, dynamic when is_binary(value) ->
+          dynamic([q], ^dynamic and ilike(json_extract_path(q.extra, [^field]), ^value))
+
+        _, dynamic ->
+          dynamic
+      end)
+
+    from(q in query, where: ^where)
+  end
+
+  defp query_list_published_pages_search(query, _search), do: query
+
+  defp query_list_published_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
   @doc """
   Get latest published page.
 
   This operation is cached.
   """
   @doc type: :pages
-  @spec get_published_page(Site.t(), Ecto.UUID.t()) :: Page.t() | nil
+  @spec get_published_page(Site.t(), UUID.t()) :: Page.t() | nil
   def get_published_page(site, page_id) do
     get_fun = fn ->
       events =
@@ -918,7 +1019,7 @@ defmodule Beacon.Content do
           distinct: [asc: event.page_id],
           order_by: [desc: event.inserted_at]
 
-      Repo.one(
+      repo(site).one(
         from snapshot in PageSnapshot,
           join: event in subquery(events),
           on: snapshot.event_id == event.id,
@@ -932,15 +1033,15 @@ defmodule Beacon.Content do
 
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
     page
-    |> Repo.reload()
-    |> Repo.preload([:variants, :event_handlers], force: true)
+    |> repo(page).reload()
+    |> repo(page).preload([:variants, :event_handlers], force: true)
     |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
-    |> Repo.reload()
-    |> Repo.preload(:event_handlers, force: true)
+    |> repo(page).reload()
+    |> repo(page).preload([:variants, :event_handlers], force: true)
     |> maybe_add_leading_slash()
   end
 
@@ -959,7 +1060,9 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Given a map of fields, stores this map as `:extra` fields in a `Page`.
 
+  Any existing `:extra` data for that Page will be overwritten!
   """
   @doc type: :pages
   @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
@@ -968,7 +1071,7 @@ defmodule Beacon.Content do
 
     page
     |> Changeset.cast(attrs, [:extra])
-    |> Repo.update()
+    |> repo(page).update()
   end
 
   # STYLESHEETS
@@ -976,22 +1079,61 @@ defmodule Beacon.Content do
   @doc """
   Creates a stylesheet.
 
+  Returns `{:ok, stylesheet}` if successful, otherwise `{:error, changeset}`.
+
   ## Example
 
-      iex> create_stylesheet(%{field: value})
+      iex >create_stylesheet(%{
+        site: :my_site,
+        name: "override",
+        content: ~S|
+        @media (min-width: 768px) {
+          .md\:text-red-400 {
+            color: red;
+          }
+        }
+        |
+      })
       {:ok, %Stylesheet{}}
+
+  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
 
   """
   @doc type: :stylesheets
   @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
   def create_stylesheet(attrs \\ %{}) do
-    %Stylesheet{}
-    |> Stylesheet.changeset(attrs)
-    |> Repo.insert()
+    changeset = Stylesheet.changeset(%Stylesheet{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
+  @doc """
+  Creates a stylesheet.
+
+  Returns the new stylesheet if successful, otherwise raises an error.
+
+  ## Example
+
+      iex >create_stylesheet(%{
+        site: :my_site,
+        name: "override",
+        content: ~S|
+        @media (min-width: 768px) {
+          .md\:text-red-400 {
+            color: red;
+          }
+        }
+        |
+      })
+      %Stylesheet{}
+
+  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
+  """
   @doc type: :stylesheets
+  @spec create_stylesheet(map()) :: Stylesheet.t()
   def create_stylesheet!(attrs \\ %{}) do
     case create_stylesheet(attrs) do
       {:ok, stylesheet} -> stylesheet
@@ -1013,7 +1155,7 @@ defmodule Beacon.Content do
   def update_stylesheet(%Stylesheet{} = stylesheet, attrs) do
     stylesheet
     |> Stylesheet.changeset(attrs)
-    |> Repo.update()
+    |> repo(stylesheet).update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
   end
 
@@ -1030,7 +1172,7 @@ defmodule Beacon.Content do
   @spec get_stylesheet_by(Site.t(), keyword(), keyword()) :: Stylesheet.t() | nil
   def get_stylesheet_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Stylesheet, clauses, opts)
+    repo(site).get_by(Stylesheet, clauses, opts)
   end
 
   @doc """
@@ -1045,7 +1187,7 @@ defmodule Beacon.Content do
   @doc type: :stylesheets
   @spec list_stylesheets(Site.t()) :: [Stylesheet.t()]
   def list_stylesheets(site) do
-    Repo.all(
+    repo(site).all(
       from s in Stylesheet,
         where: s.site == ^site
     )
@@ -1053,508 +1195,515 @@ defmodule Beacon.Content do
 
   # COMPONENTS
 
-  @doc """
-  Returns the list of components that are loaded into new sites.
-
-  Those include basic elements like buttons and links as sample components like header and navbars.
-  """
+  @doc false
+  #  Returns the list of components that are loaded by default into new sites.
   @spec blueprint_components() :: [map()]
-  @doc type: :components
   def blueprint_components do
-    nav_1 = """
-    <nav>
-      <div class="flex justify-between px-8 py-5 bg-white">
-        <div class="w-auto mr-14">
-          <a href="#"><img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" /></a>
-        </div>
-        <div class="w-auto flex flex-wrap items-center">
-          <ul class="flex items-center mr-10">
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Features</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Solutions</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Resources</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Pricing</a>
-            </li>
-          </ul>
-          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-            Start Free Trial
-          </button>
-        </div>
-      </div>
-    </nav>
-    """
-
-    nav_2 = """
-    <nav>
-      <div class="flex justify-between px-8 py-5 bg-white">
-        <div class="w-auto mr-14">
-          <a href="#">
-            <img src="https://shuffle.dev/gradia-assets/logos/gradia-name-black.svg" />
-          </a>
-        </div>
-        <div class="w-auto flex flex-wrap items-center">
-          <ul class="flex items-center mr-10">
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Features</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Solutions</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Resources</a>
-            </li>
-            <li class="mr-9 text-gray-900 hover:text-gray-700 text-lg">
-              <a href="#">Pricing</a>
-            </li>
-          </ul>
-        </div>
-        <div class="w-auto flex flex-wrap items-center">
-          <button class="text-white px-2 py-1 block w-full md:w-auto text-lg text-gray-900 font-medium overflow-hidden rounded-10 bg-blue-500 rounded">
-            Start Free Trial
-          </button>
-        </div>
-      </div>
-    </nav>
-    """
-
-    header_1 = """
-    <div class="container mx-auto px-4">
-      <div class="max-w-xl">
-        <span class="inline-block mb-3 text-gray-600 text-base">
-          Flexible Pricing Plan
-        </span>
-        <h2 class="mb-16 font-heading font-bold text-6xl sm:text-7xl text-gray-900">
-          Everything you need to launch a website
-        </h2>
-      </div>
-      <div class="flex flex-wrap">
-        <div class="w-full md:w-1/3">
-          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent border-b md:border-b-0 md:border-r border-gray-200 rounded-10">
-            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-              Basic
-            </h3>
-            <p class="mb-5 text-gray-600 text-sm">
-              Best for freelancers
-            </p>
-            <div class="mb-9 flex">
-              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">$</span>
-              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">29</span>
-              <span class="font-heading font-semibold self-end">/ m</span>
-            </div>
-            <div class="p-1">
-              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-                </div>
-                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-                  <p class="relative z-10">
-                    Join now
-                  </p>
-                </div>
-              </button>
-            </div>
-            <ul>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.0.0.4.0.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  100GB Cloud Storage
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.0.0.4.1.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  10 Email Connection
-                </p>
-              </li>
-              <li class="flex items-center font-heading font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.0.0.4.2.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Daily Analytics
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="w-full md:w-1/3">
-          <div class="pt-8 px-11 xl:px-20 pb-10 bg-transparent rounded-10">
-            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-              Premium
-            </h3>
-            <p class="mb-5 text-gray-600 text-sm">
-              Best for small agency
-            </p>
-            <div class="mb-9 flex">
-              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-                $
-              </span>
-              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-                99
-              </span>
-              <span class="font-heading font-semibold self-end">
-                / m
-              </span>
-            </div>
-            <div class="p-1">
-              <button class="group relative mb-9 p-px w-full font-heading font-semibold text-xs text-gray-900 bg-gradient-green uppercase tracking-px overflow-hidden rounded-md">
-                <div class="absolute top-0 left-0 transform -translate-y-full group-hover:-translate-y-0 h-full w-full bg-gradient-green transition ease-in-out duration-500">
-                </div>
-                <div class="p-4 bg-gray-50 overflow-hidden rounded-md">
-                  <p class="relative z-10">Join now</p>
-                </div>
-              </button>
-            </div>
-            <ul>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.0.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  500GB Cloud Storage
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.1.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  50 Email Connection
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.2.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Daily Analytics
-                </p>
-              </li>
-              <li class="flex items-center font-heading font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.1.0.4.3.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Premium Support
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="w-full md:w-1/3">
-          <div class="relative pt-8 px-11 pb-10 bg-white rounded-10 shadow-8xl">
-            <p class="absolute right-2 top-2 font-heading px-2.5 py-1 text-xs max-w-max bg-gray-100 uppercase tracking-px rounded-full text-gray-900">
-              Popular choice
-            </p>
-            <h3 class="mb-0.5 font-heading font-semibold text-lg text-gray-900">
-              Enterprise
-            </h3>
-            <p class="mb-5 text-gray-600 text-sm">
-              Best for large agency
-            </p>
-            <div class="mb-9 flex">
-              <span class="mr-1 mt-0.5 font-heading font-semibold text-lg text-gray-900">
-                $
-              </span>
-              <span class="font-heading font-semibold text-6xl sm:text-7xl text-gray-900">
-                199
-              </span>
-              <span class="font-heading font-semibold self-end">
-                / m
-              </span>
-            </div>
-            <div class="group relative mb-9">
-              <div class="absolute top-0 left-0 w-full h-full bg-gradient-green opacity-0 group-hover:opacity-50 p-1 rounded-lg transition ease-out duration-300">
-              </div>
-              <button class="p-1 w-full font-heading font-semibold text-xs text-gray-900 uppercase tracking-px overflow-hidden rounded-md">
-                <div class="relative z-10 p-4 bg-gradient-green overflow-hidden rounded-md">
-                  <p>
-                    Join now
-                  </p>
-                </div>
-              </button>
-            </div>
-            <ul>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.0.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  2TB Cloud Storage
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.1.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Unlimited Email Connection
-                </p>
-              </li>
-              <li class="flex items-center font-heading mb-3 font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.2.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Daily Analytics
-                </p>
-              </li>
-              <li class="flex items-center font-heading font-medium text-base text-gray-900">
-                <svg class="mr-2.5">
-                  <path
-                    d="M4.58301 11.9167L8.24967 15.5834L17.4163 6.41669"
-                    stroke="#A1A1AA"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    data-path="0.0.1.2.0.5.3.0.0"
-                  >
-                  </path>
-                </svg>
-                <p>
-                  Premium Support
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    """
-
     [
       %{
-        name: "Navigation 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/01_2be7c9d07f.png",
-        body: nav_1,
-        category: :nav
+        name: "div",
+        description: "div",
+        thumbnail: "https://placehold.co/400x75?text=div",
+        template: "<div>block</div>",
+        example: "<div>block</div>",
+        category: :html_tag
       },
       %{
-        name: "Navigation 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/02_0f54c9f964.png",
-        body: nav_2,
-        category: :nav
+        name: "p",
+        description: "p",
+        thumbnail: "https://placehold.co/400x75?text=p",
+        template: "<p>paragraph</p>",
+        example: "<p>paragraph</p>",
+        category: :html_tag
       },
       %{
-        name: "Navigation 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/03_e244675766.png",
-        body: nav_1,
-        category: :nav
+        name: "h1",
+        description: "header 1",
+        thumbnail: "https://placehold.co/400x75?text=h1",
+        template: "<h1>h1</h1>",
+        example: "<h1>h1</h1>",
+        category: :html_tag
       },
       %{
-        name: "Navigation 4",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/navigations/04_64390b9975.png",
-        body: nav_1,
-        category: :nav
+        name: "h2",
+        description: "header 2",
+        thumbnail: "https://placehold.co/400x75?text=h2",
+        template: "<h2>h2</h2>",
+        example: "<h2>h2</h2>",
+        category: :html_tag
       },
       %{
-        name: "Header 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        body: header_1,
-        category: :header
+        name: "h3",
+        description: "header 3",
+        thumbnail: "https://placehold.co/400x75?text=h3",
+        template: "<h3>h3</h3>",
+        example: "<h3>h3</h3>",
+        category: :html_tag
       },
       %{
-        name: "Header 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        body: "<div>Default definition for components</div>",
-        category: :header
+        name: "h4",
+        description: "header 4",
+        thumbnail: "https://placehold.co/400x75?text=h4",
+        template: "<h4>h4</h4>",
+        example: "<h4>h4</h4>",
+        category: :html_tag
       },
       %{
-        name: "Header 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/headers/01_b9f658e4b8.png",
-        body: "<div>Default definition for components</div>",
-        category: :header
+        name: "h5",
+        description: "header 5",
+        thumbnail: "https://placehold.co/400x75?text=h5",
+        template: "<h5>h5</h5>",
+        example: "<h5>h5</h5>",
+        category: :html_tag
       },
       %{
-        name: "Sign Up 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        body: "<div>Default definition for components</div>",
-        category: :sign_up
+        name: "h6",
+        description: "header 6",
+        thumbnail: "https://placehold.co/400x75?text=h6",
+        template: "<h6>h6</h6>",
+        example: "<h6>h6</h6>",
+        category: :html_tag
+      },
+      # %{
+      #   name: "live_data",
+      #   description: "Fetches and render Live Data assign",
+      #   thumbnail: "https://placehold.co/400x75?text=live_data",
+      #   attrs: [
+      #     %{name: "assign", type: "any", opts: [required: true]},
+      #     %{name: "default", type: "any", opts: [required: false, default: nil]}
+      #   ],
+      #   template: "<%= @assign || @default %>",
+      #   example: ~S|<.live_data assign={assigns[:username]} default="default" />|,
+      #   category: :data
+      # },
+      %{
+        name: "html_tag",
+        description: "Renders a HTML tag dynamically",
+        thumbnail: "https://placehold.co/400x75?text=dynamic_tag",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        example: ~S|<.html_tag name="p" class="text-xl">content</.tag>|,
+        category: :element
       },
       %{
-        name: "Sign Up 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        body: "<div>Default definition for components</div>",
-        category: :sign_up
+        name: "page_link",
+        description: "Renders a link to another Beacon page",
+        thumbnail: "https://placehold.co/400x75?text=page_link",
+        attrs: [
+          %{name: "path", type: "string", opts: [required: true]},
+          %{name: "rest", type: "global"}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.link patch={@path} {@rest}><%= render_slot(@inner_block) %></.link>|,
+        example: ~S|<.page_link path={~p"/contact"} class="text-xl">Contact Us</.page_link>|,
+        category: :element
       },
       %{
-        name: "Sign Up 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-up/01_c10e6e5d95.png",
-        body: "<div>Default definition for components</div>",
-        category: :sign_up
+        name: "button",
+        description: "Renders a button",
+        thumbnail: "https://placehold.co/400x75?text=button",
+        attrs: [
+          %{name: "type", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global", opts: [include: ~w(disabled form name value)]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <button
+          type={@type}
+          class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80",
+          {@rest}
+        >
+          <%= render_slot(@inner_block) %>
+        </button>
+        |,
+        example: ~S|<.button phx-click="go">Send!</.button>|,
+        category: :element
       },
       %{
-        name: "Stats 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        body: "<div>Default definition for components</div>",
-        category: :stats
+        name: "error",
+        description: "Generates a generic error message",
+        thumbnail: "https://placehold.co/400x75?text=error",
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <p class="mt-3 flex gap-3 text-sm leading-6 text-rose-600 phx-no-feedback:hidden">
+          <%= render_slot(@inner_block) %>
+        </p>
+        |,
+        example: ~S|<.error><p>Something went wrong</p></.error>|,
+        category: :element
       },
       %{
-        name: "Stats 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        body: "<div>Default definition for components</div>",
-        category: :stats
+        name: "table",
+        description: "Renders a table with generic styling",
+        thumbnail: "https://placehold.co/400x75?text=table",
+        attrs: [
+          %{name: "id", type: "string", opts: [required: true]},
+          %{name: "rows", type: "list", opts: [required: true]},
+          %{name: "row_id", type: "any", opts: [default: nil]},
+          %{name: "row_click", type: "any", opts: [default: nil]},
+          %{name: "row_item", type: "any", opts: [default: &Function.identity/1]}
+        ],
+        slots: [
+          %{name: "col", opts: [required: true], attrs: [%{name: "label", type: "string"}]},
+          %{name: "action"}
+        ],
+        body: ~S"""
+        assigns =
+            with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
+              assign(assigns, row_id: assigns.row_id || fn {id, _item} -> id end)
+            end
+        """,
+        template: ~S"""
+        <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
+          <table class="w-[40rem] mt-11 sm:w-full">
+            <thead class="text-sm text-left leading-6 text-zinc-500">
+              <tr>
+                <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal"><%= col[:label] %></th>
+                <th :if={@action != []} class="relative p-0 pb-4">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id={@id}
+              phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
+              class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
+            >
+              <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
+                <td
+                  :for={{col, i} <- Enum.with_index(@col)}
+                  phx-click={@row_click && @row_click.(row)}
+                  class={["relative p-0", @row_click && "hover:cursor-pointer"]}
+                >
+                  <div class="block py-4 pr-6">
+                    <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
+                    <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
+                      <%= render_slot(col, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+                <td :if={@action != []} class="relative w-14 p-0">
+                  <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
+                    <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
+                    <span :for={action <- @action} class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700">
+                      <%= render_slot(action, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """,
+        example: ~S|
+              <.table id="users" rows={[%{id: 1, username: "admin"}]}>
+                <:col :let={user} label="id"><%= user.id %></:col>
+                <:col :let={user} label="username"><%= user.username %></:col>
+              </.table>
+              |,
+        category: :element
       },
       %{
-        name: "Stats 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/numbers/01_204956d540.png",
-        body: "<div>Default definition for components</div>",
-        category: :stats
+        name: "simple_form",
+        description: "Renders a simple form",
+        thumbnail: "https://placehold.co/400x75?text=simple_form",
+        attrs: [
+          %{name: "for", type: "any", opts: [required: true]},
+          %{name: "as", type: "any", opts: [default: nil]},
+          %{name: "rest", type: "global", opts: [include: ~w(autocomplete name rel action enctype method novalidate target multipart)]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]},
+          %{name: "actions"}
+        ],
+        template: ~S|
+        <.form :let={f} for={@for} as={@as} {@rest}>
+          <div class="mt-10 space-y-8 bg-white">
+            <%= render_slot(@inner_block, f) %>
+            <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
+              <%= render_slot(action, f) %>
+            </div>
+          </div>
+        </.form>
+        |,
+        example: ~S|
+        <.simple_form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+          <.input field={f[:name]} label="Name"/>
+          <.input field={f[:email]} label="Email"/>
+          <:actions>
+            <.button>Join</.button>
+          </:actions>
+        </.simple_form>
+        |,
+        category: :element
       },
       %{
-        name: "Footer 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        body: "<div>Default definition for components</div>",
-        category: :footer
+        name: "input",
+        description: "Renders an input with label and error messages",
+        thumbnail: "https://placehold.co/400x75?text=input",
+        attrs: [
+          %{name: "id", type: "any", opts: [default: nil]},
+          %{name: "name", type: "any"},
+          %{name: "label", type: "string", opts: [default: nil]},
+          %{name: "value", type: "any"},
+          %{
+            name: "type",
+            type: "string",
+            opts: [
+              default: "text",
+              values: ~w(checkbox color date datetime-local email file month number password range search select tel text textarea time url week)
+            ]
+          },
+          %{name: "field", type: "struct", struct_name: "Phoenix.HTML.FormField", opts: [default: nil]},
+          %{name: "errors", type: "list", opts: [default: []]},
+          %{name: "checked", type: "boolean"},
+          %{name: "prompt", type: "string", opts: [default: nil]},
+          %{name: "options", type: "list"},
+          %{name: "multiple", type: "boolean", opts: [default: false]},
+          %{
+            name: "rest",
+            type: "global",
+            opts: [
+              include:
+                ~w(accept autocomplete capture cols disabled form list max maxlength min minlength multiple pattern placeholder readonly required rows size step)
+            ]
+          }
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        body: ~S"""
+        %{type: type, field: field} = assigns
+
+        assigns =
+          cond do
+            match?(%Phoenix.HTML.FormField{}, field) ->
+              assigns
+              |> assign(field: nil, id: assigns.id || field.id)
+              |> assign(:errors, Enum.map(field.errors, & &1))
+              |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
+              |> assign_new(:value, fn -> field.value end)
+
+            type == "checkbox" ->
+              assign_new(assigns, :checked, fn -> Phoenix.HTML.Form.normalize_value("checkbox", assigns.value) end)
+
+            :else ->
+              assigns
+          end
+        """,
+        template: ~S"""
+        <%= cond do %>
+          <% @type == "checkbox" -> %>
+            <div phx-feedback-for={@name}>
+              <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
+                <input type="hidden" name={@name} value="false" />
+                <input type="checkbox" id={@id} name={@name} value="true" checked={@checked} class="rounded border-zinc-300 text-zinc-900 focus:ring-0" {@rest} />
+                <%= @label %>
+              </label>
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+
+          <% @type == "select" -> %>
+            <div phx-feedback-for={@name}>
+              <.label for={@id}><%= @label %></.label>
+              <select
+                id={@id}
+                name={@name}
+                class="mt-2 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm"
+                multiple={@multiple}
+                {@rest}
+              >
+                <option :if={@prompt} value=""><%= @prompt %></option>
+                <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
+              </select>
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+
+          <% @type == "textarea" -> %>
+            <div phx-feedback-for={@name}>
+              <.label for={@id}><%= @label %></.label>
+              <textarea
+                id={@id}
+                name={@name}
+                class={[
+                  "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
+                  "min-h-[6rem] phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
+                  @errors == [] && "border-zinc-300 focus:border-zinc-400",
+                  @errors != [] && "border-rose-400 focus:border-rose-400"
+                ]}
+                {@rest}
+              ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+
+          <% :else -> %>
+            <div phx-feedback-for={@name}>
+              <.label for={@id}><%= @label %></.label>
+              <input
+                type={@type}
+                name={@name}
+                id={@id}
+                value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+                class={[
+                  "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
+                  "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
+                  @errors == [] && "border-zinc-300 focus:border-zinc-400",
+                  @errors != [] && "border-rose-400 focus:border-rose-400"
+                ]}
+                {@rest}
+              />
+              <.error :for={msg <- @errors}><%= msg %></.error>
+            </div>
+        <% end %>
+        """,
+        example: ~S|<.input field={@form[:email]} type="email" />|
       },
       %{
-        name: "Footer 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        body: "<div>Default definition for components</div>",
-        category: :footer
+        name: "label",
+        description: "Render a label",
+        thumbnail: "https://placehold.co/400x75?text=label",
+        attrs: [
+          %{name: "for", type: "string", opts: [default: nil]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|
+        <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
+          <%= render_slot(@inner_block) %>
+        </label>
+        |,
+        example: ~S|
+        <.label for={"newsletter_email"}>
+          Email
+        </.label>
+        |,
+        category: :element
       },
       %{
-        name: "Footer 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/footers/01_1648bd354f.png",
-        body: "<div>Default definition for components</div>",
-        category: :footer
+        name: "image",
+        description: "Renders a image previously uploaded in Admin Media Library",
+        thumbnail: "https://placehold.co/400x75?text=image",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]},
+          %{name: "rest", type: "global"}
+        ],
+        template: ~S|<img src={beacon_asset_url(@name)} class={@class} {@rest} />|,
+        example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        category: :media
       },
       %{
-        name: "Sign In 1",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        body: "<div>Default definition for components</div>",
-        category: :sign_in
+        name: "embedded",
+        description: "Renders embedded content like an YouTube video",
+        thumbnail: "https://placehold.co/400x75?text=embedded",
+        attrs: [%{name: "url", type: "string", opts: [required: true]}],
+        body: ~S|
+        {:ok, %{html: html}} = OEmbed.for(assigns.url)
+        assigns = Map.put(assigns, :html, html)
+        |,
+        template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
+        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
+        category: :media
       },
       %{
-        name: "Sign In 2",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        body: "<div>Default definition for components</div>",
-        category: :sign_in
+        name: "reading_time",
+        description: "Renders the estimated time in minutes to read the current page.",
+        thumbnail: "https://placehold.co/400x75?text=reading_time",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "path", type: "string", opts: [required: true]},
+          %{name: "words_per_minute", type: "integer", opts: [default: 270]}
+        ],
+        body: ~S"""
+        estimated_time_in_minutes =
+          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) do
+            nil ->
+              0
+
+            %{template: template} ->
+              template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
+              words = String.split(template_without_html_tags, " ") |> length()
+              Kernel.trunc(words / assigns.words_per_minute)
+          end
+
+        assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
+        """,
+        template: ~S|<%= @estimated_time_in_minutes %>|,
+        example: ~S|<.reading_time site={@beacon.site} path={@beacon.page.path} />|,
+        category: :element
       },
       %{
-        name: "Sign In 3",
-        thumbnail: "https://static.shuffle.dev/components/preview/43b384c1-17c4-470b-8332-d9dbb5ee99d7/sign-in/01_b25eff87e3.png",
-        body: "<div>Default definition for components</div>",
-        category: :sign_in
-      },
-      %{
-        name: "Title",
-        thumbnail: "/component_thumbnails/title.jpg",
-        body: "<header>I'm a sample title</header>",
-        category: :basic
-      },
-      %{
-        name: "Button",
-        thumbnail: "/component_thumbnails/button.jpg",
-        body: "<button>I'm a sample button</button>",
-        category: :basic
-      },
-      %{
-        name: "Link",
-        thumbnail: "/component_thumbnails/link.jpg",
-        body: "<a href=\"#\">I'm a sample link</a>",
-        category: :basic
-      },
-      %{
-        name: "Paragraph",
-        thumbnail: "/component_thumbnails/paragraph.jpg",
-        body: "<p>I'm a sample paragraph</p>",
-        category: :basic
-      },
-      %{
-        name: "Aside",
-        thumbnail: "/component_thumbnails/aside.jpg",
-        body: "<aside>I'm a sample aside</aside>",
-        category: :basic
+        name: "featured_pages",
+        description: "Renders a block of featured pages.",
+        thumbnail: "https://placehold.co/400x75?text=featured_pages",
+        attrs: [
+          %{name: "site", type: "atom", opts: [required: true]},
+          %{name: "pages", type: "list", opts: [default: []]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [default: nil]}
+        ],
+        body: ~S"""
+        assigns =
+          if Enum.empty?(assigns.pages),
+            do: Map.put(assigns, :pages, Beacon.Content.list_published_pages(assigns.site, per_page: 3)),
+            else: assigns
+        """,
+        template: ~S"""
+        <div class="max-w-7xl mx-auto">
+          <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
+            <%= if Enum.empty?(@inner_block) do %>
+              <div :for={page <- @pages}>
+                <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
+                  <div class="flex flex-col">
+                    <div>
+                      <p class="font-bold text-gray-700"></p>
+                      <p class="text-eyebrow font-medium text-gray-500 text-sm text-left">
+                        <%= Calendar.strftime(page.updated_at, "%d %B %Y") %>
+                      </p>
+                    </div>
+
+                    <div class="-order-1 flex gap-x-2 items-center mb-3">
+                      <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
+                        <.link
+                          patch={page.path}
+                          class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
+                          <%= page.title %>
+                        </.link>
+                      </h3>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            <% else %>
+              <%= for page <- @pages do %>
+                <%= render_slot(@inner_block, page) %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+        """,
+        example: ~S"""
+        <.featured_pages :let={page} pages={Beacon.Content.list_published_pages(@beacon.site, per_page: 3)}>
+          <article >
+            <%= page.title %>
+          </article>
+        </.featured_pages>
+        """
       }
     ]
   end
@@ -1584,6 +1733,8 @@ defmodule Beacon.Content do
   @doc """
   Creates a component.
 
+  Returns `{:ok, component}` if successful, otherwise `{:error, changeset}`.
+
   ## Example
 
       iex> create_component(attrs)
@@ -1593,18 +1744,29 @@ defmodule Beacon.Content do
   @spec create_component(map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
   @doc type: :components
   def create_component(attrs \\ %{}) do
-    %Component{}
-    |> Component.changeset(attrs)
-    |> validate_component_body()
-    |> Repo.insert()
+    changeset = Component.changeset(%Component{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> validate_component_template()
+    |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
+  @doc """
+  Creates a component.
+
+  Returns the new component if successful, otherwise raises an error.
+  """
   @doc type: :components
+  @spec create_component!(map()) :: Component.t()
   def create_component!(attrs \\ %{}) do
     case create_component(attrs) do
-      {:ok, component} -> component
-      {:error, changeset} -> raise "failed to create component: #{inspect(changeset.errors)}"
+      {:ok, component} ->
+        component
+
+      {:error, changeset} ->
+        raise "failed to create component: #{inspect(changeset.errors)}"
     end
   end
 
@@ -1620,36 +1782,16 @@ defmodule Beacon.Content do
   def update_component(%Component{} = component, attrs) do
     component
     |> Component.changeset(attrs)
-    |> validate_component_body()
-    |> Repo.update()
+    |> validate_component_template()
+    |> repo(component).update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :component))
   end
 
-  defp validate_component_body(changeset) do
+  defp validate_component_template(changeset) do
     site = Changeset.get_field(changeset, :site)
-    body = Changeset.get_field(changeset, :body)
+    template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-    do_validate_template(changeset, :body, :heex, body, metadata)
-  end
-
-  @doc """
-  Gets a single component by `id`.
-
-  ## Example
-
-      iex> get_component("788b2161-b23a-48ed-abcd-8af788004bbb")
-      %Component{}
-
-  """
-  @doc type: :components
-  @spec get_component(Ecto.UUID.t()) :: Component.t() | nil
-  def get_component(id) when is_binary(id) do
-    Repo.get(Component, id)
-  end
-
-  @doc type: :components
-  def get_component!(id) when is_binary(id) do
-    Repo.get!(Component, id)
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   @doc """
@@ -1665,7 +1807,26 @@ defmodule Beacon.Content do
   @spec get_component_by(Site.t(), keyword(), keyword()) :: Component.t() | nil
   def get_component_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
     clauses = Keyword.put(clauses, :site, site)
-    Repo.get_by(Component, clauses, opts)
+    preloads = Keyword.get(opts, :preloads, [])
+
+    preloads =
+      Enum.reduce(preloads, [], fn
+        :attrs, acc ->
+          attrs_query = from ca in ComponentAttr, order_by: [asc: ca.name]
+          [{:attrs, attrs_query} | acc]
+
+        :slots, acc ->
+          slots_query = from ca in ComponentSlot, order_by: [asc: ca.name]
+          [{:slots, slots_query} | acc]
+
+        {:slots, :attrs}, acc ->
+          slots_query = from ca in ComponentSlot, order_by: [asc: ca.name]
+          [{:slots, {slots_query, [:attrs]}} | acc]
+      end)
+
+    Component
+    |> repo(site).get_by(clauses)
+    |> repo(site).preload(preloads)
   end
 
   @doc """
@@ -1680,7 +1841,7 @@ defmodule Beacon.Content do
   @doc type: :components
   @spec list_components_by_name(Site.t(), String.t()) :: [Component.t()]
   def list_components_by_name(site, name) when is_atom(site) and is_binary(name) do
-    Repo.all(
+    repo(site).all(
       from c in Component,
         where: c.site == ^site and c.name == ^name
     )
@@ -1691,52 +1852,276 @@ defmodule Beacon.Content do
 
   ## Options
 
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search components by title.
+    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
+    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:query` - search components by title. Defaults to `nil`, doesn't filter query.
+    * `:preloads` - a list of preloads to load.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:name`.
 
   """
   @doc type: :components
   @spec list_components(Site.t(), keyword()) :: [Component.t()]
   def list_components(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
+    preloads = Keyword.get(opts, :preloads, [])
+    sort = Keyword.get(opts, :sort, :name)
 
     site
     |> query_list_components_base()
+    |> query_list_components_preloads(preloads)
     |> query_list_components_limit(per_page)
+    |> query_list_components_offset(per_page, page)
     |> query_list_components_search(search)
-    |> Repo.all()
+    |> query_list_components_preloads(preloads)
+    |> query_list_components_sort(sort)
+    |> repo(site).all()
   end
 
-  defp query_list_components_base(site) do
-    from c in Component,
-      where: c.site == ^site,
-      order_by: [asc: c.name]
-  end
+  defp query_list_components_base(site), do: from(l in Component, where: l.site == ^site)
 
   defp query_list_components_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
   defp query_list_components_limit(query, :infinity = _limit), do: query
   defp query_list_components_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_list_components_offset(query, per_page, page) when is_integer(per_page) and is_integer(page) do
+    offset = page * per_page - per_page
+    from(q in query, offset: ^offset)
+  end
+
+  defp query_list_components_offset(query, _per_page, _page), do: from(q in query, offset: 0)
+
   defp query_list_components_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.name, ^"%#{search}%"))
   defp query_list_components_search(query, _search), do: query
+
+  defp query_list_components_preloads(query, [_preload | _] = preloads), do: from(q in query, preload: ^preloads)
+  defp query_list_components_preloads(query, _preloads), do: query
+
+  defp query_list_components_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
+
+  @doc """
+  Counts the total number of components based on the amount of pages.
+
+  ## Options
+    * `:query` - filter rows count by query. Defaults to `nil`, doesn't filter query.
+
+  """
+  @doc type: :components
+  @spec count_components(Site.t(), keyword()) :: non_neg_integer()
+  def count_components(site, opts \\ []) do
+    search = Keyword.get(opts, :query)
+
+    site
+    |> query_list_components_base()
+    |> query_list_components_search(search)
+    |> select([q], count(q.id))
+    |> repo(site).one()
+  end
+
+  # COMPONENT ATTR
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking component_attr changes.
+
+  ## Example
+
+      iex> change_component_attr(component_attr, %{name: "Header"})
+      %Ecto.Changeset{data: %ComponentAttr{}}
+
+      iex> change_component_attr(component_attr, %{name: "Header"}, ["sites", ["pages"]])
+      %Ecto.Changeset{data: %ComponentAttr{}}
+
+  """
+  @doc type: :components
+  @spec change_component_attr(ComponentAttr.t(), map(), list(String.t())) :: Changeset.t()
+  def change_component_attr(%ComponentAttr{} = component_attr, attrs, component_attr_names) do
+    ComponentAttr.changeset(component_attr, attrs, component_attr_names)
+  end
+
+  # COMPONENT SLOTS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking slot changes.
+
+  ## Example
+
+      iex> change_component_slot(component_slot, %{name: "slot_a"}, ["slot_name_1])
+      %Ecto.Changeset{data: %ComponentSlot{}}
+
+  """
+  @doc type: :components
+  @spec change_component_slot(ComponentSlot.t(), map(), list(String.t())) :: Changeset.t()
+  def change_component_slot(%ComponentSlot{} = slot, attrs, component_slots_names) do
+    ComponentSlot.changeset(slot, attrs, component_slots_names)
+  end
+
+  @doc """
+  Creates a new component slot and returns the component with updated `:slots` association.
+  """
+  @doc type: :components
+  @spec create_slot_for_component(Component.t(), %{name: binary()}) ::
+          {:ok, Component.t()} | {:error, Changeset.t()}
+  def create_slot_for_component(component, attrs) do
+    changeset =
+      component
+      |> Ecto.build_assoc(:slots)
+      |> ComponentSlot.changeset(attrs)
+
+    with {:ok, %ComponentSlot{}} <- repo(component).insert(changeset),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc """
+  Updates a component slot and returns the component with updated `:slots` association.
+  """
+  @doc type: :components
+  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map(), list(String.t())) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def update_slot_for_component(component, slot, attrs, component_slots_names) do
+    changeset = ComponentSlot.changeset(slot, attrs, component_slots_names)
+
+    with {:ok, %ComponentSlot{}} <- repo(component).update(changeset),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc """
+  Deletes a component slot and returns the component with updated slots association.
+  """
+  @doc type: :components
+  @spec delete_slot_from_component(Component.t(), ComponentSlot.t()) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  def delete_slot_from_component(component, slot) do
+    with {:ok, %ComponentSlot{}} <- repo(component).delete(slot),
+         %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
+      {:ok, component}
+    end
+  end
+
+  @doc false
+  def validate_if_value_matches_type(changeset, type, value, field) do
+    cond do
+      value == nil -> changeset
+      type == "any" or type == "global" -> changeset
+      type == "string" and is_binary(value) -> changeset
+      type == "string" -> Changeset.add_error(changeset, field, "it must be a string when type is 'string'")
+      type == "atom" and is_atom(value) -> changeset
+      type == "atom" -> Changeset.add_error(changeset, field, "it must be an atom when type is 'atom'")
+      type == "boolean" and is_boolean(value) -> changeset
+      type == "boolean" -> Changeset.add_error(changeset, field, "it must be a boolean when type is 'boolean'")
+      type == "integer" and is_integer(value) -> changeset
+      type == "integer" -> Changeset.add_error(changeset, field, "it must be a integer when type is 'integer'")
+      type == "float" and is_float(value) -> changeset
+      type == "float" -> Changeset.add_error(changeset, field, "it must be a float when type is 'float'")
+      type == "list" and is_list(value) -> changeset
+      type == "list" -> Changeset.add_error(changeset, field, "it must be a list when type is 'list'")
+      type == "map" and is_map(value) -> changeset
+      type == "map" -> Changeset.add_error(changeset, field, "it must be a map when type is 'map'")
+      type == "struct" and is_struct(value) -> changeset
+      type == "struct" -> Changeset.add_error(changeset, field, "it must be a struct when type is 'struct'")
+    end
+  end
+
+  # COMPONENT SLOT ATTR
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking slot_attr changes.
+
+  ## Example
+
+      iex> change_slot_attr(slot_attr, %{name: "Header"}, [])
+      %Ecto.Changeset{data: %ComponentSlotAttr{}}
+
+  """
+  @doc type: :components
+  @spec change_slot_attr(ComponentSlotAttr.t(), map(), list(String.t())) :: Changeset.t()
+  def change_slot_attr(%ComponentSlotAttr{} = slot_attr, attrs, slot_attr_names) do
+    ComponentSlotAttr.changeset(slot_attr, attrs, slot_attr_names)
+  end
+
+  @doc """
+  Creates a slot attr.
+
+  ## Example
+
+      iex> create_slot_attr(site, attrs)
+      {:ok, %ComponentSlotAttr{}}
+
+  """
+  @spec create_slot_attr(Site.t(), map(), list(String.t())) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  @doc type: :components
+  def create_slot_attr(site, attrs, slot_attr_names) do
+    %ComponentSlotAttr{}
+    |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
+    |> repo(site).insert()
+  end
+
+  @doc """
+  Updates a slot attr.
+
+      iex> update_slot(slot_attr, %{name: "new_slot"})
+      {:ok, %ComponentSlotAttr{}}
+
+  """
+  @doc type: :components
+  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map(), list(String.t())) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
+  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs, slot_attr_names) do
+    slot_attr
+    |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
+    |> repo(site).update()
+  end
+
+  @doc """
+  Deletes a slot attr.
+  """
+  @doc type: :components
+  @spec delete_slot_attr(Site.t(), ComponentSlotAttr.t()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  def delete_slot_attr(site, slot_attr) do
+    repo(site).delete(slot_attr)
+  end
 
   # SNIPPETS
 
   @doc """
-  Creates a snippet helper
+  Creates a snippet helper.
+
+  Returns `{:ok, helper}` if successful, otherwise `{:error, changeset}`
   """
   @doc type: :snippets
   @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Changeset.t()}
   def create_snippet_helper(attrs) do
-    %Snippets.Helper{}
-    |> Changeset.cast(attrs, [:site, :name, :body])
-    |> Changeset.validate_required([:site, :name, :body])
-    |> Changeset.unique_constraint([:site, :name])
-    |> Repo.insert()
+    changeset =
+      %Snippets.Helper{}
+      |> Changeset.cast(attrs, [:site, :name, :body])
+      |> Changeset.validate_required([:site, :name, :body])
+      |> Changeset.unique_constraint([:site, :name])
+
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> validate_snippet_helper()
+    |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
   end
 
+  defp validate_snippet_helper(changeset) do
+    Changeset.validate_change(changeset, :body, fn :body, body ->
+      case Solid.parse(body, parser: Snippets.Parser) do
+        {:ok, _template} -> []
+        {:error, error} -> [{:body, error.message}]
+      end
+    end)
+  end
+
+  @doc """
+  Creates a snippet helper.
+
+  Returns the new helper if successful, otherwise raises an error.
+  """
   @doc type: :snippets
+  @spec create_snippet_helper!(map()) :: Snippets.Helper.t()
   def create_snippet_helper!(attrs) do
     case create_snippet_helper(attrs) do
       {:ok, helper} -> helper
@@ -1756,7 +2141,7 @@ defmodule Beacon.Content do
   @doc type: :snippets
   @spec list_snippet_helpers(Site.t()) :: [Snippets.Helper.t()]
   def list_snippet_helpers(site) do
-    Repo.all(from h in Snippets.Helper, where: h.site == ^site)
+    repo(site).all(from h in Snippets.Helper, where: h.site == ^site)
   end
 
   @doc """
@@ -1876,7 +2261,7 @@ defmodule Beacon.Content do
   @doc type: :error_pages
   @spec get_error_page(Site.t(), ErrorPage.error_status()) :: ErrorPage.t() | nil
   def get_error_page(site, status) do
-    Repo.one(
+    repo(site).one(
       from e in ErrorPage,
         where: e.site == ^site,
         where: e.status == ^status
@@ -1902,7 +2287,7 @@ defmodule Beacon.Content do
     |> query_list_error_pages_base()
     |> query_list_error_pages_limit(per_page)
     |> query_list_error_pages_preloads(preloads)
-    |> Repo.all()
+    |> repo(site).all()
   end
 
   @doc type: :error_pages
@@ -1923,7 +2308,7 @@ defmodule Beacon.Content do
     |> query_list_error_pages_limit(per_page)
     |> query_list_error_pages_preloads(preloads)
     |> where(^filter_layout_id)
-    |> Repo.all()
+    |> repo(site).all()
   end
 
   defp query_list_error_pages_base(site) do
@@ -1949,9 +2334,12 @@ defmodule Beacon.Content do
   @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
           {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def create_error_page(attrs) do
-    %ErrorPage{}
-    |> ErrorPage.changeset(attrs)
-    |> Repo.insert()
+    changeset = ErrorPage.changeset(%ErrorPage{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> validate_error_page()
+    |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
 
@@ -1990,7 +2378,8 @@ defmodule Beacon.Content do
   def update_error_page(error_page, attrs) do
     error_page
     |> ErrorPage.changeset(attrs)
-    |> Repo.update()
+    |> validate_error_page()
+    |> repo(error_page).update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
   end
 
@@ -2000,7 +2389,16 @@ defmodule Beacon.Content do
   @doc type: :error_pages
   @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
   def delete_error_page(error_page) do
-    Repo.delete(error_page)
+    repo(error_page).delete(error_page)
+  end
+
+  defp validate_error_page(changeset) do
+    template = Changeset.get_field(changeset, :template)
+    site = Changeset.get_field(changeset, :site)
+    status = Changeset.get_field(changeset, :status)
+    metadata = %Beacon.Template.LoadMetadata{site: site, path: "/_beacon_error_#{status}"}
+
+    do_validate_template(changeset, :template, :heex, template, metadata)
   end
 
   # PAGE EVENT HANDLERS
@@ -2032,9 +2430,9 @@ defmodule Beacon.Content do
       |> PageEventHandler.changeset(attrs)
       |> validate_page_event_handler(page)
 
-    Repo.transact(fn ->
-      with {:ok, %PageEventHandler{}} <- Repo.insert(changeset),
-           %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+    transact(repo(page), fn ->
+      with {:ok, %PageEventHandler{}} <- repo(page).insert(changeset),
+           %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -2052,9 +2450,9 @@ defmodule Beacon.Content do
       |> PageEventHandler.changeset(attrs)
       |> validate_page_event_handler(page)
 
-    Repo.transact(fn ->
-      with {:ok, %PageEventHandler{}} <- Repo.update(changeset),
-           %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+    transact(repo(page), fn ->
+      with {:ok, %PageEventHandler{}} <- repo(page).update(changeset),
+           %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -2076,8 +2474,8 @@ defmodule Beacon.Content do
   @doc type: :page_event_handlers
   @spec delete_event_handler_from_page(Page.t(), PageEventHandler.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def delete_event_handler_from_page(page, event_handler) do
-    with {:ok, %PageEventHandler{}} <- Repo.delete(event_handler),
-         %Page{} = page <- Repo.preload(page, :event_handlers, force: true),
+    with {:ok, %PageEventHandler{}} <- repo(page).delete(event_handler),
+         %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
          %Page{} = page <- Lifecycle.Page.after_update_page(page) do
       {:ok, page}
     end
@@ -2111,10 +2509,11 @@ defmodule Beacon.Content do
       page
       |> Ecto.build_assoc(:variants)
       |> PageVariant.changeset(attrs)
+      |> validate_variant(page)
 
-    Repo.transact(fn ->
-      with {:ok, %PageVariant{}} <- Repo.insert(changeset),
-           %Page{} = page <- Repo.preload(page, :variants, force: true),
+    transact(repo(page), fn ->
+      with {:ok, %PageVariant{}} <- repo(page).insert(changeset),
+           %Page{} = page <- repo(page).preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -2132,9 +2531,9 @@ defmodule Beacon.Content do
       |> PageVariant.changeset(attrs)
       |> validate_variant(page)
 
-    Repo.transact(fn ->
-      with {:ok, %PageVariant{}} <- Repo.update(changeset),
-           %Page{} = page <- Repo.preload(page, :variants, force: true),
+    transact(repo(page), fn ->
+      with {:ok, %PageVariant{}} <- repo(page).update(changeset),
+           %Page{} = page <- repo(page).preload(page, :variants, force: true),
            %Page{} = page <- Lifecycle.Page.after_update_page(page) do
         {:ok, page}
       end
@@ -2142,7 +2541,7 @@ defmodule Beacon.Content do
   end
 
   defp validate_variant(changeset, page) do
-    %{format: format, site: site, path: path} = page = Repo.preload(page, :variants)
+    %{format: format, site: site, path: path} = page = repo(page).preload(page, :variants)
     template = Changeset.get_field(changeset, :template)
     metadata = %Beacon.Template.LoadMetadata{site: site, path: path}
 
@@ -2175,8 +2574,8 @@ defmodule Beacon.Content do
   @doc type: :page_variants
   @spec delete_variant_from_page(Page.t(), PageVariant.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def delete_variant_from_page(page, variant) do
-    with {:ok, %PageVariant{}} <- Repo.delete(variant),
-         %Page{} = page <- Repo.preload(page, :variants, force: true),
+    with {:ok, %PageVariant{}} <- repo(page).delete(variant),
+         %Page{} = page <- repo(page).preload(page, :variants, force: true),
          %Page{} = page <- Lifecycle.Page.after_update_page(page) do
       {:ok, page}
     end
@@ -2223,18 +2622,24 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new LiveData for scoping live data to pages.
+
+  Returns `{:ok, live_data}` if successful, otherwise `{:error, changeset}`
   """
   @doc type: :live_data
   @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
   def create_live_data(attrs) do
-    %LiveData{}
-    |> LiveData.changeset(attrs)
-    |> Repo.insert()
+    changeset = LiveData.changeset(%LiveData{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
   end
 
   @doc """
   Creates a new LiveData for scoping live data to pages.
+
+  Returns the new LiveData if successful, otherwise raises an error.
   """
   @doc type: :live_data
   @spec create_live_data!(map()) :: LiveData.t()
@@ -2254,11 +2659,13 @@ defmodule Beacon.Content do
     changeset =
       live_data
       |> Ecto.build_assoc(:assigns)
+      |> Map.put(:live_data, live_data)
       |> LiveDataAssign.changeset(attrs)
+      |> validate_live_data_code()
 
-    case Repo.insert(changeset) do
+    case repo(live_data).insert(changeset) do
       {:ok, %LiveDataAssign{}} ->
-        live_data = Repo.preload(live_data, :assigns, force: true)
+        live_data = repo(live_data).preload(live_data, :assigns, force: true)
         maybe_broadcast_updated_content_event({:ok, live_data}, :live_data)
         {:ok, live_data}
 
@@ -2268,74 +2675,70 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Gets a single `LiveData` entry by `:site` and `:path`.
+  Gets a single live data by `clauses`.
 
   ## Example
 
-      iex> get_live_data(:my_site, "/foo/bar/:baz")
+      iex> get_live_data_by(site, id: "cba9ee2e-d40e-48af-9704-1237e4c23bde")
+      %LiveData{}
+
+      iex> get_live_data_by(site, path: "/blog")
       %LiveData{}
 
   """
   @doc type: :live_data
-  @spec get_live_data(Site.t(), String.t()) :: LiveData.t() | nil
-  def get_live_data(site, path) do
-    LiveData
-    |> Repo.get_by(site: site, path: path)
-    |> Repo.preload(:assigns)
+  @spec get_live_data_by(Site.t(), keyword(), keyword()) :: LiveData.t() | nil
+  def get_live_data_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    clauses = Keyword.put(clauses, :site, site)
+    repo(site).get_by(LiveData, clauses, opts) |> repo(site).preload(:assigns)
   end
 
   @doc """
-  Gets all LiveData for a site in one unpaginated query.
-  """
-  @doc type: :live_data
-  @spec live_data_for_site(Site.t()) :: [LiveData.t()]
-  def live_data_for_site(site, opts \\ []) when is_atom(site) and is_list(opts) do
-    select = Keyword.get(opts, :select, nil)
-
-    base_query = from d in LiveData, where: d.site == ^site, preload: :assigns
-
-    base_query
-    |> query_live_data_for_site_select(select)
-    |> Repo.all()
-  end
-
-  defp query_live_data_for_site_select(query, nil = _select), do: query
-  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
-
-  @doc """
-  Query LiveData paths for a given site.
+  Query LiveData for a given site.
 
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
     * `:query` - search records by path.
+    * `:select` - returns only the given field(s)
+    * `:preload` - include given association(s) (defaults to `:assigns`)
 
   """
   @doc type: :live_data
-  @spec live_data_paths_for_site(Site.t(), Keyword.t()) :: [String.t()]
-  def live_data_paths_for_site(site, opts \\ []) do
+  @spec live_data_for_site(Site.t(), Keyword.t()) :: [String.t()]
+  def live_data_for_site(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, :infinity)
     search = Keyword.get(opts, :query)
+    select = Keyword.get(opts, :select)
+    preload = Keyword.get(opts, :preload, :assigns)
 
     site
-    |> query_live_data_paths_for_site_base()
-    |> query_live_data_paths_for_site_limit(per_page)
-    |> query_live_data_paths_for_site_search(search)
-    |> Repo.all()
+    |> query_live_data_for_site_base()
+    |> query_live_data_for_site_limit(per_page)
+    |> query_live_data_for_site_search(search)
+    |> query_live_data_for_site_select(select)
+    |> query_live_data_for_site_preload(preload)
+    |> repo(site).all()
   end
 
-  defp query_live_data_paths_for_site_base(site) do
+  defp query_live_data_for_site_base(site) do
     from ld in LiveData,
       where: ld.site == ^site,
-      select: ld.path,
       order_by: [asc: ld.path]
   end
 
-  defp query_live_data_paths_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
-  defp query_live_data_paths_for_site_limit(query, :infinity = _limit), do: query
-  defp query_live_data_paths_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
-  defp query_live_data_paths_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
-  defp query_live_data_paths_for_site_search(query, _search), do: query
+  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
+  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
+  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
+
+  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
+  defp query_live_data_for_site_search(query, _search), do: query
+
+  defp query_live_data_for_site_select(query, nil = _select), do: query
+  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
+
+  defp query_live_data_for_site_preload(query, nil), do: query
+  defp query_live_data_for_site_preload(query, preload) when is_atom(preload) or is_list(preload), do: from(q in query, preload: ^preload)
 
   @doc """
   Updates LiveDataPath.
@@ -2349,25 +2752,25 @@ defmodule Beacon.Content do
   def update_live_data_path(%LiveData{} = live_data, path) do
     live_data
     |> LiveData.path_changeset(%{path: path})
-    |> Repo.update()
+    |> repo(live_data).update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
   end
 
   @doc """
   Updates LiveDataAssign.
 
-      iex> update_live_data_assign(live_data_assign, %{code: "true"})
+      iex> update_live_data_assign(live_data_assign, :my_site, %{code: "true"})
       {:ok, %LiveDataAssign{}}
 
   """
   @doc type: :live_data
-  @spec update_live_data_assign(LiveDataAssign.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
-  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs) do
+  @spec update_live_data_assign(LiveDataAssign.t(), Site.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, site, attrs) do
     live_data_assign
-    |> Repo.preload(:live_data)
+    |> repo(site).preload(:live_data)
     |> LiveDataAssign.changeset(attrs)
     |> validate_live_data_code()
-    |> Repo.update()
+    |> repo(site).update()
     |> tap(fn
       {:ok, live_data_assign} -> maybe_broadcast_updated_content_event({:ok, live_data_assign.live_data}, :live_data)
       _error -> :skip
@@ -2403,16 +2806,16 @@ defmodule Beacon.Content do
   @doc type: :live_data
   @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
   def delete_live_data(live_data) do
-    Repo.delete(live_data)
+    repo(live_data).delete(live_data)
   end
 
   @doc """
   Deletes LiveDataAssign.
   """
   @doc type: :live_data
-  @spec delete_live_data_assign(LiveDataAssign.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
-  def delete_live_data_assign(live_data_assign) do
-    Repo.delete(live_data_assign)
+  @spec delete_live_data_assign(LiveDataAssign.t(), Site.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
+  def delete_live_data_assign(live_data_assign, site) do
+    repo(site).delete(live_data_assign)
   end
 
   ## Utils
@@ -2428,6 +2831,7 @@ defmodule Beacon.Content do
       case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
         {:ok, _ast} -> []
         {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
+        {:error, %_{} = exception} -> [{field, {"invalid", compilation_error: Exception.message(exception)}}]
         {:error, _} -> [{field, "invalid"}]
       end
     end)
@@ -2520,7 +2924,7 @@ defmodule Beacon.Content do
     publish = fn page ->
       changeset = Page.update_changeset(page, %{})
 
-      Repo.transact(fn ->
+      transact(repo(site), fn ->
         with {:ok, _changeset} <- validate_page_template(changeset),
              {:ok, event} <- create_page_event(page, "published"),
              {:ok, _snapshot} <- create_page_snapshot(page, event),
@@ -2547,7 +2951,7 @@ defmodule Beacon.Content do
     publish = fn layout ->
       changeset = Layout.changeset(layout, %{})
 
-      Repo.transact(fn ->
+      transact(repo(site), fn ->
         with {:ok, _changeset} <- validate_layout_template(changeset),
              {:ok, event} <- create_layout_event(layout, "published"),
              {:ok, _snapshot} <- create_layout_snapshot(layout, event),

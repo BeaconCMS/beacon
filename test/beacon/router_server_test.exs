@@ -5,6 +5,7 @@ defmodule Beacon.RouterServerTest do
 
   setup do
     RouterServer.del_pages(:my_site)
+    on_exit(fn -> RouterServer.del_pages(:my_site) end)
   end
 
   describe "lookup by path" do
@@ -44,6 +45,13 @@ defmodule Beacon.RouterServerTest do
       assert {"/posts/authors/:author_id", "2"} = RouterServer.lookup_path(:my_site, ["posts", "authors", "1"])
     end
 
+    test "static segments with varied size" do
+      RouterServer.add_page(:my_site, "1", "/blog/2020/01/07/hello")
+      refute RouterServer.lookup_path(:my_site, ["blog", "2020"])
+      refute RouterServer.lookup_path(:my_site, ["blog", "2020", "01", "07"])
+      refute RouterServer.lookup_path(:my_site, ["blog", "2020", "01", "07", "hello", "extra"])
+    end
+
     test "catch all" do
       RouterServer.add_page(:my_site, "1", "/posts/*slug")
 
@@ -69,5 +77,16 @@ defmodule Beacon.RouterServerTest do
 
       assert {"/posts/:year/*slug", "1"} = RouterServer.lookup_path(:my_site, ["posts", "2022", "my-post"])
     end
+  end
+
+  test "add page on page_loaded event" do
+    Beacon.Loader.reload_components_module(:my_site)
+    %{id: page_id} = page = Beacon.Fixtures.published_page_fixture(path: "/test/router/add")
+    RouterServer.del_pages(:my_site)
+
+    server = :my_site |> Beacon.RouterServer.name() |> GenServer.whereis()
+    send(server, {:page_loaded, page})
+
+    assert %Beacon.Content.Page{id: ^page_id} = Beacon.RouterServer.lookup_page!(:my_site, ["test", "router", "add"])
   end
 end

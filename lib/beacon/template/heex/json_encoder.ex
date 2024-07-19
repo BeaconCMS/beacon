@@ -1,6 +1,7 @@
 defmodule Beacon.Template.HEEx.JSONEncoder do
   @moduledoc false
 
+  require Logger
   alias Beacon.Template.HEEx.HEExDecoder
 
   @type token :: map()
@@ -130,15 +131,17 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
   end
 
   defp transform_entry({:eex, expr, %{opt: opt}} = node, site, assigns) do
-    html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
-
-    %{
+    entry = %{
       "tag" => "eex",
       "metadata" => %{"opt" => opt},
       "attrs" => %{},
-      "content" => [expr],
-      "rendered_html" => html
+      "content" => [expr]
     }
+
+    case maybe_render_heex(site, node, assigns) do
+      nil -> entry
+      html -> Map.put(entry, "rendered_html", html)
+    end
   end
 
   defp transform_entry({:eex_block, arg, _content} = entry, site, assigns) do
@@ -211,13 +214,51 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     end
   end
 
+  defp maybe_render_heex(site, node, assigns) do
+    Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
+    # TODO: let it raise
+    # For context, we rescue it for now so we avoid crashing when rendering nexted :eex expressions,
+    # for example take this template:
+    #
+    #  <.table id="users" rows={[%{iusername: "foo"}]}>
+    #    <:col :let={user} label="username"><%= user.username %></:col>
+    #  </.table>
+    #
+    # When HEEx.render gets called to resolve <%= user.username %> we don't have the assign `user` available,
+    # since that's introduced in the child element/slot by `:let` and defined in the outer scope in the parent element `table`.
+  rescue
+    e ->
+      Logger.debug("""
+      failed to render heex
+
+      Got:
+
+        #{inspect(e)}
+
+      Context:
+
+        node:
+
+          #{inspect(node)}
+
+        assigns:
+
+          #{inspect(assigns)}
+
+      """)
+
+      nil
+  end
+
   defp maybe_add_rendered_html(site, assigns, node, entry) do
     tag = elem(node, 1)
     attrs = elem(node, 2)
 
     add_rendered_html = fn ->
-      rendered_html = Beacon.Template.HEEx.render(site, HEExDecoder.decode(node), assigns)
-      Map.put(entry, "rendered_html", rendered_html)
+      case maybe_render_heex(site, node, assigns) do
+        nil -> entry
+        html -> Map.put(entry, "rendered_html", html)
+      end
     end
 
     has_eex_in_attrs? =
@@ -227,7 +268,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
       end)
 
     cond do
-      # start with '.' or a capital letter
+      # start with '.' or a capital letter, we consider it a component call
       String.match?(tag, ~r/^[A-Z]|\./) -> add_rendered_html.()
       has_eex_in_attrs? -> add_rendered_html.()
       :else -> entry

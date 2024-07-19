@@ -1,5 +1,6 @@
 defmodule Beacon.RouterServer do
   @moduledoc false
+  # credo:disable-for-this-file
 
   use GenServer
   require Logger
@@ -37,10 +38,9 @@ defmodule Beacon.RouterServer do
   # Client
 
   def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
-    with {path, page_id} <- lookup_path(site, path_info),
-         %Beacon.Content.Page{path: ^path} = page <- Beacon.Content.get_published_page(site, page_id) do
-      Beacon.Loader.fetch_page_module(site, page_id)
-      page
+    with {_path, page_id} <- lookup_path(site, path_info),
+         {:ok, page_module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
+      Beacon.apply_mfa(page_module, :page, [])
     else
       _ ->
         raise BeaconWeb.NotFoundError, """
@@ -203,7 +203,8 @@ defmodule Beacon.RouterServer do
           is_nil(matching_segment) -> {:halt, {position, false}}
           String.starts_with?(matching_segment, "*") -> {:halt, {position, true}}
           String.starts_with?(matching_segment, ":") -> {:cont, {position + 1, true}}
-          segment == matching_segment -> {:cont, {position + 1, true}}
+          segment == matching_segment && position + 1 == page_path_length -> {:cont, {position + 1, true}}
+          segment == matching_segment -> {:cont, {position + 1, false}}
           :no_match -> {:halt, {position, false}}
         end
       end)
@@ -211,9 +212,12 @@ defmodule Beacon.RouterServer do
     match?
   end
 
-  # FIXME: map events
-  def handle_info(msg, config) do
-    Logger.warning("Beacon.RouterServer can not handle the message: #{inspect(msg)}")
+  def handle_info({:page_loaded, %{site: site, id: id, path: path}}, config) do
+    :ok = do_add_page(site, id, path)
+    {:noreply, config}
+  end
+
+  def handle_info(_msg, config) do
     {:noreply, config}
   end
 end

@@ -11,7 +11,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
     stylesheet_fixture()
 
     component_fixture(
-      body: ~S"""
+      template: ~S"""
       <li id={"my-component-#{@val}"}>
         <span class="text-gray-50"><%= @val %></span>
       </li>
@@ -32,7 +32,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
-        <%= for val <- @beacon_live_data[:vals] do %>
+        <%= for val <- @vals do %>
           <%= my_component("sample_component", val: val) %>
         <% end %>
       </main>
@@ -45,7 +45,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
-        <%= for val <- @beacon_live_data[:vals] do %>
+        <%= for val <- @vals do %>
           <%= my_component("sample_component", val: val) %>
         <% end %>
       </main>
@@ -66,7 +66,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   end
 
   test "config" do
-    assert TailwindCompiler.config(@site) =~ "module.exports"
+    assert TailwindCompiler.config(@site) =~ "export default"
   end
 
   describe "compile site" do

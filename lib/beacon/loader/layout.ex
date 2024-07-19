@@ -7,19 +7,26 @@ defmodule Beacon.Loader.Layout do
 
   def build_ast(site, layout) do
     module = module_name(site, layout.id)
+    routes_module = Loader.Routes.module_name(site)
     components_module = Loader.Components.module_name(site)
     render_function = render_layout(layout)
-    render(module, components_module, render_function)
+    render(module, routes_module, components_module, render_function)
   end
 
-  defp render(module_name, components_module, render_function) do
+  defp render(module_name, routes_module, components_module, render_function) do
     quote do
       defmodule unquote(module_name) do
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
-        import Phoenix.Component
-        import unquote(components_module), only: [my_component: 2]
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
+        import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
+        import unquote(components_module)
 
         unquote(render_function)
       end

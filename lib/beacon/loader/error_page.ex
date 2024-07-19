@@ -7,6 +7,7 @@ defmodule Beacon.Loader.ErrorPage do
 
   def build_ast(site, error_pages) do
     module = module_name(site)
+    routes_module = Loader.Routes.module_name(site)
     layout_functions = Enum.map(error_pages, &build_layout_fn/1)
     render_functions = Enum.map(error_pages, &build_render_fn(&1, module))
 
@@ -14,10 +15,16 @@ defmodule Beacon.Loader.ErrorPage do
       defmodule unquote(module) do
         require Logger
         require EEx
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
-        import Phoenix.Component
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
+        import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
 
         unquote_splicing(layout_functions)
         unquote_splicing(render_functions)

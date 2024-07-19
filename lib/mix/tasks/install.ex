@@ -34,61 +34,32 @@ defmodule Mix.Tasks.Beacon.Install do
     bindings = build_context_bindings(options)
 
     config_file_path = config_file_path("config.exs")
-    maybe_inject_beacon_repo_into_ecto_repos(config_file_path)
     inject_endpoint_render_errors_config(config_file_path)
-
-    dev_config_file = config_file_path("dev.exs")
-    maybe_inject_beacon_repo_config(dev_config_file, bindings)
-
-    prod_config_file = config_file_path("prod.exs")
-    maybe_inject_beacon_repo_config(prod_config_file, bindings)
 
     maybe_inject_beacon_site_routes(bindings)
 
     maybe_inject_beacon_supervisor(bindings)
 
-    maybe_create_beacon_seeds(bindings)
-
-    # Run new seeds in mix setup
-    maybe_inject_beacon_seeds_alias(bindings)
-
     Mix.shell().info("""
 
-      A new site has been configured at /#{bindings[:site]}
+      A new site has been configured at #{bindings[:path]}
 
-      Usually a sample page can be accessed at http://localhost:4000/#{bindings[:site]}
+      Please check out the guides for more info:
 
-      Note that the generator changes existing files and it may not be formatted, please run `mix format` if needed.
+        * https://github.com/BeaconCMS/beacon/tree/main/guides
+        * https://github.com/BeaconCMS/beacon_live_admin/tree/main/guides
 
-      Now you can adjust your project's config files, router.ex, or beacon_seeds.exs as you wish and run:
+      Adjust the configuration as needed and run:
 
           $ mix setup
 
       And then start your Phoenix app:
 
           $ mix phx.server
+
+      Note that the generator changes existing files which may not be formatted correctly, please run `mix format` if needed.
+
     """)
-  end
-
-  @doc false
-  def maybe_inject_beacon_repo_into_ecto_repos(config_file_path) do
-    config_file_content = File.read!(config_file_path)
-
-    if String.contains?(config_file_content, "Beacon.Repo") do
-      Mix.shell().info([
-        :yellow,
-        "* skip ",
-        :reset,
-        "injecting Beacon.Repo to ecto_repos into ",
-        Path.relative_to_cwd(config_file_path),
-        " (already exists)"
-      ])
-    else
-      regex = ~r/ecto_repos: \[(.*)\]/
-      new_config_file_content = Regex.replace(regex, config_file_content, "ecto_repos: [\\1, Beacon.Repo]")
-      Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(config_file_path)])
-      File.write!(config_file_path, new_config_file_content)
-    end
   end
 
   @doc false
@@ -120,37 +91,6 @@ defmodule Mix.Tasks.Beacon.Install do
 
       File.write!(config_file_path, [new_config_file_content, "\n"])
     end
-  end
-
-  @doc false
-  def maybe_inject_beacon_repo_config(config_file_path, bindings) do
-    config_file_content = File.read!(config_file_path)
-    templates_path = get_in(bindings, [:templates_path])
-
-    beacon_repo_config =
-      if Path.basename(config_file_path) == "prod.exs" do
-        EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_prod.exs"]), bindings)
-      else
-        EEx.eval_file(Path.join([templates_path, "install", "beacon_repo_config_dev.exs"]), bindings)
-      end
-
-    if String.contains?(config_file_content, beacon_repo_config) do
-      Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon repo config into ", Path.relative_to_cwd(config_file_path), " (already exists)"])
-    else
-      new_config_content = add_to_config(config_file_content, beacon_repo_config)
-
-      Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(config_file_path)])
-      File.write!(config_file_path, new_config_content)
-    end
-  end
-
-  defp add_to_config(config_content, data_to_add) do
-    Regex.replace(
-      ~r/(use Mix\.Config|import Config)(\r\n|\n|$)/,
-      config_content,
-      "\\0\\2#{String.trim_trailing(data_to_add)}\\2",
-      global: false
-    )
   end
 
   defp config_file_path(file_name) do
@@ -188,64 +128,20 @@ defmodule Mix.Tasks.Beacon.Install do
       Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon supervisor into ", Path.relative_to_cwd(application_file), " (already exists)"])
     else
       site = bindings[:site]
+      repo = [bindings[:base_module], "Repo"] |> Module.concat() |> inspect()
       endpoint = bindings |> get_in([:endpoint, :module_name]) |> inspect()
+      router = bindings |> get_in([:router, :module_name]) |> inspect()
 
       new_application_file_content =
         application_file_content
         |> String.replace(".Endpoint\n", ".Endpoint,\n")
-        |> String.replace(~r/(children = [^]]*)]/, "\\1 {Beacon, sites: [[site: :#{site}, endpoint: #{endpoint}]]}\n]")
+        |> String.replace(
+          ~r/(children = [^]]*)]/,
+          "\\1 {Beacon, sites: [[site: :#{site}, repo: #{repo}, endpoint: #{endpoint}, router: #{router}]]}\n]"
+        )
 
       Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(application_file)])
       File.write!(application_file, new_application_file_content)
-    end
-  end
-
-  @doc false
-  def maybe_create_beacon_seeds(bindings) do
-    seeds_path = get_in(bindings, [:seeds, :path])
-    template_path = get_in(bindings, [:seeds, :template_path])
-
-    File.mkdir_p!(Path.dirname(seeds_path))
-    File.touch!(seeds_path)
-
-    seeds_content = EEx.eval_file(template_path, bindings)
-    seeds_file_content = File.read!(seeds_path)
-
-    if Enum.any?(
-         ["Content.create_stylesheet!", "Content.create_component!", "Layouts.create_layout!", "Pages.create_page!"],
-         &String.contains?(seeds_file_content, &1)
-       ) do
-      Mix.shell().info([:yellow, "* skip ", :reset, "injecting seeds into ", Path.relative_to_cwd(seeds_path), " (already exists)"])
-    else
-      new_seeds_content =
-        seeds_file_content
-        |> String.trim_trailing()
-        |> Kernel.<>(seeds_content)
-        |> String.trim_leading()
-
-      Mix.shell().info([:green, "* creating ", :reset, Path.relative_to_cwd(seeds_path)])
-      File.write!(seeds_path, new_seeds_content)
-    end
-  end
-
-  @doc false
-  def maybe_inject_beacon_seeds_alias(bindings) do
-    mix_path = get_in(bindings, [:mix, :path])
-    relative_seeds_path = get_in(bindings, [:seeds, :path]) |> Path.relative_to_cwd()
-
-    mix_file_content = File.read!(mix_path)
-
-    cond do
-      String.contains?(mix_file_content, "run #{relative_seeds_path}") ->
-        Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon seeds path into ", Path.relative_to_cwd(mix_path), " (already exists)"])
-
-      !String.contains?(mix_file_content, "ecto.setup") ->
-        Mix.shell().info([:yellow, "* skip ", :reset, "injecting beacon seeds path into ", Path.relative_to_cwd(mix_path), " (nothing to update)"])
-
-      true ->
-        new_mix_file_content = String.replace(mix_file_content, ~r/(\"ecto\.setup\":[^]]*)]/, "\\1, \"run #{relative_seeds_path}\"]")
-        Mix.shell().info([:green, "* injecting ", :reset, Path.relative_to_cwd(mix_path)])
-        File.write!(mix_path, new_mix_file_content)
     end
   end
 
@@ -287,14 +183,11 @@ defmodule Mix.Tasks.Beacon.Install do
       },
       router: %{
         path: Path.join([root, web_path, "router.ex"]),
-        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"])
+        router_scope_template: Path.join([templates_path, "install", "beacon_router_scope.ex"]),
+        module_name: Module.concat(web_module, "Router")
       },
       application: %{
         path: Path.join([root, lib_path, "application.ex"])
-      },
-      seeds: %{
-        path: Path.join([root, "priv", "repo", "beacon_seeds.exs"]),
-        template_path: Path.join([templates_path, "install", "seeds.exs"])
       },
       mix: %{
         path: Path.join([root, "mix.exs"])

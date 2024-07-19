@@ -1,10 +1,12 @@
 defmodule Beacon.Template.HEEx.JSONEncoderTest do
   use Beacon.DataCase
 
+  alias Beacon.Loader
   alias Beacon.Template.HEEx.JSONEncoder
-  import Beacon.Fixtures
 
-  defp assert_output(template, expected, assigns \\ %{}, site \\ :my_site) do
+  @site :my_site
+
+  defp assert_output(template, expected, assigns \\ %{}, site \\ @site) do
     assert {:ok, encoded} = JSONEncoder.encode(site, template, assigns)
     assert encoded == expected
   end
@@ -44,6 +46,20 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     end
   end
 
+  test "links with sigil_p" do
+    assert_output(
+      ~S|<.link patch={~p"/details"}>view details</.link>|,
+      [
+        %{
+          "attrs" => %{"patch" => "{~p\"/details\"}"},
+          "content" => ["view details"],
+          "tag" => ".link",
+          "rendered_html" => "<a href=\"/details\" data-phx-link=\"patch\" data-phx-link-state=\"push\">view details</a>"
+        }
+      ]
+    )
+  end
+
   test "eex expressions" do
     assert_output(
       ~S|<% _name = "Beacon" %>|,
@@ -60,25 +76,25 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert_output(
       ~S|
       <img
-        alt={@beacon_live_data.person.bio}
-        src={@beacon_live_data.person.picture}
+        alt={@person.bio}
+        src={@person.picture}
         class="w-full h-auto max-w-full"
       />
       |,
       [
         %{
           "attrs" => %{
-            "alt" => "{@beacon_live_data.person.bio}",
+            "alt" => "{@person.bio}",
             "class" => "w-full h-auto max-w-full",
             "self_close" => true,
-            "src" => "{@beacon_live_data.person.picture}"
+            "src" => "{@person.picture}"
           },
           "content" => [],
           "rendered_html" => "<img alt=\"person bio\" src=\"profile.jpg\" class=\"w-full h-auto max-w-full\">",
           "tag" => "img"
         }
       ],
-      %{beacon_live_data: %{person: %{bio: "person bio", picture: "profile.jpg"}}}
+      %{person: %{bio: "person bio", picture: "profile.jpg"}}
     )
   end
 
@@ -99,7 +115,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                 "rendered_html" => "\n      <span>congrats</span>\n",
                 "ast" => ast
               }
-            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: true, completed_message: "congrats"})
+            ]} = JSONEncoder.encode(@site, if_template, %{completed: true, completed_message: "congrats"})
 
     assert %{
              "children" => [
@@ -156,7 +172,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                 "rendered_html" => "\n      keep working\n",
                 "ast" => ast
               }
-            ]} = JSONEncoder.encode(:my_site, if_template, %{completed: false, completed_message: "congrats"})
+            ]} = JSONEncoder.encode(@site, if_template, %{completed: false, completed_message: "congrats"})
 
     assert %{
              "children" => [
@@ -190,11 +206,11 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   test "comprehensions" do
     template = ~S|
-        <%= for employee <- @beacon_live_data[:employees] do %>
+        <%= for employee <- @employees do %>
           <!-- regular <!-- comment --> -->
           <%= employee.position %>
           <div>
-            <%= for person <- @beacon_live_data[:persons] do %>
+            <%= for person <- @persons do %>
               <%= if person.id == employee.id do %>
                 <span><%= person.name %></span>
                 <img src={if person.picture , do: person.picture, else: "default.jpg"} width="200" />
@@ -207,18 +223,16 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     assert {:ok,
             [
               %{
-                "arg" => "for employee <- @beacon_live_data[:employees] do",
+                "arg" => "for employee <- @employees do",
                 "tag" => "eex_block",
                 "rendered_html" =>
                   "\n<!-- regular <!-- comment --> -->\nCEO\n          <div>\n\n\n                <span>José</span>\n                <img width=\"200\" src=\"profile.jpg\">\n\n\n\n\n          </div>\n\n<!-- regular <!-- comment --> -->\nManager\n          <div>\n\n\n\n\n                <span>Chris</span>\n                <img width=\"200\" src=\"default.jpg\">\n\n\n          </div>\n",
                 "ast" => ast
               }
             ]} =
-             JSONEncoder.encode(:my_site, template, %{
-               beacon_live_data: %{
-                 employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
-                 persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
-               }
+             JSONEncoder.encode(@site, template, %{
+               employees: [%{id: 1, position: "CEO"}, %{id: 2, position: "Manager"}],
+               persons: [%{id: 1, name: "José", picture: "profile.jpg"}, %{id: 2, name: "Chris", picture: nil}]
              })
 
     assert is_binary(ast)
@@ -226,21 +240,21 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   test "live data" do
     assert_output(
-      "<%= inspect(@beacon_live_data[:vals]) %>",
+      "<%= inspect(@vals) %>",
       [
         %{
           "attrs" => %{},
-          "content" => ["inspect(@beacon_live_data[:vals])"],
+          "content" => ["inspect(@vals)"],
           "metadata" => %{"opt" => ~c"="},
           "rendered_html" => "[1, 2, 3]",
           "tag" => "eex"
         }
       ],
-      %{beacon_live_data: %{vals: [1, 2, 3]}}
+      %{vals: [1, 2, 3]}
     )
   end
 
-  test "function components" do
+  test "phoenix components" do
     assert_output(
       ~S|<.link path="/contact" replace={true}>Book meeting</.link>|,
       [
@@ -264,36 +278,185 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         }
       ]
     )
-
-    assert_output(
-      ~S|<BeaconWeb.Components.image name="logo.jpg" width="200px" />|,
-      [
-        %{
-          "attrs" => %{"name" => "logo.jpg", "self_close" => true, "width" => "200px"},
-          "content" => [],
-          "tag" => "BeaconWeb.Components.image",
-          "rendered_html" => "<img src=\"/beacon_assets/logo.jpg\" class=\"\" width=\"200px\">"
-        }
-      ]
-    )
   end
 
-  test "my_component" do
-    component_fixture(site: :my_site)
-    Beacon.Loader.fetch_components_module(:my_site)
+  describe "components" do
+    test "beacon components" do
+      component_fixture(name: "json_test")
+      Loader.reload_components_module(@site)
 
-    assert_output(
-      ~S|<%= my_component("sample_component", %{val: 1}) %>|,
-      [
-        %{
-          "attrs" => %{},
-          "content" => ["my_component(\"sample_component\", %{val: 1})"],
-          "metadata" => %{"opt" => ~c"="},
-          "tag" => "eex",
-          "rendered_html" => "<span id=\"my-component-1\">1</span>"
-        }
-      ]
-    )
+      assert_output(
+        ~S|<.json_test class="w-4" val={@val} />|,
+        [
+          %{
+            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "{@val}"},
+            "content" => [],
+            "rendered_html" => "<span id=\"my-component\">test</span>",
+            "tag" => ".json_test"
+          }
+        ],
+        %{val: "test"}
+      )
+    end
+
+    test "with special attribute :let" do
+      template = ~S|
+      <Phoenix.Component.form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+        <input
+          id={Phoenix.HTML.Form.input_id(f, :email)}
+          name={Phoenix.HTML.Form.input_name(f, :email)}
+          class="text-sm"
+          placeholder="Enter your email"
+          type="email"
+        />
+        <button type="submit">Join</button>
+      </Phoenix.Component.form>
+      |
+
+      assert_output(
+        template,
+        [
+          %{
+            "attrs" => %{":let" => "{f}", "as" => "{:newsletter}", "for" => "{%{}}", "phx-submit" => "join"},
+            "content" => [
+              %{
+                "attrs" => %{
+                  "class" => "text-sm",
+                  "id" => "{Phoenix.HTML.Form.input_id(f, :email)}",
+                  "name" => "{Phoenix.HTML.Form.input_name(f, :email)}",
+                  "placeholder" => "Enter your email",
+                  "self_close" => true,
+                  "type" => "email"
+                },
+                "content" => [],
+                "tag" => "input"
+              },
+              %{"attrs" => %{"type" => "submit"}, "content" => ["Join"], "tag" => "button"}
+            ],
+            "rendered_html" =>
+              "<form phx-submit=\"join\">\n  \n  \n  \n  <input id=\"newsletter_email\" name=\"newsletter[email]\" class=\"text-sm\" placeholder=\"Enter your email\" type=\"email\">\n  <button type=\"submit\">Join</button>\n\n</form>",
+            "tag" => "Phoenix.Component.form"
+          }
+        ]
+      )
+    end
+
+    test "with :slot" do
+      component_fixture(
+        name: "table",
+        attrs: [
+          %{name: "id", type: "string", opts: [required: true]},
+          %{name: "rows", type: "list", opts: [required: true]},
+          %{name: "row_id", type: "any", opts: [default: nil]},
+          %{name: "row_item", type: "any", opts: [default: &Function.identity/1]}
+        ],
+        slots: [
+          %{
+            name: "col",
+            opts: [required: true],
+            attrs: [%{name: "label", type: "string"}]
+          }
+        ],
+        template: """
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th :for={col <- @col}><%= col[:label] %></th>
+              </tr>
+            </thead>
+            <tbody id={@id}>
+              <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
+                <td :for={col <- @col}>
+                  <div>
+                    <span>
+                      <%= render_slot(col, @row_item.(row)) %>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """
+      )
+
+      Loader.reload_components_module(@site)
+
+      template = ~S|
+      <.table id="users" rows={[%{id: 1, username: "foo"}]}>
+        <:col :let={user} label="id"><%= user.id %></:col>
+        <:col :let={user} label="username"><%= user.username %></:col>
+      </.table>
+      |
+
+      assert_output(
+        template,
+        [
+          %{
+            "tag" => ".table",
+            "attrs" => %{"id" => "users", "rows" => "{[%{id: 1, username: \"foo\"}]}"},
+            "content" => [
+              %{
+                "attrs" => %{":let" => "{user}", "label" => "id"},
+                "content" => [%{"attrs" => %{}, "content" => ["user.id"], "metadata" => %{"opt" => ~c"="}, "tag" => "eex"}],
+                "tag" => ":col"
+              },
+              %{
+                "attrs" => %{":let" => "{user}", "label" => "username"},
+                "content" => [
+                  %{"attrs" => %{}, "content" => ["user.username"], "metadata" => %{"opt" => ~c"="}, "tag" => "eex"}
+                ],
+                "tag" => ":col"
+              }
+            ],
+            "rendered_html" =>
+              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>"
+          }
+        ]
+      )
+    end
+
+    test "nested in slot" do
+      component_fixture(
+        name: "html_tag",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]}
+        ],
+        slots: [
+          %{name: "inner_block", opts: [required: true]}
+        ],
+        template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        example: ~S|<.html_tag name="p">content</.tag>|
+      )
+
+      Loader.reload_components_module(@site)
+
+      assert_output(
+        ~S"""
+        <.html_tag name="div">
+          <.html_tag name="span">
+            nested
+          </.html_tag>
+        </.html_tag>
+        """,
+        [
+          %{
+            "tag" => ".html_tag",
+            "attrs" => %{"name" => "div"},
+            "rendered_html" => "<div>\n  <span>\n    nested\n  </span>\n</div>",
+            "content" => [
+              %{
+                "tag" => ".html_tag",
+                "attrs" => %{"name" => "span"},
+                "rendered_html" => "<span>\n  nested\n</span>",
+                "content" => [" nested "]
+              }
+            ]
+          }
+        ]
+      )
+    end
   end
 
   test "assigns" do
@@ -331,7 +494,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
   end
 
   test "invalid template" do
-    assert {:error, _} = JSONEncoder.encode(:my_site, ~S|<%= :error|)
+    assert {:error, _} = JSONEncoder.encode(@site, ~S|<%= :error|)
   end
 
   describe "encode_eex_block" do

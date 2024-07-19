@@ -1,6 +1,7 @@
 defmodule Beacon.Loader.Page do
   @moduledoc false
 
+  require Logger
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.Template.HEEx
@@ -9,32 +10,54 @@ defmodule Beacon.Loader.Page do
 
   def build_ast(site, page) do
     module = module_name(site, page.id)
+    routes_module = Loader.Routes.module_name(site)
     components_module = Loader.Components.module_name(site)
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
+      for fun <- [&page/1, &page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
       render(page),
       dynamic_helper()
     ]
 
-    ast = build(module, components_module, functions)
+    ast = build(module, routes_module, components_module, functions)
 
     {module, ast}
   end
 
-  defp build(module_name, components_module, functions) do
+  defp build(module_name, routes_module, components_module, functions) do
     quote do
       defmodule unquote(module_name) do
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
-        import Phoenix.Component
-        import unquote(components_module), only: [my_component: 2]
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
+        import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
+        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
+        import unquote(components_module)
 
         unquote_splicing(functions)
+      end
+    end
+  end
+
+  defp page(page) do
+    quote do
+      def page do
+        %Beacon.Content.Page{
+          site: unquote(page.site),
+          id: unquote(page.id),
+          layout_id: unquote(page.layout_id),
+          path: unquote(page.path),
+          title: unquote(page.title),
+          format: unquote(page.format)
+        }
       end
     end
   end
@@ -45,16 +68,22 @@ defmodule Beacon.Loader.Page do
     quote do
       def page_assigns do
         %{
+          id: unquote(page.id),
+          site: unquote(page.site),
+          layout_id: unquote(page.layout_id),
           title: unquote(page.title),
           meta_tags: unquote(Macro.escape(page.meta_tags)),
           raw_schema: unquote(Macro.escape(raw_schema)),
-          site: unquote(page.site),
           path: unquote(page.path),
           description: unquote(page.description),
           order: unquote(page.order),
           format: unquote(page.format),
           extra: unquote(Macro.escape(page.extra))
         }
+      end
+
+      def page_assigns(keys) when is_list(keys) do
+        Map.take(page_assigns(), keys)
       end
     end
   end
@@ -161,9 +190,7 @@ defmodule Beacon.Loader.Page do
     end
   end
 
-  defp load_variants(page) do
-    %{variants: variants} = page
-
+  defp load_variants(%{variants: variants} = page) when is_list(variants) do
     for variant <- variants do
       page = %{page | template: variant.template}
       template = Lifecycle.Template.load_template(page)
@@ -176,6 +203,8 @@ defmodule Beacon.Loader.Page do
       ]
     end
   end
+
+  defp load_variants(page), do: raise(Beacon.LoaderError, message: "failed to load variants for page #{page.id} - #{page.path}")
 
   defp dynamic_helper do
     quote do

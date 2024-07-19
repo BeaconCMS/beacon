@@ -23,14 +23,13 @@ jobs:
             phoenix-live-view-version: "0.20.2"
 
           # latest
-          - otp: "26"
-            elixir: "1.16"
+          - otp: "27"
+            elixir: "1.17"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
     env:
       MIX_ENV: test
-      MDEX_BUILD: 1
       PHOENIX_VERSION: ${{matrix.phoenix-version}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
 
@@ -40,6 +39,7 @@ jobs:
       postgres:
         image: postgres:13.1
         env:
+          POSTGRES_DB: beacon_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -61,7 +61,7 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
 
       - name: Cache mix deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-deps
         with:
           path: |
@@ -75,7 +75,10 @@ jobs:
 
       - run: mix tailwind.install
 
-      - run: mix test
+      - name: mix test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
+        run: mix test
 
   quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
@@ -84,20 +87,19 @@ jobs:
       matrix:
         include:
           # latest
-          - otp: "26"
-            elixir: "1.16"
+          - otp: "27"
+            elixir: "1.17"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
 
     env:
       MIX_ENV: dev
-      MDEX_BUILD: 1
 
     runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -106,7 +108,7 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
 
       - name: Cache mix deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-deps
         with:
           path: |

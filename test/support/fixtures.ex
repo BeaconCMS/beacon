@@ -1,19 +1,13 @@
 defmodule Beacon.Fixtures do
   @moduledoc false
 
-  # Test data
-  #
-  # Each fixture call `Beacon.Loader.reload_*` to simulate PROD environment
-  # where a pubsub event is broadcasted to reload the module asyncly,
-  # so here we reload such modules eagerly.
-
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
-  alias Beacon.Repo
+  import Beacon.Utils, only: [repo: 1]
 
   defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
   defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
@@ -26,7 +20,6 @@ defmodule Beacon.Fixtures do
       content: "body {cursor: zoom-in;}"
     })
     |> Content.create_stylesheet!()
-    |> tap(fn stylesheet -> Beacon.Loader.reload_stylesheet_module(stylesheet.site) end)
   end
 
   def component_fixture(attrs \\ %{}) do
@@ -34,13 +27,14 @@ defmodule Beacon.Fixtures do
     |> Enum.into(%{
       site: "my_site",
       name: "sample_component",
-      body: ~S"""
-      <span id={"my-component-#{@val}"}><%= @val %></span>
-      """,
-      category: "other"
+      category: "element",
+      attrs: [%{name: "val", type: "any", opts: [required: true]}],
+      slots: [],
+      body: ~S|assigns = Map.put(assigns, :id, "my-component")|,
+      template: ~S|<span id={@id}><%= @val %></span>|,
+      example: ~S|<.sample_component val={@val} />|
     })
     |> Content.create_component!()
-    |> tap(fn component -> Beacon.Loader.reload_components_module(component.site) end)
   end
 
   def layout_fixture(attrs \\ %{}) do
@@ -64,7 +58,6 @@ defmodule Beacon.Fixtures do
       attrs
       |> layout_fixture()
       |> Content.publish_layout()
-      |> tap(fn {:ok, layout} -> Beacon.Loader.reload_layout_module(layout.site, layout.id) end)
 
     layout
   end
@@ -94,7 +87,6 @@ defmodule Beacon.Fixtures do
       attrs
       |> page_fixture()
       |> Content.publish_page()
-      |> tap(fn {:ok, page} -> Beacon.Loader.reload_page_module(page.site, page.id) end)
 
     page
   end
@@ -121,10 +113,11 @@ defmodule Beacon.Fixtures do
       """
     })
     |> Content.create_snippet_helper!()
-    |> tap(fn snippet -> Beacon.Loader.reload_snippets_module(snippet.site) end)
   end
 
   def media_library_asset_fixture(attrs \\ %{}) do
+    attrs = Map.new(attrs)
+
     attrs
     |> upload_metadata_fixture()
     |> MediaLibrary.upload()
@@ -156,9 +149,9 @@ defmodule Beacon.Fixtures do
 
   def page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: page_variant_fixture(page, attrs)
 
-  def page_variant_fixture(%{page_id: page_id} = attrs) do
-    page_id
-    |> Content.get_page!()
+  def page_variant_fixture(%{site: site, page_id: page_id} = attrs) do
+    site
+    |> Content.get_page!(page_id)
     |> page_variant_fixture(attrs)
   end
 
@@ -172,7 +165,7 @@ defmodule Beacon.Fixtures do
     page
     |> Ecto.build_assoc(:variants)
     |> PageVariant.changeset(full_attrs)
-    |> Repo.insert!()
+    |> repo(page).insert!()
   end
 
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
@@ -183,9 +176,9 @@ defmodule Beacon.Fixtures do
   def page_event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
     do: page_event_handler_fixture(page, attrs)
 
-  def page_event_handler_fixture(%{page_id: page_id} = attrs) do
-    page_id
-    |> Content.get_page!()
+  def page_event_handler_fixture(%{site: site, page_id: page_id} = attrs) do
+    site
+    |> Content.get_page!(page_id)
     |> page_event_handler_fixture(attrs)
   end
 
@@ -198,7 +191,7 @@ defmodule Beacon.Fixtures do
     page
     |> Ecto.build_assoc(:event_handlers)
     |> PageEventHandler.changeset(full_attrs)
-    |> Repo.insert!()
+    |> repo(page).insert!()
   end
 
   def error_page_fixture(attrs \\ %{}) do
@@ -212,7 +205,6 @@ defmodule Beacon.Fixtures do
       layout_id: layout.id
     })
     |> Content.create_error_page!()
-    |> tap(fn error_page -> Beacon.Loader.reload_error_page_module(error_page.site) end)
   end
 
   def live_data_fixture(attrs \\ %{}) do
@@ -225,8 +217,7 @@ defmodule Beacon.Fixtures do
   end
 
   def live_data_assign_fixture(attrs \\ %{}) do
-    live_data = get_lazy(attrs, :live_data, fn -> live_data_fixture() end)
-    site = live_data.site
+    %{site: site} = live_data = get_lazy(attrs, :live_data, fn -> live_data_fixture() end)
 
     attrs =
       Enum.into(attrs, %{
@@ -239,9 +230,7 @@ defmodule Beacon.Fixtures do
       live_data
       |> Ecto.build_assoc(:assigns)
       |> Content.LiveDataAssign.changeset(attrs)
-      |> Repo.insert!()
-
-    Beacon.Loader.reload_live_data_module(site)
+      |> repo(site).insert!()
 
     live_data
   end

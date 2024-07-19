@@ -2,18 +2,18 @@ defmodule Beacon.Loader.PageTest do
   use Beacon.DataCase, async: false
   import Beacon.Fixtures
   alias Beacon.Loader
-  alias Beacon.Repo
+  alias Beacon.BeaconTest.Repo
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
       page_1 = published_page_fixture(site: "my_site", path: "/1", helpers: [page_helper_params(name: "page_1_upcase")])
       page_2 = published_page_fixture(site: "my_site", path: "/2", helpers: [page_helper_params(name: "page_2_upcase")])
 
-      module_1 = Loader.reload_page_module(page_1.site, page_1.id)
+      {:ok, module_1} = Loader.reload_page_module(page_1.site, page_1.id)
       assert {:dynamic_helper, 2} in module_1.__info__(:functions)
       assert {:page_1_upcase, 1} in module_1.__info__(:functions)
 
-      module_2 = Loader.reload_page_module(page_2.site, page_2.id)
+      {:ok, module_2} = Loader.reload_page_module(page_2.site, page_2.id)
       assert {:dynamic_helper, 2} in module_2.__info__(:functions)
       assert {:page_2_upcase, 1} in module_2.__info__(:functions)
     end
@@ -29,6 +29,8 @@ defmodule Beacon.Loader.PageTest do
         String.upcase(tags)
         """
       })
+
+      Loader.reload_snippets_module(:my_site)
 
       layout = published_layout_fixture()
 
@@ -52,7 +54,7 @@ defmodule Beacon.Loader.PageTest do
           ]
         )
 
-      page_module = Loader.reload_page_module(page.site, page.id)
+      {:ok, page_module} = Loader.reload_page_module(page.site, page.id)
 
       [raw_schema] = page_module.page_assigns().raw_schema
 
@@ -68,7 +70,7 @@ defmodule Beacon.Loader.PageTest do
   describe "render" do
     test "render primary template" do
       page = published_page_fixture(site: "my_site", path: "/1") |> Repo.preload([:event_handlers, :variants])
-      module = Loader.reload_page_module(page.site, page.id)
+      {:ok, module} = Loader.reload_page_module(page.site, page.id)
       assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = module.render(%{})
     end
 
@@ -77,7 +79,7 @@ defmodule Beacon.Loader.PageTest do
       Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
       Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
       Beacon.Content.publish_page(page)
-      module = Loader.reload_page_module(page.site, page.id)
+      {:ok, module} = Loader.reload_page_module(page.site, page.id)
 
       assert [
                %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]},

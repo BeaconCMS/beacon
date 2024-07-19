@@ -1,12 +1,8 @@
 import Config
 
-config :beacon, ecto_repos: [Beacon.Repo]
-
 config :beacon, :generators, binary_id: true
 
 config :phoenix, :json_library, Jason
-
-config :beacon, Beacon.Repo, migration_timestamps: [type: :utc_datetime_usec]
 
 if Mix.env() == :dev do
   esbuild = fn args ->
@@ -18,9 +14,11 @@ if Mix.env() == :dev do
   end
 
   config :esbuild,
-    version: "0.17.18",
+    version: "0.23.0",
     cdn: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --outfile=../priv/static/beacon.js)),
     cdn_min: esbuild.(~w(--format=iife --target=es2016 --global-name=Beacon --minify --outfile=../priv/static/beacon.min.js))
 end
 
-import_config "#{config_env()}.exs"
+config :tailwind, version: "3.4.4"
+
+if config_env() == :test, do: import_config("test.exs")
