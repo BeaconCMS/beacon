@@ -24,6 +24,7 @@ defmodule Beacon.Content.Page do
 
   alias Beacon.Content
   alias Beacon.Template.HEEx.HEExDecoder
+  alias Beacon.Content.Page.Helper
 
   @version 3
 
