@@ -161,19 +161,27 @@ Visit http://localhost:4000/admin/blog/layouts, edit the Default layout, and cha
 <div>
   <header class="bg-background border-b">
     <div class="container mx-auto flex items-center justify-between h-16 px-4 md:px-6">
-      <.page_link path={~P"/"} class="text-2xl font-bold">My Blog</.page_link>
+      <.page_link path={~p"/"} class="text-2xl font-bold">My Blog</.page_link>
       <nav class="hidden md:flex space-x-4">
-        <.page_link path={~P"/"} class="text-muted-foreground hover:text-foreground transition-colors">Blog</.page_link>
-        <.page_link path={~P"/about"} class="text-muted-foreground hover:text-foreground transition-colors">About</.page_link>
-        <.page_link path={~P"/contact"} class="text-muted-foreground hover:text-foreground transition-colors">Contact</.page_link>
+        <.page_link path={~p"/"} class="text-muted-foreground hover:text-foreground transition-colors">Blog</.page_link>
+        <.page_link path={~p"/about"} class="text-muted-foreground hover:text-foreground transition-colors">About</.page_link>
+        <.page_link path={~p"/contact"} class="text-muted-foreground hover:text-foreground transition-colors">Contact</.page_link>
       </nav>
     </div>
   </header>
-  <div class="mx-auto my-10 prose lg:prose-lg prose-slate">
+  <div :if={@beacon.page.path == "/"} class="container mx-auto px-4 py-12 md:px-6 lg:py-16">
+    <%= @inner_content %>
+  </div>
+
+  <div :if={@beacon.page.path != "/" } class="container mx-auto px-4 py-12 md:px-6 lg:py-16 prose lg:prose-lg prose-slate">
     <%= @inner_content %>
   </div>
 </div>
 ```
+
+Some notes about this layout:
+- The `prose` classes are defined by the tailwind typography plugin and is responsible for making our blog look good.
+- Conditionally apply the `prose` classes only to the blog posts, not to the home page.
 
 ## Create the first blog post
 
@@ -181,7 +189,10 @@ Visit http://localhost:4000/admin/blog/pages and create a new page with the foll
 
 - Path: /the-elixir-language
 - Title: The Elixir language
+- Description: What's Elixir, how and where it can be used.
 - Format: Markdown
+- Type: Blog Post
+- Tags: 2024,eng,elixir
 
 And the following template:
 
@@ -230,13 +241,52 @@ create a new live data for the path `/`, and then create a new assign `most_rece
 
 ```elixir
 import Ecto.Query
-Beacon.Content.list_published_pages(:blog, search: fn -> dynamic([q], fragment("extra->>'type' = 'blog_post'")) end)
+
+Beacon.Content.list_published_pages(
+  :blog,
+  search: fn -> dynamic([q], fragment("extra->>'type' = 'blog_post'"))
+end)
 ```
 
-Visit http://localhost:4000/admin/blog/pages and create a new page with the following data:
+Visit http://localhost:4000/admin/blog/pages and edit the "My Home Page" with the following data:
 
-- Path: /
 - Title: My Blog
-- Format: HEEx
+- Type: Page
+- Tags: leave empty (no tags)
 
 And the following template:
+
+```heex
+<div class="mb-8">
+  <h2 class="text-lg font-medium text-muted-foreground">
+    Welcome to My Blog
+  </h2>
+  <p class="text-muted-foreground">
+    Discover the latest insights and trends in web development, design, and technology.
+  </p>
+</div>
+
+<h1 class="text-3xl font-bold mb-8 md:text-4xl text-primary">Latest Blog Posts</h1>
+
+<div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+  <div :for={post <- @most_recent_posts} class="bg-background rounded-lg overflow-hidden shadow-sm transition-all hover:shadow-lg">
+    <div class="p-6">
+      <.page_link path={~p"#{post}"} class="text-xl font-bold mb-2 block text-primary">
+        <%= post.title %>
+      </.page_link>
+      <div class="flex flex-wrap gap-2 mb-2">
+        <div
+          :for={tag <- String.split(post.extra["tags"], ",")}
+          class="inline-flex w-fit items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+          <%= tag %>
+        </div>
+      </div>
+      <p class="text-muted-foreground">
+        <%= post.description %>
+      </p>
+    </div>
+  </div>
+</div>
+```
+
+Save the changes and publish the page. Visist http://localhost:4000/blog to see the result!
