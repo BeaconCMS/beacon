@@ -15,7 +15,7 @@ Install Beacon and Beacon LiveAdmin in a new Phoenix LiveView application to ena
 
 Check out the official [Elixir install guide](https://elixir-lang.org/install.html) for more info.
 
-3. Update Hex
+2. Update Hex
 
   ```sh
   mix local.hex
