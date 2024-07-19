@@ -23,6 +23,8 @@ defmodule Beacon.Content do
     * Page - only applies to the specific page.
 
   """
+
+  @doc false
   use GenServer
 
   import Ecto.Query
@@ -88,20 +90,6 @@ defmodule Beacon.Content do
 
   defp maybe_broadcast_updated_content_event({:ok, %{site: site}}, resource_type), do: Beacon.PubSub.content_updated(site, resource_type)
   defp maybe_broadcast_updated_content_event({:error, _}, _resource_type), do: :skip
-
-  @doc """
-  Returns the list of meta tags that are applied to all pages by default.
-
-  These meta tags can be overwritten or extended on a Layout or Page level.
-  """
-  @spec default_site_meta_tags() :: [map()]
-  def default_site_meta_tags do
-    [
-      %{"charset" => "utf-8"},
-      %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
-      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
-    ]
-  end
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking layout changes.
@@ -1072,6 +1060,21 @@ defmodule Beacon.Content do
     page
     |> Changeset.cast(attrs, [:extra])
     |> repo(page).update()
+  end
+
+  @doc """
+  Returns the list of meta tags that are applied to all pages by default.
+
+  These meta tags can be overwritten or extended on a Layout or Page level.
+  """
+  @spec default_site_meta_tags() :: [map()]
+  @doc type: :pages
+  def default_site_meta_tags do
+    [
+      %{"charset" => "utf-8"},
+      %{"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
+      %{"name" => "viewport", "content" => "width=device-width, initial-scale=1"}
+    ]
   end
 
   # STYLESHEETS
