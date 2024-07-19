@@ -17,7 +17,7 @@ defmodule Beacon.Content.Component do
   alias Beacon.Content.ComponentAttr
   alias Beacon.Content.ComponentSlot
 
-  @categories [:html_tag, :data, :element, :media]
+  @categories [:html_tag, :data, :element, :media, :section]
 
   @type t :: %__MODULE__{}
 
