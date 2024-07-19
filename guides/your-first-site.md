@@ -104,13 +104,13 @@ Now let's create the resources for our first site, and we'll starting by creatin
 
 We want to display the current yeat at the footer of the home page as the assign `<%= @current_year %>`. In Beacon we use Live Data to create and modify assigns at runtime, let's do it.
 
-Go to http://localhost:4000/admin/my_site/live_data to create a new path `/` and then create a new assign named `current_year` with the following value:
+Go to http://localhost:4000/admin/my_site/live_data to create a new path `/` and then create a new assign named `current_year` using the `elixir` format with the following value:
 
 ```elixir
 Date.utc_today().year
 ```
 
-**Remember** to change the format to Elixir so that content can be evaluated as Elixir code. Save the changes.
+Save the changes.
 
 ## Handle the form submission event
 
