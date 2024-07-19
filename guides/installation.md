@@ -55,7 +55,7 @@ Note that Beacon supports Umbrella applications as well.
 
 8. Add `:beacon` and `:beacon_live_admin` into `:import_deps` in file `.formatter.exs`
 
-  ```elixir
+  ```diff
   - import_deps: [:ecto, :ecto_sql, :phoenix],
   + import_deps: [:ecto, :ecto_sql, :phoenix, :beacon, :beacon_live_admin],
   ```
