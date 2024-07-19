@@ -196,7 +196,7 @@ Visit http://localhost:4000/admin/blog/pages and create a new page with the foll
 
 And the following template:
 
-```markdown
+````markdown
 # The Elixir language
 
 In the ever-evolving world of web development, Elixir has emerged as a powerful and innovative language that is transforming the way we build web applications. This blog post explores the unique features and benefits of Elixir, and how it can revolutionize your web development workflow.
@@ -228,7 +228,7 @@ defmodule MyAppWeb.PageController do
 As Elixir and the Phoenix framework continue to evolve, we can expect to see even more exciting developments in the world of web development. Advancements in areas like real-time data processing, distributed systems, and seamless integration with other technologies will further enhance the capabilities of Elixir-based web applications.
 
 By embracing Elixir, web developers can unlock new levels of scalability, fault-tolerance, and developer productivity, paving the way for a future where the focus is on building innovative and user-centric web experiences, rather than managing complex infrastructure.
-```
+````
 
 Save and publish this page. Now visit http://localhost:4000/blog/the-elixir-language to see the result. There is your first blog post!
 
