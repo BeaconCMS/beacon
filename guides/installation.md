@@ -48,15 +48,16 @@ Note that Beacon supports Umbrella applications as well.
 
 7. Add `:beacon` and `:beacon_live_admin` dependencies to `mix.exs`
 
-  ```elixir
-  {:beacon, github: "BeaconCMS/beacon", override: true},
-  {:beacon_live_admin, github: "BeaconCMS/beacon_live_admin"},
+  ```diff
+  + {:beacon, github: "BeaconCMS/beacon", override: true},
+  + {:beacon_live_admin, github: "BeaconCMS/beacon_live_admin"},
   ```
 
 8. Add `:beacon` and `:beacon_live_admin` into `:import_deps` in file `.formatter.exs`
 
   ```elixir
-  import_deps: [:ecto, :ecto_sql, :phoenix, :beacon, :beacon_live_admin],
+  - import_deps: [:ecto, :ecto_sql, :phoenix],
+  + import_deps: [:ecto, :ecto_sql, :phoenix, :beacon, :beacon_live_admin],
   ```
 
 9. Install deps
