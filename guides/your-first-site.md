@@ -114,9 +114,9 @@ Date.utc_today().year
 
 ## Handle the form submission event
 
-Besides displaying some data, we will have a form to subscribe people to our newsletter, so we need to react to that event. Let's create an event handler for that:
+Besides displaying some data, we will have a form to subscribe people to our newsletter, so we need to react to that event. Let's create an event handler for that.
 
-Edit the home page and click on the Events tab. Then create a new event handler `join` with the following content:
+Go to http://localhost:4000/admin/my_site/pages, edit the Home Page, and click on the Events tab. Then create a new event handler `join` with the following content:
 
 ```elixir
 %{"waitlist" => %{"email" => email}} = event_params
@@ -311,7 +311,9 @@ Edit the template to replace with this content:
 </div>
 ```
 
-Save the changes and Publish the page. Go to http://localhost:4000 to see the final result!
+Save the changes and Publish the page. Go to http://localhost:4000 to check the final result!
+
+You should see the image you uploaded, the current year on the footer, and a message after joining the waitlist.
 
 -----------------------
 
