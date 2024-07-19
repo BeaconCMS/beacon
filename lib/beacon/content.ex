@@ -187,11 +187,14 @@ defmodule Beacon.Content do
     GenServer.call(name(layout.site), {:publish_layout, layout})
   end
 
+  @doc """
+  Same as `publish_layout/2` but accepts a `site` and `layout_id` with which to lookup the layout.
+  """
   @doc type: :layouts
   @spec publish_layout(Site.t(), UUID.t()) :: {:ok, Layout.t()} | any()
-  def publish_layout(site, id) when is_atom(site) and is_binary(id) do
+  def publish_layout(site, layout_id) when is_atom(site) and is_binary(layout_id) do
     site
-    |> get_layout(id)
+    |> get_layout(layout_id)
     |> publish_layout()
   end
 
@@ -1114,13 +1117,13 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Creates a stylesheet.
+  Creates a stylesheet, raising an error if unsuccessful.
 
-  Returns the new stylesheet if successful, otherwise raises an error.
+  Returns the new stylesheet if successful, otherwise raises a `RuntimeError`.
 
   ## Example
 
-      iex >create_stylesheet(%{
+      iex >create_stylesheet!(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1136,7 +1139,7 @@ defmodule Beacon.Content do
   Note that escape characters must be preserved, so you should use `~S` to avoid issues.
   """
   @doc type: :stylesheets
-  @spec create_stylesheet(map()) :: Stylesheet.t()
+  @spec create_stylesheet!(map()) :: Stylesheet.t()
   def create_stylesheet!(attrs \\ %{}) do
     case create_stylesheet(attrs) do
       {:ok, stylesheet} -> stylesheet
@@ -1757,9 +1760,9 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Creates a component.
+  Creates a component, raising an error if unsuccessful.
 
-  Returns the new component if successful, otherwise raises an error.
+  Returns the new component if successful, otherwise raises a `RuntimeError`.
   """
   @doc type: :components
   @spec create_component!(map()) :: Component.t()
@@ -2119,9 +2122,9 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Creates a snippet helper.
+  Creates a snippet helper, raising an error if unsuccessful.
 
-  Returns the new helper if successful, otherwise raises an error.
+  Returns the new helper if successful, otherwise raises a `RuntimeError`.
   """
   @doc type: :snippets
   @spec create_snippet_helper!(map()) :: Snippets.Helper.t()
@@ -2293,6 +2296,12 @@ defmodule Beacon.Content do
     |> repo(site).all()
   end
 
+  @doc """
+  Lists all error pages for a given site, filtered by `clauses`.
+
+  Currently the only acceptable clause is `:layout_id`.
+  See `list_error_pages/2` for a list of acceptable `opts`.
+  """
   @doc type: :error_pages
   @spec list_error_pages_by(Site.t(), keyword(), keyword()) :: Layout.t() | nil
   def list_error_pages_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
@@ -2572,7 +2581,7 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Deletes a page variant and returns the page with updated variants association.
+  Deletes a page variant and returns the page with updated `:variants` association.
   """
   @doc type: :page_variants
   @spec delete_variant_from_page(Page.t(), PageVariant.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
@@ -2640,9 +2649,9 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Creates a new LiveData for scoping live data to pages.
+  Creates a new LiveData for scoping live data to pages, raising an error if unsuccessful.
 
-  Returns the new LiveData if successful, otherwise raises an error.
+  Returns the new LiveData if successful, otherwise raises a `RuntimeError`.
   """
   @doc type: :live_data
   @spec create_live_data!(map()) :: LiveData.t()
