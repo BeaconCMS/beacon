@@ -460,23 +460,27 @@ defmodule Beacon.Loader.Worker do
 
         {:ok, module}
 
-      {:error, module, {error, diagnostics}} ->
-        raise Beacon.LoaderError, """
+      {:error, module, {error, diagnostics}} = result ->
+        Logger.error("""
         failed to compile module #{module}
 
           Error: #{inspect(error)}
 
           Diagnostics: #{inspect(diagnostics)}
 
-        """
+        """)
 
-      {:error, error} ->
-        raise Beacon.LoaderError, """
+        result
+
+      {:error, error} = result ->
+        Logger.error("""
         failed to compile module
 
           Error: #{inspect(error)}
 
-        """
+        """)
+
+        result
     end
   end
 end
