@@ -30,6 +30,7 @@ defmodule BeaconWeb.BeaconAssigns do
     %__MODULE__{site: site, private: %{components_module: components_module}}
   end
 
+  @doc false
   def new(site, %Beacon.Content.Page{} = page) do
     components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)

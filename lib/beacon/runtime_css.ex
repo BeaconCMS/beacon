@@ -4,8 +4,8 @@ defmodule Beacon.RuntimeCSS do
 
   Beacon supports Tailwind by default implemented by `Beacon.RuntimeCSS.TailwindCompiler`,
   you can use that module as template to implement any ther CSS engine as needed.
-
   """
+  alias Beacon.Types.Site
 
   @doc """
   Returns the CSS compiler config.
@@ -13,12 +13,12 @@ defmodule Beacon.RuntimeCSS do
   For Tailwind that would be the content of the tailwind config file,
   or return an empty string `""` if the provided engine doesn't have a config file.
   """
-  @callback config(Beacon.Types.Site.t()) :: String.t()
+  @callback config(site :: Site.t()) :: String.t()
 
   @doc """
   Executes the compilation to generate the CSS for the site using the provided `:css_compiler` in `Beacon.Config`.
   """
-  @callback compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
+  @callback compile(site :: Site.t()) :: {:ok, String.t()} | {:error, any()}
 
   @doc false
   # TODO: compress and fetch from ETS
@@ -29,6 +29,7 @@ defmodule Beacon.RuntimeCSS do
   @doc """
   Returns the URL to fetch the CSS config used to generate the site stylesheet.
   """
+  @spec asset_url(Site.t()) :: String.t()
   def asset_url(site) do
     %{endpoint: endpoint, router: router} = Beacon.Config.fetch!(site)
     prefix = router.__beacon_scoped_prefix_for_site__(site)
