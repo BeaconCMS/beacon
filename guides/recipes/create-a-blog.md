@@ -271,7 +271,7 @@ And the following template:
 <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
   <div :for={post <- @most_recent_posts} class="bg-background rounded-lg overflow-hidden shadow-sm transition-all hover:shadow-lg">
     <div class="p-6">
-      <.page_link path={~p"#{post}"} class="text-xl font-bold mb-2 block text-primary">
+      <.page_link path={~p"/#{post}"} class="text-xl font-bold mb-2 block text-primary">
         <%= post.title %>
       </.page_link>
       <div class="flex flex-wrap gap-2 mb-2">
