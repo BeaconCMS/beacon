@@ -116,7 +116,7 @@ Save the changes.
 
 Besides displaying some data, we will have a form to subscribe people to our newsletter, so we need to react to that event. Let's create an event handler for that.
 
-Go to http://localhost:4000/admin/my_site/pages, edit the Home Page, and click on the Events tab. Then create a new event handler `join` with the following content:
+Go to http://localhost:4000/admin/my_site/pages, click on the Home Page, and click on the Events tab on the top of the page. Then create a new event handler `join` with the following content:
 
 ```elixir
 %{"waitlist" => %{"email" => email}} = event_params
@@ -126,7 +126,7 @@ IO.puts("#{email} joined the waitlist")
 
 ## Upload an image
 
-The last resource we want in our home is an image. Beacon provides a Media Library to upload and serve images, so first find an image and rename it to `image.jpg` (or the extension you prefer).
+The last resource we want in our home is an image. Beacon provides a Media Library to upload and serve images, so first find an image and rename it to `image.jpg` (or the extension you prefer). Or use one of the images in https://github.com/BeaconCMS/beacon/tree/main/assets/images
 
 Go to http://localhost:4000/admin/my_site/media_library and upload that image.
 
