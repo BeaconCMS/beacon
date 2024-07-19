@@ -23,9 +23,23 @@ mix beacon.install --site blog --path /blog
 
 A basic site was just created but we have some work to do before executing the Phoenix server.
 
-## Tailwind Configuration
+**Note** that if you've already execute `beacon.install` before to install another site, then it won't append the new `blog` site to your application,
+so edit the `application.ex` and `router.ex` files to include the configuration manually:
 
-Since we'll be using a tailwind plugin, you need to follow the [Tailwind configuration guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md)
+```elixir
+# application.ex
+[site: :blog, repo: MyApp.Repo, endpoint: MyAppWeb.Endpoint, router: MyAppWeb.Router]
+
+# router.ex
+beacon_site "/blog", site: :blog
+```
+
+Just make sure to add `beacon_site "/blog", site: :blog` before any `beacon_site "/"` otherwise the latter will match all paths, including `/blog`
+and Beacon won't be able to find and render pages of the blog site.
+
+## Tailwind Setup
+
+Since we'll be using a tailwind plugin, you need to follow the [Tailwind setup guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md)
 to setup and bundle the tailwind configuration.
 
 ## Tailwind Typography Plugin
@@ -178,6 +192,8 @@ Visit http://localhost:4000/admin/blog/layouts, edit the Default layout, and cha
   </div>
 </div>
 ```
+
+Save and publish the changes.
 
 Some notes about this layout:
 - The `prose` classes are defined by the tailwind typography plugin and is responsible for making our blog look good.

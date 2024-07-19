@@ -52,7 +52,7 @@ Let's break down each part of the module:
 * `changeset/3` - this is where you can add your own validation logic to that field (note: `page_changeset` is the changeset for the `%Beacon.Content.Page{}` itself)
 * `render/1` - the template to display the field on the page editor in Beacon LiveAdmin
 
-## Add the first to Beacon.Config
+## Add the field to Beacon.Config
 
 Next we'll configure Beacon to include this type for your pages.  In `application.ex` add to your
 existing Beacon config:
