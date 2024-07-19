@@ -3,11 +3,83 @@
 
 defmodule Beacon.Router do
   @moduledoc """
-  Routing helpers
+  Controls pages routing and provides helpers to mount sites in your application router and generate links to pages.
 
-  In your app router, add `use Beacon.Router` and call one the of the available macros.
+      defmodule MyAppWeb.Router do
+        use Phoenix.Router
+        use Beacon.Router
 
-  TODO: explain precedence and how to use multiple sites
+        scope "/", MyAppWeb do
+          pipe_through :browser
+          beacon_site "/blog", site: :blog
+        end
+      end
+
+  ## Helpers
+
+  A `~p` sigil is provided to generate links to pages taking the `scope` and site `prefix` into account.
+
+  Using that sigil in a template in the `:blog` site defined above would result in the following links:
+
+  ```
+  ~p"/contact" => "/blog/contact"
+  ~p"/posts/\#\{\@post\}" => "/blog/posts/my-post"
+  ```
+
+  In this example `post` is a `Beacon.Content.Page` that implements the `Phoenix.Param` protocol to resolve the page path.
+
+  ## Path
+
+  The full path of the site is calculated resolving the `scope` prefix plus the site `prefix`.
+
+  The simplest scenario is mounting a site at the root of your application:
+
+      scope "/", MyAppWeb do
+        pipe_through :browser
+        beacon_site "/", site: :my_site
+      end
+
+  In this case the site `:my_site` will be available at `https://yourapp.com/`
+
+  By mixing prefixes you have the flexibility to mount sites in different paths,
+  for example both declarations below will mount the site at `https://yourapp.com/blog`:
+
+      scope "/blog", MyAppWeb do
+        pipe_through :browser
+        beacon_site "/", site: :blog
+      end
+
+      scope "/", MyAppWeb do
+        pipe_through :browser
+        beacon_site "/blog", site: :blog
+      end
+
+  There's no difference between the two approaches, but that is important to group and organize your routes and sites,
+  for example a scope might be served through a different pipeline:application
+
+      scope "/marketing", MyAppWeb do
+        pipe_through :browser_analytics
+        beacon_site "/super-campaign", site: :marketing_super_campaign
+        beacon_site "/, site: :marketing
+      end
+
+  Note in the last example that `/super-campaign` is defined _before_ `/` and there's an important reason for that: router precedence.
+
+  ## Route Precedence
+
+  Beacon pages are defined dynamically so it doesn't know which pages are availale when the router is compiled,
+  which means that any route after the `prefix` may match a published page. For example `/contact` may be a valid
+  page published under the mounted `beacon_site "/, site: :marketing` site.
+
+  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:application
+
+      /*
+      /super-campaign
+
+  The second route would never match since the first one would match all requests.
+
+  As a rule of thumb, put all specific routes first.
+
   """
 
   defmacro __using__(_opts) do
@@ -43,36 +115,14 @@ defmodule Beacon.Router do
   end
 
   @doc """
-  Routes for a beacon site.
-
-  ## Examples
-
-      defmodule MyAppWeb.Router do
-        use Phoenix.Router
-        use Beacon.Router
-
-        scope "/", MyAppWeb do
-          pipe_through :browser
-          beacon_site "/blog", site: :blog
-        end
-      end
-
-  Note that you may have multiple sites in the same scope or
-  separated in multiple scopes, which allows you to pipe
-  your sites through custom pipelines, for eg is your site
-  requires some sort of authentication:
-
-      scope "/protected", MyAppWeb do
-          pipe_through :browser
-          pipe_through :auth
-          beacon_site "/sales", site: :stats
-        end
-      end
+  Mounts a site in the `prefix` in your host application router.
 
   ## Options
 
-    * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name,
-      note that it has to be the same name used for configuration, see `Beacon.Config` for more info.
+    * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name.
+      Note that the name has to match the one used in your site configuration in `application.ex`.
+      See the module doc and `Beacon.Config` for more info.
+
   """
   defmacro beacon_site(prefix, opts) do
     # TODO: raise on duplicated sites defined on the same prefix
@@ -161,6 +211,7 @@ defmodule Beacon.Router do
     sanitize_path("#{prefix}/#{path}")
   end
 
+  @doc false
   def sanitize_path(path) do
     String.replace(path, "//", "/")
   end

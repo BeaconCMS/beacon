@@ -74,7 +74,7 @@ end
 Replace `MyApp` with your application name.
 
 For the sake of simplicity of this guide we're assuming that no other route is available, but if you intend to have more routes in your application,
-you have to pay attention to the order in which the routes are defined, see the `Router` module for more information.
+you have to pay attention to the order in which the routes are defined, see the `Beacon.Router` module for more information.
 
 ## Starting the application
 
