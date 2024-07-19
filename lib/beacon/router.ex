@@ -6,6 +6,8 @@ defmodule Beacon.Router do
   Routing helpers
 
   In your app router, add `use Beacon.Router` and call one the of the available macros.
+
+  TODO: explain precedence and how to use multiple sites
   """
 
   defmacro __using__(_opts) do

@@ -1,34 +1,17 @@
-# Create a blog
+# Create a Blog
 
 ## Objective
 
-Create a blog with an index page listing the most recent posts, create posts with tags, and render each one using the tailwind typography plugin.
+Create blog posts with custom fields (type and tags), render each one using the tailwind typography plugin, and list the most recent posts in an index page.
 
 ## Requirements
 
-You'll need to perform some steps before proceeding with this guides:
+This guide will skip initial setup steps that are already covered in the [your first site guide](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md),
+so if that's the first site in your application, or you're not familiar with Beacon, please follow that guide first to make sure the environment is set up correctly:
 
-1. Install Beacon and Beacon LiveAdmin
-
-Follow the [Beacon installation guide](https://github.com/BeaconCMS/beacon/blob/main/guides/installation.md) to set up both libraries in a Phoenix LiveView application.
-Skip if Beacon and Beacon LiveAdmin are already installed.
-
-2. Tailwind
-
-Tailwind must be updated and the config file must be in the ESM format.
-
-Follow the [Tailwind configuration guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md) to set up it properly.
-
-2. Esbuild
-
-Similar to Tailwind, any recent Phoenix application should have it installed already but let's check by executing:
-
-```sh
-mix run -e "IO.inspect Esbuild.bin_version()"
-```
-
-If it fails then follow the [esbuild install guide](https://github.com/phoenixframework/esbuild?tab=readme-ov-file#installation) to get it installed.
-Any recent version that is installed should work just fine.
+- Beacon and Beacon LiveAdmin are installed
+- A database migration exists to create the Beacon tables
+- Router is already setup
 
 ## Create the blog site
 
@@ -42,7 +25,8 @@ A basic site was just created but we have some work to do before executing the P
 
 ## Tailwind Configuration
 
-Now that your site is created, you can add the `:tailwind_config` in your site configuration as explained at the end of the [Tailwind configuration guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md).
+Since we'll be using a tailwind plugin, you need to follow the [Tailwind configuration guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md)
+to setup and bundle the tailwind configuration.
 
 ## Tailwind Typography Plugin
 

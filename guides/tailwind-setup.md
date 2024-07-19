@@ -1,7 +1,9 @@
-# Tailwind Configuration
+# Tailwind Setup
 
-Pages can be styled with Tailwind by default, either with a custom config with plugins or using the default configuration.
-But there are some requirements to make it work properly on sites and also to preview pages on the Visual Editor.
+Beacon has built-in support for Tailwind, any page can use tailwind classes out of the box and a stylesheet will be generated and served to style the pages correctly.
+
+A default and simple configuration is already provided by Beacon, if you don't need custom config or plugins then you can skip this guide.
+Otherwise keep reading to set up a custom Tailwind configuration with more advanced features.
 
 ## Objective
 
