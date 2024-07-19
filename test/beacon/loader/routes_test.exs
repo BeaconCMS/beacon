@@ -18,11 +18,13 @@ defmodule Beacon.Loader.RoutesTest do
 
   describe "sigil_p" do
     test "static" do
+      assert ~p"/" == "/nested/site"
       assert ~p"/contact" == "/nested/site/contact"
     end
 
     test "derive path from page" do
       page = page_fixture(site: @site, path: "/elixir-lang")
+      assert ~p"/#{page}" == "/nested/site/elixir-lang"
       assert ~p"/posts/#{page}" == "/nested/site/posts/elixir-lang"
     end
 

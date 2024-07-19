@@ -68,10 +68,10 @@ defmodule Beacon.Loader.Routes do
           {path_rewrite, query_rewrite} = verify_segment(segments, route_ast)
 
           path_rewrite =
-            if prefix in ["", "/"] do
-              path_rewrite
-            else
-              [prefix] ++ path_rewrite
+            cond do
+              prefix in ["", "/"] -> path_rewrite
+              is_binary(prefix) and path_rewrite == ["/"] -> [prefix]
+              :else -> [prefix] ++ path_rewrite
             end
 
           rewrite_route =
