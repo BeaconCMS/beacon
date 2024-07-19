@@ -1303,7 +1303,7 @@ defmodule Beacon.Content do
           %{name: "inner_block", opts: [required: true]}
         ],
         template: ~S|<.link patch={@path} {@rest}><%= render_slot(@inner_block) %></.link>|,
-        example: ~S|<.page_link path={~P"/contact"} class="text-xl">Contact Us</.page_link>|,
+        example: ~S|<.page_link path={~p"/contact"} class="text-xl">Contact Us</.page_link>|,
         category: :element
       },
       %{

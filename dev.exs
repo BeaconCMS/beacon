@@ -259,9 +259,9 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link patch={~P"/authors/1-author"}>Author (patch)</.link></li>
-            <li><.link navigate={~P"/posts/2023/my-post"}>Post (navigate)</.link></li>
-            <li><.link navigate={~P"/markdown"}>Markdown Page</.link></li>
+            <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
+            <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
+            <li><.link navigate={~p"/markdown"}>Markdown Page</.link></li>
           </ul>
         </div>
 
@@ -314,8 +314,8 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate={~P"/"}>Home (navigate)</.link></li>
-            <li><.link navigate={~P"/posts/2023/my-post"}>Post (navigate)</.link></li>
+            <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
+            <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
           </ul>
         </div>
 
@@ -342,8 +342,8 @@ dev_seeds = fn ->
         <div>
           <p>Pages:</p>
           <ul>
-            <li><.link navigate={~P"/"}>Home (navigate)</.link></li>
-            <li><.link patch={~P"/authors/1-author"}>Author (patch)</.link></li>
+            <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
+            <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
           </ul>
         </div>
 
