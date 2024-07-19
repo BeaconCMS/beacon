@@ -7,7 +7,7 @@ defmodule Beacon.Authorization.Policy do
       defmodule MyApp.Beacon.AuthzPolicy do
         @behaviour Beacon.Authorization.Policy
 
-        def get_agent(%{"session_id" => session_id}}) do
+        def get_agent(%{"session_id" => session_id}) do
           MyApp.Identity.find_by_session_id!(session_id) # returns %{user_id: 1, role: :admin}
         end
 
