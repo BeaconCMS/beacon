@@ -13,7 +13,9 @@ Install Beacon and Beacon LiveAdmin in a new Phoenix LiveView application to ena
 
 1. Install Elixir v1.13 or later
 
-2. Update Hex
+Check out the official [Elixir install guide](https://elixir-lang.org/install.html) for more info.
+
+3. Update Hex
 
   ```sh
   mix local.hex
@@ -27,6 +29,8 @@ If that command fails or Elixir version is outdated, please follow the [Elixir I
   mix archive.install hex phx_new
   ```
 
+Check out the official [Phoenix install guide](https://hexdocs.pm/phoenix/installation.html) for more info.
+
 4. Setup a PostgreSQL database
 
 We recommend using PostgreSQL that's officially supported, make sure it's [installed and running](https://wiki.postgresql.org/wiki/Detailed_installation_guides).
@@ -39,7 +43,7 @@ We recommend using PostgreSQL that's officially supported, make sure it's [insta
 
 Note that Beacon supports Umbrella applications as well.
 
-6. Change the `:floki` dependency to make it available in all environments
+6. Change the existing `:floki` dependency to make it available in all environments
 
   ```diff
   - {:floki, ">= 0.30.0", only: :test},
