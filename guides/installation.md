@@ -65,3 +65,7 @@ Note that Beacon supports Umbrella applications as well.
   ```sh
   mix deps.get
   ```
+
+## Next Steps
+
+Beacon is installed but you have no sites yet. Follow the [Your First Site](your-first-site.md) guide to setup one and get familiar with Beacon.
