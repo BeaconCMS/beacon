@@ -1611,12 +1611,28 @@ defmodule Beacon.Content do
         description: "Renders embedded content like an YouTube video",
         thumbnail: "https://placehold.co/400x75?text=embedded",
         attrs: [%{name: "url", type: "string", opts: [required: true]}],
-        body: ~S|
+        body: ~S"""
         {:ok, %{html: html}} = OEmbed.for(assigns.url)
+
+        # replace width and height with class
+        html =
+          if assigns.class do
+            [{"iframe", attrs, []}] = Floki.parse_fragment!(html)
+
+            attrs =
+              attrs
+              |> Enum.reject(fn {key, _value} -> key in ["width", "height"] end)
+              |> Kernel.++([{"class", assigns.class}])
+
+            Floki.raw_html([{"iframe", attrs, []}])
+          else
+            html
+          end
+
         assigns = Map.put(assigns, :html, html)
-        |,
+        """,
         template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
-        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} />|,
+        example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} class="w-full aspect-video" />|,
         category: :media
       },
       %{
