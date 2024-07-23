@@ -53,17 +53,19 @@ defmodule MyAppWeb.Router do
     plug :put_root_layout, html: {MyAppWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug Beacon.LiveAdmin.Plug
+    plug Beacon.LiveAdmin.Plug # <- add this line
   end
 
-  use Beacon.Router
-  use Beacon.LiveAdmin.Router
+  use Beacon.Router           # <- add this line
+  use Beacon.LiveAdmin.Router # <- add this line
 
+  # add this scope
   scope "/admin" do
     pipe_through :browser
     beacon_live_admin "/"
   end
 
+  # add this scope
   scope "/" do
     pipe_through :browser
     beacon_site "/", site: :my_site
