@@ -28,8 +28,24 @@ And the corresponding function in `MyApp.CMS` module:
 ```elixir
 defmodule MyApp.CMS do
   def notify_page_published(%Beacon.Content.Page{path: path} = page) do
-    MyApp.CMSEmail.notify(%{path: path})
-    {:cont, page}
+    email =  MyApp.CMSEmail.notify(%{path: path})
+
+    case MyApp.Mailer.deliver(email) do
+      {:ok, _} ->
+        {:cont, page}
+
+      {:error, reason} ->
+        message = """
+        failed to notify that page #{path} was published
+
+        Got:
+
+          #{inspect(reason)}
+        """
+
+        # or use a custom exception
+        {:halt, %RuntimeError{message: message}}
+    end
   end
 end
 ```
