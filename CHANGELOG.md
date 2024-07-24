@@ -27,3 +27,4 @@
   * A/B Variants
   * TailwindCSS compiler
   * `@beacon` read-only assign
+  * mix task `beacon.install` to bootstrap a new Beacon site
