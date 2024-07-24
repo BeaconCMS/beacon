@@ -10,8 +10,20 @@ defmodule Beacon.MediaLibrary do
   alias Beacon.Lifecycle
   alias Beacon.MediaLibrary.Asset
   alias Beacon.MediaLibrary.Backend
+  alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.Types.Site
 
+  @doc """
+  Uploads a given `UploadMetadata` and runs the `:upload_asset` lifecycle.
+
+  Runs multiple steps:
+
+    * Upload to external service (see: `Beacon.MediaLibrary.Backend`)
+    * Persist the metadata to the local database
+    * Run the `:upload_asset` lifecycle (see: `t:Beacon.Config.lifecycle_stage/0`)
+
+  """
+  @spec upload(UploadMetadata.t()) :: Ecto.Schema.t()
   def upload(metadata) do
     with metadata <- Backend.process!(metadata),
          metadata <- send_to_cdns(metadata),
@@ -20,18 +32,30 @@ defmodule Beacon.MediaLibrary do
     end
   end
 
+  @doc """
+  This functions runs only the external upload step of `upload/1`.
+  """
+  @spec send_to_cdns(UploadMetadata.t()) :: UploadMetadata.t()
   def send_to_cdns(metadata) do
     metadata
     |> Backend.validate_for_delivery()
     |> Backend.send_to_cdns()
   end
 
+  @doc """
+  This functions runs only the local persistence step of `upload/1`.
+  """
+  @spec save_asset(UploadMetadata.t()) :: {:ok, UploadMetadata.t()} | {:error, Changeset.t()}
   def save_asset(metadata) do
     metadata
     |> prep_save_asset()
     |> repo(metadata).insert()
   end
 
+  @doc """
+  Same as `save_asset/1` but raises an error if unsuccessful.
+  """
+  @spec save_asset!(UploadMetadata.t()) :: UploadMetadata.t()
   def save_asset!(metadata) do
     metadata
     |> prep_save_asset()
@@ -60,6 +84,7 @@ defmodule Beacon.MediaLibrary do
       %Ecto.Changeset{data: %Asset{}}
 
   """
+  @spec change_asset(Asset.t(), map()) :: Changeset.t()
   def change_asset(%Asset{} = asset, attrs \\ %{}) do
     asset
     |> cast(attrs, [:site, :file_name, :media_type, :file_body])

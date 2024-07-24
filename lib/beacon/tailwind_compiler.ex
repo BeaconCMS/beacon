@@ -114,6 +114,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   # Run tailwind-cli returning the output and exit code
   # Note that `:cd` is the root dir for regular and umbrella projects so the paths have to be defined accordingly.
   # https://github.com/phoenixframework/tailwind/blob/8cf9810474bf37c1b1dd821503d756885534d2ba/lib/tailwind.ex#L192
+  @doc false
   def run_cli(profile, extra_args) when is_atom(profile) and is_list(extra_args) do
     version =
       case Tailwind.bin_version() do

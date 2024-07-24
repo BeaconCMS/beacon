@@ -113,6 +113,9 @@ defmodule Beacon.MixProject do
         Content: [
           Beacon.Content,
           Beacon.Content.Component,
+          Beacon.Content.ComponentAttr,
+          Beacon.Content.ComponentSlot,
+          Beacon.Content.ComponentSlotAttr,
           Beacon.Content.ErrorPage,
           Beacon.Content.Layout,
           Beacon.Content.LayoutEvent,
@@ -172,7 +175,9 @@ defmodule Beacon.MixProject do
           Beacon.Registry,
           Beacon.RuntimeCSS,
           Beacon.RuntimeJS,
-          Beacon.RuntimeCSS.TailwindCompiler
+          Beacon.RuntimeCSS.TailwindCompiler,
+          BeaconWeb.BeaconAssigns,
+          Beacon.Migration
         ],
         Types: [
           Beacon.Types.Atom,
@@ -185,10 +190,13 @@ defmodule Beacon.MixProject do
           Beacon.AuthorizationError,
           Beacon.ParserError,
           Beacon.SnippetError,
-          BeaconWeb.NotFoundError
+          BeaconWeb.NotFoundError,
+          BeaconWeb.ServerError,
+          Beacon.RuntimeError,
+          Beacon.ConfigError
         ]
       ],
-      groups_for_functions: [
+      groups_for_docs: [
         "Functions: Layouts": &(&1[:type] == :layouts),
         "Functions: Pages": &(&1[:type] == :pages),
         "Functions: Page Variants": &(&1[:type] == :page_variants),

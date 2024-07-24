@@ -60,7 +60,7 @@ defmodule Beacon.Router do
       scope "/marketing", MyAppWeb do
         pipe_through :browser_analytics
         beacon_site "/super-campaign", site: :marketing_super_campaign
-        beacon_site "/, site: :marketing
+        beacon_site "/", site: :marketing
       end
 
   Note in the last example that `/super-campaign` is defined _before_ `/` and there's an important reason for that: router precedence.

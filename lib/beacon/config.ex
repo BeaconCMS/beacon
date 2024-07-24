@@ -9,6 +9,7 @@ defmodule Beacon.Config do
 
   """
 
+  @doc false
   use GenServer
 
   alias Beacon.Content
@@ -349,7 +350,7 @@ defmodule Beacon.Config do
         media_types: ["image/jpeg", "image/gif", "image/png", "image/webp"],
         assets:[
           {"image/*", [backends: [Beacon.MediaLibrary.Backend.Repo], validations: [&SomeModule.some_function/2]]},
-        ]
+        ],
         lifecycle: [
           load_template: [
             heex: [],
@@ -455,7 +456,7 @@ defmodule Beacon.Config do
   end
 
   @doc """
-  Returns a `t:media_type_config/0` which contains the configuration for backends, processors and validations.
+  From a `Beacon.Config`, fetch the asset config for a given media type, raising when unsuccessful.
 
   ## Example
 
@@ -498,6 +499,25 @@ defmodule Beacon.Config do
     """
   end
 
+  @doc """
+  Searches a config option for the given media type.
+
+  For config options based on media type, such as `:assets` and `:extra_asset_fields`,
+  this function will check for the presence of `media_type`, returning the config for
+  that specific type, or `nil` if the type is not present.
+
+  ## Examples
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> jpeg_config = config_for_media_type(beacon_config.assets, "image/jpeg")
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> webp_config = config_for_media_type(beacon_config.extra_asset_fields, "image/webp")
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> nil = config_for_media_type(beacon_config.assets, "invalid/foo")
+
+  """
   @spec get_media_type_config(media_type_configs(), String.t()) :: media_type_config() | nil
   @spec get_media_type_config(extra_asset_fields(), String.t()) :: extra_asset_field() | nil
   def get_media_type_config(configs, media_type) do

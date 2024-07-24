@@ -21,9 +21,12 @@ defmodule Beacon do
 
   """
 
+  @doc false
   use Supervisor
-  require Logger
+
   alias Beacon.Config
+
+  require Logger
 
   @doc """
   Start `Beacon` and a supervisor for each site, which will load all layouts, pages, components, and so on.

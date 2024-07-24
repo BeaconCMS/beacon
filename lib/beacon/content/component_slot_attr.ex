@@ -1,6 +1,14 @@
 defmodule Beacon.Content.ComponentSlotAttr do
   @moduledoc """
-  TODO: doc
+  Component slot attr schema.
+
+  > #### Do not create or edit component slot attrs manually {: .warning}
+  >
+  > Use the public functions in `Beacon.Content` instead.
+  > The functions in that module guarantee that all dependencies
+  > are created correctly and all processes are updated.
+  > Manipulating data manually will most likely result
+  > in inconsistent behavior and crashes.
   """
 
   use Beacon.Schema

@@ -24,6 +24,7 @@ defmodule Beacon.Content.Page do
 
   alias Beacon.Content
   alias Beacon.Template.HEEx.HEExDecoder
+  alias Beacon.Content.Page.Helper
 
   @version 3
 
@@ -46,11 +47,7 @@ defmodule Beacon.Content.Page do
     has_many :variants, Content.PageVariant
     has_many :event_handlers, Content.PageEventHandler
 
-    embeds_many :helpers, Helper do
-      field :name, :string
-      field :args, :string
-      field :code, :string
-    end
+    embeds_many :helpers, Helper
 
     timestamps()
   end
