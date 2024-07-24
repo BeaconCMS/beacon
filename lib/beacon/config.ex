@@ -98,7 +98,7 @@ defmodule Beacon.Config do
   @type allowed_media_accept_types :: [media_type :: String.t()]
 
   @typedoc """
-  Register backends and validations for media types. Catchalls are allowed.
+  Register providers and validations for media types. Catchalls are allowed.
   """
   @type media_type_configs :: [{media_type :: String.t(), media_type_config()}]
 
@@ -113,7 +113,7 @@ defmodule Beacon.Config do
                (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
                | {validation_fun :: (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()), validation_config :: term()}
            )},
-          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})}
+          {:providers, list(provider :: module() | {provider :: module(), provider_config :: term()})}
         ]
 
   @typedoc """
@@ -349,7 +349,7 @@ defmodule Beacon.Config do
         ],
         media_types: ["image/jpeg", "image/gif", "image/png", "image/webp"],
         assets:[
-          {"image/*", [backends: [Beacon.MediaLibrary.Backend.Repo], validations: [&SomeModule.some_function/2]]},
+          {"image/*", [providers: [Beacon.MediaLibrary.Provider.Repo], validations: [&SomeModule.some_function/2]]},
         ],
         lifecycle: [
           load_template: [
@@ -580,9 +580,9 @@ defmodule Beacon.Config do
       assigned_assets,
       fn media_type, acc ->
         if String.contains?(media_type, "/") do
-          ensure_backend(acc, media_type)
+          ensure_provider(acc, media_type)
         else
-          ensure_backend_for_extension(acc, media_type)
+          ensure_provider_for_extension(acc, media_type)
         end
       end
     )
@@ -597,7 +597,7 @@ defmodule Beacon.Config do
     end)
   end
 
-  defp ensure_backend(configs, media_type) do
+  defp ensure_provider(configs, media_type) do
     if :error == Plug.Conn.Utils.media_type(media_type) do
       raise_invalid_media_type(media_type)
     end
@@ -605,14 +605,14 @@ defmodule Beacon.Config do
     if get_media_type_config(configs, media_type) do
       configs
     else
-      configs ++ [{media_type, [{:backends, [Beacon.MediaLibrary.Backend.Repo]}]}]
+      configs ++ [{media_type, [{:providers, [Beacon.MediaLibrary.Provider.Repo]}]}]
     end
   end
 
-  defp ensure_backend_for_extension(configs, <<46, extension::binary>>) do
+  defp ensure_provider_for_extension(configs, <<46, extension::binary>>) do
     if MIME.has_type?(extension) do
       media_type = MIME.type(extension)
-      ensure_backend(configs, media_type)
+      ensure_provider(configs, media_type)
     else
       raise ConfigError, """
       No known media type for: #{extension}
@@ -620,7 +620,7 @@ defmodule Beacon.Config do
     end
   end
 
-  defp ensure_backend_for_extension(_configs, extension_without_leading_dot),
+  defp ensure_provider_for_extension(_configs, extension_without_leading_dot),
     do: raise(ConfigError, "`#{extension_without_leading_dot}` does not appear to be a media type, extensions must begin with a `.`")
 
   defp raise_invalid_media_type(media_type) do

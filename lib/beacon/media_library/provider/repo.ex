@@ -1,11 +1,11 @@
-defmodule Beacon.MediaLibrary.Backend.Repo do
+defmodule Beacon.MediaLibrary.Provider.Repo do
   @moduledoc false
   import Ecto.Changeset
 
   alias Beacon.MediaLibrary.Asset
   alias Beacon.MediaLibrary.UploadMetadata
 
-  @backend_key "repo"
+  @provider_key "repo"
 
   def send_to_cdn(metadata) do
     key = key_for(metadata)
@@ -15,7 +15,7 @@ defmodule Beacon.MediaLibrary.Backend.Repo do
       metadata.resource
       |> cast(attrs, [:file_body])
       |> validate_required([:file_body])
-      |> Asset.keys_changeset(backend_key(), key)
+      |> Asset.keys_changeset(provider_key(), key)
 
     %{metadata | resource: resource}
   end
@@ -31,5 +31,5 @@ defmodule Beacon.MediaLibrary.Backend.Repo do
     Beacon.apply_mfa(routes, :beacon_asset_url, [asset.file_name])
   end
 
-  def backend_key, do: @backend_key
+  def provider_key, do: @provider_key
 end

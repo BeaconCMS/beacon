@@ -1,9 +1,9 @@
-defmodule Beacon.MediaLibrary.Backend.S3 do
+defmodule Beacon.MediaLibrary.Provider.S3 do
   @moduledoc false
   alias Beacon.MediaLibrary.Asset
   alias Beacon.MediaLibrary.UploadMetadata
 
-  @backend_key "s3"
+  @provider_key "s3"
   @s3_buffer_size 5 * 1024 * 1024
 
   def send_to_cdn(metadata, config \\ []) do
@@ -15,7 +15,7 @@ defmodule Beacon.MediaLibrary.Backend.S3 do
       |> ExAws.request!(config)
     end)
 
-    change = Asset.keys_changeset(metadata.resource, backend_key(), key)
+    change = Asset.keys_changeset(metadata.resource, provider_key(), key)
     %{metadata | resource: change}
   end
 
@@ -35,7 +35,7 @@ defmodule Beacon.MediaLibrary.Backend.S3 do
   end
 
   def url_for(asset, config \\ []) do
-    key = Map.fetch!(asset.keys, backend_key())
+    key = Map.fetch!(asset.keys, provider_key())
     Path.join(host(config), key)
   end
 
@@ -55,5 +55,5 @@ defmodule Beacon.MediaLibrary.Backend.S3 do
     )
   end
 
-  def backend_key, do: @backend_key
+  def provider_key, do: @provider_key
 end

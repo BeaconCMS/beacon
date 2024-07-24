@@ -63,7 +63,7 @@ Supervisor.start_link(
          repo: Beacon.BeaconTest.Repo,
          skip_boot?: true,
          assets: [
-           {"image/*", [backends: [Beacon.MediaLibrary.Backend.S3, Beacon.MediaLibrary.Backend.Repo], validations: []]}
+           {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3, Beacon.MediaLibrary.Provider.Repo], validations: []]}
          ],
          lifecycle: [upload_asset: []]
        ],
