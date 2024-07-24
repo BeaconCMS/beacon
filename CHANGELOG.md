@@ -26,3 +26,4 @@
   * Content management through the `Beacon.Content` API
   * A/B Variants
   * TailwindCSS compiler
+  * `@beacon` read-only assign
