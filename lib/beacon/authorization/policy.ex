@@ -21,9 +21,9 @@ defmodule Beacon.Authorization.Policy do
         def authorized?(%{role: :fact_checker}, :delete, %{mod: :page_editor}), do: false
       end
 
-  TODO: doc payload, possible operations, and context
-
   """
+
+  # TODO: doc payload, possible operations, and context
 
   @doc """
   Return the agent assigned by `Beacon.LiveAdmin.Hooks.AssignAgent`

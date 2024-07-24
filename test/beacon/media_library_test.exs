@@ -28,7 +28,7 @@ defmodule Beacon.MediaLibraryTest do
     setup [:start_bypass]
 
     test "upload asset, converts to webp by default, s3 store", %{bypass: bypass} do
-      setup_multipart_upload_backend(bypass, self(), "s3_site/image.webp")
+      setup_multipart_upload_provider(bypass, self(), "s3_site/image.webp")
 
       metadata = upload_metadata_fixture(file_name: "image.png", site: :s3_site)
       assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata)

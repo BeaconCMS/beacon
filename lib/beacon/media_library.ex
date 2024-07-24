@@ -9,7 +9,7 @@ defmodule Beacon.MediaLibrary do
 
   alias Beacon.Lifecycle
   alias Beacon.MediaLibrary.Asset
-  alias Beacon.MediaLibrary.Backend
+  alias Beacon.MediaLibrary.Provider
   alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.Types.Site
 
@@ -18,14 +18,14 @@ defmodule Beacon.MediaLibrary do
 
   Runs multiple steps:
 
-    * Upload to external service (see: `Beacon.MediaLibrary.Backend`)
+    * Upload to external service (see: `Beacon.MediaLibrary.Provider`)
     * Persist the metadata to the local database
     * Run the `:upload_asset` lifecycle (see: `t:Beacon.Config.lifecycle_stage/0`)
 
   """
   @spec upload(UploadMetadata.t()) :: Ecto.Schema.t()
   def upload(metadata) do
-    with metadata <- Backend.process!(metadata),
+    with metadata <- Provider.process!(metadata),
          metadata <- send_to_cdns(metadata),
          {:ok, asset} <- save_asset(metadata) do
       Lifecycle.Asset.upload_asset(metadata, asset)
@@ -38,8 +38,8 @@ defmodule Beacon.MediaLibrary do
   @spec send_to_cdns(UploadMetadata.t()) :: UploadMetadata.t()
   def send_to_cdns(metadata) do
     metadata
-    |> Backend.validate_for_delivery()
-    |> Backend.send_to_cdns()
+    |> Provider.validate_for_delivery()
+    |> Provider.send_to_cdns()
   end
 
   @doc """
@@ -102,7 +102,7 @@ defmodule Beacon.MediaLibrary do
   def url_for(asset) do
     {_, url} =
       asset
-      |> backends_for()
+      |> providers_for()
       |> hd()
       |> get_url_for(asset)
 
@@ -111,12 +111,12 @@ defmodule Beacon.MediaLibrary do
 
   def url_for(nil, _), do: nil
 
-  def url_for(asset, backend_key) do
+  def url_for(asset, provider_key) do
     {_, url} =
       asset
-      |> backends_for()
-      |> Enum.find(fn backend ->
-        backend.backend_key() == backend_key
+      |> providers_for()
+      |> Enum.find(fn provider ->
+        provider.provider_key() == provider_key
       end)
       |> get_url_for(asset)
 
@@ -125,7 +125,7 @@ defmodule Beacon.MediaLibrary do
 
   def urls_for(asset) do
     asset
-    |> backends_for()
+    |> providers_for()
     |> Enum.map(&get_url_for(&1, asset))
   end
 
@@ -152,17 +152,17 @@ defmodule Beacon.MediaLibrary do
     Enum.map(assets, fn asset -> "#{url_for(asset)} #{asset.usage_tag}" end)
   end
 
-  defp backends_for(asset) do
+  defp providers_for(asset) do
     asset.site
     |> Beacon.Config.fetch!()
     |> Beacon.Config.config_for_media_type(asset.media_type)
-    |> Keyword.fetch!(:backends)
+    |> Keyword.fetch!(:providers)
   end
 
-  defp get_url_for({backend, config}, asset),
-    do: {backend.backend_key(), backend.url_for(asset, config)}
+  defp get_url_for({provider, config}, asset),
+    do: {provider.provider_key(), provider.url_for(asset, config)}
 
-  defp get_url_for(backend, asset), do: {backend.backend_key(), backend.url_for(asset)}
+  defp get_url_for(provider, asset), do: {provider.provider_key(), provider.url_for(asset)}
 
   # credo:disable-for-next-line
   def is_image?(%{file_name: file_name}) do
