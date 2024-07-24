@@ -35,6 +35,8 @@ defmodule BeaconWeb.ComponentsTest do
 
   describe "featured_pages" do
     test "render inner slot", %{conn: conn} do
+      create_component("page_link")
+
       create_page_with_component("/featured_pages", "featured_pages", """
       <main>
       <.featured_pages :let={_page} site={:my_site}>
@@ -46,6 +48,12 @@ defmodule BeaconWeb.ComponentsTest do
       {:ok, view, _html} = live(conn, "/featured_pages")
       assert render(view) =~ "__FEATURED_PAGE__"
     end
+  end
+
+  defp create_component(name) do
+    Beacon.Content.blueprint_components()
+    |> Enum.find(&(&1.name == name))
+    |> component_fixture()
   end
 
   defp create_page_with_component(path, component_name, template) do

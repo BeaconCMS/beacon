@@ -1622,7 +1622,7 @@ defmodule Beacon.Content do
 
         # replace width and height with class
         html =
-          if assigns.class do
+          if assigns[:class] do
             [{"iframe", attrs, []}] = Floki.parse_fragment!(html)
 
             attrs =
