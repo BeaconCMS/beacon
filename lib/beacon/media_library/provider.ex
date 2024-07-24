@@ -1,5 +1,17 @@
 defmodule Beacon.MediaLibrary.Provider do
   @moduledoc """
+  Connects to an external service to store and serve assets in the Media Library.
+
+  By default, Beacon comes with 2 providers:
+
+    * `Beacon.MediaLibrary.Provider.Repo` - Store assets in the database.
+    * `Beacon.MediaLibrary.Provider.S3` - Store assets in an S3 bucket.
+
+  `Repo` is enabled by default for all media types since a database connection is already
+  available, and caching is used to reduce overload on the database. But you can switch to `S3`
+  using the `Beacon.MediaLibrary.Provider.S3` provider or create your own provider.
+
+  See `Beacon.Config` for more info.
 
   """
 
