@@ -91,7 +91,7 @@ defmodule Beacon.Router do
   defp prelude do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
-      import Beacon.Router, only: [beacon_site: 2, beacon_api: 1]
+      import Beacon.Router, only: [beacon_site: 2]
       @before_compile unquote(__MODULE__)
     end
   end
@@ -197,22 +197,6 @@ defmodule Beacon.Router do
 
       {on_mount, _opts} ->
         Keyword.merge(default_session_opts, on_mount: on_mount)
-    end
-  end
-
-  @doc false
-  defmacro beacon_api(path) do
-    quote bind_quoted: binding() do
-      scope path, BeaconWeb.API do
-        import Phoenix.Router, only: [get: 3, post: 3, put: 3]
-
-        get "/:site/pages", PageController, :index
-        get "/:site/pages/:page_id", PageController, :show
-        put "/:site/pages/:page_id", PageController, :update
-        get "/:site/pages/:page_id/components/:component_id", ComponentController, :show_ast
-        get "/:site/components", ComponentController, :index
-        get "/:site/components/:component_id", ComponentController, :show
-      end
     end
   end
 
