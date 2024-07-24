@@ -28,3 +28,4 @@
   * TailwindCSS compiler
   * `@beacon` read-only assign
   * mix task `beacon.install` to bootstrap a new Beacon site
+  * Lifecycle hooks to inject custom logic into multiple layers of the process
