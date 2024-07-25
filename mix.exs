@@ -79,7 +79,6 @@ defmodule Beacon.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
-      dev: ["run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
       "assets.build": ["esbuild cdn", "esbuild cdn_min"]
@@ -124,6 +123,16 @@ defmodule Beacon.MixProject do
 
   defp groups_for_modules do
     [
+      Execution: [
+        Beacon.Router,
+        Beacon.Loader,
+        Beacon.Registry,
+        Beacon.RuntimeCSS,
+        Beacon.RuntimeJS,
+        Beacon.RuntimeCSS.TailwindCompiler,
+        Beacon.Web.BeaconAssigns,
+        Beacon.Migration
+      ],
       Content: [
         Beacon.Content,
         Beacon.Content.Component,
@@ -167,14 +176,6 @@ defmodule Beacon.MixProject do
         Beacon.Authorization.Policy,
         Beacon.Authorization.DefaultPolicy
       ],
-      Web: [
-        Beacon.Web.PageLive,
-        Beacon.Web.Components
-      ],
-      "RESTful API": [
-        Beacon.Web.API.PageController,
-        Beacon.Web.API.ComponentController
-      ],
       Extensibility: [
         Beacon.Config,
         Beacon.Lifecycle,
@@ -182,16 +183,6 @@ defmodule Beacon.MixProject do
         Beacon.Template.RenderMetadata,
         Beacon.Content.PageField,
         Beacon.MediaLibrary.AssetField
-      ],
-      Execution: [
-        Beacon.Router,
-        Beacon.Loader,
-        Beacon.Registry,
-        Beacon.RuntimeCSS,
-        Beacon.RuntimeJS,
-        Beacon.RuntimeCSS.TailwindCompiler,
-        Beacon.Web.BeaconAssigns,
-        Beacon.Migration
       ],
       Types: [
         Beacon.Types.Atom,
