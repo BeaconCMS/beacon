@@ -1,5 +1,5 @@
 defmodule Beacon.Support.Migrations.AddBeaconTables do
   use Ecto.Migration
-  defdelegate up, to: Beacon.Migration
-  defdelegate down, to: Beacon.Migration
+  def up, do: Beacon.Migration.up()
+  def down, do: Beacon.Migration.down()
 end

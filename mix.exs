@@ -127,10 +127,6 @@ defmodule Beacon.MixProject do
         Beacon.Router,
         Beacon.Loader,
         Beacon.Registry,
-        Beacon.RuntimeCSS,
-        Beacon.RuntimeJS,
-        Beacon.RuntimeCSS.TailwindCompiler,
-        Beacon.Web.BeaconAssigns,
         Beacon.Migration
       ],
       Content: [
@@ -170,6 +166,12 @@ defmodule Beacon.MixProject do
         Beacon.MediaLibrary.Processors.Default,
         Beacon.MediaLibrary.Processors.Image,
         Beacon.MediaLibrary.UploadMetadata
+      ],
+      Web: [
+        Beacon.RuntimeCSS,
+        Beacon.RuntimeJS,
+        Beacon.RuntimeCSS.TailwindCompiler,
+        Beacon.Web.BeaconAssigns
       ],
       "Authn and Authz": [
         Beacon.Authorization,

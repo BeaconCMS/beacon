@@ -1,6 +1,6 @@
 defmodule Beacon do
   @moduledoc """
-  Beacon is a Content Management System built on top of Phoenix LiveView, focused on:
+  Beacon is a Content Management System for [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view). It's main
 
   * Rendering pages fast.
   * Reloading content at runtime.
@@ -9,15 +9,16 @@ defmodule Beacon do
 
   You can build virtually any type of website with Beacon, from a simple blog to a complex business site.
 
-  Following are the main APIs provided by Beacon. You can find out more information on each module.
+  Following are the main APIs provided by Beacon. You can find out more information on the module documentation of each one of those modules:
 
   * `Beacon.Config` - configuration of sites.
+  * `Beacon.Router` - mount one or more sites into the router of your Phoenix application.
   * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
   * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
   * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
   * `Beacon.Authorization` - define permissions to limit access to content and features, also used on Beacon LiveAdmin.
 
-  Follow along with [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started now and build your first site.
+  Get started with [your first site](https://hexdocs.pm/beacon/your-first-site.html) and check out the guides for more information.
 
   """
 

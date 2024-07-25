@@ -23,8 +23,8 @@ Then go to the generated migration (usually in `/priv/repo/migrations`) and chan
 ```elixir
 defmodule MyApp.Repo.Migrations.CreateBeaconTables do
   use Ecto.Migration
-  defdelegate up, to: Beacon.Migration
-  defdelegate down, to: Beacon.Migration
+  def up, do: Beacon.Migration.up()
+  def down, do: Beacon.Migration.down()
 end
 ```
 

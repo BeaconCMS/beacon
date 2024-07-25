@@ -2,6 +2,8 @@ defmodule Beacon.Web.BeaconAssigns do
   @moduledoc """
   Read-only container of Beacon assigns related to the current page.
 
+  Available as `@beacon`
+
   This data can be accessed in page templates, event handlers, and other parts of your site
   to read information about the current page as the current site, path and query params,
   path and title.

@@ -15,12 +15,6 @@ defmodule Beacon.Migration do
   ```elixir
   defmodule MyApp.Repo.Migrations.CreateBeaconTables do
     use Ecto.Migration
-
-    # Approach A: delegate
-    defdelegate up, to: Beacon.Migration
-    defdelegate down, to: Beacon.Migration
-
-    # Approach B: function call
     def up, do: Beacon.Migration.up()
     def down, do: Beacon.Migration.down()
   end
@@ -31,6 +25,12 @@ defmodule Beacon.Migration do
   ```
   mix ecto.migrate
   ```
+
+  Note that `up/0` will always execute all migration steps from the initial version to the latest version,
+  and those migration are idempotent.
+
+  Check out the [your first site](https://hexdocs.pm/beacon/your-first-site.html) guide for a full example.
+
   """
 
   # TODO: `up/1` should execute all migrations from v001 up to `@latest`

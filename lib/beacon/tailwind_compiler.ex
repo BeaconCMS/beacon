@@ -2,20 +2,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @moduledoc """
   Tailwind compiler for runtime CSS, used on all sites.
 
-  The default configuration is fetched from `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`,
-  you can see the actual file at https://github.com/BeaconCMS/beacon/blob/main/priv/tailwind.config.js.eex
+  The default configuration is fetched from `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js")`,
+  you can see the actual file at https://github.com/BeaconCMS/beacon/blob/main/priv/tailwind.config.js
 
-    1. It's recommended to be a file with a .eex file extension
+  That's the file used by default if no value is provided in the site configuration `t:Beacon.Config.tailwind_config/0`
 
-    2. The [content section](https://tailwindcss.com/docs/content-configuration) requires an entry `<%= @beacon_content %>`, eg:
-
-        ```
-        content: [
-          <%= @beacon_content %>
-        ]
-        ```
-
-       You're allowed to include more entries per Tailwind specification, but don't remove that special `<%= @beacon_content` placeholder.
+  You can use any of the [available options from Tailwind CSS](https://tailwindcss.com/docs/configuration) but
+  you must bundle the file if using Plugins or requiring any external module, see the [Tailwind Setup guide](https://hexdocs.pm/beacon/tailwind-setup.html)
+  for more info and examples.
 
   """
 

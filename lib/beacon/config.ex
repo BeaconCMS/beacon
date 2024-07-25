@@ -68,6 +68,11 @@ defmodule Beacon.Config do
   @typedoc """
   Path to a custom tailwind config.
 
+  ## Example
+
+      # use the config file `priv/tailwind.config.js` in your app named `my_app`
+      Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js")
+
   See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
   """
   @type tailwind_config :: Path.t()
