@@ -1,4 +1,8 @@
 defmodule BeaconWeb do
+  @moduledoc """
+  Main API for Web related functionality in Beacon.
+  """
+
   @non_assignables [:beacon]
 
   @doc """
