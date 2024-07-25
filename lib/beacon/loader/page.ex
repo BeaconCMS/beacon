@@ -37,7 +37,7 @@ defmodule Beacon.Loader.Page do
         import PhoenixHTMLHelpers.Tag
         import PhoenixHTMLHelpers.Format
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
-        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
         import unquote(routes_module)
         import unquote(components_module)

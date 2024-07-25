@@ -132,16 +132,16 @@ defmodule Beacon.Router do
 
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
 
-      get "/__beacon_assets__/#{site}/:file_name", BeaconWeb.MediaLibraryController, :show
+      get "/__beacon_assets__/#{site}/:file_name", Beacon.Web.MediaLibraryController, :show
 
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
           # TODO: css_config-:md5 caching
-          get "/__beacon_assets__/css_config", BeaconWeb.AssetsController, :css_config, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/js-:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/:file_name", BeaconWeb.MediaLibraryController, :show
-          live "/*path", BeaconWeb.PageLive, :path
+          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/:file_name", Beacon.Web.MediaLibraryController, :show
+          live "/*path", Beacon.Web.PageLive, :path
         end
       end
 
@@ -180,7 +180,7 @@ defmodule Beacon.Router do
     root_layout =
       case Keyword.pop(opts, :root_layout) do
         {nil, _opts} ->
-          {BeaconWeb.Layouts, :runtime}
+          {Beacon.Web.Layouts, :runtime}
 
         {root_layout, _opts} ->
           root_layout

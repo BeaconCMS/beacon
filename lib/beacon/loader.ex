@@ -66,7 +66,7 @@ defmodule Beacon.Loader do
 
   def module_name(site, resource) do
     site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16(case: :lower)
-    Module.concat([BeaconWeb.LiveRenderer, "#{site_hash}", "#{resource}"])
+    Module.concat([Beacon.Web.LiveRenderer, "#{site_hash}", "#{resource}"])
   end
 
   def ping(site) do

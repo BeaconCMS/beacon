@@ -1,7 +1,7 @@
-defmodule BeaconWeb.ErrorHTMLTest do
+defmodule Beacon.Web.ErrorHTMLTest do
   use ExUnit.Case, async: true
 
-  alias BeaconWeb.ErrorHTML
+  alias Beacon.Web.ErrorHTML
 
   @tag capture_log: true
   test "invalid status code" do

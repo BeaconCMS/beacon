@@ -1,4 +1,4 @@
-defmodule BeaconWeb.Components do
+defmodule Beacon.Web.Components do
   @moduledoc false
 
   use Phoenix.Component
@@ -15,7 +15,7 @@ defmodule BeaconWeb.Components do
 
   ## Examples
 
-      <BeaconWeb.Components.image_set name="logo.jpg" width="200px" sources={["480w", "800w"]} sizes="(max-width: 600px) 480px, 800px" />
+      <Beacon.Web.Components.image_set name="logo.jpg" width="200px" sources={["480w", "800w"]} sizes="(max-width: 600px) 480px, 800px" />
 
   """
 

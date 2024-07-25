@@ -186,12 +186,12 @@ defmodule Beacon.MixProject do
         Beacon.Authorization.DefaultPolicy
       ],
       Web: [
-        BeaconWeb.PageLive,
-        BeaconWeb.Components
+        Beacon.Web.PageLive,
+        Beacon.Web.Components
       ],
       "RESTful API": [
-        BeaconWeb.API.PageController,
-        BeaconWeb.API.ComponentController
+        Beacon.Web.API.PageController,
+        Beacon.Web.API.ComponentController
       ],
       Extensibility: [
         Beacon.Config,
@@ -208,7 +208,7 @@ defmodule Beacon.MixProject do
         Beacon.RuntimeCSS,
         Beacon.RuntimeJS,
         Beacon.RuntimeCSS.TailwindCompiler,
-        BeaconWeb.BeaconAssigns,
+        Beacon.Web.BeaconAssigns,
         Beacon.Migration
       ],
       Types: [
@@ -222,8 +222,8 @@ defmodule Beacon.MixProject do
         Beacon.AuthorizationError,
         Beacon.ParserError,
         Beacon.SnippetError,
-        BeaconWeb.NotFoundError,
-        BeaconWeb.ServerError,
+        Beacon.Web.NotFoundError,
+        Beacon.Web.ServerError,
         Beacon.RuntimeError,
         Beacon.ConfigError
       ]

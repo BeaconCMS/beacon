@@ -1,6 +1,6 @@
-defmodule BeaconWeb.BeaconAssignsTest do
+defmodule Beacon.Web.BeaconAssignsTest do
   use Beacon.DataCase
-  alias BeaconWeb.BeaconAssigns
+  alias Beacon.Web.BeaconAssigns
   import Beacon.Fixtures
 
   @site :my_site
@@ -13,7 +13,7 @@ defmodule BeaconWeb.BeaconAssignsTest do
   test "build with site" do
     assert %BeaconAssigns{
              site: @site,
-             private: %{components_module: :"Elixir.BeaconWeb.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components"}
+             private: %{components_module: :"Elixir.Beacon.Web.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components"}
            } = BeaconAssigns.new(@site)
   end
 

@@ -1,12 +1,12 @@
 defmodule Beacon.Loader.ErrorPageTest do
-  use BeaconWeb.ConnCase, async: false
+  use Beacon.Web.ConnCase, async: false
   import Beacon.Fixtures
 
   @site :my_site
 
   defp build_conn(conn) do
     conn
-    |> Plug.Conn.assign(:beacon, BeaconWeb.BeaconAssigns.new(@site))
+    |> Plug.Conn.assign(:beacon, Beacon.Web.BeaconAssigns.new(@site))
     |> Plug.Conn.put_private(:phoenix_router, Beacon.BeaconTest.Router)
   end
 

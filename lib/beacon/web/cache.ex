@@ -1,7 +1,7 @@
 # Copied and modified from https://github.com/hexpm/hexpm/blob/d5b4e3864e219dd8b2cca34570dbe60257bcc547/lib/hexpm_web/controllers/controller_helpers.ex
 # Originally licensed under Apache 2.0 available at https://www.apache.org/licenses/LICENSE-2.0
 
-defmodule BeaconWeb.Cache do
+defmodule Beacon.Web.Cache do
   @moduledoc false
 
   import Plug.Conn
@@ -113,7 +113,7 @@ defmodule BeaconWeb.Cache do
     binary =
       entities
       |> List.wrap()
-      |> Enum.map(&BeaconWeb.Cache.Stale.etag/1)
+      |> Enum.map(&Beacon.Web.Cache.Stale.etag/1)
       |> List.flatten()
       |> :erlang.term_to_binary()
 
@@ -125,7 +125,7 @@ defmodule BeaconWeb.Cache do
   def last_modified(entities) do
     entities
     |> List.wrap()
-    |> Enum.map(&BeaconWeb.Cache.Stale.last_modified/1)
+    |> Enum.map(&Beacon.Web.Cache.Stale.last_modified/1)
     |> List.flatten()
     |> Enum.reject(&is_nil/1)
     |> Enum.map(&time_to_erl/1)

@@ -11,7 +11,7 @@ defmodule Beacon.RouterTest do
     assert {
              :test,
              _,
-             [{:session, %{"beacon_site" => :test}}, {:root_layout, {BeaconWeb.Layouts, :runtime}}]
+             [{:session, %{"beacon_site" => :test}}, {:root_layout, {Beacon.Web.Layouts, :runtime}}]
            } = Router.__options__(site: :test)
   end
 
@@ -28,16 +28,16 @@ defmodule Beacon.RouterTest do
                {:my_site, :beacon_my_site,
                 [
                   session: %{"beacon_site" => :my_site},
-                  root_layout: {BeaconWeb.Layouts, :runtime}
+                  root_layout: {Beacon.Web.Layouts, :runtime}
                 ]}
     end
 
     test "returns custom root_layout value when passed a root_layout value in a keyword list" do
-      assert Router.__options__(site: :my_site, root_layout: {BeaconWeb.Layouts, :app}) ==
+      assert Router.__options__(site: :my_site, root_layout: {Beacon.Web.Layouts, :app}) ==
                {:my_site, :beacon_my_site,
                 [
                   session: %{"beacon_site" => :my_site},
-                  root_layout: {BeaconWeb.Layouts, :app}
+                  root_layout: {Beacon.Web.Layouts, :app}
                 ]}
     end
 
@@ -46,7 +46,7 @@ defmodule Beacon.RouterTest do
                {:my_site, :beacon_my_site,
                 [
                   session: %{"beacon_site" => :my_site},
-                  root_layout: {BeaconWeb.Layouts, :runtime},
+                  root_layout: {Beacon.Web.Layouts, :runtime},
                   on_mount: {:struct, :atom}
                 ]}
     end

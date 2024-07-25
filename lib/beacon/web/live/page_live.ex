@@ -1,14 +1,14 @@
-defmodule BeaconWeb.PageLive do
+defmodule Beacon.Web.PageLive do
   @moduledoc false
 
-  use BeaconWeb, :live_view
+  use Beacon.Web, :live_view
   require Logger
   import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3], warn: false
-  import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3], warn: false
+  import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3], warn: false
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.RouterServer
-  alias BeaconWeb.BeaconAssigns
+  alias Beacon.Web.BeaconAssigns
   alias Phoenix.Component
 
   def mount(:not_mounted_at_router, _params, socket) do
@@ -26,7 +26,7 @@ defmodule BeaconWeb.PageLive do
 
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
-    {:ok, socket, layout: {BeaconWeb.Layouts, :dynamic}}
+    {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
   end
 
   def render(assigns) do
@@ -45,8 +45,8 @@ defmodule BeaconWeb.PageLive do
       # |> BeaconAssigns.update_private(:page_updated_at, DateTime.utc_now())
       # |> assign(:page_title, page_title(params, socket.assigns))
       |> push_event("beacon:page-updated", %{
-        meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)
-        # runtime_css_path: BeaconWeb.Layouts.asset_path(socket, :css)
+        meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)
+        # runtime_css_path: Beacon.Web.Layouts.asset_path(socket, :css)
       })
 
     {:noreply, socket}
@@ -80,7 +80,7 @@ defmodule BeaconWeb.PageLive do
         {:noreply, socket}
 
       other ->
-        raise BeaconWeb.ServerError,
+        raise Beacon.Web.ServerError,
               "handle_event for #{live_path} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
     end
   end
@@ -90,7 +90,7 @@ defmodule BeaconWeb.PageLive do
     %{beacon: %{private: %{page_module: page_module}}} = socket.assigns
     %{site: site} = Beacon.apply_mfa(page_module, :page_assigns, [[:site]])
     page = Beacon.apply_mfa(page_module, :page, [])
-    live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
+    live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
     beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
     socket =
@@ -105,7 +105,7 @@ defmodule BeaconWeb.PageLive do
       |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
       |> Component.assign(:beacon, beacon_assigns)
 
-    {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: BeaconWeb.DataSource.meta_tags(socket.assigns)})}
+    {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
   end
 
   @doc false

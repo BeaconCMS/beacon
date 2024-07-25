@@ -1,4 +1,4 @@
-defmodule Beacon.BeaconWebTest do
+defmodule Beacon.Beacon.WebTest do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
@@ -32,7 +32,7 @@ defmodule Beacon.BeaconWebTest do
       import PhoenixHTMLHelpers.Tag
       import PhoenixHTMLHelpers.Format
       import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
-      import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
+      import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3]
       import Phoenix.View
 
       alias Beacon.BeaconTest.Router.Helpers, as: Routes
@@ -41,11 +41,11 @@ defmodule Beacon.BeaconWebTest do
 end
 
 defmodule Beacon.BeaconTest.LayoutView do
-  use Beacon.BeaconWebTest, :view
+  use Beacon.Beacon.WebTest, :view
 end
 
 defmodule Beacon.BeaconTest.ErrorView do
-  use Beacon.BeaconWebTest, :view
+  use Beacon.Beacon.WebTest, :view
 
   def render(_template, _assigns), do: "Error"
 end

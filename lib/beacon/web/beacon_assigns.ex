@@ -1,4 +1,4 @@
-defmodule BeaconWeb.BeaconAssigns do
+defmodule Beacon.Web.BeaconAssigns do
   @moduledoc """
   Read-only container of Beacon assigns related to the current page.
 
@@ -59,9 +59,9 @@ defmodule BeaconWeb.BeaconAssigns do
       when is_atom(site) and is_map(live_data) and is_list(path_info) and is_map(query_params) do
     %{site: ^site} = page
     page_module = Beacon.Loader.Page.module_name(site, page.id)
-    live_data = BeaconWeb.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
+    live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
     path_params = Beacon.Router.path_params(page.path, path_info)
-    page_title = BeaconWeb.DataSource.page_title(site, page.id, live_data)
+    page_title = Beacon.Web.DataSource.page_title(site, page.id, live_data)
     components_module = Beacon.Loader.Components.module_name(site)
 
     %__MODULE__{

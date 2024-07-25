@@ -1,5 +1,5 @@
-defmodule BeaconWeb.Controllers.MediaLibraryControllerTest do
-  use BeaconWeb.ConnCase, async: true
+defmodule Beacon.Web.Controllers.MediaLibraryControllerTest do
+  use Beacon.Web.ConnCase, async: true
 
   test "show", %{conn: conn} do
     %{file_name: file_name} = Beacon.Fixtures.media_library_asset_fixture(site: :my_site)

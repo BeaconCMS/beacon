@@ -43,7 +43,7 @@ defmodule Beacon.RouterServer do
       Beacon.apply_mfa(page_module, :page, [])
     else
       _ ->
-        raise BeaconWeb.NotFoundError, """
+        raise Beacon.Web.NotFoundError, """
         no page was found for site #{site} and path #{inspect(path_info)}
 
         Make sure a page was created for that path.

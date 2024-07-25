@@ -48,7 +48,7 @@ Application.put_env(:beacon, DemoWeb.Endpoint,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),
   debug_errors: !display_error_pages?,
-  render_errors: [formats: [html: BeaconWeb.ErrorHTML]],
+  render_errors: [formats: [html: Beacon.Web.ErrorHTML]],
   check_origin: false,
   pubsub_server: Demo.PubSub,
   live_reload: [
@@ -109,7 +109,7 @@ end
 
 defmodule Demo.Beacon.TagsField do
   use Phoenix.Component
-  import BeaconWeb.CoreComponents
+  import Beacon.Web.CoreComponents
   import Ecto.Changeset
 
   @behaviour Beacon.Content.PageField
@@ -270,7 +270,7 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          <%!--  <BeaconWeb.Components.image_set asset={@img1} sources={["480w"]} width="200px" /> --%>
+          <%!--  <Beacon.Web.Components.image_set asset={@img1} sources={["480w"]} width="200px" /> --%>
         </div>
 
         <div>

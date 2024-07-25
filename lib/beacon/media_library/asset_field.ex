@@ -17,7 +17,7 @@ defmodule Beacon.MediaLibrary.AssetField do
 
       defmodule MyApp.AltTextField do
         use Phoenix.Component
-        import BeaconWeb.CoreComponents
+        import Beacon.Web.CoreComponents
         import Ecto.Changeset
 
         @behaviour Beacon.MediaLibrary.AssetField

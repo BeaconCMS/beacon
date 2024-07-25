@@ -1,7 +1,7 @@
-defmodule BeaconWeb.CacheTest do
-  use BeaconWeb.ConnCase, async: true
+defmodule Beacon.Web.CacheTest do
+  use Beacon.Web.ConnCase, async: true
   import Beacon.Fixtures
-  alias BeaconWeb.Cache
+  alias Beacon.Web.Cache
 
   setup do
     asset = media_library_asset_fixture(site: :my_site)

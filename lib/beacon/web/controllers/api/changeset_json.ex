@@ -1,4 +1,4 @@
-defmodule BeaconWeb.API.ChangesetJSON do
+defmodule Beacon.Web.API.ChangesetJSON do
   @moduledoc false
 
   def error(%{changeset: changeset}) do
