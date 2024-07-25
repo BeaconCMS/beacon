@@ -174,11 +174,6 @@ defmodule Beacon.MixProject do
         Beacon.RuntimeCSS.TailwindCompiler,
         Beacon.Web.BeaconAssigns
       ],
-      "Authn and Authz": [
-        Beacon.Authorization,
-        Beacon.Authorization.Policy,
-        Beacon.Authorization.DefaultPolicy
-      ],
       Extensibility: [
         Beacon.Config,
         Beacon.Lifecycle,
