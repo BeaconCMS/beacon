@@ -2,7 +2,7 @@ defmodule BeaconWeb do
   @non_assignables [:beacon]
 
   @doc """
-  Same as `Phoenix.Component.assign/2` but raises an error if the key is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign/2` but raises `ArgumentError` if key is reserved.
   """
   def assign(socket_or_assigns, keyword_or_map) when is_map(keyword_or_map) or is_list(keyword_or_map) do
     Enum.each(keyword_or_map, fn {key, _value} ->
@@ -13,7 +13,7 @@ defmodule BeaconWeb do
   end
 
   @doc """
-  Same as `Phoenix.Component.assign/3` but raises an error if the `key` is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign/3` but raises `ArgumentError` if key is reserved.
   """
   def assign(socket_or_assigns, key, value) do
     validate_assign_key!(key)
@@ -21,7 +21,7 @@ defmodule BeaconWeb do
   end
 
   @doc """
-  Same as `Phoenix.Component.assign_new/3` but raises an error if the `key` is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign_new/3` but raises `ArgumentError` if key is reserved.
   """
   def assign_new(socket_or_assigns, key, fun) do
     validate_assign_key!(key)
