@@ -6,7 +6,7 @@ Create blog posts with custom fields (type and tags), render each one using the 
 
 ## Requirements
 
-This guide will skip initial setup steps that are already covered in the [your first site guide](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md),
+This guide will skip initial setup steps that are already covered in the [your first site guide](../introduction/your-first-site.md),
 so if that's the first site in your application, or you're not familiar with Beacon, please follow that guide first to make sure the environment is set up correctly:
 
 - Beacon and Beacon LiveAdmin are installed
@@ -39,7 +39,7 @@ and Beacon won't be able to find and render pages of the blog site.
 
 ## Tailwind Setup
 
-Since we'll be using a tailwind plugin, you need to follow the [Tailwind setup guide](https://github.com/BeaconCMS/beacon/blob/main/guides/tailwind-configuration.md)
+Since we'll be using a tailwind plugin, you need to follow the [Tailwind setup guide](../introduction/tailwind-setup.md)
 to setup and bundle the tailwind configuration.
 
 ## Tailwind Typography Plugin

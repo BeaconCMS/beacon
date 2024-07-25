@@ -1,4 +1,4 @@
-## Notify Page Published
+# Notify Page Published
 
 Let's suppose you want to notify a group of people via email when a page is published and your Phoenix application is already integrated with a mailer.
 

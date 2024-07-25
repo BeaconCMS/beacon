@@ -8,7 +8,7 @@ Create your first site to get familiar with the install command and the most com
 
 In order to create and serve sites, you'll need a Phoenix LiveView application with both Beacon and Beacon LiveAdmin installed.
 
-Follow the [Beacon installation guide](https://github.com/BeaconCMS/beacon/blob/main/guides/installation.md) to set up the environment before proceeding with this guide.
+Follow the [Beacon installation guide](installation.md) to set up the environment before proceeding with this guide.
 
 ## Setup the database schema
 
@@ -321,4 +321,4 @@ You should see the image you uploaded, the current year on the footer, and a mes
 
 Congratulations! You have a site up and running.
 
-Check out all available [recipes](https://github.com/BeaconCMS/beacon/blob/main/guides/recipes/) to learn how to deploy your site, customize it even further, and more.
+Check out all available recipes to learn how to deploy your site, customize it even further, and more.

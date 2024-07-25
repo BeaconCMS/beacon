@@ -109,93 +109,10 @@ defmodule Beacon.MixProject do
       main: "Beacon",
       source_ref: "v#{@version}",
       source_url: "https://github.com/BeaconCMS/beacon",
-      groups_for_modules: [
-        Content: [
-          Beacon.Content,
-          Beacon.Content.Component,
-          Beacon.Content.ComponentAttr,
-          Beacon.Content.ComponentSlot,
-          Beacon.Content.ComponentSlotAttr,
-          Beacon.Content.ErrorPage,
-          Beacon.Content.Layout,
-          Beacon.Content.LayoutEvent,
-          Beacon.Content.LayoutSnapshot,
-          Beacon.Content.LiveData,
-          Beacon.Content.LiveDataAssign,
-          Beacon.Content.Page,
-          Beacon.Content.Page.Event,
-          Beacon.Content.Page.Helper,
-          Beacon.Content.PageEvent,
-          Beacon.Content.PageEventHandler,
-          Beacon.Content.PageSnapshot,
-          Beacon.Content.PageVariant,
-          Beacon.Content.Stylesheet,
-          Beacon.Content.Snippets.Helper,
-          Beacon.Template,
-          Beacon.Template.HEEx,
-          Beacon.Template.Markdown
-        ],
-        "Media Library": [
-          Beacon.MediaLibrary,
-          Beacon.MediaLibrary.Asset,
-          Beacon.MediaLibrary.Provider,
-          Beacon.MediaLibrary.Provider.Repo,
-          Beacon.MediaLibrary.Provider.S3,
-          Beacon.MediaLibrary.Provider.S3.Signed,
-          Beacon.MediaLibrary.Provider.S3.Unsigned,
-          Beacon.MediaTypes,
-          Beacon.MediaLibrary.Processors.Default,
-          Beacon.MediaLibrary.Processors.Image,
-          Beacon.MediaLibrary.UploadMetadata
-        ],
-        "Authn and Authz": [
-          Beacon.Authorization,
-          Beacon.Authorization.Policy,
-          Beacon.Authorization.DefaultPolicy
-        ],
-        Web: [
-          BeaconWeb.PageLive,
-          BeaconWeb.Components
-        ],
-        "RESTful API": [
-          BeaconWeb.API.PageController,
-          BeaconWeb.API.ComponentController
-        ],
-        Extensibility: [
-          Beacon.Config,
-          Beacon.Lifecycle,
-          Beacon.Template.LoadMetadata,
-          Beacon.Template.RenderMetadata,
-          Beacon.Content.PageField,
-          Beacon.MediaLibrary.AssetField
-        ],
-        Execution: [
-          Beacon.Router,
-          Beacon.Loader,
-          Beacon.Registry,
-          Beacon.RuntimeCSS,
-          Beacon.RuntimeJS,
-          Beacon.RuntimeCSS.TailwindCompiler,
-          BeaconWeb.BeaconAssigns,
-          Beacon.Migration
-        ],
-        Types: [
-          Beacon.Types.Atom,
-          Beacon.Types.Binary,
-          Beacon.Types.Site,
-          Beacon.Types.JsonArrayMap
-        ],
-        Exceptions: [
-          Beacon.LoaderError,
-          Beacon.AuthorizationError,
-          Beacon.ParserError,
-          Beacon.SnippetError,
-          BeaconWeb.NotFoundError,
-          BeaconWeb.ServerError,
-          Beacon.RuntimeError,
-          Beacon.ConfigError
-        ]
-      ],
+      extra_section: "GUIDES",
+      extras: extras(),
+      groups_for_extras: groups_for_extras(),
+      groups_for_modules: groups_for_modules(),
       groups_for_docs: [
         "Functions: Layouts": &(&1[:type] == :layouts),
         "Functions: Pages": &(&1[:type] == :pages),
@@ -206,6 +123,109 @@ defmodule Beacon.MixProject do
         "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
         "Functions: Live Data": &(&1[:type] == :live_data)
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+    ]
+  end
+
+  defp extras do
+    ["CHANGELOG.md"] ++ Path.wildcard("guides/*/*.md")
+  end
+
+  defp groups_for_extras do
+    [
+      Introduction: ~r"guides/introduction/",
+      Recipes: ~r"guides/recipes/",
+      Troubleshoot: ~r"troubleshoot.md"
+    ]
+  end
+
+  defp groups_for_modules do
+    [
+      Content: [
+        Beacon.Content,
+        Beacon.Content.Component,
+        Beacon.Content.ComponentAttr,
+        Beacon.Content.ComponentSlot,
+        Beacon.Content.ComponentSlotAttr,
+        Beacon.Content.ErrorPage,
+        Beacon.Content.Layout,
+        Beacon.Content.LayoutEvent,
+        Beacon.Content.LayoutSnapshot,
+        Beacon.Content.LiveData,
+        Beacon.Content.LiveDataAssign,
+        Beacon.Content.Page,
+        Beacon.Content.Page.Event,
+        Beacon.Content.Page.Helper,
+        Beacon.Content.PageEvent,
+        Beacon.Content.PageEventHandler,
+        Beacon.Content.PageSnapshot,
+        Beacon.Content.PageVariant,
+        Beacon.Content.Stylesheet,
+        Beacon.Content.Snippets.Helper,
+        Beacon.Template,
+        Beacon.Template.HEEx,
+        Beacon.Template.Markdown
+      ],
+      "Media Library": [
+        Beacon.MediaLibrary,
+        Beacon.MediaLibrary.Asset,
+        Beacon.MediaLibrary.Provider,
+        Beacon.MediaLibrary.Provider.Repo,
+        Beacon.MediaLibrary.Provider.S3,
+        Beacon.MediaLibrary.Provider.S3.Signed,
+        Beacon.MediaLibrary.Provider.S3.Unsigned,
+        Beacon.MediaTypes,
+        Beacon.MediaLibrary.Processors.Default,
+        Beacon.MediaLibrary.Processors.Image,
+        Beacon.MediaLibrary.UploadMetadata
+      ],
+      "Authn and Authz": [
+        Beacon.Authorization,
+        Beacon.Authorization.Policy,
+        Beacon.Authorization.DefaultPolicy
+      ],
+      Web: [
+        BeaconWeb.PageLive,
+        BeaconWeb.Components
+      ],
+      "RESTful API": [
+        BeaconWeb.API.PageController,
+        BeaconWeb.API.ComponentController
+      ],
+      Extensibility: [
+        Beacon.Config,
+        Beacon.Lifecycle,
+        Beacon.Template.LoadMetadata,
+        Beacon.Template.RenderMetadata,
+        Beacon.Content.PageField,
+        Beacon.MediaLibrary.AssetField
+      ],
+      Execution: [
+        Beacon.Router,
+        Beacon.Loader,
+        Beacon.Registry,
+        Beacon.RuntimeCSS,
+        Beacon.RuntimeJS,
+        Beacon.RuntimeCSS.TailwindCompiler,
+        BeaconWeb.BeaconAssigns,
+        Beacon.Migration
+      ],
+      Types: [
+        Beacon.Types.Atom,
+        Beacon.Types.Binary,
+        Beacon.Types.Site,
+        Beacon.Types.JsonArrayMap
+      ],
+      Exceptions: [
+        Beacon.LoaderError,
+        Beacon.AuthorizationError,
+        Beacon.ParserError,
+        Beacon.SnippetError,
+        BeaconWeb.NotFoundError,
+        BeaconWeb.ServerError,
+        Beacon.RuntimeError,
+        Beacon.ConfigError
       ]
     ]
   end

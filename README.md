@@ -6,9 +6,9 @@ Beacon is a content management system (CMS) built with Phoenix LiveView. It brin
 
 ## Guides
 
-Check out the [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started and [recipes](https://github.com/BeaconCMS/beacon/tree/main/guides/recipes) to learn about features and do more with your sites.
+Check out the guides to get started and recipes to learn about features and do more with your sites.
 
-If you're new to Beacon you probably want to start with [creating your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md).
+If you're new to Beacon you probably want to start with the create your first site guide.
 
 
 ## Demo

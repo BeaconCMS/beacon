@@ -1,6 +1,6 @@
 # Deploying on Fly.io
 
-Once you have a [Beacon site up and running](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md) locally, you can deploy it on [Fly.io](https://fly.io) by following this guide.
+Once you have a [Beacon site up and running](../introduction/your-first-site.md) locally, you can deploy it on [Fly.io](https://fly.io) by following this guide.
 
 ## Fly.io CLI
 

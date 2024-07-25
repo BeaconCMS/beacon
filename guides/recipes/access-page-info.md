@@ -1,4 +1,4 @@
-## Access Page Info
+# Access Page Info
 
 In order to build pages you might need to access the current site or page information, as query params, path, and so on.
 
