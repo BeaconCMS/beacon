@@ -1,11 +1,19 @@
 defmodule Beacon.Authorization do
-  @moduledoc """
-  Executes the authorization rules defined by `Beacon.Authorization.Policy`.
+  @moduledoc false
 
-  Most of those calls are done in Beacon LiveAdmin and you don't need to call them directly,
-  unless you're building a custom admin page or custom logic then you can rely on this module
-  to get the agent (who is performing the operation) and check if the agent is authorized to perform such operation.
-  """
+  # TODO: review authz
+  # """
+  # Protects resources by authorizing agents to perform operations in Beacon.
+
+  # An agent might be a user, a system, or any entity that is performing an operation.
+
+  # Executes the authorization rules defined by `Beacon.Authorization.Policy`.
+
+  # Most of those calls are done in Beacon LiveAdmin or internally in Beacon contexts so you don't need to call them directly,
+  # unless you're building a custom admin page or custom logic then you can rely on this module
+  # to get the agent (who is performing the operation) with `get_agent/2` and check if the agent
+  # is authorized to perform such operation with `authorized?/4`.
+  # """
 
   alias Beacon.Behaviors.Helpers
 
@@ -16,11 +24,11 @@ defmodule Beacon.Authorization do
     |> do_get_agent(payload)
   end
 
-  defp do_get_agent(nil = _authorization_source, _data), do: nil
+  defp do_get_agent(nil = _authorization_source, _payload), do: nil
 
-  defp do_get_agent(authorization_source, data) do
+  defp do_get_agent(authorization_source, payload) do
     if Beacon.exported?(authorization_source, :get_agent, 1) do
-      authorization_source.get_agent(data)
+      authorization_source.get_agent(payload)
     else
       nil
     end

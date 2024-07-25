@@ -16,7 +16,6 @@ defmodule Beacon do
   * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
   * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
   * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
-  * `Beacon.Authorization` - define permissions to limit access to content and features, also used on Beacon LiveAdmin.
 
   Get started with [your first site](https://hexdocs.pm/beacon/your-first-site.html) and check out the guides for more information.
 

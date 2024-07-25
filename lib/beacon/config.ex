@@ -55,10 +55,10 @@ defmodule Beacon.Config do
   """
   @type skip_boot? :: boolean()
 
-  @typedoc """
-  A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules.
-  """
-  @type authorization_source :: module()
+  # @typedoc """
+  # A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules.
+  # """
+  # @type authorization_source :: module()
 
   @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
@@ -184,7 +184,7 @@ defmodule Beacon.Config do
           router: router(),
           repo: repo(),
           skip_boot?: skip_boot?(),
-          authorization_source: authorization_source(),
+          # authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           live_socket_path: live_socket_path(),
@@ -218,6 +218,7 @@ defmodule Beacon.Config do
             router: nil,
             repo: nil,
             skip_boot?: false,
+            # TODO: rename to `authorization_policy`
             authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: nil,
@@ -247,7 +248,7 @@ defmodule Beacon.Config do
           | {:router, router()}
           | {:repo, repo()}
           | {:skip_boot?, skip_boot?()}
-          | {:authorization_source, authorization_source()}
+          # | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, live_socket_path()}
@@ -259,6 +260,11 @@ defmodule Beacon.Config do
           | {:extra_page_fields, extra_page_fields()}
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
+
+  # TODO: review authz
+  # * `:authorization_source` - `t:authorization_source/0` (optional). Defaults to `Beacon.Authorization.DefaultPolicy`.
+  # authorization_source: MyApp.MySiteAuthzPolicy,
+  # authorization_source: MyApp.SiteAuthnPolicy,
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -274,8 +280,6 @@ defmodule Beacon.Config do
     * `:repo` - `t:repo/0` (required)
 
     * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
-
-    * `:authorization_source` - `t:authorization_source/0` (optional). Defaults to `Beacon.Authorization.DefaultPolicy`.
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
@@ -313,7 +317,6 @@ defmodule Beacon.Config do
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
-        authorization_source: MyApp.MySiteAuthzPolicy,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js"),
         template_formats: [
           {:custom_format, "My Custom Format"}
@@ -342,7 +345,6 @@ defmodule Beacon.Config do
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
         skip_boot?: false,
-        authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
         live_socket_path: "/live",

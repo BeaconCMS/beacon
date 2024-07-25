@@ -1,27 +1,32 @@
 defmodule Beacon.Authorization.Policy do
-  @moduledoc """
-  Provides hooks into Beacon Authorization.
+  @moduledoc false
 
-  ## Example
+  # TODO: review authz
+  # """
+  # Rules to authorize agents to perform operations in Beacon.
 
-      defmodule MyApp.Beacon.AuthzPolicy do
-        @behaviour Beacon.Authorization.Policy
+  # Below is an example of a policy that finds the person performing the operation through a session_id
+  # returned in the login and checks if the person is authorized to perform some operations.
 
-        def get_agent(%{"session_id" => session_id}) do
-          MyApp.Identity.find_by_session_id!(session_id) # returns %{user_id: 1, role: :admin}
-        end
+  # ## Example
 
-        # admin has access to all operations
-        def authorized?(%{role: :admin}, _, _), do: true
+  #     defmodule MyApp.Beacon.AuthzPolicy do
+  #       @behaviour Beacon.Authorization.Policy
 
-        # everyone can access page editor index
-        def authorized?(_, :index, %{mod: :page_editor}), do: true
+  #       def get_agent(%{"session_id" => session_id}) do
+  #         MyApp.Identity.find_by_session_id!(session_id) # returns %{user_id: 1, role: :admin}
+  #       end
 
-        # specific role can't delete a resource in page editor
-        def authorized?(%{role: :fact_checker}, :delete, %{mod: :page_editor}), do: false
-      end
+  #       # admin has access to all operations
+  #       def authorized?(%{role: :admin}, _, _), do: true
 
-  """
+  #       # everyone can access page editor index (list pages)
+  #       def authorized?(_, :index, %{mod: :page_editor}), do: true
+
+  #       # role external_contributor can't delete pages
+  #       def authorized?(%{role: :external_contributor}, :delete, %{mod: :page_editor}), do: false
+  #     end
+  # """
 
   # TODO: doc payload, possible operations, and context
 

@@ -35,13 +35,16 @@ defmodule Beacon.RuntimeError do
 end
 
 defmodule Beacon.AuthorizationError do
-  @moduledoc """
-  Raised when there is an error in the `get_agent/1` or `authorized?/3` callbacks of
-  a `Beacon.Authorization.Policy`.
+  @moduledoc false
 
-  If you're seeing this error, and have implemented a custom `Beacon.Authorization.Policy`,
-  check the logic in your policy module.
-  """
+  # TODO: review authz
+  # """
+  # Raised when there is an error in the `get_agent/1` or `authorized?/3` callbacks of
+  # a `Beacon.Authorization.Policy`.
+
+  # If you're seeing this error, and have implemented a custom `Beacon.Authorization.Policy`,
+  # check the logic in your policy module.
+  # """
 
   defexception message: "error in Beacon.Authorization"
 end
