@@ -8,12 +8,12 @@ defmodule Beacon.MixProject do
       app: :beacon,
       version: @version,
       elixir: "~> 1.13",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       name: "Beacon",
       deps: deps(),
       aliases: aliases(),
-      docs: docs(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      docs: docs()
     ]
   end
 
@@ -29,13 +29,16 @@ defmodule Beacon.MixProject do
 
   defp deps do
     [
+      # Overridable
+      override_dep(:phoenix, "~> 1.7", "PHOENIX_VERSION", "PHOENIX_PATH"),
+      override_dep(:phoenix_live_view, "~> 0.20", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
+      override_dep(:live_monaco_editor, "~> 0.1", "LIVE_MONACO_EDITOR_VERSION", "LIVE_MONACO_EDITOR_PATH"),
+      override_dep(:mdex, "~> 0.1", "MDEX_VERSION", "MDEX_PATH"),
+
+      # Runtime
       {:accent, "~> 1.1"},
-      {:bypass, "~> 2.1", only: :test},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.6"},
-      {:esbuild, "~> 0.5", only: :dev},
       {:ex_brotli, "~> 0.3"},
-      {:ex_doc, "~> 0.29", only: :docs},
       # FIXME: multipart copy in ex_aws_s3 2.5.0
       {:ex_aws, "~> 2.4.0"},
       {:ex_aws_s3, "~> 2.4.0"},
@@ -44,53 +47,32 @@ defmodule Beacon.MixProject do
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
       {:jason, "~> 1.0"},
-      live_monaco_editor_dep(),
-      mdex_dep(),
       {:oembed, "~> 0.4.1"},
-      phoenix_dep(),
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
-      {:phoenix_live_reload, "~> 1.3", only: :dev},
-      phoenix_live_view_dep(),
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_view, "~> 2.0", only: [:dev, :test]},
-      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:postgrex, "~> 0.16"},
-      {:rustler, ">= 0.0.0", optional: true},
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:solid, "~> 0.14"},
-      {:tailwind, "~> 0.2"}
+      {:tailwind, "~> 0.2"},
+
+      # Dev, Test, Docs
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:phoenix_view, "~> 2.0", only: [:dev, :test]},
+      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
+      {:esbuild, "~> 0.5", only: :dev},
+      {:phoenix_live_reload, "~> 1.3", only: :dev},
+      {:bypass, "~> 2.1", only: :test},
+      {:ex_doc, "~> 0.29", only: :docs}
     ]
   end
 
-  defp phoenix_dep do
+  defp override_dep(dep, default_version, env_version, env_path) do
     cond do
-      env = System.get_env("PHOENIX_VERSION") -> {:phoenix, env}
-      path = System.get_env("PHOENIX_PATH") -> {:phoenix, path}
-      :default -> {:phoenix, "~> 1.7"}
-    end
-  end
-
-  defp phoenix_live_view_dep do
-    cond do
-      env = System.get_env("PHOENIX_LIVE_VIEW_VERSION") -> {:phoenix_live_view, env}
-      path = System.get_env("PHOENIX_LIVE_VIEW_PATH") -> {:phoenix_live_view, path}
-      :default -> {:phoenix_live_view, "~> 0.20"}
-    end
-  end
-
-  defp live_monaco_editor_dep do
-    cond do
-      path = System.get_env("LIVE_MONACO_EDITOR_PATH") -> {:live_monaco_editor, path: path}
-      :default -> {:live_monaco_editor, "~> 0.1"}
-    end
-  end
-
-  defp mdex_dep do
-    cond do
-      path = System.get_env("MDEX_PATH") -> {:mdex, path: path}
-      :default -> {:mdex, "~> 0.1"}
+      env = System.get_env(env_version) -> {dep, env}
+      path = System.get_env(env_path) -> {dep, path}
+      :default -> {dep, default_version}
     end
   end
 
