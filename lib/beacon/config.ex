@@ -55,11 +55,6 @@ defmodule Beacon.Config do
   """
   @type skip_boot? :: boolean()
 
-  # @typedoc """
-  # A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules.
-  # """
-  # @type authorization_source :: module()
-
   @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
   """
@@ -184,7 +179,6 @@ defmodule Beacon.Config do
           router: router(),
           repo: repo(),
           skip_boot?: skip_boot?(),
-          # authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           live_socket_path: live_socket_path(),
@@ -218,8 +212,8 @@ defmodule Beacon.Config do
             router: nil,
             repo: nil,
             skip_boot?: false,
-            # TODO: rename to `authorization_policy`
-            authorization_source: Beacon.Authorization.DefaultPolicy,
+            # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
+            # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: nil,
             live_socket_path: "/live",
@@ -248,7 +242,6 @@ defmodule Beacon.Config do
           | {:router, router()}
           | {:repo, repo()}
           | {:skip_boot?, skip_boot?()}
-          # | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, live_socket_path()}
@@ -260,11 +253,6 @@ defmodule Beacon.Config do
           | {:extra_page_fields, extra_page_fields()}
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
-
-  # TODO: review authz
-  # * `:authorization_source` - `t:authorization_source/0` (optional). Defaults to `Beacon.Authorization.DefaultPolicy`.
-  # authorization_source: MyApp.MySiteAuthzPolicy,
-  # authorization_source: MyApp.SiteAuthnPolicy,
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
