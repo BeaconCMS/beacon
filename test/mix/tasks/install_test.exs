@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
                # Configures the endpoint
                config :my_app, MyAppWeb.Endpoint,
                  url: [host: "localhost"],
-                 render_errors: [formats: [html: BeaconWeb.ErrorHTML, json: MyAppWeb.ErrorJSON], layout: false],
+                 render_errors: [formats: [html: Beacon.Web.ErrorHTML, json: MyAppWeb.ErrorJSON], layout: false],
                  pubsub_server: MyApp.PubSub,
                  live_view: [signing_salt: "Ozb0CE3q"]
 

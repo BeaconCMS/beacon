@@ -1,4 +1,4 @@
-defmodule BeaconWeb do
+defmodule Beacon.Web do
   @moduledoc """
   Main API for Web related functionality in Beacon.
   """
@@ -43,12 +43,12 @@ defmodule BeaconWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        namespace: BeaconWeb,
+        namespace: Beacon.Web,
         formats: [:html, :json],
-        layouts: [html: BeaconWeb.Layouts]
+        layouts: [html: Beacon.Web.Layouts]
 
       import Plug.Conn
-      import BeaconWeb.Gettext
+      import Beacon.Web.Gettext
     end
   end
 
@@ -56,7 +56,7 @@ defmodule BeaconWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {BeaconWeb.Layouts, :app}
+        layout: {Beacon.Web.Layouts, :app}
 
       unquote(html_helpers())
     end

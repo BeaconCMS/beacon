@@ -81,7 +81,7 @@ defmodule Beacon.SnippetError do
   def exception(_error), do: %__MODULE__{message: "failed to process snippet"}
 end
 
-defmodule BeaconWeb.NotFoundError do
+defmodule Beacon.Web.NotFoundError do
   @moduledoc """
   Raised when Beacon attempts to serve a page or asset on an invalid path.
 
@@ -93,7 +93,7 @@ defmodule BeaconWeb.NotFoundError do
   defexception [:message, plug_status: 404]
 end
 
-defmodule BeaconWeb.ServerError do
+defmodule Beacon.Web.ServerError do
   @moduledoc """
   Raised when a `Beacon.Content.PageEventHandler` returns an invalid response.
 

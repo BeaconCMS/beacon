@@ -1,4 +1,4 @@
-defmodule BeaconWeb.DataSource do
+defmodule Beacon.Web.DataSource do
   @moduledoc false
 
   require Logger
@@ -65,7 +65,7 @@ defmodule BeaconWeb.DataSource do
 
       {:ok, page_assigns} ->
         assigns
-        |> BeaconWeb.Layouts.meta_tags()
+        |> Beacon.Web.Layouts.meta_tags()
         |> List.wrap()
         |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns, live_data: live_data}))
     end

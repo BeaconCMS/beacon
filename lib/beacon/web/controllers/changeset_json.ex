@@ -1,8 +1,8 @@
-defmodule BeaconWeb.ChangesetJSON do
+defmodule Beacon.Web.ChangesetJSON do
   @moduledoc false
 
   def translate_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, &BeaconWeb.CoreComponents.translate_error/1)
+    Ecto.Changeset.traverse_errors(changeset, &Beacon.Web.CoreComponents.translate_error/1)
   end
 
   def error(%{changeset: changeset}) do

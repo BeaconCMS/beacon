@@ -1,5 +1,5 @@
 # https://github.com/phoenixframework/phoenix_live_dashboard/blob/9140f56c34201237f0feeeff747528eed2795c0c/lib/phoenix/live_dashboard/controllers/assets.ex
-defmodule BeaconWeb.AssetsController do
+defmodule Beacon.Web.AssetsController do
   @moduledoc false
 
   import Plug.Conn

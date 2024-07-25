@@ -3,8 +3,8 @@
   <head>
     <meta name="csrf-token" content=<%= Phoenix.Controller.get_csrf_token() %> />
     <title>Error</title>
-    <link rel="stylesheet" href=<%= BeaconWeb.Layouts.asset_path(@conn, :css) %> />
-    <script defer src=<%= BeaconWeb.Layouts.asset_path(@conn, :js) %>>
+    <link rel="stylesheet" href=<%= Beacon.Web.Layouts.asset_path(@conn, :css) %> />
+    <script defer src=<%= Beacon.Web.Layouts.asset_path(@conn, :js) %>>
     </script>
   </head>
   <body>

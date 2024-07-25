@@ -1,5 +1,5 @@
-defmodule BeaconWeb.ComponentsTest do
-  use BeaconWeb.ConnCase, async: false
+defmodule Beacon.Web.ComponentsTest do
+  use Beacon.Web.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Phoenix.ConnTest

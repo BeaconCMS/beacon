@@ -1,4 +1,4 @@
-defmodule BeaconWeb.API.ComponentJSON do
+defmodule Beacon.Web.API.ComponentJSON do
   @moduledoc false
 
   alias Beacon.Content.Component

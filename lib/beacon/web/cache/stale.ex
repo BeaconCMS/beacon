@@ -1,14 +1,14 @@
 # Copied and modified from https://github.com/hexpm/hexpm/blob/d5b4e3864e219dd8b2cca34570dbe60257bcc547/lib/hexpm_web/stale.ex
 # Originally licensed under Apache 2.0 available at https://www.apache.org/licenses/LICENSE-2.0
 
-defprotocol BeaconWeb.Cache.Stale do
+defprotocol Beacon.Web.Cache.Stale do
   @moduledoc false
 
   def etag(schema)
   def last_modified(schema)
 end
 
-defimpl BeaconWeb.Cache.Stale, for: Atom do
+defimpl Beacon.Web.Cache.Stale, for: Atom do
   def etag(nil), do: nil
 
   # This is not a good solution because we don't know when a missing
@@ -16,16 +16,16 @@ defimpl BeaconWeb.Cache.Stale, for: Atom do
   def last_modified(nil), do: ~N[0000-01-01 00:00:00]
 end
 
-defimpl BeaconWeb.Cache.Stale, for: Any do
+defimpl Beacon.Web.Cache.Stale, for: Any do
   defmacro __deriving__(module, _struct, opts) do
     etag_keys = Keyword.get(opts, :etag, [:__struct__, :id, :updated_at])
     last_modified_key = Keyword.get(opts, :last_modified, :updated_at)
     assocs = Keyword.get(opts, :assocs, [])
 
     quote do
-      defimpl BeaconWeb.Cache.Stale, for: unquote(module) do
-        alias BeaconWeb.Cache.Stale
-        alias BeaconWeb.Cache.Stale.Any
+      defimpl Beacon.Web.Cache.Stale, for: unquote(module) do
+        alias Beacon.Web.Cache.Stale
+        alias Beacon.Web.Cache.Stale.Any
 
         def etag(schema) do
           assocs = unquote(assocs)

@@ -40,7 +40,7 @@ defmodule Beacon.Template.HEEx do
       line: 1,
       indentation: 0,
       file: file,
-      caller: BeaconWeb.PageLive.make_env(site),
+      caller: Beacon.Web.PageLive.make_env(site),
       source: template,
       trim: true,
       tag_handler: Phoenix.LiveView.HTMLEngine
@@ -72,7 +72,7 @@ defmodule Beacon.Template.HEEx do
       |> Map.new()
       |> Map.put_new(:__changed__, %{})
 
-    env = BeaconWeb.PageLive.make_env(site)
+    env = Beacon.Web.PageLive.make_env(site)
 
     {:ok, ast} = compile(site, "", template)
     {rendered, _} = Code.eval_quoted(ast, [assigns: assigns], env)

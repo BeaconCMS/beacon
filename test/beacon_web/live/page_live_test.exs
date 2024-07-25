@@ -1,5 +1,5 @@
-defmodule BeaconWeb.Live.PageLiveTest do
-  use BeaconWeb.ConnCase, async: false
+defmodule Beacon.Web.Live.PageLiveTest do
+  use Beacon.Web.ConnCase, async: false
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
@@ -243,7 +243,7 @@ defmodule BeaconWeb.Live.PageLiveTest do
     end
 
     test "raise when the given path doesn't exist", %{conn: conn} do
-      assert_raise BeaconWeb.NotFoundError, fn ->
+      assert_raise Beacon.Web.NotFoundError, fn ->
         {:ok, _view, _html} = live(conn, "/no_page_match")
       end
     end

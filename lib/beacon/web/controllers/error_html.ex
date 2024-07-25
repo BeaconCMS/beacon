@@ -1,7 +1,7 @@
-defmodule BeaconWeb.ErrorHTML do
+defmodule Beacon.Web.ErrorHTML do
   @moduledoc false
 
-  use BeaconWeb, :html
+  use Beacon.Web, :html
   require Logger
 
   def render(<<status_code::binary-size(3), _rest::binary>> = template, %{conn: conn}) do
@@ -9,7 +9,7 @@ defmodule BeaconWeb.ErrorHTML do
     error_module = Beacon.Loader.fetch_error_page_module(site)
 
     conn
-    |> Plug.Conn.assign(:beacon, BeaconWeb.BeaconAssigns.new(site))
+    |> Plug.Conn.assign(:beacon, Beacon.Web.BeaconAssigns.new(site))
     |> error_module.render(String.to_integer(status_code))
   rescue
     error ->

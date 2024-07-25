@@ -1,4 +1,4 @@
-defmodule BeaconWeb.CoreComponents do
+defmodule Beacon.Web.CoreComponents do
   @moduledoc false
 
   # Updated to Phoenix v1.7.12
@@ -6,7 +6,7 @@ defmodule BeaconWeb.CoreComponents do
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
-  import BeaconWeb.Gettext
+  import Beacon.Web.Gettext
 
   @doc """
   Renders a modal.
@@ -629,9 +629,9 @@ defmodule BeaconWeb.CoreComponents do
     # with our gettext backend as first argument. Translations are
     # available in the errors.po file (as we use the "errors" domain).
     if count = opts[:count] do
-      Gettext.dngettext(BeaconWeb.Gettext, "errors", msg, msg, count, opts)
+      Gettext.dngettext(Beacon.Web.Gettext, "errors", msg, msg, count, opts)
     else
-      Gettext.dgettext(BeaconWeb.Gettext, "errors", msg, opts)
+      Gettext.dgettext(Beacon.Web.Gettext, "errors", msg, opts)
     end
   end
 

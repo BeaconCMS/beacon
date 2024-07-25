@@ -1,6 +1,6 @@
-defmodule BeaconWeb.DataSourceTest do
+defmodule Beacon.Web.DataSourceTest do
   use Beacon.DataCase, async: false
-  alias BeaconWeb.DataSource
+  alias Beacon.Web.DataSource
   alias Beacon.Loader
 
   @site :my_site

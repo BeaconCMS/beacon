@@ -79,7 +79,7 @@ defmodule MyApp.Beacon.PageFields.Type do
   """
 
   use Phoenix.Component
-  import BeaconWeb.CoreComponents
+  import Beacon.Web.CoreComponents
   import Ecto.Changeset
 
   @behaviour Beacon.Content.PageField
@@ -124,7 +124,7 @@ defmodule MyApp.Beacon.PageFields.Tags do
   """
 
   use Phoenix.Component
-  import BeaconWeb.CoreComponents
+  import Beacon.Web.CoreComponents
   import Ecto.Changeset
 
   @behaviour Beacon.Content.PageField

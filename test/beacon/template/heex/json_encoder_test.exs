@@ -503,7 +503,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       <%= if true do %>
         <.link path="/contact" replace={true}>Book meeting</.link>
         <Phoenix.Component.link path="/contact" replace={true}>Book meeting</Phoenix.Component.link>
-        <BeaconWeb.Components.image name="logo.jpg" width="200px" />
+        <Beacon.Web.Components.image name="logo.jpg" width="200px" />
       <% end %>
       """
 
@@ -532,7 +532,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
                        attrs: %{"path" => "/contact", "replace" => "{true}"}
                      },
                      %{type: :text, metadata: %{newlines: 1}, content: "\n  "},
-                     %{tag: "BeaconWeb.Components.image", type: :tag_self_close, attrs: %{"name" => "logo.jpg", "width" => "200px"}},
+                     %{tag: "Beacon.Web.Components.image", type: :tag_self_close, attrs: %{"name" => "logo.jpg", "width" => "200px"}},
                      %{type: :text, metadata: %{newlines: 1}, content: "\n"}
                    ],
                    content: "end"

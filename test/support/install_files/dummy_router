@@ -1,5 +1,5 @@
-defmodule BeaconWeb.RouterTest do
-  use BeaconWeb, :router
+defmodule Beacon.Web.RouterTest do
+  use Beacon.Web, :router
 
   pipeline :browser do
     plug :accepts, ["html"]

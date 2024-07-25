@@ -1,7 +1,7 @@
-defmodule BeaconWeb.Layouts do
+defmodule Beacon.Web.Layouts do
   @moduledoc false
 
-  use BeaconWeb, :html
+  use Beacon.Web, :html
   require Logger
 
   embed_templates "layouts/*"
@@ -52,12 +52,12 @@ defmodule BeaconWeb.Layouts do
     %{beacon: %{private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
     %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
     live_data = Map.take(assigns, live_data_keys)
-    BeaconWeb.DataSource.page_title(site, page_id, live_data)
+    Beacon.Web.DataSource.page_title(site, page_id, live_data)
   end
 
   def render_meta_tags(assigns) do
     ~H"""
-    <%= for meta_attributes <- BeaconWeb.DataSource.meta_tags(assigns) do %>
+    <%= for meta_attributes <- Beacon.Web.DataSource.meta_tags(assigns) do %>
       <meta {meta_attributes} />
     <% end %>
     """

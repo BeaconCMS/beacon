@@ -16,7 +16,7 @@ defmodule MyApp.Beacon.PageFields.Type do
   @behaviour Beacon.Content.PageField
 
   use Phoenix.Component
-  import BeaconWeb.CoreComponents
+  import Beacon.Web.CoreComponents
   import Ecto.Changeset
 
   @impl true

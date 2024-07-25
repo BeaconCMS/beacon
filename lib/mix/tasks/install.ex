@@ -67,7 +67,7 @@ defmodule Mix.Tasks.Beacon.Install do
   def inject_endpoint_render_errors_config(config_file_path) do
     config_file_content = File.read!(config_file_path)
 
-    if String.contains?(config_file_content, "BeaconWeb.ErrorHTML") do
+    if String.contains?(config_file_content, "Beacon.Web.ErrorHTML") do
       Mix.shell().info([
         :yellow,
         "* skip ",
@@ -81,7 +81,7 @@ defmodule Mix.Tasks.Beacon.Install do
 
       [_header, endpoint_config_str] = Regex.run(regex, config_file_content, capture: :all_but_first)
       {config_list, []} = Code.eval_string("[" <> endpoint_config_str <> "]")
-      updated_config_list = put_in(config_list, [:render_errors, :formats, :html], BeaconWeb.ErrorHTML)
+      updated_config_list = put_in(config_list, [:render_errors, :formats, :html], Beacon.Web.ErrorHTML)
 
       updated_str = inspect(updated_config_list) <> "\n"
 
