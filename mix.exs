@@ -68,17 +68,18 @@ defmodule Beacon.MixProject do
     ]
   end
 
-  defp override_dep(dep, default_version, env_version, env_path) do
+  defp override_dep(dep, requirement, env_version, env_path) do
     cond do
-      env = System.get_env(env_version) -> {dep, env}
-      path = System.get_env(env_path) -> {dep, path}
-      :default -> {dep, default_version}
+      version = System.get_env(env_version) -> {dep, version}
+      path = System.get_env(env_path) -> {dep, path: path}
+      :default -> {dep, requirement}
     end
   end
 
   defp aliases do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
+      dev: ["run --no-halt dev.exs"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
       "assets.build": ["esbuild cdn", "esbuild cdn_min"]

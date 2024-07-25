@@ -4,7 +4,7 @@
 
 Create blog posts with custom fields (type and tags), render each one using the tailwind typography plugin, and list the most recent posts in an index page.
 
-## Requirements
+## Prerequisites
 
 This guide will skip initial setup steps that are already covered in the [your first site guide](../introduction/your-first-site.md),
 so if that's the first site in your application, or you're not familiar with Beacon, please follow that guide first to make sure the environment is set up correctly:

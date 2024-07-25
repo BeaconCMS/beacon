@@ -4,7 +4,7 @@
 
 Create your first site to get familiar with the install command and the most common operations to manage your site.
 
-## Requirements
+## Prerequisites
 
 In order to create and serve sites, you'll need a Phoenix LiveView application with both Beacon and Beacon LiveAdmin installed.
 
