@@ -1,6 +1,8 @@
 defmodule Beacon.Content.LayoutEvent do
   @moduledoc """
-  Layout events
+  Represents a point in time when a `Beacon.Content.Layout` was created or published.
+
+  At that time, a `Beacon.Content.LayoutSnapshot` is created and stored with the LayoutEvent.
 
   > #### Do not create or edit layout events manually {: .warning}
   >

@@ -1,6 +1,7 @@
 defmodule Beacon.Content.Component do
   @moduledoc """
-  Components
+  Beacon's representation of [Phoenix Components](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html),
+  which can be used and re-used in your pages and layouts.
 
   > #### Do not create or edit components manually {: .warning}
   >

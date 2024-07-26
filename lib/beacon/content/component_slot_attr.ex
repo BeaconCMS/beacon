@@ -1,6 +1,9 @@
 defmodule Beacon.Content.ComponentSlotAttr do
   @moduledoc """
-  Component slot attr schema.
+  Beacon's representation of Phoenix's [Slot attributes](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slot-attributes).
+
+  ComponentSlotAttrs don't exist on their own, but always belong to a `Beacon.Content.ComponentSlot`, which in turn
+  belongs to a `Beacon.Content.Component`.
 
   > #### Do not create or edit component slot attrs manually {: .warning}
   >

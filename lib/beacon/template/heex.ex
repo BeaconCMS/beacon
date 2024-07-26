@@ -1,6 +1,6 @@
 defmodule Beacon.Template.HEEx do
   @moduledoc """
-  Handle loading and compilation of HEEx templates.
+  Handles loading and compilation of HEEx templates.
   """
 
   @doc """

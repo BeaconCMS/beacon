@@ -1,6 +1,12 @@
 defmodule Beacon.Content.Snippets.Helper do
   @moduledoc """
-  Snippet Helpers
+  Snippet Helpers are blocks of custom Elixir code which can be called from
+  meta tags and various other page fields.
+
+  In addition to being scoped by `:site`, it stores a `:name` with which to call it
+  and a `:body` with the code block to run.
+
+  See `Beacon.Content.render_snippet/2` for an example of usage.
 
   > #### Do not create or edit snippet helpers manually {: .warning}
   >
