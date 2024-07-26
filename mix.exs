@@ -56,6 +56,7 @@ defmodule Beacon.MixProject do
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
+      {:heroicons, github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -80,9 +81,14 @@ defmodule Beacon.MixProject do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
       dev: ["run --no-halt dev.exs"],
+      "format.all": ["format", "cmd npm run format --prefix ./assets"],
+      "format.all.check": [
+        "format --check-formatted",
+        "cmd npm run format-check --prefix ./assets"
+      ],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
-      "assets.build": ["esbuild cdn", "esbuild cdn_min"]
+      "assets.build": ["esbuild cdn", "esbuild cdn_min", "esbuild tailwind_bundle"]
     ]
   end
 

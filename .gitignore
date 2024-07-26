@@ -35,7 +35,6 @@ beacon-*.tar
 /assets/node_modules
 # tailwind.install
 /assets/css/app.css
-/assets/tailwind.config.js
 
 # Dev temp files
 /dev/
