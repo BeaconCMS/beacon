@@ -86,10 +86,9 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_params(params, _url, socket) do
+    %{beacon: %{site: site}} = socket.assigns
     %{"path" => path_info} = params
-    %{beacon: %{private: %{page_module: page_module}}} = socket.assigns
-    %{site: site} = Beacon.apply_mfa(page_module, :page_assigns, [[:site]])
-    page = Beacon.apply_mfa(page_module, :page, [])
+    page = RouterServer.lookup_page!(site, path_info)
     live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
     beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 

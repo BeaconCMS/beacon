@@ -10,6 +10,10 @@ defmodule Beacon.Web.Live.PageLiveTest do
     live_data = live_data_fixture(site: :my_site, path: "/home/:greet")
     live_data_assign_fixture(live_data: live_data, format: :elixir, key: "values", value: "[\"first\", \"second\", \"third\"]")
 
+    Beacon.Content.blueprint_components()
+    |> Enum.find(&(&1.name == "page_link"))
+    |> component_fixture()
+
     component_fixture(name: "sample_component")
 
     layout =
@@ -45,6 +49,8 @@ defmodule Beacon.Web.Live.PageLiveTest do
           @beacon.path_params=<%= @beacon.path_params["greet"] %>
           @beacon.query_params=<%= @beacon.query_params["query"] %>
 
+          <.page_link path="/about">go_to_about_page</.page_link>
+
           <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
             Name: <%= text_input f, :name %>
             <%= submit "Hello" %>
@@ -64,6 +70,16 @@ defmodule Beacon.Web.Live.PageLiveTest do
           page_helper_params()
         ]
       )
+
+    published_page_fixture(
+      layout_id: layout.id,
+      path: "/about",
+      template: """
+      <main>
+        <h2>about_page</h2>
+      </main>
+      """
+    )
 
     _page_home_form_submit_handler =
       page_event_handler_fixture(%{
@@ -109,6 +125,14 @@ defmodule Beacon.Web.Live.PageLiveTest do
     assert has_element?(view, "#my-component", "first")
     assert has_element?(view, "#my-component", "second")
     assert has_element?(view, "#my-component", "third")
+  end
+
+  test "patch to another page", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/home/hello")
+
+    assert view
+           |> element("a", "go_to_about_page")
+           |> render_click() =~ "about_page"
   end
 
   describe "meta tags" do
