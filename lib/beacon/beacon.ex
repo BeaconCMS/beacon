@@ -16,7 +16,6 @@ defmodule Beacon do
   * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
   * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
   * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
-  * `Beacon.Authorization` - define permissions to limit access to content and features, also used on Beacon LiveAdmin.
 
   Get started with [your first site](https://hexdocs.pm/beacon/your-first-site.html) and check out the guides for more information.
 
@@ -53,8 +52,7 @@ defmodule Beacon do
       config :my_app, Beacon,
         sites: [
           [site: :my_site, endpoint: MyAppWeb.Endpoint]
-        ],
-        authorization_source: MyApp.AuthorizationPolicy
+        ]
 
       # lib/my_app/application.ex
       def start(_type, _args) do
@@ -87,20 +85,8 @@ defmodule Beacon do
 
     :pg.start_link(:beacon_cluster)
 
-    authorization_source = Keyword.get(opts, :authorization_source)
-
-    children =
-      sites
-      |> Enum.map(fn site_config -> assign_authorization_source(site_config, authorization_source) end)
-      |> Enum.map(&site_child_spec/1)
-
+    children = Enum.map(sites, &site_child_spec/1)
     Supervisor.init(children, strategy: :one_for_one)
-  end
-
-  defp assign_authorization_source(site_config, nil), do: site_config
-
-  defp assign_authorization_source(site_config, authorization_source) do
-    Keyword.put_new(site_config, :authorization_source, authorization_source)
   end
 
   defp site_child_spec(opts) do

@@ -152,8 +152,7 @@ Supervisor.start_link(
            ]
          ]
        ]
-     ],
-     authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource},
+     ]},
     Beacon.BeaconTest.Endpoint
   ],
   strategy: :one_for_one
