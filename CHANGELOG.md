@@ -15,9 +15,18 @@
     * Support for Elixir and HEEx parts
   * Layouts
     * Pre-defined default layout
+    * Meta tags
+    * Resource links
+    * Revisions
   * Pages
     * Pre-defined default home page
-  * Snippets to render small reusable templates
+    * Meta tags
+    * Schema.org support
+    * Events (handle_event)
+    * Revisions
+  * Snippets (liquid template)
+    * Page title
+    * Meta tags
   * Stylesheets
   * Live Data to define and manage assigns at runtime
     * Support Elixir and text content
