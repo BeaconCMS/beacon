@@ -1313,6 +1313,18 @@ defmodule Beacon.Content do
         category: :element
       },
       %{
+        name: "icon",
+        description: "Renders a Heroicon",
+        thumbnail: "https://placehold.co/400x75?text=icon",
+        attrs: [
+          %{name: "name", type: "string", opts: [required: true]},
+          %{name: "class", type: "string", opts: [default: nil]}
+        ],
+        template: ~S|<span class={[@name, @class]} />|,
+        example: ~S|<.icon name="hero-arrow-path" class="ml-1 w-4 h-4 animate-spin" />|,
+        category: :element
+      },
+      %{
         name: "button",
         description: "Renders a button",
         thumbnail: "https://placehold.co/400x75?text=button",
