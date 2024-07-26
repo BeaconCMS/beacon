@@ -271,7 +271,7 @@ defmodule Beacon.Config do
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
-    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js")`.
+    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")`.
 
     * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 
@@ -655,7 +655,7 @@ defmodule Beacon.Config do
     end
   end
 
-  defp ensure_tailwind_config(nil = _config), do: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js")
+  defp ensure_tailwind_config(nil = _config), do: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")
 
   defp ensure_tailwind_config(config) when is_binary(config) do
     if Path.extname(config) == ".js" do

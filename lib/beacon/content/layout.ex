@@ -1,6 +1,6 @@
 defmodule Beacon.Content.Layout do
   @moduledoc """
-  Layouts are the wrapper content for `Beacon.Content.Page`.
+  The wrapper content for a `Beacon.Content.Page`.
 
   > #### Do not create or layouts pages manually {: .warning}
   >

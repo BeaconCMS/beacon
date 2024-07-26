@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Beacon.Install do
   Before running this command, make sure you commited all your changes to git,
   beacuse it generates new files and modifies existing ones.
 
-    $ mix beacon.install --site blog --path /blog
+      $ mix beacon.install --site blog --path /blog
 
   The argument `site` defines the name of your beacon site and is
   used to generate the necessary configuration files.
@@ -25,6 +25,7 @@ defmodule Mix.Tasks.Beacon.Install do
     path: :string
   ]
 
+  @doc false
   def run(argv) do
     if Mix.Project.umbrella?() do
       Mix.raise("mix beacon.install can only be run inside an application directory")

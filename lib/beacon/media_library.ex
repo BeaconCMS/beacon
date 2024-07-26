@@ -1,6 +1,6 @@
 defmodule Beacon.MediaLibrary do
   @moduledoc """
-  Media Library to upload and serve assets.
+  Provides functions to upload and serve assets.
   """
 
   import Ecto.Query
@@ -91,12 +91,29 @@ defmodule Beacon.MediaLibrary do
     |> validate_required([:site, :file_name, :media_type, :file_body])
   end
 
-  def change_derivation(change, attrs \\ %{}) do
-    change
+  @doc """
+  Returns an `%Ecto.Changeset{}` for updating an Asset's `:usage_tag` and/or `:source_id`.
+
+  ## Examples
+
+      iex> change_asset(asset)
+      %Ecto.Changeset{data: %Asset{}}
+
+  """
+  @spec change_asset(Asset.t(), map()) :: Changeset.t()
+  def change_derivation(asset, attrs \\ %{}) do
+    asset
     |> cast(attrs, [:usage_tag, :source_id])
     |> validate_required([:usage_tag, :source_id])
   end
 
+  @doc """
+  Returns a URL for a given asset.
+
+  If multiple URLs exist due to various providers, only the first will be returned.
+  """
+  @spec url_for(nil) :: nil
+  @spec url_for(Asset.t()) :: String.t()
   def url_for(nil), do: nil
 
   def url_for(asset) do
@@ -109,6 +126,11 @@ defmodule Beacon.MediaLibrary do
     url
   end
 
+  @doc """
+  Uses the given `provider` to determine the URL for a given asset.
+  """
+  @spec url_for(nil, atom()) :: nil
+  @spec url_for(Asset.t(), atom()) :: String.t()
   def url_for(nil, _), do: nil
 
   def url_for(asset, provider_key) do
@@ -123,12 +145,22 @@ defmodule Beacon.MediaLibrary do
     url
   end
 
+  @doc """
+  Returns a list of all URLs to the given Asset.
+
+  The number of URLs depends on how many providers are configured for the media type.
+  """
+  @spec urls_for(Asset.t()) :: [String.t()]
   def urls_for(asset) do
     asset
     |> providers_for()
     |> Enum.map(&get_url_for(&1, asset))
   end
 
+  @doc """
+  For a given asset and list of acceptable usage tags, returns a [srcset](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/srcset) for use in templates.
+  """
+  @spec srcset_for_image(Asset.t(), [String.t()]) :: [String.t()]
   def srcset_for_image(%Asset{} = asset, sources) do
     asset = repo(asset).preload(asset, :assets)
 
@@ -164,6 +196,12 @@ defmodule Beacon.MediaLibrary do
 
   defp get_url_for(provider, asset), do: {provider.provider_key(), provider.url_for(asset)}
 
+  @doc """
+  Returns true if the given Asset is an image.
+
+  Accepted filetypes are `.jpg .jpeg .png .gif .bmp .tif .tiff .webp`
+  """
+  @spec is_image?(Asset.t()) :: boolean()
   # credo:disable-for-next-line
   def is_image?(%{file_name: file_name}) do
     ext = Path.extname(file_name)

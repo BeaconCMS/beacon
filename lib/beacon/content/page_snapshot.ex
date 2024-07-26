@@ -1,6 +1,9 @@
 defmodule Beacon.Content.PageSnapshot do
   @moduledoc """
-  Page snapshots
+  Represents the template of a `Beacon.Content.Page` at a specific moment in time.
+
+  PageSnapshots don't exist on their own, but are created as part of a `Beacon.Content.PageEvent`
+  whenever a Page is created, published, or unpublished.
 
   > #### Do not create or edit page snapshots manually {: .warning}
   >
