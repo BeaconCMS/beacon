@@ -1,6 +1,8 @@
 defmodule Beacon.Content.ComponentSlot do
   @moduledoc """
-  Component slot schema.
+  Beacon's representation of Phoenix's [Slots](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slots).
+
+  ComponentSlots don't exist on their own, but always belong to a `Beacon.Content.Component`.
 
   > #### Do not create or edit component slots manually {: .warning}
   >

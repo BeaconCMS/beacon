@@ -1,9 +1,8 @@
 defmodule Beacon.Content.PageEventHandler do
   @moduledoc """
-  Page event handlers.
+  Beacon's representation of a LiveView [handle_event/3](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_event/3).
 
-  This is the Elixir code which will receive form submission or on-click
-  events.
+  This is the Elixir code which will receive form submission or on-click events.
 
   > #### Do not create or edit page event handlers manually {: .warning}
   >

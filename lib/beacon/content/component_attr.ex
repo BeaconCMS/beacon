@@ -1,6 +1,8 @@
 defmodule Beacon.Content.ComponentAttr do
   @moduledoc """
-  Component attr schema.
+  Beacon's representation of Phoenix's [Component attributes](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-attributes).
+
+  ComponentAttrs don't exist on their own, but always belong to a `Beacon.Content.Component`.
 
   > #### Do not create or edit component attrs manually {: .warning}
   >
