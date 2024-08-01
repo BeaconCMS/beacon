@@ -8266,6 +8266,7 @@ var tailwind_config_default = {
     // See your `CoreComponents.icon/1` for more information.
     //
     plugin(function({ matchComponents, theme }) {
+      console.log(__dirname);
       let iconsDir = path.join(__dirname, "../deps/heroicons/optimized");
       let values = {};
       let icons = [

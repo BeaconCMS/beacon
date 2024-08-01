@@ -10,7 +10,6 @@ Check out the guides to get started and recipes to learn about features and do m
 
 If you're new to Beacon you probably want to start with the create your first site guide.
 
-
 ## Demo
 
 A sample application running latest Beacon is available at https://github.com/BeaconCMS/beacon_demo
