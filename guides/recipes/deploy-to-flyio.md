@@ -38,11 +38,16 @@ Edit the generated `Dockerfile` and make two changes:
 RUN mix tailwind.install --no-assets
 ```
 
-2. Add the following code after `USER nobody`:
+2. Add the following code before `USER nobody`:
 
-```
-RUN mkdir -p /app/bin/_build
+```dockerfile
+# Copy the tailwind-cli binary used to compile stylesheets for pages
+RUN mkdir -p ./bin/_build
 COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
+
+# Copy heroicons svg files to used on the icon component
+RUN mkdir -p ./vendor
+COPY --from=builder --chown=nobody:root /app/deps/heroicons ./vendor/heroicons
 ```
 
 ## Launch
