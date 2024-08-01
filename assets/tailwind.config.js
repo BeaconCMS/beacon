@@ -29,8 +29,24 @@ export default {
     // See your `CoreComponents.icon/1` for more information.
     //
     plugin(function ({ matchComponents, theme }) {
-      let iconsDir = path.join(__dirname, "../deps/heroicons/optimized")
       let values = {}
+      let iconsDir = null
+
+      // Copy from host app deps.
+      let hostIconsDir = path.join(__dirname, "../../heroicons/optimized")
+
+      // Copy from release.
+      // Adjust for Umbrella apps. See the Heroicons guide for more info.
+      let releaseIconsDir = path.join(__dirname, "../../../vendor/heroicons/optimized")
+
+      if (fs.existsSync(hostIconsDir)) {
+        iconsDir = hostIconsDir
+      } else if (fs.existsSync(releaseIconsDir)) {
+        iconsDir = releaseIconsDir
+      } else {
+        return matchComponents({ hero: ({ _name, _fullPath }) => {} }, { values })
+      }
+
       let icons = [
         ["", "/24/outline"],
         ["-solid", "/24/solid"],
