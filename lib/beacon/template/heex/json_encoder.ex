@@ -270,6 +270,7 @@ defmodule Beacon.Template.HEEx.JSONEncoder do
     cond do
       # start with '.' or a capital letter, we consider it a component call
       String.match?(tag, ~r/^[A-Z]|\./) -> add_rendered_html.()
+      tag == "svg" -> add_rendered_html.()
       has_eex_in_attrs? -> add_rendered_html.()
       :else -> entry
     end
