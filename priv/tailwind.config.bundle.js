@@ -8266,8 +8266,10 @@ var tailwind_config_default = {
     // See your `CoreComponents.icon/1` for more information.
     //
     plugin(function({ matchComponents, theme }) {
-      console.log(__dirname);
-      let iconsDir = path.join(__dirname, "../deps/heroicons/optimized");
+      let iconsDir = path.join(__dirname, "../../heroicons/optimized");
+      if (!fs.existsSync(iconsDir)) {
+        iconsDir = path.join(__dirname, "../../../vendor/heroicons/optimized");
+      }
       let values = {};
       let icons = [
         ["", "/24/outline"],

@@ -14,6 +14,7 @@ Make sure the proper Tailwind version is installed, create a Tailwind config in 
 * Install Tailwind v3.3.0 or higher
 * Install Esbuild
 * Tailwind config in the ESM format
+* Heroicons
 * Install plugins
 * Bundle the config
 * Use the config in your site configuration
@@ -73,6 +74,12 @@ export default {
 ```
 
 More info at https://tailwindcss.com/blog/tailwindcss-v3-3#esm-and-type-script-support
+
+### Heroicons
+
+Some built-in components use Heroicons, which must be configured properly to let the Tailwind compiler find the SVG icon files.
+
+See the [Heroicons guide](../recipes/heroicons.md) for more information.
 
 ### Install plugins
 

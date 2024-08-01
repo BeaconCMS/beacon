@@ -56,7 +56,6 @@ defmodule Beacon.MixProject do
       {:safe_code, github: "TheFirstAvenger/safe_code"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
-      {:heroicons, github: "tailwindlabs/heroicons", tag: "v2.1.1", sparse: "optimized", app: false, compile: false, depth: 1},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
