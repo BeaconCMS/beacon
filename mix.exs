@@ -18,9 +18,6 @@ defmodule Beacon.MixProject do
       description: """
       Open-source Content Management System (CMS) built with Phoenix LiveView. Faster render times to boost SEO performance, even for the most content-heavy pages.
       """,
-      preferred_cli_env: [
-        docs: :docs
-      ],
       package: package(),
       deps: deps(),
       aliases: aliases(),
@@ -86,10 +83,10 @@ defmodule Beacon.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
+      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:esbuild, "~> 0.5", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:bypass, "~> 2.1", only: :test},
-      {:ex_doc, "~> 0.29", only: :docs}
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 
