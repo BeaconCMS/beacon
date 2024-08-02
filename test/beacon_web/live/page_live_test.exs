@@ -83,7 +83,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
     _page_home_form_submit_handler =
       event_handler_fixture(%{
-        page: page_home,
+        site: :my_site,
         name: "hello",
         code: """
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
