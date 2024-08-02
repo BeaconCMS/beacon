@@ -1,6 +1,6 @@
 defmodule Beacon do
   @moduledoc """
-  Beacon is a Content Management System for [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view). It's main
+  Beacon is a Content Management System for [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view).
 
   * Rendering pages fast.
   * Reloading content at runtime.
