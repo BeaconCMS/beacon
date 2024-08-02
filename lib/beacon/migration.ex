@@ -74,8 +74,8 @@ defmodule Beacon.Migration do
   def up(opts \\ []) do
     versions_to_run =
       case opts[:version] do
-        nil -> @initial_version..@current_version
-        version -> @initial_version..version
+        nil -> @initial_version..@current_version//1
+        version -> @initial_version..version//1
       end
 
     Enum.each(versions_to_run, fn version ->
@@ -107,8 +107,8 @@ defmodule Beacon.Migration do
   def down(opts \\ []) do
     versions_to_run =
       case opts[:version] do
-        nil -> @current_version..@initial_version
-        version -> @current_version..version
+        nil -> @current_version..@initial_version//-1
+        version -> @current_version..version//-1
       end
 
     Enum.each(versions_to_run, fn version ->

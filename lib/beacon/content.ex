@@ -3532,6 +3532,14 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Lists all event handlers for a given Beacon site.
+  """
+  @spec list_event_handlers_for_site(Site.t()) :: [EventHandler.t()]
+  def list_event_handlers_for_site(site) do
+    Repo.all(from eh in EventHandler, where: [site: ^site])
+  end
+
+  @doc """
   Creates a new event handler.
   """
   @doc type: :event_handlers
