@@ -702,7 +702,7 @@ defmodule Beacon.Content do
 
   @doc false
   def create_page_snapshot(page, event) do
-    page = repo(page).preload(page, [:variants, :event_handlers])
+    page = repo(page).preload(page, :variants)
 
     attrs = %{
       "site" => page.site,
