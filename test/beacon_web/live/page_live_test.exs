@@ -82,8 +82,8 @@ defmodule Beacon.Web.Live.PageLiveTest do
     )
 
     _page_home_form_submit_handler =
-      page_event_handler_fixture(%{
-        page: page_home,
+      event_handler_fixture(%{
+        site: :my_site,
         name: "hello",
         code: """
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
@@ -181,7 +181,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       layout = published_layout_fixture()
 
       page =
-        [
+        published_page_fixture(
           site: "my_site",
           layout_id: layout.id,
           path: "/page/meta-tag",
@@ -192,9 +192,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
             %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
             %{"property" => "og:image", "content" => "{{ live_data.image }}"}
           ]
-        ]
-        |> published_page_fixture()
-        |> Beacon.BeaconTest.Repo.preload(:event_handlers)
+        )
 
       live_data = live_data_fixture(path: "/page/meta-tag")
       live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
