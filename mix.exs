@@ -47,8 +47,7 @@ defmodule Beacon.MixProject do
         GitHub: @source_url,
         Website: @homepage_url
       },
-      files:
-        ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
+      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
     ]
   end
 
@@ -132,7 +131,7 @@ defmodule Beacon.MixProject do
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
-        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
+        "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
         "Functions: Live Data": &(&1[:type] == :live_data)
       ],
@@ -167,6 +166,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ComponentSlot,
         Beacon.Content.ComponentSlotAttr,
         Beacon.Content.ErrorPage,
+        Beacon.Content.EventHandler,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
         Beacon.Content.LayoutSnapshot,
@@ -176,7 +176,6 @@ defmodule Beacon.MixProject do
         Beacon.Content.Page.Event,
         Beacon.Content.Page.Helper,
         Beacon.Content.PageEvent,
-        Beacon.Content.PageEventHandler,
         Beacon.Content.PageSnapshot,
         Beacon.Content.PageVariant,
         Beacon.Content.Stylesheet,

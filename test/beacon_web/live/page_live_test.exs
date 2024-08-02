@@ -82,7 +82,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     )
 
     _page_home_form_submit_handler =
-      page_event_handler_fixture(%{
+      event_handler_fixture(%{
         page: page_home,
         name: "hello",
         code: """

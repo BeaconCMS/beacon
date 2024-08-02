@@ -1,4 +1,4 @@
-defmodule Beacon.Content.PageEventHandler do
+defmodule Beacon.Content.EventHandler do
   @moduledoc """
   Beacon's representation of a LiveView [handle_event/3](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_event/3).
 
@@ -18,30 +18,29 @@ defmodule Beacon.Content.PageEventHandler do
   import Ecto.Changeset
 
   alias Beacon.Content.Page
+  alias Beacon.Types.Site
   alias Ecto.UUID
 
   @type t :: %__MODULE__{
           id: UUID.t(),
           name: binary(),
           code: binary(),
-          page_id: UUID.t(),
-          page: Page.t(),
+          site: Site.t(),
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
         }
 
-  schema "beacon_page_event_handlers" do
+  schema "beacon_event_handlers" do
     field :name, :string
     field :code, :string
-
-    belongs_to :page, Page
+    field :site, Site
 
     timestamps()
   end
 
   @doc false
   def changeset(%__MODULE__{} = event_handler, attrs) do
-    fields = ~w(name code)a
+    fields = ~w(name code site)a
 
     event_handler
     |> cast(attrs, fields)

@@ -3,7 +3,7 @@ defmodule Beacon.Fixtures do
 
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
-  alias Beacon.Content.PageEventHandler
+  alias Beacon.Content.EventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
@@ -171,18 +171,18 @@ defmodule Beacon.Fixtures do
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
 
-  def page_event_handler_fixture(attrs \\ %{})
+  def event_handler_fixture(attrs \\ %{})
 
-  def page_event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
-    do: page_event_handler_fixture(page, attrs)
+  def event_handler_fixture(%{page: %Content.Page{} = page} = attrs),
+    do: event_handler_fixture(page, attrs)
 
-  def page_event_handler_fixture(%{site: site, page_id: page_id} = attrs) do
+  def event_handler_fixture(%{site: site, page_id: page_id} = attrs) do
     site
     |> Content.get_page!(page_id)
-    |> page_event_handler_fixture(attrs)
+    |> event_handler_fixture(attrs)
   end
 
-  defp page_event_handler_fixture(page, attrs) do
+  defp event_handler_fixture(page, attrs) do
     full_attrs = %{
       name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
       code: attrs[:code] || "{:noreply, socket}"
@@ -190,7 +190,7 @@ defmodule Beacon.Fixtures do
 
     page
     |> Ecto.build_assoc(:event_handlers)
-    |> PageEventHandler.changeset(full_attrs)
+    |> EventHandler.changeset(full_attrs)
     |> repo(page).insert!()
   end
 
