@@ -80,10 +80,8 @@ defmodule Beacon.Migration do
 
     Enum.each(versions_to_run, fn version ->
       padded = String.pad_leading("#{version}", 3, "0")
-
-      [Beacon.Migrations, "V#{padded}"]
-      |> Module.concat()
-      |> apply(:up, [])
+      module = Module.concat([Beacon.Migrations, "V#{padded}"])
+      module.up()
     end)
   end
 
@@ -113,10 +111,8 @@ defmodule Beacon.Migration do
 
     Enum.each(versions_to_run, fn version ->
       padded = String.pad_leading("#{version}", 3, "0")
-
-      [Beacon.Migrations, "V#{padded}"]
-      |> Module.concat()
-      |> apply(:down, [])
+      module = Module.concat([Beacon.Migrations, "V#{padded}"])
+      module.down()
     end)
   end
 end
