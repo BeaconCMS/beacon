@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.1.0-dev"
+  @version "0.1.0-rc.0"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -48,8 +48,7 @@ defmodule Beacon.MixProject do
         Website: @homepage_url,
         DockYard: "https://dockyard.com"
       },
-      files:
-        ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
+      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
     ]
   end
 
