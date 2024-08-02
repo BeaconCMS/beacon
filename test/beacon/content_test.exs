@@ -657,9 +657,9 @@ defmodule Beacon.ContentTest do
     end
 
     test "delete event handler OK" do
-      event_handler = event_handler_fixture()
+      %{id: id} = event_handler = event_handler_fixture()
 
-      assert {:ok, ^event_handler} = Content.delete_event_handler(event_handler)
+      assert {:ok, %{id: ^id}} = Content.delete_event_handler(event_handler)
     end
   end
 
