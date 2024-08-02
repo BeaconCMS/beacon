@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-rc.1
+## 0.1.0-rc.0
 
 ### Enhancements
   * Loader to fetch resources from DB and compile modules

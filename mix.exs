@@ -2,6 +2,8 @@ defmodule Beacon.MixProject do
   use Mix.Project
 
   @version "0.1.0-dev"
+  @source_url "https://github.com/BeaconCMS/beacon"
+  @homepage_url "https://beaconcms.org"
 
   def project do
     [
@@ -11,6 +13,15 @@ defmodule Beacon.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       name: "Beacon",
+      homepage_url: @homepage_url,
+      source_url: @source_url,
+      description: """
+      Open-source Content Management System (CMS) built with Phoenix LiveView. Faster render times to boost SEO performance, even for the most content-heavy pages.
+      """,
+      preferred_cli_env: [
+        docs: :docs
+      ],
+      package: package(),
       deps: deps(),
       aliases: aliases(),
       docs: docs()
@@ -26,6 +37,20 @@ defmodule Beacon.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp package do
+    [
+      maintainers: ["Leandro Pereira", "Andrew Berrien"],
+      licenses: ["MIT"],
+      links: %{
+        Changelog: "https://hexdocs.pm/beacon/changelog.html",
+        GitHub: @source_url,
+        Website: @homepage_url
+      },
+      files:
+        ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
+    ]
+  end
 
   defp deps do
     [
@@ -95,7 +120,7 @@ defmodule Beacon.MixProject do
     [
       main: "Beacon",
       source_ref: "v#{@version}",
-      source_url: "https://github.com/BeaconCMS/beacon",
+      source_url: @source_url,
       extra_section: "GUIDES",
       extras: extras(),
       groups_for_extras: groups_for_extras(),
