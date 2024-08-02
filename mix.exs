@@ -45,7 +45,8 @@ defmodule Beacon.MixProject do
       links: %{
         Changelog: "https://hexdocs.pm/beacon/changelog.html",
         GitHub: @source_url,
-        Website: @homepage_url
+        Website: @homepage_url,
+        DockYard: "https://dockyard.com"
       },
       files:
         ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
@@ -78,7 +79,7 @@ defmodule Beacon.MixProject do
       {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_pubsub, "~> 2.1"},
       {:postgrex, "~> 0.16"},
-      {:safe_code, github: "TheFirstAvenger/safe_code"},
+      {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
 
