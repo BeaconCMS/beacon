@@ -40,7 +40,7 @@ defmodule Beacon.MixProject do
       maintainers: ["Leandro Pereira", "Andrew Berrien"],
       licenses: ["MIT"],
       links: %{
-        Changelog: "https://hexdocs.pm/beacon/#{@version}/changelog.html"
+        Changelog: "https://hexdocs.pm/beacon/#{@version}/changelog.html",
         GitHub: @source_url,
         Website: @homepage_url,
         DockYard: "https://dockyard.com"
