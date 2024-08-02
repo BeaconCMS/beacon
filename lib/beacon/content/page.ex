@@ -45,7 +45,6 @@ defmodule Beacon.Content.Page do
     belongs_to :layout, Content.Layout
 
     has_many :variants, Content.PageVariant
-    has_many :event_handlers, Content.EventHandler
 
     embeds_many :helpers, Helper
 

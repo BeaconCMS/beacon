@@ -17,7 +17,6 @@ defmodule Beacon.Content.EventHandler do
 
   import Ecto.Changeset
 
-  alias Beacon.Content.Page
   alias Beacon.Types.Site
   alias Ecto.UUID
 
