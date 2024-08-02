@@ -178,27 +178,27 @@ dev_seeds = fn ->
     """
   })
 
-  metadata =
-    Beacon.MediaLibrary.UploadMetadata.new(
-      :dev,
-      Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
-      name: "dockyard_1.png",
-      size: 196_000,
-      extra: %{"alt" => "logo"}
-    )
+  # metadata =
+  #   Beacon.MediaLibrary.UploadMetadata.new(
+  #     :dev,
+  #     Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
+  #     name: "dockyard_1.png",
+  #     size: 196_000,
+  #     extra: %{"alt" => "logo"}
+  #   )
 
-  _img1 = Beacon.MediaLibrary.upload(metadata)
+  # _img1 = Beacon.MediaLibrary.upload(metadata)
 
-  metadata =
-    Beacon.MediaLibrary.UploadMetadata.new(
-      :dev,
-      Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
-      name: "dockyard_2.png",
-      size: 196_000,
-      extra: %{"alt" => "alternate logo"}
-    )
+  # metadata =
+  #   Beacon.MediaLibrary.UploadMetadata.new(
+  #     :dev,
+  #     Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
+  #     name: "dockyard_2.png",
+  #     size: 196_000,
+  #     extra: %{"alt" => "alternate logo"}
+  #   )
 
-  _img2 = Beacon.MediaLibrary.upload(metadata)
+  # _img2 = Beacon.MediaLibrary.upload(metadata)
 
   home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
 
