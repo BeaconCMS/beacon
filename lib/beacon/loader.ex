@@ -165,6 +165,20 @@ defmodule Beacon.Loader do
     maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
   end
 
+  def maybe_reload_page_modules(site) do
+    pages = Beacon.Content.list_published_pages(site, per_page: :infinity)
+
+    for page <- pages do
+      # maybe_reload(Loader.Page.module_name(site, page.id), fn -> reload_page_module(site, page.id) end)
+      reload_page_module(site, page.id)
+    end
+
+    IO.inspect(length(pages))
+    IO.inspect(:erlang.memory())
+
+    :ok
+  end
+
   def reload_snippets_module(site) do
     GenServer.call(worker(site), :reload_snippets_module, @timeout)
   end
