@@ -597,6 +597,14 @@ defmodule Beacon.ContentTest do
   end
 
   describe "event_handlers" do
+    test "list_event_handlers/1" do
+      event_handlers = for _ <- 1..3, do: event_handler_fixture(site: :my_site)
+
+      result = Content.list_event_handlers(:my_site)
+
+      assert Enum.sort(event_handlers) == Enum.sort(result)
+    end
+
     test "create event handler OK" do
       attrs = %{name: "Foo", code: "{:noreply, socket}", site: :my_site}
 

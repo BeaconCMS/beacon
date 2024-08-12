@@ -125,7 +125,7 @@ defmodule Beacon.Loader.Page do
   end
 
   defp handle_event(page) do
-    event_handlers = Content.list_event_handlers_for_site(page.site)
+    event_handlers = Content.list_event_handlers(page.site)
 
     Enum.map(event_handlers, fn event_handler ->
       Beacon.safe_code_check!(page.site, event_handler.code)

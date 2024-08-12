@@ -17,7 +17,8 @@ defmodule Beacon.Migrations.V002 do
       SELECT peh.id, peh.name, peh.code, p.site
         FROM beacon_page_event_handlers as peh
         JOIN beacon_pages as p
-        ON peh.page_id = p.id;
+        ON peh.page_id = p.id
+        GROUP BY peh.name, p.site;
     """)
 
     drop_if_exists table(:beacon_page_event_handlers)
