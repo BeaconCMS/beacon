@@ -14,7 +14,7 @@ defmodule Beacon.Migrations.V002 do
 
     execute("""
     INSERT INTO beacon_event_handlers (id, name, code, site)
-      SELECT peh.id, peh.name, peh.code, p.site
+      SELECT max(peh.id), peh.name, max(peh.code), p.site
         FROM beacon_page_event_handlers as peh
         JOIN beacon_pages as p
         ON peh.page_id = p.id
