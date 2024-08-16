@@ -14,37 +14,24 @@ defmodule Beacon.Migrations.V002 do
       timestamps(type: :utc_datetime_usec)
     end
 
-    create_if_not_exists table("beacon_page_event_handlers", primary_key: false) do
-      add :id, :binary_id, primary_key: true
-      add :name, :text, null: false
-      add :code, :text, null: false
-      add :site, :text, null: false
-
-      timestamps(type: :utc_datetime_usec)
-    end
+    flush()
 
     repo().all(
       from(peh in "beacon_page_event_handlers",
         join: p in "beacon_pages",
         on: peh.page_id == p.id,
-        group_by: [peh.page_id, p.site],
-        select: {max(peh.id), peh.name, max(peh.code), p.site}
+        select: %{site: p.site, name: peh.name, code: peh.code},
+        # distinct saves us memory in cases of duplicate code
+        distinct: true
       )
     )
-    |> Enum.map(fn {id, name, code, site} ->
+    # we still need to avoid duplicates where the code is different
+    |> Enum.group_by(&{&1.site, &1.name}, & &1.code)
+    |> Enum.map(fn {{site, name}, [code | _]} ->
       now = DateTime.utc_now()
-      %{id: id, name: name, code: code, site: site, inserted_at: now, updated_at: now}
+      %{id: Ecto.UUID.generate(), name: name, code: code, site: site, inserted_at: now, updated_at: now}
     end)
     |> then(&repo().insert_all("beacon_event_handlers", &1, []))
-
-    # execute("""
-    # INSERT INTO beacon_event_handlers (id, name, code, site)
-    #   SELECT max(peh.id::text)::uuid, peh.name, max(peh.code), p.site
-    #     FROM beacon_page_event_handlers as peh
-    #     JOIN beacon_pages as p
-    #     ON peh.page_id = p.id
-    #     GROUP BY peh.name, p.site;
-    # """)
 
     drop_if_exists table(:beacon_page_event_handlers)
   end
