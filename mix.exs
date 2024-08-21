@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.1.0-dev"
+  @version "0.1.0-rc.0"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -18,9 +18,6 @@ defmodule Beacon.MixProject do
       description: """
       Open-source Content Management System (CMS) built with Phoenix LiveView. Faster render times to boost SEO performance, even for the most content-heavy pages.
       """,
-      preferred_cli_env: [
-        docs: :docs
-      ],
       package: package(),
       deps: deps(),
       aliases: aliases(),
@@ -43,9 +40,10 @@ defmodule Beacon.MixProject do
       maintainers: ["Leandro Pereira", "Andrew Berrien"],
       licenses: ["MIT"],
       links: %{
-        Changelog: "https://hexdocs.pm/beacon/changelog.html",
+        Changelog: "https://hexdocs.pm/beacon/#{@version}/changelog.html",
         GitHub: @source_url,
-        Website: @homepage_url
+        Website: @homepage_url,
+        DockYard: "https://dockyard.com"
       },
       files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
     ]
@@ -77,7 +75,7 @@ defmodule Beacon.MixProject do
       {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_pubsub, "~> 2.1"},
       {:postgrex, "~> 0.16"},
-      {:safe_code, github: "TheFirstAvenger/safe_code"},
+      {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
 
@@ -85,10 +83,10 @@ defmodule Beacon.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
+      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:esbuild, "~> 0.5", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:bypass, "~> 2.1", only: :test},
-      {:ex_doc, "~> 0.29", only: :docs}
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 

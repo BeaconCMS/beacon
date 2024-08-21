@@ -4,21 +4,6 @@ defmodule Beacon.Template.HEEx do
   """
 
   @doc """
-  Check if the template is safe.
-
-  Perform the check using https://github.com/TheFirstAvenger/safe_code
-  """
-  @spec safe_code_check(String.t()) :: {:ok, String.t()} | {:error, Exception.t()}
-  def safe_code_check(template) when is_binary(template) do
-    # TODO: enable safe code when it's ready to parse complex templates
-    # SafeCode.Validator.validate!(template, extra_function_validators: Beacon.Loader.SafeCodeImpl)
-    {:ok, template}
-  rescue
-    exception ->
-      {:error, exception}
-  end
-
-  @doc """
   Compile `template` returning its AST.
   """
   @spec compile(Beacon.Types.Site.t(), String.t(), String.t()) :: {:ok, Beacon.Template.ast()} | {:error, Exception.t()}
