@@ -10,9 +10,9 @@
 
 ### Breaking Changes
   * Remove Page Event Handlers in favor of Shared Event Handlers.
-    With Shared Event Handlers, it doesn't make sense to have page event hanlders unless overriding becomes a neccessity.
+    With Shared Event Handlers, it doesn't make sense to have page event handlers unless overriding becomes a neccessity.
     The data is automatically migrated in a best-effort way, duplicated event handler names (from multiple pages) are
-    consolidated into a single shared event handler. See the migration `V0002` for more info.
+    consolidated into a single shared event handler. See the migration `V002` for more info.
 
 ## 0.1.0-rc.0 (2024-08-02)
 
