@@ -35,6 +35,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.ComponentSlot
   alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
+  alias Beacon.Content.InfoHandler
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -3929,6 +3930,186 @@ defmodule Beacon.Content do
   @spec delete_live_data_assign(LiveDataAssign.t(), Site.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
   def delete_live_data_assign(live_data_assign, site) do
     repo(site).delete(live_data_assign)
+  end
+
+  @doc """
+  Creates a new info handler for creating shared handle_info callbacks.
+
+  ## Example
+
+      iex> create_info_handler(%{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"})
+      {:ok, %InfoHandler{}}
+
+  """
+  @doc type: :info_handlers
+  @spec create_info_handler(map()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
+  def create_info_handler(attrs) do
+    variable_names =
+      attrs
+      |> ExUtils.Map.atomize_keys()
+      |> Map.get(:msg)
+      |> list_variable_names()
+
+    changeset =
+      %InfoHandler{}
+      |> InfoHandler.changeset(attrs)
+      |> validate_info_handler(variable_names)
+
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+  end
+
+  @spec validate_info_handler(Changeset.t(), [String.t()], [String.t()]) :: Changeset.t()
+  defp validate_info_handler(changeset, variable_names, imports \\ []) do
+    code = Changeset.get_field(changeset, :code)
+    site = Changeset.get_field(changeset, :site)
+    metadata = %Beacon.Template.LoadMetadata{site: site}
+    var = ["socket"] ++ variable_names
+    imports = ["Phoenix.LiveView"] ++ imports
+
+    do_validate_template(changeset, :code, :elixir, code, metadata, var, imports)
+  end
+
+  @spec list_variable_names(String.t()) :: [String.t()]
+  defp list_variable_names(msg) do
+    {_msg, variables} =
+      msg
+      |> String.replace("{", "")
+      |> String.replace("}", "")
+      |> String.split(", ")
+      |> List.pop_at(0)
+
+    variables
+  end
+
+  @doc """
+  Creates a info handler, raising an error if unsuccessful.
+
+  Returns the new info handler if successful, otherwise raises a `RuntimeError`.
+
+  ## Example
+
+      iex> create_info_handler!(%{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"})
+      %InfoHandler{}
+  """
+  @doc type: :info_handlers
+  @spec create_info_handler!(map()) :: InfoHandler.t()
+  def create_info_handler!(attrs \\ %{}) do
+    case create_info_handler(attrs) do
+      {:ok, info_handler} -> info_handler
+      {:error, changeset} -> raise "failed to create info handler, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking info handler changes.
+
+  ## Example
+
+      iex> change_info_handler(info_handler, %{code: {:noreply, socket}})
+      %Ecto.Changeset{data: %InfoHandler{}}
+
+  """
+  @doc type: :info_handlers
+  @spec change_info_handler(InfoHandler.t(), map()) :: Changeset.t()
+  def change_info_handler(%InfoHandler{} = info_handler, attrs \\ %{}) do
+    InfoHandler.changeset(info_handler, attrs)
+  end
+
+  @doc """
+  Gets a single info handler by `id`.
+
+  ## Example
+
+      iex> get_single_info_handler(:my_site, "fefebbfe-f732-4119-9116-d031d04f5a2c")
+      %InfoHandler{}
+
+  """
+  @doc type: :info_handlers
+  @spec get_info_handler(Site.t(), UUID.t()) :: InfoHandler.t() | nil
+  def get_info_handler(site, id) when is_atom(site) and is_binary(id) do
+    repo(site).get(InfoHandler, id)
+  end
+
+  @doc """
+  Same as `get_info_handler/2` but raises an error if no result is found.
+  """
+  @doc type: :info_handlers
+  @spec get_info_handler!(Site.t(), UUID.t()) :: InfoHandler.t()
+  def get_info_handler!(site, id) when is_atom(site) and is_binary(id) do
+    repo(site).get!(InfoHandler, id)
+  end
+
+  @doc """
+  Lists all info handlers for a given site.
+
+  ## Example
+
+      iex> list_info_handlers()
+
+  """
+  @doc type: :info_handlers
+  @spec list_info_handlers(Site.t()) :: [InfoHandler.t()]
+  def list_info_handlers(site) do
+    repo(site).all(
+      from h in InfoHandler,
+        where: h.site == ^site,
+        order_by: [asc: h.inserted_at]
+    )
+  end
+
+  @doc """
+  Updates a info handler.
+
+  ## Example
+
+      iex> update_info_handler(info_handler, %{msg: "{:new_msg, arg}"})
+      {:ok, %InfoHandler{}}
+
+  """
+  @doc type: :info_handlers
+  @spec update_info_handler(InfoHandler.t(), map()) :: {:ok, InfoHandler.t()}
+  def update_info_handler(%InfoHandler{} = info_handler, attrs) do
+    variable_names =
+      info_handler
+      |> retrieve_msg(attrs)
+      |> list_variable_names()
+
+    changeset =
+      info_handler
+      |> InfoHandler.changeset(attrs)
+      |> validate_info_handler(variable_names, ["Phoenix.Component"])
+
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+  end
+
+  @spec retrieve_msg(InfoHandler.t(), map()) :: String.t()
+  defp retrieve_msg(info_handler, attrs) do
+    attrs = ExUtils.Map.atomize_keys(attrs)
+
+    case Map.get(attrs, :msg) do
+      nil ->
+        info_handler.msg
+
+      msg ->
+        msg
+    end
+  end
+
+  @doc """
+  Deletes info handler.
+  """
+  @doc type: :info_handlers
+  @spec delete_info_handler(InfoHandler.t()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
+  def delete_info_handler(info_handler) do
+    repo(info_handler.site).delete(info_handler)
   end
 
   ## Utils

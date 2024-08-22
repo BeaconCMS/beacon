@@ -55,6 +55,15 @@ defmodule Beacon.Migrations.V001 do
 
     create_if_not_exists index(:beacon_live_data_assigns, [:live_data_id])
 
+    create_if_not_exists table(:beacon_info_handlers, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :msg, :text, null: false
+      add :code, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
     create_if_not_exists table(:beacon_snippet_helpers, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
@@ -250,6 +259,7 @@ defmodule Beacon.Migrations.V001 do
     drop_if_exists table(:beacon_assets)
     drop_if_exists table(:beacon_stylesheets)
     drop_if_exists table(:beacon_live_data_assigns)
+    drop_if_exists table(:beacon_info_handlers)
     drop_if_exists table(:beacon_live_data)
     drop_if_exists table(:beacon_snippet_helpers)
     drop_if_exists table(:beacon_component_attrs)

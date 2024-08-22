@@ -78,6 +78,7 @@ defmodule Beacon.MixProject do
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
+      {:ex_utils, "~> 0.1.7"},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -131,7 +132,8 @@ defmodule Beacon.MixProject do
         "Functions: Snippets": &(&1[:type] == :snippets),
         "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
-        "Functions: Live Data": &(&1[:type] == :live_data)
+        "Functions: Live Data": &(&1[:type] == :live_data),
+        "Functions: Info Handlers": &(&1[:type] == :info_handlers)
       ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
@@ -164,6 +166,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ComponentSlot,
         Beacon.Content.ComponentSlotAttr,
         Beacon.Content.ErrorPage,
+        Beacon.Content.InfoHandler,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
         Beacon.Content.LayoutSnapshot,

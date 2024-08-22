@@ -436,6 +436,10 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
+  def handle_call(:reload_info_handlers, _from, config) do
+    stop(Beacon.Content.list_info_handlers(config.site), config)
+  end
+
   def handle_info(msg, config) do
     Logger.warning("Beacon.Loader.Worker can not handle the message: #{inspect(msg)}")
     {:noreply, config}

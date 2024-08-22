@@ -44,6 +44,8 @@ defmodule Beacon.Boot do
     Beacon.Loader.populate_default_error_pages(config.site)
     Beacon.Loader.populate_default_home_page(config.site)
 
+    Beacon.Loader.reload_info_handlers(config.site)
+
     assets = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(config.site) end),
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_css(config.site) end)

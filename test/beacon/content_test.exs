@@ -6,6 +6,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
+  alias Beacon.Content.InfoHandler
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -1008,6 +1009,145 @@ defmodule Beacon.ContentTest do
 
       assert {:ok, _} = Content.delete_live_data_assign(live_data_assign, live_data.site)
       assert %{assigns: []} = Repo.preload(live_data, :assigns)
+    end
+  end
+
+  describe "info_handlers" do
+    setup do
+      code = ~S"""
+        socket =
+          socket
+          |> redirect(to: "/home")
+          |> put_flash(
+            :error,
+            "Your email (#{email_address}) is incorrectly formatted. Please format it correctly."
+          )
+
+      {:noreply, socket}
+      """
+
+      msg = "{:incorrect_format, email_address}"
+
+      %{msg: msg, code: code}
+    end
+
+    test "success: create_info_handler/1", %{msg: msg, code: code} do
+      attrs = %{site: :my_site, msg: msg, code: code}
+
+      assert {:ok, %InfoHandler{} = info_handler} = Content.create_info_handler(attrs)
+      assert %InfoHandler{site: :my_site, msg: ^msg, code: ^code} = info_handler
+    end
+
+    test "error: create_info_handler/1 validates code", %{msg: msg} do
+      assert {:error, %{errors: [error]}} =
+               Content.create_info_handler(%{
+                 site: :my_site,
+                 msg: msg,
+                 code: ":no_reply, socket"
+               })
+
+      {:code, {"invalid", [compilation_error: compilation_error]}} = error
+
+      assert compilation_error =~ "unexpectedly reached end of line"
+
+      refute Repo.one(InfoHandler)
+    end
+
+    test "success: create_info_handler!/1", %{msg: msg, code: code} do
+      Content.create_info_handler!(%{
+        site: :my_site,
+        msg: msg,
+        code: code
+      })
+
+      assert %InfoHandler{site: :my_site, msg: ^msg, code: ^code} = Repo.one(InfoHandler)
+    end
+
+    test "success: get_info_handler/2", %{msg: msg, code: code} do
+      info_handler = info_handler_fixture(%{msg: msg, code: code})
+      site = info_handler.site
+      handler_from_db = Content.get_info_handler(site, info_handler.id)
+
+      assert %InfoHandler{site: ^site, msg: ^msg, code: ^code} = handler_from_db
+    end
+
+    test "success: get_info_handler!/2", %{msg: msg, code: code} do
+      info_handler = info_handler_fixture(%{msg: msg, code: code})
+      site = info_handler.site
+      handler_from_db = Content.get_info_handler!(site, info_handler.id)
+
+      assert %InfoHandler{site: ^site, msg: ^msg, code: ^code} = handler_from_db
+    end
+
+    test "success: list_info_handlers/1" do
+      info_handlers = for _ <- 1..3, do: info_handler_fixture()
+
+      result = Content.list_info_handlers(:my_site)
+
+      assert Enum.sort(info_handlers) == Enum.sort(result)
+    end
+
+    test "success: update_info_handler/2" do
+      code = ~S"""
+        socket =
+          socket
+          |> assign(email: nil)
+          |> put_flash(
+            :error,
+            "There was an error."
+          )
+
+      {:noreply, socket}
+      """
+
+      msg = "{:email_address_error}"
+
+      info_handler = info_handler_fixture()
+      attrs = %{code: code, msg: msg}
+
+      refute info_handler.code == code
+      refute info_handler.msg == msg
+
+      assert {:ok, %InfoHandler{} = info_handler_from_db} = Content.update_info_handler(info_handler, attrs)
+      assert %InfoHandler{code: ^code, msg: ^msg} = info_handler_from_db
+    end
+
+    test "error: update_info_handler/2" do
+      code = ~S"""
+        socket =
+          socket
+          |> assign(email: nil)
+          |> put_flash(
+            :error,
+            "There was an error."
+          )
+
+      :noreply, socket
+      """
+
+      msg = "{:email_address_error}"
+
+      info_handler = info_handler_fixture()
+      attrs = %{code: code, msg: msg}
+
+      refute info_handler.code == code
+      refute info_handler.msg == msg
+
+      {:error, %{errors: [error]}} = Content.update_info_handler(info_handler, attrs)
+
+      {:code, {"invalid", [compilation_error: compilation_error]}} = error
+
+      assert compilation_error =~ "unexpectedly reached end of line"
+    end
+
+    test "success: delete_info_handler/1", %{msg: msg, code: code} do
+      info_handler = info_handler_fixture(%{msg: msg, code: code})
+      site = info_handler.site
+
+      assert Repo.one(InfoHandler)
+
+      assert {:ok, %InfoHandler{site: ^site, msg: ^msg, code: ^code}} = Content.delete_info_handler(info_handler)
+      refute Repo.one(InfoHandler)
     end
   end
 end

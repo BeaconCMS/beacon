@@ -210,6 +210,10 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
+  def reload_info_handlers(site) do
+    GenServer.call(worker(site), :reload_info_handlers, @timeout)
+  end
+
   defp maybe_reload(module, reload_fun) do
     if :erlang.module_loaded(module) do
       {:ok, module}
@@ -284,6 +288,12 @@ defmodule Beacon.Loader do
 
   def handle_info({:content_updated, :live_data, %{site: site}}, config) do
     reload_live_data_module(site)
+    reload_runtime_css(site)
+    {:noreply, config}
+  end
+
+  def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
+    reload_info_handlers(site)
     reload_runtime_css(site)
     {:noreply, config}
   end

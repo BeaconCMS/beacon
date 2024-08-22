@@ -3,6 +3,7 @@ defmodule Beacon.Fixtures do
 
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
+  alias Beacon.Content.InfoHandler
   alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageVariant
   alias Beacon.MediaLibrary
@@ -233,5 +234,30 @@ defmodule Beacon.Fixtures do
       |> repo(site).insert!()
 
     live_data
+  end
+
+  def info_handler_fixture(attrs \\ %{}) do
+    code = ~S"""
+      socket =
+        socket
+        |> put_flash(
+          :info,
+          "We just sent an email to your address (#{email})!"
+        )
+
+    {:noreply, socket}
+    """
+
+    msg = "{:email_sent, email}"
+
+    full_attrs = %{
+      site: attrs[:site] || :my_site,
+      msg: attrs[:msg] || msg,
+      code: attrs[:code] || code
+    }
+
+    %InfoHandler{}
+    |> InfoHandler.changeset(full_attrs)
+    |> repo(full_attrs.site).insert!()
   end
 end
