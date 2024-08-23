@@ -39,6 +39,7 @@ defmodule Beacon.Web.BeaconAssigns do
             private: %{
               page_module: nil,
               components_module: nil,
+              event_handlers_module: nil,
               live_data_keys: [],
               live_path: []
             }
@@ -65,6 +66,7 @@ defmodule Beacon.Web.BeaconAssigns do
     path_params = Beacon.Router.path_params(page.path, path_info)
     page_title = Beacon.Web.DataSource.page_title(site, page.id, live_data)
     components_module = Beacon.Loader.Components.module_name(site)
+    event_handlers_module = Beacon.Loader.EventHandlers.module_name(site)
 
     %__MODULE__{
       site: page.site,
@@ -74,6 +76,7 @@ defmodule Beacon.Web.BeaconAssigns do
       private: %{
         page_module: page_module,
         components_module: components_module,
+        event_handlers_module: event_handlers_module,
         live_data_keys: Map.keys(live_data),
         live_path: path_info
       }

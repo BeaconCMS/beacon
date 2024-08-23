@@ -3553,7 +3553,9 @@ defmodule Beacon.Content do
 
     site = Changeset.get_field(changeset, :site)
 
-    repo(site).insert(changeset)
+    changeset
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
   end
 
   @doc """
@@ -3566,6 +3568,7 @@ defmodule Beacon.Content do
     |> EventHandler.changeset(attrs)
     |> validate_event_handler()
     |> repo(event_handler).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
   end
 
   defp validate_event_handler(changeset) do
@@ -3582,7 +3585,9 @@ defmodule Beacon.Content do
   @doc type: :event_handlers
   @spec delete_event_handler(EventHandler.t()) :: {:ok, EventHandler.t()} | {:error, Changeset.t()}
   def delete_event_handler(event_handler) do
-    repo(event_handler).delete(event_handler)
+    event_handler
+    |> repo(event_handler).delete()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
   end
 
   # PAGE VARIANTS

@@ -381,6 +381,14 @@ defmodule Beacon.Loader.Worker do
     stop(result, config)
   end
 
+  def handle_call(:reload_event_handlers_module, _from, config) do
+    %{site: site} = config
+    event_handlers = Content.list_event_handlers(site)
+    ast = Loader.EventHandlers.build_ast(site, event_handlers)
+    result = compile_module(site, ast, "event_handlers")
+    stop(result, config)
+  end
+
   def handle_call({:reload_layout_module, layout_id}, _from, config) do
     %{site: site} = config
     layout = Beacon.Content.get_published_layout(site, layout_id)
