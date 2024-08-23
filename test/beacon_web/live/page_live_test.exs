@@ -108,6 +108,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     Loader.reload_components_module(:my_site)
     Loader.reload_layouts_modules(:my_site)
     Loader.reload_pages_modules(:my_site)
+    Loader.reload_event_handlers_module(:my_site)
 
     [layout: layout]
   end
