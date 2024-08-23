@@ -10,6 +10,8 @@ defmodule Beacon.Loader.EventHandlers do
 
     quote do
       defmodule unquote(module) do
+        import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3]
+
         (unquote_splicing(functions))
       end
     end
