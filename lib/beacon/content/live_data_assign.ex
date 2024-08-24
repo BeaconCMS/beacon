@@ -1,6 +1,6 @@
 defmodule Beacon.Content.LiveDataAssign do
   @moduledoc """
-  Dynamic key/value assigns to be used by `Beacon.Content.Page` templates and updated with `Beacon.Content.PageEventHandler`s.
+  Dynamic key/value assigns to be used by `Beacon.Content.Page` templates and updated with `Beacon.Content.EventHandler`s.
 
   LiveDataAssigns don't exist on their own, but exist as part of a `Beacon.Content.LiveData` struct.
 

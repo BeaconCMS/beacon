@@ -35,6 +35,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.ComponentSlot
   alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
+  alias Beacon.Content.EventHandler
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -42,7 +43,6 @@ defmodule Beacon.Content do
   alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
-  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
@@ -702,7 +702,7 @@ defmodule Beacon.Content do
 
   @doc false
   def create_page_snapshot(page, event) do
-    page = repo(page).preload(page, [:variants, :event_handlers])
+    page = repo(page).preload(page, :variants)
 
     attrs = %{
       "site" => page.site,
@@ -1025,14 +1025,14 @@ defmodule Beacon.Content do
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
     page
     |> repo(page).reload()
-    |> repo(page).preload([:variants, :event_handlers], force: true)
+    |> repo(page).preload([:variants], force: true)
     |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
     |> repo(page).reload()
-    |> repo(page).preload([:variants, :event_handlers], force: true)
+    |> repo(page).preload([:variants], force: true)
     |> maybe_add_leading_slash()
   end
 
@@ -3521,77 +3521,73 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> change_page_event_handler(page_event_handler, %{name: "form-submit"})
-      %Ecto.Changeset{data: %PageEventHandler{}}
+      iex> change_event_handler(event_handler, %{name: "form-submit"})
+      %Ecto.Changeset{data: %EventHandler{}}
 
   """
-  @doc type: :page_event_handlers
-  @spec change_page_event_handler(PageEventHandler.t(), map()) :: Changeset.t()
-  def change_page_event_handler(%PageEventHandler{} = event_handler, attrs \\ %{}) do
-    PageEventHandler.changeset(event_handler, attrs)
+  @doc type: :event_handlers
+  @spec change_event_handler(EventHandler.t(), map()) :: Changeset.t()
+  def change_event_handler(%EventHandler{} = event_handler, attrs \\ %{}) do
+    EventHandler.changeset(event_handler, attrs)
   end
 
   @doc """
-  Creates a new page event handler and returns the page with updated `:event_handlers` association.
+  Lists all event handlers for a given Beacon site.
   """
-  @doc type: :page_event_handlers
-  @spec create_event_handler_for_page(Page.t(), %{name: binary(), code: binary()}) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def create_event_handler_for_page(page, attrs) do
-    changeset =
-      page
-      |> Ecto.build_assoc(:event_handlers)
-      |> PageEventHandler.changeset(attrs)
-      |> validate_page_event_handler(page)
-
-    transact(repo(page), fn ->
-      with {:ok, %PageEventHandler{}} <- repo(page).insert(changeset),
-           %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
-           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-        {:ok, page}
-      end
-    end)
+  @spec list_event_handlers(Site.t()) :: [EventHandler.t()]
+  def list_event_handlers(site) do
+    repo(site).all(from eh in EventHandler, where: [site: ^site])
   end
 
   @doc """
-  Updates a page event handler and returns the page with updated `:event_handlers` association.
+  Creates a new event handler.
   """
-  @doc type: :page_event_handlers
-  @spec update_event_handler_for_page(Page.t(), PageEventHandler.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def update_event_handler_for_page(page, event_handler, attrs) do
+  @doc type: :event_handlers
+  @spec create_event_handler(%{name: binary(), code: binary(), site: Site.t()}) ::
+          {:ok, EventHandler.t()} | {:error, Changeset.t()}
+  def create_event_handler(attrs) do
     changeset =
-      event_handler
-      |> PageEventHandler.changeset(attrs)
-      |> validate_page_event_handler(page)
+      %EventHandler{}
+      |> EventHandler.changeset(attrs)
+      |> validate_event_handler()
 
-    transact(repo(page), fn ->
-      with {:ok, %PageEventHandler{}} <- repo(page).update(changeset),
-           %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
-           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-        {:ok, page}
-      end
-    end)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
   end
 
-  defp validate_page_event_handler(changeset, page) do
+  @doc """
+  Updates an event handler with the given attrs.
+  """
+  @doc type: :event_handlers
+  @spec update_event_handler(EventHandler.t(), map()) :: {:ok, EventHandler.t()} | {:error, Changeset.t()}
+  def update_event_handler(event_handler, attrs) do
+    event_handler
+    |> EventHandler.changeset(attrs)
+    |> validate_event_handler()
+    |> repo(event_handler).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+  end
+
+  defp validate_event_handler(changeset) do
     code = Changeset.get_field(changeset, :code)
-    metadata = %Beacon.Template.LoadMetadata{site: page.site, path: page.path}
     variable_names = ["socket", "event_params"]
     imports = ["Phoenix.Socket"]
 
-    do_validate_template(changeset, :code, :elixir, code, metadata, variable_names, imports)
+    do_validate_template(changeset, :code, :elixir, code, nil, variable_names, imports)
   end
 
   @doc """
-  Deletes a page event handler and returns the page with updated `:event_handlers` association.
+  Deletes an event handler.
   """
-  @doc type: :page_event_handlers
-  @spec delete_event_handler_from_page(Page.t(), PageEventHandler.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def delete_event_handler_from_page(page, event_handler) do
-    with {:ok, %PageEventHandler{}} <- repo(page).delete(event_handler),
-         %Page{} = page <- repo(page).preload(page, :event_handlers, force: true),
-         %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-      {:ok, page}
-    end
+  @doc type: :event_handlers
+  @spec delete_event_handler(EventHandler.t()) :: {:ok, EventHandler.t()} | {:error, Changeset.t()}
+  def delete_event_handler(event_handler) do
+    event_handler
+    |> repo(event_handler).delete()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
   end
 
   # PAGE VARIANTS

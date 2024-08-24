@@ -6,13 +6,13 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
+  alias Beacon.Content.EventHandler
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.LiveData
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
-  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
   alias Beacon.BeaconTest.Repo
@@ -597,33 +597,29 @@ defmodule Beacon.ContentTest do
   end
 
   describe "event_handlers" do
-    test "create event handler OK" do
-      page = page_fixture()
-      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+    test "list_event_handlers/1" do
+      event_handlers = for _ <- 1..3, do: event_handler_fixture(site: :my_site)
 
-      assert {:ok, %Page{event_handlers: [event_handler]}} = Content.create_event_handler_for_page(page, attrs)
-      assert %PageEventHandler{name: "Foo", code: "{:noreply, socket}"} = event_handler
+      result = Content.list_event_handlers(:my_site)
+
+      assert Enum.sort(event_handlers) == Enum.sort(result)
     end
 
-    test "create triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+    test "create event handler OK" do
+      attrs = %{name: "Foo", code: "{:noreply, socket}", site: :my_site}
 
-      {:ok, %Page{}} = Content.create_event_handler_for_page(page, attrs)
-
-      assert_receive :lifecycle_after_update_page
+      assert {:ok, event_handler} = Content.create_event_handler(attrs)
+      assert %EventHandler{name: "Foo", code: "{:noreply, socket}"} = event_handler
     end
 
     test "create validates elixir code" do
-      page = page_fixture(%{format: :heex})
-
-      attrs = %{name: "test", code: "[1)"}
-      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      attrs = %{name: "test", code: "[1)", site: :my_site}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler(attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
-      attrs = %{name: "test", code: "if true, do false"}
-      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      attrs = %{name: "test", code: "if true, do false", site: :my_site}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler(attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -633,39 +629,28 @@ defmodule Beacon.ContentTest do
       {:noreply, assign(socket, res: res)}
       |
 
-      attrs = %{name: "test", code: code}
-      assert {:ok, _} = Content.create_event_handler_for_page(page, attrs)
+      attrs = %{name: "test", code: code, site: :my_site}
+      assert {:ok, _} = Content.create_event_handler(attrs)
     end
 
     test "update event handler OK" do
-      page = page_fixture(%{format: :heex})
-      event_handler = page_event_handler_fixture(%{page: page})
+      event_handler = event_handler_fixture()
       attrs = %{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"}
 
-      assert {:ok, %Page{event_handlers: [updated_event_handler]}} = Content.update_event_handler_for_page(page, event_handler, attrs)
-      assert %PageEventHandler{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"} = updated_event_handler
-    end
-
-    test "update triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      event_handler = page_event_handler_fixture(%{page: page})
-
-      {:ok, %Page{}} = Content.update_event_handler_for_page(page, event_handler, %{name: "Changed"})
-
-      assert_receive :lifecycle_after_update_page
+      assert {:ok, updated_event_handler} = Content.update_event_handler(event_handler, attrs)
+      assert %EventHandler{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"} = updated_event_handler
     end
 
     test "update validates elixir code" do
-      page = page_fixture(%{format: :heex})
-      page_event_handler = page_event_handler_fixture(%{page: page})
+      event_handler = event_handler_fixture()
 
       attrs = %{code: "[1)"}
-      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_event_handler(event_handler, attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
       attrs = %{code: "if true, do false"}
-      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_event_handler(event_handler, attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -676,25 +661,13 @@ defmodule Beacon.ContentTest do
       |
 
       attrs = %{code: code}
-      assert {:ok, _} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      assert {:ok, _} = Content.update_event_handler(event_handler, attrs)
     end
 
     test "delete event handler OK" do
-      page = page_fixture(%{format: :heex})
-      event_handler_1 = page_event_handler_fixture(%{page: page})
-      event_handler_2 = page_event_handler_fixture(%{page: page})
+      %{id: id} = event_handler = event_handler_fixture()
 
-      assert {:ok, %Page{event_handlers: [^event_handler_2]}} = Content.delete_event_handler_from_page(page, event_handler_1)
-      assert {:ok, %Page{event_handlers: []}} = Content.delete_event_handler_from_page(page, event_handler_2)
-    end
-
-    test "delete triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      event_handler = page_event_handler_fixture(%{page: page})
-
-      {:ok, %Page{}} = Content.delete_event_handler_from_page(page, event_handler)
-
-      assert_receive :lifecycle_after_update_page
+      assert {:ok, %{id: ^id}} = Content.delete_event_handler(event_handler)
     end
   end
 
