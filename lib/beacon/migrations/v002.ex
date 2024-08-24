@@ -29,7 +29,7 @@ defmodule Beacon.Migrations.V002 do
     |> Enum.group_by(&{&1.site, &1.name}, & &1.code)
     |> Enum.map(fn {{site, name}, [code | _]} ->
       now = DateTime.utc_now()
-      %{id: Ecto.UUID.generate(), name: name, code: code, site: site, inserted_at: now, updated_at: now}
+      %{id: Ecto.UUID.generate() |> Ecto.UUID.dump!(), name: name, code: code, site: site, inserted_at: now, updated_at: now}
     end)
     |> then(&repo().insert_all("beacon_event_handlers", &1, []))
 
