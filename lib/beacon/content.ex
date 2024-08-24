@@ -1025,14 +1025,14 @@ defmodule Beacon.Content do
   defp extract_page_snapshot(%{schema_version: 1, page: %Page{} = page}) do
     page
     |> repo(page).reload()
-    |> repo(page).preload([:variants, :event_handlers], force: true)
+    |> repo(page).preload([:variants], force: true)
     |> maybe_add_leading_slash()
   end
 
   defp extract_page_snapshot(%{schema_version: 2, page: %Page{} = page}) do
     page
     |> repo(page).reload()
-    |> repo(page).preload([:variants, :event_handlers], force: true)
+    |> repo(page).preload([:variants], force: true)
     |> maybe_add_leading_slash()
   end
 
