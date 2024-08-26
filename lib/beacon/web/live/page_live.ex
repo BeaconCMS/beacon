@@ -94,7 +94,6 @@ defmodule Beacon.Web.PageLive do
 
     socket =
       socket
-      |> Component.assign(:page_title, page.title)
       |> Component.assign(live_data)
       # TODO: remove deprecated @beacon_live_data
       |> Component.assign(:beacon_live_data, live_data)
