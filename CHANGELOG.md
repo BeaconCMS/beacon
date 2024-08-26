@@ -14,6 +14,9 @@
     The data is automatically migrated in a best-effort way, duplicated event handler names (from multiple pages) are
     consolidated into a single shared event handler. See the migration `V002` for more info.
 
+## Fixes
+  * Display parsed page title on live renders
+
 ## 0.1.0-rc.0 (2024-08-02)
 
 ### Enhancements
