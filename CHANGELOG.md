@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.1.0-rc.1
+## 0.1.0-dev
+
+## 0.1.0-rc.1 (2024-08-27)
 
 ### Enhancements
   * Added Shared Event Handlers which are global event handlers shared among all pages.
