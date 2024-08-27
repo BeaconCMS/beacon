@@ -1,11 +1,5 @@
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-}) : x)(function(x) {
-  if (typeof require !== "undefined") return require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
-var __commonJS = (cb, mod) => function __require2() {
+var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 
@@ -1320,60 +1314,15 @@ var require_defaultTheme = __commonJS({
   }
 });
 
-// node_modules/picocolors/picocolors.js
-var require_picocolors = __commonJS({
-  "node_modules/picocolors/picocolors.js"(exports, module) {
-    var argv = process.argv || [];
-    var env = process.env;
-    var isColorSupported = !("NO_COLOR" in env || argv.includes("--no-color")) && ("FORCE_COLOR" in env || argv.includes("--color") || process.platform === "win32" || __require != null && __require("tty").isatty(1) && env.TERM !== "dumb" || "CI" in env);
-    var formatter = (open, close, replace = open) => (input) => {
-      let string = "" + input;
-      let index = string.indexOf(close, open.length);
-      return ~index ? open + replaceClose(string, close, replace, index) + close : open + string + close;
+// node_modules/picocolors/picocolors.browser.js
+var require_picocolors_browser = __commonJS({
+  "node_modules/picocolors/picocolors.browser.js"(exports, module) {
+    var x = String;
+    var create = function() {
+      return { isColorSupported: false, reset: x, bold: x, dim: x, italic: x, underline: x, inverse: x, hidden: x, strikethrough: x, black: x, red: x, green: x, yellow: x, blue: x, magenta: x, cyan: x, white: x, gray: x, bgBlack: x, bgRed: x, bgGreen: x, bgYellow: x, bgBlue: x, bgMagenta: x, bgCyan: x, bgWhite: x };
     };
-    var replaceClose = (string, close, replace, index) => {
-      let result = "";
-      let cursor = 0;
-      do {
-        result += string.substring(cursor, index) + replace;
-        cursor = index + close.length;
-        index = string.indexOf(close, cursor);
-      } while (~index);
-      return result + string.substring(cursor);
-    };
-    var createColors = (enabled = isColorSupported) => {
-      let init = enabled ? formatter : () => String;
-      return {
-        isColorSupported: enabled,
-        reset: init("\x1B[0m", "\x1B[0m"),
-        bold: init("\x1B[1m", "\x1B[22m", "\x1B[22m\x1B[1m"),
-        dim: init("\x1B[2m", "\x1B[22m", "\x1B[22m\x1B[2m"),
-        italic: init("\x1B[3m", "\x1B[23m"),
-        underline: init("\x1B[4m", "\x1B[24m"),
-        inverse: init("\x1B[7m", "\x1B[27m"),
-        hidden: init("\x1B[8m", "\x1B[28m"),
-        strikethrough: init("\x1B[9m", "\x1B[29m"),
-        black: init("\x1B[30m", "\x1B[39m"),
-        red: init("\x1B[31m", "\x1B[39m"),
-        green: init("\x1B[32m", "\x1B[39m"),
-        yellow: init("\x1B[33m", "\x1B[39m"),
-        blue: init("\x1B[34m", "\x1B[39m"),
-        magenta: init("\x1B[35m", "\x1B[39m"),
-        cyan: init("\x1B[36m", "\x1B[39m"),
-        white: init("\x1B[37m", "\x1B[39m"),
-        gray: init("\x1B[90m", "\x1B[39m"),
-        bgBlack: init("\x1B[40m", "\x1B[49m"),
-        bgRed: init("\x1B[41m", "\x1B[49m"),
-        bgGreen: init("\x1B[42m", "\x1B[49m"),
-        bgYellow: init("\x1B[43m", "\x1B[49m"),
-        bgBlue: init("\x1B[44m", "\x1B[49m"),
-        bgMagenta: init("\x1B[45m", "\x1B[49m"),
-        bgCyan: init("\x1B[46m", "\x1B[49m"),
-        bgWhite: init("\x1B[47m", "\x1B[49m")
-      };
-    };
-    module.exports = createColors();
-    module.exports.createColors = createColors;
+    module.exports = create();
+    module.exports.createColors = create;
   }
 });
 
@@ -1398,7 +1347,7 @@ var require_log = __commonJS({
         return _default;
       }
     });
-    var _picocolors = /* @__PURE__ */ _interop_require_default(require_picocolors());
+    var _picocolors = /* @__PURE__ */ _interop_require_default(require_picocolors_browser());
     function _interop_require_default(obj) {
       return obj && obj.__esModule ? obj : {
         default: obj
@@ -5886,10 +5835,40 @@ var require_pseudo = __commonJS({
   }
 });
 
-// node_modules/util-deprecate/node.js
-var require_node2 = __commonJS({
-  "node_modules/util-deprecate/node.js"(exports, module) {
-    module.exports = __require("util").deprecate;
+// node_modules/util-deprecate/browser.js
+var require_browser = __commonJS({
+  "node_modules/util-deprecate/browser.js"(exports, module) {
+    module.exports = deprecate;
+    function deprecate(fn, msg) {
+      if (config("noDeprecation")) {
+        return fn;
+      }
+      var warned = false;
+      function deprecated() {
+        if (!warned) {
+          if (config("throwDeprecation")) {
+            throw new Error(msg);
+          } else if (config("traceDeprecation")) {
+            console.trace(msg);
+          } else {
+            console.warn(msg);
+          }
+          warned = true;
+        }
+        return fn.apply(this, arguments);
+      }
+      return deprecated;
+    }
+    function config(name) {
+      try {
+        if (!global.localStorage) return false;
+      } catch (_) {
+        return false;
+      }
+      var val = global.localStorage[name];
+      if (null == val) return false;
+      return String(val).toLowerCase() === "true";
+    }
   }
 });
 
@@ -5934,7 +5913,7 @@ var require_attribute = __commonJS({
       };
       return _setPrototypeOf(o, p);
     }
-    var deprecate = require_node2();
+    var deprecate = require_browser();
     var WRAPPED_IN_QUOTES = /^('|")([^]*)\1$/;
     var warnOfDeprecatedValueAssignment = deprecate(function() {
     }, "Assigning an attribute a value containing characters that might need to be escaped is deprecated. Call attribute.setValue() instead.");
