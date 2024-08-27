@@ -145,7 +145,8 @@ defmodule Beacon.MixProject do
     [
       Introduction: ~r"guides/introduction/",
       Recipes: ~r"guides/recipes/",
-      Troubleshoot: ~r"troubleshoot.md"
+      Troubleshoot: ~r"troubleshoot.md",
+      Upgrading: ~r"guides/upgrading/"
     ]
   end
 
