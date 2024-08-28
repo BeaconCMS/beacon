@@ -99,7 +99,7 @@ defmodule Beacon.Loader.Page do
 
   defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
     render = fn key, value, page ->
-      case Beacon.Content.render_snippet(value, %{page: page, live_data: %{}}) do
+      case Content.render_snippet(value, %{page: page, live_data: %{}}) do
         {:ok, new_value} ->
           {key, new_value}
 
@@ -127,10 +127,10 @@ defmodule Beacon.Loader.Page do
   end
 
   defp handle_event(page) do
-    %{site: site, event_handlers: event_handlers} = page
+    event_handlers = Content.list_event_handlers(page.site)
 
     Enum.map(event_handlers, fn event_handler ->
-      Beacon.safe_code_check!(site, event_handler.code)
+      Beacon.safe_code_check!(page.site, event_handler.code)
 
       quote do
         def handle_event(unquote(event_handler.name), var!(event_params), var!(socket)) do

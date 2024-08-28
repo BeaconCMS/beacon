@@ -165,7 +165,8 @@ Enum.each(
     Beacon.Content.ErrorPage,
     Beacon.Content.Page,
     Beacon.Content.Layout,
-    Beacon.Content.InfoHandler
+    Beacon.Content.InfoHandler,
+    Beacon.Content.EventHandler
   ],
   &Beacon.BeaconTest.Repo.delete_all/1
 )
@@ -175,6 +176,7 @@ for site <- [:my_site, :not_booted, :s3_site, :data_source_test, :default_meta_t
   Beacon.Loader.reload_routes_module(site)
   Beacon.Loader.reload_components_module(site)
   Beacon.Loader.reload_info_handlers_module(site)
+  Beacon.Loader.reload_event_handlers_module(site)
 end
 
 ExUnit.start(exclude: [:skip])

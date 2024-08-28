@@ -141,6 +141,10 @@ defmodule Beacon.Loader do
     Loader.Stylesheet.module_name(site)
   end
 
+  def fetch_event_handlers_module(site) do
+    Loader.EventHandlers.module_name(site)
+  end
+
   def fetch_layouts_modules(site) do
     Enum.map(Content.list_published_layouts(site), fn layout ->
       fetch_layout_module(layout.site, layout.id)
@@ -191,6 +195,10 @@ defmodule Beacon.Loader do
 
   def reload_stylesheet_module(site) do
     GenServer.call(worker(site), :reload_stylesheet_module, @timeout)
+  end
+
+  def reload_event_handlers_module(site) do
+    GenServer.call(worker(site), :reload_event_handlers_module, @timeout)
   end
 
   def reload_layouts_modules(site) do
@@ -298,6 +306,11 @@ defmodule Beacon.Loader do
 
   def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
     reload_info_handlers_module(site)
+    {:noreply, config}
+  end
+  
+  def handle_info({:content_updated, :event_handler, %{site: site}}, config) do
+    reload_event_handlers_module(site)
     {:noreply, config}
   end
 

@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.1.0-rc.0"
+  @version "0.1.0-rc.1"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -130,7 +130,7 @@ defmodule Beacon.MixProject do
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
-        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
+        "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
         "Functions: Live Data": &(&1[:type] == :live_data),
         "Functions: Info Handlers": &(&1[:type] == :info_handlers)
@@ -147,7 +147,8 @@ defmodule Beacon.MixProject do
     [
       Introduction: ~r"guides/introduction/",
       Recipes: ~r"guides/recipes/",
-      Troubleshoot: ~r"troubleshoot.md"
+      Troubleshoot: ~r"troubleshoot.md",
+      Upgrading: ~r"guides/upgrading/"
     ]
   end
 
@@ -166,6 +167,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ComponentSlot,
         Beacon.Content.ComponentSlotAttr,
         Beacon.Content.ErrorPage,
+        Beacon.Content.EventHandler,
         Beacon.Content.InfoHandler,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
@@ -176,7 +178,6 @@ defmodule Beacon.MixProject do
         Beacon.Content.Page.Event,
         Beacon.Content.Page.Helper,
         Beacon.Content.PageEvent,
-        Beacon.Content.PageEventHandler,
         Beacon.Content.PageSnapshot,
         Beacon.Content.PageVariant,
         Beacon.Content.Stylesheet,

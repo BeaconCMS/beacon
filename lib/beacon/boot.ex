@@ -56,7 +56,8 @@ defmodule Beacon.Boot do
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_layouts_modules(config.site) end),
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_error_page_module(config.site) end),
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_pages_modules(config.site, per_page: 20) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_info_handlers_module(config.site) end)
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_info_handlers_module(config.site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_event_handlers_module(config.site) end)
       # TODO: load main pages (order_by: path, per_page: 10) to avoid SEO issues
     ]
 

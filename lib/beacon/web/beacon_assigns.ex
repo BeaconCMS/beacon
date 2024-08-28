@@ -40,6 +40,7 @@ defmodule Beacon.Web.BeaconAssigns do
               page_module: nil,
               components_module: nil,
               info_handlers_module: nil,
+              event_handlers_module: nil,
               live_data_keys: [],
               live_path: []
             }
@@ -67,6 +68,7 @@ defmodule Beacon.Web.BeaconAssigns do
     page_title = Beacon.Web.DataSource.page_title(site, page.id, live_data)
     components_module = Beacon.Loader.Components.module_name(site)
     info_handlers_module = Beacon.Loader.InfoHandlers.module_name(site)
+    event_handlers_module = Beacon.Loader.EventHandlers.module_name(site)
 
     %__MODULE__{
       site: page.site,
@@ -77,6 +79,7 @@ defmodule Beacon.Web.BeaconAssigns do
         page_module: page_module,
         components_module: components_module,
         info_handlers_module: info_handlers_module,
+        event_handlers_module: event_handlers_module,
         live_data_keys: Map.keys(live_data),
         live_path: path_info
       }

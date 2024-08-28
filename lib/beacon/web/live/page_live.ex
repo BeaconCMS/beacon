@@ -75,12 +75,12 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    %{beacon: %{private: %{page_module: page_module, live_path: live_path}}} = socket.assigns
+    %{page_module: page_module, live_path: live_path, event_handlers_module: event_handlers_module} = socket.assigns.beacon.private
     %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
 
     result =
       Beacon.apply_mfa(
-        page_module,
+        event_handlers_module,
         :handle_event,
         [event_name, event_params, socket],
         context: %{site: site, page_id: page_id, live_path: live_path}
@@ -105,7 +105,6 @@ defmodule Beacon.Web.PageLive do
 
     socket =
       socket
-      |> Component.assign(:page_title, page.title)
       |> Component.assign(live_data)
       # TODO: remove deprecated @beacon_live_data
       |> Component.assign(:beacon_live_data, live_data)
