@@ -1,10 +1,11 @@
 defmodule Beacon.Loader.Page do
   @moduledoc false
-
-  require Logger
+  alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.Template.HEEx
+
+  require Logger
 
   def module_name(site, page_id), do: Loader.module_name(site, "Page#{page_id}")
 
@@ -142,7 +143,7 @@ defmodule Beacon.Loader.Page do
   defp handle_info(page) do
     %{site: site} = page
 
-    info_handlers = Beacon.Content.list_info_handlers(site)
+    info_handlers = Content.list_info_handlers(site)
 
     Enum.map(info_handlers, fn info_handler ->
       Beacon.safe_code_check!(site, info_handler.code)

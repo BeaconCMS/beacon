@@ -436,8 +436,12 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
-  def handle_call(:reload_info_handlers, _from, config) do
-    stop(Beacon.Content.list_info_handlers(config.site), config)
+  def handle_call(:reload_info_handlers_module, _from, config) do
+    %{site: site} = config
+    info_handlers = Content.list_info_handlers(site)
+    ast = Loader.InfoHandlers.build_ast(site, info_handlers)
+    result = compile_module(site, ast, "info_handlers")
+    stop(result, config)
   end
 
   def handle_info(msg, config) do

@@ -159,28 +159,23 @@ Supervisor.start_link(
 )
 
 # TODO: better control :booted default data when we introduce Beacon.Test functions
-Beacon.BeaconTest.Repo.delete_all(Beacon.Content.Component)
-Beacon.BeaconTest.Repo.delete_all(Beacon.Content.ErrorPage)
-Beacon.BeaconTest.Repo.delete_all(Beacon.Content.Page)
-Beacon.BeaconTest.Repo.delete_all(Beacon.Content.Layout)
+Enum.each(
+  [
+    Beacon.Content.Component,
+    Beacon.Content.ErrorPage,
+    Beacon.Content.Page,
+    Beacon.Content.Layout,
+    Beacon.Content.InfoHandler
+  ],
+  &Beacon.BeaconTest.Repo.delete_all/1
+)
 
 # TODO: add hooks into Beacon.Testing to reload these shared/global modules
-Beacon.Loader.reload_routes_module(:my_site)
-Beacon.Loader.reload_routes_module(:not_booted)
-Beacon.Loader.reload_routes_module(:booted)
-Beacon.Loader.reload_routes_module(:s3_site)
-Beacon.Loader.reload_routes_module(:data_source_test)
-Beacon.Loader.reload_routes_module(:default_meta_tags_test)
-Beacon.Loader.reload_routes_module(:lifecycle_test)
-Beacon.Loader.reload_routes_module(:lifecycle_test_fail)
-Beacon.Loader.reload_components_module(:my_site)
-Beacon.Loader.reload_components_module(:not_booted)
-Beacon.Loader.reload_components_module(:booted)
-Beacon.Loader.reload_components_module(:s3_site)
-Beacon.Loader.reload_components_module(:data_source_test)
-Beacon.Loader.reload_components_module(:default_meta_tags_test)
-Beacon.Loader.reload_components_module(:lifecycle_test)
-Beacon.Loader.reload_components_module(:lifecycle_test_fail)
+for site <- [:my_site, :not_booted, :s3_site, :data_source_test, :default_meta_tags_test, :lifecycle_test, :lifecycle_test_fail] do
+  Beacon.Loader.reload_routes_module(site)
+  Beacon.Loader.reload_components_module(site)
+  Beacon.Loader.reload_info_handlers_module(site)
+end
 
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.BeaconTest.Repo, :manual)

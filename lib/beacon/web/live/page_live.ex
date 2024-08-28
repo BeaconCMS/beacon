@@ -53,12 +53,12 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_info(msg, socket) do
-    %{beacon: %{private: %{page_module: page_module, live_path: live_path}}} = socket.assigns
+    %{page_module: page_module, live_path: live_path, info_handlers_module: info_handlers_module} = socket.assigns.beacon.private
     %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
 
     result =
       Beacon.apply_mfa(
-        page_module,
+        info_handlers_module,
         :handle_info,
         [msg, socket],
         context: %{site: site, page_id: page_id, live_path: live_path}

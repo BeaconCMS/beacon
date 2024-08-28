@@ -161,6 +161,10 @@ defmodule Beacon.Loader do
     Loader.Page.module_name(site, page_id)
   end
 
+  def fetch_info_handlers_module(site) do
+    Loader.InfoHandlers.module_name(site)
+  end
+
   def maybe_reload_page_module(site, page_id) do
     maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
   end
@@ -210,8 +214,8 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
-  def reload_info_handlers(site) do
-    GenServer.call(worker(site), :reload_info_handlers, @timeout)
+  def reload_info_handlers_module(site) do
+    GenServer.call(worker(site), :reload_info_handlers_module, @timeout)
   end
 
   defp maybe_reload(module, reload_fun) do
@@ -293,8 +297,7 @@ defmodule Beacon.Loader do
   end
 
   def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
-    reload_info_handlers(site)
-    reload_runtime_css(site)
+    reload_info_handlers_module(site)
     {:noreply, config}
   end
 
