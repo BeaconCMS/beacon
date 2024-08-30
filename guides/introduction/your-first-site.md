@@ -96,7 +96,7 @@ mix phx.server
 
 Visit http://localhost:4000 to see the default home page created by Beacon.
 
-## Acessing LiveAdmin to manage your site
+## Accessing LiveAdmin to manage your site
 
 Let's customize the home page. Visit http://localhost:4000/admin and you should see the `my_site` that you just created listed on the admin interface.
 
@@ -104,7 +104,7 @@ Now let's create the resources for our first site, and we'll starting by creatin
 
 ## Live Data
 
-We want to display the current yeat at the footer of the home page as the assign `<%= @current_year %>`. In Beacon we use Live Data to create and modify assigns at runtime, let's do it.
+We want to display the current year at the footer of the home page as the assign `<%= @current_year %>`. In Beacon we use Live Data to create and modify assigns at runtime, let's do it.
 
 Go to http://localhost:4000/admin/my_site/live_data to create a new path `/` and then create a new assign named `current_year` using the `elixir` format with the following value:
 
