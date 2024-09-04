@@ -326,6 +326,7 @@ defmodule Beacon.Content do
     * `:query` - search layouts by title. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load.
     * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
+      Allowed values: `:title`, `:template`, `:meta_tags`, `:resource_links`, `:inserted_at`, `:updated_at`.
 
   """
   @doc type: :layouts
@@ -335,7 +336,8 @@ defmodule Beacon.Content do
     page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [])
-    sort = Keyword.get(opts, :sort, :title)
+    sort = Keyword.get(opts, :sort)
+    sort = if sort in [:title, :template, :meta_tags, :resource_links, :inserted_at, :updated_at], do: sort, else: :title
 
     site
     |> query_list_layouts_base()
@@ -834,7 +836,8 @@ defmodule Beacon.Content do
     * `:page` - returns records from a specfic page. Defaults to 1.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
-    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
+    * `:sort` - column in which the result will be ordered by. Defaults to `:path`.
+      Allowed values: `:path`, `:title`, `:description`, `:template`, `:meta_tags`, `:raw_schema`, `:format`, `:inserted_at`, `:updated_at`.
 
   """
   @doc type: :pages
@@ -844,7 +847,8 @@ defmodule Beacon.Content do
     page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [])
-    sort = Keyword.get(opts, :sort, :title)
+    sort = Keyword.get(opts, :sort)
+    sort = if sort in [:path, :title, :description, :template, :meta_tags, :raw_schema, :format, :inserted_at, :updated_at], do: sort, else: :path
 
     site
     |> query_list_pages_base()
