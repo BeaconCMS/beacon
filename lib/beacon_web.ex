@@ -46,7 +46,7 @@ defmodule Beacon.Web do
         layouts: [html: Beacon.Web.Layouts]
 
       import Plug.Conn
-      import Beacon.Web.Gettext
+      use Gettext, backend: Beacon.Web.Gettext
     end
   end
 

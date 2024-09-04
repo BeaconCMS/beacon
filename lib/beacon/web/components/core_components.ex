@@ -6,7 +6,7 @@ defmodule Beacon.Web.CoreComponents do
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
-  import Beacon.Web.Gettext
+  use Gettext, backend: Beacon.Web.Gettext
 
   @doc """
   Renders a modal.
