@@ -14,10 +14,12 @@
     event handler in all pages.
 
 ### Breaking Changes
-  * Remove Page Event Handlers in favor of Shared Event Handlers.
+  * Removed Page Event Handlers in favor of Shared Event Handlers.
     With Shared Event Handlers, it doesn't make sense to have page event handlers unless overriding becomes a neccessity.
     The data is automatically migrated in a best-effort way, duplicated event handler names (from multiple pages) are
     consolidated into a single shared event handler. See the migration `V002` for more info.
+  * Removed "page event handlers" in `Content` API in favor of "event handlers" (removed the prefix `page`),
+    for example: `update_event_handler_for_page -> create_event_handler` and `change_page_event_handler -> change_event_handler`.
 
 ## Fixes
   * Display parsed page title on live renders
