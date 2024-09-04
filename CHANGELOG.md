@@ -5,6 +5,9 @@
 ### Breaking Changes
   * Require minimum Gettext v0.26 to use the new backend module
 
+### Fixes
+  * [Media Library] Guard against invalid values for `:sort` option in `MediaLibrary.list_assets/2`
+
 ## 0.1.0-rc.1 (2024-08-27)
 
 ### Enhancements
