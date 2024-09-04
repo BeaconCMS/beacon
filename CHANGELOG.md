@@ -2,6 +2,9 @@
 
 ## 0.1.0-dev
 
+### Breaking Changes
+  * Require minimum Gettext v0.26 to use the new backend module
+
 ## 0.1.0-rc.1 (2024-08-27)
 
 ### Enhancements
