@@ -62,8 +62,8 @@ defmodule Beacon.MixProject do
       {:ecto_sql, "~> 3.6"},
       {:ex_brotli, "~> 0.3"},
       # FIXME: multipart copy in ex_aws_s3 2.5.0
-      {:ex_aws, "~> 2.4.0"},
-      {:ex_aws_s3, "~> 2.4.0"},
+      {:ex_aws, "~> 2.5.4"},
+      {:ex_aws_s3, "~> 2.5.3"},
       {:floki, ">= 0.30.0"},
       {:gettext, "~> 0.26"},
       {:hackney, "~> 1.16"},
