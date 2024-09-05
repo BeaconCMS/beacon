@@ -1,0 +1,67 @@
+defmodule Beacon.Content.ComponentSlotAttr do
+  @moduledoc """
+  Beacon's representation of Phoenix's [Slot attributes](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slot-attributes).
+
+  ComponentSlotAttrs don't exist on their own, but always belong to a `Beacon.Content.ComponentSlot`, which in turn
+  belongs to a `Beacon.Content.Component`.
+
+  > #### Do not create or edit component slot attrs manually {: .warning}
+  >
+  > Use the public functions in `Beacon.Content` instead.
+  > The functions in that module guarantee that all dependencies
+  > are created correctly and all processes are updated.
+  > Manipulating data manually will most likely result
+  > in inconsistent behavior and crashes.
+  """
+
+  use Beacon.Schema
+
+  alias Beacon.Content.Component
+  alias Beacon.Content.ComponentSlot
+
+  @type t :: %__MODULE__{}
+
+  schema "beacon_component_slot_attrs" do
+    field :name, :string
+    field :type, :string
+    field :struct_name, :string
+    field :opts, Beacon.Types.Binary, default: []
+
+    belongs_to :slot, ComponentSlot, foreign_key: :slot_id
+
+    timestamps()
+  end
+
+  @doc false
+  def changeset(component_slot_attr, attrs, component_slot_attr_names \\ []) do
+    reserved_names = ["inner_block"]
+
+    component_slot_attr
+    |> cast(attrs, [:name, :type, :struct_name, :opts, :slot_id])
+    |> validate_required([:name, :type])
+    |> validate_format(:name, ~r/^[a-zA-Z0-9_!?]+$/, message: "can only contain letters, numbers, and underscores")
+    |> validate_exclusion(:name, reserved_names)
+    |> validate_unique_component_slot_attr_names(component_slot_attr_names)
+    |> Component.validate_if_struct_name_required()
+    |> Component.validate_struct_name()
+    |> Component.validate_non_empty_examples_opts()
+    |> Component.validate_non_empty_values_opts()
+    |> Component.validate_equivalent_options()
+    |> Component.validate_default_opts_is_in_values_opts()
+    |> Component.validate_type_and_values_opts()
+    |> Component.validate_type_and_default_opts()
+    |> Component.validate_struct_name_and_default_opts()
+    |> Component.validate_type_and_examples_opts()
+  end
+
+  @doc false
+  def validate_unique_component_slot_attr_names(changeset, component_slot_attr_names) do
+    name = get_field(changeset, :name)
+
+    if name in component_slot_attr_names do
+      add_error(changeset, :name, "a duplicate slot attr with name '#{name}' already exists")
+    else
+      changeset
+    end
+  end
+end

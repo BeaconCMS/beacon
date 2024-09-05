@@ -12,7 +12,7 @@ defmodule Beacon.MediaLibrary.Asset do
   """
 
   use Beacon.Schema
-  @derive BeaconWeb.Cache.Stale
+  @derive Beacon.Web.Cache.Stale
 
   @type t :: %__MODULE__{}
 

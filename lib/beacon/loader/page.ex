@@ -1,42 +1,64 @@
 defmodule Beacon.Loader.Page do
   @moduledoc false
-
-  require Logger
+  alias Beacon.Content
   alias Beacon.Lifecycle
   alias Beacon.Loader
   alias Beacon.Template.HEEx
+
+  require Logger
 
   def module_name(site, page_id), do: Loader.module_name(site, "Page#{page_id}")
 
   def build_ast(site, page) do
     module = module_name(site, page.id)
+    routes_module = Loader.Routes.module_name(site)
     components_module = Loader.Components.module_name(site)
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [&page_assigns/1, &handle_event/1, &helper/1] do
+      for fun <- [&page/1, &page_assigns/1, &handle_event/1, &helper/1] do
         fun.(page)
       end,
       render(page),
       dynamic_helper()
     ]
 
-    ast = build(module, components_module, functions)
+    ast = build(module, routes_module, components_module, functions)
 
     {module, ast}
   end
 
-  defp build(module_name, components_module, functions) do
+  defp build(module_name, routes_module, components_module, functions) do
     quote do
       defmodule unquote(module_name) do
-        use PhoenixHTMLHelpers
         import Phoenix.HTML
         import Phoenix.HTML.Form
+        import PhoenixHTMLHelpers.Form, except: [label: 1]
+        import PhoenixHTMLHelpers.Link
+        import PhoenixHTMLHelpers.Tag
+        import PhoenixHTMLHelpers.Format
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
-        import BeaconWeb, only: [assign: 2, assign: 3, assign_new: 3]
-        import unquote(components_module), only: [my_component: 2]
+        import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3]
+        import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        import unquote(routes_module)
+        import unquote(components_module)
 
         unquote_splicing(functions)
+      end
+    end
+  end
+
+  defp page(page) do
+    quote do
+      def page do
+        %Beacon.Content.Page{
+          site: unquote(page.site),
+          id: unquote(page.id),
+          layout_id: unquote(page.layout_id),
+          path: unquote(page.path),
+          title: unquote(page.title),
+          format: unquote(page.format)
+        }
       end
     end
   end
@@ -47,16 +69,22 @@ defmodule Beacon.Loader.Page do
     quote do
       def page_assigns do
         %{
+          id: unquote(page.id),
+          site: unquote(page.site),
+          layout_id: unquote(page.layout_id),
           title: unquote(page.title),
           meta_tags: unquote(Macro.escape(page.meta_tags)),
           raw_schema: unquote(Macro.escape(raw_schema)),
-          site: unquote(page.site),
           path: unquote(page.path),
           description: unquote(page.description),
           order: unquote(page.order),
           format: unquote(page.format),
           extra: unquote(Macro.escape(page.extra))
         }
+      end
+
+      def page_assigns(keys) when is_list(keys) do
+        Map.take(page_assigns(), keys)
       end
     end
   end
@@ -69,7 +97,7 @@ defmodule Beacon.Loader.Page do
 
   defp interpolate_raw_schema_record(schema, page) when is_map(schema) do
     render = fn key, value, page ->
-      case Beacon.Content.render_snippet(value, %{page: page, live_data: %{}}) do
+      case Content.render_snippet(value, %{page: page, live_data: %{}}) do
         {:ok, new_value} ->
           {key, new_value}
 
@@ -97,10 +125,10 @@ defmodule Beacon.Loader.Page do
   end
 
   defp handle_event(page) do
-    %{site: site, event_handlers: event_handlers} = page
+    event_handlers = Content.list_event_handlers(page.site)
 
     Enum.map(event_handlers, fn event_handler ->
-      Beacon.safe_code_check!(site, event_handler.code)
+      Beacon.safe_code_check!(page.site, event_handler.code)
 
       quote do
         def handle_event(unquote(event_handler.name), var!(event_params), var!(socket)) do

@@ -20,7 +20,7 @@ defmodule Beacon.Content.PageField do
 
       defmodule MyApp.TagsField do
         use Phoenix.Component
-        import BeaconWeb.CoreComponents
+        import Beacon.Web.CoreComponents
         import Ecto.Changeset
 
         @behaviour Beacon.Content.PageField

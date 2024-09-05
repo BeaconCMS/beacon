@@ -1,0 +1,16 @@
+<main class="px-4 py-20 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-6xl">
+    <Beacon.Web.CoreComponents.flash kind={:info} title="Success!" flash={@flash} />
+    <Beacon.Web.CoreComponents.flash kind={:error} title="Error!" flash={@flash} />
+    <Beacon.Web.CoreComponents.flash
+      id="disconnected"
+      kind={:error}
+      title="We can't find the internet"
+      phx-disconnected={Beacon.Web.CoreComponents.show("#disconnected")}
+      phx-connected={Beacon.Web.CoreComponents.hide("#disconnected")}
+    >
+      Attempting to reconnect <Beacon.Web.CoreComponents.icon name="hero-arrow-path" class="ml-1 w-3 h-3 inline animate-spin" />
+    </Beacon.Web.CoreComponents.flash>
+    <%= @inner_content %>
+  </div>
+</main>

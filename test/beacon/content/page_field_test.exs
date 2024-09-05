@@ -8,7 +8,7 @@ defmodule Beacon.Content.PageFieldTest do
 
   defmodule BeaconTest.PageFieldTags do
     use Phoenix.Component
-    import BeaconWeb.CoreComponents
+    import Beacon.Web.CoreComponents
     import Ecto.Changeset
 
     @behaviour Beacon.Content.PageField

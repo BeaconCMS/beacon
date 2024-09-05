@@ -9,9 +9,11 @@ defmodule Beacon.Config do
 
   """
 
+  @doc false
   use GenServer
 
   alias Beacon.Content
+  alias Beacon.ConfigError
 
   @doc false
   def name(site) do
@@ -30,11 +32,19 @@ defmodule Beacon.Config do
   end
 
   @typedoc """
-  Host application module endpoint.
-
-
+  Host application Endpoint module.
   """
   @type endpoint :: module()
+
+  @typedoc """
+  Host application Router module.
+  """
+  @type router :: module()
+
+  @typedoc """
+  Host application Repo module.
+  """
+  @type repo :: module()
 
   @typedoc """
   Disables site booting.
@@ -46,17 +56,17 @@ defmodule Beacon.Config do
   @type skip_boot? :: boolean()
 
   @typedoc """
-  A module that implements `Beacon.Authorization.Policy`, used to provide authorization rules.
-  """
-  @type authorization_source :: module()
-
-  @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
   """
   @type css_compiler :: module()
 
   @typedoc """
   Path to a custom tailwind config.
+
+  ## Example
+
+      # use the config file `priv/tailwind.config.js` in your app named `my_app`
+      Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js")
 
   See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
   """
@@ -88,7 +98,7 @@ defmodule Beacon.Config do
   @type allowed_media_accept_types :: [media_type :: String.t()]
 
   @typedoc """
-  Register backends and validations for media types. Catchalls are allowed.
+  Register providers and validations for media types. Catchalls are allowed.
   """
   @type media_type_configs :: [{media_type :: String.t(), media_type_config()}]
 
@@ -103,7 +113,7 @@ defmodule Beacon.Config do
                (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t())
                | {validation_fun :: (Ecto.Changeset.t(), Beacon.MediaLibrary.UploadMetadata.t() -> Ecto.Changeset.t()), validation_config :: term()}
            )},
-          {:backends, list(backend :: module() | {backend :: module(), backend_config :: term()})}
+          {:providers, list(provider :: module() | {provider :: module(), provider_config :: term()})}
         ]
 
   @typedoc """
@@ -166,8 +176,9 @@ defmodule Beacon.Config do
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
+          router: router(),
+          repo: repo(),
           skip_boot?: skip_boot?(),
-          authorization_source: authorization_source(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           live_socket_path: live_socket_path(),
@@ -198,10 +209,13 @@ defmodule Beacon.Config do
 
   defstruct site: nil,
             endpoint: nil,
+            router: nil,
+            repo: nil,
             skip_boot?: false,
-            authorization_source: Beacon.Authorization.DefaultPolicy,
+            # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
+            # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
-            tailwind_config: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex"),
+            tailwind_config: nil,
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,
@@ -225,8 +239,9 @@ defmodule Beacon.Config do
   @type option ::
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
+          | {:router, router()}
+          | {:repo, repo()}
           | {:skip_boot?, skip_boot?()}
-          | {:authorization_source, authorization_source()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, live_socket_path()}
@@ -248,13 +263,15 @@ defmodule Beacon.Config do
 
     * `:endpoint` - `t:endpoint/0` (required)
 
-    * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
+    * `:router` - `t:router/0` (required)
 
-    * `:authorization_source` - `t:authorization_source/0` (optional). Defaults to `Beacon.Authorization.DefaultPolicy`.
+    * `:repo` - `t:repo/0` (required)
+
+    * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
-    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`.
+    * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")`.
 
     * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 
@@ -286,8 +303,9 @@ defmodule Beacon.Config do
       iex> Beacon.Config.new(
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
-        authorization_source: MyApp.MySiteAuthzPolicy,
-        tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js.eex"),
+        router: MyAppWeb.Router,
+        repo: MyApp.Repo,
+        tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js"),
         template_formats: [
           {:custom_format, "My Custom Format"}
         ],
@@ -312,10 +330,11 @@ defmodule Beacon.Config do
       %Beacon.Config{
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
+        router: MyAppWeb.Router,
+        repo: MyApp.Repo,
         skip_boot?: false,
-        authorization_source: MyApp.SiteAuthnPolicy,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
-        tailwind_config: "/my_app/priv/tailwind.config.js.eex",
+        tailwind_config: "/my_app/priv/tailwind.config.js",
         live_socket_path: "/live",
         safe_code_check: false,
         template_formats: [
@@ -325,8 +344,8 @@ defmodule Beacon.Config do
         ],
         media_types: ["image/jpeg", "image/gif", "image/png", "image/webp"],
         assets:[
-          {"image/*", [backends: [Beacon.MediaLibrary.Backend.Repo], validations: [&SomeModule.some_function/2]]},
-        ]
+          {"image/*", [providers: [Beacon.MediaLibrary.Provider.Repo], validations: [&SomeModule.some_function/2]]},
+        ],
         lifecycle: [
           load_template: [
             heex: [],
@@ -361,8 +380,10 @@ defmodule Beacon.Config do
   def new(opts) do
     # TODO: validate opts, maybe use nimble_options
 
-    opts[:site] || raise "missing required option :site"
-    opts[:endpoint] || raise "missing required option :endpoint"
+    opts[:site] || raise ConfigError, "missing required option :site"
+    opts[:endpoint] || raise ConfigError, "missing required option :endpoint"
+    opts[:router] || raise ConfigError, "missing required option :router"
+    ensure_repo(opts[:repo])
 
     template_formats =
       Keyword.merge(
@@ -393,6 +414,7 @@ defmodule Beacon.Config do
 
     opts =
       opts
+      |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
       |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)
@@ -413,7 +435,7 @@ defmodule Beacon.Config do
         config
 
       _ ->
-        raise RuntimeError, """
+        raise ConfigError, """
         site #{inspect(site)} was not found. Make sure it's configured and started,
         see `Beacon.start_link/1` for more info.
         """
@@ -429,7 +451,7 @@ defmodule Beacon.Config do
   end
 
   @doc """
-  Returns a `t:media_type_config/0` which contains the configuration for backends, processors and validations.
+  From a `Beacon.Config`, fetch the asset config for a given media type, raising when unsuccessful.
 
   ## Example
 
@@ -441,7 +463,7 @@ defmodule Beacon.Config do
   def config_for_media_type(%Beacon.Config{} = beacon_config, media_type) do
     case get_media_type_config(beacon_config.assets, media_type) do
       nil ->
-        raise Beacon.LoaderError, """
+        raise ConfigError, """
         Expected to find a `media_type()` configuration for `#{media_type}` in `Beacon.Config.assets`.
 
         You can key that configuration with `#{media_type}` or a catchall like `#{build_generic_media_type(media_type)}`
@@ -451,7 +473,7 @@ defmodule Beacon.Config do
         config
 
       config ->
-        raise Beacon.LoaderError, """
+        raise ConfigError, """
         expected to find a `t:media_type/0` configuration for `#{media_type}` in `Beacon.Config.assets` to be of type `t:media_type_config/0`
 
           Got:
@@ -462,7 +484,7 @@ defmodule Beacon.Config do
   end
 
   def config_for_media_type(non_config, _) do
-    raise Beacon.LoaderError, """
+    raise ConfigError, """
     expected config to be of type `t:Beacon.Config.t/0`
 
       Got:
@@ -472,6 +494,25 @@ defmodule Beacon.Config do
     """
   end
 
+  @doc """
+  Searches a config option for the given media type.
+
+  For config options based on media type, such as `:assets` and `:extra_asset_fields`,
+  this function will check for the presence of `media_type`, returning the config for
+  that specific type, or `nil` if the type is not present.
+
+  ## Examples
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> jpeg_config = config_for_media_type(beacon_config.assets, "image/jpeg")
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> webp_config = config_for_media_type(beacon_config.extra_asset_fields, "image/webp")
+
+      iex> beacon_config = Beacon.Config.fetch!(:some_site)
+      iex> nil = config_for_media_type(beacon_config.assets, "invalid/foo")
+
+  """
   @spec get_media_type_config(media_type_configs(), String.t()) :: media_type_config() | nil
   @spec get_media_type_config(extra_asset_fields(), String.t()) :: extra_asset_field() | nil
   def get_media_type_config(configs, media_type) do
@@ -507,7 +548,7 @@ defmodule Beacon.Config do
         if Enum.member?(["image", "audio", "video"], category) do
           media_type
         else
-          raise Beacon.LoaderError, """
+          raise ConfigError, """
           Catchall Media Types are only allowed for `image`, `audio`, `video` media types.
           Media Type: #{media_type}
           """
@@ -526,7 +567,7 @@ defmodule Beacon.Config do
 
   # catchall
   defp validate_accept_extension(media_type),
-    do: raise(Beacon.LoaderError, "`#{media_type}` does not appear to be a media type, extensions must begin with a `.`")
+    do: raise(ConfigError, "`#{media_type}` does not appear to be a media type, extensions must begin with a `.`")
 
   defp process_assets_config(allowed_media_accept_types, assigned_assets) do
     Enum.reduce(
@@ -534,9 +575,9 @@ defmodule Beacon.Config do
       assigned_assets,
       fn media_type, acc ->
         if String.contains?(media_type, "/") do
-          ensure_backend(acc, media_type)
+          ensure_provider(acc, media_type)
         else
-          ensure_backend_for_extension(acc, media_type)
+          ensure_provider_for_extension(acc, media_type)
         end
       end
     )
@@ -551,7 +592,7 @@ defmodule Beacon.Config do
     end)
   end
 
-  defp ensure_backend(configs, media_type) do
+  defp ensure_provider(configs, media_type) do
     if :error == Plug.Conn.Utils.media_type(media_type) do
       raise_invalid_media_type(media_type)
     end
@@ -559,26 +600,26 @@ defmodule Beacon.Config do
     if get_media_type_config(configs, media_type) do
       configs
     else
-      configs ++ [{media_type, [{:backends, [Beacon.MediaLibrary.Backend.Repo]}]}]
+      configs ++ [{media_type, [{:providers, [Beacon.MediaLibrary.Provider.Repo]}]}]
     end
   end
 
-  defp ensure_backend_for_extension(configs, <<46, extension::binary>>) do
+  defp ensure_provider_for_extension(configs, <<46, extension::binary>>) do
     if MIME.has_type?(extension) do
       media_type = MIME.type(extension)
-      ensure_backend(configs, media_type)
+      ensure_provider(configs, media_type)
     else
-      raise Beacon.LoaderError, """
+      raise ConfigError, """
       No known media type for: #{extension}
       """
     end
   end
 
-  defp ensure_backend_for_extension(_configs, extension_without_leading_dot),
-    do: raise(Beacon.LoaderError, "`#{extension_without_leading_dot}` does not appear to be a media type, extensions must begin with a `.`")
+  defp ensure_provider_for_extension(_configs, extension_without_leading_dot),
+    do: raise(ConfigError, "`#{extension_without_leading_dot}` does not appear to be a media type, extensions must begin with a `.`")
 
   defp raise_invalid_media_type(media_type) do
-    raise(Beacon.LoaderError, "Unknown Media type: #{media_type}")
+    raise ConfigError, "Unknown Media type: #{media_type}"
   end
 
   defp ensure_processor(config, media_type) do
@@ -589,6 +630,52 @@ defmodule Beacon.Config do
       end
 
     Keyword.put_new(config, :processor, processor)
+  end
+
+  # https://github.com/elixir-ecto/ecto/blob/88100b862f69682e4bec4bd11ab8d459346817b0/lib/mix/ecto.ex#L62
+  defp ensure_repo(nil = _repo) do
+    raise ConfigError, "missing required option :repo"
+  end
+
+  defp ensure_repo(repo) do
+    case Code.ensure_compiled(repo) do
+      {:module, _} ->
+        if function_exported?(repo, :__adapter__, 0) do
+          repo
+        else
+          raise ConfigError, """
+          Module #{inspect(repo)} is not an Ecto.Repo.
+          """
+        end
+
+      {:error, error} ->
+        raise ConfigError, """
+        Could not load #{inspect(repo)}, error: #{inspect(error)}
+        """
+    end
+  end
+
+  defp ensure_tailwind_config(nil = _config), do: Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")
+
+  defp ensure_tailwind_config(config) when is_binary(config) do
+    if Path.extname(config) == ".js" do
+      config
+    else
+      invalid_tailwind_config!(config)
+    end
+  end
+
+  defp ensure_tailwind_config(config), do: invalid_tailwind_config!(config)
+
+  defp invalid_tailwind_config!(config) do
+    raise ConfigError, """
+    invalid tailwind config
+
+    Expected an existing .js file, got:
+
+      #{inspect(config)}
+
+    """
   end
 
   @doc false

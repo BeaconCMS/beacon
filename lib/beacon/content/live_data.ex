@@ -1,6 +1,6 @@
 defmodule Beacon.Content.LiveData do
   @moduledoc """
-  The LiveData schema scopes `LiveDataAssign`s to `Page`s via site and path.
+  Scopes `Beacon.Content.LiveDataAssign`s to `Beacon.Content.Page`s via site and path.
 
   > #### Do not create or edit live data manually {: .warning}
   >

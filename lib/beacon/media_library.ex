@@ -1,40 +1,65 @@
 defmodule Beacon.MediaLibrary do
   @moduledoc """
-  Media Library to upload and serve assets.
+  Provides functions to upload and serve assets.
   """
+
   import Ecto.Query
   import Ecto.Changeset
+  import Beacon.Utils, only: [repo: 1]
 
   alias Beacon.Lifecycle
   alias Beacon.MediaLibrary.Asset
-  alias Beacon.MediaLibrary.Backend
-  alias Beacon.Repo
+  alias Beacon.MediaLibrary.Provider
+  alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.Types.Site
 
+  @doc """
+  Uploads a given `UploadMetadata` and runs the `:upload_asset` lifecycle.
+
+  Runs multiple steps:
+
+    * Upload to external service (see: `Beacon.MediaLibrary.Provider`)
+    * Persist the metadata to the local database
+    * Run the `:upload_asset` lifecycle (see: `t:Beacon.Config.lifecycle_stage/0`)
+
+  """
+  @spec upload(UploadMetadata.t()) :: Ecto.Schema.t()
   def upload(metadata) do
-    with metadata <- Backend.process!(metadata),
+    with metadata <- Provider.process!(metadata),
          metadata <- send_to_cdns(metadata),
          {:ok, asset} <- save_asset(metadata) do
       Lifecycle.Asset.upload_asset(metadata, asset)
     end
   end
 
+  @doc """
+  This functions runs only the external upload step of `upload/1`.
+  """
+  @spec send_to_cdns(UploadMetadata.t()) :: UploadMetadata.t()
   def send_to_cdns(metadata) do
     metadata
-    |> Backend.validate_for_delivery()
-    |> Backend.send_to_cdns()
+    |> Provider.validate_for_delivery()
+    |> Provider.send_to_cdns()
   end
 
+  @doc """
+  This functions runs only the local persistence step of `upload/1`.
+  """
+  @spec save_asset(UploadMetadata.t()) :: {:ok, UploadMetadata.t()} | {:error, Changeset.t()}
   def save_asset(metadata) do
     metadata
     |> prep_save_asset()
-    |> Repo.insert()
+    |> repo(metadata).insert()
   end
 
+  @doc """
+  Same as `save_asset/1` but raises an error if unsuccessful.
+  """
+  @spec save_asset!(UploadMetadata.t()) :: UploadMetadata.t()
   def save_asset!(metadata) do
     metadata
     |> prep_save_asset()
-    |> Repo.insert!()
+    |> repo(metadata).insert!()
   end
 
   defp prep_save_asset(metadata) do
@@ -59,52 +84,85 @@ defmodule Beacon.MediaLibrary do
       %Ecto.Changeset{data: %Asset{}}
 
   """
+  @spec change_asset(Asset.t(), map()) :: Changeset.t()
   def change_asset(%Asset{} = asset, attrs \\ %{}) do
     asset
     |> cast(attrs, [:site, :file_name, :media_type, :file_body])
     |> validate_required([:site, :file_name, :media_type, :file_body])
   end
 
-  def change_derivation(change, attrs \\ %{}) do
-    change
+  @doc """
+  Returns an `%Ecto.Changeset{}` for updating an Asset's `:usage_tag` and/or `:source_id`.
+
+  ## Examples
+
+      iex> change_asset(asset)
+      %Ecto.Changeset{data: %Asset{}}
+
+  """
+  @spec change_asset(Asset.t(), map()) :: Changeset.t()
+  def change_derivation(asset, attrs \\ %{}) do
+    asset
     |> cast(attrs, [:usage_tag, :source_id])
     |> validate_required([:usage_tag, :source_id])
   end
 
+  @doc """
+  Returns a URL for a given asset.
+
+  If multiple URLs exist due to various providers, only the first will be returned.
+  """
+  @spec url_for(nil) :: nil
+  @spec url_for(Asset.t()) :: String.t()
   def url_for(nil), do: nil
 
   def url_for(asset) do
     {_, url} =
       asset
-      |> backends_for()
+      |> providers_for()
       |> hd()
       |> get_url_for(asset)
 
     url
   end
 
+  @doc """
+  Uses the given `provider` to determine the URL for a given asset.
+  """
+  @spec url_for(nil, atom()) :: nil
+  @spec url_for(Asset.t(), atom()) :: String.t()
   def url_for(nil, _), do: nil
 
-  def url_for(asset, backend_key) do
+  def url_for(asset, provider_key) do
     {_, url} =
       asset
-      |> backends_for()
-      |> Enum.find(fn backend ->
-        backend.backend_key() == backend_key
+      |> providers_for()
+      |> Enum.find(fn provider ->
+        provider.provider_key() == provider_key
       end)
       |> get_url_for(asset)
 
     url
   end
 
+  @doc """
+  Returns a list of all URLs to the given Asset.
+
+  The number of URLs depends on how many providers are configured for the media type.
+  """
+  @spec urls_for(Asset.t()) :: [String.t()]
   def urls_for(asset) do
     asset
-    |> backends_for()
+    |> providers_for()
     |> Enum.map(&get_url_for(&1, asset))
   end
 
+  @doc """
+  For a given asset and list of acceptable usage tags, returns a [srcset](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/srcset) for use in templates.
+  """
+  @spec srcset_for_image(Asset.t(), [String.t()]) :: [String.t()]
   def srcset_for_image(%Asset{} = asset, sources) do
-    asset = Repo.preload(asset, :assets)
+    asset = repo(asset).preload(asset, :assets)
 
     asset.assets
     |> filter_sources(sources)
@@ -126,18 +184,24 @@ defmodule Beacon.MediaLibrary do
     Enum.map(assets, fn asset -> "#{url_for(asset)} #{asset.usage_tag}" end)
   end
 
-  defp backends_for(asset) do
+  defp providers_for(asset) do
     asset.site
     |> Beacon.Config.fetch!()
     |> Beacon.Config.config_for_media_type(asset.media_type)
-    |> Keyword.fetch!(:backends)
+    |> Keyword.fetch!(:providers)
   end
 
-  defp get_url_for({backend, config}, asset),
-    do: {backend.backend_key(), backend.url_for(asset, config)}
+  defp get_url_for({provider, config}, asset),
+    do: {provider.provider_key(), provider.url_for(asset, config)}
 
-  defp get_url_for(backend, asset), do: {backend.backend_key(), backend.url_for(asset)}
+  defp get_url_for(provider, asset), do: {provider.provider_key(), provider.url_for(asset)}
 
+  @doc """
+  Returns true if the given Asset is an image.
+
+  Accepted filetypes are `.jpg .jpeg .png .gif .bmp .tif .tiff .webp`
+  """
+  @spec is_image?(Asset.t()) :: boolean()
   # credo:disable-for-next-line
   def is_image?(%{file_name: file_name}) do
     ext = Path.extname(file_name)
@@ -161,7 +225,7 @@ defmodule Beacon.MediaLibrary do
     |> where([a], a.site == ^site)
     |> where([a], is_nil(a.deleted_at))
     |> where([_a], ^Enum.to_list(clauses))
-    |> Repo.one()
+    |> repo(site).one()
   end
 
   @doc """
@@ -174,6 +238,7 @@ defmodule Beacon.MediaLibrary do
     * `:query` - search assets by file name. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load. Defaults to `[:thumbnail]`.
     * `:sort` - column in which the result will be ordered by. Defaults to `:file_name`.
+      Allowed values: `:file_name`, `:media_type`, `:inserted_at`, `:updated_at`.
 
   """
   @doc type: :assets
@@ -183,7 +248,8 @@ defmodule Beacon.MediaLibrary do
     page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [:thumbnail])
-    sort = Keyword.get(opts, :sort, :file_name)
+    sort = Keyword.get(opts, :sort)
+    sort = if sort in [:file_name, :media_type, :inserted_at, :updated_at], do: sort, else: :file_name
 
     site
     |> query_list_assets_base()
@@ -192,7 +258,7 @@ defmodule Beacon.MediaLibrary do
     |> query_list_assets_search(search)
     |> query_list_assets_preloads(preloads)
     |> query_list_assets_sort(sort)
-    |> Repo.all()
+    |> repo(site).all()
   end
 
   defp query_list_assets_base(site) do
@@ -238,7 +304,7 @@ defmodule Beacon.MediaLibrary do
     |> query_list_assets_base()
     |> query_list_assets_search(search)
     |> select([q], count(q.id))
-    |> Repo.one()
+    |> repo(site).one()
   end
 
   @doc """
@@ -249,7 +315,7 @@ defmodule Beacon.MediaLibrary do
     query = query |> String.split() |> Enum.join("%")
     query = "%#{query}%"
 
-    Repo.all(
+    repo(site).all(
       from(asset in Asset,
         where: asset.site == ^site,
         where: is_nil(asset.deleted_at) and ilike(asset.file_name, ^query),
@@ -271,13 +337,13 @@ defmodule Beacon.MediaLibrary do
   @spec soft_delete(Asset.t()) :: {:ok, Asset.t()} | :error
   def soft_delete(%Asset{} = asset) do
     update =
-      Repo.update_all(
+      repo(asset).update_all(
         from(asset in Asset, where: asset.id == ^asset.id),
         set: [deleted_at: DateTime.utc_now()]
       )
 
     case update do
-      {1, _} -> {:ok, Repo.reload(asset)}
+      {1, _} -> {:ok, repo(asset).reload(asset)}
       _ -> :error
     end
   end

@@ -6,16 +6,16 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
+  alias Beacon.Content.EventHandler
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.LiveData
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
-  alias Beacon.Content.PageEventHandler
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
-  alias Beacon.Repo
+  alias Beacon.BeaconTest.Repo
   alias Ecto.Changeset
 
   describe "layouts" do
@@ -202,18 +202,23 @@ defmodule Beacon.ContentTest do
       assert compilation_error =~ "unmatched closing tag"
     end
 
-    test "publish page should create a published event" do
+    test "publish page creates a published event" do
       page = page_fixture()
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert [_created, %PageEvent{event: :published}] = Repo.all(PageEvent)
     end
 
-    test "publish page should create a snapshot" do
+    test "publish page creates a snapshot" do
       page = page_fixture(title: "snapshot test")
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
+    end
+
+    test "publish page normalizes most used columns" do
+      published_page_fixture(path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"})
+      assert %PageSnapshot{path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"}} = Repo.one(PageSnapshot)
     end
 
     test "list_published_pages" do
@@ -236,16 +241,60 @@ defmodule Beacon.ContentTest do
 
     test "list_published_pages with same inserted_at missing usec" do
       page = page_fixture(path: "/d", title: "page v1")
-      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
-      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert Content.list_published_pages(:my_site) == []
 
       {:ok, _page} = Content.publish_page(page)
-      Beacon.Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
-      Beacon.Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
+      Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
       assert [%Page{title: "page v1"}] = Content.list_published_pages(:my_site)
+    end
+
+    test "list_published_pages query latest snapshot" do
+      # publish page_a twice
+      page_a = page_fixture(path: "/a", title: "page_a v1")
+      {:ok, page_a} = Content.publish_page(page_a)
+      {:ok, page_a} = Content.update_page(page_a, %{"title" => "page_a v2"})
+      {:ok, _page_a} = Content.publish_page(page_a)
+
+      assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site, query: "page_a")
+    end
+
+    test "list_published_pages search returns empty with no pages" do
+      assert [] = Content.list_published_pages(:my_site, search: %{path: "not-found"})
+    end
+
+    test "list_published_pages search by parts of path" do
+      published_page_fixture(path: "/home")
+      assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{path: "%me%"})
+    end
+
+    test "list_published_pages search with function" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+
+      assert [%Page{path: "/with-tags"}] =
+               Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%tag%'")) end)
+
+      assert [] = Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%other%'")) end)
+    end
+
+    test "list_published_pages search by path and title" do
+      published_page_fixture(path: "/home-1", title: "Home")
+      published_page_fixture(path: "/home-2", title: "Home")
+      assert [%Page{path: "/home-1"}] = Content.list_published_pages(:my_site, search: %{path: "/home-1", title: "Home"})
+    end
+
+    test "list_published_pages search by format" do
+      published_page_fixture(path: "/home", format: :heex)
+      assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{format: "heex"})
+    end
+
+    test "list_published_pages query by extra field with string value" do
+      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+      assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
     end
 
     test "list_page_events" do
@@ -320,7 +369,7 @@ defmodule Beacon.ContentTest do
 
       Content.publish_page(page)
 
-      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.id)
+      assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.site, page.id)
     end
 
     test "save raw_schema" do
@@ -443,6 +492,8 @@ defmodule Beacon.ContentTest do
           """)
       )
 
+      Beacon.Loader.reload_snippets_module(:my_site)
+
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
                %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
@@ -546,33 +597,29 @@ defmodule Beacon.ContentTest do
   end
 
   describe "event_handlers" do
-    test "create event handler OK" do
-      page = page_fixture()
-      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+    test "list_event_handlers/1" do
+      event_handlers = for _ <- 1..3, do: event_handler_fixture(site: :my_site)
 
-      assert {:ok, %Page{event_handlers: [event_handler]}} = Content.create_event_handler_for_page(page, attrs)
-      assert %PageEventHandler{name: "Foo", code: "{:noreply, socket}"} = event_handler
+      result = Content.list_event_handlers(:my_site)
+
+      assert Enum.sort(event_handlers) == Enum.sort(result)
     end
 
-    test "create triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      attrs = %{name: "Foo", code: "{:noreply, socket}"}
+    test "create event handler OK" do
+      attrs = %{name: "Foo", code: "{:noreply, socket}", site: :my_site}
 
-      {:ok, %Page{}} = Content.create_event_handler_for_page(page, attrs)
-
-      assert_receive :lifecycle_after_update_page
+      assert {:ok, event_handler} = Content.create_event_handler(attrs)
+      assert %EventHandler{name: "Foo", code: "{:noreply, socket}"} = event_handler
     end
 
     test "create validates elixir code" do
-      page = page_fixture(%{format: :heex})
-
-      attrs = %{name: "test", code: "[1)"}
-      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      attrs = %{name: "test", code: "[1)", site: :my_site}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler(attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
-      attrs = %{name: "test", code: "if true, do false"}
-      assert {:error, %{errors: [error]}} = Content.create_event_handler_for_page(page, attrs)
+      attrs = %{name: "test", code: "if true, do false", site: :my_site}
+      assert {:error, %{errors: [error]}} = Content.create_event_handler(attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -582,39 +629,28 @@ defmodule Beacon.ContentTest do
       {:noreply, assign(socket, res: res)}
       |
 
-      attrs = %{name: "test", code: code}
-      assert {:ok, _} = Content.create_event_handler_for_page(page, attrs)
+      attrs = %{name: "test", code: code, site: :my_site}
+      assert {:ok, _} = Content.create_event_handler(attrs)
     end
 
     test "update event handler OK" do
-      page = page_fixture(%{format: :heex})
-      event_handler = page_event_handler_fixture(%{page: page})
+      event_handler = event_handler_fixture()
       attrs = %{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"}
 
-      assert {:ok, %Page{event_handlers: [updated_event_handler]}} = Content.update_event_handler_for_page(page, event_handler, attrs)
-      assert %PageEventHandler{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"} = updated_event_handler
-    end
-
-    test "update triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      event_handler = page_event_handler_fixture(%{page: page})
-
-      {:ok, %Page{}} = Content.update_event_handler_for_page(page, event_handler, %{name: "Changed"})
-
-      assert_receive :lifecycle_after_update_page
+      assert {:ok, updated_event_handler} = Content.update_event_handler(event_handler, attrs)
+      assert %EventHandler{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"} = updated_event_handler
     end
 
     test "update validates elixir code" do
-      page = page_fixture(%{format: :heex})
-      page_event_handler = page_event_handler_fixture(%{page: page})
+      event_handler = event_handler_fixture()
 
       attrs = %{code: "[1)"}
-      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_event_handler(event_handler, attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
       attrs = %{code: "if true, do false"}
-      assert {:error, %{errors: [error]}} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_event_handler(event_handler, attrs)
       {:code, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -625,25 +661,13 @@ defmodule Beacon.ContentTest do
       |
 
       attrs = %{code: code}
-      assert {:ok, _} = Content.update_event_handler_for_page(page, page_event_handler, attrs)
+      assert {:ok, _} = Content.update_event_handler(event_handler, attrs)
     end
 
     test "delete event handler OK" do
-      page = page_fixture(%{format: :heex})
-      event_handler_1 = page_event_handler_fixture(%{page: page})
-      event_handler_2 = page_event_handler_fixture(%{page: page})
+      %{id: id} = event_handler = event_handler_fixture()
 
-      assert {:ok, %Page{event_handlers: [^event_handler_2]}} = Content.delete_event_handler_from_page(page, event_handler_1)
-      assert {:ok, %Page{event_handlers: []}} = Content.delete_event_handler_from_page(page, event_handler_2)
-    end
-
-    test "delete triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      event_handler = page_event_handler_fixture(%{page: page})
-
-      {:ok, %Page{}} = Content.delete_event_handler_from_page(page, event_handler)
-
-      assert_receive :lifecycle_after_update_page
+      assert {:ok, %{id: ^id}} = Content.delete_event_handler(event_handler)
     end
   end
 
@@ -726,13 +750,13 @@ defmodule Beacon.ContentTest do
     test "update broadcasts updated content event" do
       %{site: site} = component = component_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
-      Content.update_component(component, %{body: "<div>test</div>"})
+      Content.update_component(component, %{template: "<div>test</div>"})
       assert_receive {:content_updated, :component, %{site: ^site}}
     end
 
     test "validate template heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_component(%{site: :my_site, name: "test", body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.create_component(%{site: :my_site, name: "test", template: "<div", example: "test"})
 
       assert compilation_error =~ "expected closing `>`"
     end
@@ -740,20 +764,28 @@ defmodule Beacon.ContentTest do
     test "validate template heex on update" do
       component = component_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [body: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_component(component, %{body: "<div"})
+      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
+               Content.update_component(component, %{template: "<div"})
 
       assert compilation_error =~ "expected closing `>`"
     end
 
+    test "validate name format as valid function name" do
+      assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
+               Content.create_component(%{site: :my_site, name: "my component", template: "test", example: "test"})
+
+      assert {:error, %Ecto.Changeset{errors: [name: {"can only contain lowercase letters, numbers, and underscores", _}]}} =
+               Content.create_component(%{site: :my_site, name: "my_component$", template: "test", example: "test"})
+    end
+
     test "list components" do
-      component_a = component_fixture(name: "component_a")
-      component_b = component_fixture(name: "component_b")
+      component_fixture(site: "my_site", name: "component_a")
+      component_fixture(site: "my_site", name: "component_b")
 
-      components = Content.list_components(component_b.site, query: "_b")
+      components = Content.list_components(:my_site, query: "_b", preloads: [:attrs])
 
-      assert Enum.member?(components, component_b)
-      refute Enum.member?(components, component_a)
+      assert Enum.find(components, &(&1.name == "component_b"))
+      refute Enum.find(components, &(&1.name == "component_a"))
     end
 
     test "page and per_page" do
@@ -779,8 +811,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update_component" do
-      component = component_fixture(name: "new_component", body: "old_body")
-      assert {:ok, %Component{body: "new_body"}} = Content.update_component(component, %{body: "new_body"})
+      component = component_fixture(name: "new_component", template: "old_body")
+      assert {:ok, %Component{template: "new_body"}} = Content.update_component(component, %{template: "new_body"})
     end
   end
 
@@ -813,6 +845,17 @@ defmodule Beacon.ContentTest do
       assert %{key: "product_id", format: :elixir, value: "123"} = assign
     end
 
+    test "blocks assigning reserved keys" do
+      live_data = live_data_fixture()
+      invalid_keys = [:beacon, :uploads, :streams, :socket, :myself, :flash]
+
+      for invalid_key <- invalid_keys do
+        attrs = %{key: to_string(invalid_key), format: :text, value: "foo"}
+        assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
+        assert {:key, {"is reserved", _}} = error
+      end
+    end
+
     test "validate assign elixir code on create" do
       live_data = live_data_fixture()
 
@@ -838,7 +881,7 @@ defmodule Beacon.ContentTest do
     test "get_live_data/2" do
       live_data = live_data_fixture() |> Repo.preload(:assigns)
 
-      assert Content.get_live_data(live_data.site, live_data.path) == live_data
+      assert Content.get_live_data_by(live_data.site, path: live_data.path) == live_data
     end
 
     test "live_data_for_site/1" do
@@ -892,7 +935,7 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{key: "wins", value: "1337", format: :elixir}
-      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
 
       assert updated_assign.id == live_data_assign.id
       assert updated_assign.key == "wins"
@@ -905,12 +948,12 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
 
       attrs = %{value: "[1)", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected token: )"
 
       attrs = %{value: "if true, do false", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
       {:value, {_, [compilation_error: compilation_error]}} = error
       assert compilation_error =~ "unexpected reserved word: do"
 
@@ -920,7 +963,7 @@ defmodule Beacon.ContentTest do
       |
 
       attrs = %{value: code, format: :elixir}
-      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, attrs)
+      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
     end
 
     test "delete_live_data/1" do
@@ -936,7 +979,7 @@ defmodule Beacon.ContentTest do
       live_data_assign = live_data_assign_fixture(live_data: live_data)
       Repo.preload(live_data, :assigns)
 
-      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign)
+      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign, live_data.site)
       assert %{assigns: []} = Repo.preload(live_data, :assigns)
     end
   end

@@ -1,8 +1,10 @@
-defmodule BeaconWeb do
+defmodule Beacon.Web do
+  @moduledoc false
+
   @non_assignables [:beacon]
 
   @doc """
-  Same as `Phoenix.Component.assign/2` but raises an error if the key is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign/2` but raises `ArgumentError` if key is reserved.
   """
   def assign(socket_or_assigns, keyword_or_map) when is_map(keyword_or_map) or is_list(keyword_or_map) do
     Enum.each(keyword_or_map, fn {key, _value} ->
@@ -13,7 +15,7 @@ defmodule BeaconWeb do
   end
 
   @doc """
-  Same as `Phoenix.Component.assign/3` but raises an error if the `key` is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign/3` but raises `ArgumentError` if key is reserved.
   """
   def assign(socket_or_assigns, key, value) do
     validate_assign_key!(key)
@@ -21,7 +23,7 @@ defmodule BeaconWeb do
   end
 
   @doc """
-  Same as `Phoenix.Component.assign_new/3` but raises an error if the `key` is a reserved assign by Beacon.
+  Same as `Phoenix.Component.assign_new/3` but raises `ArgumentError` if key is reserved.
   """
   def assign_new(socket_or_assigns, key, fun) do
     validate_assign_key!(key)
@@ -39,12 +41,12 @@ defmodule BeaconWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        namespace: BeaconWeb,
+        namespace: Beacon.Web,
         formats: [:html, :json],
-        layouts: [html: BeaconWeb.Layouts]
+        layouts: [html: Beacon.Web.Layouts]
 
       import Plug.Conn
-      import BeaconWeb.Gettext
+      use Gettext, backend: Beacon.Gettext
     end
   end
 
@@ -52,7 +54,7 @@ defmodule BeaconWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {BeaconWeb.Layouts, :app}
+        layout: {Beacon.Web.Layouts, :app}
 
       unquote(html_helpers())
     end
@@ -72,11 +74,9 @@ defmodule BeaconWeb do
     quote do
       use Phoenix.Component
 
-      # Import convenience functions from controllers
       import Phoenix.Controller,
         only: [get_csrf_token: 0, view_module: 1, view_template: 1]
 
-      # Include general helpers for rendering HTML
       unquote(html_helpers())
     end
   end
@@ -84,20 +84,13 @@ defmodule BeaconWeb do
   @doc false
   defp html_helpers do
     quote do
-      # HTML helpers and components
-      use PhoenixHTMLHelpers
       import Phoenix.HTML
       import Phoenix.HTML.Form
-
-      # Core UI components and translation
-      import BeaconWeb.CoreComponents
-      import BeaconWeb.Gettext
-
-      # Shortcut for generating JS commands
+      import PhoenixHTMLHelpers.Form, except: [label: 1]
+      import PhoenixHTMLHelpers.Link
+      import PhoenixHTMLHelpers.Tag
+      import PhoenixHTMLHelpers.Format
       alias Phoenix.LiveView.JS
-
-      # Router helpers
-      alias BeaconWeb.Router.Helpers, as: Routes
     end
   end
 

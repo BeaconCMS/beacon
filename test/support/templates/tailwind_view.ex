@@ -1,6 +1,6 @@
-defmodule BeaconWeb.TailwindView do
+defmodule Beacon.Web.TailwindView do
   @moduledoc false
-  use BeaconWeb, :html
+  use Beacon.Web, :html
 
   def render(_, assigns) do
     ~H"""

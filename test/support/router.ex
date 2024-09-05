@@ -1,5 +1,5 @@
 defmodule Beacon.BeaconTest.Router do
-  use Beacon.BeaconWebTest, :router
+  use Beacon.Beacon.WebTest, :router
   use Beacon.Router
 
   pipeline :browser do
@@ -8,6 +8,11 @@ defmodule Beacon.BeaconTest.Router do
     plug :fetch_live_flash
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+  end
+
+  scope "/nested" do
+    pipe_through :browser
+    beacon_site "/site", site: :booted
   end
 
   scope "/" do

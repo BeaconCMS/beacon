@@ -38,13 +38,12 @@ defmodule Beacon.RouterServer do
   # Client
 
   def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
-    with {path, page_id} <- lookup_path(site, path_info),
-         %Beacon.Content.Page{path: ^path} = page <- Beacon.Content.get_published_page(site, page_id) do
-      Beacon.Loader.fetch_page_module(site, page_id)
-      page
+    with {_path, page_id} <- lookup_path(site, path_info),
+         {:ok, page_module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
+      Beacon.apply_mfa(page_module, :page, [])
     else
       _ ->
-        raise BeaconWeb.NotFoundError, """
+        raise Beacon.Web.NotFoundError, """
         no page was found for site #{site} and path #{inspect(path_info)}
 
         Make sure a page was created for that path.
@@ -213,9 +212,12 @@ defmodule Beacon.RouterServer do
     match?
   end
 
-  # FIXME: map events
-  def handle_info(msg, config) do
-    Logger.warning("Beacon.RouterServer can not handle the message: #{inspect(msg)}")
+  def handle_info({:page_loaded, %{site: site, id: id, path: path}}, config) do
+    :ok = do_add_page(site, id, path)
+    {:noreply, config}
+  end
+
+  def handle_info(_msg, config) do
     {:noreply, config}
   end
 end

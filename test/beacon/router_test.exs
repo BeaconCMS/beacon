@@ -11,7 +11,7 @@ defmodule Beacon.RouterTest do
     assert {
              :test,
              _,
-             [{:session, %{"beacon_site" => :test}}, {:root_layout, {BeaconWeb.Layouts, :runtime}}]
+             [{:session, %{"beacon_site" => :test}}, {:root_layout, {Beacon.Web.Layouts, :runtime}}]
            } = Router.__options__(site: :test)
   end
 
@@ -19,6 +19,36 @@ defmodule Beacon.RouterTest do
     test "require site as atom" do
       assert_raise ArgumentError, fn -> Router.__options__([]) end
       assert_raise ArgumentError, fn -> Router.__options__(site: "string") end
+    end
+  end
+
+  describe "__options__/1" do
+    test "returns default session options that include session and root_layout keys when passed a site name as an atom" do
+      assert Router.__options__(site: :my_site) ==
+               {:my_site, :beacon_my_site,
+                [
+                  session: %{"beacon_site" => :my_site},
+                  root_layout: {Beacon.Web.Layouts, :runtime}
+                ]}
+    end
+
+    test "returns custom root_layout value when passed a root_layout value in a keyword list" do
+      assert Router.__options__(site: :my_site, root_layout: {Beacon.Web.Layouts, :app}) ==
+               {:my_site, :beacon_my_site,
+                [
+                  session: %{"beacon_site" => :my_site},
+                  root_layout: {Beacon.Web.Layouts, :app}
+                ]}
+    end
+
+    test "returns custom on_mount value when passed an on_mount value in a keyword list" do
+      assert Router.__options__(site: :my_site, on_mount: {:struct, :atom}) ==
+               {:my_site, :beacon_my_site,
+                [
+                  session: %{"beacon_site" => :my_site},
+                  root_layout: {Beacon.Web.Layouts, :runtime},
+                  on_mount: {:struct, :atom}
+                ]}
     end
   end
 

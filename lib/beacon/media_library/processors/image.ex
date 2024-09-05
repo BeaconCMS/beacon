@@ -1,4 +1,5 @@
 defmodule Beacon.MediaLibrary.Processors.Image do
+  @moduledoc false
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
 

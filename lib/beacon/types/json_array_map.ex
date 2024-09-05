@@ -10,8 +10,10 @@ defmodule Beacon.Types.JsonArrayMap do
   """
   @type t :: [map()]
 
+  @doc false
   def type, do: {:array, :map}
 
+  @doc false
   def cast(term) when is_map(term), do: {:ok, [term]}
 
   def cast(term) when is_list(term) do
@@ -35,6 +37,7 @@ defmodule Beacon.Types.JsonArrayMap do
     {:error, message: "expected a list of map or a map, got: #{inspect(term)}"}
   end
 
+  @doc false
   def dump(term) when is_map(term), do: {:ok, [term]}
 
   def dump(term) when is_list(term) do
@@ -56,6 +59,7 @@ defmodule Beacon.Types.JsonArrayMap do
 
   def dump(_site), do: :error
 
+  @doc false
   def load(term) when is_map(term), do: {:ok, [term]}
 
   def load(term) when is_list(term), do: {:ok, term}

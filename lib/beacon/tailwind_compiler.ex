@@ -2,20 +2,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @moduledoc """
   Tailwind compiler for runtime CSS, used on all sites.
 
-  The default configuration is fetched from `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js.eex")`,
-  you can see the actual file at https://github.com/BeaconCMS/beacon/blob/main/priv/tailwind.config.js.eex
+  The default configuration is fetched from `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.js")`,
+  you can see the actual file at https://github.com/BeaconCMS/beacon/blob/main/priv/tailwind.config.js
 
-    1. It's recommended to be a file with a .eex file extension
+  That's the file used by default if no value is provided in the site configuration `t:Beacon.Config.tailwind_config/0`
 
-    2. The [content section](https://tailwindcss.com/docs/content-configuration) requires an entry `<%= @beacon_content %>`, eg:
-
-        ```
-        content: [
-          <%= @beacon_content %>
-        ]
-        ```
-
-       You're allowed to include more entries per Tailwind specification, but don't remove that special `<%= @beacon_content` placeholder.
+  You can use any of the [available options from Tailwind CSS](https://tailwindcss.com/docs/configuration) but
+  you must bundle the file if using Plugins or requiring any external module, see the [Tailwind Setup guide](https://hexdocs.pm/beacon/tailwind-setup.html)
+  for more info and examples.
 
   """
 
@@ -27,13 +21,9 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @impl Beacon.RuntimeCSS
   @spec config(Beacon.Types.Site.t()) :: String.t()
   def config(site) when is_atom(site) do
-    tmp_dir = tmp_dir!()
-    content = beacon_content(tmp_dir)
-
     site
     |> tailwind_config!()
-    |> EEx.eval_file(assigns: %{beacon_content: content})
-    |> tap(fn _ -> cleanup(tmp_dir, []) end)
+    |> File.read!()
   end
 
   @impl Beacon.RuntimeCSS
@@ -58,8 +48,20 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
     Application.put_env(:tailwind, :beacon_runtime, [])
 
+    tailwind_config = """
+    const userConfig = require(\"#{tailwind_config}\")
+
+    module.exports = {
+      ...userConfig,
+      content: [
+        <%= @beacon_content %>,
+        ...(userConfig.content || [])
+      ]
+    }
+    """
+
     tailwind_config
-    |> EEx.eval_file(assigns: %{beacon_content: content})
+    |> EEx.eval_string(assigns: %{beacon_content: content})
     |> write_file!(tmp_dir, "tailwind.config.js")
   end
 
@@ -106,18 +108,31 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   # Run tailwind-cli returning the output and exit code
   # Note that `:cd` is the root dir for regular and umbrella projects so the paths have to be defined accordingly.
   # https://github.com/phoenixframework/tailwind/blob/8cf9810474bf37c1b1dd821503d756885534d2ba/lib/tailwind.ex#L192
+  @doc false
   def run_cli(profile, extra_args) when is_atom(profile) and is_list(extra_args) do
-    if Tailwind.bin_version() == :error do
-      message = """
-      tailwind-cli binary not found or the installation is invalid.
+    version =
+      case Tailwind.bin_version() do
+        {:ok, version} ->
+          version
 
-      Execute the following command to install the binary used to compile CSS:
+        :error ->
+          raise Beacon.LoaderError, """
+          tailwind-cli binary not found or the installation is invalid.
 
-          mix tailwind.install
+          Execute the following command to install the binary used to compile CSS:
+
+              mix tailwind.install
+
+          """
+      end
+
+    if Version.compare(version, "3.3.0") == :lt do
+      raise Beacon.LoaderError, """
+      Beacon requires Tailwind CSS 3.3.0 or higher.
+
+      Please update your Tailwind CSS binary to the latest version.
 
       """
-
-      raise Beacon.LoaderError, message
     end
 
     config = Tailwind.config_for!(profile)
@@ -146,13 +161,13 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   defp tailwind_config!(site) do
     tailwind_config = Beacon.Config.fetch!(site).tailwind_config
 
-    if File.exists?(tailwind_config) && File.read!(tailwind_config) =~ "<%= @beacon_content %>" do
+    if File.exists?(tailwind_config) do
       tailwind_config
     else
       raise """
       Tailwind config not found or invalid.
 
-      Make sure the provided file exists at #{inspect(tailwind_config)} and it contains <%= @beacon_content %> in the `content` section.
+      Make sure the provided file exists at #{inspect(tailwind_config)}
 
       See Beacon.Config for more info.
       """
@@ -164,7 +179,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
       Task.async(fn ->
         Enum.map(Beacon.Content.list_components(site, per_page: :infinity), fn component ->
           component_path = Path.join(tmp_dir, "#{site}_component_#{remove_special_chars(component.name)}.template")
-          File.write!(component_path, component.body)
+          File.write!(component_path, component.template)
           component_path
         end)
       end),

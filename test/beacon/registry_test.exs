@@ -1,5 +1,5 @@
 defmodule Beacon.RegistryTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   test "running_sites" do
     running_sites = Beacon.Registry.running_sites()
@@ -12,6 +12,7 @@ defmodule Beacon.RegistryTest do
              :lifecycle_test_fail,
              :my_site,
              :not_booted,
+             :raw_schema_test,
              :s3_site
            ]
   end

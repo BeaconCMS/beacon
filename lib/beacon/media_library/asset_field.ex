@@ -17,7 +17,7 @@ defmodule Beacon.MediaLibrary.AssetField do
 
       defmodule MyApp.AltTextField do
         use Phoenix.Component
-        import BeaconWeb.CoreComponents
+        import Beacon.Web.CoreComponents
         import Ecto.Changeset
 
         @behaviour Beacon.MediaLibrary.AssetField
@@ -99,6 +99,7 @@ defmodule Beacon.MediaLibrary.AssetField do
   defp get_media_type_from_form(%{data: %{"media_type" => media_type}}), do: media_type
   defp get_media_type_from_form(%{data: %{media_type: media_type}}), do: media_type
 
+  @doc false
   def get_extra_fields_for_media_type(field_configs, media_type) do
     case Beacon.Config.get_media_type_config(field_configs, media_type) do
       nil -> []

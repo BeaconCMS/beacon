@@ -2,18 +2,26 @@ defmodule Beacon.MixProject do
   use Mix.Project
 
   @version "0.1.0-dev"
+  @source_url "https://github.com/BeaconCMS/beacon"
+  @homepage_url "https://beaconcms.org"
 
   def project do
     [
       app: :beacon,
       version: @version,
       elixir: "~> 1.13",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       name: "Beacon",
+      homepage_url: @homepage_url,
+      source_url: @source_url,
+      description: """
+      Open-source Content Management System (CMS) built with Phoenix LiveView. Faster render times to boost SEO performance, even for the most content-heavy pages.
+      """,
+      package: package(),
       deps: deps(),
       aliases: aliases(),
-      docs: docs(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      docs: docs()
     ]
   end
 
@@ -27,81 +35,81 @@ defmodule Beacon.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  defp deps do
+  defp package do
     [
-      {:accent, "~> 1.1"},
-      {:bypass, "~> 2.1", only: :test},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:ecto_sql, "~> 3.6"},
-      {:esbuild, "~> 0.5", only: :dev},
-      {:ex_brotli, "~> 0.3"},
-      {:ex_doc, "~> 0.29", only: :docs},
-      {:ex_aws, "~> 2.4"},
-      {:ex_aws_s3, "~> 2.4"},
-      {:floki, ">= 0.30.0", only: :test},
-      {:gettext, "~> 0.20"},
-      {:hackney, "~> 1.16", only: [:dev, :test]},
-      {:image, "~> 0.40"},
-      {:jason, "~> 1.0"},
-      {:solid, "~> 0.14"},
-      phoenix_dep(),
-      {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_html, "~> 4.0"},
-      {:phoenix_html_helpers, "~> 1.0"},
-      {:phoenix_live_reload, "~> 1.3", only: :dev},
-      phoenix_live_view_dep(),
-      {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_view, "~> 2.0", only: [:dev, :test]},
-      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
-      {:postgrex, "~> 0.16"},
-      {:safe_code, github: "TheFirstAvenger/safe_code"},
-      {:tailwind, "~> 0.2"},
-      {:rustler, ">= 0.0.0", optional: true},
-      {:faker, "~> 0.17", only: :test},
-      live_monaco_editor_dep(),
-      mdex_dep()
+      maintainers: ["Leandro Pereira", "Andrew Berrien"],
+      licenses: ["MIT"],
+      links: %{
+        Changelog: "https://hexdocs.pm/beacon/#{@version}/changelog.html",
+        GitHub: @source_url,
+        Website: @homepage_url,
+        DockYard: "https://dockyard.com"
+      },
+      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
     ]
   end
 
-  defp phoenix_dep do
-    cond do
-      env = System.get_env("PHOENIX_VERSION") -> {:phoenix, env}
-      path = System.get_env("PHOENIX_PATH") -> {:phoenix, path}
-      :default -> {:phoenix, "~> 1.7"}
-    end
+  defp deps do
+    [
+      # Overridable
+      override_dep(:phoenix, "~> 1.7", "PHOENIX_VERSION", "PHOENIX_PATH"),
+      override_dep(:phoenix_live_view, "~> 0.20", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
+      override_dep(:live_monaco_editor, "~> 0.1", "LIVE_MONACO_EDITOR_VERSION", "LIVE_MONACO_EDITOR_PATH"),
+      override_dep(:mdex, "~> 0.1", "MDEX_VERSION", "MDEX_PATH"),
+
+      # Runtime
+      {:accent, "~> 1.1"},
+      {:ecto_sql, "~> 3.6"},
+      {:ex_brotli, "~> 0.3"},
+      # FIXME: multipart copy in ex_aws_s3 2.5.0
+      {:ex_aws, "~> 2.4.0"},
+      {:ex_aws_s3, "~> 2.4.0"},
+      {:floki, ">= 0.30.0"},
+      {:gettext, "~> 0.26"},
+      {:hackney, "~> 1.16"},
+      {:image, "~> 0.40"},
+      {:jason, "~> 1.0"},
+      {:oembed, "~> 0.4.1"},
+      {:phoenix_ecto, "~> 4.4"},
+      {:phoenix_html, "~> 4.0"},
+      {:phoenix_html_helpers, "~> 1.0"},
+      {:phoenix_pubsub, "~> 2.1"},
+      {:postgrex, "~> 0.16"},
+      {:safe_code, "~> 0.2"},
+      {:solid, "~> 0.14"},
+      {:tailwind, "~> 0.2"},
+
+      # Dev, Test, Docs
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:phoenix_view, "~> 2.0", only: [:dev, :test]},
+      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
+      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
+      {:esbuild, "~> 0.5", only: :dev},
+      {:phoenix_live_reload, "~> 1.3", only: :dev},
+      {:bypass, "~> 2.1", only: :test}
+    ]
   end
 
-  defp phoenix_live_view_dep do
+  defp override_dep(dep, requirement, env_version, env_path) do
     cond do
-      env = System.get_env("PHOENIX_LIVE_VIEW_VERSION") -> {:phoenix_live_view, env}
-      path = System.get_env("PHOENIX_LIVE_VIEW_PATH") -> {:phoenix_live_view, path}
-      :default -> {:phoenix_live_view, "~> 0.20"}
-    end
-  end
-
-  defp live_monaco_editor_dep do
-    cond do
-      path = System.get_env("LIVE_MONACO_EDITOR_PATH") -> {:live_monaco_editor, path: path}
-      :default -> {:live_monaco_editor, "~> 0.1"}
-    end
-  end
-
-  defp mdex_dep do
-    cond do
-      path = System.get_env("MDEX_PATH") -> {:mdex, path: path}
-      :default -> {:mdex, "~> 0.1"}
+      version = System.get_env(env_version) -> {dep, version}
+      path = System.get_env(env_path) -> {dep, path: path}
+      :default -> {dep, requirement}
     end
   end
 
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      dev: ["ecto.reset", "run --no-halt dev.exs"],
+      setup: ["deps.get", "assets.setup", "assets.build"],
+      dev: ["run --no-halt dev.exs"],
+      "format.all": ["format", "cmd npm run format --prefix ./assets"],
+      "format.all.check": [
+        "format --check-formatted",
+        "cmd npm run format-check --prefix ./assets"
+      ],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing --no-assets", "esbuild.install --if-missing"],
-      "assets.build": ["esbuild cdn", "esbuild cdn_min"]
+      "assets.build": ["esbuild cdn", "esbuild cdn_min", "esbuild tailwind_bundle"]
     ]
   end
 
@@ -109,96 +117,114 @@ defmodule Beacon.MixProject do
     [
       main: "Beacon",
       source_ref: "v#{@version}",
-      source_url: "https://github.com/BeaconCMS/beacon",
-      groups_for_modules: [
-        Content: [
-          Beacon.Content,
-          Beacon.Content.Component,
-          Beacon.Content.ErrorPage,
-          Beacon.Content.Layout,
-          Beacon.Content.LayoutEvent,
-          Beacon.Content.LayoutSnapshot,
-          Beacon.Content.LiveData,
-          Beacon.Content.LiveDataAssign,
-          Beacon.Content.Page,
-          Beacon.Content.Page.Event,
-          Beacon.Content.Page.Helper,
-          Beacon.Content.PageEvent,
-          Beacon.Content.PageEventHandler,
-          Beacon.Content.PageSnapshot,
-          Beacon.Content.PageVariant,
-          Beacon.Content.Stylesheet,
-          Beacon.Content.Snippets.Helper,
-          Beacon.Template,
-          Beacon.Template.HEEx,
-          Beacon.Template.Markdown
-        ],
-        "Media Library": [
-          Beacon.MediaLibrary,
-          Beacon.MediaLibrary.Asset,
-          Beacon.MediaLibrary.Backend,
-          Beacon.MediaLibrary.Backend.Repo,
-          Beacon.MediaLibrary.Backend.S3,
-          Beacon.MediaLibrary.Backend.S3.Signed,
-          Beacon.MediaLibrary.Backend.S3.Unsigned,
-          Beacon.MediaTypes,
-          Beacon.MediaLibrary.Processors.Default,
-          Beacon.MediaLibrary.Processors.Image,
-          Beacon.MediaLibrary.UploadMetadata
-        ],
-        "Authn and Authz": [
-          Beacon.Authorization,
-          Beacon.Authorization.Policy,
-          Beacon.Authorization.DefaultPolicy
-        ],
-        Web: [
-          BeaconWeb.PageLive,
-          BeaconWeb.Components
-        ],
-        "RESTful API": [
-          BeaconWeb.API.PageController,
-          BeaconWeb.API.ComponentController
-        ],
-        Extensibility: [
-          Beacon.Config,
-          Beacon.Lifecycle,
-          Beacon.Template.LoadMetadata,
-          Beacon.Template.RenderMetadata,
-          Beacon.Content.PageField,
-          Beacon.MediaLibrary.AssetField
-        ],
-        Execution: [
-          Beacon.Router,
-          Beacon.Loader,
-          Beacon.Registry,
-          Beacon.RuntimeCSS,
-          Beacon.RuntimeJS,
-          Beacon.RuntimeCSS.TailwindCompiler
-        ],
-        Types: [
-          Beacon.Types.Atom,
-          Beacon.Types.Binary,
-          Beacon.Types.Site,
-          Beacon.Types.JsonArrayMap
-        ],
-        Exceptions: [
-          Beacon.LoaderError,
-          Beacon.AuthorizationError,
-          Beacon.ParserError,
-          Beacon.SnippetError,
-          BeaconWeb.NotFoundError
-        ]
-      ],
-      groups_for_functions: [
+      source_url: @source_url,
+      extra_section: "GUIDES",
+      extras: extras(),
+      groups_for_extras: groups_for_extras(),
+      groups_for_modules: groups_for_modules(),
+      groups_for_docs: [
         "Functions: Layouts": &(&1[:type] == :layouts),
         "Functions: Pages": &(&1[:type] == :pages),
         "Functions: Page Variants": &(&1[:type] == :page_variants),
         "Functions: Stylesheets": &(&1[:type] == :stylesheets),
         "Functions: Components": &(&1[:type] == :components),
         "Functions: Snippets": &(&1[:type] == :snippets),
-        "Functions: Page Event Handlers": &(&1[:type] == :page_event_handlers),
+        "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
         "Functions: Live Data": &(&1[:type] == :live_data)
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+    ]
+  end
+
+  defp extras do
+    ["CHANGELOG.md"] ++ Path.wildcard("guides/*/*.md")
+  end
+
+  defp groups_for_extras do
+    [
+      Introduction: ~r"guides/introduction/",
+      Recipes: ~r"guides/recipes/",
+      Troubleshoot: ~r"troubleshoot.md",
+      Upgrading: ~r"guides/upgrading/"
+    ]
+  end
+
+  defp groups_for_modules do
+    [
+      Execution: [
+        Beacon.Router,
+        Beacon.Loader,
+        Beacon.Registry,
+        Beacon.Migration
+      ],
+      Content: [
+        Beacon.Content,
+        Beacon.Content.Component,
+        Beacon.Content.ComponentAttr,
+        Beacon.Content.ComponentSlot,
+        Beacon.Content.ComponentSlotAttr,
+        Beacon.Content.ErrorPage,
+        Beacon.Content.EventHandler,
+        Beacon.Content.Layout,
+        Beacon.Content.LayoutEvent,
+        Beacon.Content.LayoutSnapshot,
+        Beacon.Content.LiveData,
+        Beacon.Content.LiveDataAssign,
+        Beacon.Content.Page,
+        Beacon.Content.Page.Event,
+        Beacon.Content.Page.Helper,
+        Beacon.Content.PageEvent,
+        Beacon.Content.PageSnapshot,
+        Beacon.Content.PageVariant,
+        Beacon.Content.Stylesheet,
+        Beacon.Content.Snippets.Helper,
+        Beacon.Template,
+        Beacon.Template.HEEx,
+        Beacon.Template.Markdown
+      ],
+      "Media Library": [
+        Beacon.MediaLibrary,
+        Beacon.MediaLibrary.Asset,
+        Beacon.MediaLibrary.Provider,
+        Beacon.MediaLibrary.Provider.Repo,
+        Beacon.MediaLibrary.Provider.S3,
+        Beacon.MediaLibrary.Provider.S3.Signed,
+        Beacon.MediaLibrary.Provider.S3.Unsigned,
+        Beacon.MediaTypes,
+        Beacon.MediaLibrary.Processors.Default,
+        Beacon.MediaLibrary.Processors.Image,
+        Beacon.MediaLibrary.UploadMetadata
+      ],
+      Web: [
+        Beacon.RuntimeCSS,
+        Beacon.RuntimeJS,
+        Beacon.RuntimeCSS.TailwindCompiler,
+        Beacon.Web.BeaconAssigns
+      ],
+      Extensibility: [
+        Beacon.Config,
+        Beacon.Lifecycle,
+        Beacon.Template.LoadMetadata,
+        Beacon.Template.RenderMetadata,
+        Beacon.Content.PageField,
+        Beacon.MediaLibrary.AssetField
+      ],
+      Types: [
+        Beacon.Types.Atom,
+        Beacon.Types.Binary,
+        Beacon.Types.Site,
+        Beacon.Types.JsonArrayMap
+      ],
+      Exceptions: [
+        Beacon.LoaderError,
+        Beacon.AuthorizationError,
+        Beacon.ParserError,
+        Beacon.SnippetError,
+        Beacon.Web.NotFoundError,
+        Beacon.Web.ServerError,
+        Beacon.RuntimeError,
+        Beacon.ConfigError
       ]
     ]
   end

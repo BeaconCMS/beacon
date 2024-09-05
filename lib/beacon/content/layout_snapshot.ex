@@ -1,6 +1,9 @@
 defmodule Beacon.Content.LayoutSnapshot do
   @moduledoc """
-  Layout snapshots
+  Represents the template of a `Beacon.Content.Layout` at a specific moment in time.
+
+  LayoutSnapshots don't exist on their own, but are created as part of a `Beacon.Content.LayoutEvent`
+  whenever a Layout is created or published.
 
   > #### Do not create or edit layout snapshots manually {: .warning}
   >

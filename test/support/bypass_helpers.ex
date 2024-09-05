@@ -6,7 +6,7 @@ defmodule Beacon.Support.BypassHelpers do
   end
 
   # beacon-media-library matches the bucket in the aws test creds in test.exs
-  def setup_multipart_upload_backend(bypass, test_pid, key, opts \\ []) do
+  def setup_multipart_upload_provider(bypass, test_pid, key, opts \\ []) do
     bucket = Keyword.get(opts, :bucket, "beacon-media-library")
     upload_id = Keyword.get(opts, :upload_id, "a-very-secret-upload")
     request_path = "/#{bucket}/#{key}"

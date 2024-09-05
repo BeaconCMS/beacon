@@ -2,7 +2,7 @@ defmodule Beacon.Template.Markdown do
   @moduledoc """
   GitHub Flavored Markdown
 
-  Use https://github.com/leandrocp/mdex to convert Markdown to HTML
+  Uses https://github.com/leandrocp/mdex to convert Markdown to HTML
   """
 
   # TODO: implement a markdown format that is aware of Phoenix features like link attrs and assigns

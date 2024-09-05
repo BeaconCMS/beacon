@@ -4,23 +4,23 @@ defmodule Beacon.ConfigTest do
   alias Beacon.Config
 
   @site :my_site
+  @repo Beacon.BeaconTest.Repo
 
   describe "registry" do
     test "returns the site config" do
       assert %Beacon.Config{
                css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
-               authorization_source: Beacon.BeaconTest.BeaconAuthorizationSource,
                live_socket_path: "/custom_live",
                safe_code_check: false,
                site: :my_site,
                tailwind_config: tailwind_config
              } = Config.fetch!(@site)
 
-      assert tailwind_config =~ "tailwind.config.templates.js.eex"
+      assert tailwind_config =~ "tailwind.config.templates.js"
     end
 
     test "raises for non existing site" do
-      assert_raise RuntimeError, ~r/site :invalid was not found/, fn ->
+      assert_raise Beacon.ConfigError, ~r/site :invalid was not found/, fn ->
         Config.fetch!(:invalid)
       end
     end
@@ -37,7 +37,7 @@ defmodule Beacon.ConfigTest do
                  {:heex, "HEEx (HTML)"},
                  {:markdown, "Markdown (GitHub Flavored version)"}
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, template_formats: [])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo, template_formats: [])
     end
 
     test "merge existing config" do
@@ -46,7 +46,7 @@ defmodule Beacon.ConfigTest do
                  {:markdown, "Markdown (GitHub Flavored version)"},
                  {:heex, "Custom HEEx description"}
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, template_formats: [{:heex, "Custom HEEx description"}])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo, template_formats: [{:heex, "Custom HEEx description"}])
     end
 
     test "add config" do
@@ -56,7 +56,7 @@ defmodule Beacon.ConfigTest do
                  {:markdown, "Markdown (GitHub Flavored version)"},
                  {:custom_format, "Custom Format"}
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, template_formats: [{:custom_format, "Custom Format"}])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo, template_formats: [{:custom_format, "Custom Format"}])
     end
   end
 
@@ -71,7 +71,7 @@ defmodule Beacon.ConfigTest do
                  after_publish_page: [],
                  upload_asset: [{:thumbnail, _}]
                ]
-             } = Config.new(site: :site, endpoint: :endpoint, lifecycle: [load_template: []])
+             } = Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo, lifecycle: [load_template: []])
     end
   end
 
@@ -82,45 +82,45 @@ defmodule Beacon.ConfigTest do
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
                 ]},
                {"image/gif",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
                 ]},
                {"image/png",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
                 ]},
                {"image/webp",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
                 ]},
                {"application/pdf",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
                 ]}
-             ] = Config.new(site: :site, endpoint: :endpoint).assets
+             ] = Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo).assets
     end
   end
 
   describe "config_for_media_type/2" do
     test "retrieves" do
       media_type = "image/jpeg"
-      config = Config.new(site: :site, endpoint: :endpoint)
+      config = Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo)
 
       assert [
                {:processor, _},
                {:validations, []},
-               {:backends, [Beacon.MediaLibrary.Backend.Repo]}
+               {:providers, [Beacon.MediaLibrary.Provider.Repo]}
              ] = Config.config_for_media_type(config, media_type)
     end
   end

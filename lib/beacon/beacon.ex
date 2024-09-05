@@ -1,6 +1,6 @@
 defmodule Beacon do
   @moduledoc """
-  Beacon is a Content Management System built on top of Phoenix LiveView, focused on:
+  Beacon is a Content Management System for [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view).
 
   * Rendering pages fast.
   * Reloading content at runtime.
@@ -9,21 +9,24 @@ defmodule Beacon do
 
   You can build virtually any type of website with Beacon, from a simple blog to a complex business site.
 
-  Following are the main APIs provided by Beacon. You can find out more information on each module.
+  Following are the main APIs provided by Beacon. You can find out more information on the module documentation of each one of those modules:
 
   * `Beacon.Config` - configuration of sites.
+  * `Beacon.Router` - mount one or more sites into the router of your Phoenix application.
   * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
   * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
   * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
-  * `Beacon.Authorization` - define permissions to limit access to content and features, also used on Beacon LiveAdmin.
 
-  Follow along with [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started now and build your first site.
+  Get started with [your first site](https://hexdocs.pm/beacon/your-first-site.html) and check out the guides for more information.
 
   """
 
+  @doc false
   use Supervisor
-  require Logger
+
   alias Beacon.Config
+
+  require Logger
 
   @doc """
   Start `Beacon` and a supervisor for each site, which will load all layouts, pages, components, and so on.
@@ -37,7 +40,7 @@ defmodule Beacon do
   Note that each Beacon instance may have multiple sites and each site loads in its own supervisor. That gives you the
   flexibility to plan your architecture from simple to complex environments. For example, you can have a single site
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
-  campaing that may receive too much traffic.
+  campaign that may receive too much traffic.
 
   ## Options
 
@@ -49,8 +52,7 @@ defmodule Beacon do
       config :my_app, Beacon,
         sites: [
           [site: :my_site, endpoint: MyAppWeb.Endpoint]
-        ],
-        authorization_source: MyApp.AuthorizationPolicy
+        ]
 
       # lib/my_app/application.ex
       def start(_type, _args) do
@@ -83,20 +85,8 @@ defmodule Beacon do
 
     :pg.start_link(:beacon_cluster)
 
-    authorization_source = Keyword.get(opts, :authorization_source)
-
-    children =
-      sites
-      |> Enum.map(fn site_config -> assign_authorization_source(site_config, authorization_source) end)
-      |> Enum.map(&site_child_spec/1)
-
+    children = Enum.map(sites, &site_child_spec/1)
     Supervisor.init(children, strategy: :one_for_one)
-  end
-
-  defp assign_authorization_source(site_config, nil), do: site_config
-
-  defp assign_authorization_source(site_config, authorization_source) do
-    Keyword.put_new(site_config, :authorization_source, authorization_source)
   end
 
   defp site_child_spec(opts) do
@@ -122,12 +112,14 @@ defmodule Beacon do
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) do
-    Beacon.Boot.do_init(Config.fetch!(site))
-    Beacon.Config.update_value(site, :skip_boot?, false)
+    site
+    |> Config.fetch!()
+    |> Beacon.Boot.do_init()
+
     :ok
   end
 
-  @tailwind_version "3.3.1"
+  @tailwind_version "3.4.4"
   @doc false
   def tailwind_version, do: @tailwind_version
 
@@ -148,19 +140,21 @@ defmodule Beacon do
     do_apply_mfa(module, function, args, 0, context)
   end
 
+  @max_retries 5
+
   defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
     if :erlang.module_loaded(module) do
       apply(module, function, args)
     else
-      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context)
+      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
     end
   rescue
-    e in UndefinedFunctionError ->
-      case {failure_count, e} do
-        {failure_count, _} when failure_count >= 10 ->
+    error in UndefinedFunctionError ->
+      case {failure_count, error} do
+        {failure_count, _} when failure_count >= @max_retries ->
           mfa = Exception.format_mfa(module, function, length(args))
           Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context)], __STACKTRACE__
+          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
 
         {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
           mfa = Exception.format_mfa(module, function, length(args))
@@ -168,33 +162,26 @@ defmodule Beacon do
           :timer.sleep(100 * (failure_count * 2))
           do_apply_mfa(module, function, args, failure_count + 1, context)
 
-        {_, e} ->
+        {_, error} ->
           reraise Beacon.RuntimeError,
-                  [message: apply_mfa_error_message(module, function, args, "runtime error - #{inspect(e)}", context)],
+                  [message: apply_mfa_error_message(module, function, args, nil, context, error)],
                   __STACKTRACE__
       end
 
-    e ->
-      reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, inspect(e), context)], __STACKTRACE__
+    error ->
+      Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
+      reraise error, __STACKTRACE__
   end
 
-  defp apply_mfa_error_message(module, function, args, reason, context) do
+  defp apply_mfa_error_message(module, function, args, reason, context, error) do
     mfa = Exception.format_mfa(module, function, length(args))
+    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
+    reason = if reason, do: "reason: #{reason}"
+    context = if context, do: "context: #{inspect(context)}"
+    error = if error, do: Exception.message(error)
 
-    context =
-      case context do
-        nil -> ""
-        _ -> "context: #{inspect(context)}"
-      end
-
-    """
-    failed to call #{mfa} with args: #{inspect(List.flatten(args))}
-
-    reason: #{reason}
-
-    #{context}
-
-    """
+    lines = for line <- [summary, reason, context, error], line != nil, do: line
+    Enum.join(lines, "\n\n")
   end
 
   @doc false

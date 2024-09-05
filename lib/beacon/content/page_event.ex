@@ -1,6 +1,8 @@
 defmodule Beacon.Content.PageEvent do
   @moduledoc """
-  Page events
+  Represents a point in time when a `Beacon.Content.Page` was created, published, or unpublished.
+
+  At that time, a `Beacon.Content.PageSnapshot` is created and stored with the PageEvent.
 
   > #### Do not create or edit page events manually {: .warning}
   >

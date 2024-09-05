@@ -1,9 +1,5 @@
 defmodule Beacon.Registry do
-  @moduledoc """
-  Site process storage.
-
-  Each site `Beacon.Config` is stored in this registry.
-  """
+  @moduledoc false
 
   @doc false
   def child_spec(_arg) do

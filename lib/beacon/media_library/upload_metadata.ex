@@ -22,6 +22,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
         }
 
   # TODO: https://github.com/BeaconCMS/beacon/pull/239#discussion_r1194160478
+  @doc false
   def new(site, path, opts \\ []) do
     opts =
       Keyword.reject(opts, fn
@@ -56,6 +57,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
     }
   end
 
+  @doc false
   def config_for_media_type(metadata, media_type) do
     metadata.site
     |> Beacon.Config.fetch!()
@@ -63,6 +65,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
     |> Enum.into(%{})
   end
 
+  @doc false
   def key_for(%{name: name, site: site}) do
     ext = Path.extname(name)
 

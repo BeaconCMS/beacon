@@ -6,9 +6,9 @@ Beacon is a content management system (CMS) built with Phoenix LiveView. It brin
 
 ## Guides
 
-Check out the [guides](https://github.com/BeaconCMS/beacon/tree/main/guides) to get started and [recipes](https://github.com/BeaconCMS/beacon/tree/main/guides/recipes) to learn about features and do more with your sites.
+Check out the guides to get started and recipes to learn about features and do more with your sites.
 
-If you're new to Beacon you probably want to start with [creating your first site](https://github.com/BeaconCMS/beacon/blob/main/guides/your-first-site.md).
+If you're new to Beacon you probably want to start with [creating your first site](https://hexdocs.pm/beacon/0.1.0-rc.1/your-first-site.html) guide.
 
 ## Demo
 
@@ -45,16 +45,13 @@ The file `dev.exs` is a self-contained Phoenix application running Beacon with s
 mix setup
 ```
 
-If deps compilation fails, make sure your environment has the compilers installed.
-On Ubuntu look for the `build_essential` package, on macOS install utilities with `xcode-select --install`
-
 2. Execute the dev script:
 
 ```sh
-iex --sname core -S mix dev
+iex --sname core@localhost -S mix dev
 ```
 
-Note that running a named node isn't required unless you're running Beacon LiveAdmin too.
+Note that running a named node isn't required unless you're running Beacon LiveAdmin for local development as well.
 
 Finally, visit any of the routes defined in `dev.exs`, eg: http://localhost:4001/dev or http://localhost:4001/dev/sample
 

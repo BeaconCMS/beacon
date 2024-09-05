@@ -3,9 +3,83 @@
 
 defmodule Beacon.Router do
   @moduledoc """
-  Provides routing helpers to instantiate sites, or api endpoints.
+  Controls pages routing and provides helpers to mount sites in your application router and generate links to pages.
 
-  In your app router, add `use Beacon.Router` and call one the of the available macros.
+      defmodule MyAppWeb.Router do
+        use Phoenix.Router
+        use Beacon.Router
+
+        scope "/", MyAppWeb do
+          pipe_through :browser
+          beacon_site "/blog", site: :blog
+        end
+      end
+
+  ## Helpers
+
+  A `~p` sigil is provided to generate links to pages taking the `scope` and site `prefix` into account.
+
+  Using that sigil in a template in the `:blog` site defined above would result in the following links:
+
+  ```
+  ~p"/contact" => "/blog/contact"
+  ~p"/posts/\#\{\@post\}" => "/blog/posts/my-post"
+  ```
+
+  In this example `post` is a `Beacon.Content.Page` that implements the `Phoenix.Param` protocol to resolve the page path.
+
+  ## Path
+
+  The full path of the site is calculated resolving the `scope` prefix plus the site `prefix`.
+
+  The simplest scenario is mounting a site at the root of your application:
+
+      scope "/", MyAppWeb do
+        pipe_through :browser
+        beacon_site "/", site: :my_site
+      end
+
+  In this case the site `:my_site` will be available at `https://yourapp.com/`
+
+  By mixing prefixes you have the flexibility to mount sites in different paths,
+  for example both declarations below will mount the site at `https://yourapp.com/blog`:
+
+      scope "/blog", MyAppWeb do
+        pipe_through :browser
+        beacon_site "/", site: :blog
+      end
+
+      scope "/", MyAppWeb do
+        pipe_through :browser
+        beacon_site "/blog", site: :blog
+      end
+
+  There's no difference between the two approaches, but that is important to group and organize your routes and sites,
+  for example a scope might be served through a different pipeline:application
+
+      scope "/marketing", MyAppWeb do
+        pipe_through :browser_analytics
+        beacon_site "/super-campaign", site: :marketing_super_campaign
+        beacon_site "/", site: :marketing
+      end
+
+  Note in the last example that `/super-campaign` is defined _before_ `/` and there's an important reason for that: router precedence.
+
+  ## Route Precedence
+
+  Beacon pages are defined dynamically so it doesn't know which pages are availale when the router is compiled,
+  which means that any route after the `prefix` may match a published page. For example `/contact` may be a valid
+  page published under the mounted `beacon_site "/, site: :marketing` site.
+
+  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:application
+
+      /*
+      /super-campaign
+
+  The second route would never match since the first one would match all requests.
+
+  As a rule of thumb, put all specific routes first.
+
   """
 
   defmacro __using__(_opts) do
@@ -17,7 +91,7 @@ defmodule Beacon.Router do
   defp prelude do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
-      import Beacon.Router, only: [beacon_site: 2, beacon_api: 1]
+      import Beacon.Router, only: [beacon_site: 2]
       @before_compile unquote(__MODULE__)
     end
   end
@@ -41,36 +115,14 @@ defmodule Beacon.Router do
   end
 
   @doc """
-  Routes for a beacon site.
-
-  ## Examples
-
-      defmodule MyAppWeb.Router do
-        use Phoenix.Router
-        use Beacon.Router
-
-        scope "/", MyAppWeb do
-          pipe_through :browser
-          beacon_site "/blog", site: :blog
-        end
-      end
-
-  Note that you may have multiple sites in the same scope or
-  separated in multiple scopes, which allows you to pipe
-  your sites through custom pipelines, for eg is your site
-  requires some sort of authentication:
-
-      scope "/protected", MyAppWeb do
-          pipe_through :browser
-          pipe_through :auth
-          beacon_site "/sales", site: :stats
-        end
-      end
+  Mounts a site in the `prefix` in your host application router.
 
   ## Options
 
-    * `:site` (required) `t:Beacon.Config.site/0` - register your site with a unique name,
-      note that has to be the same name used for configuration, see `Beacon.Config` for more info.
+    * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name.
+      Note that the name has to match the one used in your site configuration in `application.ex`.
+      See the module doc and `Beacon.Config` for more info.
+
   """
   defmacro beacon_site(prefix, opts) do
     # TODO: raise on duplicated sites defined on the same prefix
@@ -80,14 +132,16 @@ defmodule Beacon.Router do
 
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
 
-      get "/beacon_assets/#{site}/:file_name", BeaconWeb.MediaLibraryController, :show
+      get "/__beacon_assets__/#{site}/:file_name", Beacon.Web.MediaLibraryController, :show
 
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
-          get "/beacon_assets/css-:md5", BeaconWeb.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/beacon_assets/js:md5", BeaconWeb.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/beacon_assets/:file_name", BeaconWeb.MediaLibraryController, :show
-          live "/*path", BeaconWeb.PageLive, :path
+          # TODO: css_config-:md5 caching
+          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/:file_name", Beacon.Web.MediaLibraryController, :show
+          live "/*path", Beacon.Web.PageLive, :path
         end
       end
 
@@ -96,6 +150,7 @@ defmodule Beacon.Router do
   end
 
   @doc false
+  @spec __options__(keyword()) :: {atom(), atom(), keyword()}
   def __options__(opts) do
     {site, _opts} = Keyword.pop(opts, :site)
 
@@ -111,60 +166,46 @@ defmodule Beacon.Router do
           raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
       end
 
+    session_opts = build_session_opts(opts, site)
+
     {
       site,
       # TODO: sanitize and format session name
       String.to_atom("beacon_#{site}"),
-      [
-        session: %{"beacon_site" => site},
-        root_layout: {BeaconWeb.Layouts, :runtime}
-      ]
+      session_opts
     }
   end
 
-  @doc """
-  API routes.
-  """
-  defmacro beacon_api(path) do
-    quote bind_quoted: binding() do
-      scope path, BeaconWeb.API do
-        import Phoenix.Router, only: [get: 3, post: 3, put: 3]
+  defp build_session_opts(opts, site) do
+    root_layout =
+      case Keyword.pop(opts, :root_layout) do
+        {nil, _opts} ->
+          {Beacon.Web.Layouts, :runtime}
 
-        get "/:site/pages", PageController, :index
-        get "/:site/pages/:page_id", PageController, :show
-        put "/:site/pages/:page_id", PageController, :update
-        get "/:site/pages/:page_id/components/:component_id", ComponentController, :show_ast
-        get "/:site/components", ComponentController, :index
-        get "/:site/components/:component_id", ComponentController, :show
+        {root_layout, _opts} ->
+          root_layout
       end
+
+    default_session_opts = [
+      session: %{"beacon_site" => site},
+      root_layout: root_layout
+    ]
+
+    case Keyword.pop(opts, :on_mount) do
+      {nil, _opts} ->
+        default_session_opts
+
+      {on_mount, _opts} ->
+        Keyword.merge(default_session_opts, on_mount: on_mount)
     end
   end
 
-  # TODO: secure cross site assets
-  @doc """
-  Router helper to generate the asset path.
-
-  ## Example
-
-      iex> beacon_asset_path(:my_site_com, "logo.jpg")
-      "/beacon_assets/my_site_com/logo.jpg"
-
-  """
-  @spec beacon_asset_path(Beacon.Types.Site.t(), Path.t()) :: String.t()
+  @doc false
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    sanitize_path("/beacon_assets/#{site}/#{file_name}")
+    sanitize_path("/__beacon_assets__/#{site}/#{file_name}")
   end
 
-  @doc """
-  Router helper to generate the asset url.
-
-  ## Example
-
-      iex> beacon_asset_url(:my_site_com, "logo.jpg")
-      "https://site.com/beacon_assets/my_site_com/logo.jpg"
-
-  """
-  @spec beacon_asset_url(Beacon.Types.Site.t(), Path.t()) :: String.t()
+  @doc false
   def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
     Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
   end
@@ -178,6 +219,7 @@ defmodule Beacon.Router do
     sanitize_path("#{prefix}/#{path}")
   end
 
+  @doc false
   def sanitize_path(path) do
     String.replace(path, "//", "/")
   end
