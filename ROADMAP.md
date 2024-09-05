@@ -33,7 +33,7 @@ Those issues have priority over the rest and will be included in the next releas
 #### Media Library
 - Redesign Media Library - https://www.figma.com/design/k8NhxbRRb8hm4fc1RQHms1/Media-Library?node-id=30-57434
 
-### Admin Interface
+#### Admin Interface
 - Adopt a set of standard components and colors on built-in pages
 - Expose built-in components and colors to build custom pages
 
@@ -53,6 +53,8 @@ Those issues have priority over the rest and will be included in the next releas
   - Create a Plausible plugin
 ### Better integration between Beacon and your existing Phoenix app
   - Remove limitations of current mix tasks to install and add new sites to existing apps, potentially using Igniter
+  - Support Windows
+  - Support other major database vendors as MySQL, MSSQL, and SQLite
   - Introduce Beacon.Test to help test resources and lifecycles
 ### General
 - Built-in SEO tools
