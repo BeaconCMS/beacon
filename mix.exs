@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.1.0-rc.1"
+  @version "0.1.0-dev"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -65,7 +65,7 @@ defmodule Beacon.MixProject do
       {:ex_aws, "~> 2.4.0"},
       {:ex_aws_s3, "~> 2.4.0"},
       {:floki, ">= 0.30.0"},
-      {:gettext, "~> 0.20"},
+      {:gettext, "~> 0.26"},
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
       {:jason, "~> 1.0"},

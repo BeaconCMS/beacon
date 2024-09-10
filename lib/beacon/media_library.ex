@@ -238,6 +238,7 @@ defmodule Beacon.MediaLibrary do
     * `:query` - search assets by file name. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load. Defaults to `[:thumbnail]`.
     * `:sort` - column in which the result will be ordered by. Defaults to `:file_name`.
+      Allowed values: `:file_name`, `:media_type`, `:inserted_at`, `:updated_at`.
 
   """
   @doc type: :assets
@@ -247,7 +248,8 @@ defmodule Beacon.MediaLibrary do
     page = Keyword.get(opts, :page, 1)
     search = Keyword.get(opts, :query)
     preloads = Keyword.get(opts, :preloads, [:thumbnail])
-    sort = Keyword.get(opts, :sort, :file_name)
+    sort = Keyword.get(opts, :sort)
+    sort = if sort in [:file_name, :media_type, :inserted_at, :updated_at], do: sort, else: :file_name
 
     site
     |> query_list_assets_base()
