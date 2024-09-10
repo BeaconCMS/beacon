@@ -41,7 +41,7 @@ defmodule Beacon.Loader.Page do
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
-        import Beacon.Web.Gettext
+        use Gettext, backend: Beacon.Gettext
         import unquote(routes_module)
         import unquote(components_module)
 

@@ -3940,16 +3940,12 @@ defmodule Beacon.Content do
   @doc type: :info_handlers
   @spec create_info_handler(map()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
   def create_info_handler(attrs) do
-    variable_names =
-      attrs
-      |> ExUtils.Map.atomize_keys()
-      |> Map.get(:msg)
-      |> list_variable_names()
+    msg = retrieve_msg(attrs)
 
     changeset =
       %InfoHandler{}
       |> InfoHandler.changeset(attrs)
-      |> validate_info_handler(variable_names)
+      |> validate_info_handler(msg)
 
     site = Changeset.get_field(changeset, :site)
 
@@ -3959,26 +3955,31 @@ defmodule Beacon.Content do
   end
 
   @spec validate_info_handler(Changeset.t(), [String.t()], [String.t()]) :: Changeset.t()
-  defp validate_info_handler(changeset, variable_names, imports \\ []) do
+  defp validate_info_handler(changeset, msg, imports \\ []) do
     code = Changeset.get_field(changeset, :code)
     site = Changeset.get_field(changeset, :site)
     metadata = %Beacon.Template.LoadMetadata{site: site}
-    var = ["socket"] ++ variable_names
+    var = ["socket"] ++ msg
     imports = ["Phoenix.LiveView"] ++ imports
 
     do_validate_template(changeset, :code, :elixir, code, metadata, var, imports)
   end
 
-  @spec list_variable_names(String.t()) :: [String.t()]
-  defp list_variable_names(msg) do
-    {_msg, variables} =
-      msg
-      |> String.replace("{", "")
-      |> String.replace("}", "")
-      |> String.split(", ")
-      |> List.pop_at(0)
+  @spec retrieve_msg(map(), InfoHandler.t()) :: [String.t()]
+  defp retrieve_msg(attrs, info_handler \\ %{}) do
+    case Map.get(attrs, :msg) do
+      nil ->
+        case Map.get(attrs, "msg") do
+          nil ->
+            [Map.get(info_handler, :msg)]
 
-    variables
+          msg ->
+            [msg]
+        end
+
+      msg ->
+        [msg]
+    end
   end
 
   @doc """
@@ -4069,15 +4070,12 @@ defmodule Beacon.Content do
   @doc type: :info_handlers
   @spec update_info_handler(InfoHandler.t(), map()) :: {:ok, InfoHandler.t()}
   def update_info_handler(%InfoHandler{} = info_handler, attrs) do
-    variable_names =
-      info_handler
-      |> retrieve_msg(attrs)
-      |> list_variable_names()
+    msg = retrieve_msg(attrs, info_handler)
 
     changeset =
       info_handler
       |> InfoHandler.changeset(attrs)
-      |> validate_info_handler(variable_names, ["Phoenix.Component"])
+      |> validate_info_handler(msg, ["Phoenix.Component"])
 
     site = Changeset.get_field(changeset, :site)
 
@@ -4086,26 +4084,15 @@ defmodule Beacon.Content do
     |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
   end
 
-  @spec retrieve_msg(InfoHandler.t(), map()) :: String.t()
-  defp retrieve_msg(info_handler, attrs) do
-    attrs = ExUtils.Map.atomize_keys(attrs)
-
-    case Map.get(attrs, :msg) do
-      nil ->
-        info_handler.msg
-
-      msg ->
-        msg
-    end
-  end
-
   @doc """
   Deletes info handler.
   """
   @doc type: :info_handlers
   @spec delete_info_handler(InfoHandler.t()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
   def delete_info_handler(info_handler) do
-    repo(info_handler.site).delete(info_handler)
+    info_handler
+    |> repo(info_handler).delete()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
   end
 
   ## Utils
