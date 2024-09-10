@@ -162,4 +162,11 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
   test "live data assigns" do
     assert_equal(~S|<%= @name %>|, %{name: "Beacon"})
   end
+
+  test "script tag" do
+    assert_equal(~S"""
+    <script data-domain={MyAppWeb.Endpoint.config(:url)[:host]} defer src="/js/script.js">
+    </script>
+    """)
+  end
 end
