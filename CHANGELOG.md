@@ -10,6 +10,7 @@
   * [Media Library] Guard against invalid values for `:sort` option in `MediaLibrary.list_assets/2`
   * [Content] Guard against invalid values for `:sort` option in `Content.list_layouts/2`
   * [Content] Guard against invalid values for `:sort` option in `Content.list_pages/2`
+  * [HEEx Decoder] Handle attr values with `nil` values, for example the `defer` in script tags
 
 ## 0.1.0-rc.1 (2024-08-27)
 

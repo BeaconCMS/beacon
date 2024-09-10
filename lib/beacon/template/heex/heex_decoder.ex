@@ -126,6 +126,10 @@ defmodule Beacon.Template.HEEx.HEExDecoder do
     [name, "=", ?{, content, ?}]
   end
 
+  defp reconstruct_attr({name, _, _}) do
+    [name]
+  end
+
   defp decode_eex_block(ast) do
     %{"type" => "eex_block", "content" => content, "children" => children} = Jason.decode!(ast)
 
