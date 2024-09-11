@@ -3944,46 +3944,25 @@ defmodule Beacon.Content do
   @doc type: :info_handlers
   @spec create_info_handler(map()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
   def create_info_handler(attrs) do
-    msg = retrieve_msg(attrs)
-
-    changeset =
-      %InfoHandler{}
-      |> InfoHandler.changeset(attrs)
-      |> validate_info_handler(msg)
-
+    changeset = InfoHandler.changeset(%InfoHandler{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
     changeset
+    |> validate_info_handler()
     |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
   end
 
-  @spec validate_info_handler(Changeset.t(), [String.t()], [String.t()]) :: Changeset.t()
-  defp validate_info_handler(changeset, msg, imports \\ []) do
+  @spec validate_info_handler(Changeset.t(), [String.t()]) :: Changeset.t()
+  defp validate_info_handler(changeset, imports \\ []) do
     code = Changeset.get_field(changeset, :code)
+    msg = Changeset.get_field(changeset, :msg)
     site = Changeset.get_field(changeset, :site)
     metadata = %Beacon.Template.LoadMetadata{site: site}
-    var = ["socket"] ++ msg
+    var = ["socket", msg]
     imports = ["Phoenix.LiveView"] ++ imports
 
     do_validate_template(changeset, :code, :elixir, code, metadata, var, imports)
-  end
-
-  @spec retrieve_msg(map(), InfoHandler.t()) :: [String.t()]
-  defp retrieve_msg(attrs, info_handler \\ %{}) do
-    case Map.get(attrs, :msg) do
-      nil ->
-        case Map.get(attrs, "msg") do
-          nil ->
-            [Map.get(info_handler, :msg)]
-
-          msg ->
-            [msg]
-        end
-
-      msg ->
-        [msg]
-    end
   end
 
   @doc """
@@ -4074,16 +4053,11 @@ defmodule Beacon.Content do
   @doc type: :info_handlers
   @spec update_info_handler(InfoHandler.t(), map()) :: {:ok, InfoHandler.t()}
   def update_info_handler(%InfoHandler{} = info_handler, attrs) do
-    msg = retrieve_msg(attrs, info_handler)
-
-    changeset =
-      info_handler
-      |> InfoHandler.changeset(attrs)
-      |> validate_info_handler(msg, ["Phoenix.Component"])
-
+    changeset = InfoHandler.changeset(info_handler, attrs)
     site = Changeset.get_field(changeset, :site)
 
     changeset
+    |> validate_info_handler(["Phoenix.Component"])
     |> repo(site).update()
     |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
   end
