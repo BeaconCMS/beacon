@@ -213,18 +213,6 @@ dev_seeds = fn ->
     }
   )
 
-  Beacon.Content.create_assign_for_live_data(
-    home_live_data,
-    %{
-      format: :elixir,
-      key: "img1",
-      value: """
-      [img1] = Beacon.MediaLibrary.search(:dev, "dockyard_1")
-      img1
-      """
-    }
-  )
-
   page_home =
     Beacon.Content.create_page!(%{
       path: "/sample",
@@ -269,11 +257,7 @@ dev_seeds = fn ->
           Sample component: <%= my_component("sample_component", val: 1) %>
         </div>
 
-        <div>
-          <%!--  <Beacon.Web.Components.image_set asset={@img1} sources={["480w"]} width="200px" /> --%>
-        </div>
-
-        <div>
+       <div>
           <p>From data source:</p>
           <%= @year %>
         </div>
