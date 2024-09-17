@@ -1328,32 +1328,33 @@ defmodule Beacon.Content do
           %{name: "micro", type: "boolean", opts: [default: false]},
           %{name: "rest", type: "global", opts: [include: ~w(fill stroke stroke-width)]}
         ],
-        body: ~S"""
-        sizing =
-          cond do
-            assigns.micro -> "h-4 w-4"
-            assigns.mini -> "h-5 w-5"
-            :default -> "h-6 w-6"
-          end
+        body:
+          ~S"""
+          sizing =
+            cond do
+              assigns.micro -> "h-4 w-4"
+              assigns.mini -> "h-5 w-5"
+              :default -> "h-6 w-6"
+            end
 
-        icon =
-          assigns.name
-          |> String.replace("-", "_")
-          |> String.to_atom()
+          icon =
+            assigns.name
+            |> String.replace("-", "_")
+            |> String.to_atom()
 
-        component = Function.capture(Heroicons, icon, 1)
+          component = Function.capture(Heroicons, icon, 1)
 
-        {_, assigns} = get_and_update_in(assigns, [:rest, :class], fn current ->
-          current = current || ""
-          new = "#{current} #{sizing} align-middle inline-block"
-          {current, new}
-        end)
+          {_, assigns} = get_and_update_in(assigns, [:rest, :class], fn current ->
+            current = current || ""
+            new = "#{current} #{sizing} align-middle inline-block"
+            {current, new}
+          end)
 
-        assigns = assign(assigns, component: component)
-        """,
-        template: ~S|
-        <%= Phoenix.LiveView.TagEngine.component(@component, assigns, {__ENV__.module, __ENV__.function, __ENV__.file, __ENV__.line}) %>
-        |,
+          assigns = assign(assigns, component: component)
+          """
+          |> String.trim(),
+        template:
+          ~S|<%= Phoenix.LiveView.TagEngine.component(@component, assigns, {__ENV__.module, __ENV__.function, __ENV__.file, __ENV__.line}) %>|,
         example: ~S|<.icon name="light-bulb" solid />|,
         category: :element
       },
@@ -1368,15 +1369,17 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|
-        <button
-          type={@type}
-          class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80",
-          {@rest}
-        >
-          <%= render_slot(@inner_block) %>
-        </button>
-        |,
+        template:
+          ~S"""
+          <button
+            type={@type}
+            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80",
+            {@rest}
+          >
+            <%= render_slot(@inner_block) %>
+          </button>
+          """
+          |> String.trim(),
         example: ~S|<.button phx-click="go">Send!</.button>|,
         category: :element
       },
@@ -1387,11 +1390,13 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|
-        <p class="mt-3 flex gap-3 text-sm leading-6 text-rose-600 phx-no-feedback:hidden">
-          <%= render_slot(@inner_block) %>
-        </p>
-        |,
+        template:
+          ~S"""
+          <p class="mt-3 flex gap-3 text-sm leading-6 text-rose-600 phx-no-feedback:hidden">
+            <%= render_slot(@inner_block) %>
+          </p>
+          """
+          |> String.trim(),
         example: ~S|<.error><p>Something went wrong</p></.error>|,
         category: :element
       },
@@ -1410,60 +1415,66 @@ defmodule Beacon.Content do
           %{name: "col", opts: [required: true], attrs: [%{name: "label", type: "string"}]},
           %{name: "action"}
         ],
-        body: ~S"""
-        assigns =
-            with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
-              assign(assigns, row_id: assigns.row_id || fn {id, _item} -> id end)
-            end
-        """,
-        template: ~S"""
-        <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
-          <table class="w-[40rem] mt-11 sm:w-full">
-            <thead class="text-sm text-left leading-6 text-zinc-500">
-              <tr>
-                <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal"><%= col[:label] %></th>
-                <th :if={@action != []} class="relative p-0 pb-4">
-                  <span class="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody
-              id={@id}
-              phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
-              class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
-            >
-              <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
-                <td
-                  :for={{col, i} <- Enum.with_index(@col)}
-                  phx-click={@row_click && @row_click.(row)}
-                  class={["relative p-0", @row_click && "hover:cursor-pointer"]}
-                >
-                  <div class="block py-4 pr-6">
-                    <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
-                    <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
-                      <%= render_slot(col, @row_item.(row)) %>
-                    </span>
-                  </div>
-                </td>
-                <td :if={@action != []} class="relative w-14 p-0">
-                  <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
-                    <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
-                    <span :for={action <- @action} class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700">
-                      <%= render_slot(action, @row_item.(row)) %>
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        """,
-        example: ~S|
-              <.table id="users" rows={[%{id: 1, username: "admin"}]}>
-                <:col :let={user} label="id"><%= user.id %></:col>
-                <:col :let={user} label="username"><%= user.username %></:col>
-              </.table>
-              |,
+        body:
+          ~S"""
+          assigns =
+              with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
+                assign(assigns, row_id: assigns.row_id || fn {id, _item} -> id end)
+              end
+          """
+          |> String.trim(),
+        template:
+          ~S"""
+          <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
+            <table class="w-[40rem] mt-11 sm:w-full">
+              <thead class="text-sm text-left leading-6 text-zinc-500">
+                <tr>
+                  <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal"><%= col[:label] %></th>
+                  <th :if={@action != []} class="relative p-0 pb-4">
+                    <span class="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody
+                id={@id}
+                phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
+                class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
+              >
+                <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
+                  <td
+                    :for={{col, i} <- Enum.with_index(@col)}
+                    phx-click={@row_click && @row_click.(row)}
+                    class={["relative p-0", @row_click && "hover:cursor-pointer"]}
+                  >
+                    <div class="block py-4 pr-6">
+                      <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
+                      <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
+                        <%= render_slot(col, @row_item.(row)) %>
+                      </span>
+                    </div>
+                  </td>
+                  <td :if={@action != []} class="relative w-14 p-0">
+                    <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
+                      <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
+                      <span :for={action <- @action} class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700">
+                        <%= render_slot(action, @row_item.(row)) %>
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          """
+          |> String.trim(),
+        example:
+          ~S"""
+          <.table id="users" rows={[%{id: 1, username: "admin"}]}>
+            <:col :let={user} label="id"><%= user.id %></:col>
+            <:col :let={user} label="username"><%= user.username %></:col>
+          </.table>
+          """
+          |> String.trim(),
         category: :element
       },
       %{
@@ -1479,25 +1490,29 @@ defmodule Beacon.Content do
           %{name: "inner_block", opts: [required: true]},
           %{name: "actions"}
         ],
-        template: ~S|
-        <.form :let={f} for={@for} as={@as} {@rest}>
-          <div class="mt-10 space-y-8 bg-white">
-            <%= render_slot(@inner_block, f) %>
-            <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
-              <%= render_slot(action, f) %>
+        template:
+          ~S"""
+          <.form :let={f} for={@for} as={@as} {@rest}>
+            <div class="mt-10 space-y-8 bg-white">
+              <%= render_slot(@inner_block, f) %>
+              <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
+                <%= render_slot(action, f) %>
+              </div>
             </div>
-          </div>
-        </.form>
-        |,
-        example: ~S|
-        <.simple_form :let={f} for={%{}} as={:newsletter} phx-submit="join">
-          <.input field={f[:name]} label="Name"/>
-          <.input field={f[:email]} label="Email"/>
-          <:actions>
-            <.button>Join</.button>
-          </:actions>
-        </.simple_form>
-        |,
+          </.form>
+          """
+          |> String.trim(),
+        example:
+          ~S"""
+          <.simple_form :let={f} for={%{}} as={:newsletter} phx-submit="join">
+            <.input field={f[:name]} label="Name"/>
+            <.input field={f[:email]} label="Email"/>
+            <:actions>
+              <.button>Join</.button>
+            </:actions>
+          </.simple_form>
+          """
+          |> String.trim(),
         category: :element
       },
       %{
@@ -1535,90 +1550,94 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        body: ~S"""
-        %{type: type, field: field} = assigns
+        body:
+          ~S"""
+          %{type: type, field: field} = assigns
 
-        assigns =
-          cond do
-            match?(%Phoenix.HTML.FormField{}, field) ->
-              assigns
-              |> assign(field: nil, id: assigns.id || field.id)
-              |> assign(:errors, Enum.map(field.errors, & &1))
-              |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
-              |> assign_new(:value, fn -> field.value end)
+          assigns =
+            cond do
+              match?(%Phoenix.HTML.FormField{}, field) ->
+                assigns
+                |> assign(field: nil, id: assigns.id || field.id)
+                |> assign(:errors, Enum.map(field.errors, & &1))
+                |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
+                |> assign_new(:value, fn -> field.value end)
 
-            type == "checkbox" ->
-              assign_new(assigns, :checked, fn -> Phoenix.HTML.Form.normalize_value("checkbox", assigns.value) end)
+              type == "checkbox" ->
+                assign_new(assigns, :checked, fn -> Phoenix.HTML.Form.normalize_value("checkbox", assigns.value) end)
 
-            :else ->
-              assigns
-          end
-        """,
-        template: ~S"""
-        <%= cond do %>
-          <% @type == "checkbox" -> %>
-            <div phx-feedback-for={@name}>
-              <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
-                <input type="hidden" name={@name} value="false" />
-                <input type="checkbox" id={@id} name={@name} value="true" checked={@checked} class="rounded border-zinc-300 text-zinc-900 focus:ring-0" {@rest} />
-                <%= @label %>
-              </label>
-              <.error :for={msg <- @errors}><%= msg %></.error>
-            </div>
+              :else ->
+                assigns
+            end
+          """
+          |> String.trim(),
+        template:
+          ~S"""
+          <%= cond do %>
+            <% @type == "checkbox" -> %>
+              <div phx-feedback-for={@name}>
+                <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
+                  <input type="hidden" name={@name} value="false" />
+                  <input type="checkbox" id={@id} name={@name} value="true" checked={@checked} class="rounded border-zinc-300 text-zinc-900 focus:ring-0" {@rest} />
+                  <%= @label %>
+                </label>
+                <.error :for={msg <- @errors}><%= msg %></.error>
+              </div>
 
-          <% @type == "select" -> %>
-            <div phx-feedback-for={@name}>
-              <.label for={@id}><%= @label %></.label>
-              <select
-                id={@id}
-                name={@name}
-                class="mt-2 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm"
-                multiple={@multiple}
-                {@rest}
-              >
-                <option :if={@prompt} value=""><%= @prompt %></option>
-                <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
-              </select>
-              <.error :for={msg <- @errors}><%= msg %></.error>
-            </div>
+            <% @type == "select" -> %>
+              <div phx-feedback-for={@name}>
+                <.label for={@id}><%= @label %></.label>
+                <select
+                  id={@id}
+                  name={@name}
+                  class="mt-2 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm"
+                  multiple={@multiple}
+                  {@rest}
+                >
+                  <option :if={@prompt} value=""><%= @prompt %></option>
+                  <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
+                </select>
+                <.error :for={msg <- @errors}><%= msg %></.error>
+              </div>
 
-          <% @type == "textarea" -> %>
-            <div phx-feedback-for={@name}>
-              <.label for={@id}><%= @label %></.label>
-              <textarea
-                id={@id}
-                name={@name}
-                class={[
-                  "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
-                  "min-h-[6rem] phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
-                  @errors == [] && "border-zinc-300 focus:border-zinc-400",
-                  @errors != [] && "border-rose-400 focus:border-rose-400"
-                ]}
-                {@rest}
-              ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
-              <.error :for={msg <- @errors}><%= msg %></.error>
-            </div>
+            <% @type == "textarea" -> %>
+              <div phx-feedback-for={@name}>
+                <.label for={@id}><%= @label %></.label>
+                <textarea
+                  id={@id}
+                  name={@name}
+                  class={[
+                    "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
+                    "min-h-[6rem] phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
+                    @errors == [] && "border-zinc-300 focus:border-zinc-400",
+                    @errors != [] && "border-rose-400 focus:border-rose-400"
+                  ]}
+                  {@rest}
+                ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
+                <.error :for={msg <- @errors}><%= msg %></.error>
+              </div>
 
-          <% :else -> %>
-            <div phx-feedback-for={@name}>
-              <.label for={@id}><%= @label %></.label>
-              <input
-                type={@type}
-                name={@name}
-                id={@id}
-                value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-                class={[
-                  "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
-                  "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
-                  @errors == [] && "border-zinc-300 focus:border-zinc-400",
-                  @errors != [] && "border-rose-400 focus:border-rose-400"
-                ]}
-                {@rest}
-              />
-              <.error :for={msg <- @errors}><%= msg %></.error>
-            </div>
-        <% end %>
-        """,
+            <% :else -> %>
+              <div phx-feedback-for={@name}>
+                <.label for={@id}><%= @label %></.label>
+                <input
+                  type={@type}
+                  name={@name}
+                  id={@id}
+                  value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+                  class={[
+                    "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
+                    "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400",
+                    @errors == [] && "border-zinc-300 focus:border-zinc-400",
+                    @errors != [] && "border-rose-400 focus:border-rose-400"
+                  ]}
+                  {@rest}
+                />
+                <.error :for={msg <- @errors}><%= msg %></.error>
+              </div>
+          <% end %>
+          """
+          |> String.trim(),
         example: ~S|<.input field={@form[:email]} type="email" />|
       },
       %{
@@ -1631,16 +1650,20 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|
-        <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
-          <%= render_slot(@inner_block) %>
-        </label>
-        |,
-        example: ~S|
-        <.label for={"newsletter_email"}>
-          Email
-        </.label>
-        |,
+        template:
+          ~S"""
+          <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
+            <%= render_slot(@inner_block) %>
+          </label>
+          """
+          |> String.trim(),
+        example:
+          ~S"""
+          <.label for={"newsletter_email"}>
+            Email
+          </.label>
+          """
+          |> String.trim(),
         category: :element
       },
       %{
@@ -1662,26 +1685,28 @@ defmodule Beacon.Content do
         description: "Renders embedded content like an YouTube video",
         thumbnail: "https://placehold.co/400x75?text=embedded",
         attrs: [%{name: "url", type: "string", opts: [required: true]}],
-        body: ~S"""
-        {:ok, %{html: html}} = OEmbed.for(assigns.url)
+        body:
+          ~S"""
+          {:ok, %{html: html}} = OEmbed.for(assigns.url)
 
-        # replace width and height with class
-        html =
-          if assigns[:class] do
-            [{"iframe", attrs, []}] = Floki.parse_fragment!(html)
+          # replace width and height with class
+          html =
+            if assigns[:class] do
+              [{"iframe", attrs, []}] = Floki.parse_fragment!(html)
 
-            attrs =
-              attrs
-              |> Enum.reject(fn {key, _value} -> key in ["width", "height"] end)
-              |> Kernel.++([{"class", assigns.class}])
+              attrs =
+                attrs
+                |> Enum.reject(fn {key, _value} -> key in ["width", "height"] end)
+                |> Kernel.++([{"class", assigns.class}])
 
-            Floki.raw_html([{"iframe", attrs, []}])
-          else
-            html
-          end
+              Floki.raw_html([{"iframe", attrs, []}])
+            else
+              html
+            end
 
-        assigns = Map.put(assigns, :html, html)
-        """,
+          assigns = Map.put(assigns, :html, html)
+          """
+          |> String.trim(),
         template: ~S|<%= Phoenix.HTML.raw(@html) %>|,
         example: ~S|<.embedded url={"https://www.youtube.com/watch?v=agkXUp0hCW8"} class="w-full aspect-video" />|,
         category: :media
@@ -1695,20 +1720,22 @@ defmodule Beacon.Content do
           %{name: "path", type: "string", opts: [required: true]},
           %{name: "words_per_minute", type: "integer", opts: [default: 270]}
         ],
-        body: ~S"""
-        estimated_time_in_minutes =
-          case Beacon.Content.get_page_by(assigns.site, path: assigns.path) do
-            nil ->
-              0
+        body:
+          ~S"""
+          estimated_time_in_minutes =
+            case Beacon.Content.get_page_by(assigns.site, path: assigns.path) do
+              nil ->
+                0
 
-            %{template: template} ->
-              template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
-              words = String.split(template_without_html_tags, " ") |> length()
-              Kernel.trunc(words / assigns.words_per_minute)
-          end
+              %{template: template} ->
+                template_without_html_tags = String.replace(template, ~r/(<[^>]*>|\n|\s{2,})/, "", global: true)
+                words = String.split(template_without_html_tags, " ") |> length()
+                Kernel.trunc(words / assigns.words_per_minute)
+            end
 
-        assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
-        """,
+          assigns = Map.put(assigns, :estimated_time_in_minutes, estimated_time_in_minutes)
+          """
+          |> String.trim(),
         template: ~S|<%= @estimated_time_in_minutes %>|,
         example: ~S|<.reading_time site={@beacon.site} path={@beacon.page.path} />|,
         category: :element
@@ -1724,53 +1751,59 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [default: nil]}
         ],
-        body: ~S"""
-        assigns =
-          if Enum.empty?(assigns.pages),
-            do: Map.put(assigns, :pages, Beacon.Content.list_published_pages(assigns.site, per_page: 3)),
-            else: assigns
-        """,
-        template: ~S"""
-        <div class="max-w-7xl mx-auto">
-          <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
-            <%= if Enum.empty?(@inner_block) do %>
-              <div :for={page <- @pages}>
-                <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
-                  <div class="flex flex-col">
-                    <div>
-                      <p class="font-bold text-gray-700"></p>
-                      <p class="text-eyebrow font-medium text-gray-500 text-sm text-left">
-                        <%= Calendar.strftime(page.updated_at, "%d %B %Y") %>
-                      </p>
-                    </div>
+        body:
+          ~S"""
+          assigns =
+            if Enum.empty?(assigns.pages),
+              do: Map.put(assigns, :pages, Beacon.Content.list_published_pages(assigns.site, per_page: 3)),
+              else: assigns
+          """
+          |> String.trim(),
+        template:
+          ~S"""
+          <div class="max-w-7xl mx-auto">
+            <div class="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 lg:gap-11 md:space-y-0 space-y-10">
+              <%= if Enum.empty?(@inner_block) do %>
+                <div :for={page <- @pages}>
+                  <article class="hover:ring-2 hover:ring-gray-200 hover:ring-offset-8 flex relative flex-col rounded-lg xl:hover:ring-offset-[12px] 2xl:hover:ring-offset-[16px] active:ring-gray-200 active:ring-offset-8 xl:active:ring-offset-[12px] 2xl:active:ring-offset-[16px] focus-within:ring-2 focus-within:ring-blue-200 focus-within:ring-offset-8 xl:focus-within:ring-offset-[12px] hover:bg-white active:bg-white trasition-all duration-300">
+                    <div class="flex flex-col">
+                      <div>
+                        <p class="font-bold text-gray-700"></p>
+                        <p class="text-eyebrow font-medium text-gray-500 text-sm text-left">
+                          <%= Calendar.strftime(page.updated_at, "%d %B %Y") %>
+                        </p>
+                      </div>
 
-                    <div class="-order-1 flex gap-x-2 items-center mb-3">
-                      <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
-                        <.page_link
-                          path={page.path}
-                          class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
-                          <%= page.title %>
-                        </.page_link>
-                      </h3>
+                      <div class="-order-1 flex gap-x-2 items-center mb-3">
+                        <h3 class="font-heading lg:text-xl lg:leading-8 text-lg font-bold leading-7">
+                          <.page_link
+                            path={page.path}
+                            class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none">
+                            <%= page.title %>
+                          </.page_link>
+                        </h3>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              </div>
-            <% else %>
-              <%= for page <- @pages do %>
-                <%= render_slot(@inner_block, page) %>
+                  </article>
+                </div>
+              <% else %>
+                <%= for page <- @pages do %>
+                  <%= render_slot(@inner_block, page) %>
+                <% end %>
               <% end %>
-            <% end %>
+            </div>
           </div>
-        </div>
-        """,
-        example: ~S"""
-        <.featured_pages :let={page} pages={Beacon.Content.list_published_pages(@beacon.site, per_page: 3)}>
-          <article >
-            <%= page.title %>
-          </article>
-        </.featured_pages>
-        """
+          """
+          |> String.trim(),
+        example:
+          ~S"""
+          <.featured_pages :let={page} pages={Beacon.Content.list_published_pages(@beacon.site, per_page: 3)}>
+            <article >
+              <%= page.title %>
+            </article>
+          </.featured_pages>
+          """
+          |> String.trim()
       },
       %{
         name: "flowbite_cta",
