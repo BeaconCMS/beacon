@@ -1322,10 +1322,39 @@ defmodule Beacon.Content do
         thumbnail: "https://placehold.co/400x75?text=icon",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
-          %{name: "class", type: "string", opts: [default: nil]}
+          %{name: "outline", type: "boolean", opts: [default: true]},
+          %{name: "solid", type: "boolean", opts: [default: false]},
+          %{name: "mini", type: "boolean", opts: [default: false]},
+          %{name: "micro", type: "boolean", opts: [default: false]},
+          %{name: "rest", type: "global", opts: [include: ~w(fill stroke stroke-width)]}
         ],
-        template: ~S|<span class={[@name, @class]} />|,
-        example: ~S|<.icon name="hero-arrow-path" class="ml-1 w-4 h-4 animate-spin" />|,
+        body: ~S"""
+        sizing =
+          cond do
+            assigns.micro -> "h-4 w-4"
+            assigns.mini -> "h-5 w-5"
+            :default -> "h-6 w-6"
+          end
+
+        icon =
+          assigns.name
+          |> String.replace("-", "_")
+          |> String.to_atom()
+
+        component = Function.capture(Heroicons, icon, 1)
+
+        {_, assigns} = get_and_update_in(assigns, [:rest, :class], fn current ->
+          current = current || ""
+          new = "#{current} #{sizing} align-middle inline-block"
+          {current, new}
+        end)
+
+        assigns = assign(assigns, component: component)
+        """,
+        template: ~S|
+        <%= Phoenix.LiveView.TagEngine.component(@component, assigns, {__ENV__.module, __ENV__.function, __ENV__.file, __ENV__.line}) %>
+        |,
+        example: ~S|<.icon name="light-bulb" solid />|,
         category: :element
       },
       %{

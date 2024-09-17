@@ -256,12 +256,15 @@ dev_seeds = fn ->
         <h1 class="text-violet-500">Dev</h1>
         <p class="text-sm">Page</p>
 
+        <p><.icon name="arrow-up-circle" solid class="animate-spin"/></p>
+
         <div>
           <p>Pages:</p>
           <ul>
             <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
             <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
             <li><.link navigate={~p"/markdown"}>Markdown Page</.link></li>
+            <li><.link navigate={~p"/drag-drop"}>Drag and Drop Page</.link></li>
           </ul>
         </div>
 
