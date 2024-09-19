@@ -1317,9 +1317,9 @@ defmodule Beacon.Content do
         category: :element
       },
       %{
-        name: "icon",
+        name: "heroicon",
         description: "Renders a Heroicon",
-        thumbnail: "https://placehold.co/400x75?text=icon",
+        thumbnail: "https://placehold.co/400x75?text=heroicon",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]},
           %{name: "outline", type: "boolean", opts: [default: true]},
@@ -1355,7 +1355,7 @@ defmodule Beacon.Content do
           |> String.trim(),
         template:
           ~S|<%= Phoenix.LiveView.TagEngine.component(@component, assigns, {__ENV__.module, __ENV__.function, __ENV__.file, __ENV__.line}) %>|,
-        example: ~S|<.icon name="light-bulb" solid />|,
+        example: ~S|<.heroicon name="light-bulb" solid />|,
         category: :element
       },
       %{

@@ -244,7 +244,7 @@ dev_seeds = fn ->
         <h1 class="text-violet-500">Dev</h1>
         <p class="text-sm">Page</p>
 
-        <p><.icon name="arrow-up-circle" solid class="animate-spin"/></p>
+        <p><.heroicon name="arrow-up-circle" solid class="animate-spin"/></p>
 
         <div>
           <p>Pages:</p>

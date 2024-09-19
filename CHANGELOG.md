@@ -3,6 +3,7 @@
 ## 0.1.0-dev
 
 ### Breaking Changes
+  * Renamed component `.icon` to `.heroicon` to make it explicit that it's rendering Heroicons and also to avoid future conflicts
   * Require minimum Gettext v0.26 to use the new backend module
   * Default `:sort` option value in `Content.list_pages/2` changed from `:title` to `:path`
 
@@ -12,6 +13,9 @@
   * [Content] Guard against invalid values for `:sort` option in `Content.list_layouts/2`
   * [Content] Guard against invalid values for `:sort` option in `Content.list_pages/2`
   * [HEEx Decoder] Handle attr values with `nil` values, for example the `defer` in script tags
+
+### Documentation
+  * Updated Heroicons recipes to reflect changes on configuration and naming
 
 ## 0.1.0-rc.1 (2024-08-27)
 
