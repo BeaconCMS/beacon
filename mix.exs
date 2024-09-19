@@ -78,8 +78,6 @@ defmodule Beacon.MixProject do
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
-      {:heroicons, "~> 0.5"},
-
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
