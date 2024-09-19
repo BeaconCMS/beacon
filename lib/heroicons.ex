@@ -1,3 +1,5 @@
+# https://github.com/mveytsman/heroicons_elixir/blob/afb57ff3e181fbcf55c68ff64a0e7f1d339a07d4/lib/heroicons.ex
+
 defmodule Heroicons do
   @moduledoc """
   Provides precompiled icon compiles from [heroicons.com v2.1.5](heroicons.com).
