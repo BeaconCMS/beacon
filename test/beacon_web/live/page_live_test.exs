@@ -90,6 +90,18 @@ defmodule Beacon.Web.Live.PageLiveTest do
         """
       })
 
+    info_handler_fixture(%{
+      site: :my_site,
+      msg: "{:incorrect_format, email}",
+      code: """
+      socket =
+        socket
+        |> put_flash(:error, "Your email (\#{email}) is incorrectly formatted. Please format it correctly.")
+
+      {:noreply, socket}
+      """
+    })
+
     Content.publish_page(page_home)
 
     _page_without_meta_tags =
@@ -108,6 +120,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     Loader.reload_components_module(:my_site)
     Loader.reload_layouts_modules(:my_site)
     Loader.reload_pages_modules(:my_site)
+    Loader.reload_info_handlers_module(:my_site)
     Loader.reload_event_handlers_module(:my_site)
 
     [layout: layout]
@@ -257,6 +270,18 @@ defmodule Beacon.Web.Live.PageLiveTest do
       assert view
              |> form("form", %{greeting: %{name: "Beacon"}})
              |> render_submit() =~ "Hello Beacon"
+    end
+
+    test "info handler", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home/hello")
+
+      email = "email@email"
+
+      refute render(view) =~ "Your email (#{email}) is incorrectly formatted. Please format it correctly."
+
+      send(view.pid, {:incorrect_format, email})
+
+      assert render(view) =~ "Your email (#{email}) is incorrectly formatted. Please format it correctly."
     end
 
     test "helper", %{conn: conn} do

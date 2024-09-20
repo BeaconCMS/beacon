@@ -135,7 +135,8 @@ defmodule Beacon.MixProject do
         "Functions: Snippets": &(&1[:type] == :snippets),
         "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
-        "Functions: Live Data": &(&1[:type] == :live_data)
+        "Functions: Live Data": &(&1[:type] == :live_data),
+        "Functions: Info Handlers": &(&1[:type] == :info_handlers)
       ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
@@ -170,6 +171,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ComponentSlotAttr,
         Beacon.Content.ErrorPage,
         Beacon.Content.EventHandler,
+        Beacon.Content.InfoHandler,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
         Beacon.Content.LayoutSnapshot,
