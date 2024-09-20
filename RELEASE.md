@@ -21,7 +21,7 @@ This policy applies to Beacon, BeaconLiveAdmin, and any other project in the Bea
 ## Git strategy
 
 Change are applied to the `main` branch through feature branches. A pull requested is opened, reviewed, and merged to `main`
-once it's ready, so there should not have any blocker to merge pull requests.
+once it's ready to avoid merge conflicts and make that code available on `main` in case anyone wants to test or use it.
 
 Along with the `main` and feature branches, we also keep release branches for each version, for example `v0.1.x`, `v2.0.x`, and so on.
 Changes are cherry-picked from `main` to the release branches as needed, for example if the current published version is `v0.1.1` and
