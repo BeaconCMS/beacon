@@ -31,15 +31,16 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 
 ## Release steps
 
-- Checkout the release branch and make sure it's up to date with upstream
-- Make sure all the changes have been cherry-picked from `main` to the release branch
-- Run `mix assets.build` and commit changes if any
-- Update the version in these files: `mix.exs`, `package.json`, and `installation.md`
-- Make sure all relevant changes, especially breaking changes, are documented in a upgrade guide in `guides/upgrading`
-- Update the `CHANGELOG.md` to list all changes included in the release, update the date of the release, and remove unrelated entries, like future unreleased changes.
-- Create a new git tag and push upstream
-- Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
-- Publish the package to [Hex.pm](https://hex.pm) package registry
+1. Checkout the release branch and make sure it's up to date with upstream
+2. Make sure all the changes have been cherry-picked from `main` to the release branch
+3. Run `mix assets.build` and commit changes if any
+4. Update the version in these files: `mix.exs`, `package.json`, and `installation.md`
+5. Make sure all relevant changes, especially breaking changes, are documented in a upgrade guide in `guides/upgrading`
+6. Update the `CHANGELOG.md` to list all changes included in the release, update the date of the release, and remove unrelated entries (like future unreleased changes that may have been added in `main`)
+7. Commit the changes
+8. Create a new git tag and push upstream
+9. Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
+10. Publish the package to [Hex.pm](https://hex.pm) package registry
 
 ## Prioritization
 
