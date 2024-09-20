@@ -33,6 +33,7 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 
 - Checkout the release branch and make sure it's up to date with upstream
 - Make sure all the changes have been cherry-picked from `main` to the release branch
+- Run `mix assets.build` and commit changes if any
 - Update the version in these files: `mix.exs`, `package.json`, and `installation.md`
 - Make sure all relevant changes, especially breaking changes, are documented in a upgrade guide in `guides/upgrading`
 - Update the `CHANGELOG.md` to mark the date of the release and make sure all changes are included
