@@ -16,7 +16,7 @@ defmodule Beacon.Loader.Page do
 
     # Group function heads together to avoid compiler warnings
     functions = [
-      for fun <- [&page/1, &page_assigns/1, &handle_event/1, &helper/1] do
+      for fun <- [&page/1, &page_assigns/1, &handle_event/1, &handle_info/1, &helper/1] do
         fun.(page)
       end,
       render(page),
@@ -37,9 +37,11 @@ defmodule Beacon.Loader.Page do
         import PhoenixHTMLHelpers.Link
         import PhoenixHTMLHelpers.Tag
         import PhoenixHTMLHelpers.Format
+        import Phoenix.LiveView
         import Phoenix.Component, except: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Web, only: [assign: 2, assign: 3, assign_new: 3]
         import Beacon.Router, only: [beacon_asset_path: 2, beacon_asset_url: 2]
+        use Gettext, backend: Beacon.Gettext
         import unquote(routes_module)
         import unquote(components_module)
 
@@ -133,6 +135,22 @@ defmodule Beacon.Loader.Page do
       quote do
         def handle_event(unquote(event_handler.name), var!(event_params), var!(socket)) do
           unquote(Code.string_to_quoted!(event_handler.code))
+        end
+      end
+    end)
+  end
+
+  defp handle_info(page) do
+    %{site: site} = page
+
+    info_handlers = Content.list_info_handlers(site)
+
+    Enum.map(info_handlers, fn info_handler ->
+      Beacon.safe_code_check!(site, info_handler.code)
+
+      quote do
+        def handle_info(unquote(Code.string_to_quoted!(info_handler.msg)), var!(socket)) do
+          unquote(Code.string_to_quoted!(info_handler.code))
         end
       end
     end)

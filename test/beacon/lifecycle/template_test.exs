@@ -20,7 +20,6 @@ defmodule Beacon.Lifecycle.TemplateTest do
     Beacon.Loader.reload_page_module(page.site, page.id)
     env = Beacon.Web.PageLive.make_env(:my_site)
 
-    assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} =
-             Lifecycle.Template.render_template(page, %{}, env)
+    assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = Lifecycle.Template.render_template(page, %{}, env)
   end
 end

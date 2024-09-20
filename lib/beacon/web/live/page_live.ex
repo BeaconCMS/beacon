@@ -53,14 +53,25 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_info(msg, socket) do
-    Logger.warning("""
-    unhandled message:
+    %{page_module: page_module, live_path: live_path, info_handlers_module: info_handlers_module} = socket.assigns.beacon.private
+    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
 
-      #{inspect(msg)}
+    result =
+      Beacon.apply_mfa(
+        info_handlers_module,
+        :handle_info,
+        [msg, socket],
+        context: %{site: site, page_id: page_id, live_path: live_path}
+      )
 
-    """)
+    case result do
+      {:noreply, %Phoenix.LiveView.Socket{} = socket} ->
+        {:noreply, socket}
 
-    {:noreply, socket}
+      other ->
+        raise Beacon.Web.ServerError,
+              "handle_info for #{live_path} expected return of {:noreply, %Phoenix.LiveView.Socket{}}, but got #{inspect(other)}"
+    end
   end
 
   def handle_event(event_name, event_params, socket) do
