@@ -29,8 +29,16 @@ a bug fix is merged into `main`, it will be cherry-picked into the `v0.1.x` bran
 if a new feature is merged or a breaking change is introduced, it will also be cherry-picked into a release branch but this time
 into the `v0.2.x` branch because new features and breaking changes require a version bump.
 
-Once the changes are ready to be released, a new tag is generated from the release branch, a new GitHub release is created from that tag,
-and the package is pushed to [Hex.pm](https://hex.pm) package registry.
+## Release steps
+
+- Checkout the release branch and make sure it's up to date with upstream
+- Make sure all the changes have been cherry-picked from `main` to the release branch
+- Update the version in these files: `mix.exs`, `package.json`, and `installation.md`
+- Make sure all relevant changes, especially breaking changes, are documented in a upgrade guide in `guides/upgrading`
+- Update the `CHANGELOG.md` to mark the date of the release and make sure all changes are included
+- Create a new git tag and push upstream
+- Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
+- Publish the package to [Hex.pm](https://hex.pm) package registry
 
 ## Prioritization
 
