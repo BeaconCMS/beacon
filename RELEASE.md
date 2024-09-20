@@ -36,7 +36,7 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 - Run `mix assets.build` and commit changes if any
 - Update the version in these files: `mix.exs`, `package.json`, and `installation.md`
 - Make sure all relevant changes, especially breaking changes, are documented in a upgrade guide in `guides/upgrading`
-- Update the `CHANGELOG.md` to mark the date of the release and make sure all changes are included
+- Update the `CHANGELOG.md` to list all changes included in the release, update the date of the release, and remove unrelated entries, like future unreleased changes.
 - Create a new git tag and push upstream
 - Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
 - Publish the package to [Hex.pm](https://hex.pm) package registry
