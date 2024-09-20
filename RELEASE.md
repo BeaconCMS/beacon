@@ -1,13 +1,20 @@
 # Release Process
 
+This policy applies to Beacon, BeaconLiveAdmin, and any other project in the BeaconCMS organization.
+
 ## Guidelines
 
-* Follow Semantic Versioning
-* Each project has its own lifecycle and releases, one may evolve faster than others
-* A release once a month on every first Wednesday of the month including all merged work since last release,
-  unless there's no substantial changes to justify a release  (this policy will be valid only after v0.1 is released)
-* Breaking changes can be released as a minor version before we reach a v1.0 release
-* Bug fixes and security patches may be released early as needed
+1. Follow [Semantic Versioning](https://semver.org/)
+
+   * For projects on v0.x releases, breaking changes are released as minor versions., for example in v0.2.0
+   * For projects on v1.x releases, breaking changes are released as major versions., for example in v2.0.0
+
+2. Each project has its own lifecycle and releases, one may evolve faster than others
+
+3. A new version is released once a month containing features, fixes, and potentially breaking changes.
+   We might skip a release if there's no changes in that period of time.
+
+5. Bug fixes and security patches are released as soon as possible, either as a patch or minor version.
 
 ## Process
 

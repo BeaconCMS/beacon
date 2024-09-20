@@ -2,8 +2,6 @@
 
 ## Guidelines
 
-First some guidelines that we follow to keep the project organized:
-
 * Issues aligned with our [roadmap](https://github.com/BeaconCMS/beacon_live_admin/blob/main/ROADMAP.md) have higher priority
   and those are [labeled as roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap)
 * [Bugs](https://github.com/BeaconCMS/beacon/labels/bug) tend to have higher priority unless they are of minor impact
@@ -34,13 +32,17 @@ that reproduces the error condition.
 
 ## Have a feature request?
 
-Please provide some thoughful commentary and code samples on what this feature
-should do and why it should be added (your use case). The minimal questions you
-should answer when submitting a feature request should be:
+Please open a [feature request](https://github.com/orgs/BeaconCMS/discussions/new?category=feature-requests)
+before opening a pull request, and provide some thoughful commentary and code samples on what this feature
+should do and why it should be added (your use case). The minimal questions you should answer when
+submitting a feature request should be:
 
  - What will it allow you to do that you can't do today?
  - Why do you need this feature and how will it benefit other users?
  - Are there any drawbacks to this feature?
+
+This gives us a chance to discuss the feature, the trade-offs, viability,
+and the best way to implement it if possible.
 
 ## Submitting a pull-request?
 

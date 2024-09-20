@@ -2,7 +2,7 @@
 
 > Performance without compromising productivity.
 
-Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
+Beacon is a Content Management System (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
 
 ## Guides
 
@@ -28,7 +28,9 @@ The roadmap is available at https://github.com/BeaconCMS/beacon_live_admin/blob/
 ## Contributing
 
 Check out the [CONTRIBUTING.md](https://github.com/BeaconCMS/beacon/blob/main/CONTRIBUTING.md) doc for overall guidelines to contribute to this project,
-then follow the [Local Development](https://github.com/BeaconCMS/beacon#local-development) steps to run a local project or watch the video below to understand more
+and please engage on our [Discussions](https://github.com/orgs/BeaconCMS/discussions) forum to ask questions, request new features, or keep up with the latest news.
+
+To start working with Beacon, follow the [Local Development](https://github.com/BeaconCMS/beacon#local-development) steps to run a local project or watch the video below to understand more
 about Beacon internals:
 
 <a href="https://www.youtube.com/watch?v=5jk0fIJOFuc">
