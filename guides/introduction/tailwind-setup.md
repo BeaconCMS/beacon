@@ -1,19 +1,34 @@
 # Tailwind Setup
 
-Beacon has built-in support for Tailwind, any page can use tailwind classes out of the box and a stylesheet will be generated and served to style the pages correctly.
+Beacon has built-in TailwindCSS support, any page can use its classes out of the box and a stylesheet will be automatically generated and served.
 
-A default and simple configuration is already provided by Beacon, if you don't need custom config or plugins then you can skip this guide.
-Otherwise keep reading to set up a custom Tailwind configuration with more advanced features.
+A default and simple configuration that works with Phoenix and Beacon is already bundled in the Beacon package, so you can skip this guide if that suits your needs.
+
+Otherwise, keep reading to learn how to set up a custom configuration with more advanced features.
+
+**Note** that the Tailwind configuration must respect some constraints to work properly with Beacon,
+so if you want to reuse an existing configuration, make sure to follow the steps below and make the necessary adjustments.
 
 ## Objective
 
-Make sure the proper Tailwind version is installed, create a Tailwind config in the ESM format, and if you intend to use plugins, then bundle everything together in a single module.
+Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, and if you intend to use plugins, then bundle everything together in a single module.
+
+## Constraints
+
+Since Beacon uses the same configuration to generate stylesheets for your sites and also to preview pages on the Visual Editor in the browser,
+that configuration must respect some constraints to work properly in both environments:
+
+  - Use the ESM format
+  - Can't call node APIs
+
+In the steps below you'll learn how to make the neccessary adjustments.
 
 ## Steps
 
 * Install Tailwind v3.3.0 or higher
 * Install Esbuild
-* Tailwind config in the ESM format
+* ESM format
+* Remove node APIs
 * Heroicons
 * Install plugins
 * Bundle the config
@@ -43,11 +58,9 @@ mix run -e "IO.inspect Esbuild.bin_version()"
 If it fails then follow the [esbuild install guide](https://github.com/phoenixframework/esbuild?tab=readme-ov-file#installation) to get it installed.
 Any recent version that is installed should work just fine.
 
-### Config in the ESM format
+### ESM format
 
-We need the tailwind config file in the ESM format, ie: `default export` instead of `module.exports`.
-That's because Beacon uses Tailwind to generate stylesheets for published pages (your deployed site) and also to preview pages in the Visual Editor (in your admin interface).
-The former uses the tailwind-cli binary (a node application) while the latter compiles the stylesheet in the browser, so we need to reuse the same config file in both environments and ESM is the format that works in this scenario.
+Beacon expects a config file in the ESM format, ie: one that has `default export` instead of `module.exports`.
 
 Most likely the existing config `assets/tailwind.config.js` was created in the CommonJS format, so given a file like this:
 
@@ -75,11 +88,19 @@ export default {
 
 More info at https://tailwindcss.com/blog/tailwindcss-v3-3#esm-and-type-script-support
 
+### Remove node APIs
+
+The default `tailwind.config.js` created by the Phoenix installer will require the `fs` and `path` modules to load Heroicons in your application,
+the problem is that those modules are not available in the browser, so we can't use them.
+
+You have 2 options. Either remove those requires and the code using that module if you're not using Heroicons or not planning to use them,
+or the other option is to create a new config file target to Beacon pages only, that doesn't include those requires.
+
+See the Heroicons sections below for more information regarding loading icons for Beacon pages.
+
 ### Heroicons
 
-Some built-in components use Heroicons, which must be configured properly to let the Tailwind compiler find the SVG icon files.
-
-See the [Heroicons guide](../recipes/heroicons.md) for more information.
+Heroicons are bundled by default in the `.heroicon` component, see the [Heroicons guide](../recipes/heroicons.md) for more information.
 
 ### Install plugins
 
