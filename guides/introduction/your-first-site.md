@@ -118,7 +118,7 @@ Save the changes.
 
 Besides displaying some data, we will have a form to subscribe people to our newsletter, so we need to react to that event. Let's create an event handler for that.
 
-Go to http://localhost:4000/admin/my_site/pages, click on the Home Page, and click on the Events tab on the top of the page. Then create a new event handler `join` with the following content:
+Go to http://localhost:4000/admin/my_site/events and create a new event handler named `join` with the following content:
 
 ```elixir
 %{"waitlist" => %{"email" => email}} = event_params
