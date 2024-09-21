@@ -54,7 +54,7 @@ Note that Beacon supports Umbrella applications as well.
 
   ```diff
   + {:beacon, "~> 0.1.0-rc.2", override: true},
-  + {:beacon_live_admin, "~> 0.1.0"},
+  + {:beacon_live_admin, ">= 0.0.0"},
   ```
 
 8. Add `:beacon` and `:beacon_live_admin` into `:import_deps` in file `.formatter.exs`
