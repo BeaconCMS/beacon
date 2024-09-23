@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.1.0-dev
+
 ## 0.1.0-rc.2 (2024-09-20)
 
 ### Breaking Changes
@@ -8,7 +10,7 @@
   * Default `:sort` option value in `Content.list_pages/2` changed from `:title` to `:path`
 
 ### Fixes
-  * [Components] Bring back the `.icon` (heroicon) component using https://hex.pm/packages/heroicons instead of Tailwind config that depends on the fs module that's not available
+  * [Components] Bring back the `.icon` (heroicon) component using https://hex.pm/packages/heroicons instead of a Tailwind plugin that depends on the unavailable `fs` API
   * [Media Library] Guard against invalid values for `:sort` option in `MediaLibrary.list_assets/2`
   * [Content] Guard against invalid values for `:sort` option in `Content.list_layouts/2`
   * [Content] Guard against invalid values for `:sort` option in `Content.list_pages/2`
