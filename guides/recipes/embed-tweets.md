@@ -6,7 +6,7 @@ causing it to be executed too early. To fix this, we need to load the tweets _af
 
 ## Steps
 
-1. Load the Twitter JS script
+### 1. Load the Twitter JS script
 
 Find the Layout you're using on the pages where you're embedding tweets, then edit its template to include the following script:
 
@@ -31,7 +31,7 @@ window.twttr = (function(d, s, id) {
 
 window.addEventListener("phx:page-loading-stop", function(info){
   twttr.widgets.load()
-})
+});
 </script>
 ```
 
@@ -39,7 +39,7 @@ This will first include the global `twttr` object and then load the tweets as so
 
 Visit https://developer.x.com/en/docs/x-for-websites/javascript-api/guides/set-up-twitter-for-websites for more info.
 
-2. Embed tweets
+### 2. Embed tweets
 
 Now you can embed tweets on your pages _but_ remember to remove the `<script>` that's included at the end of the embedded code,
 as we're already loading the Twitter JS script in the Layout template.
@@ -53,5 +53,5 @@ Usually it looks like this:
 Remove the `<script>` tag at the end of the embedded tweet to look like this:
 
 ```html
-<blockquote class="twitter-tweet" data-theme="dark">><!-- content omitted --></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<blockquote class="twitter-tweet" data-theme="dark">><!-- content omitted --></blockquote>
 ```
