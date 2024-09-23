@@ -447,6 +447,30 @@ dev_seeds = fn ->
           <div class="p-2 border rounded">Item 6<br />Small text.</div>
         </div>
       </div>
+      <!-- 8. Inline-block elements with overflow -->
+      <div class="mb-8">
+        <h2 class="text-lg font-semibold mb-4">8. Elements with Inline-Block Layout</h2>
+        <div class="text-justify">
+          <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
+            Item 1<br />Small text.
+          </div>
+          <div class="inline-block w-2/5 p-2 border rounded mb-2 mx-2">
+            Item 2<br />Small text.<br />But taller.
+          </div>
+          <div class="inline-block w-1/4 p-2 border rounded mb-2 mx-2">
+            Item 3<br />Small text.
+          </div>
+          <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
+            Item 4<br />Small text.
+          </div>
+          <div class="inline-block w-1/5 p-2 border rounded mb-2 mx-2">
+            Item 5<br />Small text.
+          </div>
+          <div class="inline-block w-9/20 p-2 border rounded mb-2 mx-2">
+            Item 6<br />Small text.
+          </div>
+        </div>
+      </div>
       """
     })
 
