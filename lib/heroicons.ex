@@ -1,56 +1,9 @@
 # https://github.com/mveytsman/heroicons_elixir/blob/afb57ff3e181fbcf55c68ff64a0e7f1d339a07d4/lib/heroicons.ex
 
-defmodule Heroicons do
-  @moduledoc """
-  Provides precompiled icon compiles from [heroicons.com v2.1.5](heroicons.com).
+# Namespace as `Beacon.` to avoid conflicts with the module in the `:heroicons` package
+defmodule Beacon.Heroicons do
+  @moduledoc false
 
-  Heroicons are designed by [Steve Schoger](https://twitter.com/steveschoger)
-
-  ## Usage
-
-  Hero icons come in four styles – outline (`24x24`), solid (`24x24`), mini (`20x20`) and micro(`16x16`).
-
-  By default, the icon components will use the outline style, but the `solid`,
-  `mini` or micro attributes may be passed to select styling, for example:
-
-  ```heex
-  <Heroicons.cake />
-  <Heroicons.cake solid />
-  <Heroicons.cake mini />
-  <Heroicons.cake micro />
-  ```
-
-  You can also pass arbitrary HTML attributes to the components:
-
-   ```heex
-  <Heroicons.cake class="w-2 h-2" />
-  <Heroicons.cake solid class="w-2 h-2" />
-  ```
-
-  ## Heroicons License Attribution
-
-  MIT License
-
-  Copyright (c) 2020 Refactoring UI Inc.
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-  """
   use Phoenix.Component
 
   defp svg(assigns) do

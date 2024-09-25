@@ -2,6 +2,12 @@
 
 ## 0.1.0-dev
 
+### Fixes
+  * [Heroicons] Namespace the vendorized module as `Beacon.Heroicons` to avoid conflicts
+
+### Documentation
+  * Added guide on how to embed tweets using the Twitter JS api
+
 ## 0.1.0-rc.2 (2024-09-20)
 
 ### Breaking Changes

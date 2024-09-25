@@ -1343,7 +1343,7 @@ defmodule Beacon.Content do
             |> String.replace("-", "_")
             |> String.to_atom()
 
-          component = Function.capture(Heroicons, icon, 1)
+          component = Function.capture(Beacon.Heroicons, icon, 1)
 
           {_, assigns} = get_and_update_in(assigns, [:rest, :class], fn current ->
             current = current || ""
