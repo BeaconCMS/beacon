@@ -308,7 +308,7 @@ defmodule Beacon.Loader do
     reload_info_handlers_module(site)
     {:noreply, config}
   end
-  
+
   def handle_info({:content_updated, :event_handler, %{site: site}}, config) do
     reload_event_handlers_module(site)
     {:noreply, config}
