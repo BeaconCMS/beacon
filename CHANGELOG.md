@@ -2,6 +2,9 @@
 
 ## 0.1.0-dev
 
+### Enhancements
+  * Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by @ddink
+
 ### Fixes
   * [Heroicons] Namespace the vendorized module as `Beacon.Heroicons` to avoid conflicts
 
