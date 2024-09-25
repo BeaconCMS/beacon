@@ -3,12 +3,18 @@
 ## 0.1.0-dev
 
 ### Enhancements
+  * Enable Markdown options: `:footnotes`, `:description_lists`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:escape`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
+    See https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html and https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html for more info.
   * Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
 
 ### Fixes
   * [Heroicons] Namespace the vendorized module as `Beacon.Heroicons` to avoid conflicts
 
+### Breaking Changes
+  * Require minimun `:mdex` v0.1.17
+
 ### Documentation
+  * Added guide to customize the Markdown options
   * Added guide on how to embed tweets using the Twitter JS api
 
 ## 0.1.0-rc.2 (2024-09-20)

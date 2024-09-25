@@ -28,12 +28,19 @@ defmodule Beacon.Template.Markdown do
           autolink: true,
           tasklist: true,
           superscript: true,
-          description_lists: true
+          footnotes: true,
+          description_lists: true,
+          multiline_block_quotes: true,
+          shortcodes: true,
+          underline: true
         ],
         parse: [smart: true],
         render: [
           hardbreaks: false,
-          unsafe_: true
+          unsafe_: true,
+          escape: true,
+          relaxed_tasklist_matching: true,
+          relaxed_autolinks: true
         ],
         features: [
           syntax_highlight_theme: syntax_highlight_theme
