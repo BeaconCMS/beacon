@@ -6,7 +6,7 @@
   * Require minimum Elixir v1.14
 
 ### Enhancements
-  * Enable Markdown options: `:footnotes`, `:description_lists`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:escape`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
+  * Enable Markdown options: `:footnotes`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:escape`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
     See https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html and https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html for more info.
   * Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
 
