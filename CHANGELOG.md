@@ -2,6 +2,9 @@
 
 ## 0.1.0-dev
 
+### Breaking Changes
+  * Require minimum Elixir v1.14
+
 ### Enhancements
   * Enable Markdown options: `:footnotes`, `:description_lists`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:escape`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
     See https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html and https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html for more info.

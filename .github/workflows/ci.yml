@@ -14,11 +14,12 @@ jobs:
     name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           # minimum required versions
           - otp: "23"
-            elixir: "1.13.0"
+            elixir: "1.14.0"
             phoenix-version: "1.7.0"
             phoenix-live-view-version: "0.20.2"
 
@@ -84,6 +85,7 @@ jobs:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           # latest
