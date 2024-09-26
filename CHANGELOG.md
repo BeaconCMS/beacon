@@ -2,6 +2,9 @@
 
 ## 0.1.0-dev
 
+### Breaking Changes
+  * Require minimum Elixir v1.14
+
 ### Enhancements
   * Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
 
