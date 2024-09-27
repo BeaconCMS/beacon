@@ -43,6 +43,7 @@ Ecto.Migrator.run(Demo.Repo, path, :up, all: true, log_migrations_sql: true)
 Demo.Repo.stop()
 
 Application.put_env(:beacon, DemoWeb.Endpoint,
+  adapter: Bandit.PhoenixAdapter,
   http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
