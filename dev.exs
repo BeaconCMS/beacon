@@ -352,11 +352,101 @@ dev_seeds = fn ->
       layout_id: layout.id,
       format: "markdown",
       template: """
-      # My Markdown Page
+      ## Headings
 
-      ## Intro
+      # H1
+
+      ## H2
+
+      ### H3
+
+      ## Text Decoration
+
+      Bold: **bold text**
+
+      Italics: *italicized text*
+
+      Subscript: H~2~O
+
+      Superscript: X^2^
+
+      Emoji: :joy:
+
+      > blockquote
+
+      ## Lists
+
+      1. ordered list item 1
+      2. ordered list item 2
+      3. ordered list item 3
+
+      - unordered list item
+      - unordered list item
+      - unordered list item
+
+      - [x] Completed task list item
+      - [ ] incomplete task list item
+      - [ ] incomplete task list item
+
+      ## Code
+
+      `inline code`
+
+      ```elixir
+      %{
+        "firstName" => "John",
+        "lastName" => "Smith",
+        "age" => 25
+      }
+      ```
+
+      ## Hyperlink
 
       Back to [Home](/dev)
+
+      [link](https://example.com)
+
+      ## Image
+
+      ![image](https://assets.dockyard.com/images/narwin-press-release-og-v2.svg)
+
+      ## Table
+
+      | Table | Header |
+      | ----------- | ----------- |
+      | Header | Title |
+      | Paragraph | Text |
+
+      ## Footnote
+
+      Here's a sentence with a footnote. [^1]
+
+      [^1]: This is the footnote.
+
+      ## Description List
+
+      term
+
+      : definition
+
+      First Horizontal Line
+
+      ***
+
+      Second One
+
+      -----
+
+      Third
+
+      _________
+
+
+      ## Embeds
+
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/J---aiyznGQ?si=Go2Dsrw6mTIiyf2-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+      <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Read about what people are building with LiveView Native and how easy it&#39;s been for them to get up and going<a href="https://t.co/HtO3a7fYZ7">https://t.co/HtO3a7fYZ7</a><a href="https://twitter.com/hashtag/myelixirstatus?src=hash&amp;ref_src=twsrc%5Etfw">#myelixirstatus</a></p>&mdash; LiveView Native (@liveviewnative) <a href="https://twitter.com/liveviewnative/status/1838621636028731652?ref_src=twsrc%5Etfw">September 24, 2024</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
       """
     })
 

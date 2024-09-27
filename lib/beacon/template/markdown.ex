@@ -38,7 +38,6 @@ defmodule Beacon.Template.Markdown do
         render: [
           hardbreaks: false,
           unsafe_: true,
-          escape: true,
           relaxed_tasklist_matching: true,
           relaxed_autolinks: true
         ],
