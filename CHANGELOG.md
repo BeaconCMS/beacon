@@ -11,6 +11,7 @@
   * Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
 
 ### Fixes
+  * Remove unnecessary `:plug_cowboy` dependency - [#594](https://github.com/BeaconCMS/beacon_live_admin/pull/594)
   * [Heroicons] Namespace the vendorized module as `Beacon.Heroicons` to avoid conflicts
 
 ### Breaking Changes
