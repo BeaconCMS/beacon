@@ -83,4 +83,12 @@ defmodule Beacon.Test do
       use Beacon.Test.Fixtures, site: unquote(site)
     end
   end
+
+  @doc """
+  Returns the site defined in the current test.
+
+  Default is `:my_site` if the option `:site` was not set in `use Beacon.Test`
+  """
+  @spec default_site() :: atom
+  def default_site, do: :my_site
 end

@@ -60,8 +60,10 @@ defmodule Beacon.Test.Fixtures do
 
   @doc false
   defmacro __using__(opts) do
+    site = Keyword.get(opts, :site, :my_site)
+
     quote do
-      Module.put_attribute(__MODULE__, :__beacon_test_default_site__, unquote(Macro.escape(opts[:site] || :my_site)))
+      Module.put_attribute(__MODULE__, :__beacon_test_default_site__, unquote(site))
       @before_compile unquote(__MODULE__)
       import Beacon.Test.Fixtures, only: [beacon_page_helper_params: 0, beacon_page_helper_params: 1]
     end
@@ -73,7 +75,6 @@ defmodule Beacon.Test.Fixtures do
     quote do
       alias Beacon.Test.Fixtures
 
-      @doc false
       def default_site, do: unquote(Macro.escape(site))
 
       unquote_splicing(
@@ -177,9 +178,7 @@ defmodule Beacon.Test.Fixtures do
       meta_tags: [],
       resource_links: [],
       template: """
-      <header>Page header</header>
       <%= @inner_content %>
-      <footer>Page footer</footer>
       """
     })
     |> Content.create_layout!()
