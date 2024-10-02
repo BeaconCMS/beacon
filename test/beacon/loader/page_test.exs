@@ -6,8 +6,8 @@ defmodule Beacon.Loader.PageTest do
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
-      page_1 = published_page_fixture(site: "my_site", path: "/1", helpers: [page_helper_params(name: "page_1_upcase")])
-      page_2 = published_page_fixture(site: "my_site", path: "/2", helpers: [page_helper_params(name: "page_2_upcase")])
+      page_1 = beacon_published_page_fixture(site: "my_site", path: "/1", helpers: [beacon_page_helper_params(name: "page_1_upcase")])
+      page_2 = beacon_published_page_fixture(site: "my_site", path: "/2", helpers: [beacon_page_helper_params(name: "page_2_upcase")])
 
       {:ok, module_1} = Loader.reload_page_module(page_1.site, page_1.id)
       assert {:dynamic_helper, 2} in module_1.__info__(:functions)
@@ -21,7 +21,7 @@ defmodule Beacon.Loader.PageTest do
 
   describe "page_assigns/1" do
     test "interpolates raw_schema snippets" do
-      snippet_helper_fixture(%{
+      beacon_snippet_helper_fixture(%{
         site: "my_site",
         name: "raw_schema_blog_post_tags",
         body: ~S"""
@@ -32,10 +32,10 @@ defmodule Beacon.Loader.PageTest do
 
       Loader.reload_snippets_module(:my_site)
 
-      layout = published_layout_fixture()
+      layout = beacon_published_layout_fixture()
 
       page =
-        published_page_fixture(
+        beacon_published_page_fixture(
           site: "my_site",
           layout_id: layout.id,
           path: "/page/raw-schema",
@@ -69,13 +69,13 @@ defmodule Beacon.Loader.PageTest do
 
   describe "render" do
     test "render primary template" do
-      page = published_page_fixture(site: "my_site", path: "/1") |> Repo.preload(:variants)
+      page = beacon_published_page_fixture(site: "my_site", path: "/1") |> Repo.preload(:variants)
       {:ok, module} = Loader.reload_page_module(page.site, page.id)
       assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = module.render(%{})
     end
 
     test "render all templates" do
-      page = published_page_fixture(site: "my_site", path: "/1")
+      page = beacon_published_page_fixture(site: "my_site", path: "/1")
       Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
       Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
       Beacon.Content.publish_page(page)

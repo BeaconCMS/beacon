@@ -70,7 +70,7 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     end
 
     test "beacon components" do
-      component_fixture(name: "heex_test")
+      beacon_component_fixture(name: "heex_test")
       assert_equal(~S|<.heex_test class="w-4" val="test" />|)
     end
 
@@ -91,7 +91,7 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     end
 
     test "with :slot" do
-      component_fixture(
+      beacon_component_fixture(
         name: "table",
         attrs: [
           %{name: "id", type: "string", opts: [required: true]},
@@ -139,7 +139,7 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
     end
 
     test "nested in slot" do
-      component_fixture(
+      beacon_component_fixture(
         name: "html_tag",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]}

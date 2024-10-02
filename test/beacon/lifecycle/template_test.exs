@@ -16,7 +16,7 @@ defmodule Beacon.Lifecycle.TemplateTest do
   end
 
   test "render_template" do
-    page = published_page_fixture(site: "my_site") |> Repo.preload(:variants)
+    page = beacon_published_page_fixture(site: "my_site") |> Repo.preload(:variants)
     Beacon.Loader.reload_page_module(page.site, page.id)
     env = Beacon.Web.PageLive.make_env(:my_site)
 

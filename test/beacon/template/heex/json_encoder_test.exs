@@ -282,7 +282,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   describe "components" do
     test "beacon components" do
-      component_fixture(name: "json_test")
+      beacon_component_fixture(name: "json_test")
       Loader.reload_components_module(@site)
 
       assert_output(
@@ -342,7 +342,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     end
 
     test "with :slot" do
-      component_fixture(
+      beacon_component_fixture(
         name: "table",
         attrs: [
           %{name: "id", type: "string", opts: [required: true]},
@@ -418,7 +418,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     end
 
     test "nested in slot" do
-      component_fixture(
+      beacon_component_fixture(
         name: "html_tag",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]}

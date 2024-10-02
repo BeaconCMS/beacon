@@ -19,7 +19,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
   test "build with unpublished page" do
     Beacon.Loader.reload_components_module(@site)
-    page = page_fixture(site: @site, path: "/blog")
+    page = beacon_page_fixture(site: @site, path: "/blog")
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
 
@@ -48,7 +48,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
   test "build with published page resolves page title" do
     Beacon.Loader.reload_components_module(@site)
-    page = published_page_fixture(site: @site, path: "/blog", title: "blog index")
+    page = beacon_published_page_fixture(site: @site, path: "/blog", title: "blog index")
     Beacon.Loader.reload_page_module(@site, page.id)
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
@@ -64,7 +64,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
   test "build with path info and query params" do
     Beacon.Loader.reload_components_module(@site)
-    page = page_fixture(site: @site, path: "/blog")
+    page = beacon_page_fixture(site: @site, path: "/blog")
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{source: "search"})
 
@@ -79,7 +79,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
   test "build with path params" do
     Beacon.Loader.reload_components_module(@site)
-    page = page_fixture(site: @site, path: "/blog/:post")
+    page = beacon_page_fixture(site: @site, path: "/blog/:post")
 
     assigns = BeaconAssigns.new(@site, page, %{}, ["blog", "hello"], %{})
 
@@ -91,10 +91,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
   test "build with live data" do
     Beacon.Loader.reload_components_module(@site)
-    page = page_fixture(site: @site, path: "/blog")
+    page = beacon_page_fixture(site: @site, path: "/blog")
 
-    live_data = live_data_fixture(site: @site, path: "/blog")
-    live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
+    live_data = beacon_live_data_fixture(site: @site, path: "/blog")
+    beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
     Beacon.Loader.reload_live_data_module(@site)
 
     assigns = BeaconAssigns.new(@site, page, live_data, ["blog"], %{})

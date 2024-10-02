@@ -43,7 +43,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "loads module containing all snippet helpers" do
-      snippet_helper_fixture()
+      beacon_snippet_helper_fixture()
       {:ok, module} = Loader.reload_snippets_module(@site)
       assert module.upcase_title(%{"page" => %{"title" => "Beacon"}}) == "BEACON"
     end
@@ -51,7 +51,7 @@ defmodule Beacon.LoaderTest do
 
   describe "components" do
     setup do
-      component_fixture(name: "a", template: "<h1>A</h1>")
+      beacon_component_fixture(name: "a", template: "<h1>A</h1>")
       :ok
     end
 
@@ -62,7 +62,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "adding or removing components reloads the component module" do
-      component_fixture(name: "b", template: "<h1>B</h1>")
+      beacon_component_fixture(name: "b", template: "<h1>B</h1>")
 
       {:ok, module} = Loader.reload_components_module(@site)
       assert %Rendered{static: ["<h1>A</h1>"]} = module.my_component("a", %{})
@@ -79,7 +79,7 @@ defmodule Beacon.LoaderTest do
 
   describe "live data" do
     setup do
-      live_data_assign_fixture()
+      beacon_live_data_assign_fixture()
       :ok
     end
 
@@ -91,7 +91,7 @@ defmodule Beacon.LoaderTest do
 
   describe "error pages" do
     setup do
-      error_page_fixture()
+      beacon_error_page_fixture()
       :ok
     end
 
@@ -104,7 +104,7 @@ defmodule Beacon.LoaderTest do
 
   describe "stylesheets" do
     setup do
-      stylesheet_fixture()
+      beacon_stylesheet_fixture()
       :ok
     end
 
@@ -116,17 +116,17 @@ defmodule Beacon.LoaderTest do
 
   describe "layouts" do
     setup do
-      layout_a = published_layout_fixture(template: "<h1>A</h1>")
-      layout_b = published_layout_fixture(template: "<h1>B</h1>")
+      layout_a = beacon_published_layout_fixture(template: "<h1>A</h1>")
+      layout_b = beacon_published_layout_fixture(template: "<h1>B</h1>")
       [layout_a: layout_a, layout_b: layout_b]
     end
   end
 
   describe "pages" do
     setup do
-      layout = published_layout_fixture()
-      page_a = published_page_fixture(layout_id: layout.id, path: "/a", template: "<h1>A</h1>")
-      page_b = published_page_fixture(layout_id: layout.id, path: "/b", template: "<h1>B</h1>")
+      layout = beacon_published_layout_fixture()
+      page_a = beacon_published_page_fixture(layout_id: layout.id, path: "/a", template: "<h1>A</h1>")
+      page_b = beacon_published_page_fixture(layout_id: layout.id, path: "/b", template: "<h1>B</h1>")
       [page_a: page_a, page_b: page_b]
     end
 

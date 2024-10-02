@@ -53,17 +53,17 @@ defmodule Beacon.Web.ComponentsTest do
   defp create_component(name) do
     Beacon.Content.blueprint_components()
     |> Enum.find(&(&1.name == name))
-    |> component_fixture()
+    |> beacon_component_fixture()
   end
 
   defp create_page_with_component(path, component_name, template) do
     attrs = Enum.find(Beacon.Content.blueprint_components(), &(&1.name == component_name))
-    component_fixture(attrs)
+    beacon_component_fixture(attrs)
 
-    layout = published_layout_fixture()
+    layout = beacon_published_layout_fixture()
 
     page =
-      published_page_fixture(
+      beacon_published_page_fixture(
         layout_id: layout.id,
         path: path,
         template: template

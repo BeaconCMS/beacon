@@ -8,9 +8,9 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   @site :my_site
 
   defp create_page(_) do
-    stylesheet_fixture()
+    beacon_stylesheet_fixture()
 
-    component_fixture(
+    beacon_component_fixture(
       template: ~S"""
       <li id={"my-component-#{@val}"}>
         <span class="text-gray-50"><%= @val %></span>
@@ -19,14 +19,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
     )
 
     layout =
-      published_layout_fixture(
+      beacon_published_layout_fixture(
         template: """
         <header class="text-gray-100">Page header</header>
         <%= @inner_content %>
         """
       )
 
-    published_page_fixture(
+    beacon_published_page_fixture(
       layout_id: layout.id,
       path: "/tailwind-test",
       template: """
@@ -39,7 +39,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
       """
     )
 
-    published_page_fixture(
+    beacon_published_page_fixture(
       layout_id: layout.id,
       path: "/tailwind-test-post-process",
       template: """
@@ -52,7 +52,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
       """
     )
 
-    page_fixture(
+    beacon_page_fixture(
       layout_id: layout.id,
       path: "/b",
       template: """

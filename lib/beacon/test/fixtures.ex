@@ -1,8 +1,13 @@
 defmodule Beacon.Test.Fixtures do
-  # This module will eventually be made public to help users test their Beacon data and sites,
-  # ie: provide a better integration between Beacon and the Phoenix host application.
-  # But it's not quite ready, consider it private and subject to change.
-  @moduledoc false
+  @moduledoc """
+  Fixture data for testing Beacon content.
+
+  > #### Only use for testing {: .warning}
+  >
+  > These fixtures should be used only for testing purposes,
+  > if you are looking to run seeds or some sort of content automation
+  > then you should use `Beacon.Content` functions instead.
+  """
 
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
@@ -13,23 +18,41 @@ defmodule Beacon.Test.Fixtures do
   alias Beacon.MediaLibrary.UploadMetadata
   import Beacon.Utils, only: [repo: 1]
 
-  defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
-  defp get_lazy(attrs, key, fun), do: Keyword.get_lazy(attrs, key, fun)
+  @default_site "my_site"
 
-  def stylesheet_fixture(attrs \\ %{}) do
+  defp get(attrs, key) when is_map(attrs), do: Map.get(attrs, key)
+  defp get(attrs, key) when is_list(attrs) and is_atom(key), do: Keyword.get(attrs, key)
+  defp get(_attrs, _key), do: nil
+  defp get_lazy(attrs, key, fun) when is_map(attrs), do: Map.get_lazy(attrs, key, fun)
+  defp get_lazy(attrs, key, fun) when is_list(attrs), do: Keyword.get_lazy(attrs, key, fun)
+
+  defp site(attrs) do
+    get(attrs, :site) || get(attrs, "site") || @default_site
+  end
+
+  def beacon_stylesheet_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
     })
     |> Content.create_stylesheet!()
   end
 
-  def component_fixture(attrs \\ %{}) do
+  @doc """
+  Creates a `Beacon.Content.Component`.
+
+  ## Example
+
+      iex> beacon_component_fixture(name: "sample_component")
+      %Beacon.Content.Component{}
+
+  """
+  def beacon_component_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       name: "sample_component",
       category: "element",
       attrs: [%{name: "val", type: "any", opts: [required: true]}],
@@ -41,10 +64,10 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_component!()
   end
 
-  def layout_fixture(attrs \\ %{}) do
+  def beacon_layout_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       title: "Sample Home Page",
       meta_tags: [],
       resource_links: [],
@@ -57,21 +80,21 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_layout!()
   end
 
-  def published_layout_fixture(attrs \\ %{}) do
+  def beacon_published_layout_fixture(attrs \\ %{}) do
     {:ok, layout} =
       attrs
-      |> layout_fixture()
+      |> beacon_layout_fixture()
       |> Content.publish_layout()
 
     layout
   end
 
-  def page_fixture(attrs \\ %{}) do
-    layout_id = get_lazy(attrs, :layout_id, fn -> layout_fixture().id end)
+  def beacon_page_fixture(attrs \\ %{}) do
+    layout_id = get_lazy(attrs, :layout_id, fn -> beacon_layout_fixture().id end)
 
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       layout_id: layout_id,
       path: "/home",
       title: "home",
@@ -86,21 +109,22 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_page!()
   end
 
-  def published_page_fixture(attrs \\ %{}) do
-    attrs = Enum.into(attrs, %{site: "my_site"})
+  def beacon_published_page_fixture(attrs \\ %{}) do
+    site = site(attrs)
 
-    layout_id = get_lazy(attrs, :layout_id, fn -> published_layout_fixture(site: attrs.site).id end)
+    layout_id = get_lazy(attrs, :layout_id, fn -> beacon_published_layout_fixture(site: site).id end)
     attrs = Enum.into(attrs, %{layout_id: layout_id})
 
     {:ok, page} =
       attrs
-      |> page_fixture()
+      |> beacon_page_fixture()
       |> Content.publish_page()
 
     page
   end
 
-  def page_helper_params(attrs \\ %{}) do
+  @doc false
+  def beacon_page_helper_params(attrs \\ %{}) do
     Enum.into(attrs, %{
       name: "upcase",
       args: "%{name: name}",
@@ -110,10 +134,10 @@ defmodule Beacon.Test.Fixtures do
     })
   end
 
-  def snippet_helper_fixture(attrs \\ %{}) do
+  def beacon_snippet_helper_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       name: "upcase_title",
       body: """
       assigns
@@ -124,15 +148,15 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_snippet_helper!()
   end
 
-  def media_library_asset_fixture(attrs \\ %{}) do
+  def beacon_media_library_asset_fixture(attrs \\ %{}) do
     attrs = Map.new(attrs)
 
     attrs
-    |> upload_metadata_fixture()
+    |> beacon_upload_metadata_fixture()
     |> MediaLibrary.upload()
   end
 
-  def upload_metadata_fixture(attrs \\ %{}) do
+  def beacon_upload_metadata_fixture(attrs \\ %{}) do
     attrs =
       attrs
       |> Enum.into(%{
@@ -154,17 +178,17 @@ defmodule Beacon.Test.Fixtures do
     Path.join(["test", "support", "fixtures", file_name])
   end
 
-  def page_variant_fixture(attrs \\ %{})
+  def beacon_page_variant_fixture(attrs \\ %{})
 
-  def page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: page_variant_fixture(page, attrs)
+  def beacon_page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: beacon_page_variant_fixture(page, attrs)
 
-  def page_variant_fixture(%{site: site, page_id: page_id} = attrs) do
+  def beacon_page_variant_fixture(%{site: site, page_id: page_id} = attrs) do
     site
     |> Content.get_page!(page_id)
-    |> page_variant_fixture(attrs)
+    |> beacon_page_variant_fixture(attrs)
   end
 
-  defp page_variant_fixture(page, attrs) do
+  defp beacon_page_variant_fixture(page, attrs) do
     full_attrs = %{
       name: attrs[:name] || "Variant #{System.unique_integer([:positive])}",
       weight: attrs[:weight] || Enum.random(1..10),
@@ -180,7 +204,7 @@ defmodule Beacon.Test.Fixtures do
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
 
-  def event_handler_fixture(attrs \\ %{}) do
+  def beacon_event_handler_fixture(attrs \\ %{}) do
     full_attrs = %{
       name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
       code: attrs[:code] || "{:noreply, socket}",
@@ -192,12 +216,12 @@ defmodule Beacon.Test.Fixtures do
     |> repo(full_attrs.site).insert!()
   end
 
-  def error_page_fixture(attrs \\ %{}) do
-    layout = get_lazy(attrs, :layout, fn -> layout_fixture() end)
+  def beacon_error_page_fixture(attrs \\ %{}) do
+    layout = get_lazy(attrs, :layout, fn -> beacon_layout_fixture() end)
 
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       status: Enum.random(ErrorPage.valid_statuses()),
       template: "Uh-oh!",
       layout_id: layout.id
@@ -205,17 +229,17 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_error_page!()
   end
 
-  def live_data_fixture(attrs \\ %{}) do
+  def beacon_live_data_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
-      site: "my_site",
+      site: @default_site,
       path: "/foo/bar"
     })
     |> Content.create_live_data!()
   end
 
-  def live_data_assign_fixture(attrs \\ %{}) do
-    %{site: site} = live_data = get_lazy(attrs, :live_data, fn -> live_data_fixture() end)
+  def beacon_live_data_assign_fixture(attrs \\ %{}) do
+    %{site: site} = live_data = get_lazy(attrs, :live_data, fn -> beacon_live_data_fixture() end)
 
     attrs =
       Enum.into(attrs, %{
@@ -233,7 +257,7 @@ defmodule Beacon.Test.Fixtures do
     live_data
   end
 
-  def info_handler_fixture(attrs \\ %{}) do
+  def beacon_info_handler_fixture(attrs \\ %{}) do
     code = ~S"""
       socket =
         socket

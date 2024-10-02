@@ -23,7 +23,7 @@ defmodule Beacon.Loader.RoutesTest do
     end
 
     test "derive path from page" do
-      page = page_fixture(site: @site, path: "/elixir-lang")
+      page = beacon_page_fixture(site: @site, path: "/elixir-lang")
       assert ~p"/#{page}" == "/nested/site/elixir-lang"
       assert ~p"/posts/#{page}" == "/nested/site/posts/elixir-lang"
     end
