@@ -1,7 +1,7 @@
 defmodule Beacon.Web.BeaconAssignsTest do
   use Beacon.DataCase
   alias Beacon.Web.BeaconAssigns
-  import Beacon.Test.Fixtures
+  use Beacon.Test
 
   @site :my_site
 

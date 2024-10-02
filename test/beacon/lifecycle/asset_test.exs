@@ -1,6 +1,6 @@
 defmodule Beacon.Lifecycle.AssetTest do
   use Beacon.DataCase
-  import Beacon.Test.Fixtures
+  use Beacon.Test
 
   test "upload_asset" do
     refute Beacon.MediaLibrary.get_asset_by(:lifecycle_test, file_name: "image.webp")

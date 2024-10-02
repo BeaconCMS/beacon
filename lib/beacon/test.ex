@@ -47,12 +47,40 @@ defmodule Beacon.Test do
 
   And all functions in `Beacon.Test.Fixtures` will be imported to help you create resources in your tests.
 
+  ## Default site
+
+  Most of the functions need a `site` option to know which site to operate on.
+  If you don't provide it, the default site `:my_site` is used:
+
+  ```elixir
+  create_page_fixture(title: "Home")
+  %Beacon.Content.Page{site: :my_site, title: "Home"}
+  ```
+
+  Or you can override it:
+
+  ```elixir
+  create_page_fixture(site: :blog, title: "Home")
+  %Beacon.Content.Page{site: :blog, title: "Home"}
+  ```
+
+  But doing so every time is not efficient, so you can set a default site that will be used in all function calls:
+
+  ```elixir
+  use Beacon.Test, site: :blog
+
+  create_page_fixture(title: "Home")
+  %Beacon.Content.Page{site: :blog, title: "Home"}
+  ```
+
   """
 
   @doc false
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
+    site = Keyword.get(opts, :site, :my_site)
+
     quote do
-      import Beacon.Test.Fixtures
+      use Beacon.Test.Fixtures, site: unquote(site)
     end
   end
 end

@@ -3,7 +3,7 @@ defmodule Beacon.Web.ComponentsTest do
 
   import Phoenix.LiveViewTest
   import Phoenix.ConnTest
-  import Beacon.Test.Fixtures
+  use Beacon.Test
 
   describe "reading_time" do
     test "displays the estimated time to read the page", %{conn: conn} do

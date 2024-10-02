@@ -1,6 +1,6 @@
 defmodule Beacon.Loader.ErrorPageTest do
   use Beacon.Web.ConnCase, async: false
-  import Beacon.Test.Fixtures
+  use Beacon.Test
 
   @site :my_site
 

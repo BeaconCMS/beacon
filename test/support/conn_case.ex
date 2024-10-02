@@ -26,7 +26,7 @@ defmodule Beacon.Web.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import Phoenix.LiveViewTest
-      import Beacon.Test.Fixtures
+      use Beacon.Test
       import Beacon.Web.ConnCase
     end
   end

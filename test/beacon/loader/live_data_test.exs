@@ -1,6 +1,6 @@
 defmodule Beacon.Loader.LiveDataTest do
   use Beacon.DataCase, async: false
-  import Beacon.Test.Fixtures
+  use Beacon.Test
   alias Beacon.Loader
 
   @site :my_site

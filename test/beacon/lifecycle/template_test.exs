@@ -1,7 +1,7 @@
 defmodule Beacon.Lifecycle.TemplateTest do
   use Beacon.DataCase, async: false
 
-  import Beacon.Test.Fixtures
+  use Beacon.Test
   alias Beacon.Lifecycle
 
   test "load_template" do

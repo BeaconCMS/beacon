@@ -1,6 +1,6 @@
 defmodule Beacon.LoaderTest do
   use Beacon.DataCase, async: false
-  import Beacon.Test.Fixtures
+  use Beacon.Test
   alias Beacon.Content
   alias Beacon.Loader
   alias Beacon.BeaconTest.Repo
