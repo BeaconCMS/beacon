@@ -54,6 +54,7 @@ defmodule Beacon.Test.Fixtures do
   alias Beacon.Content.EventHandler
   alias Beacon.Content.InfoHandler
   alias Beacon.Content.PageVariant
+  alias Beacon.Loader
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
   import Beacon.Utils, only: [repo: 1]
@@ -143,6 +144,7 @@ defmodule Beacon.Test.Fixtures do
       content: "body {cursor: zoom-in;}"
     })
     |> Content.create_stylesheet!()
+    |> tap(&Loader.reload_stylesheet_module(&1.site))
   end
 
   @doc """
@@ -167,6 +169,7 @@ defmodule Beacon.Test.Fixtures do
       example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
     })
     |> Content.create_component!()
+    |> tap(&Loader.reload_components_module(&1.site))
   end
 
   def beacon_layout_fixture(attrs \\ %{}) do
@@ -188,6 +191,8 @@ defmodule Beacon.Test.Fixtures do
       attrs
       |> beacon_layout_fixture()
       |> Content.publish_layout()
+
+    Loader.reload_layout_module(layout.site, layout.id)
 
     layout
   end
@@ -236,6 +241,8 @@ defmodule Beacon.Test.Fixtures do
       |> beacon_page_fixture()
       |> Content.publish_page()
 
+    Loader.reload_page_module(page.site, page.id)
+
     page
   end
 
@@ -262,6 +269,7 @@ defmodule Beacon.Test.Fixtures do
       """
     })
     |> Content.create_snippet_helper!()
+    |> tap(&Loader.reload_snippets_module(&1.site))
   end
 
   def beacon_media_library_asset_fixture(attrs) do
@@ -309,10 +317,15 @@ defmodule Beacon.Test.Fixtures do
       template: attrs[:template] || template_for(page)
     }
 
-    page
-    |> Ecto.build_assoc(:variants)
-    |> PageVariant.changeset(full_attrs)
-    |> repo(page).insert!()
+    page_variant =
+      page
+      |> Ecto.build_assoc(:variants)
+      |> PageVariant.changeset(full_attrs)
+      |> repo(page).insert!()
+
+    Loader.reload_page_module(page.site, page.id)
+
+    page_variant
   end
 
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
@@ -328,6 +341,7 @@ defmodule Beacon.Test.Fixtures do
     %EventHandler{}
     |> EventHandler.changeset(full_attrs)
     |> repo(full_attrs.site).insert!()
+    |> tap(&Loader.reload_event_handlers_module(&1.site))
   end
 
   def beacon_error_page_fixture(attrs) do
@@ -341,6 +355,7 @@ defmodule Beacon.Test.Fixtures do
       layout_id: layout.id
     })
     |> Content.create_error_page!()
+    |> tap(&Loader.reload_error_page_module(&1.site))
   end
 
   def beacon_live_data_fixture(attrs) do
@@ -350,6 +365,7 @@ defmodule Beacon.Test.Fixtures do
       path: "/foo/bar"
     })
     |> Content.create_live_data!()
+    |> tap(&Loader.reload_live_data_module(&1.site))
   end
 
   def beacon_live_data_assign_fixture(attrs) do
@@ -367,6 +383,8 @@ defmodule Beacon.Test.Fixtures do
       |> Ecto.build_assoc(:assigns)
       |> Content.LiveDataAssign.changeset(attrs)
       |> repo(site).insert!()
+
+    Loader.reload_live_data_module(site)
 
     live_data
   end
@@ -394,5 +412,6 @@ defmodule Beacon.Test.Fixtures do
     %InfoHandler{}
     |> InfoHandler.changeset(full_attrs)
     |> repo(full_attrs.site).insert!()
+    |> tap(&Loader.reload_info_handlers_module(&1.site))
   end
 end

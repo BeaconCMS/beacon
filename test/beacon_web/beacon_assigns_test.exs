@@ -18,7 +18,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with unpublished page" do
-    Beacon.Loader.reload_components_module(default_site())
     page = beacon_page_fixture(path: "/blog")
 
     assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
@@ -47,7 +46,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with published page resolves page title" do
-    Beacon.Loader.reload_components_module(default_site())
     page = beacon_published_page_fixture(path: "/blog", title: "blog index")
     Beacon.Loader.reload_page_module(default_site(), page.id)
 
@@ -63,7 +61,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with path info and query params" do
-    Beacon.Loader.reload_components_module(default_site())
     page = beacon_page_fixture(path: "/blog")
 
     assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{source: "search"})
@@ -78,7 +75,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with path params" do
-    Beacon.Loader.reload_components_module(default_site())
     page = beacon_page_fixture(path: "/blog/:post")
 
     assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog", "hello"], %{})
@@ -90,7 +86,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with live data" do
-    Beacon.Loader.reload_components_module(default_site())
     page = beacon_page_fixture(path: "/blog")
 
     live_data = beacon_live_data_fixture(path: "/blog")

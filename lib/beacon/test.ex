@@ -44,6 +44,7 @@ defmodule Beacon.Test do
   - Do not hot-load resources during boot
   - Do not broadcast events on Content changes
   - Perform most operations in a synchronous way
+  - Reload module as fixture data is created
 
   And all functions in `Beacon.Test.Fixtures` will be imported to help you create resources in your tests.
 

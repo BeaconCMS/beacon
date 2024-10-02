@@ -130,10 +130,9 @@ defmodule Beacon.ContentTest do
     end
 
     test "broadcasts loaded event" do
-      %{site: site, id: id, path: path} = beacon_published_page_fixture(site: "booted")
-      :ok = Beacon.PubSub.subscribe_to_page(site, path)
-      Beacon.Loader.reload_page_module(site, id)
-      assert_receive {:page_loaded, %{site: ^site, id: ^id}}
+      :ok = Beacon.PubSub.subscribe_to_page(:booted, "/broadcast-test")
+      beacon_published_page_fixture(site: "booted", path: "/broadcast-test")
+      assert_receive {:page_loaded, %{site: :booted}}
     end
 
     test "broadcasts unpublished event" do
@@ -492,8 +491,6 @@ defmodule Beacon.ContentTest do
           "test_#{author_id}"
           """)
       )
-
-      Beacon.Loader.reload_snippets_module(:my_site)
 
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",

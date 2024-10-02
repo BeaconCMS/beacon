@@ -134,7 +134,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
     Loader.reload_live_data_module(default_site())
     Loader.reload_snippets_module(default_site())
-    Loader.reload_components_module(default_site())
     Loader.reload_layouts_modules(default_site())
     Loader.reload_pages_modules(default_site())
     Loader.reload_info_handlers_module(default_site())
@@ -363,7 +362,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
           layout_id: layout.id
         )
 
-      Beacon.Loader.reload_components_module(component.site)
+      # Beacon.Loader.reload_components_module(component.site)
       Beacon.Loader.reload_layout_module(layout.site, layout.id)
       Beacon.Loader.reload_page_module(page.site, page.id)
 

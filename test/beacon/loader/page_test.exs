@@ -29,8 +29,6 @@ defmodule Beacon.Loader.PageTest do
         """
       })
 
-      Loader.reload_snippets_module(default_site())
-
       layout = beacon_published_layout_fixture()
 
       page =
