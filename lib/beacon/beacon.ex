@@ -105,10 +105,10 @@ defmodule Beacon do
   but in some scenarions, you want to start Beacon and all related process like the Repo without actually booting the site,
   for example to seed initial data and in tests.
 
-  In those scenarios you'd define the config `skip_boot?` to `true` in your site configuration,
+  In those scenarios you'd define the config `:mode` to `:manual` in your site configuration,
   execute everything you need and then call `Beacon.boot/1` to finally boot the site if necessary.
 
-  Note that calling this function will update the running `site` config `skip_boot?` to `false` automatically after the site gets booted,
+  Note that calling this function will update the config `:mode` to `:auto` after the site gets booted,
   so all PubSub events necessary for Beacon to work properly are broadcasted as expected.
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
@@ -116,6 +116,8 @@ defmodule Beacon do
     site
     |> Config.fetch!()
     |> Beacon.Boot.do_init()
+
+    Beacon.Config.update_value(site, :mode, :auto)
 
     :ok
   end

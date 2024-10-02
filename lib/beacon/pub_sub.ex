@@ -94,7 +94,7 @@ defmodule Beacon.PubSub do
   # Utils
 
   defp broadcast(topic, message, site) when is_binary(topic) do
-    if Beacon.Config.fetch!(site).skip_boot? do
+    if Beacon.Config.fetch!(site).mode == :manual do
       :ok
     else
       Phoenix.PubSub.broadcast(@pubsub, topic, message)
@@ -102,7 +102,7 @@ defmodule Beacon.PubSub do
   end
 
   defp local_broadcast(topic, message, site) when is_binary(topic) do
-    if Beacon.Config.fetch!(site).skip_boot? do
+    if Beacon.Config.fetch!(site).mode == :manual do
       :ok
     else
       Phoenix.PubSub.local_broadcast(@pubsub, topic, message)

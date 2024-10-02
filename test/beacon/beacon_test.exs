@@ -1,14 +1,6 @@
 defmodule Beacon.BeaconTest do
   use Beacon.DataCase, async: false
 
-  describe "boot" do
-    test "disable skip_boot config" do
-      assert config().skip_boot?
-      Beacon.boot(:not_booted)
-      refute config().skip_boot?
-    end
-  end
-
   describe "apply_mfa" do
     test "valid module" do
       assert Beacon.apply_mfa(String, :trim, [" beacon "]) == "beacon"

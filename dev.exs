@@ -1184,7 +1184,7 @@ dev_site = [
   repo: Demo.Repo,
   endpoint: DemoWeb.Endpoint,
   router: DemoWeb.Router,
-  skip_boot?: true,
+  mode: :manual,
   extra_page_fields: [Demo.Beacon.TagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
@@ -1221,7 +1221,7 @@ Task.start(fn ->
          repo: Demo.Repo,
          endpoint: DemoWeb.Endpoint,
          router: DemoWeb.Router,
-         skip_boot?: true
+         mode: :manual
        ]
      ]}
   ]

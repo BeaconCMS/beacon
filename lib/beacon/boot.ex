@@ -15,8 +15,8 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, skip_boot?: true}) do
-    Logger.debug("Beacon.Boot is disabled on site #{site}")
+  def init(%{site: site, mode: :manual}) do
+    Logger.debug("Beacon.Boot is disabled on site #{site} on manual mode")
 
     # Router helpers are always available
     Beacon.Loader.reload_routes_module(site)
@@ -65,9 +65,6 @@ defmodule Beacon.Boot do
 
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))
-
-    # Reset option to enable event broadcasting even after booting manually
-    Beacon.Config.update_value(config.site, :skip_boot?, false)
 
     # TODO: add telemetry to measure booting time
     Logger.info("Beacon.Boot finished booting site #{config.site}")

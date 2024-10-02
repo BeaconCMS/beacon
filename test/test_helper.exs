@@ -22,7 +22,7 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         skip_boot?: true,
+         mode: :manual,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js"]),
          live_socket_path: "/custom_live",
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
@@ -44,14 +44,13 @@ Supervisor.start_link(
        ],
        [
          site: :not_booted,
-         skip_boot?: true,
+         mode: :manual,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :booted,
-         skip_boot?: false,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
@@ -61,7 +60,7 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         skip_boot?: true,
+         mode: :manual,
          assets: [
            {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3, Beacon.MediaLibrary.Provider.Repo], validations: []]}
          ],
@@ -69,21 +68,21 @@ Supervisor.start_link(
        ],
        [
          site: :data_source_test,
-         skip_boot?: true,
+         mode: :manual,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :raw_schema_test,
-         skip_boot?: true,
+         mode: :manual,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
        [
          site: :default_meta_tags_test,
-         skip_boot?: true,
+         mode: :manual,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
@@ -96,7 +95,7 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         skip_boot?: true,
+         mode: :manual,
          lifecycle: [
            load_template: [
              {:markdown,
@@ -145,7 +144,7 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         skip_boot?: true,
+         mode: :manual,
          lifecycle: [
            render_template: [
              {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}
