@@ -286,16 +286,16 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
       Loader.reload_components_module(@site)
 
       assert_output(
-        ~S|<.json_test class="w-4" val={@val} />|,
+        ~S|<.json_test class="w-4" project={@project} />|,
         [
           %{
-            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "{@val}"},
+            "attrs" => %{"class" => "w-4", "project" => "{@project}", "self_close" => true},
             "content" => [],
-            "rendered_html" => "<span id=\"my-component\">test</span>",
+            "rendered_html" => "<span id=\"project-1\">Beacon</span>",
             "tag" => ".json_test"
           }
         ],
-        %{val: "test"}
+        %{project: %{id: 1, name: "Beacon"}}
       )
     end
 
@@ -411,7 +411,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
               }
             ],
             "rendered_html" =>
-              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>"
+              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"users\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>"
           }
         ]
       )

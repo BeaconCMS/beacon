@@ -33,8 +33,8 @@ defmodule Beacon.Template.HEExTest do
       beacon_component_fixture(site: "my_site", name: "sample")
       Beacon.Loader.reload_components_module(:my_site)
 
-      assert HEEx.render(:my_site, ~S|<%= my_component("sample", %{val: 1}) %>|, %{}) == ~S|<span id="my-component">1</span>|
-      assert HEEx.render(:my_site, ~S|<.sample val={1} />|, %{}) == ~S|<span id="my-component">1</span>|
+      assert HEEx.render(:my_site, ~S|<%= my_component("sample", %{project: %{id: 1, name: "Beacon"}}) %>|, %{}) == ~S|<span id="project-1">Beacon</span>|
+      assert HEEx.render(:my_site, ~S|<.sample project={%{id: 1, name: "Beacon"}} />|, %{}) == ~S|<span id="project-1">Beacon</span>|
     end
   end
 end

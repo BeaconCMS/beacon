@@ -161,11 +161,10 @@ defmodule Beacon.Test.Fixtures do
       site: "my_site",
       name: "sample_component",
       category: "element",
-      attrs: [%{name: "val", type: "any", opts: [required: true]}],
+      attrs: [%{name: "project", type: "any", opts: [required: true]}],
       slots: [],
-      body: ~S|assigns = Map.put(assigns, :id, "my-component")|,
-      template: ~S|<span id={@id}><%= @val %></span>|,
-      example: ~S|<.sample_component val={@val} />|
+      template: ~S|<span id={"project-#{@project.id}"}><%= @project.name %></span>|,
+      example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
     })
     |> Content.create_component!()
   end

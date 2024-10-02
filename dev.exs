@@ -162,12 +162,9 @@ dev_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
-    template: """
-    <li>
-      <%= @val %>
-    </li>
-    """,
-    example: "<.sample_component val={1} />"
+    attrs: [%{name: "project", type: "any", opts: [required: true]}],
+    template: ~S|<span id={@project.id}><%= @project.name %></span>|,
+    example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
   })
 
   Beacon.Content.create_snippet_helper!(%{

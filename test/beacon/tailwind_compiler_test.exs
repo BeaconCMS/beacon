@@ -30,9 +30,6 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
-        <%= for val <- @vals do %>
-          <%= my_component("sample_component", val: val) %>
-        <% end %>
       </main>
       """
     )
@@ -43,9 +40,6 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
-        <%= for val <- @vals do %>
-          <%= my_component("sample_component", val: val) %>
-        <% end %>
       </main>
       """
     )

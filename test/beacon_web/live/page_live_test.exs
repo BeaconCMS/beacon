@@ -10,7 +10,19 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
   setup do
     live_data = beacon_live_data_fixture(path: "/home/:greet")
-    beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "values", value: "[\"first\", \"second\", \"third\"]")
+
+    beacon_live_data_assign_fixture(
+      live_data: live_data,
+      format: :elixir,
+      key: "projects",
+      value: ~S"""
+      [
+        %{id: 1, name: "Beacon"},
+        %{id: 2, name: "BeaconLiveAdmin"},
+        %{id: 3, name: "MDEx"}
+      ]
+      """
+    )
 
     Beacon.Content.blueprint_components()
     |> Enum.find(&(&1.name == "page_link"))
@@ -46,9 +58,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
         path: "/home/:greet",
         template: """
         <main>
-          <h2>Some Values:</h2>
-          <%= for value <- @values do %>
-            <.sample_component val={value} />
+          <h2>Projects</h2>
+          <%= for project <- @projects do %>
+            <.sample_component project={project} />
           <% end %>
 
           <h2>Beacon:</h2>
@@ -141,9 +153,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
   test "live data", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/home/hello")
 
-    assert has_element?(view, "#my-component", "first")
-    assert has_element?(view, "#my-component", "second")
-    assert has_element?(view, "#my-component", "third")
+    assert has_element?(view, "#project-1", "Beacon")
+    assert has_element?(view, "#project-2", "BeaconLiveAdmin")
+    assert has_element?(view, "#project-3", "MDEx")
   end
 
   test "patch to another page", %{conn: conn} do
@@ -257,14 +269,14 @@ defmodule Beacon.Web.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ "<header>Page header</header>"
-      assert html =~ ~s"<main><h2>Some Values:</h2>"
+      assert html =~ ~s"<main><h2>Projects</h2>"
       assert html =~ "<footer>Page footer</footer>"
     end
 
     test "component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home/hello")
 
-      assert html =~ ~s(<span id="my-component">)
+      assert html =~ ~s(<span id="project-1">)
     end
 
     test "event", %{conn: conn} do
