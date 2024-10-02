@@ -3,7 +3,7 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
 
   alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Template.HEEx.JSONEncoder
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
 
   defp assert_equal(input, assigns \\ %{}, site \\ :my_site) do
     assert {:ok, encoded} = JSONEncoder.encode(site, input, assigns)

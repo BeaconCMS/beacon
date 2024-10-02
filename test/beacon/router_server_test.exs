@@ -81,7 +81,7 @@ defmodule Beacon.RouterServerTest do
 
   test "add page on page_loaded event" do
     Beacon.Loader.reload_components_module(:my_site)
-    %{id: page_id} = page = Beacon.Fixtures.published_page_fixture(path: "/test/router/add")
+    %{id: page_id} = page = Beacon.Test.Fixtures.published_page_fixture(path: "/test/router/add")
     RouterServer.del_pages(:my_site)
 
     server = :my_site |> Beacon.RouterServer.name() |> GenServer.whereis()

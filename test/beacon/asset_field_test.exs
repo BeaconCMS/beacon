@@ -1,7 +1,7 @@
 defmodule Beacon.AssetFieldTest do
   use Beacon.DataCase, async: true
 
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
   alias Beacon.MediaLibrary.AssetField
   alias Beacon.MediaLibrary.AssetFields.AltText
 

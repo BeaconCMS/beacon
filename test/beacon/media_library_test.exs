@@ -4,7 +4,7 @@ defmodule Beacon.MediaLibraryTest do
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Asset
 
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
   import Beacon.Support.BypassHelpers
 
   test "search by file name" do

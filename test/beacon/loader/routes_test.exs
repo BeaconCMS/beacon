@@ -1,7 +1,7 @@
 defmodule Beacon.Loader.RoutesTest do
   use Beacon.DataCase, async: true
 
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
 
   @site :booted
 

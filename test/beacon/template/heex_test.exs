@@ -2,7 +2,7 @@ defmodule Beacon.Template.HEExTest do
   use Beacon.DataCase, async: false
 
   alias Beacon.Template.HEEx
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
 
   describe "render" do
     test "phoenix components" do

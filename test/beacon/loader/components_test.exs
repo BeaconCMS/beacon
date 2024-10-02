@@ -1,7 +1,7 @@
 defmodule Beacon.Loader.ComponentsTest do
   use Beacon.DataCase, async: false
 
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
   alias Beacon.Loader
 
   @site :my_site

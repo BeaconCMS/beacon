@@ -1,7 +1,7 @@
 defmodule Beacon.ContentTest do
   use Beacon.DataCase
 
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
 
   alias Beacon.Content
   alias Beacon.Content.Component

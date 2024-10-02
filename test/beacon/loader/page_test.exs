@@ -1,6 +1,6 @@
 defmodule Beacon.Loader.PageTest do
   use Beacon.DataCase, async: false
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
   alias Beacon.Loader
   alias Beacon.BeaconTest.Repo
 

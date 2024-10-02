@@ -1,6 +1,6 @@
 defmodule Beacon.Web.CacheTest do
   use Beacon.Web.ConnCase, async: true
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
   alias Beacon.Web.Cache
 
   setup do

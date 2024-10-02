@@ -8,7 +8,7 @@ defmodule Beacon.DataCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      import Beacon.Fixtures
+      import Beacon.Test.Fixtures
       import Beacon.DataCase
     end
   end

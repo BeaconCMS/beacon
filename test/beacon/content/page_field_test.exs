@@ -1,7 +1,7 @@
 defmodule Beacon.Content.PageFieldTest do
   use Beacon.DataCase, async: true
 
-  import Beacon.Fixtures
+  import Beacon.Test.Fixtures
   alias Beacon.Content.PageField
 
   @form %Phoenix.HTML.Form{}
