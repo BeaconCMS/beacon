@@ -18,8 +18,4 @@ defmodule Beacon.BeaconTest do
       end
     end
   end
-
-  defp config do
-    Beacon.Config.fetch!(:not_booted)
-  end
 end

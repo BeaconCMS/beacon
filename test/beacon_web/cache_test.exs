@@ -1,10 +1,10 @@
 defmodule Beacon.Web.CacheTest do
   use Beacon.Web.ConnCase, async: true
-  use Beacon.Test
+  use Beacon.Test, site: :my_site
   alias Beacon.Web.Cache
 
   setup do
-    asset = beacon_media_library_asset_fixture(site: :my_site)
+    asset = beacon_media_library_asset_fixture()
     asset = %{asset | id: "9272fab9-0369-4394-8458-380b889600fd", updated_at: ~U[2024-04-02 20:32:12Z]}
     [asset: asset]
   end

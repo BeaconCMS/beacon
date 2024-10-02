@@ -1,12 +1,12 @@
 defmodule Beacon.Web.BeaconAssignsTest do
   use Beacon.DataCase
   alias Beacon.Web.BeaconAssigns
-  use Beacon.Test
+  use Beacon.Test, site: :my_site
 
   @site :my_site
 
   setup do
-    Beacon.Loader.reload_live_data_module(@site)
+    Beacon.Loader.reload_live_data_module(default_site())
     [socket: %Phoenix.LiveView.Socket{assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}}]
   end
 
@@ -14,14 +14,14 @@ defmodule Beacon.Web.BeaconAssignsTest do
     assert %BeaconAssigns{
              site: @site,
              private: %{components_module: :"Elixir.Beacon.Web.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components"}
-           } = BeaconAssigns.new(@site)
+           } = BeaconAssigns.new(default_site())
   end
 
   test "build with unpublished page" do
-    Beacon.Loader.reload_components_module(@site)
-    page = beacon_page_fixture(site: @site, path: "/blog")
+    Beacon.Loader.reload_components_module(default_site())
+    page = beacon_page_fixture(path: "/blog")
 
-    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
+    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -33,9 +33,9 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with non-persisted page" do
-    page = %Beacon.Content.Page{site: @site, path: "/blog"}
+    page = %Beacon.Content.Page{site: default_site(), path: "/blog"}
 
-    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
+    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -47,11 +47,11 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with published page resolves page title" do
-    Beacon.Loader.reload_components_module(@site)
-    page = beacon_published_page_fixture(site: @site, path: "/blog", title: "blog index")
-    Beacon.Loader.reload_page_module(@site, page.id)
+    Beacon.Loader.reload_components_module(default_site())
+    page = beacon_published_page_fixture(path: "/blog", title: "blog index")
+    Beacon.Loader.reload_page_module(default_site(), page.id)
 
-    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{})
+    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -63,10 +63,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with path info and query params" do
-    Beacon.Loader.reload_components_module(@site)
-    page = beacon_page_fixture(site: @site, path: "/blog")
+    Beacon.Loader.reload_components_module(default_site())
+    page = beacon_page_fixture(path: "/blog")
 
-    assigns = BeaconAssigns.new(@site, page, %{}, ["blog"], %{source: "search"})
+    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{source: "search"})
 
     assert %BeaconAssigns{
              site: @site,
@@ -78,10 +78,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with path params" do
-    Beacon.Loader.reload_components_module(@site)
-    page = beacon_page_fixture(site: @site, path: "/blog/:post")
+    Beacon.Loader.reload_components_module(default_site())
+    page = beacon_page_fixture(path: "/blog/:post")
 
-    assigns = BeaconAssigns.new(@site, page, %{}, ["blog", "hello"], %{})
+    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog", "hello"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -90,14 +90,14 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with live data" do
-    Beacon.Loader.reload_components_module(@site)
-    page = beacon_page_fixture(site: @site, path: "/blog")
+    Beacon.Loader.reload_components_module(default_site())
+    page = beacon_page_fixture(path: "/blog")
 
-    live_data = beacon_live_data_fixture(site: @site, path: "/blog")
+    live_data = beacon_live_data_fixture(path: "/blog")
     beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
-    Beacon.Loader.reload_live_data_module(@site)
+    Beacon.Loader.reload_live_data_module(default_site())
 
-    assigns = BeaconAssigns.new(@site, page, live_data, ["blog"], %{})
+    assigns = BeaconAssigns.new(default_site(), page, live_data, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,

@@ -1,11 +1,9 @@
 defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   use Beacon.DataCase, async: false
+  use Beacon.Test, site: :my_site
 
   import ExUnit.CaptureIO
-  use Beacon.Test
   alias Beacon.RuntimeCSS.TailwindCompiler
-
-  @site :my_site
 
   defp create_page(_) do
     beacon_stylesheet_fixture()
@@ -66,7 +64,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   end
 
   test "config" do
-    assert TailwindCompiler.config(@site) =~ "export default"
+    assert TailwindCompiler.config(default_site()) =~ "export default"
   end
 
   describe "compile site" do
@@ -74,7 +72,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
 
     test "includes classes from all resources" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(@site)
+        assert {:ok, output} = TailwindCompiler.compile(default_site())
 
         # test/support/templates/*.*ex
         assert output =~ "text-red-50"
@@ -89,14 +87,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
 
     test "do not include classes from unpublished pages" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(@site)
+        assert {:ok, output} = TailwindCompiler.compile(default_site())
 
         refute output =~ "text-gray-300"
       end)
     end
 
     test "fetch post processed page templates" do
-      assert {:ok, output} = TailwindCompiler.compile(@site)
+      assert {:ok, output} = TailwindCompiler.compile(default_site())
       assert output =~ "text-blue-200"
     end
   end

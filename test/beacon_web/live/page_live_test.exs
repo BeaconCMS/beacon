@@ -1,5 +1,7 @@
 defmodule Beacon.Web.Live.PageLiveTest do
   use Beacon.Web.ConnCase, async: false
+  use Beacon.Test, site: :my_site
+
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
@@ -7,7 +9,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
   alias Beacon.Loader
 
   setup do
-    live_data = beacon_live_data_fixture(site: :my_site, path: "/home/:greet")
+    live_data = beacon_live_data_fixture(path: "/home/:greet")
     beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "values", value: "[\"first\", \"second\", \"third\"]")
 
     Beacon.Content.blueprint_components()
@@ -18,6 +20,11 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
     layout =
       beacon_published_layout_fixture(
+        template: """
+        <header>Page header</header>
+        <%= @inner_content %>
+        <footer>Page footer</footer>
+        """,
         meta_tags: [
           %{"http-equiv" => "refresh", "content" => "300"}
         ],
@@ -83,7 +90,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
     _page_home_form_submit_handler =
       beacon_event_handler_fixture(%{
-        site: :my_site,
         name: "hello",
         code: """
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
@@ -91,7 +97,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
       })
 
     beacon_info_handler_fixture(%{
-      site: :my_site,
       msg: "{:incorrect_format, email}",
       code: """
       socket =
@@ -115,13 +120,13 @@ defmodule Beacon.Web.Live.PageLiveTest do
         meta_tags: nil
       )
 
-    Loader.reload_live_data_module(:my_site)
-    Loader.reload_snippets_module(:my_site)
-    Loader.reload_components_module(:my_site)
-    Loader.reload_layouts_modules(:my_site)
-    Loader.reload_pages_modules(:my_site)
-    Loader.reload_info_handlers_module(:my_site)
-    Loader.reload_event_handlers_module(:my_site)
+    Loader.reload_live_data_module(default_site())
+    Loader.reload_snippets_module(default_site())
+    Loader.reload_components_module(default_site())
+    Loader.reload_layouts_modules(default_site())
+    Loader.reload_pages_modules(default_site())
+    Loader.reload_info_handlers_module(default_site())
+    Loader.reload_event_handlers_module(default_site())
 
     [layout: layout]
   end
@@ -183,7 +188,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
     test "interpolate snippets", %{conn: conn} do
       beacon_snippet_helper_fixture(%{
-        site: "my_site",
         name: "og_description",
         body: ~S"""
         assigns
@@ -196,7 +200,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
       page =
         beacon_published_page_fixture(
-          site: "my_site",
           layout_id: layout.id,
           path: "/page/meta-tag",
           title: "my first page",
@@ -211,8 +214,8 @@ defmodule Beacon.Web.Live.PageLiveTest do
       live_data = beacon_live_data_fixture(path: "/page/meta-tag")
       beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
 
-      Beacon.Loader.reload_snippets_module(:my_site)
-      Beacon.Loader.reload_live_data_module(:my_site)
+      Beacon.Loader.reload_snippets_module(default_site())
+      Beacon.Loader.reload_live_data_module(default_site())
       Beacon.Loader.reload_layout_module(layout.site, layout.id)
       Beacon.Loader.reload_page_module(page.site, page.id)
 
@@ -315,7 +318,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       live_data = beacon_live_data_fixture(path: "/my/page/:var")
       beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
 
-      Loader.reload_live_data_module(:my_site)
+      Loader.reload_live_data_module(default_site())
 
       {:ok, view, _html} = live(conn, "/my/page/foobar")
 
