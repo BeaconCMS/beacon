@@ -24,6 +24,22 @@ defmodule Beacon.Test.Fixtures do
   use Beacon.Test.Fixtures
   ```
 
+  ## Fixtures
+
+  All fixtures accept either a map or a keyword list, so these are equivalent:
+
+  ```elixir
+  beacon_page_fixture(path: "/contact")
+  beacon_page_fixture(%{path: "/contact"})
+  beacon_page_fixture(%{"path" => "/contact"})
+  ```
+
+  Or no attributes at all to use the default values:
+
+  ```elixir
+  beacon_page_fixture()
+  ```
+
   ## Default site
 
   You can pass a default site to be used in the attrs for all fixture functions:
@@ -138,6 +154,16 @@ defmodule Beacon.Test.Fixtures do
     get(attrs, :site) || get(attrs, "site") || "my_site"
   end
 
+  @doc """
+  Creates a `Beacon.Content.Stylesheet`.
+
+  ## Example
+
+      iex> beacon_stylesheet_fixture(content: "h1 { color: red; }")
+      %Beacon.Content.Stylesheet{}
+
+  """
+  @spec beacon_stylesheet_fixture(map() | Keyword.t()) :: Beacon.Content.Stylesheet.t()
   def beacon_stylesheet_fixture(attrs) do
     attrs
     |> Enum.into(%{
@@ -174,6 +200,19 @@ defmodule Beacon.Test.Fixtures do
     |> tap(&Loader.reload_components_module(&1.site))
   end
 
+  @doc """
+  Creates a draft `Beacon.Content.Layout`.
+
+  ## Examples
+
+      iex> beacon_layout_fixture()
+      %Beacon.Content.Layout{}
+
+      iex> beacon_layout_fixture(template: "<%= @inner_content %>")
+      %Beacon.Content.Layout{}
+
+  """
+  @spec beacon_layout_fixture(map() | Keyword.t()) :: Beacon.Content.Layout.t()
   def beacon_layout_fixture(attrs \\ %{}) do
     attrs
     |> Enum.into(%{
@@ -188,6 +227,10 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_layout!()
   end
 
+  @doc """
+  Similar to `beacon_layout_fixture/1`, but also publishes the layout.
+  """
+  @spec beacon_published_layout_fixture(map() | Keyword.t()) :: Beacon.Content.Layout.t()
   def beacon_published_layout_fixture(attrs) do
     {:ok, layout} =
       attrs
@@ -200,7 +243,7 @@ defmodule Beacon.Test.Fixtures do
   end
 
   @doc """
-  Creates a `Beacon.Content.Page`
+  Creates a draft `Beacon.Content.Page`
 
   ## Examples
 
@@ -232,6 +275,10 @@ defmodule Beacon.Test.Fixtures do
     |> Content.create_page!()
   end
 
+  @doc """
+  Similar to `beacon_page_fixture/1`, but also publishes the page.
+  """
+  @spec beacon_published_page_fixture(map() | Keyword.t()) :: Beacon.Content.Page.t()
   def beacon_published_page_fixture(attrs) do
     site = site(attrs)
 
@@ -259,6 +306,18 @@ defmodule Beacon.Test.Fixtures do
     })
   end
 
+  @doc """
+  Creates a `Beacon.Content.Snippets.Helper`.
+
+  ## Example
+
+      iex> beacon_snippet_helper_fixture(body: ~S\"\"\"
+        assigns |> get_in(["page", "title"]) |> String.trim()
+      \"\"\")
+      %Beacon.Content.Snippets.Helper{}
+
+  """
+  @spec beacon_snippet_helper_fixture(map() | Keyword.t()) :: Beacon.Content.Snippets.Helper.t()
   def beacon_snippet_helper_fixture(attrs) do
     attrs
     |> Enum.into(%{
@@ -274,14 +333,33 @@ defmodule Beacon.Test.Fixtures do
     |> tap(&Loader.reload_snippets_module(&1.site))
   end
 
-  def beacon_media_library_asset_fixture(attrs) do
-    attrs = Map.new(attrs)
+  @doc """
+  Uploads a given "upload metadata" created by `beacon_upload_metadata_fixture/1`.
 
+  ## Example
+
+      iex> beacon_media_library_asset_fixture(upload_metadata)
+      %Beacon.MediaLibrary.Asset{}
+
+  """
+  @spec beacon_media_library_asset_fixture(map() | Keyword.t()) :: Beacon.MediaLibrary.Asset.t()
+  def beacon_media_library_asset_fixture(attrs) do
     attrs
+    |> Map.new()
     |> beacon_upload_metadata_fixture()
     |> MediaLibrary.upload()
   end
 
+  @doc """
+  Creates a `Beacon.MediaLibrary.UploadMetadata`.
+
+  ## Example
+
+      iex> beacon_upload_metadata_fixture(file_size: 100_000)
+      %Beacon.MediaLibrary.UploadMetadata{}
+
+  """
+  @spec beacon_upload_metadata_fixture(map() | Keyword.t()) :: Beacon.MediaLibrary.UploadMetadata.t()
   def beacon_upload_metadata_fixture(attrs) do
     attrs =
       attrs
@@ -304,8 +382,19 @@ defmodule Beacon.Test.Fixtures do
     Path.join(["test", "support", "fixtures", file_name])
   end
 
+  @doc """
+  Creates a `Beacon.Content.PageVariant`.
+
+  ## Example
+
+      iex> beacon_page_variant_fixture(page: page, weight: 50, template: "<h1>Variant B</h1>")
+      %Beacon.Content.PageVariant{}
+
+  """
+  @spec beacon_page_variant_fixture(map() | Keyword.t()) :: Beacon.Content.PageVariant.t()
   def beacon_page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: beacon_page_variant_fixture(page, attrs)
 
+  # FIXME: accept map and keyword
   def beacon_page_variant_fixture(%{site: site, page_id: page_id} = attrs) do
     site
     |> Content.get_page!(page_id)
@@ -325,6 +414,7 @@ defmodule Beacon.Test.Fixtures do
       |> PageVariant.changeset(full_attrs)
       |> repo(page).insert!()
 
+    # FIXME: use Content
     Loader.reload_page_module(page.site, page.id)
 
     page_variant
@@ -333,7 +423,22 @@ defmodule Beacon.Test.Fixtures do
   defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
 
+  @doc """
+  Creates a `Beacon.Content.EventHandler`.
+
+  ## Example
+
+      iex> beacon_event_handler_fixture(code: ~S\"\"\"
+        email = event_params["newsletter"]["email"]
+        MyApp.Newsletter.subscribe(email)
+        {:noreply, socket}
+      "\"\"\)
+      %Beacon.Content.EventHandler{}
+
+  """
+  @spec beacon_event_handler_fixture(map() | Keyword.t()) :: Beacon.Content.EventHandler.t()
   def beacon_event_handler_fixture(attrs) do
+    # FIXME: accept map and keyword
     full_attrs = %{
       name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
       code: attrs[:code] || "{:noreply, socket}",
@@ -346,6 +451,16 @@ defmodule Beacon.Test.Fixtures do
     |> tap(&Loader.reload_event_handlers_module(&1.site))
   end
 
+  @doc """
+  Creates a `Beacon.Content.ErrorPage`.
+
+  ## Example
+
+      iex> beacon_error_page_fixture(status: 404, template: "nothing here")
+      %Beacon.Content.ErrorPage{}
+
+  """
+  @spec beacon_error_page_fixture(map() | Keyword.t()) :: Beacon.Content.ErrorPage.t()
   def beacon_error_page_fixture(attrs) do
     layout = get_lazy(attrs, :layout, fn -> beacon_layout_fixture() end)
 
@@ -360,6 +475,16 @@ defmodule Beacon.Test.Fixtures do
     |> tap(&Loader.reload_error_page_module(&1.site))
   end
 
+  @doc """
+  Creates a `Beacon.Content.LiveData`.
+
+  ## Example
+
+      iex> beacon_live_data_fixture(path: "/contact")
+      %Beacon.Content.LiveData{}
+
+  """
+  @spec beacon_live_data_fixture(map() | Keyword.t()) :: Beacon.Content.LiveData.t()
   def beacon_live_data_fixture(attrs) do
     attrs
     |> Enum.into(%{
@@ -370,6 +495,16 @@ defmodule Beacon.Test.Fixtures do
     |> tap(&Loader.reload_live_data_module(&1.site))
   end
 
+  @doc """
+  Creates a `Beacon.Content.LiveDataAssign`.
+
+  ## Example
+
+      iex> beacon_live_data_assign_fixture(live_data: live_data, key: "user", value: "%{id: 1, name: \"John\"}")
+      %Beacon.Content.LiveDataAssign{}
+
+  """
+  @spec beacon_live_data_assign_fixture(map() | Keyword.t()) :: Beacon.Content.LiveDataAssign.t()
   def beacon_live_data_assign_fixture(attrs) do
     %{site: site} = live_data = get_lazy(attrs, :live_data, fn -> beacon_live_data_fixture(%{}) end)
 
@@ -391,6 +526,19 @@ defmodule Beacon.Test.Fixtures do
     live_data
   end
 
+  @doc """
+  Creates a `Beacon.Content.InfoHandler`.
+
+  ## Example
+
+      iex> beacon_info_handler_fixture(msg: "{:subscribed, email}", code: ~S\"\"\"
+      MyApp.Notifications.send_email(email, "Welcome!")
+      {:noreply, socket}
+      \"\"\")
+      %Beacon.Content.InfoHandler{}
+
+  """
+  @spec beacon_info_handler_fixture(map() | Keyword.t()) :: Beacon.Content.InfoHandler.t()
   def beacon_info_handler_fixture(attrs) do
     code = ~S"""
       socket =
@@ -411,6 +559,7 @@ defmodule Beacon.Test.Fixtures do
       code: attrs[:code] || code
     }
 
+    # FIXME: use Content
     %InfoHandler{}
     |> InfoHandler.changeset(full_attrs)
     |> repo(full_attrs.site).insert!()
