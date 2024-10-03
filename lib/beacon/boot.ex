@@ -15,14 +15,26 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, mode: mode}) when mode in [:testing, :manual] do
-    Logger.debug("Beacon.Boot is disabled for site #{site} on #{mode} mode")
+  def init(%{site: site, mode: :manual}) do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
 
     # Router helpers are always available
     Beacon.Loader.reload_routes_module(site)
 
     :ignore
   end
+
+  def init(%{site: site, mode: :testing}) do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
+
+    # reload shared modules used by layouts and pages
+    Beacon.Loader.reload_routes_module(site)
+    Beacon.Loader.reload_components_module(site)
+    Beacon.Loader.reload_live_data_module(site)
+
+    :ignore
+  end
+
 
   def init(config), do: do_init(config.site)
 
