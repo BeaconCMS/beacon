@@ -49,6 +49,8 @@ defmodule Beacon.Test.Fixtures do
 
   """
 
+  # FIXME: remove Beacon.Loader dependency in favor of new optimized loader using :error_handler
+
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.EventHandler
