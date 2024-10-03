@@ -35,7 +35,6 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-
   def init(config), do: do_init(config.site)
 
   def do_init(site) do
