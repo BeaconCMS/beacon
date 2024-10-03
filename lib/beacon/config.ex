@@ -50,12 +50,16 @@ defmodule Beacon.Config do
   Disables site booting.
   Defines the mode which the site will operate.
 
-  Default is `:auto` which will load resources during boot, broadcast events on content change,
-  and execute operation assyncly.
+  Default is `:live` which will load resources during boot, broadcast events on content change,
+  and execute operation assyncly. That's the normal mode for production.
 
-  You should set it to `:manual` for testing, see `Beacon.Test` for more info.
+  The `:testing` mode is suited for testing environments,
+  you should always use it when running tests that involve Beacon resources.
+
+  And the `:manual` mode is similar to `:testing` but it won't boot load any resource,
+  it's useful to seed data.
   """
-  @type mode :: :auto | :manual
+  @type mode :: :live | :testing | :manual
 
   @typedoc """
   A module that implements `Beacon.RuntimeCSS`.

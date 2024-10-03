@@ -163,7 +163,7 @@ dev_seeds = fn ->
     site: "dev",
     name: "sample_component",
     attrs: [%{name: "project", type: "any", opts: [required: true]}],
-    template: ~S|<span id={@project.id}><%= @project.name %></span>|,
+    template: ~S|<span id={"project-#{@project.id}"}><%= @project.name %></span>|,
     example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
   })
 
@@ -255,7 +255,7 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          Sample component: <%= my_component("sample_component", val: 1) %>
+          Sample component: <%= my_component("sample_component", project: %{id: 1, name: "Beacon"}) %>
         </div>
 
        <div>

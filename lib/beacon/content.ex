@@ -185,12 +185,10 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    mode = Beacon.Config.fetch!(layout.site).mode
-
-    if mode == :manual do
-      do_publish_layout(layout)
-    else
+    if Beacon.Config.fetch!(layout.site).mode == :live do
       GenServer.call(name(layout.site), {:publish_layout, layout})
+    else
+      do_publish_layout(layout)
     end
   end
 
@@ -624,12 +622,10 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    mode = Beacon.Config.fetch!(page.site).mode
-
-    if mode == :manual do
-      do_publish_page(page)
-    else
+    if Beacon.Config.fetch!(page.site).mode == :live do
       GenServer.call(name(page.site), {:publish_page, page})
+    else
+      do_publish_page(page)
     end
   end
 

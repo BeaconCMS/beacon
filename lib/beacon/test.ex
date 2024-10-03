@@ -4,12 +4,12 @@ defmodule Beacon.Test do
 
   ## Usage
 
-  First you need to activate the `:manual` mode in your site configuration:
+  First you need to activate the `:testing` mode in your site configuration:
 
   ```elixir
   # test.exs
-  # active manual mode for all sites under test
-  config :my_app, Beacon, sites: [[site: :my_site, mode: :manual]]
+  # active testing mode for all sites under test
+  config :my_app, Beacon, sites: [[site: :my_site, mode: :testing]]
   ```
 
   See `Beacon.start_link/1` for more info on how to setup your Beacon configuration.

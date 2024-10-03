@@ -223,14 +223,20 @@ defmodule Beacon.Loader do
   end
 
   # call worker asyncly or syncly depending on the current site mode
+  # or skip if mode is manual so we don't reload modules
   defp call_worker(site, async_request, sync_request) do
     mode = Beacon.Config.fetch!(site).mode
-    {sync_fun, sync_args} = sync_request
 
-    if mode == :manual do
-      apply(Beacon.Loader.Worker, sync_fun, sync_args)
-    else
-      GenServer.call(worker(site), async_request, @timeout)
+    case mode do
+      :live ->
+        GenServer.call(worker(site), async_request, @timeout)
+
+      :testing ->
+        {sync_fun, sync_args} = sync_request
+        apply(Beacon.Loader.Worker, sync_fun, sync_args)
+
+      :manual ->
+        :skip
     end
   end
 
