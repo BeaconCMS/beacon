@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Beacon.Install do
+defmodule Mix.Tasks.Beacon.InstallOld do
   @shortdoc "Generates beacon base files into the project"
 
   @moduledoc """
