@@ -1,10 +1,14 @@
 name: CI
 
 on:
-  pull_request:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'guides/**'
+  pull_request:
+    paths-ignore:
+      - 'guides/**'
 
 permissions:
   contents: write
@@ -22,12 +26,14 @@ jobs:
             elixir: "1.14.0"
             phoenix-version: "1.7.0"
             phoenix-live-view-version: "0.20.2"
+            postgres: '13.0-alpine'
 
           # latest
           - otp: "27"
             elixir: "1.17"
             phoenix-version: "~> 1.7"
             phoenix-live-view-version: "~> 0.20"
+            postgres: '16.4-alpine'
 
     env:
       MIX_ENV: test
@@ -38,7 +44,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13.1
+        image: postgres:${{matrix.postgres}}
         env:
           POSTGRES_DB: beacon_test
           POSTGRES_USER: postgres
@@ -49,7 +55,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 5432/tcp
 
     steps:
       - name: Checkout code
