@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test:
-    name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
+    name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LiveView ${{matrix.phoenix-live-view}} | PG ${{matrix.postgres}}"
 
     strategy:
       fail-fast: false
@@ -24,21 +24,21 @@ jobs:
           # minimum required versions
           - otp: "23"
             elixir: "1.14.0"
-            phoenix-version: "1.7.0"
-            phoenix-live-view-version: "0.20.2"
+            phoenix: "1.7.0"
+            phoenix-live-view: "0.20.2"
             postgres: '13.0-alpine'
 
           # latest
           - otp: "27"
             elixir: "1.17"
-            phoenix-version: "~> 1.7"
-            phoenix-live-view-version: "~> 0.20"
+            phoenix: "~> 1.7"
+            phoenix-live-view: "~> 0.20"
             postgres: '16.4-alpine'
 
     env:
       MIX_ENV: test
-      PHOENIX_VERSION: ${{matrix.phoenix-version}}
-      PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view-version}}
+      PHOENIX_VERSION: ${{matrix.phoenix}}
+      PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view}}
 
     runs-on: ubuntu-20.04
 
@@ -74,9 +74,9 @@ jobs:
           path: |
             deps
             _build
-          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix}}-${{ matrix.phoenix-live-view}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix}}-${{ matrix.phoenix-live-view}}-${{ hashFiles('**/mix.lock') }}
 
       - run: mix deps.get --only-test
 
@@ -88,7 +88,7 @@ jobs:
         run: mix test
 
   quality:
-    name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix-version}} | LiveView ${{matrix.phoenix-live-view-version}}"
+    name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LiveView ${{matrix.phoenix-live-view}}"
 
     strategy:
       fail-fast: false
@@ -97,8 +97,8 @@ jobs:
           # latest
           - otp: "27"
             elixir: "1.17"
-            phoenix-version: "~> 1.7"
-            phoenix-live-view-version: "~> 0.20"
+            phoenix: "~> 1.7"
+            phoenix-live-view: "~> 0.20"
 
     env:
       MIX_ENV: dev
@@ -123,9 +123,9 @@ jobs:
           path: |
             deps
             _build
-          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix}}-${{ matrix.phoenix-live-view}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix-version }}-${{ matrix.phoenix-live-view-version }}-${{ hashFiles('**/mix.lock') }}
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix}}-${{ matrix.phoenix-live-view}}-${{ hashFiles('**/mix.lock') }}
 
       - run: mix deps.get
 
