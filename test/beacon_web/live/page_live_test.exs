@@ -6,7 +6,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
   import Phoenix.LiveViewTest
 
   alias Beacon.Content
-  alias Beacon.Loader
 
   setup do
     live_data = beacon_live_data_fixture(path: "/home/:greet")
@@ -132,13 +131,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
         meta_tags: nil
       )
 
-    Loader.reload_live_data_module(default_site())
-    Loader.reload_snippets_module(default_site())
-    Loader.reload_layouts_modules(default_site())
-    Loader.reload_pages_modules(default_site())
-    Loader.reload_info_handlers_module(default_site())
-    Loader.reload_event_handlers_module(default_site())
-
     [layout: layout]
   end
 
@@ -209,26 +201,21 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
       layout = beacon_published_layout_fixture()
 
-      page =
-        beacon_published_page_fixture(
-          layout_id: layout.id,
-          path: "/page/meta-tag",
-          title: "my first page",
-          description: "my test page",
-          meta_tags: [
-            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-            %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
-            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
-          ]
-        )
+      # page =
+      beacon_published_page_fixture(
+        layout_id: layout.id,
+        path: "/page/meta-tag",
+        title: "my first page",
+        description: "my test page",
+        meta_tags: [
+          %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
+          %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+        ]
+      )
 
       live_data = beacon_live_data_fixture(path: "/page/meta-tag")
       beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
-
-      Beacon.Loader.reload_snippets_module(default_site())
-      Beacon.Loader.reload_live_data_module(default_site())
-      Beacon.Loader.reload_layout_module(layout.site, layout.id)
-      Beacon.Loader.reload_page_module(page.site, page.id)
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -329,8 +316,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
       live_data = beacon_live_data_fixture(path: "/my/page/:var")
       beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
 
-      Loader.reload_live_data_module(default_site())
-
       {:ok, view, _html} = live(conn, "/my/page/foobar")
 
       assert page_title(view) =~ "page foobar"
@@ -353,18 +338,14 @@ defmodule Beacon.Web.Live.PageLiveTest do
       component = beacon_component_fixture(name: "component_test", template: "component_test_v1")
       layout = beacon_published_layout_fixture()
 
-      page =
-        beacon_published_page_fixture(
-          path: "/component_test",
-          template: """
-          <%= my_component("component_test", []) %>
-          """,
-          layout_id: layout.id
-        )
-
-      # Beacon.Loader.reload_components_module(component.site)
-      Beacon.Loader.reload_layout_module(layout.site, layout.id)
-      Beacon.Loader.reload_page_module(page.site, page.id)
+      # page =
+      beacon_published_page_fixture(
+        path: "/component_test",
+        template: """
+        <%= my_component("component_test", []) %>
+        """,
+        layout_id: layout.id
+      )
 
       {:ok, _view, html} = live(conn, "/component_test")
 

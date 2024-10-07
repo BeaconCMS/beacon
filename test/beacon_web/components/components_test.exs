@@ -62,16 +62,10 @@ defmodule Beacon.Web.ComponentsTest do
 
     layout = beacon_published_layout_fixture()
 
-    page =
-      beacon_published_page_fixture(
-        layout_id: layout.id,
-        path: path,
-        template: template
-      )
-
-    Beacon.Loader.reload_live_data_module(:my_site)
-    Beacon.Loader.reload_components_module(:my_site)
-    Beacon.Loader.reload_layout_module(layout.site, layout.id)
-    Beacon.Loader.reload_page_module(page.site, page.id)
+    beacon_published_page_fixture(
+      layout_id: layout.id,
+      path: path,
+      template: template
+    )
   end
 end

@@ -6,7 +6,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
   @site :my_site
 
   setup do
-    Beacon.Loader.reload_live_data_module(default_site())
     [socket: %Phoenix.LiveView.Socket{assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}}]
   end
 
@@ -47,7 +46,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
   test "build with published page resolves page title" do
     page = beacon_published_page_fixture(path: "/blog", title: "blog index")
-    Beacon.Loader.reload_page_module(default_site(), page.id)
 
     assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
 
@@ -90,7 +88,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
 
     live_data = beacon_live_data_fixture(path: "/blog")
     beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
-    Beacon.Loader.reload_live_data_module(default_site())
 
     assigns = BeaconAssigns.new(default_site(), page, live_data, ["blog"], %{})
 

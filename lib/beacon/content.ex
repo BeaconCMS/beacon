@@ -3634,6 +3634,21 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Creates an event handler, raising an error if unsuccessful.
+  """
+  @doc type: :event_handlers
+  @spec create_event_handler!(map()) :: EventHandler.t()
+  def create_event_handler!(attrs \\ %{}) do
+    case create_event_handler(attrs) do
+      {:ok, event_handler} ->
+        event_handler
+
+      {:error, changeset} ->
+        raise "failed to create event_handler: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
   Updates an event handler with the given attrs.
   """
   @doc type: :event_handlers

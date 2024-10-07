@@ -42,7 +42,7 @@ defmodule Beacon.LoaderTest do
 
     test "loads module containing all snippet helpers" do
       beacon_snippet_helper_fixture()
-      {:ok, module} = Loader.reload_snippets_module(default_site())
+      module = Loader.fetch_snippets_module(default_site())
       assert module.upcase_title(%{"page" => %{"title" => "Beacon"}}) == "BEACON"
     end
   end
@@ -54,7 +54,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "loads module containing all components" do
-      {:ok, module} = Loader.reload_components_module(default_site())
+      module = Loader.fetch_components_module(default_site())
       assert %Rendered{static: ["<h1>A</h1>"]} = module.my_component("a", %{})
       assert %Rendered{static: ["<h1>A</h1>"]} = module.render("a", %{})
     end
@@ -62,7 +62,7 @@ defmodule Beacon.LoaderTest do
     test "adding or removing components reloads the component module" do
       beacon_component_fixture(name: "b", template: "<h1>B</h1>")
 
-      {:ok, module} = Loader.reload_components_module(default_site())
+      module = Loader.fetch_components_module(default_site())
       assert %Rendered{static: ["<h1>A</h1>"]} = module.my_component("a", %{})
       assert %Rendered{static: ["<h1>B</h1>"]} = module.my_component("b", %{})
 
@@ -82,7 +82,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "loads module containing all live data" do
-      {:ok, module} = Loader.reload_live_data_module(default_site())
+      module = Loader.fetch_live_data_module(default_site())
       assert module.live_data(["foo", "bar"], %{}) == %{bar: "Hello world!"}
     end
   end

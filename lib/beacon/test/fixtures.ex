@@ -65,13 +65,11 @@ defmodule Beacon.Test.Fixtures do
 
   """
 
-  # FIXME: remove Beacon.Loader dependency in favor of new optimized loader using :error_handler
+  # FIXME: remove Beacon.Loader dependency in favor of the new optimized :error_handler loader,
+  #        so it does not trigger a reload for _every_ fixture call, which makes the tests suite slower.
 
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
-  alias Beacon.Content.EventHandler
-  alias Beacon.Content.InfoHandler
-  alias Beacon.Content.PageVariant
   alias Beacon.Loader
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.UploadMetadata
@@ -394,7 +392,6 @@ defmodule Beacon.Test.Fixtures do
   @spec beacon_page_variant_fixture(map() | Keyword.t()) :: Beacon.Content.PageVariant.t()
   def beacon_page_variant_fixture(%{page: %Content.Page{} = page} = attrs), do: beacon_page_variant_fixture(page, attrs)
 
-  # FIXME: accept map and keyword
   def beacon_page_variant_fixture(%{site: site, page_id: page_id} = attrs) do
     site
     |> Content.get_page!(page_id)
@@ -402,25 +399,25 @@ defmodule Beacon.Test.Fixtures do
   end
 
   defp beacon_page_variant_fixture(page, attrs) do
-    full_attrs = %{
-      name: attrs[:name] || "Variant #{System.unique_integer([:positive])}",
-      weight: attrs[:weight] || Enum.random(1..10),
-      template: attrs[:template] || template_for(page)
-    }
+    attrs =
+      Enum.into(attrs, %{
+        name: "Variant #{System.unique_integer([:positive])}",
+        weight: Enum.random(1..10),
+        template: template_for(page)
+      })
 
     page_variant =
       page
       |> Ecto.build_assoc(:variants)
-      |> PageVariant.changeset(full_attrs)
+      |> Content.PageVariant.changeset(attrs)
       |> repo(page).insert!()
 
-    # FIXME: use Content
     Loader.reload_page_module(page.site, page.id)
 
     page_variant
   end
 
-  defp template_for(%{format: :heex} = _page), do: "<div>My Site</div>"
+  defp template_for(%{format: :heex} = _page), do: "<div><h1>My Site</h1></div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
 
   @doc """
@@ -438,16 +435,13 @@ defmodule Beacon.Test.Fixtures do
   """
   @spec beacon_event_handler_fixture(map() | Keyword.t()) :: Beacon.Content.EventHandler.t()
   def beacon_event_handler_fixture(attrs) do
-    # FIXME: accept map and keyword
-    full_attrs = %{
-      name: attrs[:name] || "Event Handler #{System.unique_integer([:positive])}",
-      code: attrs[:code] || "{:noreply, socket}",
-      site: attrs[:site] || :my_site
-    }
-
-    %EventHandler{}
-    |> EventHandler.changeset(full_attrs)
-    |> repo(full_attrs.site).insert!()
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      name: "Event Handler #{System.unique_integer([:positive])}",
+      code: "{:noreply, socket}"
+    })
+    |> Content.create_event_handler!()
     |> tap(&Loader.reload_event_handlers_module(&1.site))
   end
 
@@ -553,16 +547,13 @@ defmodule Beacon.Test.Fixtures do
 
     msg = "{:email_sent, email}"
 
-    full_attrs = %{
-      site: attrs[:site] || :my_site,
-      msg: attrs[:msg] || msg,
-      code: attrs[:code] || code
-    }
-
-    # FIXME: use Content
-    %InfoHandler{}
-    |> InfoHandler.changeset(full_attrs)
-    |> repo(full_attrs.site).insert!()
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      msg: msg,
+      code: code
+    })
+    |> Content.create_info_handler!()
     |> tap(&Loader.reload_info_handlers_module(&1.site))
   end
 end

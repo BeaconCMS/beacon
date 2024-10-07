@@ -31,7 +31,6 @@ defmodule Beacon.Template.HEExTest do
 
     test "user defined components" do
       beacon_component_fixture(site: "my_site", name: "sample")
-      # Beacon.Loader.reload_components_module(:my_site)
 
       assert HEEx.render(:my_site, ~S|<%= my_component("sample", %{project: %{id: 1, name: "Beacon"}}) %>|, %{}) ==
                ~S|<span id="project-1">Beacon</span>|
