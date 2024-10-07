@@ -47,17 +47,18 @@ defmodule Beacon.Config do
   @type repo :: module()
 
   @typedoc """
-  Disables site booting.
   Defines the mode which the site will operate.
 
   Default is `:live` which will load resources during boot, broadcast events on content change,
-  and execute operation assyncly. That's the normal mode for production.
+  and execute operations asyncly. That's the normal mode for production.
 
   The `:testing` mode is suited for testing environments,
   you should always use it when running tests that involve Beacon resources.
 
   And the `:manual` mode is similar to `:testing` but it won't boot load any resource,
   it's useful to seed data.
+
+  You can always change to `:live` mode at runtime by calling `Beacon.boot/1`.
   """
   @type mode :: :live | :testing | :manual
 
@@ -217,7 +218,7 @@ defmodule Beacon.Config do
             endpoint: nil,
             router: nil,
             repo: nil,
-            mode: :auto,
+            mode: :live,
             # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
             # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
@@ -273,7 +274,7 @@ defmodule Beacon.Config do
 
     * `:repo` - `t:repo/0` (required)
 
-    * `:mode` - `t:mode/0` (optional). Defaults to `:auto`.
+    * `:mode` - `t:mode/0` (optional). Defaults to `:live`.
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
@@ -338,7 +339,7 @@ defmodule Beacon.Config do
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
-        mode: :auto,
+        mode: :live,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
         live_socket_path: "/live",

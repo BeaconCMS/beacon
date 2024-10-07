@@ -9,7 +9,7 @@ defmodule Beacon.Test do
   ```elixir
   # test.exs
   # active testing mode for all sites under test
-  config :my_app, Beacon, sites: [[site: :my_site, mode: :testing]]
+  config :my_app, :my_site, mode: :testing
   ```
 
   See `Beacon.start_link/1` for more info on how to setup your Beacon configuration.
@@ -39,7 +39,7 @@ defmodule Beacon.Test do
   end
   ```
 
-  With this configuration, Beacon will perform some operations so the environment is better suited for testing:
+  With this configuration, Beacon will behave in a way that is better suited for testing:
 
   - Do not hot-load resources during boot
   - Do not broadcast events on Content changes

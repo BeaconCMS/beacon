@@ -113,7 +113,7 @@ defmodule Beacon do
   """
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) when is_atom(site) do
-    Beacon.Boot.do_init(site)
+    Beacon.Boot.live_init(site)
     :ok
   end
 

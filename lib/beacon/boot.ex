@@ -19,6 +19,7 @@ defmodule Beacon.Boot do
     Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
 
     # Router helpers are always available
+    # TODO: we should be able to remove the next line after implementing `:error_handler` callbacks
     Beacon.Loader.reload_routes_module(site)
 
     :ignore
@@ -28,6 +29,8 @@ defmodule Beacon.Boot do
     Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
 
     # reload shared modules used by layouts and pages
+    # Router helpers are always available
+    # TODO: we should be able to remove the next lines after implementing `:error_handler` callbacks
     Beacon.Loader.reload_routes_module(site)
     Beacon.Loader.reload_components_module(site)
     Beacon.Loader.reload_live_data_module(site)
@@ -35,9 +38,10 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  def init(config), do: do_init(config.site)
+  def init(config), do: live_init(config.site)
 
-  def do_init(site) do
+  # TODO: we should be able to remove most of the Loader calls here, probably keep only runtime js/css
+  def live_init(site) do
     Logger.info("Beacon.Boot booting site #{site}")
     task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
 
