@@ -185,7 +185,11 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    GenServer.call(name(layout.site), {:publish_layout, layout})
+    if Beacon.Config.fetch!(layout.site).mode == :live do
+      GenServer.call(name(layout.site), {:publish_layout, layout})
+    else
+      do_publish_layout(layout)
+    end
   end
 
   @doc """
@@ -618,7 +622,11 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    GenServer.call(name(page.site), {:publish_page, page})
+    if Beacon.Config.fetch!(page.site).mode == :live do
+      GenServer.call(name(page.site), {:publish_page, page})
+    else
+      do_publish_page(page)
+    end
   end
 
   @doc """
@@ -3626,6 +3634,21 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Creates an event handler, raising an error if unsuccessful.
+  """
+  @doc type: :event_handlers
+  @spec create_event_handler!(map()) :: EventHandler.t()
+  def create_event_handler!(attrs \\ %{}) do
+    case create_event_handler(attrs) do
+      {:ok, event_handler} ->
+        event_handler
+
+      {:error, changeset} ->
+        raise "failed to create event_handler: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
   Updates an event handler with the given attrs.
   """
   @doc type: :event_handlers
@@ -4236,53 +4259,17 @@ defmodule Beacon.Content do
 
   @doc false
   def handle_call({:publish_page, page}, _from, config) do
-    %{site: site} = config
-
-    publish = fn page ->
-      changeset = Page.update_changeset(page, %{})
-
-      transact(repo(site), fn ->
-        with {:ok, _changeset} <- validate_page_template(changeset),
-             {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event),
-             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
-             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
-             true <- :ets.delete(table_name(site), page.id) do
-          {:ok, page}
-        end
-      end)
-    end
-
-    with {:ok, page} <- publish.(page),
-         :ok <- Beacon.PubSub.page_published(page) do
-      {:reply, {:ok, page}, config}
-    else
+    case do_publish_page(page) do
+      {:ok, page} -> {:reply, {:ok, page}, config}
       error -> {:reply, error, config}
     end
   end
 
   @doc false
   def handle_call({:publish_layout, layout}, _from, config) do
-    %{site: site} = config
-
-    publish = fn layout ->
-      changeset = Layout.changeset(layout, %{})
-
-      transact(repo(site), fn ->
-        with {:ok, _changeset} <- validate_layout_template(changeset),
-             {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
-             true <- :ets.delete(table_name(site), layout.id) do
-          {:ok, layout}
-        end
-      end)
-    end
-
-    with {:ok, layout} <- publish.(layout),
-         :ok <- Beacon.PubSub.layout_published(layout) do
-      {:reply, {:ok, layout}, config}
-    else
-      error -> {:reply, error, config}
+    case do_publish_layout(layout) do
+      {:ok, layout} -> {:reply, {:ok, layout}, config}
+      {:error, error} -> {:reply, error, config}
     end
   end
 
@@ -4317,6 +4304,56 @@ defmodule Beacon.Content do
   def handle_call(:dump_cached_content, _from, config) do
     content = config.site |> table_name() |> :ets.match(:"$1") |> List.flatten()
     {:reply, content, config}
+  end
+
+  defp do_publish_page(page) do
+    %{site: site} = page
+
+    publish = fn page ->
+      changeset = Page.update_changeset(page, %{})
+
+      transact(repo(site), fn ->
+        with {:ok, _changeset} <- validate_page_template(changeset),
+             {:ok, event} <- create_page_event(page, "published"),
+             {:ok, _snapshot} <- create_page_snapshot(page, event),
+             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
+             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
+             true <- :ets.delete(table_name(site), page.id) do
+          {:ok, page}
+        end
+      end)
+    end
+
+    with {:ok, page} <- publish.(page),
+         :ok <- Beacon.PubSub.page_published(page) do
+      {:ok, page}
+    else
+      error -> error
+    end
+  end
+
+  defp do_publish_layout(layout) do
+    %{site: site} = layout
+
+    publish = fn layout ->
+      changeset = Layout.changeset(layout, %{})
+
+      transact(repo(site), fn ->
+        with {:ok, _changeset} <- validate_layout_template(changeset),
+             {:ok, event} <- create_layout_event(layout, "published"),
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
+             true <- :ets.delete(table_name(site), layout.id) do
+          {:ok, layout}
+        end
+      end)
+    end
+
+    with {:ok, layout} <- publish.(layout),
+         :ok <- Beacon.PubSub.layout_published(layout) do
+      {:ok, layout}
+    else
+      error -> error
+    end
   end
 
   @doc false

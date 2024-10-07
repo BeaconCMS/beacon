@@ -1,7 +1,7 @@
 defmodule Beacon.ContentTest do
   use Beacon.DataCase
 
-  import Beacon.Fixtures
+  use Beacon.Test
 
   alias Beacon.Content
   alias Beacon.Content.Component
@@ -21,7 +21,7 @@ defmodule Beacon.ContentTest do
 
   describe "layouts" do
     test "broadcasts published event" do
-      %{site: site, id: id} = layout = layout_fixture(site: "booted")
+      %{site: site, id: id} = layout = beacon_layout_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_layouts(site)
       Content.publish_layout(layout)
       assert_receive {:layout_published, %{site: ^site, id: ^id}}
@@ -38,14 +38,14 @@ defmodule Beacon.ContentTest do
     end
 
     test "publish layout should create a published event" do
-      layout = layout_fixture()
+      layout = beacon_layout_fixture()
 
       assert {:ok, %Layout{}} = Content.publish_layout(layout)
       assert [_created, %LayoutEvent{event: :published}] = Repo.all(LayoutEvent)
     end
 
     test "publish layout should create a snapshot" do
-      layout = layout_fixture(title: "snapshot test")
+      layout = beacon_layout_fixture(title: "snapshot test")
 
       assert {:ok, %Layout{}} = Content.publish_layout(layout)
       assert %LayoutSnapshot{layout: %Layout{title: "snapshot test"}} = Repo.one(LayoutSnapshot)
@@ -53,19 +53,19 @@ defmodule Beacon.ContentTest do
 
     test "list published layouts" do
       # publish layout_a twice
-      layout_a = layout_fixture(title: "layout_a v1")
+      layout_a = beacon_layout_fixture(title: "layout_a v1")
       {:ok, layout_a} = Content.publish_layout(layout_a)
       {:ok, layout_a} = Content.update_layout(layout_a, %{"title" => "layout_a v2"})
       {:ok, _layout_a} = Content.publish_layout(layout_a)
 
       # do not publish layout_b
-      _layout_b = layout_fixture(title: "layout_b v1")
+      _layout_b = beacon_layout_fixture(title: "layout_b v1")
 
       assert [%Layout{title: "layout_a v2"}] = Content.list_published_layouts(:my_site)
     end
 
     test "list_layout_events" do
-      layout = layout_fixture()
+      layout = beacon_layout_fixture()
       Content.publish_layout(layout)
 
       assert [
@@ -75,7 +75,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "get_latest_layout_event" do
-      layout = layout_fixture()
+      layout = beacon_layout_fixture()
       assert %LayoutEvent{event: :created} = Content.get_latest_layout_event(layout.site, layout.id)
 
       Content.publish_layout(layout)
@@ -90,7 +90,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate body heex on update" do
-      layout = layout_fixture()
+      layout = beacon_layout_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.update_layout(layout, %{template: "<div"})
@@ -99,8 +99,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "page and per_page" do
-      layout_fixture(title: "first")
-      layout_fixture(title: "second")
+      beacon_layout_fixture(title: "first")
+      beacon_layout_fixture(title: "second")
 
       assert [%Layout{title: "first"}] = Content.list_layouts(:my_site, per_page: 1, page: 1, sort: :title)
       assert [%Layout{title: "second"}] = Content.list_layouts(:my_site, per_page: 1, page: 2, sort: :title)
@@ -112,8 +112,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "filter by title" do
-      layout_fixture(title: "first")
-      layout_fixture(title: "second")
+      beacon_layout_fixture(title: "first")
+      beacon_layout_fixture(title: "second")
 
       assert Content.count_layouts(:my_site, query: "first") == 1
       assert Content.count_layouts(:my_site, query: "second") == 1
@@ -123,28 +123,27 @@ defmodule Beacon.ContentTest do
 
   describe "pages" do
     test "broadcasts published event" do
-      %{site: site, id: id} = page = page_fixture(site: "booted")
+      %{site: site, id: id} = page = beacon_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_pages(site)
       Content.publish_page(page)
       assert_receive {:page_published, %{site: ^site, id: ^id}}
     end
 
     test "broadcasts loaded event" do
-      %{site: site, id: id, path: path} = published_page_fixture(site: "booted")
-      :ok = Beacon.PubSub.subscribe_to_page(site, path)
-      Beacon.Loader.reload_page_module(site, id)
-      assert_receive {:page_loaded, %{site: ^site, id: ^id}}
+      :ok = Beacon.PubSub.subscribe_to_page(:booted, "/broadcast-test")
+      beacon_published_page_fixture(site: "booted", path: "/broadcast-test")
+      assert_receive {:page_loaded, %{site: :booted}}
     end
 
     test "broadcasts unpublished event" do
-      %{site: site, id: id, path: path} = page = published_page_fixture(site: "booted")
+      %{site: site, id: id, path: path} = page = beacon_published_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_pages(site)
       assert {:ok, _} = Content.unpublish_page(page)
       assert_receive {:page_unpublished, %{site: ^site, id: ^id, path: ^path}}
     end
 
     test "count pages" do
-      page = page_fixture(title: "title_a")
+      page = beacon_page_fixture(title: "title_a")
 
       assert Content.count_pages(page.site) == 1
       assert Content.count_pages(page.site, query: "title_a") == 1
@@ -152,7 +151,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate template heex on create" do
-      layout = layout_fixture()
+      layout = beacon_layout_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.create_page(%{site: :my_site, path: "/", title: "home", layout_id: layout.id, template: "<div"})
@@ -161,7 +160,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate template heex on update" do
-      page = page_fixture()
+      page = beacon_page_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.update_page(page, %{template: "<div"})
@@ -175,7 +174,7 @@ defmodule Beacon.ContentTest do
         path: "/",
         title: "home",
         template: "<p>page</p>",
-        layout_id: layout_fixture().id
+        layout_id: beacon_layout_fixture().id
       })
 
       assert %PageEvent{event: :created} = Repo.one(PageEvent)
@@ -188,14 +187,14 @@ defmodule Beacon.ContentTest do
           path: "/",
           title: "home",
           template: "<p>page</p>",
-          layout_id: layout_fixture().id
+          layout_id: beacon_layout_fixture().id
         })
 
       assert page.meta_tags == [%{"name" => "foo", "content" => "bar"}]
     end
 
     test "update page should validate invalid templates" do
-      page = page_fixture()
+      page = beacon_page_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false}} =
                Content.update_page(page, %{"template" => "<div>invalid</span>"})
@@ -204,44 +203,44 @@ defmodule Beacon.ContentTest do
     end
 
     test "publish page creates a published event" do
-      page = page_fixture()
+      page = beacon_page_fixture()
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert [_created, %PageEvent{event: :published}] = Repo.all(PageEvent)
     end
 
     test "publish page creates a snapshot" do
-      page = page_fixture(title: "snapshot test")
+      page = beacon_page_fixture(title: "snapshot test")
 
       assert {:ok, %Page{}} = Content.publish_page(page)
       assert %PageSnapshot{page: %Page{title: "snapshot test"}} = Repo.one(PageSnapshot)
     end
 
     test "publish page normalizes most used columns" do
-      published_page_fixture(path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"})
+      beacon_published_page_fixture(path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"})
       assert %PageSnapshot{path: "/test-normalize", title: "normalize", format: :heex, extra: %{"tags" => "test,normalize"}} = Repo.one(PageSnapshot)
     end
 
     test "list_published_pages" do
       # publish page_a twice
-      page_a = page_fixture(path: "/a", title: "page_a v1")
+      page_a = beacon_page_fixture(path: "/a", title: "page_a v1")
       {:ok, page_a} = Content.publish_page(page_a)
       {:ok, page_a} = Content.update_page(page_a, %{"title" => "page_a v2"})
       {:ok, _page_a} = Content.publish_page(page_a)
 
       # publish and unpublish page_b
-      page_b = page_fixture(path: "/b", title: "page_b v1")
+      page_b = beacon_page_fixture(path: "/b", title: "page_b v1")
       {:ok, page_b} = Content.publish_page(page_b)
       {:ok, _page_b} = Content.unpublish_page(page_b)
 
       # do not publish page_c
-      _page_c = page_fixture(path: "/c", title: "page_c v1")
+      _page_c = beacon_page_fixture(path: "/c", title: "page_c v1")
 
       assert [%Page{title: "page_a v2"}] = Content.list_published_pages(:my_site)
     end
 
     test "list_published_pages with same inserted_at missing usec" do
-      page = page_fixture(path: "/d", title: "page v1")
+      page = beacon_page_fixture(path: "/d", title: "page v1")
       Repo.query!("UPDATE beacon_page_events SET inserted_at = '2020-01-01'", [])
       Repo.query!("UPDATE beacon_page_snapshots SET inserted_at = '2020-01-01'", [])
 
@@ -256,7 +255,7 @@ defmodule Beacon.ContentTest do
 
     test "list_published_pages query latest snapshot" do
       # publish page_a twice
-      page_a = page_fixture(path: "/a", title: "page_a v1")
+      page_a = beacon_page_fixture(path: "/a", title: "page_a v1")
       {:ok, page_a} = Content.publish_page(page_a)
       {:ok, page_a} = Content.update_page(page_a, %{"title" => "page_a v2"})
       {:ok, _page_a} = Content.publish_page(page_a)
@@ -269,12 +268,12 @@ defmodule Beacon.ContentTest do
     end
 
     test "list_published_pages search by parts of path" do
-      published_page_fixture(path: "/home")
+      beacon_published_page_fixture(path: "/home")
       assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{path: "%me%"})
     end
 
     test "list_published_pages search with function" do
-      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+      beacon_published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
 
       assert [%Page{path: "/with-tags"}] =
                Content.list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike '%tag%'")) end)
@@ -283,23 +282,23 @@ defmodule Beacon.ContentTest do
     end
 
     test "list_published_pages search by path and title" do
-      published_page_fixture(path: "/home-1", title: "Home")
-      published_page_fixture(path: "/home-2", title: "Home")
+      beacon_published_page_fixture(path: "/home-1", title: "Home")
+      beacon_published_page_fixture(path: "/home-2", title: "Home")
       assert [%Page{path: "/home-1"}] = Content.list_published_pages(:my_site, search: %{path: "/home-1", title: "Home"})
     end
 
     test "list_published_pages search by format" do
-      published_page_fixture(path: "/home", format: :heex)
+      beacon_published_page_fixture(path: "/home", format: :heex)
       assert [%Page{path: "/home"}] = Content.list_published_pages(:my_site, search: %{format: "heex"})
     end
 
     test "list_published_pages query by extra field with string value" do
-      published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
+      beacon_published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
       assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
     end
 
     test "list_page_events" do
-      page = page_fixture()
+      page = beacon_page_fixture()
       Content.publish_page(page)
       Content.unpublish_page(page)
 
@@ -311,7 +310,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "get_latest_page_event" do
-      page = page_fixture()
+      page = beacon_page_fixture()
       assert %PageEvent{event: :created} = Content.get_latest_page_event(page.site, page.id)
 
       Content.publish_page(page)
@@ -325,7 +324,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "lifecycle after_create_page" do
-      layout = layout_fixture(site: :lifecycle_test)
+      layout = beacon_layout_fixture(site: :lifecycle_test)
 
       Content.create_page!(%{
         site: "lifecycle_test",
@@ -339,7 +338,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "lifecycle after_update_page" do
-      layout = layout_fixture(site: :lifecycle_test)
+      layout = beacon_layout_fixture(site: :lifecycle_test)
 
       page =
         Content.create_page!(%{
@@ -357,7 +356,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "lifecycle after_publish_page" do
-      layout = layout_fixture(site: :lifecycle_test)
+      layout = beacon_layout_fixture(site: :lifecycle_test)
 
       page =
         Content.create_page!(%{
@@ -374,7 +373,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "save raw_schema" do
-      layout = layout_fixture(site: :raw_schema_test)
+      layout = beacon_layout_fixture(site: :raw_schema_test)
 
       assert %Page{raw_schema: [%{"foo" => "bar"}]} =
                Content.create_page!(%{
@@ -388,7 +387,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "update raw_schema" do
-      layout = layout_fixture(site: :raw_schema_test)
+      layout = beacon_layout_fixture(site: :raw_schema_test)
 
       page =
         Content.create_page!(%{
@@ -404,7 +403,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate raw_schema" do
-      layout = layout_fixture(site: :raw_schema_test)
+      layout = beacon_layout_fixture(site: :raw_schema_test)
 
       assert {:error,
               %{
@@ -426,12 +425,12 @@ defmodule Beacon.ContentTest do
   describe "stylesheets" do
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
-      %{site: site} = stylesheet_fixture(site: "booted")
+      %{site: site} = beacon_stylesheet_fixture(site: "booted")
       assert_receive {:content_updated, :stylesheet, %{site: ^site}}
     end
 
     test "update broadcasts updated content event" do
-      %{site: site} = stylesheet = stylesheet_fixture(site: "booted")
+      %{site: site} = stylesheet = beacon_stylesheet_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_stylesheet(stylesheet, %{body: "/* test */"})
       assert_receive {:content_updated, :stylesheet, %{site: ^site}}
@@ -454,7 +453,7 @@ defmodule Beacon.ContentTest do
 
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
-      %{site: site} = snippet_helper_fixture(site: "booted")
+      %{site: site} = beacon_snippet_helper_fixture(site: "booted")
       assert_receive {:content_updated, :snippet_helper, %{site: ^site}}
     end
 
@@ -483,7 +482,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "render helper" do
-      snippet_helper_fixture(
+      beacon_snippet_helper_fixture(
         site: "my_site",
         name: "author_name",
         body:
@@ -492,8 +491,6 @@ defmodule Beacon.ContentTest do
           "test_#{author_id}"
           """)
       )
-
-      Beacon.Loader.reload_snippets_module(:my_site)
 
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
@@ -504,7 +501,7 @@ defmodule Beacon.ContentTest do
 
   describe "variants" do
     test "create variant OK" do
-      page = page_fixture(%{format: :heex})
+      page = beacon_page_fixture(%{format: :heex})
       attrs = %{name: "Foo", weight: 3, template: "<div>Bar</div>"}
 
       assert {:ok, %Page{variants: [variant]}} = Content.create_variant_for_page(page, attrs)
@@ -512,7 +509,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "create triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
+      page = beacon_page_fixture(site: :lifecycle_test)
       attrs = %{name: "Foo", weight: 3, template: "<div>Bar</div>"}
 
       {:ok, %Page{}} = Content.create_variant_for_page(page, attrs)
@@ -521,7 +518,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "create variant should validate invalid templates" do
-      page = page_fixture(%{format: :heex})
+      page = beacon_page_fixture(%{format: :heex})
       attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
@@ -531,8 +528,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update variant OK" do
-      page = page_fixture(%{format: :heex})
-      variant = page_variant_fixture(%{page: page})
+      page = beacon_page_fixture(%{format: :heex})
+      variant = beacon_page_variant_fixture(%{page: page})
       attrs = %{name: "Changed Name", weight: 99, template: "<div>changed</div>"}
 
       assert {:ok, %Page{variants: [updated_variant]}} = Content.update_variant_for_page(page, variant, attrs)
@@ -540,8 +537,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      variant = page_variant_fixture(%{page: page})
+      page = beacon_page_fixture(site: :lifecycle_test)
+      variant = beacon_page_variant_fixture(%{page: page})
 
       {:ok, %Page{}} = Content.update_variant_for_page(page, variant, %{name: "Changed"})
 
@@ -549,8 +546,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update variant should validate invalid templates" do
-      page = page_fixture(%{format: :heex})
-      variant = page_variant_fixture(%{page: page})
+      page = beacon_page_fixture(%{format: :heex})
+      variant = beacon_page_variant_fixture(%{page: page})
       attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
@@ -560,9 +557,9 @@ defmodule Beacon.ContentTest do
     end
 
     test "update variant should validate total weight of all variants" do
-      page = page_fixture(%{format: :heex})
-      _variant_1 = page_variant_fixture(%{page: page, weight: 99})
-      variant_2 = page_variant_fixture(%{page: page, weight: 0})
+      page = beacon_page_fixture(%{format: :heex})
+      _variant_1 = beacon_page_variant_fixture(%{page: page, weight: 99})
+      variant_2 = beacon_page_variant_fixture(%{page: page, weight: 0})
 
       assert {:error, %Ecto.Changeset{errors: [weight: {"total weights cannot exceed 100", []}], valid?: false}} =
                Content.update_variant_for_page(page, variant_2, %{weight: 2})
@@ -571,25 +568,25 @@ defmodule Beacon.ContentTest do
     end
 
     test "update variant should not validate total weight if unchanged" do
-      page = page_fixture(%{format: :heex})
-      variant_1 = page_variant_fixture(%{page: page, weight: 99})
-      _variant_2 = page_variant_fixture(%{page: page, weight: 98})
+      page = beacon_page_fixture(%{format: :heex})
+      variant_1 = beacon_page_variant_fixture(%{page: page, weight: 99})
+      _variant_2 = beacon_page_variant_fixture(%{page: page, weight: 98})
 
       assert {:ok, %Page{}} = Content.update_variant_for_page(page, variant_1, %{name: "Foo"})
     end
 
     test "delete variant OK" do
-      page = page_fixture(%{format: :heex})
-      variant_1 = page_variant_fixture(%{page: page})
-      variant_2 = page_variant_fixture(%{page: page})
+      page = beacon_page_fixture(%{format: :heex})
+      variant_1 = beacon_page_variant_fixture(%{page: page})
+      variant_2 = beacon_page_variant_fixture(%{page: page})
 
       assert {:ok, %Page{variants: [^variant_2]}} = Content.delete_variant_from_page(page, variant_1)
       assert {:ok, %Page{variants: []}} = Content.delete_variant_from_page(page, variant_2)
     end
 
     test "delete triggers after_update_page lifecycle" do
-      page = page_fixture(site: :lifecycle_test)
-      variant = page_variant_fixture(%{page: page})
+      page = beacon_page_fixture(site: :lifecycle_test)
+      variant = beacon_page_variant_fixture(%{page: page})
 
       {:ok, %Page{}} = Content.delete_variant_from_page(page, variant)
 
@@ -599,7 +596,7 @@ defmodule Beacon.ContentTest do
 
   describe "event_handlers" do
     test "list_event_handlers/1" do
-      event_handlers = for _ <- 1..3, do: event_handler_fixture(site: :my_site)
+      event_handlers = for _ <- 1..3, do: beacon_event_handler_fixture(site: :my_site)
 
       result = Content.list_event_handlers(:my_site)
 
@@ -635,7 +632,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "update event handler OK" do
-      event_handler = event_handler_fixture()
+      event_handler = beacon_event_handler_fixture()
       attrs = %{name: "Changed Name", code: "{:noreply, assign(socket, foo: :bar)}"}
 
       assert {:ok, updated_event_handler} = Content.update_event_handler(event_handler, attrs)
@@ -643,7 +640,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "update validates elixir code" do
-      event_handler = event_handler_fixture()
+      event_handler = beacon_event_handler_fixture()
 
       attrs = %{code: "[1)"}
       assert {:error, %{errors: [error]}} = Content.update_event_handler(event_handler, attrs)
@@ -666,7 +663,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "delete event handler OK" do
-      %{id: id} = event_handler = event_handler_fixture()
+      %{id: id} = event_handler = beacon_event_handler_fixture()
 
       assert {:ok, %{id: ^id}} = Content.delete_event_handler(event_handler)
     end
@@ -675,26 +672,26 @@ defmodule Beacon.ContentTest do
   describe "error_pages" do
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
-      %{site: site} = error_page_fixture(site: "booted")
+      %{site: site} = beacon_error_page_fixture(site: "booted")
       assert_receive {:content_updated, :error_page, %{site: ^site}}
     end
 
     test "update broadcasts updated content event" do
-      %{site: site} = error_page = error_page_fixture(site: "booted")
+      %{site: site} = error_page = beacon_error_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_error_page(error_page, %{template: "test"})
       assert_receive {:content_updated, :error_page, %{site: ^site}}
     end
 
     test "get_error_page/2" do
-      error_page = error_page_fixture(%{site: :my_site, status: 404})
-      _other = error_page_fixture(%{site: :my_site, status: 400})
+      error_page = beacon_error_page_fixture(%{site: :my_site, status: 404})
+      _other = beacon_error_page_fixture(%{site: :my_site, status: 400})
 
       assert ^error_page = Content.get_error_page(:my_site, 404)
     end
 
     test "create_error_page/1 OK" do
-      %{id: layout_id} = layout_fixture()
+      %{id: layout_id} = beacon_layout_fixture()
       attrs = %{site: :my_site, status: 400, template: "Oops!", layout_id: layout_id}
 
       assert {:ok, %ErrorPage{} = error_page} = Content.create_error_page(attrs)
@@ -702,7 +699,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "create_error_page should validate invalid templates" do
-      %{id: layout_id} = layout_fixture()
+      %{id: layout_id} = beacon_layout_fixture()
       attrs = %{site: :my_site, status: 400, template: "<div>invalid</span>", layout_id: layout_id}
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
@@ -712,20 +709,20 @@ defmodule Beacon.ContentTest do
     end
 
     test "create_error_page/1 ERROR (duplicate)" do
-      error_page = error_page_fixture()
-      bad_attrs = %{site: error_page.site, status: error_page.status, template: "Error", layout_id: layout_fixture().id}
+      error_page = beacon_error_page_fixture()
+      bad_attrs = %{site: error_page.site, status: error_page.status, template: "Error", layout_id: beacon_layout_fixture().id}
 
       assert {:error, %Changeset{errors: errors}} = Content.create_error_page(bad_attrs)
       assert [{:status, {"has already been taken", [constraint: :unique, constraint_name: "beacon_error_pages_status_site_index"]}}] = errors
     end
 
     test "update_error_page/2" do
-      error_page = error_page_fixture()
+      error_page = beacon_error_page_fixture()
       assert {:ok, %ErrorPage{template: "Changed"}} = Content.update_error_page(error_page, %{template: "Changed"})
     end
 
     test "update_error_page should validate invalid templates" do
-      error_page = error_page_fixture()
+      error_page = beacon_error_page_fixture()
 
       attrs = %{template: "<div>invalid</span>"}
 
@@ -736,7 +733,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "delete_error_page/1" do
-      error_page = error_page_fixture()
+      error_page = beacon_error_page_fixture()
       assert {:ok, %ErrorPage{__meta__: %{state: :deleted}}} = Content.delete_error_page(error_page)
     end
   end
@@ -744,12 +741,12 @@ defmodule Beacon.ContentTest do
   describe "components" do
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
-      %{site: site} = component_fixture(site: "booted")
+      %{site: site} = beacon_component_fixture(site: "booted")
       assert_receive {:content_updated, :component, %{site: ^site}}
     end
 
     test "update broadcasts updated content event" do
-      %{site: site} = component = component_fixture(site: "booted")
+      %{site: site} = component = beacon_component_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_component(component, %{template: "<div>test</div>"})
       assert_receive {:content_updated, :component, %{site: ^site}}
@@ -763,7 +760,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate template heex on update" do
-      component = component_fixture()
+      component = beacon_component_fixture()
 
       assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
                Content.update_component(component, %{template: "<div"})
@@ -780,8 +777,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "list components" do
-      component_fixture(site: "my_site", name: "component_a")
-      component_fixture(site: "my_site", name: "component_b")
+      beacon_component_fixture(site: "my_site", name: "component_a")
+      beacon_component_fixture(site: "my_site", name: "component_b")
 
       components = Content.list_components(:my_site, query: "_b", preloads: [:attrs])
 
@@ -790,8 +787,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "page and per_page" do
-      component_fixture(name: "first")
-      component_fixture(name: "second")
+      beacon_component_fixture(name: "first")
+      beacon_component_fixture(name: "second")
 
       assert [%Component{name: "first"}] = Content.list_components(:my_site, per_page: 1, page: 1, sort: :name)
       assert [%Component{name: "second"}] = Content.list_components(:my_site, per_page: 1, page: 2, sort: :name)
@@ -803,8 +800,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "filter by title" do
-      component_fixture(name: "first")
-      component_fixture(name: "second")
+      beacon_component_fixture(name: "first")
+      beacon_component_fixture(name: "second")
 
       assert Content.count_components(:my_site, query: "first") == 1
       assert Content.count_components(:my_site, query: "second") == 1
@@ -812,7 +809,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "update_component" do
-      component = component_fixture(name: "new_component", template: "old_body")
+      component = beacon_component_fixture(name: "new_component", template: "old_body")
       assert {:ok, %Component{template: "new_body"}} = Content.update_component(component, %{template: "new_body"})
     end
   end
@@ -820,7 +817,7 @@ defmodule Beacon.ContentTest do
   describe "live data" do
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)
-      %{site: site} = live_data_fixture(site: "booted")
+      %{site: site} = beacon_live_data_fixture(site: "booted")
       assert_receive {:content_updated, :live_data, %{site: ^site}}
     end
 
@@ -839,7 +836,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "create_assign_for_live_data/2" do
-      live_data = live_data_fixture()
+      live_data = beacon_live_data_fixture()
       attrs = %{key: "product_id", format: :elixir, value: "123"}
 
       assert {:ok, %LiveData{assigns: [assign]}} = Content.create_assign_for_live_data(live_data, attrs)
@@ -847,7 +844,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "blocks assigning reserved keys" do
-      live_data = live_data_fixture()
+      live_data = beacon_live_data_fixture()
       invalid_keys = [:beacon, :uploads, :streams, :socket, :myself, :flash]
 
       for invalid_key <- invalid_keys do
@@ -858,7 +855,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate assign elixir code on create" do
-      live_data = live_data_fixture()
+      live_data = beacon_live_data_fixture()
 
       attrs = %{key: "foo", value: "[1)", format: :elixir}
       assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
@@ -880,15 +877,15 @@ defmodule Beacon.ContentTest do
     end
 
     test "get_live_data/2" do
-      live_data = live_data_fixture() |> Repo.preload(:assigns)
+      live_data = beacon_live_data_fixture() |> Repo.preload(:assigns)
 
       assert Content.get_live_data_by(live_data.site, path: live_data.path) == live_data
     end
 
     test "live_data_for_site/1" do
-      live_data_1 = live_data_fixture(site: :my_site, path: "/foo")
-      live_data_2 = live_data_fixture(site: :my_site, path: "/bar")
-      live_data_3 = live_data_fixture(site: :not_booted, path: "/baz")
+      live_data_1 = beacon_live_data_fixture(site: :my_site, path: "/foo")
+      live_data_2 = beacon_live_data_fixture(site: :my_site, path: "/bar")
+      live_data_3 = beacon_live_data_fixture(site: :not_booted, path: "/baz")
 
       results = Content.live_data_for_site(:my_site)
 
@@ -898,24 +895,24 @@ defmodule Beacon.ContentTest do
     end
 
     test "live_data_for_site/2" do
-      %{id: live_data_id} = live_data_fixture(site: :my_site)
+      %{id: live_data_id} = beacon_live_data_fixture(site: :my_site)
 
       assert [%LiveData{id: ^live_data_id}] = Content.live_data_for_site(:my_site)
     end
 
     test "live_data_for_site/2 :query option" do
-      %{id: foo_id} = live_data_fixture(site: :my_site, path: "/foo")
-      %{id: bar_id} = live_data_fixture(site: :my_site, path: "/bar")
+      %{id: foo_id} = beacon_live_data_fixture(site: :my_site, path: "/foo")
+      %{id: bar_id} = beacon_live_data_fixture(site: :my_site, path: "/bar")
 
       assert [%LiveData{id: ^foo_id}] = Content.live_data_for_site(:my_site, query: "fo")
       assert [%LiveData{id: ^bar_id}] = Content.live_data_for_site(:my_site, query: "ba")
     end
 
     test "live_data_for_site/2 :per_page option" do
-      %{id: foo_id} = live_data_fixture(site: :my_site, path: "/foo")
-      %{id: bar_id} = live_data_fixture(site: :my_site, path: "/bar")
-      %{id: baz_id} = live_data_fixture(site: :my_site, path: "/baz")
-      %{id: bong_id} = live_data_fixture(site: :my_site, path: "/bong")
+      %{id: foo_id} = beacon_live_data_fixture(site: :my_site, path: "/foo")
+      %{id: bar_id} = beacon_live_data_fixture(site: :my_site, path: "/bar")
+      %{id: baz_id} = beacon_live_data_fixture(site: :my_site, path: "/baz")
+      %{id: bong_id} = beacon_live_data_fixture(site: :my_site, path: "/bong")
 
       assert [%{id: ^bar_id}] = Content.live_data_for_site(:my_site, per_page: 1)
       assert [%{id: ^bar_id}, %{id: ^baz_id}] = Content.live_data_for_site(:my_site, per_page: 2)
@@ -924,7 +921,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "update_live_data_path/2" do
-      live_data = live_data_fixture(site: :my_site, path: "/foo")
+      live_data = beacon_live_data_fixture(site: :my_site, path: "/foo")
 
       assert {:ok, result} = Content.update_live_data_path(live_data, "/foo/:bar_id")
       assert result.id == live_data.id
@@ -932,8 +929,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "update_live_data_assign/2" do
-      live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data: live_data)
+      live_data = beacon_live_data_fixture()
+      live_data_assign = beacon_live_data_assign_fixture(live_data: live_data)
 
       attrs = %{key: "wins", value: "1337", format: :elixir}
       assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
@@ -945,8 +942,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "validate assign elixir code on update" do
-      live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data: live_data)
+      live_data = beacon_live_data_fixture()
+      live_data_assign = beacon_live_data_assign_fixture(live_data: live_data)
 
       attrs = %{value: "[1)", format: :elixir}
       assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
@@ -968,7 +965,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "delete_live_data/1" do
-      live_data = live_data_fixture()
+      live_data = beacon_live_data_fixture()
 
       assert [%{}] = Content.live_data_for_site(live_data.site)
       assert {:ok, _} = Content.delete_live_data(live_data)
@@ -976,8 +973,8 @@ defmodule Beacon.ContentTest do
     end
 
     test "delete_live_data_assign/1" do
-      live_data = live_data_fixture()
-      live_data_assign = live_data_assign_fixture(live_data: live_data)
+      live_data = beacon_live_data_fixture()
+      live_data_assign = beacon_live_data_assign_fixture(live_data: live_data)
       Repo.preload(live_data, :assigns)
 
       assert {:ok, _} = Content.delete_live_data_assign(live_data_assign, live_data.site)
@@ -1037,7 +1034,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "success: get_info_handler/2", %{msg: msg, code: code} do
-      info_handler = info_handler_fixture(%{msg: msg, code: code})
+      info_handler = beacon_info_handler_fixture(%{msg: msg, code: code})
       site = info_handler.site
       handler_from_db = Content.get_info_handler(site, info_handler.id)
 
@@ -1045,7 +1042,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "success: get_info_handler!/2", %{msg: msg, code: code} do
-      info_handler = info_handler_fixture(%{msg: msg, code: code})
+      info_handler = beacon_info_handler_fixture(%{msg: msg, code: code})
       site = info_handler.site
       handler_from_db = Content.get_info_handler!(site, info_handler.id)
 
@@ -1053,7 +1050,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "success: list_info_handlers/1" do
-      info_handlers = for _ <- 1..3, do: info_handler_fixture()
+      info_handlers = for _ <- 1..3, do: beacon_info_handler_fixture()
 
       result = Content.list_info_handlers(:my_site)
 
@@ -1075,7 +1072,7 @@ defmodule Beacon.ContentTest do
 
       msg = "{:email_address_error}"
 
-      info_handler = info_handler_fixture()
+      info_handler = beacon_info_handler_fixture()
       attrs = %{code: code, msg: msg}
 
       refute info_handler.code == code
@@ -1100,7 +1097,7 @@ defmodule Beacon.ContentTest do
 
       msg = "{:email_address_error}"
 
-      info_handler = info_handler_fixture()
+      info_handler = beacon_info_handler_fixture()
       attrs = %{code: code, msg: msg}
 
       refute info_handler.code == code
@@ -1114,7 +1111,7 @@ defmodule Beacon.ContentTest do
     end
 
     test "success: delete_info_handler/1", %{msg: msg, code: code} do
-      info_handler = info_handler_fixture(%{msg: msg, code: code})
+      info_handler = beacon_info_handler_fixture(%{msg: msg, code: code})
       site = info_handler.site
 
       assert Repo.one(InfoHandler)
