@@ -343,8 +343,12 @@ defmodule Beacon.MediaLibrary do
       )
 
     case update do
-      {1, _} -> {:ok, repo(asset).reload(asset)}
-      _ -> :error
+      {1, _} ->
+        Lifecycle.Asset.delete_uploaded_asset(asset)
+        {:ok, repo(asset).reload(asset)}
+
+      _ ->
+        :error
     end
   end
 end

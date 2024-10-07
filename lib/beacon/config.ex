@@ -152,6 +152,10 @@ defmodule Beacon.Config do
              [
                {identifier :: atom(), fun :: (Ecto.Schema.t(), Beacon.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
              ]}
+          | {:soft_delete_asset,
+             [
+               {identifier :: atom(), fun :: (Ecto.Schema.t() -> {:cont, any()} | {:halt, Exception.t()})}
+             ]}
 
   @typedoc """
   Add extra fields to pages.

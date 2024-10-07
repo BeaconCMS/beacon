@@ -48,4 +48,20 @@ defmodule Beacon.Lifecycle.Asset do
   end
 
   def variant_480w(asset, _metadata), do: {:cont, asset}
+
+  def delete_uploaded_asset(%MediaLibrary.Asset{site: site, media_type: media_type} = asset) do
+    config =
+      site
+      |> Beacon.Config.fetch!()
+      |> Beacon.Config.config_for_media_type(media_type)
+      |> Enum.into(%{})
+
+    if Map.get(config, :delete_asset_callbacks) do
+      Enum.reduce(config.delete_asset_callbacks, asset, fn
+        callback, asset -> callback.(asset)
+      end)
+    end
+
+    {:cont, asset}
+  end
 end
