@@ -4,8 +4,14 @@
 
 ### Breaking Changes
   * Require minimum Elixir v1.14
+  * Require minimun `:mdex` v0.1.17
+  * Removed config `:skip_boot?` in favor of `:mode` which can be `:live`, `:testing`, and `:manual` (defaults to `:live`) - the major difference between then is that live loads all modules and broadcasts all messages, testing only does that when it makes sense for tests (for example it does reload modules on fixtures), and manual does pretty much nothing, it's useful to seed data or to test specific scenarios where you need total control over Beacon.Loader
 
 ### Enhancements
+  * Add `Beacon.Test` that provides testing utilities to use on host apps
+  * Add `Beacon.Test.Fixtures` to expose fixtures to seed test data, the same used by Beacon itself
+  * Reload modules synchronously on `testing` mode
+  * Leverage `:manual` mode during boot to avoid unnecessary calls to Tailwind compiler, speeding up the whole process to start sites
   * Enable Markdown options: `:footnotes`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
     See https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html and https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html for more info.
   * Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
@@ -14,10 +20,8 @@
   * Remove unnecessary `:plug_cowboy` dependency - [#594](https://github.com/BeaconCMS/beacon_live_admin/pull/594)
   * [Heroicons] Namespace the vendorized module as `Beacon.Heroicons` to avoid conflicts
 
-### Breaking Changes
-  * Require minimun `:mdex` v0.1.17
-
 ### Documentation
+  * Added "Testing" recipe to demonstrate usage of `Beacon.Test`
   * Added guide to customize the Markdown options
   * Added guide on how to embed tweets using the Twitter JS api
 
