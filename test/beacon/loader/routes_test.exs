@@ -1,9 +1,6 @@
 defmodule Beacon.Loader.RoutesTest do
   use Beacon.DataCase, async: true
-
-  import Beacon.Fixtures
-
-  @site :booted
+  use Beacon.Test
 
   # Beacon.Loader.fetch_routes_module(:booted)
   import :"Elixir.Beacon.Web.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"
@@ -23,7 +20,7 @@ defmodule Beacon.Loader.RoutesTest do
     end
 
     test "derive path from page" do
-      page = page_fixture(site: @site, path: "/elixir-lang")
+      page = beacon_page_fixture(site: :booted, path: "/elixir-lang")
       assert ~p"/#{page}" == "/nested/site/elixir-lang"
       assert ~p"/posts/#{page}" == "/nested/site/posts/elixir-lang"
     end

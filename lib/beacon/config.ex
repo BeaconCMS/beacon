@@ -47,13 +47,20 @@ defmodule Beacon.Config do
   @type repo :: module()
 
   @typedoc """
-  Disables site booting.
+  Defines the mode which the site will operate.
 
-  Disables inserting default content data and routes, loading modules, and broadcasting events that trigger actions in Beacon lifecycle.
+  Default is `:live` which will load resources during boot, broadcast events on content change,
+  and execute operations asyncly. That's the normal mode for production.
 
-  See `Beacon.boot/1` for more info.
+  The `:testing` mode is suited for testing environments,
+  you should always use it when running tests that involve Beacon resources.
+
+  And the `:manual` mode is similar to `:testing` but it won't boot load any resource,
+  it's useful to seed data.
+
+  You can always change to `:live` mode at runtime by calling `Beacon.boot/1`.
   """
-  @type skip_boot? :: boolean()
+  @type mode :: :live | :testing | :manual
 
   @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
@@ -178,7 +185,7 @@ defmodule Beacon.Config do
           endpoint: endpoint(),
           router: router(),
           repo: repo(),
-          skip_boot?: skip_boot?(),
+          mode: mode(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           live_socket_path: live_socket_path(),
@@ -211,7 +218,7 @@ defmodule Beacon.Config do
             endpoint: nil,
             router: nil,
             repo: nil,
-            skip_boot?: false,
+            mode: :live,
             # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
             # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
@@ -241,7 +248,7 @@ defmodule Beacon.Config do
           | {:endpoint, endpoint()}
           | {:router, router()}
           | {:repo, repo()}
-          | {:skip_boot?, skip_boot?()}
+          | {:mode, mode()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
           | {:live_socket_path, live_socket_path()}
@@ -267,7 +274,7 @@ defmodule Beacon.Config do
 
     * `:repo` - `t:repo/0` (required)
 
-    * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
+    * `:mode` - `t:mode/0` (optional). Defaults to `:live`.
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
@@ -332,7 +339,7 @@ defmodule Beacon.Config do
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
-        skip_boot?: false,
+        mode: :live,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
         live_socket_path: "/live",
