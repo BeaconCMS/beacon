@@ -4,6 +4,7 @@ defmodule Beacon.Lifecycle.Asset do
   alias Beacon.Lifecycle
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Processors
+  alias Beacon.MediaLibrary.Provider
 
   @behaviour Beacon.Lifecycle
 
@@ -56,11 +57,7 @@ defmodule Beacon.Lifecycle.Asset do
       |> Beacon.Config.config_for_media_type(media_type)
       |> Enum.into(%{})
 
-    if Map.get(config, :delete_asset_callbacks) do
-      Enum.reduce(config.delete_asset_callbacks, asset, fn
-        callback, asset -> callback.(asset)
-      end)
-    end
+    Provider.soft_delete(asset, config)
 
     {:cont, asset}
   end

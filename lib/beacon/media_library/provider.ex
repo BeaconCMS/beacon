@@ -16,6 +16,10 @@ defmodule Beacon.MediaLibrary.Provider do
   """
 
   alias Beacon.MediaLibrary.UploadMetadata
+  alias Beacon.MediaLibrary.Asset
+
+  import Ecto.Query
+  import Beacon.Utils, only: [repo: 1]
 
   @doc false
   def process!(%UploadMetadata{} = metadata) do
@@ -52,5 +56,25 @@ defmodule Beacon.MediaLibrary.Provider do
     Enum.reduce(metadata.config.providers, metadata, fn
       provider, md -> provider.send_to_cdn(md, config)
     end)
+  end
+
+  @doc false
+  @spec soft_delete(Asset.t(), any()) :: {:ok, Asset.t()} | :error
+  def soft_delete(%Asset{} = asset, config) do
+    update =
+      repo(asset).update_all(
+        from(asset in Asset, where: asset.id == ^asset.id),
+        set: [deleted_at: DateTime.utc_now()]
+      )
+
+    case update do
+      {1, _} ->
+        Enum.reduce(config.providers, asset, fn
+          provider, asset -> provider.soft_delete(asset)
+        end)
+
+      _ ->
+        :error
+    end
   end
 end
