@@ -334,21 +334,9 @@ defmodule Beacon.MediaLibrary do
       {:ok, %Asset{}}
 
   """
-  @spec soft_delete(Asset.t()) :: {:ok, Asset.t()} | :error
+  @spec soft_delete(Asset.t()) :: {:ok, Asset.t()}
   def soft_delete(%Asset{} = asset) do
-    update =
-      repo(asset).update_all(
-        from(asset in Asset, where: asset.id == ^asset.id),
-        set: [deleted_at: DateTime.utc_now()]
-      )
-
-    case update do
-      {1, _} ->
-        Lifecycle.Asset.delete_uploaded_asset(asset)
-        {:ok, repo(asset).reload(asset)}
-
-      _ ->
-        :error
-    end
+    Lifecycle.Asset.delete_uploaded_asset(asset)
+    {:ok, repo(asset).reload(asset)}
   end
 end
