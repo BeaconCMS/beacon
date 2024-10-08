@@ -120,6 +120,7 @@ defmodule Beacon.MixProject do
   defp docs do
     [
       main: "Beacon",
+      logo: "assets/images/beacon_logo.png",
       source_ref: "v#{@version}",
       source_url: @source_url,
       extra_section: "GUIDES",
