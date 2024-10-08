@@ -49,4 +49,4 @@ defmodule MyApp.CMS.NotificationEmailTest do
     assert_delivered_email expected_email
   end
 end
-````
+```
