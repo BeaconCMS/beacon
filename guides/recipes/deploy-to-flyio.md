@@ -22,7 +22,7 @@ fly auth login
 
 ## Dockerfile
 
-Applications on Fly run in containers. Let's generate a Dockerfile and make a couple of changes to that file:
+Fly applications run in containers. Let's generate a Dockerfile and make a couple of changes:
 
 Run:
 
@@ -30,24 +30,29 @@ Run:
 mix phx.gen.release --docker
 ```
 
-Edit the generated `Dockerfile` and make two changes:
+Edit the generated `Dockerfile` and make some changes:
 
-1. Add the following code before `RUN mix assets.deploy`:
+1. Install `npm` by adding it into the `apt-get install` list:
 
+It should look like this:
+
+```dockerfile
+RUN apt-get update -y && apt-get install -y build-essential git npm \ # <-- add npm here
 ```
+
+2. Add the following code before `RUN mix assets.deploy`:
+
+```dockerfile
 RUN mix tailwind.install --no-assets
+RUN npm install --prefix assets
 ```
 
-2. Add the following code before `USER nobody`:
+3. Add the following code before `USER nobody`:
 
 ```dockerfile
 # Copy the tailwind-cli binary used to compile stylesheets for pages
 RUN mkdir -p ./bin/_build
 COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
-
-# Copy heroicons svg files to used on the icon component
-RUN mkdir -p ./vendor
-COPY --from=builder --chown=nobody:root /app/deps/heroicons ./vendor/heroicons
 ```
 
 ## Launch
@@ -83,3 +88,9 @@ If you have created a custom page, simply replace `/` in the above command to ma
 ## More commands
 
 You can find all available commands in the [Fly.io docs](https://fly.io/docs/flyctl) and also find more tips on the official [Phoenix Deploying on Fly.io guide](https://fly.io/docs/elixir/getting-started/).
+
+## Troubleshooting
+
+The default config file created by `fly launch` defines `min_machines_running = 0` so Fly will auto stop machines
+that receive no traffic for a period of time. You might want to change this value to `1` otherwise it will look like your app
+is not working, when in fact it's just Fly proxy doing its job.
