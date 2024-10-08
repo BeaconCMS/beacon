@@ -1,7 +1,7 @@
 defmodule Beacon.Lifecycle.TemplateTest do
   use Beacon.DataCase, async: false
 
-  import Beacon.Fixtures
+  use Beacon.Test
   alias Beacon.Lifecycle
 
   test "load_template" do
@@ -16,11 +16,8 @@ defmodule Beacon.Lifecycle.TemplateTest do
   end
 
   test "render_template" do
-    page = published_page_fixture(site: "my_site") |> Repo.preload(:variants)
-    Beacon.Loader.reload_page_module(page.site, page.id)
+    page = beacon_published_page_fixture(site: "my_site") |> Repo.preload(:variants)
     env = Beacon.Web.PageLive.make_env(:my_site)
-
-    assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} =
-             Lifecycle.Template.render_template(page, %{}, env)
+    assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = Lifecycle.Template.render_template(page, %{}, env)
   end
 end

@@ -11,7 +11,7 @@ Install Beacon and Beacon LiveAdmin in a new Phoenix LiveView application to ena
 
 ## Steps
 
-1. Install Elixir v1.13 or later
+1. Install Elixir v1.14 or later
 
 Check out the official [Elixir install guide](https://elixir-lang.org/install.html) for more info.
 

@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.1.0-rc.2"
+  @version "0.1.0-dev"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -9,7 +9,7 @@ defmodule Beacon.MixProject do
     [
       app: :beacon,
       version: @version,
-      elixir: "~> 1.13",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       name: "Beacon",
@@ -55,7 +55,7 @@ defmodule Beacon.MixProject do
       override_dep(:phoenix, "~> 1.7", "PHOENIX_VERSION", "PHOENIX_PATH"),
       override_dep(:phoenix_live_view, "~> 0.20", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
       override_dep(:live_monaco_editor, "~> 0.1", "LIVE_MONACO_EDITOR_VERSION", "LIVE_MONACO_EDITOR_PATH"),
-      override_dep(:mdex, "~> 0.1", "MDEX_VERSION", "MDEX_PATH"),
+      override_dep(:mdex, "~> 0.1.17", "MDEX_VERSION", "MDEX_PATH"),
 
       # Runtime
       {:accent, "~> 1.1"},
@@ -81,8 +81,8 @@ defmodule Beacon.MixProject do
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:bandit, "~> 1.0", only: :dev, optional: true},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
-      {:plug_cowboy, "~> 2.6", only: [:dev, :test]},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:esbuild, "~> 0.5", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
@@ -120,6 +120,7 @@ defmodule Beacon.MixProject do
   defp docs do
     [
       main: "Beacon",
+      logo: "assets/images/beacon_logo.png",
       source_ref: "v#{@version}",
       source_url: @source_url,
       extra_section: "GUIDES",
@@ -135,7 +136,8 @@ defmodule Beacon.MixProject do
         "Functions: Snippets": &(&1[:type] == :snippets),
         "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
-        "Functions: Live Data": &(&1[:type] == :live_data)
+        "Functions: Live Data": &(&1[:type] == :live_data),
+        "Functions: Info Handlers": &(&1[:type] == :info_handlers)
       ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
@@ -170,6 +172,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ComponentSlotAttr,
         Beacon.Content.ErrorPage,
         Beacon.Content.EventHandler,
+        Beacon.Content.InfoHandler,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
         Beacon.Content.LayoutSnapshot,

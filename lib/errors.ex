@@ -83,9 +83,9 @@ end
 
 defmodule Beacon.Web.ServerError do
   @moduledoc """
-  Raised when a `Beacon.Content.EventHandler` returns an invalid response.
+  Raised when a `Beacon.Content.EventHandler` or a `Beacon.Content.InfoHandler` returns an invalid response.
 
-  If you're seeing this error, check the code in your site's event handlers, and
+  If you're seeing this error, check the code in your site's event handlers or info handlers, and
   ensure that each one returns `{:noreply, socket}`.
   """
 

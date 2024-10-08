@@ -1,7 +1,7 @@
 defmodule Beacon.AssetFieldTest do
   use Beacon.DataCase, async: true
 
-  import Beacon.Fixtures
+  use Beacon.Test
   alias Beacon.MediaLibrary.AssetField
   alias Beacon.MediaLibrary.AssetFields.AltText
 
@@ -9,7 +9,7 @@ defmodule Beacon.AssetFieldTest do
 
   describe "apply_changesets" do
     setup do
-      asset = media_library_asset_fixture(site: :my_site)
+      asset = beacon_media_library_asset_fixture()
       asset_changeset = Beacon.MediaLibrary.change_asset(asset)
       [asset_changeset: asset_changeset]
     end
@@ -39,7 +39,7 @@ defmodule Beacon.AssetFieldTest do
 
   describe "extra_fields" do
     setup do
-      asset = media_library_asset_fixture(site: :my_site)
+      asset = beacon_media_library_asset_fixture()
       asset_changeset = Beacon.MediaLibrary.change_asset(asset)
       [asset_changeset: asset_changeset]
     end

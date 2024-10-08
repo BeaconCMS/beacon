@@ -165,36 +165,44 @@ defmodule Beacon.Loader do
     Loader.Page.module_name(site, page_id)
   end
 
+  def fetch_info_handlers_module(site) do
+    Loader.InfoHandlers.module_name(site)
+  end
+
   def maybe_reload_page_module(site, page_id) do
     maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
   end
 
   def reload_snippets_module(site) do
-    GenServer.call(worker(site), :reload_snippets_module, @timeout)
+    call_worker(site, :reload_snippets_module, {:reload_snippets_module, [site]})
   end
 
   def reload_routes_module(site) do
-    GenServer.call(worker(site), :reload_routes_module, @timeout)
+    call_worker(site, :reload_routes_module, {:reload_routes_module, [site]})
   end
 
   def reload_components_module(site) do
-    GenServer.call(worker(site), :reload_components_module, @timeout)
+    call_worker(site, :reload_components_module, {:reload_components_module, [site]})
   end
 
   def reload_live_data_module(site) do
-    GenServer.call(worker(site), :reload_live_data_module, @timeout)
+    call_worker(site, :reload_live_data_module, {:reload_live_data_module, [site]})
   end
 
   def reload_error_page_module(site) do
-    GenServer.call(worker(site), :reload_error_page_module, @timeout)
+    call_worker(site, :reload_error_page_module, {:reload_error_page_module, [site]})
   end
 
   def reload_stylesheet_module(site) do
-    GenServer.call(worker(site), :reload_stylesheet_module, @timeout)
+    call_worker(site, :reload_stylesheet_module, {:reload_stylesheet_module, [site]})
   end
 
   def reload_event_handlers_module(site) do
-    GenServer.call(worker(site), :reload_event_handlers_module, @timeout)
+    call_worker(site, :reload_event_handlers_module, {:reload_event_handlers_module, [site]})
+  end
+
+  def reload_info_handlers_module(site) do
+    call_worker(site, :reload_info_handlers_module, {:reload_info_handlers_module, [site]})
   end
 
   def reload_layouts_modules(site) do
@@ -202,7 +210,7 @@ defmodule Beacon.Loader do
   end
 
   def reload_layout_module(site, layout_id) do
-    GenServer.call(worker(site), {:reload_layout_module, layout_id}, @timeout)
+    call_worker(site, {:reload_layout_module, layout_id}, {:reload_layout_module, [site, layout_id]})
   end
 
   def reload_pages_modules(site, opts \\ []) do
@@ -211,7 +219,25 @@ defmodule Beacon.Loader do
   end
 
   def reload_page_module(site, page_id) do
-    GenServer.call(worker(site), {:reload_page_module, page_id}, @timeout)
+    call_worker(site, {:reload_page_module, page_id}, {:reload_page_module, [site, page_id]})
+  end
+
+  # call worker asyncly or syncly depending on the current site mode
+  # or skip if mode is manual so we don't reload modules
+  defp call_worker(site, async_request, sync_request) do
+    mode = Beacon.Config.fetch!(site).mode
+
+    case mode do
+      :live ->
+        GenServer.call(worker(site), async_request, @timeout)
+
+      :testing ->
+        {sync_fun, sync_args} = sync_request
+        apply(Beacon.Loader.Worker, sync_fun, sync_args)
+
+      :manual ->
+        :skip
+    end
   end
 
   def unload_page_module(site, page_id) do
@@ -293,6 +319,11 @@ defmodule Beacon.Loader do
   def handle_info({:content_updated, :live_data, %{site: site}}, config) do
     reload_live_data_module(site)
     reload_runtime_css(site)
+    {:noreply, config}
+  end
+
+  def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
+    reload_info_handlers_module(site)
     {:noreply, config}
   end
 

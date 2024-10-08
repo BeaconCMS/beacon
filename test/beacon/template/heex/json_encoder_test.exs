@@ -1,7 +1,6 @@
 defmodule Beacon.Template.HEEx.JSONEncoderTest do
   use Beacon.DataCase
 
-  alias Beacon.Loader
   alias Beacon.Template.HEEx.JSONEncoder
 
   @site :my_site
@@ -282,20 +281,19 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
   describe "components" do
     test "beacon components" do
-      component_fixture(name: "json_test")
-      Loader.reload_components_module(@site)
+      beacon_component_fixture(name: "json_test")
 
       assert_output(
-        ~S|<.json_test class="w-4" val={@val} />|,
+        ~S|<.json_test class="w-4" project={@project} />|,
         [
           %{
-            "attrs" => %{"self_close" => true, "class" => "w-4", "val" => "{@val}"},
+            "attrs" => %{"class" => "w-4", "project" => "{@project}", "self_close" => true},
             "content" => [],
-            "rendered_html" => "<span id=\"my-component\">test</span>",
+            "rendered_html" => "<span id=\"project-1\">Beacon</span>",
             "tag" => ".json_test"
           }
         ],
-        %{val: "test"}
+        %{project: %{id: 1, name: "Beacon"}}
       )
     end
 
@@ -342,7 +340,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
     end
 
     test "with :slot" do
-      component_fixture(
+      beacon_component_fixture(
         name: "table",
         attrs: [
           %{name: "id", type: "string", opts: [required: true]},
@@ -381,8 +379,6 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         """
       )
 
-      Loader.reload_components_module(@site)
-
       template = ~S|
       <.table id="users" rows={[%{id: 1, username: "foo"}]}>
         <:col :let={user} label="id"><%= user.id %></:col>
@@ -411,14 +407,14 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
               }
             ],
             "rendered_html" =>
-              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"my-component\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>"
+              "<div>\n  <table>\n    <thead>\n      <tr>\n        <th>id</th><th>username</th>\n      </tr>\n    </thead>\n    <tbody id=\"users\">\n      <tr>\n        <td>\n          <div>\n            <span>\n1\n            </span>\n          </div>\n        </td><td>\n          <div>\n            <span>\nfoo\n            </span>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>"
           }
         ]
       )
     end
 
     test "nested in slot" do
-      component_fixture(
+      beacon_component_fixture(
         name: "html_tag",
         attrs: [
           %{name: "name", type: "string", opts: [required: true]}
@@ -429,8 +425,6 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
         example: ~S|<.html_tag name="p">content</.tag>|
       )
-
-      Loader.reload_components_module(@site)
 
       assert_output(
         ~S"""

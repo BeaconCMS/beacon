@@ -34,6 +34,15 @@ defmodule Beacon.Migrations.V002 do
     |> then(&repo().insert_all("beacon_event_handlers", &1, []))
 
     drop_if_exists table(:beacon_page_event_handlers)
+
+    create_if_not_exists table(:beacon_info_handlers, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :site, :text, null: false
+      add :msg, :text, null: false
+      add :code, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
   end
 
   def down do
@@ -50,5 +59,7 @@ defmodule Beacon.Migrations.V002 do
     # global event handlers can't be converted back into page event handlers
 
     drop_if_exists table(:beacon_event_handlers)
+
+    drop_if_exists table(:beacon_info_handlers)
   end
 end

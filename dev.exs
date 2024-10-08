@@ -43,6 +43,7 @@ Ecto.Migrator.run(Demo.Repo, path, :up, all: true, log_migrations_sql: true)
 Demo.Repo.stop()
 
 Application.put_env(:beacon, DemoWeb.Endpoint,
+  adapter: Bandit.PhoenixAdapter,
   http: [ip: {127, 0, 0, 1}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
@@ -161,12 +162,9 @@ dev_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
-    template: """
-    <li>
-      <%= @val %>
-    </li>
-    """,
-    example: "<.sample_component val={1} />"
+    attrs: [%{name: "project", type: "any", opts: [required: true]}],
+    template: ~S|<span id={"project-#{@project.id}"}><%= @project.name %></span>|,
+    example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
   })
 
   Beacon.Content.create_snippet_helper!(%{
@@ -257,7 +255,7 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          Sample component: <%= my_component("sample_component", val: 1) %>
+          Sample component: <%= my_component("sample_component", project: %{id: 1, name: "Beacon"}) %>
         </div>
 
        <div>
@@ -352,11 +350,101 @@ dev_seeds = fn ->
       layout_id: layout.id,
       format: "markdown",
       template: """
-      # My Markdown Page
+      ## Headings
 
-      ## Intro
+      # H1
+
+      ## H2
+
+      ### H3
+
+      ## Text Decoration
+
+      Bold: **bold text**
+
+      Italics: *italicized text*
+
+      Subscript: H~2~O
+
+      Superscript: X^2^
+
+      Emoji: :joy:
+
+      > blockquote
+
+      ## Lists
+
+      1. ordered list item 1
+      2. ordered list item 2
+      3. ordered list item 3
+
+      - unordered list item
+      - unordered list item
+      - unordered list item
+
+      - [x] Completed task list item
+      - [ ] incomplete task list item
+      - [ ] incomplete task list item
+
+      ## Code
+
+      `inline code`
+
+      ```elixir
+      %{
+        "firstName" => "John",
+        "lastName" => "Smith",
+        "age" => 25
+      }
+      ```
+
+      ## Hyperlink
 
       Back to [Home](/dev)
+
+      [link](https://example.com)
+
+      ## Image
+
+      ![image](https://assets.dockyard.com/images/narwin-press-release-og-v2.svg)
+
+      ## Table
+
+      | Table | Header |
+      | ----------- | ----------- |
+      | Header | Title |
+      | Paragraph | Text |
+
+      ## Footnote
+
+      Here's a sentence with a footnote. [^1]
+
+      [^1]: This is the footnote.
+
+      ## Description List
+
+      term
+
+      : definition
+
+      First Horizontal Line
+
+      ***
+
+      Second One
+
+      -----
+
+      Third
+
+      _________
+
+
+      ## Embeds
+
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/J---aiyznGQ?si=Go2Dsrw6mTIiyf2-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+      <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Read about what people are building with LiveView Native and how easy it&#39;s been for them to get up and going<a href="https://t.co/HtO3a7fYZ7">https://t.co/HtO3a7fYZ7</a><a href="https://twitter.com/hashtag/myelixirstatus?src=hash&amp;ref_src=twsrc%5Etfw">#myelixirstatus</a></p>&mdash; LiveView Native (@liveviewnative) <a href="https://twitter.com/liveviewnative/status/1838621636028731652?ref_src=twsrc%5Etfw">September 24, 2024</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
       """
     })
 
@@ -445,6 +533,30 @@ dev_seeds = fn ->
           <div class="p-2 border rounded">Item 4<br />Small text.</div>
           <div class="p-2 border rounded">Item 5<br />Small text.</div>
           <div class="p-2 border rounded">Item 6<br />Small text.</div>
+        </div>
+      </div>
+      <!-- 8. Inline-block elements with overflow -->
+      <div class="mb-8">
+        <h2 class="text-lg font-semibold mb-4">8. Elements with Inline-Block Layout</h2>
+        <div class="text-justify">
+          <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
+            Item 1<br />Small text.
+          </div>
+          <div class="inline-block w-2/5 p-2 border rounded mb-2 mx-2">
+            Item 2<br />Small text.<br />But taller.
+          </div>
+          <div class="inline-block w-1/4 p-2 border rounded mb-2 mx-2">
+            Item 3<br />Small text.
+          </div>
+          <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
+            Item 4<br />Small text.
+          </div>
+          <div class="inline-block w-1/5 p-2 border rounded mb-2 mx-2">
+            Item 5<br />Small text.
+          </div>
+          <div class="inline-block w-9/20 p-2 border rounded mb-2 mx-2">
+            Item 6<br />Small text.
+          </div>
         </div>
       </div>
       """
@@ -1069,7 +1181,7 @@ dev_site = [
   repo: Demo.Repo,
   endpoint: DemoWeb.Endpoint,
   router: DemoWeb.Router,
-  skip_boot?: true,
+  mode: :manual,
   extra_page_fields: [Demo.Beacon.TagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
@@ -1106,7 +1218,7 @@ Task.start(fn ->
          repo: Demo.Repo,
          endpoint: DemoWeb.Endpoint,
          router: DemoWeb.Router,
-         skip_boot?: true
+         mode: :manual
        ]
      ]}
   ]

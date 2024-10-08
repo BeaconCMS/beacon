@@ -1,23 +1,41 @@
 defmodule Beacon.Web.Live.PageLiveTest do
   use Beacon.Web.ConnCase, async: false
+  use Beacon.Test, site: :my_site
+
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
   alias Beacon.Content
-  alias Beacon.Loader
 
   setup do
-    live_data = live_data_fixture(site: :my_site, path: "/home/:greet")
-    live_data_assign_fixture(live_data: live_data, format: :elixir, key: "values", value: "[\"first\", \"second\", \"third\"]")
+    live_data = beacon_live_data_fixture(path: "/home/:greet")
+
+    beacon_live_data_assign_fixture(
+      live_data: live_data,
+      format: :elixir,
+      key: "projects",
+      value: ~S"""
+      [
+        %{id: 1, name: "Beacon"},
+        %{id: 2, name: "BeaconLiveAdmin"},
+        %{id: 3, name: "MDEx"}
+      ]
+      """
+    )
 
     Beacon.Content.blueprint_components()
     |> Enum.find(&(&1.name == "page_link"))
-    |> component_fixture()
+    |> beacon_component_fixture()
 
-    component_fixture(name: "sample_component")
+    beacon_component_fixture(name: "sample_component")
 
     layout =
-      published_layout_fixture(
+      beacon_published_layout_fixture(
+        template: """
+        <header>Page header</header>
+        <%= @inner_content %>
+        <footer>Page footer</footer>
+        """,
         meta_tags: [
           %{"http-equiv" => "refresh", "content" => "300"}
         ],
@@ -34,14 +52,14 @@ defmodule Beacon.Web.Live.PageLiveTest do
       )
 
     page_home =
-      page_fixture(
+      beacon_page_fixture(
         layout_id: layout.id,
         path: "/home/:greet",
         template: """
         <main>
-          <h2>Some Values:</h2>
-          <%= for value <- @values do %>
-            <.sample_component val={value} />
+          <h2>Projects</h2>
+          <%= for project <- @projects do %>
+            <.sample_component project={project} />
           <% end %>
 
           <h2>Beacon:</h2>
@@ -67,11 +85,11 @@ defmodule Beacon.Web.Live.PageLiveTest do
           %{"property" => "og:title", "content" => "Beacon"}
         ],
         helpers: [
-          page_helper_params()
+          beacon_page_helper_params()
         ]
       )
 
-    published_page_fixture(
+    beacon_published_page_fixture(
       layout_id: layout.id,
       path: "/about",
       template: """
@@ -82,18 +100,28 @@ defmodule Beacon.Web.Live.PageLiveTest do
     )
 
     _page_home_form_submit_handler =
-      event_handler_fixture(%{
-        site: :my_site,
+      beacon_event_handler_fixture(%{
         name: "hello",
         code: """
         {:noreply, assign(socket, :message, "Hello \#{event_params["greeting"]["name"]}!")}
         """
       })
 
+    beacon_info_handler_fixture(%{
+      msg: "{:incorrect_format, email}",
+      code: """
+      socket =
+        socket
+        |> put_flash(:error, "Your email (\#{email}) is incorrectly formatted. Please format it correctly.")
+
+      {:noreply, socket}
+      """
+    })
+
     Content.publish_page(page_home)
 
     _page_without_meta_tags =
-      published_page_fixture(
+      beacon_published_page_fixture(
         layout_id: layout.id,
         path: "/without_meta_tags",
         template: """
@@ -102,13 +130,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
         """,
         meta_tags: nil
       )
-
-    Loader.reload_live_data_module(:my_site)
-    Loader.reload_snippets_module(:my_site)
-    Loader.reload_components_module(:my_site)
-    Loader.reload_layouts_modules(:my_site)
-    Loader.reload_pages_modules(:my_site)
-    Loader.reload_event_handlers_module(:my_site)
 
     [layout: layout]
   end
@@ -123,9 +144,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
   test "live data", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/home/hello")
 
-    assert has_element?(view, "#my-component", "first")
-    assert has_element?(view, "#my-component", "second")
-    assert has_element?(view, "#my-component", "third")
+    assert has_element?(view, "#project-1", "Beacon")
+    assert has_element?(view, "#project-2", "BeaconLiveAdmin")
+    assert has_element?(view, "#project-3", "MDEx")
   end
 
   test "patch to another page", %{conn: conn} do
@@ -169,8 +190,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     end
 
     test "interpolate snippets", %{conn: conn} do
-      snippet_helper_fixture(%{
-        site: "my_site",
+      beacon_snippet_helper_fixture(%{
         name: "og_description",
         body: ~S"""
         assigns
@@ -179,29 +199,23 @@ defmodule Beacon.Web.Live.PageLiveTest do
         """
       })
 
-      layout = published_layout_fixture()
+      layout = beacon_published_layout_fixture()
 
-      page =
-        published_page_fixture(
-          site: "my_site",
-          layout_id: layout.id,
-          path: "/page/meta-tag",
-          title: "my first page",
-          description: "my test page",
-          meta_tags: [
-            %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-            %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
-            %{"property" => "og:image", "content" => "{{ live_data.image }}"}
-          ]
-        )
+      # page =
+      beacon_published_page_fixture(
+        layout_id: layout.id,
+        path: "/page/meta-tag",
+        title: "my first page",
+        description: "my test page",
+        meta_tags: [
+          %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
+          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
+          %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+        ]
+      )
 
-      live_data = live_data_fixture(path: "/page/meta-tag")
-      live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
-
-      Beacon.Loader.reload_snippets_module(:my_site)
-      Beacon.Loader.reload_live_data_module(:my_site)
-      Beacon.Loader.reload_layout_module(layout.site, layout.id)
-      Beacon.Loader.reload_page_module(page.site, page.id)
+      live_data = beacon_live_data_fixture(path: "/page/meta-tag")
+      beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -241,14 +255,14 @@ defmodule Beacon.Web.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ "<header>Page header</header>"
-      assert html =~ ~s"<main><h2>Some Values:</h2>"
+      assert html =~ ~s"<main><h2>Projects</h2>"
       assert html =~ "<footer>Page footer</footer>"
     end
 
     test "component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/home/hello")
 
-      assert html =~ ~s(<span id="my-component">)
+      assert html =~ ~s(<span id="project-1">)
     end
 
     test "event", %{conn: conn} do
@@ -257,6 +271,18 @@ defmodule Beacon.Web.Live.PageLiveTest do
       assert view
              |> form("form", %{greeting: %{name: "Beacon"}})
              |> render_submit() =~ "Hello Beacon"
+    end
+
+    test "info handler", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home/hello")
+
+      email = "email@email"
+
+      refute render(view) =~ "Your email (#{email}) is incorrectly formatted. Please format it correctly."
+
+      send(view.pid, {:incorrect_format, email})
+
+      assert render(view) =~ "Your email (#{email}) is incorrectly formatted. Please format it correctly."
     end
 
     test "helper", %{conn: conn} do
@@ -280,17 +306,15 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
   describe "page title" do
     test "with snippet helper from page", %{conn: conn, layout: layout} do
-      published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "/my/:page")
+      beacon_published_page_fixture(layout_id: layout.id, title: "{{ page.path }}", path: "/my/:page")
       {:ok, view, _html} = live(conn, "/my/:page")
       assert page_title(view) =~ "/my/:page"
     end
 
     test "with snippet helper from live data assigns", %{conn: conn, layout: layout} do
-      published_page_fixture(layout_id: layout.id, title: "page {{ live_data.test }}", path: "/my/page/:var")
-      live_data = live_data_fixture(path: "/my/page/:var")
-      live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
-
-      Loader.reload_live_data_module(:my_site)
+      beacon_published_page_fixture(layout_id: layout.id, title: "page {{ live_data.test }}", path: "/my/page/:var")
+      live_data = beacon_live_data_fixture(path: "/my/page/:var")
+      beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
 
       {:ok, view, _html} = live(conn, "/my/page/foobar")
 
@@ -300,8 +324,8 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
   describe "markdown" do
     test "page template", %{conn: conn, layout: layout} do
-      live_data_fixture(path: "/markdown")
-      published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
+      beacon_live_data_fixture(path: "/markdown")
+      beacon_published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
 
       {:ok, view, _html} = live(conn, "/markdown")
 
@@ -311,21 +335,17 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
   describe "components" do
     test "update should reload the resource", %{conn: conn} do
-      component = component_fixture(name: "component_test", template: "component_test_v1")
-      layout = published_layout_fixture()
+      component = beacon_component_fixture(name: "component_test", template: "component_test_v1")
+      layout = beacon_published_layout_fixture()
 
-      page =
-        published_page_fixture(
-          path: "/component_test",
-          template: """
-          <%= my_component("component_test", []) %>
-          """,
-          layout_id: layout.id
-        )
-
-      Beacon.Loader.reload_components_module(component.site)
-      Beacon.Loader.reload_layout_module(layout.site, layout.id)
-      Beacon.Loader.reload_page_module(page.site, page.id)
+      # page =
+      beacon_published_page_fixture(
+        path: "/component_test",
+        template: """
+        <%= my_component("component_test", []) %>
+        """,
+        layout_id: layout.id
+      )
 
       {:ok, _view, html} = live(conn, "/component_test")
 

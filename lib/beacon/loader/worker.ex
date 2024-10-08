@@ -334,90 +334,31 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
-  def handle_call(:reload_snippets_module, _from, config) do
-    %{site: site} = config
-    snippets = Content.list_snippet_helpers(site)
-    ast = Loader.Snippets.build_ast(site, snippets)
-    result = compile_module(site, ast, "snippets")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_routes_module, _from, config) do
-    %{site: site} = config
-    ast = Loader.Routes.build_ast(site)
-    result = compile_module(site, ast, "routes")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_components_module, _from, config) do
-    %{site: site} = config
-    components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
-    ast = Loader.Components.build_ast(site, components)
-    result = compile_module(site, ast, "components")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_live_data_module, _from, config) do
-    %{site: site} = config
-    live_data = Content.live_data_for_site(site)
-    ast = Loader.LiveData.build_ast(site, live_data)
-    result = compile_module(site, ast, "live_data")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_error_page_module, _from, config) do
-    %{site: site} = config
-    error_pages = Content.list_error_pages(site, preloads: [:layout])
-    ast = Loader.ErrorPage.build_ast(site, error_pages)
-    result = compile_module(site, ast, "error_pages")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_stylesheet_module, _from, config) do
-    %{site: site} = config
-    stylesheets = Content.list_stylesheets(site)
-    ast = Loader.Stylesheet.build_ast(site, stylesheets)
-    result = compile_module(site, ast, "stylesheets")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_event_handlers_module, _from, config) do
-    %{site: site} = config
-    event_handlers = Content.list_event_handlers(site)
-    ast = Loader.EventHandlers.build_ast(site, event_handlers)
-    result = compile_module(site, ast, "event_handlers")
-    stop(result, config)
+  def handle_call(request, _from, config)
+      when request in [
+             :reload_snippets_module,
+             :reload_routes_module,
+             :reload_components_module,
+             :reload_live_data_module,
+             :reload_error_page_module,
+             :reload_stylesheet_module,
+             :reload_event_handlers_module,
+             :reload_info_handlers_module
+           ] do
+    apply(__MODULE__, request, [config.site])
+    |> stop(config)
   end
 
   def handle_call({:reload_layout_module, layout_id}, _from, config) do
-    %{site: site} = config
-    layout = Beacon.Content.get_published_layout(site, layout_id)
-
-    case layout do
-      nil ->
-        {:error, :layout_not_published}
-
-      layout ->
-        ast = Loader.Layout.build_ast(site, layout)
-        result = compile_module(site, ast, "layout")
-        stop(result, config)
-    end
+    config.site
+    |> reload_layout_module(layout_id)
+    |> stop(config)
   end
 
   def handle_call({:reload_page_module, page_id}, _from, config) do
-    %{site: site} = config
-    page = Beacon.Content.get_published_page(site, page_id)
-
-    case page do
-      nil ->
-        stop({:error, :page_not_published}, config)
-
-      page ->
-        ast = Loader.Page.build_ast(site, page)
-        result = compile_module(site, ast, "page")
-        :ok = Beacon.PubSub.page_loaded(page)
-        stop(result, config)
-    end
+    config.site
+    |> reload_page_module(page_id)
+    |> stop(config)
   end
 
   def handle_call(:reload_runtime_js, _from, config) do
@@ -447,6 +388,81 @@ defmodule Beacon.Loader.Worker do
   def handle_info(msg, config) do
     Logger.warning("Beacon.Loader.Worker can not handle the message: #{inspect(msg)}")
     {:noreply, config}
+  end
+
+  def reload_snippets_module(site) do
+    snippets = Content.list_snippet_helpers(site)
+    ast = Loader.Snippets.build_ast(site, snippets)
+    compile_module(site, ast, "snippets")
+  end
+
+  def reload_routes_module(site) do
+    ast = Loader.Routes.build_ast(site)
+    compile_module(site, ast, "routes")
+  end
+
+  def reload_components_module(site) do
+    components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
+    ast = Loader.Components.build_ast(site, components)
+    compile_module(site, ast, "components")
+  end
+
+  def reload_live_data_module(site) do
+    live_data = Content.live_data_for_site(site)
+    ast = Loader.LiveData.build_ast(site, live_data)
+    compile_module(site, ast, "live_data")
+  end
+
+  def reload_error_page_module(site) do
+    error_pages = Content.list_error_pages(site, preloads: [:layout])
+    ast = Loader.ErrorPage.build_ast(site, error_pages)
+    compile_module(site, ast, "error_pages")
+  end
+
+  def reload_stylesheet_module(site) do
+    stylesheets = Content.list_stylesheets(site)
+    ast = Loader.Stylesheet.build_ast(site, stylesheets)
+    compile_module(site, ast, "stylesheets")
+  end
+
+  def reload_event_handlers_module(site) do
+    event_handlers = Content.list_event_handlers(site)
+    ast = Loader.EventHandlers.build_ast(site, event_handlers)
+    compile_module(site, ast, "event_handlers")
+  end
+
+  def reload_info_handlers_module(site) do
+    info_handlers = Content.list_info_handlers(site)
+    ast = Loader.InfoHandlers.build_ast(site, info_handlers)
+    compile_module(site, ast, "info_handlers")
+  end
+
+  def reload_layout_module(site, layout_id) do
+    layout = Beacon.Content.get_published_layout(site, layout_id)
+
+    case layout do
+      nil ->
+        {:error, :layout_not_published}
+
+      layout ->
+        ast = Loader.Layout.build_ast(site, layout)
+        compile_module(site, ast, "layout")
+    end
+  end
+
+  def reload_page_module(site, page_id) do
+    page = Beacon.Content.get_published_page(site, page_id)
+
+    case page do
+      nil ->
+        {:error, :page_not_published}
+
+      page ->
+        ast = Loader.Page.build_ast(site, page)
+        result = compile_module(site, ast, "page")
+        :ok = Beacon.PubSub.page_loaded(page)
+        result
+    end
   end
 
   defp stop(reply, state) do
