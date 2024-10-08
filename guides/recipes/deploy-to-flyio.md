@@ -1,4 +1,4 @@
-# Deploying on Fly.io
+# Deploy to Fly.io
 
 Once you have a [Beacon site up and running](../introduction/your-first-site.md) locally, you can deploy it on [Fly.io](https://fly.io) by following this guide.
 
