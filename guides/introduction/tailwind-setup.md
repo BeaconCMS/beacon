@@ -214,4 +214,4 @@ end
 **Remember** to replace `my_app` with the actual name of your application.
 
 Now the bundled Tailwind config will be used by Beacon to generate the styles for your site and to create pages using the Visual editor,
-and the same config will be used to [../recipes/deploy-to-flyio.md](deploy your site).
+and the same config will be used to [deploy your site](../recipes/deploy-to-flyio.md).
