@@ -16,7 +16,7 @@ A sample application running latest Beacon is available at https://github.com/Be
 
 ## Status
 
-Pre-release version. You can expect incomplete features and breaking changes before a stable v0.1.0 is released.
+Pre-release version. You can expect incomplete features and breaking changes before a stable v1.0 is released.
 
 Main components:
 - Core - A functional website can be built and deployed by inserting components in database and running a server, see https://github.com/BeaconCMS/beacon_demo
