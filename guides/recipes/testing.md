@@ -33,7 +33,7 @@ config :my_app, :my_site, mode: :testing
 
 And the actual test would look like the example below.
 
-First we create and publish a page by calling the [fixture](https://hexdocs.pm/beacon/0.1.0-rc.2/Beacon.Test.Fixtures.html) `beacon_published_page_fixture/0`,
+First we create and publish a page by calling the [fixture](https://hexdocs.pm/beacon/0.1.0/Beacon.Test.Fixtures.html) `beacon_published_page_fixture/0`,
 then we build and assert the correct email was delivered, using [assert_delivered_email/1](https://hexdocs.pm/bamboo/Bamboo.Test.html#assert_delivered_email/2)
 from the Bamboo library.
 

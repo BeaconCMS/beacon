@@ -53,7 +53,7 @@ Note that Beacon supports Umbrella applications as well.
 7. Add `:beacon` and `:beacon_live_admin` dependencies to `mix.exs`
 
   ```diff
-  + {:beacon, "~> 0.1.0-rc.2", override: true},
+  + {:beacon, "~> 0.1.0", override: true},
   + {:beacon_live_admin, ">= 0.0.0"},
   ```
 

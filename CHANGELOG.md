@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-dev
+## 0.1.0 (2024-10-09)
 
 ### Breaking Changes
   * Require minimum Elixir v1.14.0
