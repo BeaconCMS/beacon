@@ -20,7 +20,7 @@ defmodule Beacon.Template.Markdown do
     syntax_highlight_theme = Keyword.get(opts, :syntax_highlight_theme, "onedark")
 
     template =
-      MDEx.to_html(template,
+      MDEx.to_html!(template,
         extension: [
           strikethrough: true,
           tagfilter: false,
