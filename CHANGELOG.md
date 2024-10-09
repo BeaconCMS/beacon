@@ -1,10 +1,10 @@
 # Changelog
 
-## 0.1.0-dev
+## 0.1.0 (2024-10-09)
 
 ### Breaking Changes
-  * Require minimum Elixir v1.14
-  * Require minimun `:mdex` v0.1.17
+  * Require minimum Elixir v1.14.0
+  * Require minimun `:mdex` v0.2.0
   * Removed config `:skip_boot?` in favor of `:mode` which can be `:live`, `:testing`, and `:manual` (defaults to `:live`) - the major difference between then is that live loads all modules and broadcasts all messages, testing only does that when it makes sense for tests (for example it does reload modules on fixtures), and manual does pretty much nothing, it's useful to seed data or to test specific scenarios where you need total control over Beacon.Loader
 
 ### Enhancements
