@@ -16,7 +16,7 @@ A sample application running latest Beacon is available at https://github.com/Be
 
 ## Status and Roadmap
 
-Pre-release version. You can expect incomplete features and breaking changes before a stable v0.1.0 is released.
+Pre-release version. You can expect incomplete features and breaking changes before a stable v1.0 is released.
 
 Main components:
 - [Beacon](https://github.com/BeaconCMS/beacon) is the **core** engine responsible for storing data and running sites
