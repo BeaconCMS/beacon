@@ -16,6 +16,7 @@ defmodule Beacon.MediaLibrary.Provider do
   """
 
   alias Beacon.MediaLibrary.UploadMetadata
+  alias Beacon.MediaLibrary.Asset
 
   @doc false
   def process!(%UploadMetadata{} = metadata) do
@@ -51,6 +52,14 @@ defmodule Beacon.MediaLibrary.Provider do
   def send_to_cdns({%UploadMetadata{} = metadata, config}) do
     Enum.reduce(metadata.config.providers, metadata, fn
       provider, md -> provider.send_to_cdn(md, config)
+    end)
+  end
+
+  @doc false
+  @spec soft_delete(Asset.t(), any()) :: Asset.t()
+  def soft_delete(%Asset{} = asset, config) do
+    Enum.reduce(config.providers, asset, fn
+      provider, asset -> provider.soft_delete(asset)
     end)
   end
 end

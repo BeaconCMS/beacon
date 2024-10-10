@@ -7,8 +7,10 @@ defmodule Beacon.MediaLibrary.Provider.Repo do
 
   import Ecto.Changeset
 
+  import Ecto.Query
   alias Beacon.MediaLibrary.Asset
   alias Beacon.MediaLibrary.UploadMetadata
+  import Beacon.Utils, only: [repo: 1]
 
   @provider_key "repo"
 
@@ -42,4 +44,21 @@ defmodule Beacon.MediaLibrary.Provider.Repo do
 
   @doc false
   def provider_key, do: @provider_key
+
+  @doc false
+  def soft_delete(%Asset{} = asset) do
+    update =
+      repo(asset).update_all(
+        from(asset in Asset, where: asset.id == ^asset.id),
+        set: [deleted_at: DateTime.utc_now()]
+      )
+
+    case update do
+      {1, _} ->
+        {:ok, repo(asset).reload(asset)}
+
+      _ ->
+        :error
+    end
+  end
 end
