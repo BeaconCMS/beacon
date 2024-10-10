@@ -1,4 +1,4 @@
-# On Mount Handle Info Loop
+# Handle async and continuous updates with handle_info and on_mount
 
 Using [Live Data](https://hexdocs.pm/beacon/0.1.0-rc.2/Beacon.Content.html#create_live_data/1) assigns, [on_mount](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#on_mount/1) callbacks, and  corresponding [handle_info](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_info/2) handlers is a pattern that you can leverage to achieve optimistic UI for your pages.
 
