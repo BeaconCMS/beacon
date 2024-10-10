@@ -1,6 +1,10 @@
 # On Mount Handle Info Loop
 
-If you would like to continuously monitor or update a page, you can create an [on_mount](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#on_mount/1) callback, and corresponding [handle_info](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_info/2) handler.
+Using [Live Data](https://hexdocs.pm/beacon/0.1.0-rc.2/Beacon.Content.html#create_live_data/1) assigns, [on_mount](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#on_mount/1) callbacks, and  corresponding [handle_info](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_info/2) handlers is a pattern that you can leverage to achieve optimistic UI for your pages.
+
+Suppose you're displaying a Weather widget on your page but fetching the data takes a second, delaying the whole page, even though that widget is not critical to your page and could display dummy data (or no data at all) while the rest of the page is loaded. In this scenario, a Live Data assign would provide the initial dummy data, the on_mount hook request the data to be loaded asyncly, and finally the handle_info loads the data and update that assign.
+
+For this example, we'll build a similar scenario but also add a continuous monitor to update the assign frequently.
 
 In this example we're going to update a `DateTime` every `1_000` milliseconds from the server, starting that loop `on_mount`, then continuously looping over a `handle_info`.
 
