@@ -30,7 +30,16 @@ defmodule Beacon.ErrorHandler do
 
     case resource_str do
       "Page" <> page_id -> Worker.reload_page_module(site, page_id)
-      other -> :noop
+      "Layout" <> layout_id -> Worker.reload_layout_module(site, layout_id)
+      "Routes" -> Worker.reload_routes_module(site)
+      "Components" -> Worker.reload_components_module(site)
+      "LiveData" -> Worker.reload_live_data_module(site)
+      "Stylesheet" -> Worker.reload_stylesheet_module(site)
+      "Snippets" -> Worker.reload_snippets_module(site)
+      "ErrorPage" -> Worker.reload_error_page_module(site)
+      "EventHandlers" -> Worker.reload_event_handlers_module(site)
+      "InfoHandlers" -> Worker.reload_info_handlers_module(site)
+      _other -> :noop
     end
   end
 end
