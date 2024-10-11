@@ -19,6 +19,9 @@ defmodule Beacon.Web.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
+    # Use Beacon custom error handler to automatically load modules on-demand
+    Process.flag(:error_handler, Beacon.ErrorHandler)
+
     # TODO: handle back pressure on simualtaneous calls to reload the same page
     page = RouterServer.lookup_page!(site, path)
 

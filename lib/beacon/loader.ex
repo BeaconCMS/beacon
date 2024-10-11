@@ -65,8 +65,13 @@ defmodule Beacon.Loader do
   # Client
 
   def module_name(site, resource) do
-    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16(case: :lower)
-    Module.concat([Beacon.Web.LiveRenderer, "#{site_hash}", "#{resource}"])
+    Module.concat([Beacon.Web.LiveRenderer, "#{hash(site)}", "#{resource}"])
+  end
+
+  def hash(site) do
+    :md5
+    |> :crypto.hash(Atom.to_string(site))
+    |> Base.encode16(case: :lower)
   end
 
   def ping(site) do
@@ -167,10 +172,6 @@ defmodule Beacon.Loader do
 
   def fetch_info_handlers_module(site) do
     Loader.InfoHandlers.module_name(site)
-  end
-
-  def maybe_reload_page_module(site, page_id) do
-    maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
   end
 
   def reload_snippets_module(site) do
