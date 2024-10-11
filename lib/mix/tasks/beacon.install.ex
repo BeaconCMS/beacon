@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Beacon.Install do
   use Igniter.Mix.Task
 
-  @example "mix beacon.install --example arg"
+  @example "mix beacon.install --site my_site --path /"
 
   @shortdoc "A short description of your task"
   @moduledoc """
@@ -37,11 +37,12 @@ defmodule Mix.Tasks.Beacon.Install do
       positional: [],
       # Other tasks your task composes using `Igniter.compose_task`, passing in the CLI argv
       # This ensures your option schema includes options from nested tasks
-      composes: [],
+      composes: ["beacon.gen.site"],
       # `OptionParser` schema
-      schema: [],
+      schema: [path: :string, site: :string],
       # CLI aliases
-      aliases: []
+      aliases: [p: :path, s: :site],
+      defaults: [path: "/"]
     }
   end
 
@@ -54,5 +55,14 @@ defmodule Mix.Tasks.Beacon.Install do
     # Do your work here and return an updated igniter
     igniter
     |> Igniter.Project.Formatter.import_dep(:beacon)
+    |> gen_site(options, argv)
+  end
+
+  defp gen_site(igniter, options, argv) do
+    if options[:site] do
+      Igniter.compose_task("beacon.gen.site", argv)
+    else
+      igniter
+    end
   end
 end

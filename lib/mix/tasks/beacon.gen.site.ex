@@ -41,7 +41,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       # `OptionParser` schema
       schema: [path: :string, site: :string],
       # CLI aliases
-      aliases: [p: :path, s: :site]
+      aliases: [p: :path, s: :site],
+      defaults: [path: "/"]
     }
   end
 
@@ -51,13 +52,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     # extract options according to `schema` and `aliases` above
     options = options!(argv)
 
-    options =
-      options
-      |> Keyword.put_new(:path, "/")
-      |> Keyword.put_new(:site, "my_site")
+    # TODO: warn missing :site
+    site = Keyword.fetch!(options, :site) |> String.to_atom()
+    path = Keyword.fetch!(options, :path)
 
-    path = Keyword.get(options, :path)
-    site = Keyword.get(options, :site) |> String.to_atom()
+    # options =
+    #   options
+    #   |> Keyword.put_new(:path, "/")
+    #   |> Keyword.put_new(:site, "my_site")
 
     {igniter, router} = Igniter.Libs.Phoenix.select_router(igniter)
     {igniter, [endpoint]} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
@@ -69,7 +71,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     # |> Igniter.Project.Module.create_module(migration_name, "", location: {:source_folder, "priv"})
     # |> Igniter.add_task("ecto.gen.migration", ["create_beacon_tables"])
     # |> Igniter.add_notice("modify your migration file to call Beacon migration")
-    |> create_migration()
+    |> create_migration(repo)
     |> Igniter.Libs.Phoenix.append_to_scope(
       "/",
       """
@@ -89,7 +91,43 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
            router: router
          ]
        ]},
-      after: [repo, endpoint]
+      after: [repo, endpoint],
+      opts_updater: fn zipper ->
+        Igniter.Util.Debug.puts_code_at_node(zipper)
+
+        with {:ok, zipper} <-
+               Igniter.Code.Keyword.put_in_keyword(
+                 zipper,
+                 [:sites],
+                 [
+                   site: site,
+                   repo: repo,
+                   endpoint: endpoint,
+                   router: router
+                 ],
+                 fn zipper ->
+                   Igniter.Util.Debug.puts_code_at_node(zipper)
+
+                   site_config = [
+                     site: site,
+                     repo: repo,
+                     endpoint: endpoint,
+                     router: router
+                   ]
+
+                   config = Sourceror.to_string(site_config) |> Sourceror.parse_string!()
+
+                   Igniter.Code.List.append_to_list(
+                     zipper,
+                     config
+                   )
+                 end
+               ) do
+          {:ok, zipper}
+        else
+          :error -> {:warning, ["Failed to automatically add your site."]}
+        end
+      end
     )
   end
 
@@ -107,33 +145,46 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     end)
   end
 
-  defp migration_module_name(igniter) do
-    Igniter.Project.Module.module_name(igniter, "Repo.Migrations.CreateBeaconTables")
+  # defp migration_module_name(igniter) do
+  #   Igniter.Project.Module.module_name(igniter, "Repo.Migrations.CreateBeaconTables")
+  # end
+
+  defp create_migration(igniter, repo) do
+    Igniter.Libs.Ecto.gen_migration(
+      igniter,
+      repo,
+      "create_beacon_tables",
+      body: """
+      def up, do: Beacon.Migration.up()
+      def down, do: Beacon.Migration.down()
+      """,
+      on_exists: :skip
+    )
   end
 
-  defp create_migration(igniter) do
-    {exists, igniter} = Igniter.Project.Module.module_exists?(igniter, migration_module_name(igniter))
+  # defp create_migration(igniter) do
+  #   {exists, igniter} = Igniter.Project.Module.module_exists?(igniter, migration_module_name(igniter))
 
-    if exists do
-      igniter
-      |> Igniter.create_new_elixir_file("priv/repo/migrations/#{migration_timestamp()}_create_beacon_tables.exs", """
-      defmodule #{inspect(migration_module_name(igniter))} do
-        use Ecto.Migration
-        def up, do: Beacon.Migration.up()
-        def down, do: Beacon.Migration.down()
-      end
-      """)
-      |> Igniter.add_notice("run mix ecto.migrate")
-    else
-      igniter
-    end
-  end
+  #   if exists do
+  #     igniter
+  #     |> Igniter.create_new_elixir_file("priv/repo/migrations/#{migration_timestamp()}_create_beacon_tables.exs", """
+  #     defmodule #{inspect(migration_module_name(igniter))} do
+  #       use Ecto.Migration
+  #       def up, do: Beacon.Migration.up()
+  #       def down, do: Beacon.Migration.down()
+  #     end
+  #     """)
+  #     |> Igniter.add_notice("run mix ecto.migrate")
+  #   else
+  #     igniter
+  #   end
+  # end
 
-  defp migration_timestamp do
-    {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time()
-    "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss)}"
-  end
+  # defp migration_timestamp do
+  #   {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time()
+  #   "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss)}"
+  # end
 
-  defp pad(i) when i < 10, do: <<?0, ?0 + i>>
-  defp pad(i), do: to_string(i)
+  # defp pad(i) when i < 10, do: <<?0, ?0 + i>>
+  # defp pad(i), do: to_string(i)
 end
