@@ -37,26 +37,13 @@ beacon_site "/blog", site: :blog
 Just make sure to add `beacon_site "/blog", site: :blog` before any `beacon_site "/"` otherwise the latter will match all paths, including `/blog`
 and Beacon won't be able to find and render pages of the blog site.
 
-## Tailwind Setup
+## Custom Tailwind Config (optional)
 
-Since we'll be using a tailwind plugin, you need to follow the [Tailwind setup guide](../introduction/tailwind-setup.md)
-to setup and bundle the tailwind configuration.
+Beacon bundles a [minimal Tailwind configuration](https://github.com/BeaconCMS/beacon/blob/main/assets/tailwind.config.js) that includes
+@tailwindcss forms and typography plugins, and Phoenix variants for loading states.
 
-## Tailwind Typography Plugin
-
-A blog is useless if it looks ugly and is hard to read but lucky us that Tailwind provides a [plugin](https://tailwindcss.com/blog/tailwindcss-typography) that turns blocks of HTML into beautiful documents.
-
-Let's install that plugin. Execute in the root of your project:
-
-```sh
-npm install --prefix assets --include=dev @tailwindcss/typography
-```
-
-And edit the file `assets/tailwind.config.js` to require that plugin. Add the following line in the `plugins` list:
-
-```js
-require("@tailwindcss/typography"),
-```
+That's enough for our blog and many other sites, otherwise you can follow the [Tailwind setup guide](../introduction/tailwind-setup.md)
+to create a new configuration to bundle into into your site.
 
 ## Custom Fields
 
@@ -115,6 +102,8 @@ Note that the file location and the module name doesn't need to follow any speci
 
 A blog post without tags is like a cake without icing, so let's create a custom field to store list of tags for each post.
 
+Create a new file `lib/my_app/beacon/page_fields/tags.ex` with the following content:
+
 ```elixir
 defmodule MyApp.Beacon.PageFields.Tags do
   @moduledoc """
@@ -159,6 +148,24 @@ extra_page_fields: [
   MyApp.Beacon.PageFields.Type,
   MyApp.Beacon.PageFields.Tags
 ]
+```
+
+It should look like this:
+
+```elixir
+{Beacon,
+ sites: [
+   [
+     site: :blog,
+     repo: MyApp.Repo,
+     endpoint: MyAppWeb.Endpoint,
+     router: MyAppWeb.Router,
+     extra_page_fields: [
+       MyApp.Beacon.PageFields.Type,
+       MyApp.Beacon.PageFields.Tags
+     ]
+   ]
+ ]}
 ```
 
 ## Create the layout
@@ -246,7 +253,7 @@ As Elixir and the Phoenix framework continue to evolve, we can expect to see eve
 By embracing Elixir, web developers can unlock new levels of scalability, fault-tolerance, and developer productivity, paving the way for a future where the focus is on building innovative and user-centric web experiences, rather than managing complex infrastructure.
 ````
 
-Save and publish this page. Now visit http://localhost:4000/blog/the-elixir-language to see the result. There is your first blog post!
+Click on Create Draft Page and Publish. Now visit http://localhost:4000/blog/the-elixir-language to see the result. There is your first blog post!
 
 ## Create the blog index
 

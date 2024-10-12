@@ -29,8 +29,7 @@ In the steps below you'll learn how to make the neccessary adjustments.
 
 * Install Tailwind v3.3.0 or higher
 * Install Esbuild
-* ESM format
-* Remove node APIs
+* Create a new valid config
 * Heroicons
 * Install plugins
 * Bundle the config
@@ -60,45 +59,20 @@ mix run -e "IO.inspect Esbuild.bin_version()"
 If it fails then follow the [esbuild install guide](https://github.com/phoenixframework/esbuild?tab=readme-ov-file#installation) to get it installed.
 Any recent version that is installed should work just fine.
 
-### ESM format
+### Create a new valid config
 
 Beacon expects a config file in the ESM format, ie: one that has `default export` instead of `module.exports`.
 
-Most likely the existing config `assets/tailwind.config.js` was created in the CommonJS format, so given a file like this:
+You can either modify the existing `assets/tailwind.config.js` config file or create a new one,
+but for this guide we'll create a new one to avoid conflicts with the existing one that might be
+used by your application.
 
-```js
-module.exports = {
-  theme: {
-    colors: {
-      'blue': '#1fb6ff'
-    }
-  }
-}
-```
+Create the file `assets/tailwind.config.beacon.js` with the same content as https://github.com/BeaconCMS/beacon/blob/main/assets/tailwind.config.js
 
-Replace with the following syntax to have a valid ESM config:
+Keep in mind this config has to be in the ESM format and it can't call node APIs like `fs` or `path` since we'll be using
+this module in the browser to generate stylesheets for the Visual Editor.
 
-```js
-export default {
-  theme: {
-    colors: {
-      'blue': '#1fb6ff'
-    }
-  }
-}
-```
-
-More info at https://tailwindcss.com/blog/tailwindcss-v3-3#esm-and-type-script-support
-
-### Remove node APIs
-
-The default `tailwind.config.js` created by the Phoenix installer will require the `fs` and `path` modules to load Heroicons in your application,
-the problem is that those modules are not available in the browser, so we can't use them.
-
-You have 2 options. Either remove those requires and the code using that module if you're not using Heroicons or not planning to use them,
-or the other option is to create a new config file only for Beacon, that doesn't require those APIs.
-
-See the Heroicons section below for more information regarding loading icons for Beacon pages.
+More info about the ESM format https://tailwindcss.com/blog/tailwindcss-v3-3#esm-and-type-script-support
 
 ### Heroicons
 
@@ -118,7 +92,7 @@ We'll change 3 files to make it work:
 
 1. `config/config.exs`
 
-Open the file `config/config.exs`, find the `:esbuild` config, and add a new `tailwind_bundle` that will look like this:
+Open the file `config/config.exs`, find the `:esbuild` config, and add a new `beacon_tailwind_bundle` that will look like this:
 
 ```elixir
 config :esbuild,
@@ -127,25 +101,23 @@ config :esbuild,
     # omitted for brevity
   ],
   # add this block
-  tailwind_bundle: [
-    args: ~w(tailwind.config.js --bundle --format=esm --target=es2020 --outfile=../priv/tailwind.config.bundle.js),
+  beacon_tailwind_bundle: [
+    args: ~w(tailwind.config.beacon.js --bundle --format=esm --target=es2020 --outfile=../priv/tailwind.config.beacon.bundle.js),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 ```
 
-_Change the path to the `tailwind.config.js` file if you're using a different one._
-
 2. `config/dev.exs`
 
-Open the file `config/dev.exs`, find the `:watchers` key in the endpoint config, and add a new `tailwind_bundle` that will look like this:
+Open the file `config/dev.exs`, find the `:watchers` key in the endpoint config, and add a new `beacon_tailwind_bundle` that will look like this:
 
 ```elixir
 config :my_app, MyAppWeb.Endpoint,
   # omitted for brevity
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:my_app, ~w(--sourcemap=inline --watch)]},
-    esbuild: {Esbuild, :install_and_run, [:tailwind_bundle, ~w(--watch)]}, # <-- add this line
+    esbuild: {Esbuild, :install_and_run, [:beacon_tailwind_bundle, ~w(--watch)]}, # <-- add this line
     tailwind: {Tailwind, :install_and_run, [:my_app, ~w(--watch)]}
   ]
 ```
@@ -155,7 +127,7 @@ config :my_app, MyAppWeb.Endpoint,
 In the list of aliases, add the following command in both `"assets.build"` and `"assets.deploy"`:
 
 ```elixir
-"esbuild tailwind_bundle"
+"esbuild beacon_tailwind_bundle"
 ```
 
 It will look like this:
@@ -164,11 +136,11 @@ It will look like this:
 defp aliases do
   [
     # omitted for brevity
-    "assets.build": ["tailwind my_app", "esbuild my_app", "esbuild tailwind_bundle"],
+    "assets.build": ["tailwind my_app", "esbuild my_app", "esbuild beacon_tailwind_bundle"],
     "assets.deploy": [
       "tailwind my_app --minify",
       "esbuild my_app --minify",
-      "esbuild tailwind_bundle --minify",
+      "esbuild beacon_tailwind_bundle --minify",
       "phx.digest"
     ]
   ]
@@ -184,7 +156,7 @@ Open the file `lib/my_app/application.ex` (replace `my_app` with your actual app
 this Tailwind config and add the `tailwind_config` key pointing to the bundled file:
 
 ```elixir
-tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.bundle.js"),
+tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.beacon.bundle.js"),
 ```
 
 It will look somewhat like this:
@@ -201,7 +173,7 @@ def start(_type, _args) do
          repo: MyApp.Repo,
          endpoint: MyAppWeb.Endpoint,
          router: MyAppWeb.Router,
-         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.bundle.js") # <-- add this line
+         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.beacon.bundle.js") # <-- add this line
        ]
      ]},
     MyAppWeb.Endpoint
