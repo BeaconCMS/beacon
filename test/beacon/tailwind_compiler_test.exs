@@ -62,7 +62,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   end
 
   test "css" do
-    assert TailwindCompiler.css(default_site()) =~ ".test-custom { color: red; }"
+    assert TailwindCompiler.css(default_site()) =~ ".custom-font-style { @apply font-sans; color: #5e5e5e }"
   end
 
   describe "compile site" do

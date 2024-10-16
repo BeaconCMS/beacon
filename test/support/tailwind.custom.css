@@ -3,4 +3,4 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-.test-custom { color: red; }
+.custom-font-style { @apply font-sans; color: #5e5e5e }
