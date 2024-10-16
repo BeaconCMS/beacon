@@ -61,6 +61,10 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
     assert TailwindCompiler.config(default_site()) =~ "export default"
   end
 
+  test "css" do
+    assert TailwindCompiler.css(default_site()) =~ ".test-custom { color: red; }"
+  end
+
   describe "compile site" do
     setup [:create_page]
 
