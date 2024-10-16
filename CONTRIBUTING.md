@@ -45,5 +45,5 @@ next in the short term. Those have more priority over the other issues and will 
 Engaging on [feature request issues](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request) also helps us to prioritize the work,
 so feel free to add comments or discuss on feature requests you'd like to see implemented and those will have more priority over the other issues.
 
-Finally keep in mind that we can't guarantee which exact issues will be included in the very next release and we may give more
-priority to specific issues as decided by the core team as needed.
+Finally keep in mind that we can't guarantee which exact issues will be included in the very next release; the core team may
+give more priority to specific issues as needed.

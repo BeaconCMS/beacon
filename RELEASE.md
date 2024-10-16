@@ -20,7 +20,7 @@ This policy applies to Beacon, BeaconLiveAdmin, and any other project in the Bea
 
 ## Git strategy
 
-Changes are applied to the `main` branch through feature branches. A pull requeste is opened, reviewed, and merged into `main`
+Changes are applied to the `main` branch through feature branches. A pull request is opened, reviewed, and merged into `main`
 once it's ready to avoid merge conflicts and make that code available on `main` in case anyone wants to test or use it.
 
 Along with the `main` and feature branches, we also keep release branches for each version, for example `v0.1.x`, `v2.0.x`, and so on.
