@@ -20,7 +20,7 @@ Pull requests correcting spelling or grammar mistakes are always welcome.
 
 ## Found a bug?
 
-Please open a [bug reporet](https://github.com/BeaconCMS/beacon/issues/new?template=bug_report.md&labes=bug).
+Please open a [bug report](https://github.com/BeaconCMS/beacon/issues/new?template=bug_report.md&labes=bug).
 
 ## Have a feature request?
 
@@ -40,10 +40,10 @@ issue's number to the description of your pull-request.
 ## Prioritization
 
 Issues tagged as [roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap) indicate the work that is planned to be worked
-next on the short term, those have more priority over the other issues and will be included in the next releases.
+next on the short term. Those have more priority over the other issues and will be included in the next releases.
 
 Engaging on [feature request issues](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request) also helps us to prioritize the work,
-so feel free to add comments or discusson on feature request you'd like to see implemented and those will have more priority over the other issues.
+so feel free to add comments or discuss on feature requests you'd like to see implemented and those will have more priority over the other issues.
 
 Finally keep in mind that we can't guarantee which exact issues will be included in the very next release and we may give more
 priority to specific issues as decided by the core team as needed.

@@ -21,7 +21,7 @@ as items are completed.
 ## Content Creation Experience
 
 #### Visual Editor
-- High-level visual controls that generate the underlyng styles, effects, and attributes in general. Including bot not limited to:
+- High-level visual controls that generate the underlying styles, effects, and attributes in general. Including but not limited to:
   - colors
   - sizing
   - positioning
@@ -29,7 +29,7 @@ as items are completed.
   - visibility
   - navigation (links)
   - eex (:if conditionals for example)
-  - animiations
+  - animations
 - Breakpoints manager to build responsive designs
 - Typography system to load and preview custom fonts
 - Enable the visual editor on Components and Layouts editors
@@ -43,7 +43,7 @@ as items are completed.
 
 #### Admin Interface
 - Adopt a component/UI library to improve the standard look and feel of admin pages
-- Expose built-in components and colors to allow users build custom pages easily
+- Expose built-in components and colors to allow users to build custom pages easily
 
 ## Tooling, Integration, and Extensibility
 

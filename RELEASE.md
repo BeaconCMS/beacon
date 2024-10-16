@@ -6,21 +6,21 @@ This policy applies to Beacon, BeaconLiveAdmin, and any other project in the Bea
 
 1. Follow [Semantic Versioning](https://semver.org/)
 
-   * For projects on v0.x releases, breaking changes are released as minor versions., for example in v0.2.0
-   * For projects on v1.x releases, breaking changes are released as major versions., for example in v2.0.0
+   * For projects on v0.x releases, breaking changes are released as minor versions, for example in v0.2.0
+   * For projects on v1.x releases, breaking changes are released as major versions, for example in v2.0.0
 
-2. Each project has its own lifecycle and releases, one may evolve faster than others
+2. Each project has its own lifecycle and releases, one may evolve faster than others.
 
 3. A new major or minor version is released once a month containing features, fixes, and potentially breaking changes.
 
    * The type of the version, either major or minor is decided based on the changes included in that release and the current version.
-   * We might skip releasing a new version if there's no changes in that period of time.
+   * We might skip releasing a new version if there are no changes in that period of time.
 
 5. Bug fixes and security patches are released as soon as possible, either as a patch or minor version depending on the current version.
 
 ## Git strategy
 
-Change are applied to the `main` branch through feature branches. A pull requested is opened, reviewed, and merged into `main`
+Changes are applied to the `main` branch through feature branches. A pull requeste is opened, reviewed, and merged into `main`
 once it's ready to avoid merge conflicts and make that code available on `main` in case anyone wants to test or use it.
 
 Along with the `main` and feature branches, we also keep release branches for each version, for example `v0.1.x`, `v2.0.x`, and so on.
@@ -37,9 +37,9 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 4. Commit the changes to upstream `main` if necessary
 5. Checkout the release branch and make sure it's up to date with upstream
 6. Make sure all the relevant changes have been cherry-picked from `main` to the release branch
-7. Update the version in the files `mix.exs` and `package.json` and throut docs/ files
+7. Update the version in the files `mix.exs` and `package.json` and throughout docs/ files
 8. Run `mix assets.build`
-9. Make sure all relevant changes, especially breaking changes, are documented in a upgrade guide in `guides/upgrading`
+9. Make sure all relevant changes, especially breaking changes, are documented in an upgrade guide in `guides/upgrading`
 10. Commit the changes
 11. Create a new git tag and push upstream
 12. Publish the package to [Hex.pm](https://hex.pm) package registry
