@@ -27,8 +27,7 @@ The roadmap is available at https://github.com/BeaconCMS/beacon_live_admin/blob/
 
 ## Contributing
 
-Check out the [CONTRIBUTING.md](https://github.com/BeaconCMS/beacon/blob/main/CONTRIBUTING.md) doc for overall guidelines to contribute to this project,
-and please engage on our [Discussions](https://github.com/orgs/BeaconCMS/discussions) forum to ask questions, request new features, or keep up with the latest news.
+Check out the [CONTRIBUTING.md](https://github.com/BeaconCMS/beacon/blob/main/CONTRIBUTING.md) documentation for overall guidelines to contribute to this project.
 
 To start working with Beacon, follow the [Local Development](https://github.com/BeaconCMS/beacon#local-development) steps to run a local project or watch the video below to understand more
 about Beacon internals:

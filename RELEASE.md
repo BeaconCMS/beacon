@@ -41,15 +41,3 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 8. Create a new git tag and push upstream
 9. Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
 10. Publish the package to [Hex.pm](https://hex.pm) package registry
-
-## Prioritization
-
-Issues tagged as [roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap) indicate the work that is planned to be worked
-next on the short term, those have more priority over the other issues and will be included in the next releases.
-
-Voting on [Feature Requests on our Discussion forum](https://github.com/orgs/BeaconCMS/discussions/categories/feature-requests)
-also helps us to prioritize the work, so feel free to vote on the features you'd like to see implemented and those will have more
-priority over the other issues.
-
-Finally keep in mind that we don't guarantee which exact issues will be included in the very next release and we may give more
-priority to specific issues as decided by the core team as needed.

@@ -1,19 +1,26 @@
 # Roadmap
 
-Planned work for Beacon and BeaconLiveAdmin
+Planned work for Beacon and related projects.
 
-See current issues tagged as `roadmap` on [beacon](https://github.com/BeaconCMS/beacon/labels/roadmap) and [beacon_live_admin](https://github.com/BeaconCMS/beacon_live_admin/labels/roadmap).
-Those issues have priority over the rest and will be included in the next releases.
+The issues tagged as `roadmap` in [beacon](https://github.com/BeaconCMS/beacon/labels/roadmap) and [beacon_live_admin](https://github.com/BeaconCMS/beacon_live_admin/labels/roadmap)
+refer to issues that solve items in this roadmap. They have priority over others and will be included in the next releases.
+
+The priority is defined by demand, added value to the project, and [contributions](CONTRIBUTING.md). But we also reserve the right to change this roadmap
+at any time to reflect changes in the project or the community as we learn more and grow.
+
+"Resources" in this document refers to resources managed by Beacon, such as pages, layouts, components, live data, media assets, and more.
 
 ## Adoption
 - Provide more guides and recipes as we learn more about what the community needs
 - Make code documentation part of the development process
-- Update https://beaconcms.org
+- Update the content of https://beaconcms.org
+- Add support for more LiveView resources like JS hooks
+- Admin interactive tour for user onboarding
 
 ## Content Creation Experience
 
 #### Visual Editor
-- High-level visual controls to edit styles, effects, and attributes in general. Including bot not limited to:
+- High-level visual controls that generate the underlyng styles, effects, and attributes in general. Including bot not limited to:
   - colors
   - sizing
   - positioning
@@ -21,43 +28,56 @@ Those issues have priority over the rest and will be included in the next releas
   - visibility
   - navigation (links)
   - eex (:if conditionals for example)
-  - and more
-- Breakpoints manager and preview
-- Typography to load and preview custom fonts
-- Enable the visual editor on Components and Layouts
-- Inline links to edit pages and media assets
+  - animiations
+- Breakpoints manager to build responsive designs
+- Typography system to load and preview custom fonts
+- Enable the visual editor on Components and Layouts editors
+- Inline links in the preview to jump to pages, layouts, components, and media assets
 
 #### Code Editor
-- Rich Markdown editor that provides high-level visual controls to upload media assets, create page links, and more.
+- Rich Markdown editor that provides high-level visual controls to upload media assets, create page links, embed Phoenix components, and more.
 
 #### Media Library
 - Redesign Media Library - https://www.figma.com/design/k8NhxbRRb8hm4fc1RQHms1/Media-Library?node-id=30-57434
 
 #### Admin Interface
-- Adopt a set of standard components and colors on built-in pages
-- Expose built-in components and colors to build custom pages
+- Adopt a component/UI library to improve the standard look and feel of admin pages
+- Expose built-in components and colors to allow users build custom pages easily
 
 ## Tooling, Integration, and Extensibility
 
-### Optimize the Loader process
-  - Load dependent modules lazily
-  - Introduce a lock to control module compilation
-### Introduce a Plugin system to extend and change Beacon behavior and data
+#### Resource Loading
+  - Make use of `:error_handler` to load modules dynamicaly on-the-fly
+  - Introduce a lock to control module compilation and avoid race conditions
+
+### Plugin System
   - Load at runtime
   - Refresh site config at runtime
-  - Define the behaviour of plugin modules
-  - Migrate data
-  - Bootstrap using a mix task, potentially using Igniter
+  - Define the behaviour and config of plugins
+  - Migrate and rollback data
+  - Start new plugin projects with Igniter
   - Preview and reload on development
-  - Extract AWS Provider into a plugin
+  - Expand existing hooks to allow modifying more parts of Beacon internal lifecycle
   - Create a Plausible plugin
-### Better integration between Beacon and your existing Phoenix app
-  - Remove limitations of current mix tasks to install and add new sites to existing apps, potentially using Igniter
+  - Extract Media Library S3 Provider into a plugin
+
+### CLI and Local Environment
+  - Fetch resources from running sites
+  - Upload local resources to running sites
+  - Generate new Phoenix projects with Beacon or install Beacon in single and umbrella apps with an Igniter task
+  - Igniter task to generate new sites and resources
+
+### Integration with host Phoenix app
   - Support Windows
   - Support other major database vendors as MySQL, MSSQL, and SQLite
   - Introduce Beacon.Test to help test resources and lifecycles
+  - Reuse some resources between the host app and Beacon, such as components and stylesheets.
+
+### SEO
+- Redirect manager to handle deleted pages and broken links
+- Tool to search the top Google search results and compare the terms used in your site - https://x.com/ac_alejos/status/1774171644090544627
+
 ### General
-- Built-in SEO tools
 - Create, change, and load new sites at runtime on the admin interface
 - Release Components as plugins to quickly bootstrap new pages and serve as example
 - LiveView Native integration
