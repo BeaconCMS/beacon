@@ -14,7 +14,7 @@ assignees: ''
 * Phoenix LiveView version (mix deps):
 * Beacon version (mix deps):
 * Operating system:
-* Browsers you attempted to reproduce this bug on (the more the merrier):
+* Browsers on which you attempted to reproduce this bug (the more the merrier):
 
 ### Actual behavior
 

@@ -5,8 +5,8 @@
 * Issues aligned with our [roadmap](https://github.com/BeaconCMS/beacon_live_admin/blob/main/ROADMAP.md) have higher priority
   and those are [labeled as roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap)
 * [Bugs](https://github.com/BeaconCMS/beacon/labels/bug) tend to have higher priority unless they are of minor impact
-* If unsure where to start, look for issues tagged as [good first issue](https://github.com/BeaconCMS/beacon/labels/good%20first%20issue) to find good candidates of issues to start contributing
-* Issues tagged [help wanted](https://github.com/BeaconCMS/beacon/labels/help%20wanted) are also good candidates but may require more knowledge of the project and time
+* If unsure where to start, look for issues tagged as [good first issue](https://github.com/BeaconCMS/beacon/labels/good%20first%20issue) to find good candidates for your first contribution
+* Issues tagged [help wanted](https://github.com/BeaconCMS/beacon/labels/help%20wanted) are also good candidates but may require more project knowledge and/or time investment
 * Issues are usually tagged by type and area to help identify their priority aligned to our roadmap
 
 ## Improve documentation
@@ -39,8 +39,8 @@ issue's number to the description of your pull-request.
 
 ## Prioritization
 
-Issues tagged as [roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap) indicate the work that is planned to be worked
-next on the short term. Those have more priority over the other issues and will be included in the next releases.
+Issues tagged as [roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap) indicate the work that is planned to be done
+next in the short term. Those have more priority over the other issues and will be included in the next releases.
 
 Engaging on [feature request issues](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request) also helps us to prioritize the work,
 so feel free to add comments or discuss on feature requests you'd like to see implemented and those will have more priority over the other issues.
