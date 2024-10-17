@@ -24,6 +24,7 @@ Supervisor.start_link(
          repo: Beacon.BeaconTest.Repo,
          mode: :testing,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js"]),
+         tailwind_css: Path.join([File.cwd!(), "test", "support", "tailwind.custom.css"]),
          live_socket_path: "/custom_live",
          extra_page_fields: [Beacon.BeaconTest.PageFields.TagsField],
          lifecycle: [

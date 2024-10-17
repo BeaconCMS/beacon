@@ -22,7 +22,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @spec config(Beacon.Types.Site.t()) :: String.t()
   def config(site) when is_atom(site) do
     site
-    |> tailwind_config!()
+    |> tailwind_config_path!()
+    |> File.read!()
+  end
+
+  @doc false
+  def css(site) when is_atom(site) do
+    site
+    |> tailwind_css_path!()
     |> File.read!()
   end
 
@@ -39,7 +46,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   end
 
   defp generate_tailwind_config_file(site, tmp_dir, content) do
-    tailwind_config = tailwind_config!(site)
+    tailwind_config = tailwind_config_path!(site)
 
     unless Application.get_env(:tailwind, :version) do
       default_tailwind_version = Beacon.tailwind_version()
@@ -158,16 +165,32 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
     System.cmd(Tailwind.bin_path(), args, opts)
   end
 
-  defp tailwind_config!(site) do
+  defp tailwind_config_path!(site) do
     tailwind_config = Beacon.Config.fetch!(site).tailwind_config
 
     if File.exists?(tailwind_config) do
       tailwind_config
     else
       raise """
-      Tailwind config not found or invalid.
+      Tailwind config not found
 
       Make sure the provided file exists at #{inspect(tailwind_config)}
+
+      See Beacon.Config for more info.
+      """
+    end
+  end
+
+  defp tailwind_css_path!(site) do
+    tailwind_css = Beacon.Config.fetch!(site).tailwind_css
+
+    if File.exists?(tailwind_css) do
+      tailwind_css
+    else
+      raise """
+      Tailwind CSS not found
+
+      Make sure the provided file exists at #{inspect(tailwind_css)}
 
       See Beacon.Config for more info.
       """
@@ -220,9 +243,9 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   end
 
   defp generate_input_css_file!(tmp_dir, site) do
-    beacon_tailwind_css_path = Path.join([Application.app_dir(:beacon), "priv", "beacon_tailwind.css"])
+    tailwind_css_path = tailwind_css_path!(site)
 
-    app_css =
+    beacon_stylesheets =
       site
       |> Beacon.Content.list_stylesheets()
       |> Enum.map_join(fn stylesheet ->
@@ -230,7 +253,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
       end)
 
     input_css_path = Path.join(tmp_dir, "input.css")
-    File.write!(input_css_path, IO.iodata_to_binary([File.read!(beacon_tailwind_css_path), "\n", app_css]))
+    File.write!(input_css_path, IO.iodata_to_binary([File.read!(tailwind_css_path), "\n", beacon_stylesheets]))
     input_css_path
   end
 
