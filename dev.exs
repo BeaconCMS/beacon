@@ -162,12 +162,9 @@ dev_seeds = fn ->
   Beacon.Content.create_component!(%{
     site: "dev",
     name: "sample_component",
-    template: """
-    <li>
-      <%= @val %>
-    </li>
-    """,
-    example: "<.sample_component val={1} />"
+    attrs: [%{name: "project", type: "any", opts: [required: true]}],
+    template: ~S|<span id={"project-#{@project.id}"}><%= @project.name %></span>|,
+    example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
   })
 
   Beacon.Content.create_snippet_helper!(%{
@@ -239,7 +236,7 @@ dev_seeds = fn ->
         "author_id" => 1
       },
       template: """
-      <main>
+      <main class="custom-font-style">
         <%!-- Home Page --%>
 
         <h1 class="text-violet-500">Dev</h1>
@@ -258,7 +255,7 @@ dev_seeds = fn ->
         </div>
 
         <div>
-          Sample component: <%= my_component("sample_component", val: 1) %>
+          Sample component: <%= my_component("sample_component", project: %{id: 1, name: "Beacon"}) %>
         </div>
 
        <div>
@@ -1184,7 +1181,8 @@ dev_site = [
   repo: Demo.Repo,
   endpoint: DemoWeb.Endpoint,
   router: DemoWeb.Router,
-  skip_boot?: true,
+  mode: :manual,
+  tailwind_css: "test/support/tailwind.custom.css",
   extra_page_fields: [Demo.Beacon.TagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
@@ -1221,7 +1219,7 @@ Task.start(fn ->
          repo: Demo.Repo,
          endpoint: DemoWeb.Endpoint,
          router: DemoWeb.Router,
-         skip_boot?: true
+         mode: :manual
        ]
      ]}
   ]

@@ -47,13 +47,20 @@ defmodule Beacon.Config do
   @type repo :: module()
 
   @typedoc """
-  Disables site booting.
+  Defines the mode which the site will operate.
 
-  Disables inserting default content data and routes, loading modules, and broadcasting events that trigger actions in Beacon lifecycle.
+  Default is `:live` which will load resources during boot, broadcast events on content change,
+  and execute operations asyncly. That's the normal mode for production.
 
-  See `Beacon.boot/1` for more info.
+  The `:testing` mode is suited for testing environments,
+  you should always use it when running tests that involve Beacon resources.
+
+  And the `:manual` mode is similar to `:testing` but it won't boot load any resource,
+  it's useful to seed data.
+
+  You can always change to `:live` mode at runtime by calling `Beacon.boot/1`.
   """
-  @type skip_boot? :: boolean()
+  @type mode :: :live | :testing | :manual
 
   @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
@@ -61,16 +68,30 @@ defmodule Beacon.Config do
   @type css_compiler :: module()
 
   @typedoc """
-  Path to a custom tailwind config.
+  Path to a custom Tailwind config.
 
   ## Example
 
-      # use the config file `priv/tailwind.config.js` in your app named `my_app`
+      # use the config file `priv/tailwind.config.js` from your app named `my_app`
       Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js")
 
   See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
   """
   @type tailwind_config :: Path.t()
+
+  @typedoc """
+  Path to a custom Tailwind CSS
+
+  Note that Tailwind base, components, and utilities must be imported in this file.
+
+  ## Example
+
+      # use the file `assets/css/app.css` from your app named `my_app`
+      Path.join([Application.app_dir(:my_app, "assets"), "css", "app.css"])
+
+  See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
+  """
+  @type tailwind_css :: Path.t()
 
   @typedoc """
   Path of a LiveView socket where Beacon should connect to.
@@ -178,9 +199,10 @@ defmodule Beacon.Config do
           endpoint: endpoint(),
           router: router(),
           repo: repo(),
-          skip_boot?: skip_boot?(),
+          mode: mode(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
+          tailwind_css: tailwind_css(),
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
@@ -211,11 +233,12 @@ defmodule Beacon.Config do
             endpoint: nil,
             router: nil,
             repo: nil,
-            skip_boot?: false,
+            mode: :live,
             # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
             # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: nil,
+            tailwind_css: nil,
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,
@@ -241,9 +264,10 @@ defmodule Beacon.Config do
           | {:endpoint, endpoint()}
           | {:router, router()}
           | {:repo, repo()}
-          | {:skip_boot?, skip_boot?()}
+          | {:mode, mode()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
+          | {:tailwind_css, tailwind_css()}
           | {:live_socket_path, live_socket_path()}
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
@@ -267,11 +291,13 @@ defmodule Beacon.Config do
 
     * `:repo` - `t:repo/0` (required)
 
-    * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
+    * `:mode` - `t:mode/0` (optional). Defaults to `:live`.
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
     * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")`.
+
+    * `:tailwind_css` - `t:tailwind_css/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css")`.
 
     * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 
@@ -306,6 +332,7 @@ defmodule Beacon.Config do
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js"),
+        tailwind_css: Path.join([Application.app_dir(:my_app, "assets"), "css", "app.css"]),
         template_formats: [
           {:custom_format, "My Custom Format"}
         ],
@@ -332,9 +359,10 @@ defmodule Beacon.Config do
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
-        skip_boot?: false,
+        mode: :live,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
+        tailwind_css: "/my_app/assets/css/app.css",
         live_socket_path: "/live",
         safe_code_check: false,
         template_formats: [
@@ -385,6 +413,8 @@ defmodule Beacon.Config do
     opts[:router] || raise ConfigError, "missing required option :router"
     ensure_repo(opts[:repo])
 
+    tailwind_css = Keyword.get(opts, :tailwind_css) || Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css")
+
     template_formats =
       Keyword.merge(
         [
@@ -415,6 +445,7 @@ defmodule Beacon.Config do
     opts =
       opts
       |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
+      |> Keyword.put(:tailwind_css, tailwind_css)
       |> Keyword.put(:template_formats, template_formats)
       |> Keyword.put(:lifecycle, lifecycle)
       |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)

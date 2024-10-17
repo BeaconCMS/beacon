@@ -15,49 +15,65 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, skip_boot?: true}) do
-    Logger.debug("Beacon.Boot is disabled on site #{site}")
+  def init(%{site: site, mode: :manual}) do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
 
     # Router helpers are always available
+    # TODO: we should be able to remove the next line after implementing `:error_handler` callbacks
     Beacon.Loader.reload_routes_module(site)
 
     :ignore
   end
 
-  def init(config), do: do_init(config)
+  def init(%{site: site, mode: :testing}) do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
 
-  def do_init(config) do
-    Logger.info("Beacon.Boot booting site #{config.site}")
+    # reload shared modules used by layouts and pages
+    # Router helpers are always available
+    # TODO: we should be able to remove the next lines after implementing `:error_handler` callbacks
+    Beacon.Loader.reload_routes_module(site)
+    Beacon.Loader.reload_components_module(site)
+    Beacon.Loader.reload_live_data_module(site)
 
-    task_supervisor = Beacon.Registry.via({config.site, TaskSupervisor})
+    :ignore
+  end
+
+  def init(config), do: live_init(config.site)
+
+  # TODO: we should be able to remove most of the Loader calls here, probably keep only runtime js/css
+  def live_init(site) do
+    Logger.info("Beacon.Boot booting site #{site}")
+    task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
+
+    # temporary disable module reloadin so we can populate data more efficiently
+    %{mode: :manual} = Beacon.Config.update_value(site, :mode, :manual)
+    Beacon.Loader.populate_default_components(site)
+    Beacon.Loader.populate_default_layouts(site)
+    Beacon.Loader.populate_default_error_pages(site)
+    Beacon.Loader.populate_default_home_page(site)
+
+    %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
 
     # Sigils and router helpers
-    Beacon.Loader.reload_routes_module(config.site)
+    Beacon.Loader.reload_routes_module(site)
 
-    # Layouts and pages depend on the components module so we need to load it first
-    Beacon.Loader.populate_default_components(config.site)
-    Beacon.Loader.reload_components_module(config.site)
-
-    Beacon.Loader.populate_default_layouts(config.site)
-
-    # Pages depend on default layouts
-    Beacon.Loader.populate_default_error_pages(config.site)
-    Beacon.Loader.populate_default_home_page(config.site)
+    # Layouts and pages depend on the components module so we need to load them first
+    Beacon.Loader.reload_components_module(site)
 
     assets = [
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_css(config.site) end)
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_css(site) end)
     ]
 
     modules = [
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_stylesheet_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_snippets_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_live_data_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_layouts_modules(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_error_page_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_pages_modules(config.site, per_page: 20) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_info_handlers_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_event_handlers_module(config.site) end)
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_stylesheet_module(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_snippets_module(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_live_data_module(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_layouts_modules(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_error_page_module(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_pages_modules(site, per_page: 20) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_info_handlers_module(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_event_handlers_module(site) end)
       # TODO: load main pages (order_by: path, per_page: 10) to avoid SEO issues
     ]
 
@@ -66,11 +82,8 @@ defmodule Beacon.Boot do
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))
 
-    # Reset option to enable event broadcasting even after booting manually
-    Beacon.Config.update_value(config.site, :skip_boot?, false)
-
     # TODO: add telemetry to measure booting time
-    Logger.info("Beacon.Boot finished booting site #{config.site}")
+    Logger.info("Beacon.Boot finished booting site #{site}")
 
     :ignore
   end
