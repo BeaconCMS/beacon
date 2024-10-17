@@ -1758,7 +1758,7 @@ defmodule Beacon.Content do
           %{name: "pages", type: "list", opts: [default: []]}
         ],
         slots: [
-          %{name: "inner_block", opts: [default: nil]}
+          %{name: "inner_block", opts: []}
         ],
         body:
           ~S"""
