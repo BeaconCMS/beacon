@@ -92,8 +92,8 @@ defmodule Beacon.MixProject do
 
   defp override_dep(dep, requirement, env_version, env_path) do
     cond do
-      version = System.get_env(env_version) -> {dep, version}
-      path = System.get_env(env_path) -> {dep, path: path}
+      version = System.get_env(env_version) -> {dep, version, override: true}
+      path = System.get_env(env_path) -> {dep, path: path, override: true}
       :default -> {dep, requirement}
     end
   end
