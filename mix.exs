@@ -54,7 +54,6 @@ defmodule Beacon.MixProject do
       # Overridable
       override_dep(:phoenix, "~> 1.7", "PHOENIX_VERSION", "PHOENIX_PATH"),
       override_dep(:phoenix_live_view, "~> 0.20", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
-      override_dep(:live_monaco_editor, "~> 0.1", "LIVE_MONACO_EDITOR_VERSION", "LIVE_MONACO_EDITOR_PATH"),
       override_dep(:mdex, "~> 0.2", "MDEX_VERSION", "MDEX_PATH"),
 
       # Runtime
@@ -92,8 +91,8 @@ defmodule Beacon.MixProject do
 
   defp override_dep(dep, requirement, env_version, env_path) do
     cond do
-      version = System.get_env(env_version) -> {dep, version}
-      path = System.get_env(env_path) -> {dep, path: path}
+      version = System.get_env(env_version) -> {dep, version, override: true}
+      path = System.get_env(env_path) -> {dep, path: path, override: true}
       :default -> {dep, requirement}
     end
   end

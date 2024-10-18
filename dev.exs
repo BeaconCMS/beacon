@@ -236,7 +236,7 @@ dev_seeds = fn ->
         "author_id" => 1
       },
       template: """
-      <main>
+      <main class="custom-font-style">
         <%!-- Home Page --%>
 
         <h1 class="text-violet-500">Dev</h1>
@@ -1182,6 +1182,7 @@ dev_site = [
   endpoint: DemoWeb.Endpoint,
   router: DemoWeb.Router,
   mode: :manual,
+  tailwind_css: "test/support/tailwind.custom.css",
   extra_page_fields: [Demo.Beacon.TagsField],
   lifecycle: [upload_asset: [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2, _480w: &Beacon.Lifecycle.Asset.variant_480w/2]],
   default_meta_tags: [
