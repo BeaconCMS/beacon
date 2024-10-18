@@ -3,6 +3,7 @@ defmodule Beacon.Loader.RoutesTest do
   use Beacon.Test
 
   # Beacon.Loader.fetch_routes_module(:booted)
+  Process.flag(:error_handler, Beacon.ErrorHandler)
   import :"Elixir.Beacon.Web.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"
 
   test "beacon_asset_path" do
