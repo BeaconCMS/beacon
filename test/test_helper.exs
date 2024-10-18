@@ -171,8 +171,5 @@ Enum.each(
   &Beacon.BeaconTest.Repo.delete_all/1
 )
 
-# Use Beacon custom error handler to automatically load modules on-demand
-Process.flag(:error_handler, Beacon.ErrorHandler)
-
 ExUnit.start(exclude: [:skip])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.BeaconTest.Repo, :manual)
