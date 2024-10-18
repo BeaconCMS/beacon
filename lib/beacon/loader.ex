@@ -65,8 +65,13 @@ defmodule Beacon.Loader do
   # Client
 
   def module_name(site, resource) do
-    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16(case: :lower)
-    Module.concat([Beacon.Web.LiveRenderer, "#{site_hash}", "#{resource}"])
+    Module.concat([Beacon.Web.LiveRenderer, "#{hash(site)}", "#{resource}"])
+  end
+
+  def hash(site) do
+    :md5
+    |> :crypto.hash(Atom.to_string(site))
+    |> Base.encode16(case: :lower)
   end
 
   def ping(site) do
@@ -169,10 +174,6 @@ defmodule Beacon.Loader do
     Loader.InfoHandlers.module_name(site)
   end
 
-  def maybe_reload_page_module(site, page_id) do
-    maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
-  end
-
   def reload_snippets_module(site) do
     call_worker(site, :reload_snippets_module, {:reload_snippets_module, [site]})
   end
@@ -242,14 +243,6 @@ defmodule Beacon.Loader do
 
   def unload_page_module(site, page_id) do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
-  end
-
-  defp maybe_reload(module, reload_fun) do
-    if :erlang.module_loaded(module) do
-      {:ok, module}
-    else
-      reload_fun.()
-    end
   end
 
   # Server
