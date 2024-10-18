@@ -5,7 +5,7 @@ defmodule Beacon.ErrorHandlerCompileHook do
 
   defmacro __before_compile__(_env) do
     quote do
-      Process.flag(:error_handler, Beacon.ErrorHandler)
+      @set_error_handler_flag Process.flag(:error_handler, Beacon.ErrorHandler)
     end
   end
 end

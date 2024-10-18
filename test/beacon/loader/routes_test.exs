@@ -2,9 +2,7 @@ defmodule Beacon.Loader.RoutesTest do
   use Beacon.DataCase, async: true
   use Beacon.Test
 
-  setup do
-    Process.flag(:error_handler, Beacon.ErrorHandler)
-  end
+  @before_compile Beacon.ErrorHandlerCompileHook
 
   test "beacon_asset_path" do
     import :"Elixir.Beacon.Web.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"
