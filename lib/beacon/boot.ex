@@ -25,8 +25,9 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  def init(config) do
-    site = config.site
+  def init(%{site: site}), do: init(site)
+
+  def init(site) when is_atom(site) do
     Logger.info("Beacon.Boot booting site #{site}")
     task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
 

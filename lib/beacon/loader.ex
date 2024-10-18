@@ -245,14 +245,6 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
-  defp maybe_reload(module, reload_fun) do
-    if :erlang.module_loaded(module) do
-      {:ok, module}
-    else
-      reload_fun.()
-    end
-  end
-
   # Server
 
   def handle_continue(:async_init, config) do
