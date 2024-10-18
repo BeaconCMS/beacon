@@ -3,8 +3,12 @@ defmodule Beacon.Loader.RoutesTest do
   use Beacon.Test
 
   # Beacon.Loader.fetch_routes_module(:booted)
-  Process.flag(:error_handler, Beacon.ErrorHandler)
+  @compile {:no_warn_undefined, :"Elixir.Beacon.Web.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"}
   import :"Elixir.Beacon.Web.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"
+
+  setup do
+    Process.flag(:error_handler, Beacon.ErrorHandler)
+  end
 
   test "beacon_asset_path" do
     assert beacon_asset_path("logo.webp") == "/__beacon_assets__/booted/logo.webp"
