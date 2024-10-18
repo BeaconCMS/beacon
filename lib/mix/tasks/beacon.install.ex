@@ -3,11 +3,9 @@ defmodule Mix.Tasks.Beacon.Install do
 
   @example "mix beacon.install --site my_site --path /"
 
-  @shortdoc "A short description of your task"
+  @shortdoc "Install Beacon in a Phoenix LiveView app"
   @moduledoc """
   #{@shortdoc}
-
-  Longer explanation of your task
 
   ## Example
 
@@ -17,42 +15,27 @@ defmodule Mix.Tasks.Beacon.Install do
 
   ## Options
 
-  * `--example-option` or `-e` - Docs for your option
+  * `--site` or `-s` (required) - The name of your site
+  * `--path` or `-p` (optional, defaults to "/") - Route prefix where your site will be mounted
+
   """
 
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
-      # dependencies to add
-      adds_deps: [],
-      # dependencies to add and call their associated installers, if they exist
-      installs: [],
-      # An example invocation
       example: @example,
-      # Accept additional arguments that are not in your schema
-      # Does not guarantee that, when composed, the only options you get are the ones you define
-      extra_args?: false,
-      # A list of environments that this should be installed in, only relevant if this is an installer.
-      only: nil,
-      # a list of positional arguments, i.e `[:file]`
-      positional: [],
-      # Other tasks your task composes using `Igniter.compose_task`, passing in the CLI argv
-      # This ensures your option schema includes options from nested tasks
       composes: ["beacon.gen.site"],
-      # `OptionParser` schema
       schema: [path: :string, site: :string],
-      # CLI aliases
       aliases: [p: :path, s: :site],
       defaults: [path: "/"]
     }
   end
 
   def igniter(igniter, argv) do
-    # extract positional arguments according to `positional` above
-    {arguments, argv} = positional_args!(argv)
-    # extract options according to `schema` and `aliases` above
+    {_arguments, argv} = positional_args!(argv)
     options = options!(argv)
 
-    # Do your work here and return an updated igniter
+    dbg options
+
     igniter
     |> Igniter.Project.Formatter.import_dep(:beacon)
     |> gen_site(options, argv)
