@@ -28,6 +28,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   @doc false
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
+      group: :beacon,
       example: @example,
       schema: [site: :string, path: :string],
       aliases: [s: :site, p: :path],
