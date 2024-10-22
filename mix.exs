@@ -78,6 +78,7 @@ defmodule Beacon.MixProject do
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
       {:igniter, "~> 0.3"},
+      # {:igniter, path: "/Users/leandro/code/github/leandrocp/igniter", override: true},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -86,7 +87,8 @@ defmodule Beacon.MixProject do
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:esbuild, "~> 0.5", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:bypass, "~> 2.1", only: :test}
+      {:bypass, "~> 2.1", only: :test},
+      {:phx_new, "~> 1.7", only: :test, runtime: false}
     ]
   end
 
