@@ -2,7 +2,7 @@
 
 ## Objective
 
-Create your first site to get familiar with the install command and the most common operations to manage your site.
+Create your first site to get familiar with Beacon resources and the most common operations to manage your site.
 
 ## Prerequisites
 
@@ -10,79 +10,17 @@ In order to create and serve sites, you'll need a Phoenix LiveView application w
 
 Follow the [Beacon installation guide](installation.md) to set up the environment before proceeding with this guide.
 
-## Setup the database schema
+## Setup
 
-Site data is stored in the database so we need to create the necessary tables first. Let's use a Ecto migration to perform this task. Execute:
-
-```sh
-mix ecto.gen.migration create_beacon_tables
-```
-
-Then go to the generated migration (usually in `/priv/repo/migrations`) and change the migration to look like this:
-
-```elixir
-defmodule MyApp.Repo.Migrations.CreateBeaconTables do
-  use Ecto.Migration
-  def up, do: Beacon.Migration.up()
-  def down, do: Beacon.Migration.down()
-end
-```
-
-## Generating the site
-
-Now it's time to create your first site. You need to change some files in your application but Beacon provides a generator to help you with that.
-
-In the root of your application, execute:
+Beacon provides a command to get your site up and running quickly. Open a terminal and run the following command:
 
 ```sh
-mix beacon.install --site my_site --path /
+mix beacon.gen.site --site my_site --path /
 ```
-
-## Configuring the routes
-
-To access the admin interface and the site we just created, both needs to be mounted in your application router. Open the file `router.ex` and change it to look like this:
-
-```elixir
-defmodule MyAppWeb.Router do
-  use MyAppWeb, :router
-
-  pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {MyAppWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-    plug Beacon.LiveAdmin.Plug # <- add this line
-  end
-
-  use Beacon.Router           # <- add this line
-  use Beacon.LiveAdmin.Router # <- add this line
-
-  # add this scope
-  scope "/admin" do
-    pipe_through :browser
-    beacon_live_admin "/"
-  end
-
-  # add this scope
-  scope "/" do
-    pipe_through :browser
-    beacon_site "/", site: :my_site
-  end
-end
-```
-
-Replace `MyApp` with your application name.
-
-For the sake of simplicity of this guide we're assuming that no other route is available, but if you intend to have more routes in your application,
-you have to pay attention to the order in which the routes are defined, see the `Beacon.Router` module for more information.
 
 ## Starting the application
 
-We're done configuring your site, let's run the project to make sure it's working.
-
-Firstly execute the following to install dependencies:
+Firstly execute the following to install all dependencies:
 
 ```sh
 mix setup
