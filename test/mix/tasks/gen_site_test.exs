@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Beacon.Gen.SiteTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
-  @opts ~w(--site my_site --path / --yes)
+  @opts ~w(--site my_site --path /)
 
   describe "options validation" do
     test "validates site" do

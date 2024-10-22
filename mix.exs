@@ -78,7 +78,6 @@ defmodule Beacon.MixProject do
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
       {:igniter, "~> 0.3"},
-      # {:igniter, path: "/Users/leandro/code/github/leandrocp/igniter", override: true},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},

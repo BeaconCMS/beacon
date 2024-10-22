@@ -46,16 +46,15 @@ defmodule Mix.Tasks.Beacon.Install do
   @doc false
   def igniter(igniter, argv \\ []) do
     {_arguments, argv} = positional_args!(argv)
-    _options = options!(argv)
+    options = options!(argv)
 
     igniter
     |> Igniter.Project.Formatter.import_dep(:beacon)
-    |> error_html()
-
-    # |> gen_site(options, argv)
+    |> replace_error_html()
+    |> maybe_gen_site(options, argv)
   end
 
-  defp error_html(igniter) do
+  defp replace_error_html(igniter) do
     app_name = Igniter.Project.Application.app_name(igniter)
 
     {igniter, router} = Igniter.Libs.Phoenix.select_router(igniter)
@@ -70,11 +69,11 @@ defmodule Mix.Tasks.Beacon.Install do
     )
   end
 
-  # defp gen_site(igniter, options, argv) do
-  #   if options[:site] do
-  #     Igniter.compose_task("beacon.gen.site", argv)
-  #   else
-  #     igniter
-  #   end
-  # end
+  defp maybe_gen_site(igniter, options, argv) do
+    if options[:site] do
+      Igniter.compose_task(igniter, "beacon.gen.site", argv)
+    else
+      igniter
+    end
+  end
 end
