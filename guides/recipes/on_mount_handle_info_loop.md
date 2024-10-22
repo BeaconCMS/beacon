@@ -1,6 +1,6 @@
 # Handle async and continuous updates with handle_info and on_mount
 
-Using [Live Data](https://hexdocs.pm/beacon/0.1.0-rc.2/Beacon.Content.html#create_live_data/1) assigns, [on_mount](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#on_mount/1) callbacks, and  corresponding [handle_info](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_info/2) handlers is a pattern that you can leverage to achieve optimistic UI for your pages.
+Using [Live Data](https://hexdocs.pm/beacon/Beacon.Content.html#create_live_data/1) assigns, [on_mount](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#on_mount/1) callbacks, and corresponding [handle_info](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#c:handle_info/2) handlers is a pattern that you can leverage to achieve optimistic UI for your pages.
 
 Suppose you're displaying a Weather widget on your page but fetching the data takes a second, delaying the whole page, even though that widget is not critical to your page and could display dummy data (or no data at all) while the rest of the page is loaded. In this scenario, a Live Data assign would provide the initial dummy data, the on_mount hook request the data to be loaded asyncly, and finally the handle_info loads the data and update that assign.
 
@@ -10,8 +10,8 @@ In this example we're going to update a `DateTime` every `1_000` milliseconds fr
 
 ## Creating the On Mount Handler Module
 
-After completing [your first site](../introduction/your-first-site.md) guide, create a module to handle 
-your `on_mount` callbacks. This is an example, so find a place that works best 
+After completing [your first site](../introduction/your-first-site.md) guide, create a module to handle
+your `on_mount` callbacks. This is an example, so find a place that works best
 for your project structure. Here, we're creating a `my_site_on_mount.ex` file
 in our web path.
 
@@ -42,7 +42,7 @@ in our web path.
 ```
 
 When the socket is connected, we will send a message to `self()` in 1_000 milliseconds
-to `:update_current_time`. 
+to `:update_current_time`.
 
 ```elixir
 defmodule MySiteWeb.OnMount do
