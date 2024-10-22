@@ -9,6 +9,7 @@
   - Support Phoenix LiveView v1.0.0-rc.7
 
 ### Documentation
+  - Link to latest version
   - Update docs to use the new tasks created with Igniter
   - Guide for `on_mount` and `handle_info` [#599](https://github.com/BeaconCMS/beacon/pull/599) by [@djcarpe]
 
