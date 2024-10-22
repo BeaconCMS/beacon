@@ -4,11 +4,19 @@
 
 Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
 
-## Guides
+## Getting Started
 
-Check out the guides to get started and recipes to learn about features and do more with your sites.
+Generate a new Phoenix application with Beacon and Beacon LiveAdmin installed:
 
-If you're new to Beacon you probably want to start with the create your first site guide.
+```sh
+mix archive.install hex phx_new
+mix archive.install hex igniter_new
+mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new --beacon.site my_site
+```
+
+Or check out the guides for more info and recipes to learn about features and do more with your sites.
+
+If you're new to Beacon you probably want to take a look on the [Your First Site](https://hexdocs.pm/beacon/your-first-site.html) guide.
 
 ## Demo
 
