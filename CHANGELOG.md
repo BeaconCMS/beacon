@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 (2024-10-22)
+
+### Enhancements
+  - Support Phoenix LiveView v1.0.0-rc.7
+
+### Documentation
+  - Link to latest version
+  - Guide for `on_mount` and `handle_info` [#599](https://github.com/BeaconCMS/beacon/pull/599) by [@djcarpe]
+
 ## 0.1.0 (2024-10-09)
 
 ### Breaking Changes
