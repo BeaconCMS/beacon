@@ -11,7 +11,7 @@
 ### Documentation
   - Link to latest version
   - Update docs to use the new tasks created with Igniter
-  - Guide for `on_mount` and `handle_info` [#599](https://github.com/BeaconCMS/beacon/pull/599) by [@djcarpe]
+  - Guide for `on_mount` and `handle_info` [#599](https://github.com/BeaconCMS/beacon/pull/599) by @djcarpe
 
 ## 0.1.0 (2024-10-09)
 
@@ -27,7 +27,7 @@
   - Leverage `:manual` mode during boot to avoid unnecessary calls to Tailwind compiler, speeding up the whole process to start sites
   - Enable Markdown options: `:footnotes`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
     See https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html and https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html for more info.
-  - Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
+  - Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by @ddink
 
 ### Fixes
   - Remove unnecessary `:plug_cowboy` dependency - [#594](https://github.com/BeaconCMS/beacon_live_admin/pull/594)
