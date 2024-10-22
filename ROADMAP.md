@@ -78,7 +78,8 @@ as items are completed.
 
 ### SEO
 - Redirect manager to handle deleted pages and broken links
-- Tool to scan and manage terms - https://x.com/ac_alejos/status/1774171644090544627
+- Smart tools to improve content, eg: https://x.com/ac_alejos/status/1774171644090544627
+- Built-in tools to manaage content as sitemaps and feeds.
 
 ### General
 - Create, change, and load new sites at runtime on the admin interface
