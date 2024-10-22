@@ -28,7 +28,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   @doc false
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
-      group: :beacon,
       example: @example,
       schema: [site: :string, path: :string],
       aliases: [s: :site, p: :path],
@@ -82,7 +81,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
     """)
   end
-
 
   defp add_use_beacon_in_router(igniter, router) do
     Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->

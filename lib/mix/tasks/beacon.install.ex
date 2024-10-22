@@ -35,6 +35,7 @@ defmodule Mix.Tasks.Beacon.Install do
   @doc false
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
+      group: :beacon,
       example: @example,
       composes: ["beacon.gen.site"],
       schema: [site: :string, path: :string],
