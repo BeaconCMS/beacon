@@ -43,5 +43,16 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 9. Make sure all relevant changes, especially breaking changes, are documented in an upgrade guide in `guides/upgrading`
 10. Commit the changes
 11. Create a new git tag and push upstream
+
+```sh
+git tag -a v0.1.0 -m "v0.1.0"
+git push --tags
+```
+
 12. Publish the package to [Hex.pm](https://hex.pm) package registry
-13. Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
+
+```sh
+mix hex.publish
+```
+
+13. [Create a new GitHub release](https://github.com/BeaconCMS/beacon/releases/new) from the tag and include the changes from the `CHANGELOG.md` in the release notes
