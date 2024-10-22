@@ -28,6 +28,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   @doc false
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
+      group: :beacon,
       example: @example,
       schema: [site: :string, path: :string],
       aliases: [s: :site, p: :path],
@@ -55,6 +56,15 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> add_beacon_config_in_app_supervisor(site, repo, router, endpoint)
   end
 
+  defp validate_options!(site, path) do
+    cond do
+      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.", site, path)
+      !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".", site, path)
+      !Beacon.Types.Site.valid_path?(path) -> raise_with_help!("Invalid path value. It should start with /.", site, path)
+      :else -> :ok
+    end
+  end
+
   defp raise_with_help!(msg, site, path) do
     Mix.raise("""
     #{msg}
@@ -73,14 +83,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     """)
   end
 
-  defp validate_options!(site, path) do
-    cond do
-      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.", site, path)
-      !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".", site, path)
-      !Beacon.Types.Site.valid_path?(path) -> raise_with_help!("Invalid path value. It should start with /.", site, path)
-      :else -> :ok
-    end
-  end
 
   defp add_use_beacon_in_router(igniter, router) do
     Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
