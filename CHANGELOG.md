@@ -6,11 +6,20 @@
   - Add `beacon.gen.site` task to generate new sites
   - Rework `beacon.install` with Igniter to be composable
   - Introduce config `:tailwind_css`
+
+### Documentation
+  - Update docs to use the new tasks created with Igniter
+
+### Fixes
+  - [Content/Component] - Validate attr opts and slot opts to avoid invalid state and compilation errors
+
+## 0.1.1 (2024-10-22)
+
+### Enhancements
   - Support Phoenix LiveView v1.0.0-rc.7
 
 ### Documentation
   - Link to latest version
-  - Update docs to use the new tasks created with Igniter
   - Guide for `on_mount` and `handle_info` [#599](https://github.com/BeaconCMS/beacon/pull/599) by @djcarpe
 
 ## 0.1.0 (2024-10-09)
