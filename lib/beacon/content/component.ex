@@ -130,12 +130,17 @@ defmodule Beacon.Content.Component do
   @doc false
   def validate_equivalent_options(changeset) do
     opts = get_field(changeset, :opts) |> maybe_binary_to_term()
+    type = get_field(changeset, :type)
     required_opts = get_field_from_opts(changeset, :required)
-
     values_opts = get_field_from_opts(changeset, :values)
     examples_opts = get_field_from_opts(changeset, :examples)
+    not_allowed = Keyword.keys(opts) -- [:required, :default, :examples, :values, :doc]
 
     cond do
+      Enum.count(not_allowed) > 0 and type != "global" ->
+        name = get_field(changeset, :name)
+        add_error(changeset, :opts, "invalid opts for attribute #{inspect(name)}: #{inspect(not_allowed)}")
+
       not is_nil(required_opts) and :default in Keyword.keys(opts) ->
         add_error(changeset, :opts_default, "only one of 'Required' or 'Default' attribute must be given")
 
