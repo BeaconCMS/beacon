@@ -776,6 +776,44 @@ defmodule Beacon.ContentTest do
                Content.create_component(%{site: :my_site, name: "my_component$", template: "test", example: "test"})
     end
 
+    test "validate allowed attrs opts" do
+      assert {
+               :error,
+               %Ecto.Changeset{
+                 changes: %{attrs: [%{errors: [opts: {"invalid opts for attribute \"name\": [:other]", []}]}]},
+                 valid?: false
+               }
+             } =
+               Content.create_component(%{
+                 site: :my_site,
+                 name: "my_component",
+                 template: "test",
+                 example: "test",
+                 attrs: [
+                   %{name: "name", type: "string", opts: [required: true, other: nil]}
+                 ]
+               })
+    end
+
+    test "validate allowed slot opts" do
+      assert {
+               :error,
+               %Ecto.Changeset{
+                 changes: %{slots: [%{errors: [opts: {"invalid opts for slot \"inner_block\": [:default]", []}]}]},
+                 valid?: false
+               }
+             } =
+               Content.create_component(%{
+                 site: :my_site,
+                 name: "my_component",
+                 template: "test",
+                 example: "test",
+                 slots: [
+                   %{name: "inner_block", opts: [default: nil]}
+                 ]
+               })
+    end
+
     test "list components" do
       beacon_component_fixture(site: "my_site", name: "component_a")
       beacon_component_fixture(site: "my_site", name: "component_b")

@@ -36,6 +36,7 @@ defmodule Beacon.Content.ComponentSlot do
     |> cast(attrs, [:name, :opts])
     |> validate_required([:name])
     |> validate_unique_component_slot_names(component_slots_names)
+    |> validate_opts()
     |> cast_assoc(:attrs, with: &ComponentSlotAttr.changeset/2)
   end
 
@@ -49,4 +50,22 @@ defmodule Beacon.Content.ComponentSlot do
       changeset
     end
   end
+
+  @doc false
+  def validate_opts(changeset) do
+    opts = get_field(changeset, :opts) |> maybe_binary_to_term()
+    not_allowed = Keyword.keys(opts) -- [:required, :validate_attrs, :doc]
+
+    cond do
+      Enum.count(not_allowed) > 0 ->
+        name = get_field(changeset, :name)
+        add_error(changeset, :opts, "invalid opts for slot #{inspect(name)}: #{inspect(not_allowed)}")
+
+      true ->
+        changeset
+    end
+  end
+
+  defp maybe_binary_to_term(opts) when is_binary(opts), do: :erlang.binary_to_term(opts)
+  defp maybe_binary_to_term(opts), do: opts
 end
