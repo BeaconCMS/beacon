@@ -10,6 +10,8 @@
 ### Documentation
   - Update docs to use the new tasks created with Igniter
 
+## 0.1.2 (2024-10-23)
+
 ### Fixes
   - [Content/Component] - Validate attr opts and slot opts to avoid invalid state and compilation errors
 
