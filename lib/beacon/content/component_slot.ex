@@ -56,13 +56,11 @@ defmodule Beacon.Content.ComponentSlot do
     opts = get_field(changeset, :opts) |> maybe_binary_to_term()
     not_allowed = Keyword.keys(opts) -- [:required, :validate_attrs, :doc]
 
-    cond do
-      Enum.count(not_allowed) > 0 ->
-        name = get_field(changeset, :name)
-        add_error(changeset, :opts, "invalid opts for slot #{inspect(name)}: #{inspect(not_allowed)}")
-
-      true ->
-        changeset
+    if Enum.count(not_allowed) > 0 do
+      name = get_field(changeset, :name)
+      add_error(changeset, :opts, "invalid opts for slot #{inspect(name)}: #{inspect(not_allowed)}")
+    else
+      changeset
     end
   end
 
