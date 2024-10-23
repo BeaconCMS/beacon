@@ -24,7 +24,7 @@ Changes are applied to the `main` branch through feature branches. A pull reques
 once it's ready to avoid merge conflicts and make that code available on `main` in case anyone wants to test or use it.
 
 Along with the `main` and feature branches, we also keep release branches for each version, for example `v0.1.x`, `v2.0.x`, and so on.
-Changes are cherry-picked from `main` into the release branches as needed, for example if the current published version is `v0.1.1` and
+Changes are [cherry-picked](https://github.com/googleapis/repo-automation-bots/tree/main/packages/cherry-pick-bot) from `main` into the release branches as needed, for example if the current published version is `v0.1.1` and
 a bug fix is merged into `main`, it will be cherry-picked into the `v0.1.x` branch and a new `v0.1.2` version will be released. Similarly,
 if a new feature is merged or a breaking change is introduced, it will also be cherry-picked into a release branch but this time
 into the `v0.2.x` branch because new features and breaking changes require a version bump.
