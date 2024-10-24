@@ -38,7 +38,14 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
       |> Keyword.get(:media_type, media_type_from_name(name))
       |> MediaTypes.normalize()
 
-    size = Keyword.get(opts, :size)
+    size =
+      Keyword.get_lazy(opts, :size, fn ->
+        case File.stat(path) do
+          {:ok, stat} -> stat.size
+          _ -> nil
+        end
+      end)
+
     output = Keyword.get(opts, :output)
     resource = Keyword.get(opts, :resource, Asset.bare_changeset())
     extra = Keyword.get(opts, :extra)
