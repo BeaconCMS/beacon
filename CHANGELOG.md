@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Enhancements
+  - Auto populate Media beacon.webp to be used on components
   - Add `beacon.gen.site` task to generate new sites
   - Rework `beacon.install` with Igniter to be composable
   - Introduce config `:tailwind_css`
