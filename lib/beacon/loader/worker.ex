@@ -26,6 +26,21 @@ defmodule Beacon.Loader.Worker do
     stop(:pong, config)
   end
 
+  def handle_call(:populate_default_media, _from, config) do
+    %{site: site} = config
+    path = Path.join(Application.app_dir(:beacon, "priv"), "beacon.png")
+
+    Beacon.MediaLibrary.UploadMetadata.new(
+      site,
+      path,
+      name: "beacon.png",
+      extra: %{"alt" => "logo"}
+    )
+    |> Beacon.MediaLibrary.upload()
+
+    stop(:ok, config)
+  end
+
   def handle_call(:populate_default_components, _from, config) do
     %{site: site} = config
 
