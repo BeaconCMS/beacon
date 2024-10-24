@@ -47,7 +47,7 @@ as items are completed.
 
 ## Tooling, Integration, and Extensibility
 
-#### Resource Loading
+### Resource Loading
   - Make use of `:error_handler` to load modules dynamicaly on-the-fly
   - Introduce a lock to control module compilation and avoid race conditions
 
