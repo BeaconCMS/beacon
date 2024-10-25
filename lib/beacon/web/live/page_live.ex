@@ -106,6 +106,8 @@ defmodule Beacon.Web.PageLive do
     live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
     beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
+    Process.put(:beacon_site, site)
+
     socket =
       socket
       |> Component.assign(live_data)

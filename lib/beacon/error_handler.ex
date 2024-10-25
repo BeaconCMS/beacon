@@ -4,9 +4,7 @@ defmodule Beacon.ErrorHandler do
 
   See `https://elixir-lang.org/blog/2012/04/24/a-peek-inside-elixir-s-parallel-compiler/` for more info
   """
-  alias Beacon.Loader
   alias Beacon.Loader.Worker
-  alias Beacon.Registry
 
   @doc false
   def undefined_function(module, fun, args) do
@@ -21,12 +19,12 @@ defmodule Beacon.ErrorHandler do
   end
 
   defp reload_resource(module) do
-    [site_hash, resource_str] =
+    resource_str =
       "#{module}"
       |> String.split(".")
-      |> Enum.slice(-2..-1)
+      |> List.last()
 
-    site = Enum.find(Registry.running_sites(), &(Loader.hash(&1) == site_hash))
+    site = Process.get(:beacon_site)
 
     case resource_str do
       "Page" <> page_id -> Worker.reload_page_module(site, page_id)
