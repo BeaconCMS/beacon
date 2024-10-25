@@ -10,6 +10,11 @@ defmodule Beacon.Loader.ComponentsTest do
     |> IO.iodata_to_binary()
   end
 
+  setup do
+    Process.put(:beacon_site, default_site())
+    :ok
+  end
+
   test "load empty module without components" do
     {:ok, mod} = Loader.reload_components_module(default_site())
     assert mod.__info__(:functions) == [{:my_component, 1}, {:my_component, 2}]
