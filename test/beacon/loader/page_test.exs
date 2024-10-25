@@ -67,6 +67,7 @@ defmodule Beacon.Loader.PageTest do
     test "render primary template" do
       page = beacon_published_page_fixture(path: "/1") |> Repo.preload(:variants)
       module = Loader.fetch_page_module(page.site, page.id)
+      Process.put(:beacon_site, page.site)
       assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = module.render(%{})
     end
 
