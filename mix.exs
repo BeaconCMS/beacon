@@ -68,7 +68,7 @@ defmodule Beacon.MixProject do
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
       # https://github.com/akash-akya/vix/issues/173
-      {:vix, "<= 0.30.0"},
+      {:vix, "<= 0.32.0"},
       {:jason, "~> 1.0"},
       {:oembed, "~> 0.4.1"},
       {:phoenix_ecto, "~> 4.4"},
