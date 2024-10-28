@@ -268,7 +268,8 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
     './assets/js/**/*.js',
     './lib/*_web.ex',
     './lib/*_web/**/*.*ex',
-    './apps/*_web/assets/**/*.js',
+    './apps/*_web/assets/js/**/*.js',
+    '!./apps/*_web/assets/node_modules/**',
     './apps/*_web/lib/*_web.ex',
     './apps/*_web/lib/*_web/**/*.*ex',
     '#{tmp_dir}/*.template'
