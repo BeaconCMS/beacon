@@ -68,6 +68,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
           @beacon.query_params=<%= @beacon.query_params["query"] %>
 
           <.page_link path="/about">go_to_about_page</.page_link>
+          <.link patch={"#{Beacon.BeaconTest.Endpoint.url()}/other"}>go_to_other_site</.link>
 
           <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
             Name: <%= text_input f, :name %>
@@ -131,6 +132,14 @@ defmodule Beacon.Web.Live.PageLiveTest do
         meta_tags: nil
       )
 
+    beacon_published_page_fixture(
+      site: :not_booted,
+      path: "/",
+      template: """
+      <h1><%= @beacon.site %></h1>
+      """
+    )
+
     [layout: layout]
   end
 
@@ -155,6 +164,16 @@ defmodule Beacon.Web.Live.PageLiveTest do
     assert view
            |> element("a", "go_to_about_page")
            |> render_click() =~ "about_page"
+  end
+
+  test "patch to another site resets site data", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/home/hello")
+
+    view
+    |> element("a", "go_to_other_site")
+    |> render_click()
+
+    assert has_element?(view, "h1", "not_booted")
   end
 
   describe "meta tags" do
