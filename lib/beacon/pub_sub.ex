@@ -56,6 +56,10 @@ defmodule Beacon.PubSub do
     Phoenix.PubSub.subscribe(@pubsub, topic_page(site, path))
   end
 
+  def unsubscribe_to_page(site, path) do
+    Phoenix.PubSub.unsubscribe(@pubsub, topic_page(site, path))
+  end
+
   def page_loaded(%Content.Page{} = page) do
     page.site
     |> topic_page(page.path)

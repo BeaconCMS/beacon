@@ -23,6 +23,7 @@ defmodule Beacon.Web.PageLive do
     page = RouterServer.lookup_page!(site, path)
 
     socket = Component.assign(socket, beacon: BeaconAssigns.new(site, page))
+
     if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
@@ -96,27 +97,24 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_params(params, url, socket) do
-    view = __MODULE__
+    case Beacon.Private.site_from_session(socket.endpoint, socket.router, url, __MODULE__) do
+      nil ->
+        raise Beacon.Web.NotFoundError, """
+        no page was found for url #{url}
 
-    case Phoenix.LiveView.Route.live_link_info(socket.endpoint, socket.router, url) do
-      {_,
-       %{
-         view: ^view,
-         live_session: %{
-           extra: %{
-             session: %{"beacon_site" => site}
-           }
-         }
-       }} ->
+        Make sure a page was created for that url.
+        """
+
+      site ->
         %{"path" => path_info} = params
         page = RouterServer.lookup_page!(site, path_info)
         live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
         beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
-        # TODO: only unsubscribe if the site has changed
-        # %{beacon: %{site: current_site}} = socket.assigns
-        # Beacon.PubSub.unsubscribe_to_page(current_site, path_info)
-        # Beacon.PubSub.subscribe_to_page(site, path_info)
+        if socket.assigns.beacon.site != site do
+          Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
+          Beacon.PubSub.subscribe_to_page(site, path_info)
+        end
 
         socket =
           socket
@@ -130,13 +128,6 @@ defmodule Beacon.Web.PageLive do
           |> Component.assign(:beacon, beacon_assigns)
 
         {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
-
-      _ ->
-        raise Beacon.Web.NotFoundError, """
-        no page was found for url #{url}
-
-        Make sure a page was created for that url.
-        """
     end
   end
 
