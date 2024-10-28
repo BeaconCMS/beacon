@@ -51,7 +51,7 @@ as items are completed.
   - Make use of `:error_handler` to load modules dynamicaly on-the-fly
   - Introduce a lock to control module compilation and avoid race conditions
 
-### Plugin and Theme System
+#### Plugin and Theme System
   - Packaging and distribution
   - Package structure of files and directories
   - Metadata files plugin.exs and theme.exs to define config and behavior
@@ -64,24 +64,24 @@ as items are completed.
   - Create a Plausible plugin
   - Extract Media Library S3 Provider into a plugin
 
-### CLI and Local Environment
+#### CLI and Local Environment
   - Fetch resources from running sites
   - Upload local resources to running sites
   - Generate new Phoenix projects with Beacon or install Beacon in single and umbrella apps with an Igniter task
   - Igniter task to generate new sites and resources
 
-### Integration with host Phoenix app
+#### Integration with host Phoenix app
   - Support Windows
   - Support other major database vendors as MySQL, MSSQL, and SQLite
   - Introduce Beacon.Test to help test resources and lifecycles
   - Reuse some resources between the host app and Beacon, such as components and stylesheets.
 
-### SEO
+#### SEO
 - Redirect manager to handle deleted pages and broken links
 - Smart tools to improve content, eg: https://x.com/ac_alejos/status/1774171644090544627
 - Built-in tools to manaage content as sitemaps and feeds.
 
-### General
+#### General
 - Create, change, and load new sites at runtime on the admin interface
 - Release Components as plugins to quickly bootstrap new pages and serve as example
 - LiveView Native integration

@@ -1686,7 +1686,7 @@ defmodule Beacon.Content do
           %{name: "rest", type: "global"}
         ],
         template: ~S|<img src={beacon_asset_url(@name)} class={@class} {@rest} />|,
-        example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        example: ~S|<.image site={@beacon.site} name="beacon.webp" alt="logo" />|,
         category: :media
       },
       %{
@@ -2948,7 +2948,14 @@ defmodule Beacon.Content do
         component
 
       {:error, changeset} ->
-        raise "failed to create component: #{inspect(changeset.errors)}"
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
+              opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+            end)
+          end)
+
+        raise "failed to create component: #{inspect(errors)}"
     end
   end
 

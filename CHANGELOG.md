@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Enhancements
+  - Auto populate Media beacon.webp to be used on components
+  - Add `beacon.gen.site` task to generate new sites
+  - Rework `beacon.install` with Igniter to be composable
+  - Introduce config `:tailwind_css`
+
+### Documentation
+  - Update docs to use the new tasks created with Igniter
+
+## 0.1.2 (2024-10-23)
+
+### Fixes
+  - [Content/Component] - Validate attr opts and slot opts to avoid invalid state and compilation errors
+
+## 0.1.1 (2024-10-22)
+
+### Enhancements
+  - Support Phoenix LiveView v1.0.0-rc.7
+
+### Documentation
+  - Link to latest version
+  - Guide for `on_mount` and `handle_info` [#599](https://github.com/BeaconCMS/beacon/pull/599) by @djcarpe
+
 ## 0.1.0 (2024-10-09)
 
 ### Breaking Changes
@@ -14,7 +39,7 @@
   - Leverage `:manual` mode during boot to avoid unnecessary calls to Tailwind compiler, speeding up the whole process to start sites
   - Enable Markdown options: `:footnotes`, `:multiline_block_quotes`, `:shortcodes` (emojis), `:underline`, `:relaxed_tasklist_matching`, and `:relaxed_autolinks`.
     See https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html and https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html for more info.
-  - Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by [@ddink](https://github.com/ddink)
+  - Added Shared Info Handlers (`info_handle` callbacks) - [#578](https://github.com/BeaconCMS/beacon/pull/578) by @ddink
 
 ### Fixes
   - Remove unnecessary `:plug_cowboy` dependency - [#594](https://github.com/BeaconCMS/beacon_live_admin/pull/594)

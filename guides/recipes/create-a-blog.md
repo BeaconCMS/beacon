@@ -312,4 +312,4 @@ And the following template:
 </div>
 ```
 
-Save the changes and publish the page. Visist http://localhost:4000/blog to see the result!
+Save the changes and publish the page. Visit http://localhost:4000/blog to see the result!

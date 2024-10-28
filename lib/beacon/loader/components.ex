@@ -99,8 +99,8 @@ defmodule Beacon.Loader.Components do
           quote do
             attr.(
               unquote(String.to_atom(component_attr.name)),
-              unquote(att_type_to_atom(component_attr.type, component_attr.struct_name)),
-              unquote(Macro.escape(component_attr.opts))
+              unquote(attr_type_to_atom(component_attr.type, component_attr.struct_name)),
+              unquote(Macro.escape(ignore_invalid_attr_opts(component_attr.opts)))
             )
           end
         end
@@ -109,15 +109,15 @@ defmodule Beacon.Loader.Components do
       unquote_splicing(
         for component_slot <- component.slots do
           quote do
-            slot.(unquote(String.to_atom(component_slot.name)), unquote(component_slot.opts),
+            slot.(unquote(String.to_atom(component_slot.name)), unquote(ignore_invalid_slot_opts(component_slot.opts)),
               do:
                 unquote_splicing(
                   for slot_attr <- component_slot.attrs do
                     quote do
                       attr.(
                         unquote(String.to_atom(slot_attr.name)),
-                        unquote(att_type_to_atom(slot_attr.type, slot_attr.struct_name)),
-                        unquote(Macro.escape(slot_attr.opts))
+                        unquote(attr_type_to_atom(slot_attr.type, slot_attr.struct_name)),
+                        unquote(Macro.escape(ignore_invalid_attr_opts(slot_attr.opts)))
                       )
                     end
                   end
@@ -134,12 +134,22 @@ defmodule Beacon.Loader.Components do
     end
   end
 
-  def att_type_to_atom(component_type, struct_name) when component_type == "struct" do
+  defp attr_type_to_atom(component_type, struct_name) when component_type == "struct" do
     Module.concat([struct_name])
   end
 
-  def att_type_to_atom(component_type, _struct_name) when component_type in @supported_attr_types do
+  defp attr_type_to_atom(component_type, _struct_name) when component_type in @supported_attr_types do
     String.to_atom(component_type)
+  end
+
+  # https://hexdocs.pm/phoenix_live_view/1.0.0-rc.5/Phoenix.Component.html#attr/3
+  defp ignore_invalid_attr_opts(opts) do
+    Keyword.take(opts, [:required, :default, :examples, :values, :doc])
+  end
+
+  # https://hexdocs.pm/phoenix_live_view/1.0.0-rc.7/Phoenix.Component.html#slot/3
+  defp ignore_invalid_slot_opts(opts) do
+    Keyword.take(opts, [:required, :validate_attrs, :doc])
   end
 
   # TODO: remove render_component/1 along with my_component/2

@@ -24,7 +24,7 @@ Changes are applied to the `main` branch through feature branches. A pull reques
 once it's ready to avoid merge conflicts and make that code available on `main` in case anyone wants to test or use it.
 
 Along with the `main` and feature branches, we also keep release branches for each version, for example `v0.1.x`, `v2.0.x`, and so on.
-Changes are cherry-picked from `main` into the release branches as needed, for example if the current published version is `v0.1.1` and
+Changes are [cherry-picked](https://github.com/googleapis/repo-automation-bots/tree/main/packages/cherry-pick-bot) from `main` into the release branches as needed, for example if the current published version is `v0.1.1` and
 a bug fix is merged into `main`, it will be cherry-picked into the `v0.1.x` branch and a new `v0.1.2` version will be released. Similarly,
 if a new feature is merged or a breaking change is introduced, it will also be cherry-picked into a release branch but this time
 into the `v0.2.x` branch because new features and breaking changes require a version bump.
@@ -33,14 +33,26 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 
 1. Checkout the `main` branch and make sure it's up to date with upstream
 2. Run `mix assets.build`
-3. Update the `CHANGELOG.md` file to list all changes included in the release and add the current date
+3. Update the `CHANGELOG.md` file to list all changes included in the "Unreleased" section
 4. Commit the changes to upstream `main` if necessary
 5. Checkout the release branch and make sure it's up to date with upstream
 6. Make sure all the relevant changes have been cherry-picked from `main` to the release branch
+3. Update the `CHANGELOG.md` and replace Unreleased with the actual version and date, and list only the changes included in the version
 7. Update the version in the files `mix.exs` and `package.json` and throughout docs/ files
 8. Run `mix assets.build`
 9. Make sure all relevant changes, especially breaking changes, are documented in an upgrade guide in `guides/upgrading`
 10. Commit the changes
 11. Create a new git tag and push upstream
+
+```sh
+git tag -a v0.1.0 -m "v0.1.0"
+git push --tags
+```
+
 12. Publish the package to [Hex.pm](https://hex.pm) package registry
-13. Create a new GitHub release from the tag and include the changes from the `CHANGELOG.md` in the release notes
+
+```sh
+mix hex.publish
+```
+
+13. [Create a new GitHub release](https://github.com/BeaconCMS/beacon/releases/new) from the tag and include the changes from the `CHANGELOG.md` in the release notes

@@ -93,6 +93,10 @@ defmodule Beacon.Loader do
     site |> modules_table_name() |> :ets.match(:"$1") |> List.flatten()
   end
 
+  def populate_default_media(site) do
+    GenServer.call(worker(site), :populate_default_media, @timeout)
+  end
+
   def populate_default_components(site) do
     GenServer.call(worker(site), :populate_default_components, @timeout)
   end
