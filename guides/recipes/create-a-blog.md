@@ -10,7 +10,6 @@ This guide will skip initial setup steps that are already covered in the [your f
 so if that's the first site in your application, or you're not familiar with Beacon, please follow that guide first to make sure the environment is set up correctly:
 
 - Beacon and Beacon LiveAdmin are installed
-- A database migration exists to create the Beacon tables
 - Router is already setup
 
 ## Create the blog site
@@ -18,32 +17,15 @@ so if that's the first site in your application, or you're not familiar with Bea
 Now that we have fullfilled the requirements, let's create the blog site mounted at `/blog`. Go ahead and execute:
 
 ```sh
-mix beacon.install --site blog --path /blog
+mix beacon.gen.site --site blog --path /blog
 ```
+
+Review the changes applied to your project `router.ex` file to make sure order of routes is correct,
+for example if you already have a site mounted at the root `/` it should be place after the `/blog` route.
+
+See [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) for more info.
 
 A basic site was just created but we have some work to do before executing the Phoenix server.
-
-**Note** that if you've already execute `beacon.install` before to install another site, then it won't append the new `blog` site to your application,
-so edit the `application.ex` and `router.ex` files to include the configuration manually:
-
-```elixir
-# application.ex
-[site: :blog, repo: MyApp.Repo, endpoint: MyAppWeb.Endpoint, router: MyAppWeb.Router]
-
-# router.ex
-beacon_site "/blog", site: :blog
-```
-
-Just make sure to add `beacon_site "/blog", site: :blog` before any `beacon_site "/"` otherwise the latter will match all paths, including `/blog`
-and Beacon won't be able to find and render pages of the blog site.
-
-## Custom Tailwind Config (optional)
-
-Beacon bundles a [minimal Tailwind configuration](https://github.com/BeaconCMS/beacon/blob/main/assets/tailwind.config.js) that includes
-@tailwindcss forms and typography plugins, and Phoenix variants for loading states.
-
-That's enough for our blog and many other sites, otherwise you can follow the [Tailwind setup guide](../introduction/tailwind-setup.md)
-to create a new configuration to bundle into into your site.
 
 ## Custom Fields
 

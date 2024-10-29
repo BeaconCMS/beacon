@@ -18,8 +18,8 @@ Beacon provides a command to get your site up and running quickly. Open a termin
 mix beacon.gen.site --site my_site --path /
 ```
 
-Routing is an important aspect of the site configuration, especially the order the routes are defined,
-see [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html)  for more info.
+Routing is an important aspect of the site configuration, especially the order the routes are defined.
+Inspect the generated changes in the `router.ex` file and see [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html)  for more info.
 
 ## Starting the application
 

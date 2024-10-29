@@ -15,7 +15,7 @@ parts that are common between them.
 
 Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, then bundle everything together into a single package.
 
-## Requirements
+## Prerequisites
 
 A site must be already configured. Otherwise, follow the [Your First Site](https://hexdocs.pm/beacon/your-first-site.html) guide first.
 
