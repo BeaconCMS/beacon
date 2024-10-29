@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Beacon.InstallTest do
+defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 

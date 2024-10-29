@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Beacon.Gen.SiteTest do
+defmodule Mix.Tasks.Beacon.GenSiteTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
