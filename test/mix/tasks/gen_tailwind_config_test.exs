@@ -11,7 +11,7 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
   test "copy js config file", %{project: project} do
     project
     |> Igniter.compose_task("beacon.install")
-    |> Igniter.compose_task("beacon.gen.tailwind_config")
+    |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_creates("assets/beacon.tailwind.config.js")
   end
 
