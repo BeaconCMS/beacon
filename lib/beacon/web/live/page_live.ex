@@ -126,6 +126,7 @@ defmodule Beacon.Web.PageLive do
           # TODO: remove deprecated @beacon_query_params
           |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
           |> Component.assign(:beacon, beacon_assigns)
+          |> Component.assign(:page_title, Beacon.Web.DataSource.page_title(site, page.id, live_data))
 
         {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
     end
