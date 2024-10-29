@@ -2,71 +2,38 @@
 
 ## Objective
 
-Create blog posts with custom fields (type and tags), render each one using the tailwind typography plugin, and list the most recent posts in an index page.
+Create blog posts with custom fields (type and tags), render each one using the tailwind typography plugin, and list the most recent posts on an index page.
 
 ## Prerequisites
 
 This guide will skip initial setup steps that are already covered in the [your first site guide](../introduction/your-first-site.md),
-so if that's the first site in your application, or you're not familiar with Beacon, please follow that guide first to make sure the environment is set up correctly:
-
-- Beacon and Beacon LiveAdmin are installed
-- A database migration exists to create the Beacon tables
-- Router is already setup
+so if that's the first site in your application, or you're not familiar with Beacon, please follow that guide first to make sure
+both Beacon and BeaconLiveAdmin are correctly installed and configured.
 
 ## Create the blog site
 
-Now that we have fullfilled the requirements, let's create the blog site mounted at `/blog`. Go ahead and execute:
+Now that we have fulfilled the requirements, let's create the blog site mounted at `/blog`. Go ahead and execute:
 
 ```sh
-mix beacon.install --site blog --path /blog
+mix beacon.gen.site --site blog --path /blog
 ```
+
+Review the changes applied to your project `router.ex` file to make sure the order of routes is correct,
+for example, if you already have a site mounted at the root `/` it should be placed after the `/blog` route.
+
+See [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) for more info.
 
 A basic site was just created but we have some work to do before executing the Phoenix server.
-
-**Note** that if you've already execute `beacon.install` before to install another site, then it won't append the new `blog` site to your application,
-so edit the `application.ex` and `router.ex` files to include the configuration manually:
-
-```elixir
-# application.ex
-[site: :blog, repo: MyApp.Repo, endpoint: MyAppWeb.Endpoint, router: MyAppWeb.Router]
-
-# router.ex
-beacon_site "/blog", site: :blog
-```
-
-Just make sure to add `beacon_site "/blog", site: :blog` before any `beacon_site "/"` otherwise the latter will match all paths, including `/blog`
-and Beacon won't be able to find and render pages of the blog site.
-
-## Tailwind Setup
-
-Since we'll be using a tailwind plugin, you need to follow the [Tailwind setup guide](../introduction/tailwind-setup.md)
-to setup and bundle the tailwind configuration.
-
-## Tailwind Typography Plugin
-
-A blog is useless if it looks ugly and is hard to read but lucky us that Tailwind provides a [plugin](https://tailwindcss.com/blog/tailwindcss-typography) that turns blocks of HTML into beautiful documents.
-
-Let's install that plugin. Execute in the root of your project:
-
-```sh
-npm install --prefix assets --include=dev @tailwindcss/typography
-```
-
-And edit the file `assets/tailwind.config.js` to require that plugin. Add the following line in the `plugins` list:
-
-```js
-require("@tailwindcss/typography"),
-```
 
 ## Custom Fields
 
 Every Beacon page has some essential fields like title, path, description, and others. But since Beacon can be used to build any kind of site, from small to big,
-we can't include all possible fields to accomodate all kinds of page that might exist. The solution to this problem is allowing users to create their own custom field,
+we can't include all possible fields to accommodate all kinds of pages that might exist. The solution to this problem is allowing users to create their own custom fields,
 which are displayed in the Beacon LiveAdmin editor, stored in the page record in the database, and can be used in queries and templates.
 
 For our blog we'll create 2 custom fields: type and tags. Type to allow us to distinguish between a regular page and a blog post, and tags to allow us to categorize our posts.
 
-Those custom fields are modules that implements the `Beacon.Content.PageField` behaviour. Let's create them.
+Those custom fields are modules that implement the `Beacon.Content.PageField` behaviour. Let's create them.
 
 ### Custom field `type`
 
@@ -109,11 +76,13 @@ defmodule MyApp.Beacon.PageFields.Type do
 end
 ```
 
-Note that the file location and the module name doesn't need to follow any special convention, it's up to you to organize your code as you see fit.
+Note that the file location and the module name don't need to follow any special convention, it's up to you to organize your code as you see fit.
 
 ### Custom field `tags`
 
-A blog post without tags is like a cake without icing, so let's create a custom field to store list of tags for each post.
+A blog post without tags is like a cake without icing, so let's create a custom field to store a list of tags for each post.
+
+Create a new file `lib/my_app/beacon/page_fields/tags.ex` with the following content:
 
 ```elixir
 defmodule MyApp.Beacon.PageFields.Tags do
@@ -152,13 +121,31 @@ defmodule MyApp.Beacon.PageFields.Tags do
 end
 ```
 
-Great, now we need to tell Beacon to use those custom page fields. Open the file `lib/my_app/application.ex` and add the following into your site configuration:
+Great, now we need to tell Beacon to use those custom page fields. Open the file `lib/my_app/application.ex` and add the following to your site configuration:
 
 ```elixir
 extra_page_fields: [
   MyApp.Beacon.PageFields.Type,
   MyApp.Beacon.PageFields.Tags
 ]
+```
+
+It should look like this:
+
+```elixir
+{Beacon,
+ sites: [
+   [
+     site: :blog,
+     repo: MyApp.Repo,
+     endpoint: MyAppWeb.Endpoint,
+     router: MyAppWeb.Router,
+     extra_page_fields: [
+       MyApp.Beacon.PageFields.Type,
+       MyApp.Beacon.PageFields.Tags
+     ]
+   ]
+ ]}
 ```
 
 ## Create the layout
@@ -196,7 +183,7 @@ Visit http://localhost:4000/admin/blog/layouts, edit the Default layout, and cha
 Save and publish the changes.
 
 Some notes about this layout:
-- The `prose` classes are defined by the tailwind typography plugin and is responsible for making our blog look good.
+- The `prose` classes are defined by the Tailwind typography plugin and are responsible for improving the look & feel of the pages.
 - Conditionally apply the `prose` classes only to the blog posts, not to the home page.
 
 ## Create the first blog post
@@ -205,7 +192,7 @@ Visit http://localhost:4000/admin/blog/pages and create a new page with the foll
 
 - Path: /the-elixir-language
 - Title: The Elixir language
-- Description: What's Elixir, how and where it can be used.
+- Description: What's Elixir, and how and where it can be used.
 - Format: Markdown
 - Type: Blog Post
 - Tags: 2024,eng,elixir
@@ -219,9 +206,9 @@ In the ever-evolving world of web development, Elixir has emerged as a powerful 
 
 ## The Rise of Elixir
 
-Elixir is a dynamic, functional programming language that runs on the Erlang Virtual Machine (BEAM). Inspired by Erlang, Elixir inherits its robust concurrency model, fault-tolerance, and scalability, making it an excellent choice for building highly available and scalable web applications.
+Elixir is a dynamic, functional programming language that runs on the Erlang Virtual Machine (BEAM). Inspired by Erlang, Elixir inherits its robust concurrency model, fault tolerance, and scalability, making it an excellent choice for building highly available and scalable web applications.
 
-One of the key features of Elixir is its focus on functional programming principles. By embracing immutable data structures and a concise syntax, Elixir enables developers to write more expressive and maintainable code. This, combined with Elixir's powerful metaprogramming capabilities, allows for the creation of domain-specific languages (DSLs) that can greatly enhance developer productivity.
+One of the key features of Elixir is its focus on functional programming principles. By embracing immutable data structures and concise syntax, Elixir enables developers to write more expressive and maintainable code. This, combined with Elixir's powerful metaprogramming capabilities, allows for the creation of domain-specific languages (DSLs) that can greatly enhance developer productivity.
 
 ## Elixir and Web Development
 
@@ -246,13 +233,13 @@ As Elixir and the Phoenix framework continue to evolve, we can expect to see eve
 By embracing Elixir, web developers can unlock new levels of scalability, fault-tolerance, and developer productivity, paving the way for a future where the focus is on building innovative and user-centric web experiences, rather than managing complex infrastructure.
 ````
 
-Save and publish this page. Now visit http://localhost:4000/blog/the-elixir-language to see the result. There is your first blog post!
+Click on Create Draft Page and Publish. Now visit http://localhost:4000/blog/the-elixir-language to see the result. There is your first blog post!
 
 ## Create the blog index
 
 Now that we have a blog post, let's create an index page to list published posts.
 
-First we need to fetch published posts, so let's create a live data assign that exposes data to pages. Visit http://localhost:4000/admin/blog/live_data,
+First, we need to fetch published posts, so let's create a live data assign that exposes data to pages. Visit http://localhost:4000/admin/blog/live_data,
 create a new live data for the path `/`, and then create a new assign `most_recent_posts` with the following code:
 
 ```elixir

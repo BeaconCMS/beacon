@@ -53,7 +53,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> create_migration(repo)
     |> add_use_beacon_in_router(router)
     |> mount_site_in_router(router, site, path)
-    |> add_beacon_config_in_app_supervisor(site, repo, router, endpoint)
+    |> add_site_config_in_config_runtime(site, repo, router, endpoint)
+    |> add_beacon_config_in_app_supervisor(site, repo, endpoint)
   end
 
   defp validate_options!(site, path) do
@@ -109,65 +110,85 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
         def up, do: Beacon.Migration.up()
         def down, do: Beacon.Migration.down()
         """,
-        on_exists: :overwrite
+        on_exists: :skip
       ] ++ timestamp
     )
   end
 
   defp mount_site_in_router(igniter, router, site, path) do
-    Igniter.Libs.Phoenix.append_to_scope(
+    case Igniter.Project.Module.find_module(igniter, router) do
+      {:ok, {_igniter, _source, zipper}} ->
+        exists? =
+          Sourceror.Zipper.find(
+            zipper,
+            &match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1)
+          )
+
+        if exists? do
+          Igniter.add_warning(
+            igniter,
+            "Site already exists: #{site}, skipping creation."
+          )
+        else
+          Igniter.Libs.Phoenix.append_to_scope(
+            igniter,
+            "/",
+            """
+            beacon_site #{inspect(path)}, site: #{inspect(site)}
+            """,
+            with_pipelines: [:browser],
+            router: router
+          )
+        end
+
+      _ ->
+        :skip
+    end
+  end
+
+  defp add_site_config_in_config_runtime(igniter, site, repo, router, endpoint) do
+    Igniter.Project.Config.configure(
       igniter,
-      "/",
-      """
-      beacon_site #{inspect(path)}, site: #{inspect(site)}
-      """,
-      with_pipelines: [:browser],
-      router: router
+      "runtime.exs",
+      :beacon,
+      [site],
+      {:code,
+       Sourceror.parse_string!("""
+       [site: :#{site}, repo: #{inspect(repo)}, endpoint: #{inspect(endpoint)}, router: #{inspect(router)}]
+       """)}
     )
   end
 
-  defp add_beacon_config_in_app_supervisor(igniter, site, repo, router, endpoint) do
+  defp add_beacon_config_in_app_supervisor(igniter, site, repo, endpoint) do
     Igniter.Project.Application.add_new_child(
       igniter,
       {Beacon,
-       sites: [
-         [
-           site: site,
-           repo: repo,
-           endpoint: endpoint,
-           router: router
-         ]
-       ]},
+       {:code,
+        quote do
+          [sites: [Application.fetch_env!(:beacon, unquote(site))]]
+        end}},
       after: [repo, endpoint],
       opts_updater: fn zipper ->
-        Igniter.Util.Debug.puts_code_at_node(zipper)
-
         with {:ok, zipper} <-
                Igniter.Code.Keyword.put_in_keyword(
                  zipper,
                  [:sites],
-                 [
-                   site: site,
-                   repo: repo,
-                   endpoint: endpoint,
-                   router: router
-                 ],
+                 Sourceror.parse_string!("[Application.fetch_env!(:beacon, :#{site})]"),
                  fn zipper ->
-                   Igniter.Util.Debug.puts_code_at_node(zipper)
+                   exists? =
+                     Sourceror.Zipper.find(
+                       zipper,
+                       &match?({{_, _, [{_, _, [:Application]}, :fetch_env!]}, _, [{_, _, [:beacon]}, {_, _, [^site]}]}, &1)
+                     )
 
-                   site_config = [
-                     site: site,
-                     repo: repo,
-                     endpoint: endpoint,
-                     router: router
-                   ]
-
-                   config = Sourceror.to_string(site_config) |> Sourceror.parse_string!()
-
-                   Igniter.Code.List.append_to_list(
-                     zipper,
-                     config
-                   )
+                   if exists? do
+                     {:ok, zipper}
+                   else
+                     Igniter.Code.List.append_to_list(
+                       zipper,
+                       Sourceror.parse_string!("Application.fetch_env!(:beacon, :#{site})")
+                     )
+                   end
                  end
                ) do
           {:ok, zipper}
