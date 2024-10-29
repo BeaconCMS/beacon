@@ -93,6 +93,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     beacon_published_page_fixture(
       layout_id: layout.id,
       path: "/about",
+      title: "about_page",
       template: """
       <main>
         <h2>about_page</h2>
@@ -158,22 +159,34 @@ defmodule Beacon.Web.Live.PageLiveTest do
     assert has_element?(view, "#project-3", "MDEx")
   end
 
-  test "patch to another page", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/home/hello")
+  describe "navigation" do
+    test "patch to another page", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home/hello")
 
-    assert view
-           |> element("a", "go_to_about_page")
-           |> render_click() =~ "about_page"
-  end
+      assert view
+             |> element("a", "go_to_about_page")
+             |> render_click() =~ "about_page"
+    end
 
-  test "patch to another site resets site data", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/home/hello")
+    test "patch to another site resets site data", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home/hello")
 
-    view
-    |> element("a", "go_to_other_site")
-    |> render_click()
+      view
+      |> element("a", "go_to_other_site")
+      |> render_click()
 
-    assert has_element?(view, "h1", "not_booted")
+      assert has_element?(view, "h1", "not_booted")
+    end
+
+    test "update page title", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/home/hello")
+
+      view
+      |> element("a", "go_to_about_page")
+      |> render_click()
+
+      assert page_title(view) == "about_page"
+    end
   end
 
   describe "meta tags" do
