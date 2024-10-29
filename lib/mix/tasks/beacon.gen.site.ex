@@ -117,12 +117,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   defp mount_site_in_router(igniter, router, site, path) do
     case Igniter.Project.Module.find_module(igniter, router) do
-      {:ok, {_igniter, source, _zipper}} ->
-        mount = "beacon_site #{inspect(path)}, site: #{inspect(site)}"
-        exists? = Regex.compile!(mount)
+      {:ok, {_igniter, _source, zipper}} ->
+        exists? =
+          Sourceror.Zipper.find(
+            zipper,
+            &match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1)
+          )
 
-        # FIXME: find using Sourceror
-        if Regex.match?(exists?, source.content) do
+        if exists? do
           Igniter.add_warning(
             igniter,
             "Site already exists: #{site}, skipping creation."
@@ -171,14 +173,23 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
                Igniter.Code.Keyword.put_in_keyword(
                  zipper,
                  [:sites],
-                 Sourceror.parse_string!("[Application.fetch_env!(:beacon, :#{site})]")
-                 # fn zipper ->
-                 #    zipper
-                 #   # Igniter.Code.List.append_to_list(
-                 #   #   zipper,
-                 #   #   Sourceror.parse_string!("Application.fetch_env!(:beacon, :#{site})")
-                 #   # )
-                 # end
+                 Sourceror.parse_string!("[Application.fetch_env!(:beacon, :#{site})]"),
+                 fn zipper ->
+                   exists? =
+                     Sourceror.Zipper.find(
+                       zipper,
+                       &match?({{_, _, [{_, _, [:Application]}, :fetch_env!]}, _, [{_, _, [:beacon]}, {_, _, [^site]}]}, &1)
+                     )
+
+                   if exists? do
+                     {:ok, zipper}
+                   else
+                     Igniter.Code.List.append_to_list(
+                       zipper,
+                       Sourceror.parse_string!("Application.fetch_env!(:beacon, :#{site})")
+                     )
+                   end
+                 end
                ) do
           {:ok, zipper}
         else
