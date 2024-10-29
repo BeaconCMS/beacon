@@ -17,6 +17,7 @@ as items are completed.
 - Update the content of https://beaconcms.org
 - Add support for more Phoenix and LiveView resources such as JS hooks
 - Admin interactive tour for user onboarding
+- Importer
 
 ## Content Creation Experience
 
