@@ -1,25 +1,11 @@
 # Beacon
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/BeaconCMS/beacon/main/assets/images/beacon.png" width="512" alt="Beacon logo">
+  <img src="https://raw.githubusercontent.com/BeaconCMS/beacon/main/assets/images/beacon.png" width="256" alt="Beacon logo">
 </p>
 
 <p align="center">
   Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
-</p>
-
-<p align="center">
-  <a href="https://hex.pm/packages/beacon">
-    <img alt="Hex Version" src="https://img.shields.io/hexpm/v/beacon">
-  </a>
-
-  <a href="https://hexdocs.pm/beacon">
-    <img alt="Hex Docs" src="http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat">
-  </a>
-
-  <a href="https://opensource.org/licenses/MIT">
-    <img alt="MIT" src="https://img.shields.io/hexpm/l/beacon">
-  </a>
 </p>
 
 ## Getting Started
