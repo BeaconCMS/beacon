@@ -4,16 +4,16 @@ Beacon has built-in TailwindCSS support, any page can use its classes out of the
 
 That default configuration is already bundled in the Beacon package, so you can skip this guide if that suits your needs.
 
-Otherwise, keep reading to learn how to set up a custom configuration with more advanced features such as custom plugins plugins, themes, and more.
+Otherwise, keep reading to learn how to set up a custom configuration with more advanced features such as custom plugins, themes, and more.
 
 **Note** that the Tailwind configuration must respect some constraints to work properly with Beacon,
-so if you want to reuse an existing configuration, make sure to follow the steps below and make the necessary adjustments.
+so if you want to reuse an existing configuration make sure to follow the steps below and make the necessary adjustments.
 It might be a good idea to keep separated configs, one for your application and another one for Beacon sites, and reuse
 parts that are common between them.
 
 ## Objective
 
-Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, then bundle everything together in a single module.
+Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, then bundle everything together into a single package.
 
 ## Requirements
 
@@ -29,26 +29,16 @@ that configuration must respect some constraints to work properly in both enviro
 
 ## Steps
 
-* Install Tailwind v3.3.0 or higher
-* Install Esbuild
-* Create a new valid config
-* Heroicons
-* Install plugins
-* Bundle the config
-* Use the config in your site configuration
-
-Let's go through each one to set up Tailwind properly for your sites.
-
 ### Tailwind v3.3.0 or higher
 
-Any recent Phoenix application should have the [tailwind](https://hex.pm/packages/tailwind) library already installed and updated but let's double check by executing:
+Any recent Phoenix application should have the [tailwind](https://hex.pm/packages/tailwind) library already installed and updated but let's double check, execute:
 
 ```sh
 mix run -e "IO.inspect Tailwind.bin_version()"
 ```
 
 If it fails or the version is lower than 3.3.0 then follow the [tailwind install guide](https://github.com/phoenixframework/tailwind?tab=readme-ov-file#installation)
-to get it installed or updated. It's important to install a recent Tailwind version higher than 3.3.0
+to get it installed or updated. It's required to install a recent Tailwind version higher than 3.3.0
 
 ### Esbuild
 
@@ -63,8 +53,8 @@ Any recent version that is installed should work just fine.
 
 ### Install plugins
 
-The config we'll generate imports the plugins `@tailwindcss/forms` and `@tailwindcss/typography` that must be installed in order to generate the bundle file,
-so execute in the root of your project:
+The config we'll generate imports the plugins `@tailwindcss/forms` and `@tailwindcss/typography` so they must be installed before we can actually generate the bundle file.
+Execute in the root of your project:
 
 ```sh
 npm install --prefix assets --save @tailwindcss/forms @tailwindcss/typography
@@ -77,33 +67,11 @@ Beacon provides a generator that will create and change the files needed to set 
 Execute at the root of your project and follow the prompts:
 
 ```sh
-mix beacon.gen.tailwind_config
+mix beacon.gen.tailwind_config --site my_site
 ```
+
+_Replace `my_site` with the name of the site you want to install the custom Tailwind configuration._
 
 The generated config file is in the ESM format, ie: it exports the config as `default export` instead of `module.exports`,
 and it doesn't use node APIs like `fs` or `path`, so it can't bundle heroicons as the default Phoenix config does,
 but Beacon provides a component to render such icons, see the [Heroicons guide](../recipes/heroicons.md) for more information.
-
-## Site Configuration
-
-```elixir
-@impl true
-def start(_type, _args) do
-  children = [
-    # omitted for brevity
-    {Beacon,
-     sites: [
-       [
-         site: :my_site,
-         repo: MyApp.Repo,
-         endpoint: MyAppWeb.Endpoint,
-         router: MyAppWeb.Router,
-         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "beacon.tailwind.config.bundle.js") # <-- add this line
-       ]
-     ]},
-    MyAppWeb.Endpoint
-  ]
-
-  # omitted for brevity
-end
-```

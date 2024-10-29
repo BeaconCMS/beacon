@@ -2,22 +2,24 @@ defmodule Mix.Tasks.Beacon.InstallTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
+  @opts_my_site ~w(--site my_site)
+
   setup do
-    [igniter: phoenix_project()]
+    [project: phoenix_project()]
   end
 
-  test "copy js config file", %{igniter: igniter} do
-    igniter
+  test "copy js config file", %{project: project} do
+    project
     |> Igniter.compose_task("beacon.install")
     |> Igniter.compose_task("beacon.gen.tailwind_config")
     |> assert_creates("assets/beacon.tailwind.config.js")
   end
 
-  test "add esbuild profile", %{igniter: igniter} do
-    igniter
+  test "add esbuild profile", %{project: project} do
+    project
     |> Igniter.compose_task("beacon.install")
     |> apply_igniter!()
-    |> Igniter.compose_task("beacon.gen.tailwind_config")
+    |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("config/config.exs", """
        41 + |  ],
        42 + |  beacon_tailwind_config: [
@@ -28,33 +30,53 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     """)
   end
 
-  test "add endpoint watcher", %{igniter: igniter} do
-    igniter
+  test "add endpoint watcher", %{project: project} do
+    project
     |> Igniter.compose_task("beacon.install")
     |> apply_igniter!()
-    |> Igniter.compose_task("beacon.gen.tailwind_config")
+    |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("config/dev.exs", """
        18 + |    esbuild: {Esbuild, :install_and_run, [:beacon_tailwind_bundle, ~w(--watch)]},
     """)
   end
 
-  test "add esbuild cmd into assets.build alias", %{igniter: igniter} do
-    igniter
+  test "add esbuild cmd into assets.build alias", %{project: project} do
+    project
     |> Igniter.compose_task("beacon.install")
     |> apply_igniter!()
-    |> Igniter.compose_task("beacon.gen.tailwind_config")
+    |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("mix.exs", """
        72 + |      "assets.build": ["tailwind test", "esbuild test", "esbuild beacon_tailwind_config"],
     """)
   end
 
-  test "add esbuild cmd into assets.deploy alias", %{igniter: igniter} do
-    igniter
+  test "add esbuild cmd into assets.deploy alias", %{project: project} do
+    project
     |> Igniter.compose_task("beacon.install")
     |> apply_igniter!()
-    |> Igniter.compose_task("beacon.gen.tailwind_config")
+    |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("mix.exs", """
        73 + |      "assets.deploy": ["tailwind test --minify", "esbuild test --minify", "phx.digest", "esbuild beacon_tailwind_config --minify"]
+    """)
+  end
+
+  test "add tailwind_config into site config", %{project: project} do
+    project
+    |> Igniter.compose_task("beacon.install")
+    |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
+    |> apply_igniter!()
+    |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
+    |> assert_has_patch("config/runtime.exs", """
+    2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+    3   2   |
+        3 + |config :beacon,
+        4 + |  my_site: [
+        5 + |    site: :my_site,
+        6 + |    repo: Test.Repo,
+        7 + |    endpoint: TestWeb.Endpoint,
+        8 + |    router: TestWeb.Router,
+        9 + |    tailwind_config: Path.join(Application.app_dir(:test, "priv"), "beacon.tailwind.config.bundle.js")
+       10 + |  ]
     """)
   end
 end

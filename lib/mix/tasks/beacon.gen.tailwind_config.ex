@@ -22,12 +22,19 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
   @doc false
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
-      example: @example
+      example: @example,
+      schema: [site: :string],
+      aliases: [s: :site],
+      required: [:site]
     }
   end
 
   @doc false
-  def igniter(igniter, _argv) do
+  def igniter(igniter, argv) do
+    {_arguments, argv} = positional_args!(argv)
+    options = options!(argv)
+    site = Keyword.fetch!(options, :site) |> String.to_atom()
+
     app_name = Igniter.Project.Application.app_name(igniter)
     {igniter, router} = Igniter.Libs.Phoenix.select_router(igniter)
     {igniter, [endpoint]} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
@@ -38,7 +45,7 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
     |> add_endpoint_watcher(app_name, endpoint)
     |> add_esbuild_cmd_into_assets_build_alias()
     |> add_esbuild_cmd_into_assets_deploy_alias()
-    |> add_tailwind_config_into_site_config()
+    |> add_tailwind_config_into_site_config(app_name, site)
   end
 
   defp create_tailwind_config(igniter) do
@@ -122,7 +129,20 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
     Igniter.Project.TaskAliases.add_alias(igniter, "assets.deploy", "esbuild beacon_tailwind_config --minify", if_exists: :append)
   end
 
-  defp add_tailwind_config_into_site_config(igniter) do
-    igniter
+  defp add_tailwind_config_into_site_config(igniter, app_name, site) do
+    Igniter.Project.Config.configure(
+      igniter,
+      "runtime.exs",
+      :beacon,
+      [site],
+      [],
+      updater: fn zipper ->
+        Igniter.Code.Keyword.put_in_keyword(
+          zipper,
+          [:tailwind_config],
+          Sourceror.parse_string!(~s|Path.join(Application.app_dir(:#{app_name}, "priv"), "beacon.tailwind.config.bundle.js")|)
+        )
+      end
+    )
   end
 end
