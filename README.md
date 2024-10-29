@@ -1,8 +1,12 @@
 # Beacon
 
-> Performance without compromising productivity.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BeaconCMS/beacon/main/assets/images/beacon.png" width="256" alt="Beacon logo">
+</p>
 
-Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
+<p align="center">
+  Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
+</p>
 
 ## Getting Started
 

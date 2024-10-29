@@ -3,13 +3,21 @@
 ## Unreleased
 
 ### Enhancements
-  - Auto populate Media beacon.webp to be used on components
   - Add `beacon.gen.site` task to generate new sites
   - Rework `beacon.install` with Igniter to be composable
   - Introduce config `:tailwind_css`
 
 ### Documentation
   - Update docs to use the new tasks created with Igniter
+
+## 0.1.3 (2024-10-29)
+
+### Enhancements
+ - Auto populate Media beacon.webp to be used on components
+
+### Fixes
+ - Exclude the node modules from Tailwind content #622 by @anu788
+ - Allow to patch (navigate patching the content) to another site
 
 ## 0.1.2 (2024-10-23)
 
