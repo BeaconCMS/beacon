@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 (2024-10-29)
+
+### Fixes
+ - Exclude the node modules from Tailwind content #622 by @anu788
+ - Allow to patch (navigate patching the content) to another site
+
 ## 0.1.2 (2024-10-23)
 
 ### Fixes
