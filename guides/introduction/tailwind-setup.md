@@ -8,12 +8,12 @@ Otherwise, keep reading to learn how to set up a custom configuration with more 
 
 **Note** that the Tailwind configuration must respect some constraints to work properly with Beacon,
 so if you want to reuse an existing configuration make sure to follow the steps below and make the necessary adjustments.
-It might be a good idea to keep separated configs, one for your application and another one for Beacon sites, and reuse
+It might be a good idea to keep separate configs, one for your application and another one for Beacon sites, and reuse
 parts that are common between them.
 
 ## Objective
 
-Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, then bundle everything together into a single package.
+Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, and bundle everything together into a single package.
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ Any recent version that is installed should work just fine.
 ### Install plugins
 
 The config we'll generate imports the plugins `@tailwindcss/forms` and `@tailwindcss/typography` so they must be installed before we can actually generate the bundle file.
-Execute in the root of your project:
+Execute at the root of your project:
 
 ```sh
 npm install --prefix assets --save @tailwindcss/forms @tailwindcss/typography

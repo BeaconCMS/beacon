@@ -47,7 +47,7 @@ Check out the official [Phoenix install guide](https://hexdocs.pm/phoenix/instal
   mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new
   ```
 
-Replace `my_app` with the name of your application.
+Replace `my_app` with the name of your application and follow the prompts.
 
 ## Install in an existing application
 
