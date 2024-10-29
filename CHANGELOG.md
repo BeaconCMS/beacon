@@ -2,6 +2,9 @@
 
 ## 0.1.3 (2024-10-29)
 
+### Enhancements
+ - Auto populate Media beacon.webp to be used on components
+
 ### Fixes
  - Exclude the node modules from Tailwind content #622 by @anu788
  - Allow to patch (navigate patching the content) to another site
