@@ -10,6 +10,9 @@
 ### Documentation
   - Update docs to use the new tasks created with Igniter
 
+### Fixes
+  - Fix page title not updating on page patch
+
 ## 0.1.3 (2024-10-29)
 
 ### Enhancements
