@@ -9,6 +9,8 @@
 
 ### Documentation
   - Update docs to use the new tasks created with Igniter
+  - Update Deploy to Fly.io guide to use a release step to copy files into the release
+  - Create recipe Reuse app.css
 
 ### Fixes
   - Fix page title not updating on page patch
