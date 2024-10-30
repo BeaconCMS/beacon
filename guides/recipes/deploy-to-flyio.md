@@ -32,28 +32,88 @@ mix phx.gen.release --docker
 
 Edit the generated `Dockerfile` and make some changes:
 
-1. Install `npm` by adding it into the `apt-get install` list:
+1. Install `npm` by adding it to the `apt-get install` list
 
 It should look like this:
 
 ```dockerfile
-RUN apt-get update -y && apt-get install -y build-essential git npm \ # <-- add npm here
+RUN apt-get update -y && apt-get install -y build-essential git npm \
 ```
 
 2. Add the following code before `RUN mix assets.deploy`:
 
 ```dockerfile
-RUN mix tailwind.install --no-assets
 RUN npm install --prefix assets
 ```
 
-3. Add the following code before `USER nobody`:
+## Copy files into the release
 
-```dockerfile
-# Copy the tailwind-cli binary used to compile stylesheets for pages
-RUN mkdir -p ./bin/_build
-COPY --from=builder --chown=nobody:root /app/_build/tailwind-* ./bin/_build/
+Open the file `mix.exs` and locate the `project/0` function. Add a new `:releases` config that contains a custom step to copy Beacon files:
+
+```elixir
+releases: [
+  my_app: [
+    steps: [:assemble, &copy_beacon_files/1]
+  ]
+]
 ```
+
+Replace `my_app` with your actual app name. The whole function will look similar to this:
+
+```elixir
+def project do
+  [
+    app: :my_app,
+    version: "0.1.0",
+    elixir: "~> 1.14",
+    elixirc_paths: elixirc_paths(Mix.env()),
+    start_permanent: Mix.env() == :prod,
+    consolidate_protocols: Mix.env() != :dev,
+    aliases: aliases(),
+    deps: deps(),
+    releases: [
+      my_app: [
+        steps: [:assemble, &copy_beacon_files/1]
+      ]
+    ]
+  ]
+end
+```
+
+Now create a new function `copy_beacon_files/1` at any place in the `mix.exs` file:
+
+```elixir
+defp copy_beacon_files(%{path: path} = release) do
+  case Path.wildcard("_build/tailwind-*") do
+    [] ->
+      raise """
+      tailwind-cli not found
+
+      Execute the following command to install it before proceeding:
+
+          mix tailwind.install
+
+      """
+
+    tailwind_bin_path ->
+      build_path = Path.join([path, "bin", "_build"])
+      File.mkdir_p!(build_path)
+
+      for file <- tailwind_bin_path do
+        File.cp!(file, Path.join(build_path, Path.basename(file)))
+      end
+  end
+
+  File.cp!(Path.join(["assets", "css", "app.css"]), Path.join(path, "app.css"))
+
+  release
+end
+````
+
+Essential this function will copy the `tailwind-cli` binary and the `app.css` files into the release.
+The `tailwind-cli` binary is required but `app.css` is only used if you actually [reuse it on your sites](reuse-app-css.md).
+
+See  https://hexdocs.pm/mix/Mix.Tasks.Release.html for more info about releases configuration.
 
 ## Launch
 
@@ -83,7 +143,7 @@ Finally, if you followed the guides to setup your site, run the following comman
 fly open /
 ```
 
-If you have created a custom page, simply replace `/` in the above command to match its path
+If you have created a custom page, simply replace `/` in the above command to match its prefix.
 
 ## More commands
 
@@ -91,6 +151,6 @@ You can find all available commands in the [Fly.io docs](https://fly.io/docs/fly
 
 ## Troubleshooting
 
-The default config file created by `fly launch` defines `min_machines_running = 0` so Fly will auto stop machines
+The default config file `fly.toml` created by `fly launch` defines `min_machines_running = 0` so Fly will auto stop machines
 that receive no traffic for a period of time. You might want to change this value to `1` otherwise it will look like your app
 is not working, when in fact it's just Fly proxy doing its job.
