@@ -25,5 +25,3 @@ config :beacon,
 ```
 
 Note the path is different for development and production environments because deployment usually are packed as releases.
-
-See the recipe [Deploy to Fly.io](deploy-to-flyio.md) for more info on how to deploy your app.
