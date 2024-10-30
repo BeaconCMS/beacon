@@ -139,6 +139,8 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
       Please update your Tailwind CSS binary to the latest version.
 
+      See https://github.com/phoenixframework/tailwind for more info.
+
       """
     end
 
