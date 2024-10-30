@@ -67,6 +67,7 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.26"},
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
+      {:vix, "<= 0.30.0 or >= 0.31.1"},
       {:jason, "~> 1.0"},
       {:oembed, "~> 0.4.1"},
       {:phoenix_ecto, "~> 4.4"},
