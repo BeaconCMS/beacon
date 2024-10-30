@@ -110,7 +110,7 @@ defp copy_beacon_files(%{path: path} = release) do
 end
 ````
 
-Essential this function will copy the `tailwind-cli` binary and the `app.css` files into the release.
+Essentially this function will copy the `tailwind-cli` binary and the `app.css` files into the release.
 The `tailwind-cli` binary is required but `app.css` is only used if you actually [reuse it on your sites](reuse-app-css.md).
 
 See  https://hexdocs.pm/mix/Mix.Tasks.Release.html for more info about releases configuration.
@@ -125,11 +125,11 @@ fly launch
 
 When asked if you would like to set up a PostgreSQL database, answer YES and choose the most appropriate configuration for your site.
 
-When asked if you would like to deploy, answer YES or run `fly deploy` afterwards when you're ready to deploy.
+When asked if you would like to deploy, answer YES or run `fly deploy` afterward when you're ready to deploy.
 
 ## Deploy
 
-Beacon is designed to minimize deployments as much as possible, but eventually you can trigger new deployments by running:
+Beacon is designed to minimize deployments as much as possible, but eventually, you can trigger new deployments by running:
 
 ```sh
 fly deploy
@@ -137,7 +137,7 @@ fly deploy
 
 ## Open
 
-Finally, if you followed the guides to setup your site, run the following command to see it live:
+Finally, if you followed the guides to set up your site, run the following command to see it live:
 
 ```sh
 fly open /
@@ -151,6 +151,6 @@ You can find all available commands in the [Fly.io docs](https://fly.io/docs/fly
 
 ## Troubleshooting
 
-The default config file `fly.toml` created by `fly launch` defines `min_machines_running = 0` so Fly will auto stop machines
+The default config file `fly.toml` created by `fly launch` defines `min_machines_running = 0` so Fly will auto-stop machines
 that receive no traffic for a period of time. You might want to change this value to `1` otherwise it will look like your app
 is not working, when in fact it's just Fly proxy doing its job.

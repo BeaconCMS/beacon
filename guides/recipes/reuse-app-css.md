@@ -1,7 +1,7 @@
 # Reuse app.css
 
-Your Phoenix application has a `app.css` that you might want to use to generate styles for your site,
-and in this guide we'll see how to configure your site and make the neceeary changes to deploy your app.
+Your Phoenix application has an `app.css` that you might want to use to generate styles for your site,
+and in this guide, we'll see how to configure your site to reuse the same styles for your application and sites.
 
 In your site config, usually located at `runtime.exs`, you should add a new config `:tailwind_css`
 to let Beacon know where to find the `app.css` file:
@@ -24,5 +24,6 @@ config :beacon,
   ]
 ```
 
-Note the path is different for developments and production environments.
+Note the path is different for development and production environments because deployment usually are packed as releases.
+
 See the recipe [Deploy to Fly.io](deploy-to-flyio.md) for more info on how to deploy your app.
