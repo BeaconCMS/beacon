@@ -18,6 +18,9 @@
   - Skip dependency `:vix` v0.31.0 due to a bug to open files
   - Fix page title not updating on page patch
 
+### Chores
+  - TailwindCompiler - increase timeout to 4 minutes when waiting to generate template files
+
 ## 0.1.3 (2024-10-29)
 
 ### Enhancements
