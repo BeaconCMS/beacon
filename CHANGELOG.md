@@ -13,6 +13,8 @@
   - Update Deploy to Fly.io guide to use a release step to copy files into the release
   - Create recipe Reuse app.css
 
+## 0.1.4 (2024-10-31)
+
 ### Fixes
   - Fix Page and Layout publish on cluster environments
   - Skip dependency `:vix` v0.31.0 due to a bug to open files
