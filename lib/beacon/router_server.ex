@@ -51,6 +51,9 @@ defmodule Beacon.RouterServer do
     end
   end
 
+  @doc """
+  Inserts or replace a page in the router.
+  """
   def add_page(site, id, path) when is_atom(site) and is_binary(id) and is_binary(path) do
     GenServer.call(name(site), {:add_page, id, path})
   end
