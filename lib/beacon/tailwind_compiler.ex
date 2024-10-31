@@ -206,7 +206,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
         end)
       end)
     ]
-    |> Task.await_many(60_000)
+    |> Task.await_many(:timer.minutes(4))
     |> List.flatten()
   end
 
