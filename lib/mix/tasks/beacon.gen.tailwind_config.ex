@@ -114,8 +114,8 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
       updater: fn zipper ->
         Igniter.Code.Keyword.put_in_keyword(
           zipper,
-          [:esbuild],
-          Sourceror.parse_string!("{Esbuild, :install_and_run, [:beacon_tailwind_bundle, ~w(--watch)]}")
+          [:beacon_tailwind_config],
+          Sourceror.parse_string!("{Esbuild, :install_and_run, [:beacon_tailwind_config, ~w(--watch)]}")
         )
       end
     )
