@@ -67,6 +67,11 @@ defmodule Beacon.Content do
     String.to_atom("beacon_content_#{site}")
   end
 
+  defp clear_cache(site, key) do
+    :ets.delete(table_name(site), key)
+    :ok
+  end
+
   @doc false
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
@@ -185,10 +190,17 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    if Beacon.Config.fetch!(layout.site).mode == :live do
-      GenServer.call(name(layout.site), {:publish_layout, layout})
-    else
-      do_publish_layout(layout)
+    case Beacon.Config.fetch!(layout.site).mode do
+      :live ->
+        GenServer.call(name(layout.site), {:publish_layout, layout})
+
+      :testing ->
+        layout
+        |> insert_published_layout()
+        |> tap(fn {:ok, layout} -> reload_published_layout(layout.site, layout.id) end)
+
+      :manual ->
+        insert_published_layout(layout)
     end
   end
 
@@ -622,10 +634,17 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    if Beacon.Config.fetch!(page.site).mode == :live do
-      GenServer.call(name(page.site), {:publish_page, page})
-    else
-      do_publish_page(page)
+    case Beacon.Config.fetch!(page.site).mode do
+      :live ->
+        GenServer.call(name(page.site), {:publish_page, page})
+
+      :testing ->
+        page
+        |> insert_published_page()
+        |> tap(fn {:ok, page} -> reload_published_page(page.site, page.id) end)
+
+      :manual ->
+        insert_published_page(page)
     end
   end
 
@@ -4266,9 +4285,13 @@ defmodule Beacon.Content do
 
   @doc false
   def handle_call({:publish_page, page}, _from, config) do
-    case do_publish_page(page) do
-      {:ok, page} -> {:reply, {:ok, page}, config}
-      error -> {:reply, error, config}
+    case insert_published_page(page) do
+      {:ok, page} ->
+        :ok = Beacon.PubSub.page_published(page)
+        {:reply, {:ok, page}, config}
+
+      error ->
+        {:reply, error, config}
     end
   end
 
@@ -4313,30 +4336,48 @@ defmodule Beacon.Content do
     {:reply, content, config}
   end
 
-  defp do_publish_page(page) do
+  defp insert_published_layout(layout) do
+    %{site: site} = layout
+
+    changeset = Layout.changeset(layout, %{})
+
+    transact(repo(site), fn ->
+      with {:ok, _changeset} <- validate_layout_template(changeset),
+           {:ok, event} <- create_layout_event(layout, "published"),
+           {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
+        {:ok, layout}
+      end
+    end)
+  end
+
+  defp insert_published_page(page) do
     %{site: site} = page
+    changeset = Page.update_changeset(page, %{})
 
-    publish = fn page ->
-      changeset = Page.update_changeset(page, %{})
+    transact(repo(site), fn ->
+      with {:ok, _changeset} <- validate_page_template(changeset),
+           {:ok, event} <- create_page_event(page, "published"),
+           {:ok, _snapshot} <- create_page_snapshot(page, event),
+           %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
 
-      transact(repo(site), fn ->
-        with {:ok, _changeset} <- validate_page_template(changeset),
-             {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event),
-             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
-             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
-             true <- :ets.delete(table_name(site), page.id) do
-          {:ok, page}
-        end
-      end)
-    end
+  @doc false
+  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
+  def reload_published_layout(site, id) do
+    clear_cache(site, id)
+    :ok
+  end
 
-    with {:ok, page} <- publish.(page),
-         :ok <- Beacon.PubSub.page_published(page) do
-      {:ok, page}
-    else
-      error -> error
-    end
+  @doc false
+  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
+  def reload_published_page(site, id) do
+    clear_cache(site, id)
+    page = get_published_page(site, id)
+    :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+    :ok
   end
 
   defp do_publish_layout(layout) do
@@ -4348,8 +4389,7 @@ defmodule Beacon.Content do
       transact(repo(site), fn ->
         with {:ok, _changeset} <- validate_layout_template(changeset),
              {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
-             true <- :ets.delete(table_name(site), layout.id) do
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
           {:ok, layout}
         end
       end)
