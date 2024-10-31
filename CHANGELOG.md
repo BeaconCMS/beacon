@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Enhancements
+  - Add `beacon.gen.tailwind_config` task to generate a custom Tailwind config
   - Add `beacon.gen.site` task to generate new sites
   - Rework `beacon.install` with Igniter to be composable
   - Introduce config `:tailwind_css`
@@ -13,6 +14,8 @@
   - Create recipe Reuse app.css
 
 ### Fixes
+  - Fix Page and Layout publish on cluster environments
+  - Skip dependency `:vix` v0.31.0 due to a bug to open files
   - Fix page title not updating on page patch
 
 ## 0.1.3 (2024-10-29)
