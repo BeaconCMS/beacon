@@ -68,6 +68,12 @@ defmodule Beacon.Content do
   end
 
   @doc false
+  def clear_cache(site, key) do
+    :ets.delete(table_name(site), key)
+    :ok
+  end
+
+  @doc false
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
   end
@@ -4323,9 +4329,7 @@ defmodule Beacon.Content do
         with {:ok, _changeset} <- validate_page_template(changeset),
              {:ok, event} <- create_page_event(page, "published"),
              {:ok, _snapshot} <- create_page_snapshot(page, event),
-             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
-             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
-             true <- :ets.delete(table_name(site), page.id) do
+             %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
           {:ok, page}
         end
       end)
@@ -4348,8 +4352,7 @@ defmodule Beacon.Content do
       transact(repo(site), fn ->
         with {:ok, _changeset} <- validate_layout_template(changeset),
              {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
-             true <- :ets.delete(table_name(site), layout.id) do
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
           {:ok, layout}
         end
       end)

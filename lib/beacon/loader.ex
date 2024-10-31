@@ -269,12 +269,16 @@ defmodule Beacon.Loader do
   end
 
   def handle_info({:layout_published, %{site: site, id: id}}, config) do
+    Beacon.Content.clear_cache(site, id)
     reload_layout_module(site, id)
     reload_runtime_css(site)
     {:noreply, config}
   end
 
   def handle_info({:page_published, %{site: site, id: id}}, config) do
+    Beacon.Content.clear_cache(site, id)
+    page = Beacon.Content.get_published_page(site, id)
+    :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
     reload_page_module(site, id)
     reload_runtime_css(site)
     {:noreply, config}
@@ -282,6 +286,9 @@ defmodule Beacon.Loader do
 
   def handle_info({:pages_published, site, pages}, config) do
     for %{id: id} <- pages do
+      Beacon.Content.clear_cache(site, id)
+      page = Beacon.Content.get_published_page(site, id)
+      :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
       reload_page_module(site, id)
     end
 
