@@ -111,16 +111,16 @@ defmodule Beacon.Web.PageLive do
         """
 
       site ->
-        if Beacon.Config.fetch!(site).mode == :live do
-          Process.put(:beacon_site, site)
-        end
-
         %{"path" => path_info} = params
         page = RouterServer.lookup_page!(site, path_info)
         live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
         beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
         if socket.assigns.beacon.site != site do
+          if Beacon.Config.fetch!(site).mode == :live do
+            Process.put(:beacon_site, site)
+          end
+
           Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
           Beacon.PubSub.subscribe_to_page(site, path_info)
         end

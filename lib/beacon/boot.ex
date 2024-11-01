@@ -15,7 +15,7 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, mode: :manual}) do
+  def init(%{site: site, mode: :manual}) when is_atom(site) do
     Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
 
     # Router helpers are always available
@@ -25,9 +25,9 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  def init(%{site: site, mode: :testing}) do
+  def init(%{site: site, mode: :testing}) when is_atom(site) do
     Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
-
+    #
     # reload shared modules used by layouts and pages
     # Router helpers are always available
     # TODO: we should be able to remove the next lines after implementing `:error_handler` callbacks
@@ -38,11 +38,15 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  def init(%{site: site}), do: init(site)
-
-  def init(site) when is_atom(site) do
+  def init(%{site: site, mode: :live}) when is_atom(site) do
     Logger.info("Beacon.Boot booting site #{site}")
     task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
+
+    # Still needed to test Beacon itself
+    # Sigils and router helpers
+    # Layouts and pages depend on the components module so we need to load them first
+    Beacon.Loader.reload_routes_module(site)
+    Beacon.Loader.reload_components_module(site)
 
     # temporary disable module reloading so we can populate data more efficiently
     %{mode: :manual} = Beacon.Config.update_value(site, :mode, :manual)
@@ -67,4 +71,6 @@ defmodule Beacon.Boot do
 
     :ignore
   end
+
+  def init(site) when is_atom(site), do: init(%{site: site, mode: :live})
 end

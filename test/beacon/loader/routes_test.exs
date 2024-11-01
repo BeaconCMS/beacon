@@ -2,35 +2,35 @@ defmodule Beacon.Loader.RoutesTest do
   use Beacon.DataCase, async: true
   use Beacon.Test
 
-  # Beacon.Loader.fetch_routes_module(:booted)
-  import :"Elixir.Beacon.Web.LiveRenderer.fb13425603d2684189757bc0a91e1833.Routes"
+  # Beacon.Loader.fetch_routes_module(:s3_site)
+  import :"Elixir.Beacon.Web.LiveRenderer.c55c9d9db8d6d8c4d34b4f249c20ed4e.Routes"
 
   test "beacon_asset_path" do
-    assert beacon_asset_path("logo.webp") == "/__beacon_assets__/booted/logo.webp"
+    assert beacon_asset_path("logo.webp") == "/__beacon_assets__/s3_site/logo.webp"
   end
 
   test "beacon_asset_url" do
-    assert beacon_asset_url("logo.webp") == "http://localhost:4000/__beacon_assets__/booted/logo.webp"
+    assert beacon_asset_url("logo.webp") == "http://localhost:4000/__beacon_assets__/s3_site/logo.webp"
   end
 
   describe "sigil_p" do
     test "static" do
-      assert sigil_p("/", []) == "/nested/site"
-      assert sigil_p("/contact", []) == "/nested/site/contact"
+      assert ~p"/" == "/nested/media"
+      assert ~p"/contact" == "/nested/media/contact"
     end
 
     test "derive path from page" do
-      page = beacon_page_fixture(site: :booted, path: "/elixir-lang")
+      page = beacon_page_fixture(site: :s3_site, path: "/elixir-lang")
 
-      assert sigil_p("/#{page}", []) == "/nested/site/elixir-lang"
-      assert sigil_p("/posts/#{page}", []) == "/nested/site/posts/elixir-lang"
+      assert ~p"/#{page}" == "/nested/media/elixir-lang"
+      assert ~p"/posts/#{page}" == "/nested/media/posts/elixir-lang"
     end
 
     test "with dynamic segments" do
       page = %{id: 1}
 
-      assert sigil_p("/posts/#{page.id}", []) == "/nested/site/posts/1"
-      assert sigil_p("/posts/#{"a b"}", []) == "/nested/site/posts/a%20b"
+      assert ~p"/posts/#{page.id}" == "/nested/media/posts/1"
+      assert ~p"/posts/#{"a b"}" == "/nested/media/posts/a%20b"
     end
   end
 end
