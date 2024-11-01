@@ -282,6 +282,7 @@ defmodule Beacon.Loader do
 
   def handle_info({:page_published, %{site: site, id: id}}, config) do
     Beacon.Content.reload_published_page(site, id)
+    # TODO: remove reload_page_module
     reload_page_module(site, id)
     reload_runtime_css(site)
     {:noreply, config}

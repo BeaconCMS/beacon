@@ -27,7 +27,7 @@ defmodule Beacon.Boot do
 
   def init(%{site: site, mode: :testing}) when is_atom(site) do
     Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
-    #
+
     # reload shared modules used by layouts and pages
     # Router helpers are always available
     # TODO: we should be able to remove the next lines after implementing `:error_handler` callbacks
