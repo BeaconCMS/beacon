@@ -128,6 +128,7 @@ defmodule Beacon do
     end
   end
 
+  # TODO: remove apply_mfa
   @doc false
   # Provides a safer `apply` for cases where `module` is being recompiled,
   # and also raises with more context about the called mfa.
