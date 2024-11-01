@@ -2,52 +2,43 @@
 
 Beacon has built-in TailwindCSS support, any page can use its classes out of the box and a stylesheet will be automatically generated and served.
 
-A default and simple configuration that works with Phoenix and Beacon is already bundled in the Beacon package, so you can skip this guide if that suits your needs.
+That default configuration is already bundled in the Beacon package, so you can skip this guide if that suits your needs.
 
-Otherwise, keep reading to learn how to set up a custom configuration with more advanced features like plugins.
+Otherwise, keep reading to learn how to set up a custom configuration with more advanced features such as custom plugins, themes, and more.
 
 **Note** that the Tailwind configuration must respect some constraints to work properly with Beacon,
-so if you want to reuse an existing configuration, make sure to follow the steps below and make the necessary adjustments.
-It might be a good idea to keep separated configs, one for your application and another one for Beacon sites, and reuse
+so if you want to reuse an existing configuration make sure to follow the steps below and make the necessary adjustments.
+It might be a good idea to keep separate configs, one for your application and another one for Beacon sites, and reuse
 parts that are common between them.
 
 ## Objective
 
-Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, then bundle everything together in a single module.
+Make sure the proper Tailwind version is installed, create a valid Tailwind config in the ESM format, and bundle everything together into a single package.
+
+## Prerequisites
+
+A site must be already configured. Otherwise, follow the [Your First Site](https://hexdocs.pm/beacon/your-first-site.html) guide first.
 
 ## Constraints
 
 Since Beacon uses the same configuration to generate stylesheets for your sites and also to preview pages on the Visual Editor in the browser,
 that configuration must respect some constraints to work properly in both environments:
 
-  - Use the ESM format
-  - Can't call node APIs
-
-In the steps below you'll learn how to make the neccessary adjustments.
+  - [Use the ESM format](https://tailwindcss.com/blog/tailwindcss-v3-3#esm-and-type-script-support)
+  - Can't call node APIs such as `require("fs")` and `require("path")`
 
 ## Steps
 
-* Install Tailwind v3.3.0 or higher
-* Install Esbuild
-* ESM format
-* Remove node APIs
-* Heroicons
-* Install plugins
-* Bundle the config
-* Use the config in your site configuration
-
-Let's go through each one to set up Tailwind properly for your sites.
-
 ### Tailwind v3.3.0 or higher
 
-Any recent Phoenix application should have the [tailwind](https://hex.pm/packages/tailwind) library already installed and updated but let's double check by executing:
+Any recent Phoenix application should have the [tailwind](https://hex.pm/packages/tailwind) library already installed and updated but let's double check, execute:
 
 ```sh
 mix run -e "IO.inspect Tailwind.bin_version()"
 ```
 
 If it fails or the version is lower than 3.3.0 then follow the [tailwind install guide](https://github.com/phoenixframework/tailwind?tab=readme-ov-file#installation)
-to get it installed or updated. It's important to install a recent Tailwind version higher than 3.3.0
+to get it installed or updated. It's required to install a recent Tailwind version higher than 3.3.0
 
 ### Esbuild
 
@@ -60,158 +51,27 @@ mix run -e "IO.inspect Esbuild.bin_version()"
 If it fails then follow the [esbuild install guide](https://github.com/phoenixframework/esbuild?tab=readme-ov-file#installation) to get it installed.
 Any recent version that is installed should work just fine.
 
-### ESM format
-
-Beacon expects a config file in the ESM format, ie: one that has `default export` instead of `module.exports`.
-
-Most likely the existing config `assets/tailwind.config.js` was created in the CommonJS format, so given a file like this:
-
-```js
-module.exports = {
-  theme: {
-    colors: {
-      'blue': '#1fb6ff'
-    }
-  }
-}
-```
-
-Replace with the following syntax to have a valid ESM config:
-
-```js
-export default {
-  theme: {
-    colors: {
-      'blue': '#1fb6ff'
-    }
-  }
-}
-```
-
-More info at https://tailwindcss.com/blog/tailwindcss-v3-3#esm-and-type-script-support
-
-### Remove node APIs
-
-The default `tailwind.config.js` created by the Phoenix installer will require the `fs` and `path` modules to load Heroicons in your application,
-the problem is that those modules are not available in the browser, so we can't use them.
-
-You have 2 options. Either remove those requires and the code using that module if you're not using Heroicons or not planning to use them,
-or the other option is to create a new config file only for Beacon, that doesn't require those APIs.
-
-See the Heroicons section below for more information regarding loading icons for Beacon pages.
-
-### Heroicons
-
-Heroicons are bundled by default in the `.heroicon` component, see the [Heroicons guide](../recipes/heroicons.md) for more information.
-
 ### Install plugins
 
-The default config generated by Phoenix imports the `@tailwindcss/forms` plugin so we need to install it first. Execute in the root of your project:
+The config we'll generate imports the plugins `@tailwindcss/forms` and `@tailwindcss/typography` so they must be installed before we can actually generate the bundle file.
+Execute at the root of your project:
 
 ```sh
-npm install --prefix assets --save @tailwindcss/forms
+npm install --prefix assets --save @tailwindcss/forms @tailwindcss/typography
 ```
 
-### Bundled config
+### Create a new valid config file and update site config
 
-We'll change 3 files to make it work:
+Beacon provides a generator that will create and change the files needed to set up a custom Tailwind configuration.
 
-1. `config/config.exs`
+Execute at the root of your project and follow the prompts:
 
-Open the file `config/config.exs`, find the `:esbuild` config, and add a new `tailwind_bundle` that will look like this:
-
-```elixir
-config :esbuild,
-  version: "0.23.0",
-  my_app: [
-    # omitted for brevity
-  ],
-  # add this block
-  tailwind_bundle: [
-    args: ~w(tailwind.config.js --bundle --format=esm --target=es2020 --outfile=../priv/tailwind.config.bundle.js),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
-  ]
+```sh
+mix beacon.gen.tailwind_config --site my_site
 ```
 
-_Change the path to the `tailwind.config.js` file if you're using a different one._
+_Replace `my_site` with the name of the site you want to install the custom Tailwind configuration._
 
-2. `config/dev.exs`
-
-Open the file `config/dev.exs`, find the `:watchers` key in the endpoint config, and add a new `tailwind_bundle` that will look like this:
-
-```elixir
-config :my_app, MyAppWeb.Endpoint,
-  # omitted for brevity
-  watchers: [
-    esbuild: {Esbuild, :install_and_run, [:my_app, ~w(--sourcemap=inline --watch)]},
-    esbuild: {Esbuild, :install_and_run, [:tailwind_bundle, ~w(--watch)]}, # <-- add this line
-    tailwind: {Tailwind, :install_and_run, [:my_app, ~w(--watch)]}
-  ]
-```
-
-3. `mix.exs`
-
-In the list of aliases, add the following command in both `"assets.build"` and `"assets.deploy"`:
-
-```elixir
-"esbuild tailwind_bundle"
-```
-
-It will look like this:
-
-```elixir
-defp aliases do
-  [
-    # omitted for brevity
-    "assets.build": ["tailwind my_app", "esbuild my_app", "esbuild tailwind_bundle"],
-    "assets.deploy": [
-      "tailwind my_app --minify",
-      "esbuild my_app --minify",
-      "esbuild tailwind_bundle --minify",
-      "phx.digest"
-    ]
-  ]
-end
-```
-
-## Site Configuration
-
-**Note** that if you're setting up the environment for the first time and have no site created yet, for example if you're following the "Your first site" or the "Create a Blog" guide,
-you won't have any site configuration to update. In this case, you can skip this step and come back to it later after executing the `beacon.install` command.
-
-Open the file `lib/my_app/application.ex` (replace `my_app` with your actual application name), find the configuration of the site you'll be using
-this Tailwind config and add the `tailwind_config` key pointing to the bundled file:
-
-```elixir
-tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.bundle.js"),
-```
-
-It will look somewhat like this:
-
-```elixir
-@impl true
-def start(_type, _args) do
-  children = [
-    # omitted for brevity
-    {Beacon,
-     sites: [
-       [
-         site: :my_site,
-         repo: MyApp.Repo,
-         endpoint: MyAppWeb.Endpoint,
-         router: MyAppWeb.Router,
-         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.bundle.js") # <-- add this line
-       ]
-     ]},
-    MyAppWeb.Endpoint
-  ]
-
-  # omitted for brevity
-end
-```
-
-**Remember** to replace `my_app` with the actual name of your application.
-
-Now the bundled Tailwind config will be used by Beacon to generate the styles for your site and to create pages using the Visual editor,
-and the same config will be used to [deploy your site](../recipes/deploy-to-flyio.md).
+The generated config file is in the ESM format, ie: it exports the config as `default export` instead of `module.exports`,
+and it doesn't use node APIs like `fs` or `path`, so it can't bundle heroicons as the default Phoenix config does,
+but Beacon provides a component to render such icons, see the [Heroicons guide](../recipes/heroicons.md) for more information.

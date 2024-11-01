@@ -1,14 +1,26 @@
 # Beacon
 
-> Performance without compromising productivity.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BeaconCMS/beacon/main/assets/images/beacon.png" width="256" alt="Beacon logo">
+</p>
 
-Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
+<p align="center">
+  Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
+</p>
 
-## Guides
+## Getting Started
 
-Check out the guides to get started and recipes to learn about features and do more with your sites.
+Generate a new Phoenix application with Beacon and Beacon LiveAdmin installed:
 
-If you're new to Beacon you probably want to start with the create your first site guide.
+```sh
+mix archive.install hex phx_new
+mix archive.install hex igniter_new
+mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new --beacon.site my_site
+```
+
+Or check out the guides for more info and recipes to learn about features and do more with your sites.
+
+If you're new to Beacon you probably want to take a look on the [Your First Site](https://hexdocs.pm/beacon/your-first-site.html) guide.
 
 ## Demo
 
@@ -55,7 +67,7 @@ Finally, visit any of the routes defined in `dev.exs`, eg: http://localhost:4001
 
 ## Looking for help with your Elixir project?
 
-<img src="assets/images/dockyard_logo.png" width="256" alt="DockYard logo">
+<img src="assets/images/dockyard.png" width="256" alt="DockYard logo">
 
 At DockYard we are [ready to help you build your next Elixir project](https://dockyard.com/phoenix-consulting).
 We have a unique expertise in Elixir and Phoenix development that is unmatched and we love to [write about Elixir](https://dockyard.com/blog/categories/elixir).

@@ -67,6 +67,7 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.26"},
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
+      {:vix, "<= 0.30.0 or >= 0.31.1"},
       {:jason, "~> 1.0"},
       {:oembed, "~> 0.4.1"},
       {:phoenix_ecto, "~> 4.4"},
@@ -77,6 +78,7 @@ defmodule Beacon.MixProject do
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
+      {:igniter, "~> 0.3"},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -85,7 +87,8 @@ defmodule Beacon.MixProject do
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:esbuild, "~> 0.5", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:bypass, "~> 2.1", only: :test}
+      {:bypass, "~> 2.1", only: :test},
+      {:phx_new, "~> 1.7", only: :test, runtime: false}
     ]
   end
 
@@ -119,7 +122,7 @@ defmodule Beacon.MixProject do
   defp docs do
     [
       main: "Beacon",
-      logo: "assets/images/beacon_logo.png",
+      logo: "assets/images/beacon.png",
       source_ref: "v#{@version}",
       source_url: @source_url,
       extra_section: "GUIDES",

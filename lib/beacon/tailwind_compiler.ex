@@ -139,6 +139,8 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
       Please update your Tailwind CSS binary to the latest version.
 
+      See https://github.com/phoenixframework/tailwind for more info.
+
       """
     end
 
@@ -229,7 +231,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
         end)
       end)
     ]
-    |> Task.await_many(60_000)
+    |> Task.await_many(:timer.minutes(4))
     |> List.flatten()
   end
 
@@ -269,6 +271,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
     './lib/*_web.ex',
     './lib/*_web/**/*.*ex',
     './apps/*_web/assets/**/*.js',
+    '!./apps/*_web/assets/node_modules/**',
     './apps/*_web/lib/*_web.ex',
     './apps/*_web/lib/*_web/**/*.*ex',
     '#{tmp_dir}/*.template'

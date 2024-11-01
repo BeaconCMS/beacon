@@ -100,27 +100,41 @@ defmodule Beacon.Web.PageLive do
     end
   end
 
-  def handle_params(params, _url, socket) do
-    %{beacon: %{site: site}} = socket.assigns
-    %{"path" => path_info} = params
-    page = RouterServer.lookup_page!(site, path_info)
-    live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
-    beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
+  def handle_params(params, url, socket) do
+    case Beacon.Private.site_from_session(socket.endpoint, socket.router, url, __MODULE__) do
+      nil ->
+        raise Beacon.Web.NotFoundError, """
+        no page was found for url #{url}
+        Make sure a page was created for that url.
+        """
 
-    Process.put(:beacon_site, site)
+      site ->
+        Process.put(:beacon_site, site)
 
-    socket =
-      socket
-      |> Component.assign(live_data)
-      # TODO: remove deprecated @beacon_live_data
-      |> Component.assign(:beacon_live_data, live_data)
-      # TODO: remove deprecated @beacon_path_params
-      |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
-      # TODO: remove deprecated @beacon_query_params
-      |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
-      |> Component.assign(:beacon, beacon_assigns)
+        %{"path" => path_info} = params
+        page = RouterServer.lookup_page!(site, path_info)
+        live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
+        beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
-    {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
+        if socket.assigns.beacon.site != site do
+          Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
+          Beacon.PubSub.subscribe_to_page(site, path_info)
+        end
+
+        socket =
+          socket
+          |> Component.assign(live_data)
+          # TODO: remove deprecated @beacon_live_data
+          |> Component.assign(:beacon_live_data, live_data)
+          # TODO: remove deprecated @beacon_path_params
+          |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
+          # TODO: remove deprecated @beacon_query_params
+          |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
+          |> Component.assign(:beacon, beacon_assigns)
+          |> Component.assign(:page_title, Beacon.Web.DataSource.page_title(site, page.id, live_data))
+
+        {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
+    end
   end
 
   @doc false

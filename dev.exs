@@ -176,28 +176,6 @@ dev_seeds = fn ->
     """
   })
 
-  # metadata =
-  #   Beacon.MediaLibrary.UploadMetadata.new(
-  #     :dev,
-  #     Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
-  #     name: "dockyard_1.png",
-  #     size: 196_000,
-  #     extra: %{"alt" => "logo"}
-  #   )
-
-  # _img1 = Beacon.MediaLibrary.upload(metadata)
-
-  # metadata =
-  #   Beacon.MediaLibrary.UploadMetadata.new(
-  #     :dev,
-  #     Path.join(:code.priv_dir(:beacon), "assets/dockyard-wide.jpeg"),
-  #     name: "dockyard_2.png",
-  #     size: 196_000,
-  #     extra: %{"alt" => "alternate logo"}
-  #   )
-
-  # _img2 = Beacon.MediaLibrary.upload(metadata)
-
   home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
 
   Beacon.Content.create_assign_for_live_data(
@@ -238,6 +216,8 @@ dev_seeds = fn ->
       template: """
       <main class="custom-font-style">
         <%!-- Home Page --%>
+
+        <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
 
         <h1 class="text-violet-500">Dev</h1>
         <p class="text-sm">Page</p>
