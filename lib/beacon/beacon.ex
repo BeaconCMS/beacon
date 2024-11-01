@@ -135,57 +135,59 @@ defmodule Beacon do
   #
   # This should always be used when calling dynamic modules
   def apply_mfa(module, function, args, opts \\ []) when is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
-    context = Keyword.get(opts, :context, nil)
-    do_apply_mfa(module, function, args, 0, context)
+    apply(module, function, args)
+    # context = Keyword.get(opts, :context, nil)
+    # do_apply_mfa(module, function, args, 0, context)
   end
 
-  @max_retries 5
+  # @max_retries 5
 
-  defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
-    if :erlang.module_loaded(module) do
-      apply(module, function, args)
-    else
-      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
-    end
-  rescue
-    error in UndefinedFunctionError ->
-      case {failure_count, error} do
-        {failure_count, _} when failure_count >= @max_retries ->
-          mfa = Exception.format_mfa(module, function, length(args))
-          Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
+  # defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
+  #   if :erlang.module_loaded(module) do
+  #     apply(module, function, args)
+  #   else
+  #     raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
+  #   end
+  # rescue
+  #   error in UndefinedFunctionError ->
+  #     case {failure_count, error} do
+  #       {failure_count, _} when failure_count >= @max_retries ->
+  #         mfa = Exception.format_mfa(module, function, length(args))
+  #         Logger.debug("failed to call #{mfa} after #{failure_count} tries")
+  #         reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
 
-        {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
-          mfa = Exception.format_mfa(module, function, length(args))
-          Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
-          :timer.sleep(100 * (failure_count * 2))
-          do_apply_mfa(module, function, args, failure_count + 1, context)
+  #       {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
+  #         mfa = Exception.format_mfa(module, function, length(args))
+  #         Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
+  #         :timer.sleep(100 * (failure_count * 2))
+  #         do_apply_mfa(module, function, args, failure_count + 1, context)
 
-        {_, error} ->
-          reraise Beacon.RuntimeError,
-                  [message: apply_mfa_error_message(module, function, args, nil, context, error)],
-                  __STACKTRACE__
-      end
+  #       {_, error} ->
+  #         reraise Beacon.RuntimeError,
+  #                 [message: apply_mfa_error_message(module, function, args, nil, context, error)],
+  #                 __STACKTRACE__
+  #     end
 
-    error ->
-      Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
-      reraise error, __STACKTRACE__
-  end
+  #   error ->
+  #     Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
+  #     reraise error, __STACKTRACE__
+  # end
 
-  defp apply_mfa_error_message(module, function, args, reason, context, error) do
-    mfa = Exception.format_mfa(module, function, length(args))
-    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
-    reason = if reason, do: "reason: #{reason}"
-    context = if context, do: "context: #{inspect(context)}"
-    error = if error, do: Exception.message(error)
+  # defp apply_mfa_error_message(module, function, args, reason, context, error) do
+  #   mfa = Exception.format_mfa(module, function, length(args))
+  #   summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
+  #   reason = if reason, do: "reason: #{reason}"
+  #   context = if context, do: "context: #{inspect(context)}"
+  #   error = if error, do: Exception.message(error)
 
-    lines = for line <- [summary, reason, context, error], line != nil, do: line
-    Enum.join(lines, "\n\n")
-  end
+  #   lines = for line <- [summary, reason, context, error], line != nil, do: line
+  #   Enum.join(lines, "\n\n")
+  # end
 
   @doc false
   # https://github.com/phoenixframework/phoenix_live_view/blob/8fedc6927fd937fe381553715e723754b3596a97/lib/phoenix_live_view/channel.ex#L435-L437
   def exported?(m, f, a) do
-    function_exported?(m, f, a) || (Code.ensure_loaded?(m) && function_exported?(m, f, a))
+    function_exported?(m, f, a)
+    # function_exported?(m, f, a) || (Code.ensure_loaded?(m) && function_exported?(m, f, a))
   end
 end
