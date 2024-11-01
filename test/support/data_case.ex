@@ -14,7 +14,6 @@ defmodule Beacon.DataCase do
   end
 
   setup tags do
-    Process.flag(:error_handler, Beacon.ErrorHandler)
     Beacon.DataCase.setup_sandbox(tags)
     :ok
   end

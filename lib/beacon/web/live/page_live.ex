@@ -20,8 +20,10 @@ defmodule Beacon.Web.PageLive do
     %{"beacon_site" => site} = session
 
     # Use Beacon custom error handler to automatically load modules on-demand
-    Process.flag(:error_handler, Beacon.ErrorHandler)
-    Process.put(:beacon_site, site)
+    if Beacon.Config.fetch!(site).mode == :live do
+      Process.put(:beacon_site, site)
+      Process.flag(:error_handler, Beacon.ErrorHandler)
+    end
 
     # TODO: handle back pressure on simualtaneous calls to reload the same page
     page = RouterServer.lookup_page!(site, path)
@@ -109,7 +111,9 @@ defmodule Beacon.Web.PageLive do
         """
 
       site ->
-        Process.put(:beacon_site, site)
+        if Beacon.Config.fetch!(site).mode == :live do
+          Process.put(:beacon_site, site)
+        end
 
         %{"path" => path_info} = params
         page = RouterServer.lookup_page!(site, path_info)

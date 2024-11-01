@@ -11,7 +11,6 @@ defmodule Beacon.Loader.ErrorPageTest do
   setup %{conn: conn} do
     :ok = Beacon.Loader.populate_default_layouts(default_site())
     :ok = Beacon.Loader.populate_default_error_pages(default_site())
-    Process.put(:beacon_site, default_site())
     {:ok, error_module} = Beacon.Loader.reload_error_page_module(default_site())
 
     [conn: build_conn(conn), error_module: error_module]
