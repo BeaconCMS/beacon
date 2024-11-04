@@ -274,14 +274,14 @@ defmodule Beacon.Loader do
   end
 
   def handle_info({:layout_published, %{site: site, id: id}}, config) do
-    Beacon.Content.reload_published_layout(site, id)
+    Beacon.Content.reset_published_layout(site, id)
     reload_layout_module(site, id)
     reload_runtime_css(site)
     {:noreply, config}
   end
 
   def handle_info({:page_published, %{site: site, id: id}}, config) do
-    Beacon.Content.reload_published_page(site, id)
+    Beacon.Content.reset_published_page(site, id)
     # TODO: remove reload_page_module
     reload_page_module(site, id)
     reload_runtime_css(site)
@@ -290,7 +290,7 @@ defmodule Beacon.Loader do
 
   def handle_info({:pages_published, site, pages}, config) do
     for %{id: id} <- pages do
-      Beacon.Content.reload_published_page(site, id)
+      Beacon.Content.reset_published_page(site, id)
       reload_page_module(site, id)
     end
 

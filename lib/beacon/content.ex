@@ -197,7 +197,7 @@ defmodule Beacon.Content do
       :testing ->
         layout
         |> insert_published_layout()
-        |> tap(fn {:ok, layout} -> reload_published_layout(layout.site, layout.id) end)
+        |> tap(fn {:ok, layout} -> reset_published_layout(layout.site, layout.id) end)
 
       :manual ->
         insert_published_layout(layout)
@@ -641,7 +641,7 @@ defmodule Beacon.Content do
       :testing ->
         page
         |> insert_published_page()
-        |> tap(fn {:ok, page} -> reload_published_page(page.site, page.id) end)
+        |> tap(fn {:ok, page} -> reset_published_page(page.site, page.id) end)
 
       :manual ->
         insert_published_page(page)
@@ -4366,14 +4366,34 @@ defmodule Beacon.Content do
 
   @doc false
   # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
-  def reload_published_layout(site, id) do
+  def reset_published_layouts(site) do
+    for %{id: id} <- list_published_layouts(site) do
+      reset_published_layout(site, id)
+    end
+
+    :ok
+  end
+
+  @doc false
+  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
+  def reset_published_layout(site, id) do
     clear_cache(site, id)
     :ok
   end
 
   @doc false
   # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
-  def reload_published_page(site, id) do
+  def reset_published_pages(site) do
+    for %{id: id} <- list_published_pages(site, per_page: :infinity) do
+      reset_published_page(site, id)
+    end
+
+    :ok
+  end
+
+  @doc false
+  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
+  def reset_published_page(site, id) do
     clear_cache(site, id)
     page = get_published_page(site, id)
     :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
