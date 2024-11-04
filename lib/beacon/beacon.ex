@@ -129,7 +129,7 @@ defmodule Beacon do
   end
 
   @doc false
-  # This should always be used when calling dynamic modules
+  # This should always be used when calling dynamic modules to provide better error messages
   def apply_mfa(module, function, args, opts \\ []) when is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
     apply(module, function, args)
   rescue
@@ -151,7 +151,4 @@ defmodule Beacon do
     lines = for line <- [summary, reason, context, error], line != nil, do: line
     Enum.join(lines, "\n\n")
   end
-
-  @doc false
-  def exported?(m, f, a), do: function_exported?(m, f, a)
 end

@@ -1,26 +1,25 @@
 defmodule Beacon.ErrorHandler do
   @moduledoc false
 
-  # Beacon custom error handler
-  # This module is VERY fragile, any silly mistake will crash the VM.
-  # Change with caution.
-  # See `https://elixir-lang.org/blog/2012/04/24/a-peek-inside-elixir-s-parallel-compiler/` for more info
+  # Beacon custom error handler to autoload modules at runtime.
+  # This module is VERY fragile, any silly mistake will crash the VM without logs. Change with caution.
+  # See https://elixir-lang.org/blog/2012/04/24/a-peek-inside-elixir-s-parallel-compiler for more info
 
   alias Beacon.Loader
 
-  @doc false
   def undefined_function(module, fun, args) do
     ensure_loaded(module) or reload_resource(module)
     :error_handler.undefined_function(module, fun, args)
   end
 
-  @doc false
   def undefined_lambda(module, fun, args) do
     ensure_loaded(module) or reload_resource(module)
     :error_handler.undefined_lambda(module, fun, args)
   end
 
-  def ensure_loaded(module) do
+  # tries to load the module before calling Beacon's loader
+  # necessary to load regular modules not managed by Beacon
+  defp ensure_loaded(module) do
     case :code.ensure_loaded(module) do
       {:module, _} -> true
       {:error, _} -> false
@@ -31,6 +30,9 @@ defmodule Beacon.ErrorHandler do
     module
     |> Module.split()
     |> reload_resource()
+  # ignore erlang modules
+  rescue
+    _ -> false
   end
 
   defp reload_resource(["Beacon", "Web", "LiveRenderer", _site_id, resource]) do
@@ -41,12 +43,14 @@ defmodule Beacon.ErrorHandler do
     reload_beacon_resource(resource)
   end
 
-  defp reload_resource(_module) do
-    false
-  end
+  defp reload_resource(_module), do: false
 
   defp reload_beacon_resource(resource) do
-    site = Process.get(:beacon_site)
+    site = Process.get(:__beacon_site__)
+
+    if !site do
+      raise Beacon.LoaderError, "failed to load resource #{resource} due to undefined site"
+    end
 
     case resource do
       "Page" <> page_id -> Loader.reload_page_module(site, page_id)
@@ -59,6 +63,7 @@ defmodule Beacon.ErrorHandler do
       "ErrorPage" -> Loader.reload_error_page_module(site)
       "EventHandlers" -> Loader.reload_event_handlers_module(site)
       "InfoHandlers" -> Loader.reload_info_handlers_module(site)
+      _ -> raise Beacon.LoaderError, "Beacon autoload do not recognize the resource #{resource}"
     end
   end
 end
