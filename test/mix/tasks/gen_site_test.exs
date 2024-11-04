@@ -52,7 +52,12 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
 
   describe "router" do
     setup do
-      [project: phoenix_project()]
+      project =
+        phoenix_project()
+        |> Igniter.compose_task("beacon.install", [])
+        |> Igniter.Test.apply_igniter!()
+
+      [project: project]
     end
 
     test "use beacon", %{project: project} do

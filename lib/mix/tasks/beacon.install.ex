@@ -45,14 +45,18 @@ defmodule Mix.Tasks.Beacon.Install do
   end
 
   @doc false
-  def igniter(igniter, argv \\ []) do
-    {_arguments, argv} = positional_args!(argv)
-    options = options!(argv)
+  def igniter(igniter) do
+    argv = igniter.args.argv
+    options = igniter.args.options
 
     igniter
-    |> Igniter.Project.Formatter.import_dep(:beacon)
+    |> add_beacon_plugin_formatter()
     |> replace_error_html()
     |> maybe_gen_site(options, argv)
+  end
+
+  defp add_beacon_plugin_formatter(igniter) do
+    Igniter.Project.Formatter.import_dep(igniter, :beacon)
   end
 
   defp replace_error_html(igniter) do
