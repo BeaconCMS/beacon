@@ -106,7 +106,8 @@ defmodule Beacon.Web.PageLive do
     case Beacon.Private.site_from_session(socket.endpoint, socket.router, url, __MODULE__) do
       nil ->
         raise Beacon.Web.NotFoundError, """
-        no page was found for url #{url}
+        no page found for url #{url}
+
         Make sure a page was created for that url.
         """
 

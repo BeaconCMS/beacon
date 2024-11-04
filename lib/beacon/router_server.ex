@@ -40,7 +40,7 @@ defmodule Beacon.RouterServer do
   def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
     raise = fn ->
       raise Beacon.Web.NotFoundError, """
-      no page was found for site #{site} and path #{inspect(path_info)}
+      no page found for site #{site} and path #{inspect(path_info)}
 
       Make sure a page was created for that path.
       """
