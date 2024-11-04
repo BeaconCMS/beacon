@@ -4,6 +4,10 @@ defmodule Beacon.ErrorHandler do
   # Beacon custom error handler to autoload modules at runtime.
   # This module is VERY fragile, any silly mistake will crash the VM without logs. Change with caution.
   # See https://elixir-lang.org/blog/2012/04/24/a-peek-inside-elixir-s-parallel-compiler for more info
+  #
+  # Note that we don't raise in this module because it must propagate the error upstream,
+  # so for example a UndefinedFunctionError can be captured by Beacon and re-raised as
+  # a more meaningful error message with a proper Plug status.
 
   alias Beacon.Loader
 
@@ -30,28 +34,24 @@ defmodule Beacon.ErrorHandler do
     module
     |> Module.split()
     |> reload_resource()
-  # ignore erlang modules
   rescue
+    # ignore erlang modules
     _ -> false
   end
 
   defp reload_resource(["Beacon", "Web", "LiveRenderer", _site_id, resource]) do
-    reload_beacon_resource(resource)
+    reload_beacon_resource(Process.get(:__beacon_site__), resource)
   end
 
   defp reload_resource(["Elixir", "Beacon", "Web", "LiveRenderer", _site_id, resource]) do
-    reload_beacon_resource(resource)
+    reload_beacon_resource(Process.get(:__beacon_site__), resource)
   end
 
   defp reload_resource(_module), do: false
 
-  defp reload_beacon_resource(resource) do
-    site = Process.get(:__beacon_site__)
+  defp reload_beacon_resource(nil = _site, _resource), do: false
 
-    if !site do
-      raise Beacon.LoaderError, "failed to load resource #{resource} due to undefined site"
-    end
-
+  defp reload_beacon_resource(site, resource) do
     case resource do
       "Page" <> page_id -> Loader.reload_page_module(site, page_id)
       "Layout" <> layout_id -> Loader.reload_layout_module(site, layout_id)
@@ -63,7 +63,7 @@ defmodule Beacon.ErrorHandler do
       "ErrorPage" -> Loader.reload_error_page_module(site)
       "EventHandlers" -> Loader.reload_event_handlers_module(site)
       "InfoHandlers" -> Loader.reload_info_handlers_module(site)
-      _ -> raise Beacon.LoaderError, "Beacon autoload do not recognize the resource #{resource}"
+      _ -> false
     end
   end
 end
