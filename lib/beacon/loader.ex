@@ -18,29 +18,12 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def modules_table_name(site) do
-    String.to_atom("beacon_modules_#{site}")
-  end
-
-  def resources_table_name(site) do
-    String.to_atom("beacon_resources_#{site}")
-  end
-
   def init(config) do
-    :ets.new(modules_table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
-    :ets.new(resources_table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
-
     if Beacon.Config.env_test?() do
       {:ok, config}
     else
       {:ok, config, {:continue, :async_init}}
     end
-  end
-
-  def terminate(_reason, config) do
-    :ets.delete(modules_table_name(config.site))
-    :ets.delete(resources_table_name(config.site))
-    :ok
   end
 
   defp worker(site) do
@@ -76,26 +59,6 @@ defmodule Beacon.Loader do
 
   def ping(site) do
     GenServer.call(worker(site), :ping, @timeout)
-  end
-
-  def add_module(site, module, {_md5, _error, _diagnostics} = metadata) when is_atom(site) do
-    :ets.insert(modules_table_name(site), {module, metadata})
-    :ok
-  end
-
-  def lookup_module(site, module) when is_atom(site) do
-    match = {module, :_}
-    guards = []
-    body = [:"$_"]
-
-    case :ets.select(modules_table_name(site), [{match, guards, body}]) do
-      [match] -> match
-      _ -> nil
-    end
-  end
-
-  def dump_modules(site) when is_atom(site) do
-    site |> modules_table_name() |> :ets.match(:"$1") |> List.flatten()
   end
 
   def populate_default_media(site) do

@@ -180,6 +180,7 @@ defmodule Beacon.Content do
     end
   end
 
+  # TODO: only publish if there were actual changes compared to the last snapshot
   @doc """
   Publishes `layout` and reload resources to render the updated layout and pages.
 
@@ -659,6 +660,7 @@ defmodule Beacon.Content do
     |> publish_page()
   end
 
+  # TODO: only publish if there were actual changes compared to the last snapshot
   @doc """
   Publish multiple `pages`.
 

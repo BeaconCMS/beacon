@@ -2,7 +2,7 @@ defmodule Beacon.ErrorHandler do
   @moduledoc false
 
   # Beacon custom error handler to autoload modules at runtime.
-  # This module is VERY fragile, any silly mistake will crash the VM without logs. Change with caution.
+  # This module is fragile, any silly mistake will crash the VM without logs. Change with caution.
   # See https://elixir-lang.org/blog/2012/04/24/a-peek-inside-elixir-s-parallel-compiler for more info
   #
   # Note that we don't raise in this module because it must propagate the error upstream,
@@ -38,10 +38,6 @@ defmodule Beacon.ErrorHandler do
   end
 
   defp reload_resource(["Beacon", "Web", "LiveRenderer", _site_id, resource]) do
-    reload_beacon_resource(Process.get(:__beacon_site__), resource)
-  end
-
-  defp reload_resource(["Elixir", "Beacon", "Web", "LiveRenderer", _site_id, resource]) do
     reload_beacon_resource(Process.get(:__beacon_site__), resource)
   end
 

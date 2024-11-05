@@ -2,39 +2,21 @@ defmodule Beacon.Compiler do
   @moduledoc false
 
   require Logger
-  alias Beacon.Loader
-
-  if Beacon.Config.env_test?() do
-    @max_retries 2
-  else
-    @max_retries 4
-  end
 
   @type diagnostics :: [Code.diagnostic(:warning | :error)]
 
-  @spec compile_module(Beacon.Site.t(), Macro.t(), String.t()) ::
+  @spec compile_module(Macro.t(), String.t()) ::
           {:ok, module(), diagnostics()} | {:error, module(), {Exception.t(), diagnostics()}} | {:error, Exception.t() | :invalid_module}
-  def compile_module(site, quoted, file \\ "nofile") do
+  def compile_module(quoted, file \\ "nofile") do
+    Logger.debug("compiling #{inspect(file)}")
+
     case module_name(quoted) do
       {:ok, module} ->
-        do_compile_module(site, module, quoted, hash(quoted), file)
+        unload(module)
+        compile(module, quoted, file)
 
       {:error, error} ->
         {:error, error}
-    end
-  end
-
-  defp do_compile_module(site, module, quoted, hash, file) do
-    case {:erlang.module_loaded(module), current_hash(site, module) == hash} do
-      {true, true} ->
-        {:ok, module, []}
-
-      {true, _} ->
-        unload(module)
-        compile_and_register(site, module, quoted, hash, file)
-
-      {false, _} ->
-        compile_and_register(site, module, quoted, hash, file)
     end
   end
 
@@ -55,23 +37,23 @@ defmodule Beacon.Compiler do
     invalid module given to Beacon.Compiler,
     expected a quoted expression containing a single module.
 
-      Got: #{inspect(quoted)}
+    Got:
+
+      #{inspect(quoted)}
 
     """)
 
     {:error, :invalid_module}
   end
 
-  defp compile_and_register(site, module, quoted, hash, file) do
+  defp compile(module, quoted, file) do
     Code.put_compiler_option(:ignore_module_conflict, true)
 
     case compile_quoted(quoted, file) do
       {:ok, module, diagnostics} ->
-        :ok = Loader.add_module(site, module, {hash, nil, diagnostics})
         {:ok, module, diagnostics}
 
       {:error, error, diagnostics} ->
-        :ok = Loader.add_module(site, module, {hash, error, diagnostics})
         {:error, module, {error, diagnostics}}
     end
   end
@@ -98,23 +80,10 @@ defmodule Beacon.Compiler do
     end
   end
 
-  defp do_compile_and_load(quoted, file, failure_count \\ 0) do
-    # [{module, _}] = Code.compile_quoted(quoted, file)
+  defp do_compile_and_load(quoted, file) do
     [{module, _}] = :elixir_compiler.quoted(quoted, file, fn _, _ -> :ok end)
-
-    case :code.ensure_modules_loaded([module]) do
-      :ok -> {:ok, module}
-      {:error, [{_, error}]} -> {:error, error}
-    end
+    {:ok, module}
   rescue
-    error in CompileError ->
-      if failure_count < @max_retries do
-        :timer.sleep(100 * (failure_count * 2))
-        do_compile_and_load(quoted, file, failure_count + 1)
-      else
-        {:error, error}
-      end
-
     error ->
       {:error, error}
   end
@@ -122,16 +91,5 @@ defmodule Beacon.Compiler do
   def unload(module) do
     :code.purge(module)
     :code.delete(module)
-  end
-
-  defp current_hash(site, module) do
-    case Loader.lookup_module(site, module) do
-      {^module, {hash, _, _}} -> hash
-      _ -> nil
-    end
-  end
-
-  defp hash(quoted) do
-    :erlang.phash2(quoted)
   end
 end
