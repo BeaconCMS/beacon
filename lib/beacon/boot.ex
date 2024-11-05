@@ -39,10 +39,6 @@ defmodule Beacon.Boot do
     Logger.info("Beacon.Boot booting site #{site}")
     task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
 
-    # still needed to test Beacon itself
-    Beacon.Loader.reload_routes_module(site)
-    Beacon.Loader.reload_components_module(site)
-
     # temporary disable module reloading so we can populate data more efficiently
     %{mode: :manual} = Beacon.Config.update_value(site, :mode, :manual)
     Beacon.Loader.populate_default_media(site)
@@ -52,6 +48,10 @@ defmodule Beacon.Boot do
     Beacon.Loader.populate_default_home_page(site)
 
     %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
+
+    # still needed to test Beacon itself
+    Beacon.Loader.reload_routes_module(site)
+    Beacon.Loader.reload_components_module(site)
 
     assets = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(site) end),

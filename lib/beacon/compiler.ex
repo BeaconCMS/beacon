@@ -99,7 +99,8 @@ defmodule Beacon.Compiler do
   end
 
   defp do_compile_and_load(quoted, file, failure_count \\ 0) do
-    [{module, _}] = Code.compile_quoted(quoted, file)
+    # [{module, _}] = Code.compile_quoted(quoted, file)
+    [{module, _}] = :elixir_compiler.quoted(quoted, file, fn _, _ -> :ok end)
 
     case :code.ensure_modules_loaded([module]) do
       :ok -> {:ok, module}

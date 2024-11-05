@@ -5,6 +5,8 @@ defmodule Beacon.Application do
 
   @impl true
   def start(_type, _args) do
+    {:module, _} = Code.ensure_loaded(Beacon.ErrorHandler)
+
     # Starts just the minimum required apps for beacon to work.
     # - Keep loading sites as children of main sup to have control of where and when to trigger it.
     # - Loading repo allows to run seeds without triggering module and css recompilation.

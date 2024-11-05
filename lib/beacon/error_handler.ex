@@ -21,8 +21,6 @@ defmodule Beacon.ErrorHandler do
     :error_handler.undefined_lambda(module, fun, args)
   end
 
-  # tries to load the module before calling Beacon's loader
-  # necessary to load regular modules not managed by Beacon
   defp ensure_loaded(module) do
     case :code.ensure_loaded(module) do
       {:module, _} -> true
