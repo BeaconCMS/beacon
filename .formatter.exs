@@ -6,7 +6,6 @@ locals_without_parens = [
 [
   import_deps: [:ecto, :ecto_sql, :phoenix],
   line_length: 150,
-  subdirectories: ["priv/*/migrations"],
   plugins: [Phoenix.LiveView.HTMLFormatter],
   inputs: ["{mix,.formatter,dev}.exs", "{config,lib,test}/**/*.{heex,ex,exs}"],
   locals_without_parens: locals_without_parens,
