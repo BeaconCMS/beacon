@@ -80,7 +80,7 @@ defmodule Beacon.Lifecycle do
   """
   @spec validate_input!(Lifecycle.t(), module(), Beacon.Config.t(), atom()) :: Lifecycle.t()
   def validate_input!(lifecycle, provider, config, sub_key) do
-    if Beacon.exported?(provider, :validate_input!, 3) do
+    if function_exported?(provider, :validate_input!, 3) do
       provider.validate_input!(lifecycle, config, sub_key)
     else
       lifecycle
@@ -94,7 +94,7 @@ defmodule Beacon.Lifecycle do
   """
   @spec validate_input!(Lifecycle.t(), module(), Beacon.Config.t(), term()) :: Lifecycle.t()
   def put_metadata(lifecycle, provider, config, context) do
-    if Beacon.exported?(provider, :put_metadata, 3) do
+    if function_exported?(provider, :put_metadata, 3) do
       provider.put_metadata(lifecycle, config, context)
     else
       lifecycle
@@ -108,7 +108,7 @@ defmodule Beacon.Lifecycle do
   """
   @spec validate_output!(Lifecycle.t(), module(), Beacon.Config.t(), atom()) :: Lifecycle.t()
   def validate_output!(lifecycle, provider, config, sub_key) do
-    if Beacon.exported?(provider, :validate_output!, 3) do
+    if function_exported?(provider, :validate_output!, 3) do
       provider.validate_output!(lifecycle, config, sub_key)
     else
       lifecycle

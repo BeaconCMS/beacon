@@ -13,6 +13,7 @@ defmodule Beacon.BeaconTest.Router do
   scope "/nested" do
     pipe_through :browser
     beacon_site "/site", site: :booted
+    beacon_site "/media", site: :s3_site
   end
 
   scope "/" do

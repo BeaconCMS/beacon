@@ -18,29 +18,12 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def modules_table_name(site) do
-    String.to_atom("beacon_modules_#{site}")
-  end
-
-  def resources_table_name(site) do
-    String.to_atom("beacon_resources_#{site}")
-  end
-
   def init(config) do
-    :ets.new(modules_table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
-    :ets.new(resources_table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
-
     if Beacon.Config.env_test?() do
       {:ok, config}
     else
       {:ok, config, {:continue, :async_init}}
     end
-  end
-
-  def terminate(_reason, config) do
-    :ets.delete(modules_table_name(config.site))
-    :ets.delete(resources_table_name(config.site))
-    :ok
   end
 
   defp worker(site) do
@@ -62,35 +45,32 @@ defmodule Beacon.Loader do
     end
   end
 
+  @doc """
+  Remove OLD and move NEW to OLD.
+
+  Existing processes can continue using OLD while making room for NEW version.
+  """
+  def unload(module) when is_atom(module) do
+    :code.purge(module)
+    :code.delete(module)
+    :ok
+  end
+
+  def unload(_module), do: :skip
+
   # Client
 
   def module_name(site, resource) do
-    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16(case: :lower)
+    site_hash =
+      :md5
+      |> :crypto.hash(Atom.to_string(site))
+      |> Base.encode16(case: :lower)
+
     Module.concat([Beacon.Web.LiveRenderer, "#{site_hash}", "#{resource}"])
   end
 
   def ping(site) do
     GenServer.call(worker(site), :ping, @timeout)
-  end
-
-  def add_module(site, module, {_md5, _error, _diagnostics} = metadata) when is_atom(site) do
-    :ets.insert(modules_table_name(site), {module, metadata})
-    :ok
-  end
-
-  def lookup_module(site, module) when is_atom(site) do
-    match = {module, :_}
-    guards = []
-    body = [:"$_"]
-
-    case :ets.select(modules_table_name(site), [{match, guards, body}]) do
-      [match] -> match
-      _ -> nil
-    end
-  end
-
-  def dump_modules(site) when is_atom(site) do
-    site |> modules_table_name() |> :ets.match(:"$1") |> List.flatten()
   end
 
   def populate_default_media(site) do
@@ -268,24 +248,40 @@ defmodule Beacon.Loader do
     {:noreply, config}
   end
 
+  # Published resources are just unloaded so `Beacon.ErrorHandler`
+  # takes care of loading them on the next request.
+
   def handle_info({:layout_published, %{site: site, id: id}}, config) do
-    Beacon.Content.reload_published_layout(site, id)
-    reload_layout_module(site, id)
+    Beacon.Content.reset_published_layout(site, id)
+
+    site
+    |> Loader.Layout.module_name(id)
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:page_published, %{site: site, id: id}}, config) do
-    Beacon.Content.reload_published_page(site, id)
-    reload_page_module(site, id)
+    Beacon.Content.reset_published_page(site, id)
+
+    site
+    |> Loader.Page.module_name(id)
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:pages_published, site, pages}, config) do
     for %{id: id} <- pages do
-      Beacon.Content.reload_published_page(site, id)
-      reload_page_module(site, id)
+      Beacon.Content.reset_published_page(site, id)
+
+      site
+      |> Loader.Page.module_name(id)
+      |> unload()
     end
 
     reload_runtime_css(site)
@@ -300,42 +296,68 @@ defmodule Beacon.Loader do
   end
 
   def handle_info({:content_updated, :stylesheet, %{site: site}}, config) do
-    reload_stylesheet_module(site)
+    site
+    |> Loader.Stylesheet.module_name()
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :snippet_helper, %{site: site}}, config) do
-    reload_snippets_module(site)
+    site
+    |> Loader.Snippets.module_name()
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :error_page, %{site: site}}, config) do
-    reload_error_page_module(site)
+    site
+    |> Loader.ErrorPage.module_name()
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :component, %{site: site}}, config) do
-    reload_components_module(site)
+    site
+    |> Loader.Components.module_name()
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :live_data, %{site: site}}, config) do
-    reload_live_data_module(site)
+    site
+    |> Loader.LiveData.module_name()
+    |> unload()
+
     reload_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
-    reload_info_handlers_module(site)
+    site
+    |> Loader.InfoHandlers.module_name()
+    |> unload()
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :event_handler, %{site: site}}, config) do
-    reload_event_handlers_module(site)
+    site
+    |> Loader.EventHandlers.module_name()
+    |> unload()
+
     {:noreply, config}
   end
 

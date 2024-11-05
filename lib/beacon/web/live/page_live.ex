@@ -19,6 +19,12 @@ defmodule Beacon.Web.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
+    # Use Beacon custom error handler to automatically load modules on-demand
+    if Beacon.Config.fetch!(site).mode == :live do
+      Process.put(:__beacon_site__, site)
+      Process.flag(:error_handler, Beacon.ErrorHandler)
+    end
+
     # TODO: handle back pressure on simualtaneous calls to reload the same page
     page = RouterServer.lookup_page!(site, path)
 
@@ -100,7 +106,7 @@ defmodule Beacon.Web.PageLive do
     case Beacon.Private.site_from_session(socket.endpoint, socket.router, url, __MODULE__) do
       nil ->
         raise Beacon.Web.NotFoundError, """
-        no page was found for url #{url}
+        no page found for url #{url}
 
         Make sure a page was created for that url.
         """
@@ -112,6 +118,10 @@ defmodule Beacon.Web.PageLive do
         beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
         if socket.assigns.beacon.site != site do
+          if Beacon.Config.fetch!(site).mode == :live do
+            Process.put(:__beacon_site__, site)
+          end
+
           Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
           Beacon.PubSub.subscribe_to_page(site, path_info)
         end
