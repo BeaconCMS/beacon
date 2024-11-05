@@ -4367,34 +4367,12 @@ defmodule Beacon.Content do
   end
 
   @doc false
-  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
-  def reset_published_layouts(site) do
-    for %{id: id} <- list_published_layouts(site) do
-      reset_published_layout(site, id)
-    end
-
-    :ok
-  end
-
-  @doc false
-  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
   def reset_published_layout(site, id) do
     clear_cache(site, id)
     :ok
   end
 
   @doc false
-  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
-  def reset_published_pages(site) do
-    for %{id: id} <- list_published_pages(site, per_page: :infinity) do
-      reset_published_page(site, id)
-    end
-
-    :ok
-  end
-
-  @doc false
-  # TODO: revisit after changing Fixture to only insert data through repo functions instead of Context functions
   def reset_published_page(site, id) do
     clear_cache(site, id)
     page = get_published_page(site, id)

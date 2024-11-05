@@ -12,7 +12,6 @@ defmodule Beacon.Compiler do
 
     case module_name(quoted) do
       {:ok, module} ->
-        # unload(module)
         compile(module, quoted, file)
 
       {:error, error} ->
