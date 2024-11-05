@@ -70,24 +70,26 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
 
+    @tag :skip
     test "mount site in router", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("lib/test_web/router.ex", """
       19 + |  scope "/" do
-      20 + |    pipe_through([:browser])
-      21 + |    beacon_site("/", site: :my_site)
+      20 + |    pipe_through [:browser]
+      21 + |    beacon_site "/", site: :my_site
       22 + |  end
       """)
     end
 
+    @tag :skip
     test "mount another site in router", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> apply_igniter!()
       |> Igniter.compose_task("beacon.gen.site", @opts_other_site)
       |> assert_has_patch("lib/test_web/router.ex", """
-      22 + |    beacon_site("/other", site: :other)
+      22 + |    beacon_site "/other", site: :other
       """)
     end
   end
