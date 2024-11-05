@@ -2,6 +2,8 @@ defmodule Mix.Tasks.Beacon.InstallTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
+  # TODO: it should respect .formatter.exs locals_without_parens (only impacts tests)
+
   setup do
     [project: phoenix_project()]
   end
@@ -10,8 +12,8 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     project
     |> Igniter.compose_task("beacon.install")
     |> assert_has_patch(".formatter.exs", """
-    2   - |  import_deps: [:ecto, :ecto_sql, :phoenix],
-      2 + |  import_deps: [:beacon, :ecto, :ecto_sql, :phoenix],
+    7    - |  import_deps: [:ecto, :ecto_sql, :phoenix],
+       7 + |  import_deps: [:beacon, :ecto, :ecto_sql, :phoenix],
     """)
   end
 
@@ -29,8 +31,8 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     |> Igniter.compose_task("beacon.install", ~w(--site my_site --path /my_site))
     |> assert_has_patch("lib/test_web/router.ex", """
     19 + |  scope "/" do
-    20 + |    pipe_through [:browser]
-    21 + |    beacon_site "/my_site", site: :my_site
+    20 + |    pipe_through([:browser])
+    21 + |    beacon_site("/my_site", site: :my_site)
     22 + |  end
     """)
   end

@@ -56,7 +56,13 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("mix.exs", """
-       73 + |      "assets.deploy": ["tailwind test --minify", "esbuild test --minify", "phx.digest", "esbuild beacon_tailwind_config --minify"]
+    73 73   |      "assets.deploy": [
+    74 74   |        "tailwind test --minify",
+    75 75   |        "esbuild test --minify",
+    76    - |        "phx.digest"
+       76 + |        "phx.digest",
+       77 + |        "esbuild beacon_tailwind_config --minify"
+    77 78   |      ]
     """)
   end
 
@@ -67,9 +73,8 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("config/runtime.exs", """
-    2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
-    3   2   |
-        3 + |config :beacon,
+    3   3   |config :beacon,
+    4     - |  my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
         4 + |  my_site: [
         5 + |    site: :my_site,
         6 + |    repo: Test.Repo,
