@@ -394,7 +394,7 @@ defmodule Beacon.Loader.Worker do
       page ->
         page.site
         |> Loader.Page.module_name(page.id)
-        |> Compiler.unload()
+        |> Loader.unload()
 
         stop(:ok, config)
     end

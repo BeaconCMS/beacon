@@ -12,7 +12,7 @@ defmodule Beacon.Compiler do
 
     case module_name(quoted) do
       {:ok, module} ->
-        unload(module)
+        # unload(module)
         compile(module, quoted, file)
 
       {:error, error} ->
@@ -86,10 +86,5 @@ defmodule Beacon.Compiler do
   rescue
     error ->
       {:error, error}
-  end
-
-  def unload(module) do
-    :code.purge(module)
-    :code.delete(module)
   end
 end

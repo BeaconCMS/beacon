@@ -29,7 +29,7 @@ defmodule Beacon.CompilerTest do
         end
       end
 
-    on_exit(fn -> Compiler.unload(Valid) end)
+    on_exit(fn -> Beacon.Loader.unload(Valid) end)
 
     [valid_quoted_v1: valid_quoted_v1, valid_quoted_v2: valid_quoted_v2, error_quoted: error_quoted]
   end
