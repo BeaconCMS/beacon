@@ -2,8 +2,6 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
-  # TODO: it should respect .formatter.exs locals_without_parens (only impacts tests)
-
   @opts_my_site ~w(--site my_site --path /)
   @opts_other_site ~w(--site other --path /other)
 
@@ -70,7 +68,6 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
 
-    @tag :skip
     test "mount site in router", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
@@ -82,7 +79,6 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
 
-    @tag :skip
     test "mount another site in router", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
@@ -103,8 +99,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("config/runtime.exs", """
-      3 + |config :beacon,
-        4 + |  my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+      2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
       """)
     end
 
@@ -114,8 +109,9 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> apply_igniter!()
       |> Igniter.compose_task("beacon.gen.site", @opts_other_site)
       |> assert_has_patch("config/runtime.exs", """
-      3   3   |config :beacon,
-      4     - |  my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+      2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+      3   2   |
+          3 + |config :beacon,
           4 + |  my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router],
           5 + |  other: [site: :other, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
       """)
@@ -142,11 +138,8 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> apply_igniter!()
       |> Igniter.compose_task("beacon.gen.site", @opts_other_site)
       |> assert_has_patch("lib/test/application.ex", """
-       21    - |      {Beacon, [sites: [Application.fetch_env!(:beacon, :my_site)]]}
-          21 + |      {Beacon,
-          22 + |       [
-          23 + |         sites: [Application.fetch_env!(:beacon, :my_site), Application.fetch_env!(:beacon, :other)]
-          24 + |       ]}
+      21    - |      {Beacon, [sites: [Application.fetch_env!(:beacon, :my_site)]]}
+         21 + |      {Beacon, [sites: [Application.fetch_env!(:beacon, :my_site), Application.fetch_env!(:beacon, :other)]]}
       """)
     end
   end
