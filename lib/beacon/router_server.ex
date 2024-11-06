@@ -37,29 +37,35 @@ defmodule Beacon.RouterServer do
 
   # Client
 
-  def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
-    raise = fn ->
-      raise Beacon.Web.NotFoundError, """
-      no page found for site #{site} and path #{inspect(path_info)}
-
-      Make sure a page was created for that path.
-      """
-    end
-
+  def lookup_page(site, path_info) when is_atom(site) and is_list(path_info) do
     if Beacon.Config.fetch!(site).mode == :testing do
       with {_path, page_id} <- lookup_path(site, path_info),
            {:ok, page_module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
         Beacon.apply_mfa(page_module, :page, [])
       else
-        _ -> raise.()
+        _ -> nil
       end
     else
       with {_path, page_id} <- lookup_path(site, path_info) do
         page_module = Beacon.Loader.fetch_page_module(site, page_id)
         Beacon.apply_mfa(page_module, :page, [])
       else
-        _ -> raise.()
+        _ -> nil
       end
+    end
+  end
+
+  def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
+    case lookup_page(site, path_info) do
+      nil ->
+        raise Beacon.Web.NotFoundError, """
+        no page found for site #{site} and path #{inspect(path_info)}
+
+        Make sure a page was created for that path.
+        """
+
+      page ->
+        page
     end
   end
 

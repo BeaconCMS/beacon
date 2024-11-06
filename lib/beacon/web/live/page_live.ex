@@ -23,14 +23,11 @@ defmodule Beacon.Web.PageLive do
     if Beacon.Config.fetch!(site).mode == :live do
       Process.put(:__beacon_site__, site)
       Process.flag(:error_handler, Beacon.ErrorHandler)
+      if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
 
-    # TODO: handle back pressure on simualtaneous calls to reload the same page
     page = RouterServer.lookup_page!(site, path)
-
     socket = Component.assign(socket, beacon: BeaconAssigns.new(site, page))
-
-    if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
   end
@@ -117,11 +114,8 @@ defmodule Beacon.Web.PageLive do
         live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
         beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
 
-        if socket.assigns.beacon.site != site do
-          if Beacon.Config.fetch!(site).mode == :live do
-            Process.put(:__beacon_site__, site)
-          end
-
+        if socket.assigns.beacon.site != site && Beacon.Config.fetch!(site).mode == :live do
+          Process.put(:__beacon_site__, site)
           Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
           Beacon.PubSub.subscribe_to_page(site, path_info)
         end

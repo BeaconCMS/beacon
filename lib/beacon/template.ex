@@ -48,10 +48,24 @@ defmodule Beacon.Template do
 
   @doc false
   def render_path(site, path_info, query_params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(query_params) do
-    page = Beacon.RouterServer.lookup_page!(site, path_info)
-    live_data = Beacon.Web.DataSource.live_data(site, path_info)
-    beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, query_params)
-    Beacon.Lifecycle.Template.render_template(page, Map.put(live_data, :beacon, beacon_assigns), Beacon.Web.PageLive.make_env(site))
+    case Beacon.RouterServer.lookup_page(site, path_info) do
+      nil ->
+        :error
+
+      page ->
+        page_module = Beacon.Loader.fetch_page_module(page.site, page.id)
+        live_data = Beacon.Web.DataSource.live_data(site, path_info)
+        beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, query_params)
+        assigns = Map.put(live_data, :beacon, beacon_assigns)
+        env = Beacon.Web.PageLive.make_env(site)
+
+        template =
+          page_module
+          |> Beacon.apply_mfa(:page, [])
+          |> Beacon.Lifecycle.Template.render_template(assigns, env)
+
+        {:ok, template}
+    end
   end
 
   @doc false
