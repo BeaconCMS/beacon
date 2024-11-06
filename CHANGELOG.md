@@ -14,6 +14,9 @@
   - Update Deploy to Fly.io guide to use a release step to copy files into the release
   - Create recipe Reuse app.css
 
+### Chore
+  - Only subscribe to page changes on `:live` sites
+
 ## 0.1.4 (2024-10-31)
 
 ### Fixes
