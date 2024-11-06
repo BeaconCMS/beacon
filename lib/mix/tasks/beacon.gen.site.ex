@@ -38,9 +38,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   end
 
   @doc false
-  def igniter(igniter, argv) do
-    {_arguments, argv} = positional_args!(argv)
-    options = options!(argv)
+  def igniter(igniter) do
+    options = igniter.args.options
     site = Keyword.fetch!(options, :site) |> String.to_atom()
     path = Keyword.fetch!(options, :path)
     validate_options!(site, path)

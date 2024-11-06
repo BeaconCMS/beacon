@@ -29,6 +29,7 @@ defmodule Beacon.CodeGenCase do
         |> Enum.reduce(Igniter.Test.test_project(), fn {source, target}, igniter ->
           Igniter.copy_template(igniter, source, target, project.binding, on_exists: :overwrite)
         end)
+        |> Igniter.copy_template(".formatter.exs", ".formatter.exs", [], on_exists: :overwrite)
         |> Igniter.Test.apply_igniter!()
       end
 

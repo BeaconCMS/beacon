@@ -30,9 +30,8 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
   end
 
   @doc false
-  def igniter(igniter, argv) do
-    {_arguments, argv} = positional_args!(argv)
-    options = options!(argv)
+  def igniter(igniter) do
+    options = igniter.args.options
     site = Keyword.fetch!(options, :site) |> String.to_atom()
 
     app_name = Igniter.Project.Application.app_name(igniter)
