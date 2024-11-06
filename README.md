@@ -13,8 +13,10 @@
 Generate a new Phoenix application with Beacon and Beacon LiveAdmin installed:
 
 ```sh
-mix archive.install hex phx_new
-mix archive.install hex igniter_new
+mix archive.install hex phx_new && mix archive.install hex igniter_new
+```
+
+```sh
 mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new --beacon.site my_site
 ```
 
