@@ -58,7 +58,7 @@ Follow these steps to install Beacon and Beacon LiveAdmin in an existing Phoenix
   ```elixir
   defp deps do
     [
-      {:igniter, "~> 0.3"}
+      {:igniter, "~> 0.4"}
     ]
   end
   ```
