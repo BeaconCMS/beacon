@@ -74,7 +74,7 @@ beacon@github:BeaconCMS/beacon,beacon_live_admin@github:BeaconCMS/beacon_live_ad
 Replace `my_app` and `my_site` with the names you want to generate and follow the prompts.
 </details>
 
-To finish, install dependencies, run the server, and open http://localhost:4000 and http://localhost:4000/admin
+To finish, install dependencies, run the server, and open http://localhost:4000 to see the default home page or http://localhost:4000/admin to manage your new site.
 
 ```sh
 mix setup
