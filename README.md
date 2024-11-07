@@ -10,19 +10,78 @@
 
 ## Getting Started
 
-Generate a new Phoenix application with Beacon and Beacon LiveAdmin installed:
+Install both Phoenix and Igniter installers:
 
 ```sh
 mix archive.install hex phx_new && mix archive.install hex igniter_new
 ```
 
+Now you can either create a new Phoenix project with Beacon or add Beacon to an existing Phoenix project:
+
+<details>
+<summary>Create a new project</summary>
+
+- Using latest published [beacon](https://hex.pm/packages/beacon) and [beacon_live_admin](https://hex.pm/packages/beacon_live_admin) packages:
+
 ```sh
 mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new --beacon.site my_site
 ```
 
-Or check out the guides for more info and recipes to learn about features and do more with your sites.
+- Or using the unreleased projects from GitHub from the main branch:
 
-If you're new to Beacon you probably want to take a look on the [Your First Site](https://hexdocs.pm/beacon/your-first-site.html) guide.
+```sh
+mix igniter.new my_app \
+--install beacon@github:BeaconCMS/beacon,beacon_live_admin@github:BeaconCMS/beacon_live_admin \
+--with phx.new \
+--beacon.site my_site
+```
+
+Replace `my_app` and `my_site` with the names you want to generate and follow the prompts.
+
+</details>
+
+<details>
+<summary>Add to existing project</summary>
+
+If you already have a Phoenix project with Phoenix LiveView then you can just add Beacon into that project.
+
+First add the [Igniter](https://hex.pm/packages/igniter) dependency into your project:
+
+```elixir
+defp deps do
+  [
+    {:igniter, "~> 0.4"}
+  ]
+end
+```
+
+Run `mix deps.get` and now you'll be able to execute either one of the installers below:
+
+- Using latest published [beacon](https://hex.pm/packages/beacon) and [beacon_live_admin](https://hex.pm/packages/beacon_live_admin) packages:
+
+```sh
+mix igniter.install beacon,beacon_live_admin --beacon.site my_site
+```
+
+- Or using the unreleased projects from GitHub from the main branch:
+
+```sh
+mix igniter.install \
+beacon@github:BeaconCMS/beacon,beacon_live_admin@github:BeaconCMS/beacon_live_admin \
+--beacon.site my_site
+```
+
+Replace `my_app` and `my_site` with the names you want to generate and follow the prompts.
+</details>
+
+To finish, install dependencies, run the server, and open http://localhost:4000 and http://localhost:4000/admin
+
+```sh
+mix setup
+mix phx.server
+```
+
+For more info, check out the [guides and recipes](https://hexdocs.pm/beacon/installation.html). If you're new to Beacon you can start with [Your First Site](https://hexdocs.pm/beacon/your-first-site.html) guide.
 
 ## Demo
 
