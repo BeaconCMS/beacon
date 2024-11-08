@@ -2,7 +2,7 @@ defmodule Beacon.ErrorHandlerTest do
   use ExUnit.Case
 
   test "error handler" do
-    Process.flag(:error_handler, Beacon.ErrorHandler)
+    Beacon.ErrorHandler.enable(:nosite)
 
     assert_raise UndefinedFunctionError, fn ->
       mod = :"Beacon.Web.LiveRenderer.1.Page2"
