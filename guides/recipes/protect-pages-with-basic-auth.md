@@ -1,4 +1,4 @@
-# Basic app authentication
+# Protect Pages with Basic Auth
 
 If you want to protect your app with a basic username and password protection, you can easily do so by using the [`Plug.BasicAuth`](https://hexdocs.pm/plug/Plug.BasicAuth.html) plug.
 
@@ -45,7 +45,7 @@ And that's it! Run your app and go to any page. It should popup a username and p
 # Specific pages authentication
 
 The previous example protects your whole app. In some cases you might only want to protect a few specific pages of your app.
-As Beacon is handling all routing of a scope, we cannot just add a router's scope to cover this, because it will always go through the default scope where you define the `beacon_site` as a "catch-all". 
+As Beacon is handling all routing of a scope, we cannot just add a router's scope to cover this, because it will always go through the default scope where you define the `beacon_site` as a "catch-all".
 You can change your existing plug (or create a separate one) to do a check on what page is being requested (we're using `conn.request_path`).
 For hardcoded paths, we can use a guard to only match when it's one of your protected pages, and keep a fallback / default `call` definition for all the other pages that shouldn't do anything.
 
