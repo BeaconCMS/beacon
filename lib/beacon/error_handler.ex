@@ -21,6 +21,11 @@ defmodule Beacon.ErrorHandler do
     :error_handler.undefined_lambda(module, fun, args)
   end
 
+  def enable(site) do
+    Process.put(:__beacon_site__, site)
+    Process.flag(:error_handler, Beacon.ErrorHandler)
+  end
+
   defp ensure_loaded(module) do
     case :code.ensure_loaded(module) do
       {:module, _} -> true
