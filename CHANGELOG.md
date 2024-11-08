@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0 (2024-11-08)
+
 ### Enhancements
   - Introduce `Beacon.ErrorHandler` to load resources and dependencies
   - Add `beacon.gen.tailwind_config` task to generate a custom Tailwind config
