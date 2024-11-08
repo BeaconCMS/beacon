@@ -10,6 +10,7 @@
   - Introduce config `:tailwind_css`
 
 ### Documentation
+  - Create recipe Protect Pages with Basic Auth
   - Update docs to use the new tasks created with Igniter
   - Update Deploy to Fly.io guide to use a release step to copy files into the release
   - Create recipe Reuse app.css
