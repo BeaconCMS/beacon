@@ -153,10 +153,6 @@ defmodule Beacon.Loader do
     Loader.InfoHandlers.module_name(site)
   end
 
-  def maybe_reload_page_module(site, page_id) do
-    maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
-  end
-
   def reload_snippets_module(site) do
     call_worker(site, :reload_snippets_module, {:reload_snippets_module, [site]})
   end
@@ -206,6 +202,10 @@ defmodule Beacon.Loader do
     call_worker(site, {:reload_page_module, page_id}, {:reload_page_module, [site, page_id]})
   end
 
+  def load_page_module(site, page_id, module) do
+    call_worker(site, {:load_page_module, page_id, module}, {:load_page_module, [site, page_id, module]})
+  end
+
   # call worker asyncly or syncly depending on the current site mode
   # or skip if mode is manual so we don't reload modules
   defp call_worker(site, async_request, sync_request) do
@@ -226,14 +226,6 @@ defmodule Beacon.Loader do
 
   def unload_page_module(site, page_id) do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
-  end
-
-  defp maybe_reload(module, reload_fun) do
-    if :erlang.module_loaded(module) do
-      {:ok, module}
-    else
-      reload_fun.()
-    end
   end
 
   # Server

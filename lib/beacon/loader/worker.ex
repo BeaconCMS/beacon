@@ -376,6 +376,12 @@ defmodule Beacon.Loader.Worker do
     |> stop(config)
   end
 
+  def handle_call({:load_page_module, page_id, module}, _from, config) do
+    ^module = load_page_module(config.site, page_id, module)
+
+    {:stop, {:shutdown, :loaded}, module, config}
+  end
+
   def handle_call(:reload_runtime_js, _from, config) do
     stop(Beacon.RuntimeJS.load!(), config)
   end
@@ -477,6 +483,39 @@ defmodule Beacon.Loader.Worker do
         result = compile_module(ast, "page")
         :ok = Beacon.PubSub.page_loaded(page)
         result
+    end
+  end
+
+  def load_page_module(site, page_id, module) do
+    page = Beacon.Content.get_published_page(site, page_id)
+
+    case page do
+      nil ->
+        {:error, :page_not_published}
+
+      page ->
+        case Registry.register(Beacon.Loader.Registry, module, module) do
+          {:ok, _pid} ->
+            ast = Beacon.Loader.Page.build_ast(site, page)
+            {:ok, ^module} = compile_module(ast, "page")
+            :ok = Beacon.PubSub.page_loaded(page)
+            module
+
+          {:error, {:already_registered, pid}} ->
+            # another worker already started, let's wait for it
+            case Process.monitor(pid) do
+              {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} ->
+                module
+
+              _ref ->
+                receive do
+                  {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} ->
+                    module
+                after
+                  10_000 -> :error
+                end
+            end
+        end
     end
   end
 

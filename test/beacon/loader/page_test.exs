@@ -75,7 +75,6 @@ defmodule Beacon.Loader.PageTest do
       Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
       Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
       Beacon.Content.publish_page(page)
-      {:ok, module} = Loader.reload_page_module(page.site, page.id)
 
       assert [
                %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]},

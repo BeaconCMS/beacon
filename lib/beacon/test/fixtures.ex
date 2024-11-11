@@ -288,8 +288,6 @@ defmodule Beacon.Test.Fixtures do
       |> beacon_page_fixture()
       |> Content.publish_page()
 
-    Loader.reload_page_module(page.site, page.id)
-
     page
   end
 
@@ -406,15 +404,10 @@ defmodule Beacon.Test.Fixtures do
         template: template_for(page)
       })
 
-    page_variant =
-      page
-      |> Ecto.build_assoc(:variants)
-      |> Content.PageVariant.changeset(attrs)
-      |> repo(page).insert!()
-
-    Loader.reload_page_module(page.site, page.id)
-
-    page_variant
+    page
+    |> Ecto.build_assoc(:variants)
+    |> Content.PageVariant.changeset(attrs)
+    |> repo(page).insert!()
   end
 
   defp template_for(%{format: :heex} = _page), do: "<div><h1>My Site</h1></div>"

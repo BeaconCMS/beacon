@@ -52,7 +52,7 @@ defmodule Beacon.ErrorHandler do
 
   defp reload_beacon_resource(site, resource) do
     case resource do
-      "Page" <> page_id -> Loader.reload_page_module(site, page_id)
+      "Page" <> page_id -> Loader.load_page_module(site, page_id, resource)
       "Layout" <> layout_id -> Loader.reload_layout_module(site, layout_id)
       "Routes" -> Loader.reload_routes_module(site)
       "Components" -> Loader.reload_components_module(site)

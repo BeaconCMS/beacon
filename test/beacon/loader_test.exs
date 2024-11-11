@@ -129,13 +129,13 @@ defmodule Beacon.LoaderTest do
     end
 
     test "loads page module", %{page_a: page} do
-      {:ok, module} = Loader.reload_page_module(default_site(), page.id)
+      {:ok, module} = Loader.load_page_module(default_site(), page.id)
       assert %{path: "/a"} = module.page_assigns()
       assert %Rendered{static: ["<h1>A</h1>"]} = module.render(%{})
     end
 
     test "unload page", %{page_a: page} do
-      {:ok, module} = Loader.reload_page_module(page.site, page.id)
+      {:ok, module} = Loader.load_page_module(page.site, page.id)
       assert :erlang.module_loaded(module)
       Loader.unload_page_module(page.site, page.id)
       refute :erlang.module_loaded(module)
