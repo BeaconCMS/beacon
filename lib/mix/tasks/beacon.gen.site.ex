@@ -136,7 +136,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
             beacon_site #{inspect(path)}, site: #{inspect(site)}
             """,
             with_pipelines: [:browser],
-            router: router
+            router: router,
+            arg2: Igniter.Libs.Phoenix.web_module(igniter)
           )
         end
 
