@@ -15,10 +15,12 @@ defmodule Beacon.Loader.Routes do
 
     config.site
     |> module_name()
-    |> render(config.site, config.endpoint, config.router)
+    |> render(config)
   end
 
-  defp render(routes_module, site, endpoint, router) do
+  defp render(routes_module, config) do
+    %{site: site, endpoint: endpoint, router: router} = config
+
     quote do
       defmodule unquote(routes_module) do
         Module.put_attribute(__MODULE__, :site, unquote(site))
@@ -28,7 +30,8 @@ defmodule Beacon.Loader.Routes do
         # TODO: secure cross site assets
         # TODO: asset_path sigil
         def beacon_asset_path(file_name) when is_binary(file_name) do
-          sanitize_path("/__beacon_assets__/#{unquote(site)}/#{file_name}")
+          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
+          sanitize_path("#{prefix}/__beacon_assets__/#{file_name}")
         end
 
         # TODO: asset_url sigil

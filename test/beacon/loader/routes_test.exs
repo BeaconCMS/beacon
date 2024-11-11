@@ -6,11 +6,11 @@ defmodule Beacon.Loader.RoutesTest do
   import :"Elixir.Beacon.Web.LiveRenderer.c55c9d9db8d6d8c4d34b4f249c20ed4e.Routes"
 
   test "beacon_asset_path" do
-    assert beacon_asset_path("logo.webp") == "/__beacon_assets__/s3_site/logo.webp"
+    assert beacon_asset_path("logo.webp") == "/nested/media/__beacon_assets__/logo.webp"
   end
 
   test "beacon_asset_url" do
-    assert beacon_asset_url("logo.webp") == "http://localhost:4000/__beacon_assets__/s3_site/logo.webp"
+    assert beacon_asset_url("logo.webp") == "http://localhost:4000/nested/media/__beacon_assets__/logo.webp"
   end
 
   describe "sigil_p" do
