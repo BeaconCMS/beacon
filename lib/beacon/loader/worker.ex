@@ -19,6 +19,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def init(config) do
+    Beacon.ErrorHandler.enable(config.site)
     {:ok, config}
   end
 
@@ -349,6 +350,7 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
+  # todo: remove
   def handle_call(request, _from, config)
       when request in [
              :reload_snippets_module,
@@ -362,6 +364,15 @@ defmodule Beacon.Loader.Worker do
            ] do
     apply(__MODULE__, request, [config.site])
     |> stop(config)
+  end
+
+  def handle_call(request, _from, config)
+      when request in [
+             :load_snippets_module
+           ] do
+    module = apply(__MODULE__, request, [config.site])
+
+    {:stop, {:shutdown, :loaded}, module, config}
   end
 
   def handle_call({:reload_layout_module, layout_id}, _from, config) do
@@ -411,10 +422,18 @@ defmodule Beacon.Loader.Worker do
     {:noreply, config}
   end
 
+  # todo: remove
   def reload_snippets_module(site) do
     snippets = Content.list_snippet_helpers(site)
     ast = Loader.Snippets.build_ast(site, snippets)
     compile_module(ast, "snippets")
+  end
+
+  def load_snippets_module(site) do
+    snippets = Content.list_snippet_helpers(site) |> IO.inspect(label: "found snippet helpers:")
+    ast = Loader.Snippets.build_ast(site, snippets)
+    {:ok, module} = compile_module(ast, "snippets")
+    module
   end
 
   def reload_routes_module(site) do
@@ -494,7 +513,7 @@ defmodule Beacon.Loader.Worker do
         {:error, :page_not_published}
 
       page ->
-        case Registry.register(Beacon.Loader.Registry, module, module) do
+        case Registry.register(Beacon.Registry, module, module) do
           {:ok, _pid} ->
             ast = Beacon.Loader.Page.build_ast(site, page)
             {:ok, ^module} = compile_module(ast, "page")
@@ -503,17 +522,12 @@ defmodule Beacon.Loader.Worker do
 
           {:error, {:already_registered, pid}} ->
             # another worker already started, let's wait for it
-            case Process.monitor(pid) do
-              {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} ->
-                module
+            _ref = Process.monitor(pid)
 
-              _ref ->
-                receive do
-                  {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} ->
-                    module
-                after
-                  10_000 -> :error
-                end
+            receive do
+              {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} -> module
+            after
+              10_000 -> :error
             end
         end
     end

@@ -153,8 +153,13 @@ defmodule Beacon.Loader do
     Loader.InfoHandlers.module_name(site)
   end
 
+  # todo: remove
   def reload_snippets_module(site) do
     call_worker(site, :reload_snippets_module, {:reload_snippets_module, [site]})
+  end
+
+  def load_snippets_module(site) do
+    call_worker(site, :load_snippets_module, {:load_snippets_module, [site]})
   end
 
   def reload_routes_module(site) do
@@ -198,6 +203,7 @@ defmodule Beacon.Loader do
     Enum.map(Content.list_published_pages(site, per_page: per_page), &reload_page_module(&1.site, &1.id))
   end
 
+  # todo: remove
   def reload_page_module(site, page_id) do
     call_worker(site, {:reload_page_module, page_id}, {:reload_page_module, [site, page_id]})
   end

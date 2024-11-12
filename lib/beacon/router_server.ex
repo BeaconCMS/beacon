@@ -23,11 +23,7 @@ defmodule Beacon.RouterServer do
     # We store routes by order and length so the most visited pages will likely be in the first rows
     :ets.new(table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
 
-    if config.mode == :live do
-      {:ok, config, {:continue, :async_init}}
-    else
-      {:ok, config}
-    end
+    {:ok, config, {:continue, :async_init}}
   end
 
   def terminate(_reason, config) do
@@ -113,7 +109,9 @@ defmodule Beacon.RouterServer do
   end
 
   def handle_call({:lookup_path, path_info, limit}, _from, config) do
-    route = do_lookup_path(table_name(config.site), path_info, limit)
+    lookup_table = table_name(config.site)
+    IO.inspect(:ets.tab2list(lookup_table))
+    route = do_lookup_path(lookup_table, path_info, limit)
     {:reply, route, config}
   end
 

@@ -52,13 +52,13 @@ defmodule Beacon.ErrorHandler do
 
   defp reload_beacon_resource(site, resource) do
     case resource do
-      "Page" <> page_id -> Loader.load_page_module(site, page_id, resource)
+      "Page" <> page_id -> Loader.load_page_module(site, page_id, Loader.module_name(site, resource))
       "Layout" <> layout_id -> Loader.reload_layout_module(site, layout_id)
       "Routes" -> Loader.reload_routes_module(site)
       "Components" -> Loader.reload_components_module(site)
       "LiveData" -> Loader.reload_live_data_module(site)
       "Stylesheet" -> Loader.reload_stylesheet_module(site)
-      "Snippets" -> Loader.reload_snippets_module(site)
+      "Snippets" -> Loader.load_snippets_module(site)
       "ErrorPage" -> Loader.reload_error_page_module(site)
       "EventHandlers" -> Loader.reload_event_handlers_module(site)
       "InfoHandlers" -> Loader.reload_info_handlers_module(site)
