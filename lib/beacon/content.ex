@@ -4375,8 +4375,12 @@ defmodule Beacon.Content do
   @doc false
   def reset_published_page(site, id) do
     clear_cache(site, id)
-    page = get_published_page(site, id)
-    :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+
+    case get_published_page(site, id) do
+      nil -> :skip
+      page -> :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+    end
+
     :ok
   end
 
