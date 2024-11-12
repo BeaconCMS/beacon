@@ -14,7 +14,7 @@ defmodule Beacon.Utils do
   ## Examples
 
       # print module body
-      quoted |> Beacon.Utils.quoted_to_string() |> IO.puts()
+      quoted |> Beacon.Utils.quoted_to_binary() |> IO.puts()
 
       # write to a persisted file
       File.write!("module.ex", Beacon.Utils.quoted_to_binary(quoted))

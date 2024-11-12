@@ -1,4 +1,4 @@
-# Development Server for Beacon
+# Development App
 #
 # Usage:
 #
@@ -38,7 +38,7 @@ _ = Ecto.Adapters.Postgres.storage_up(Demo.Repo.config())
 path = Path.join([Path.dirname(__ENV__.file), "test", "support", "migrations"])
 Demo.Repo.start_link()
 # TODO: script arg to skip recreating the data (to avoid losing temporary data)
-Ecto.Migrator.run(Demo.Repo, path, :down, all: true, log_migrations_sql: true)
+# Ecto.Migrator.run(Demo.Repo, path, :down, all: true, log_migrations_sql: true)
 Ecto.Migrator.run(Demo.Repo, path, :up, all: true, log_migrations_sql: true)
 Demo.Repo.stop()
 
@@ -139,9 +139,41 @@ defmodule Demo.Beacon.TagsField do
   end
 end
 
+create_layout = fn params ->
+  %{site: site, title: title} = params
+  site = String.to_existing_atom(site)
+
+  with %Beacon.Content.Layout{} = layout <- Beacon.Content.get_layout_by(site, title: title),
+       %Beacon.Content.Layout{} = layout <- Beacon.Content.get_published_layout(layout.site, layout.id) do
+    layout
+  else
+    _ ->
+      params
+      |> Beacon.Content.create_layout!()
+      |> Beacon.Content.publish_layout()
+      |> then(fn {:ok, layout} -> layout end)
+  end
+end
+
+create_page = fn params ->
+  %{site: site, path: path} = params
+  site = String.to_existing_atom(site)
+
+  with %Beacon.Content.Page{} = page <- Beacon.Content.get_page_by(site, path: path),
+       %Beacon.Content.Page{} = page <- Beacon.Content.get_published_page(page.site, page.id) do
+    page
+  else
+    _ ->
+      params
+      |> Beacon.Content.create_page!()
+      |> Beacon.Content.publish_page()
+      |> then(fn {:ok, page} -> page end)
+  end
+end
+
 dev_seeds = fn ->
   layout =
-    Beacon.Content.create_layout!(%{
+    create_layout.(%{
       site: "dev",
       title: "dev",
       meta_tags: [
@@ -159,7 +191,7 @@ dev_seeds = fn ->
 
   Beacon.Content.publish_layout(layout)
 
-  Beacon.Content.create_component!(%{
+  Beacon.Content.create_component(%{
     site: "dev",
     name: "sample_component",
     attrs: [%{name: "project", type: "any", opts: [required: true]}],
@@ -167,7 +199,7 @@ dev_seeds = fn ->
     example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
   })
 
-  Beacon.Content.create_snippet_helper!(%{
+  Beacon.Content.create_snippet_helper(%{
     site: "dev",
     name: "author_name",
     body: ~S"""
@@ -176,7 +208,8 @@ dev_seeds = fn ->
     """
   })
 
-  home_live_data = Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
+  home_live_data =
+    Beacon.Content.get_live_data_by(:dev, path: "/sample") || Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
 
   Beacon.Content.create_assign_for_live_data(
     home_live_data,
@@ -189,8 +222,8 @@ dev_seeds = fn ->
     }
   )
 
-  page_home =
-    Beacon.Content.create_page!(%{
+  _page_home =
+    create_page.(%{
       path: "/sample",
       site: "dev",
       title: "dev home",
@@ -264,10 +297,8 @@ dev_seeds = fn ->
       ]
     })
 
-  Beacon.Content.publish_page(page_home)
-
-  page_author =
-    Beacon.Content.create_page!(%{
+  _page_author =
+    create_page.(%{
       path: "/authors/:author_id",
       site: "dev",
       title: "dev author",
@@ -292,10 +323,8 @@ dev_seeds = fn ->
       """
     })
 
-  Beacon.Content.publish_page(page_author)
-
-  page_post =
-    Beacon.Content.create_page!(%{
+  _page_post =
+    create_page.(%{
       path: "/posts/*slug",
       site: "dev",
       title: "dev post",
@@ -320,10 +349,8 @@ dev_seeds = fn ->
       """
     })
 
-  Beacon.Content.publish_page(page_post)
-
-  page_markdown =
-    Beacon.Content.create_page!(%{
+  _page_markdown =
+    create_page.(%{
       path: "/markdown",
       site: "dev",
       title: "dev markdown",
@@ -428,10 +455,8 @@ dev_seeds = fn ->
       """
     })
 
-  Beacon.Content.publish_page(page_markdown)
-
-  page_drag_drop_playground =
-    Beacon.Content.create_page!(%{
+  _page_drag_drop_playground =
+    create_page.(%{
       path: "/drag-drop",
       site: "dev",
       title: "dev drag and drop playground",
@@ -541,12 +566,10 @@ dev_seeds = fn ->
       </div>
       """
     })
-
-  Beacon.Content.publish_page(page_drag_drop_playground)
 end
 
 dy_seeds = fn ->
-  Beacon.Content.create_component!(%{
+  Beacon.Content.create_component(%{
     site: "dy",
     name: "header",
     template: """
@@ -620,7 +643,7 @@ dy_seeds = fn ->
     example: "<.header />"
   })
 
-  Beacon.Content.create_component!(%{
+  Beacon.Content.create_component(%{
     site: "dy",
     name: "footer",
     template: """
@@ -906,7 +929,7 @@ dy_seeds = fn ->
   })
 
   layout =
-    Beacon.Content.create_layout!(%{
+    create_layout.(%{
       site: "dy",
       title: "main",
       template: """
@@ -916,10 +939,8 @@ dy_seeds = fn ->
       """
     })
 
-  Beacon.Content.publish_layout(layout)
-
-  page_home =
-    Beacon.Content.create_page!(%{
+  _page_home =
+    create_page.(%{
       path: "/",
       site: "dy",
       title: "home",
@@ -1152,8 +1173,6 @@ dy_seeds = fn ->
       </main>
       """
     })
-
-  Beacon.Content.publish_page(page_home)
 end
 
 dev_site = [
