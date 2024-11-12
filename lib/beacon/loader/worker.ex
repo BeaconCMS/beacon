@@ -430,7 +430,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_snippets_module(site) do
-    snippets = Content.list_snippet_helpers(site) |> IO.inspect(label: "found snippet helpers:")
+    snippets = Content.list_snippet_helpers(site)
     ast = Loader.Snippets.build_ast(site, snippets)
     {:ok, module} = compile_module(ast, "snippets")
     module
