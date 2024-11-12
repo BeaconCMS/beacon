@@ -122,6 +122,9 @@ defmodule Beacon.Router do
     * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name.
       Note that the name has to match the one used in your site configuration.
       See the module doc and `Beacon.Config` for more info.
+    * `:root_layout` - override the default root layout for the site. Defaults to `{Beacon.Web.Layouts, :runtime}`.
+    See `Beacon.Web.Layouts` and `Phoenix.LiveView.Router.live_session/3` for more info.
+    Use with caution.
 
   """
   defmacro beacon_site(prefix, opts) do
