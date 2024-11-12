@@ -133,13 +133,15 @@ defmodule Beacon.Router do
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
 
       scope prefix, alias: false, as: false do
-        get "/__beacon_assets__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: opts[:site]}
-
         live_session session_name, session_opts do
+          get "/__beacon_media__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: opts[:site]}
+
           # TODO: css_config-:md5 caching
-          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, as: :asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, as: :asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, as: :asset, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, assigns: %{site: opts[:site]}
+
+          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
+
           live "/*path", Beacon.Web.PageLive, :path
         end
       end
@@ -200,13 +202,17 @@ defmodule Beacon.Router do
   end
 
   @doc false
+  @deprecated "use Routes.beacon_media_path/1 instead"
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    sanitize_path("/__beacon_assets__/#{site}/#{file_name}")
+    routes = Beacon.Loader.fetch_routes_module(site)
+    routes.beacon_media_path(file_name)
   end
 
   @doc false
+  @deprecated "use Routes.beacon_media_path/1 instead"
   def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
-    Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
+    routes = Beacon.Loader.fetch_routes_module(site)
+    routes.beacon_media_url(file_name)
   end
 
   @doc false

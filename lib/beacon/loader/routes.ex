@@ -27,16 +27,26 @@ defmodule Beacon.Loader.Routes do
         Module.put_attribute(__MODULE__, :endpoint, unquote(endpoint))
         Module.put_attribute(__MODULE__, :router, unquote(router))
 
-        # TODO: secure cross site assets
-        # TODO: asset_path sigil
+        @deprecated "use beacon_media_path/1 instead"
         def beacon_asset_path(file_name) when is_binary(file_name) do
-          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
-          sanitize_path("#{prefix}/__beacon_assets__/#{file_name}")
+          beacon_media_path(file_name)
         end
 
-        # TODO: asset_url sigil
+        @deprecated "use beacon_media_url/1 instead"
         def beacon_asset_url(file_name) when is_binary(file_name) do
-          @endpoint.url() <> beacon_asset_path(file_name)
+          beacon_media_url(file_name)
+        end
+
+        # TODO: secure cross site assets
+        # TODO: media_path sigil
+        def beacon_media_path(file_name) when is_binary(file_name) do
+          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
+          sanitize_path("#{prefix}/__beacon_media__/#{file_name}")
+        end
+
+        # TODO: media_url sigil
+        def beacon_media_url(file_name) when is_binary(file_name) do
+          @endpoint.url() <> beacon_media_path(file_name)
         end
 
         defp sanitize_path(path) do
