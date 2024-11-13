@@ -1207,22 +1207,20 @@ dev_site =
       Keyword.put(dev_site, :assets, assets)
   end
 
+dy_site = [
+  site: :dy,
+  repo: Demo.Repo,
+  endpoint: DemoWeb.Endpoint,
+  router: DemoWeb.Router,
+  mode: :manual
+]
+
 Task.start(fn ->
   children = [
     Demo.Repo,
     {Phoenix.PubSub, [name: Demo.PubSub]},
     DemoWeb.Endpoint,
-    {Beacon,
-     sites: [
-       dev_site,
-       [
-         site: :dy,
-         repo: Demo.Repo,
-         endpoint: DemoWeb.Endpoint,
-         router: DemoWeb.Router,
-         mode: :manual
-       ]
-     ]}
+    {Beacon, sites: [dev_site, dy_site]}
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
@@ -1230,8 +1228,15 @@ Task.start(fn ->
   dev_seeds.()
   dy_seeds.()
 
-  Beacon.boot(:dev)
-  Beacon.boot(:dy)
+  dev_site
+  |> Keyword.put(:mode, :live)
+  |> Beacon.Config.new()
+  |> Beacon.boot()
+
+  dy_site
+  |> Keyword.put(:mode, :live)
+  |> Beacon.Config.new()
+  |> Beacon.boot()
 
   Process.sleep(:infinity)
 end)
