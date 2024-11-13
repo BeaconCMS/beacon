@@ -27,10 +27,12 @@ defmodule Beacon.Loader.Routes do
         Module.put_attribute(__MODULE__, :endpoint, unquote(endpoint))
         Module.put_attribute(__MODULE__, :router, unquote(router))
 
+        @deprecated "use beacon_media_path/1 instead"
         def beacon_asset_path(file_name) when is_binary(file_name) do
           beacon_media_path(file_name)
         end
 
+        @deprecated "use beacon_media_url/1 instead"
         def beacon_asset_url(file_name) when is_binary(file_name) do
           beacon_media_url(file_name)
         end
