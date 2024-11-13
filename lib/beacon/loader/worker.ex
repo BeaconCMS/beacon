@@ -410,7 +410,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_snippets_module(site) do
-    module = Loader.module_name(site, "Snippets")
+    module = Loader.fetch_snippets_module(site)
 
     safe_load(module, fn ->
       snippets = Content.list_snippet_helpers(site)
@@ -420,7 +420,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_routes_module(site) do
-    module = Loader.module_name(site, "Routes")
+    module = Loader.fetch_routes_module(site)
 
     safe_load(module, fn ->
       ast = Loader.Routes.build_ast(site)
@@ -429,7 +429,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_components_module(site) do
-    module = Loader.module_name(site, "Components")
+    module = Loader.fetch_components_module(site)
 
     safe_load(module, fn ->
       components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
@@ -439,7 +439,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_live_data_module(site) do
-    module = Loader.module_name(site, "LiveData")
+    module = Loader.fetch_live_data_module(site)
 
     safe_load(module, fn ->
       live_data = Content.live_data_for_site(site)
@@ -449,7 +449,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_error_page_module(site) do
-    module = Loader.module_name(site, "ErrorPages")
+    module = Loader.fetch_error_page_module(site)
 
     safe_load(module, fn ->
       error_pages = Content.list_error_pages(site, preloads: [:layout])
@@ -459,7 +459,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_stylesheet_module(site) do
-    module = Loader.module_name(site, "Stylesheets")
+    module = Loader.fetch_stylesheet_module(site)
 
     safe_load(module, fn ->
       stylesheets = Content.list_stylesheets(site)
@@ -469,7 +469,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_event_handlers_module(site) do
-    module = Loader.module_name(site, "EventHandlers")
+    module = Loader.fetch_event_handlers_module(site)
 
     safe_load(module, fn ->
       event_handlers = Content.list_event_handlers(site)
@@ -479,7 +479,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def load_info_handlers_module(site) do
-    module = Loader.module_name(site, "InfoHandlers")
+    module = Loader.fetch_info_handlers_module(site)
 
     safe_load(module, fn ->
       info_handlers = Content.list_info_handlers(site)
@@ -490,7 +490,7 @@ defmodule Beacon.Loader.Worker do
 
   def load_layout_module(site, layout_id) do
     layout = Beacon.Content.get_published_layout(site, layout_id)
-    module = Loader.module_name(site, "Layout#{layout_id}")
+    module = Loader.fetch_layout_module(site, layout_id)
 
     case layout do
       nil ->
@@ -506,7 +506,7 @@ defmodule Beacon.Loader.Worker do
 
   def load_page_module(site, page_id) do
     page = Beacon.Content.get_published_page(site, page_id)
-    module = Loader.module_name(site, "Page#{page_id}")
+    module = Loader.fetch_page_module(site, page_id)
 
     case page do
       nil ->
