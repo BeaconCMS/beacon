@@ -6,20 +6,33 @@ defmodule Beacon.Web.BeaconAssignsTest do
   @site :my_site
 
   setup do
-    [socket: %Phoenix.LiveView.Socket{assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}}]
+    site = default_site()
+
+    # we aren't passing through PageLive in these tests so we have to manually
+    # enable the ErrorHandler and set the site in the Process dictionary
+    # (which would normally happen in the LiveView mount)
+    Process.put(:__beacon_site__, site)
+    Process.flag(:error_handler, Beacon.ErrorHandler)
+
+    [
+      socket: %Phoenix.LiveView.Socket{
+        assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}
+      },
+      site: site
+    ]
   end
 
-  test "build with site" do
+  test "build with site", %{site: site} do
     assert %BeaconAssigns{
              site: @site,
              private: %{components_module: :"Elixir.Beacon.Web.LiveRenderer.6a217f0f7032720eb50a1a2fbf258463.Components"}
-           } = BeaconAssigns.new(default_site())
+           } = BeaconAssigns.new(site)
   end
 
-  test "build with unpublished page" do
+  test "build with unpublished page", %{site: site} do
     page = beacon_page_fixture(path: "/blog")
 
-    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
+    assigns = BeaconAssigns.new(site, page, %{}, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -30,24 +43,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with non-persisted page" do
-    page = %Beacon.Content.Page{site: default_site(), path: "/blog"}
-
-    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
-
-    assert %BeaconAssigns{
-             site: @site,
-             page: %{path: "/blog", title: ""},
-             private: %{
-               live_path: ["blog"]
-             }
-           } = assigns
-  end
-
-  test "build with published page resolves page title" do
+  test "build with published page resolves page title", %{site: site} do
     page = beacon_published_page_fixture(path: "/blog", title: "blog index")
 
-    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{})
+    assigns = BeaconAssigns.new(site, page, %{}, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -58,10 +57,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with path info and query params" do
-    page = beacon_page_fixture(path: "/blog")
+  test "build with path info and query params", %{site: site} do
+    page = beacon_published_page_fixture(path: "/blog")
 
-    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog"], %{source: "search"})
+    assigns = BeaconAssigns.new(site, page, %{}, ["blog"], %{source: "search"})
 
     assert %BeaconAssigns{
              site: @site,
@@ -72,10 +71,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with path params" do
+  test "build with path params", %{site: site} do
     page = beacon_page_fixture(path: "/blog/:post")
 
-    assigns = BeaconAssigns.new(default_site(), page, %{}, ["blog", "hello"], %{})
+    assigns = BeaconAssigns.new(site, page, %{}, ["blog", "hello"], %{})
 
     assert %BeaconAssigns{
              site: @site,
@@ -83,13 +82,13 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with live data" do
+  test "build with live data", %{site: site} do
     page = beacon_page_fixture(path: "/blog")
 
     live_data = beacon_live_data_fixture(path: "/blog")
     beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
 
-    assigns = BeaconAssigns.new(default_site(), page, live_data, ["blog"], %{})
+    assigns = BeaconAssigns.new(site, page, live_data, ["blog"], %{})
 
     assert %BeaconAssigns{
              site: @site,

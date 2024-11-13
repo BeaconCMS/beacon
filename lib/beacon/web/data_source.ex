@@ -17,22 +17,15 @@ defmodule Beacon.Web.DataSource do
          {:ok, page_title} <- Beacon.Content.render_snippet(page_assigns.title, %{page: page_assigns, live_data: live_data}) do
       page_title
     else
-      {:error, :page_module_not_found} ->
-        ""
-
       {:error, error} ->
-        {path, original_title} =
-          case page_assigns do
-            {:ok, page_assigns} -> {page_assigns.path, page_assigns.title}
-            _ -> {nil, ""}
-          end
+        {:ok, %{path: path, title: title}} = page_assigns
 
         Logger.error("""
         failed to interpolate page title variables
 
         will return the original unmodified page title
 
-        site: #{site}
+        site: #{title}
         page path: #{path}
 
         Got:
@@ -41,34 +34,22 @@ defmodule Beacon.Web.DataSource do
 
         """)
 
-        original_title
+        title
     end
   end
 
   # TODO: revisit this logic to evaluate meta_tags for unpublished pages
   def meta_tags(assigns) do
-    %{beacon: %{page: page, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
+    %{beacon: %{private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
     %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
     live_data = Map.take(assigns, live_data_keys)
 
-    case page_assigns(site, page_id) do
-      {:error, _} ->
-        Logger.error("""
-        failed to interpolate page meta tags, returning empty list of meta tags
+    {:ok, page_assigns} = page_assigns(site, page_id)
 
-        Site: #{site}
-        Page path: #{page.path}
-
-        """)
-
-        []
-
-      {:ok, page_assigns} ->
-        assigns
-        |> Beacon.Web.Layouts.meta_tags()
-        |> List.wrap()
-        |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns, live_data: live_data}))
-    end
+    assigns
+    |> Beacon.Web.Layouts.meta_tags()
+    |> List.wrap()
+    |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns, live_data: live_data}))
   end
 
   defp interpolate_meta_tag(meta_tag, values) when is_map(meta_tag) do
@@ -87,12 +68,11 @@ defmodule Beacon.Web.DataSource do
   # which is what we need for sites to work properly but
   # the page builder could use this data as well
   defp page_assigns(site, page_id) do
-    page_module = Beacon.Loader.fetch_page_module(site, page_id)
+    assigns =
+      site
+      |> Beacon.Loader.fetch_page_module(page_id)
+      |> Beacon.apply_mfa(:page_assigns, [])
 
-    if :erlang.module_loaded(page_module) do
-      {:ok, Beacon.apply_mfa(page_module, :page_assigns, [])}
-    else
-      {:error, :page_module_not_found}
-    end
+    {:ok, assigns}
   end
 end

@@ -114,7 +114,6 @@ defmodule Beacon.RouterServer do
 
   def handle_call({:lookup_path, path_info, limit}, _from, config) do
     lookup_table = table_name(config.site)
-    IO.inspect(:ets.tab2list(lookup_table))
     route = do_lookup_path(lookup_table, path_info, limit)
     {:reply, route, config}
   end
