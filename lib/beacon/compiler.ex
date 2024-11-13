@@ -8,10 +8,9 @@ defmodule Beacon.Compiler do
   @spec compile_module(Macro.t(), String.t()) ::
           {:ok, module(), diagnostics()} | {:error, module(), {Exception.t(), diagnostics()}} | {:error, Exception.t() | :invalid_module}
   def compile_module(quoted, file \\ "nofile") do
-    Logger.debug("compiling #{inspect(file)}")
-
     case module_name(quoted) do
       {:ok, module} ->
+        Logger.debug("compiling #{inspect(module)}")
         compile(module, quoted, file)
 
       {:error, error} ->

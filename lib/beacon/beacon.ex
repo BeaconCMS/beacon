@@ -114,6 +114,14 @@ defmodule Beacon do
   @spec boot(Beacon.Types.Site.t()) :: :ok
   def boot(site) when is_atom(site) do
     Beacon.Boot.init(site)
+
+    # JUST TESTING
+    config = Beacon.Config.fetch!(site)
+    Beacon.RouterServer.handle_continue(:async_init, config)
+    Beacon.Loader.handle_continue(:async_init, config)
+    # ** (Beacon.RuntimeError) failed to call :"Elixir.Beacon.Web.LiveRenderer.e77989ed21758e78331b20e477fc5582.Snippets".author_name/1
+    Beacon.Loader.reload_snippets_module(site)
+
     :ok
   end
 

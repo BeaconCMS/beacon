@@ -1,11 +1,24 @@
 defmodule Beacon.Web.Layouts do
-  @moduledoc false
+  @moduledoc """
+  Core layouts.
+
+  These functions are mostly used internally by Beacon but you can override the
+  root layout in `beacon_site` so you should use the functions in this
+  module to properly build your custom root layout to avoid breaking
+  Beacon functionality.
+
+  See https://github.com/BeaconCMS/beacon/blob/main/lib/beacon/web/components/layouts/runtime.html.heex for reference.
+
+  """
 
   use Beacon.Web, :html
   require Logger
 
   embed_templates "layouts/*"
 
+  @doc """
+  Returns the path to the route that serves CSS and JS assets.
+  """
   # TODO: style nonce
   def asset_path(conn, asset) when asset in [:css, :js] do
     %{assigns: %{beacon: %{site: site}}} = conn
@@ -24,6 +37,7 @@ defmodule Beacon.Web.Layouts do
   defp router(%Plug.Conn{private: %{phoenix_router: router}}), do: router
   defp router(%Phoenix.LiveView.Socket{router: router}), do: router
 
+  @doc false
   def render_dynamic_layout(assigns) do
     %{beacon: %{private: %{page_module: page_module}}} = assigns
     %{site: site, layout_id: layout_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :layout_id]])
@@ -31,6 +45,9 @@ defmodule Beacon.Web.Layouts do
     Beacon.apply_mfa(layout_module, :render, [assigns])
   end
 
+  @doc """
+  Returns the path to the live socket defined in the site configuration.
+  """
   def live_socket_path(assigns) do
     %{beacon: %{site: site}} = assigns
     Beacon.Config.fetch!(site).live_socket_path
@@ -48,11 +65,20 @@ defmodule Beacon.Web.Layouts do
     |> Beacon.apply_mfa(:layout_assigns, [])
   end
 
+  @doc """
+  Returns the resolved page title.
+
+  Page titles may use snippets to render dynamic content.
+  This function will resolve such snippets.
+  """
   def render_page_title(assigns) do
     %{beacon: %{page: %{title: title}}} = assigns
     title
   end
 
+  @doc """
+  Renders all `<meta>` tags defined in the current page.
+  """
   def render_meta_tags(assigns) do
     ~H"""
     <%= for meta_attributes <- Beacon.Web.DataSource.meta_tags(assigns) do %>
@@ -61,6 +87,7 @@ defmodule Beacon.Web.Layouts do
     """
   end
 
+  @doc false
   def meta_tags(assigns) do
     page_meta_tags = page_meta_tags(assigns) || []
     layout_meta_tags = layout_meta_tags(assigns) || []
@@ -104,7 +131,10 @@ defmodule Beacon.Web.Layouts do
     meta_tags
   end
 
-  defp render_schema(assigns) do
+  @doc """
+  Renders the Schema.org data defined in the current page.
+  """
+  def render_schema(assigns) do
     %{beacon: %{private: %{page_module: page_module}}} = assigns
     %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
     %{raw_schema: raw_schema} = compiled_page_assigns(site, page_id)
@@ -126,6 +156,9 @@ defmodule Beacon.Web.Layouts do
     end
   end
 
+  @doc """
+  Renders all resource `<link>` tags defined in the current layout.
+  """
   def render_resource_links(assigns) do
     resource_links = layout_resource_links(assigns) || []
     assigns = assign(assigns, :resource_links, resource_links)

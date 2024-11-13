@@ -1706,7 +1706,7 @@ defmodule Beacon.Content do
           %{name: "class", type: "string", opts: [default: nil]},
           %{name: "rest", type: "global"}
         ],
-        template: ~S|<img src={beacon_asset_url(@name)} class={@class} {@rest} />|,
+        template: ~S|<img src={beacon_media_url(@name)} class={@class} {@rest} />|,
         example: ~S|<.image site={@beacon.site} name="beacon.webp" alt="logo" />|,
         category: :media
       },
@@ -4375,8 +4375,12 @@ defmodule Beacon.Content do
   @doc false
   def reset_published_page(site, id) do
     clear_cache(site, id)
-    page = get_published_page(site, id)
-    :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+
+    case get_published_page(site, id) do
+      nil -> :skip
+      page -> :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+    end
+
     :ok
   end
 
