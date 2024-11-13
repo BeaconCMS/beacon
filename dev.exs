@@ -79,7 +79,7 @@ defmodule DemoWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  scope "/" do
+  scope "/", DemoWeb do
     pipe_through :browser
     beacon_site "/dev", site: :dev
     beacon_site "/dy", site: :dy
