@@ -36,7 +36,7 @@ defmodule Beacon.LoaderTest do
 
   describe "snippets" do
     test "loads module even without snippets helpers available" do
-      {:ok, module} = Loader.reload_snippets_module(default_site())
+      {:ok, module} = Loader.load_snippets_module(default_site())
       assert :erlang.module_loaded(module)
     end
 
@@ -67,7 +67,7 @@ defmodule Beacon.LoaderTest do
       assert %Rendered{static: ["<h1>B</h1>"]} = module.my_component("b", %{})
 
       Repo.delete_all(Content.Component)
-      Loader.reload_components_module(default_site())
+      Loader.load_components_module(default_site())
 
       assert_raise Beacon.RuntimeError, fn ->
         module.my_component("a", %{})
@@ -95,7 +95,7 @@ defmodule Beacon.LoaderTest do
 
     test "loads module containing all page errors" do
       conn = Phoenix.ConnTest.build_conn()
-      {:ok, module} = Loader.reload_error_page_module(default_site())
+      {:ok, module} = Loader.load_error_page_module(default_site())
       assert module.render(conn, 404) == "Not Found"
     end
   end
@@ -107,7 +107,7 @@ defmodule Beacon.LoaderTest do
     end
 
     test "loads module containing all stylesheets" do
-      {:ok, module} = Loader.reload_stylesheet_module(default_site())
+      {:ok, module} = Loader.load_stylesheet_module(default_site())
       assert module.render() =~ "sample_stylesheet"
     end
   end

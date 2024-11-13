@@ -12,12 +12,12 @@ defmodule Beacon.ErrorHandler do
   alias Beacon.Loader
 
   def undefined_function(module, fun, args) do
-    ensure_loaded(module) or reload_resource(module)
+    ensure_loaded(module) or load_resource(module)
     :error_handler.undefined_function(module, fun, args)
   end
 
   def undefined_lambda(module, fun, args) do
-    ensure_loaded(module) or reload_resource(module)
+    ensure_loaded(module) or load_resource(module)
     :error_handler.undefined_lambda(module, fun, args)
   end
 
@@ -33,35 +33,35 @@ defmodule Beacon.ErrorHandler do
     end
   end
 
-  defp reload_resource(module) when is_atom(module) do
+  defp load_resource(module) when is_atom(module) do
     module
     |> Module.split()
-    |> reload_resource()
+    |> load_resource()
   rescue
     # ignore erlang modules
     _ -> false
   end
 
-  defp reload_resource(["Beacon", "Web", "LiveRenderer", _site_id, resource]) do
-    reload_beacon_resource(Process.get(:__beacon_site__), resource)
+  defp load_resource(["Beacon", "Web", "LiveRenderer", _site_id, resource]) do
+    load_beacon_resource(Process.get(:__beacon_site__), resource)
   end
 
-  defp reload_resource(_module), do: false
+  defp load_resource(_module), do: false
 
-  defp reload_beacon_resource(nil = _site, _resource), do: false
+  defp load_beacon_resource(nil = _site, _resource), do: false
 
-  defp reload_beacon_resource(site, resource) do
+  defp load_beacon_resource(site, resource) do
     case resource do
-      "Page" <> page_id -> Loader.load_page_module(site, page_id, Loader.module_name(site, resource))
-      "Layout" <> layout_id -> Loader.reload_layout_module(site, layout_id)
-      "Routes" -> Loader.reload_routes_module(site)
-      "Components" -> Loader.reload_components_module(site)
-      "LiveData" -> Loader.reload_live_data_module(site)
-      "Stylesheet" -> Loader.reload_stylesheet_module(site)
+      "Page" <> page_id -> Loader.load_page_module(site, page_id)
+      "Layout" <> layout_id -> Loader.load_layout_module(site, layout_id)
+      "Routes" -> Loader.load_routes_module(site)
+      "Components" -> Loader.load_components_module(site)
+      "LiveData" -> Loader.load_live_data_module(site)
+      "Stylesheet" -> Loader.load_stylesheet_module(site)
       "Snippets" -> Loader.load_snippets_module(site)
-      "ErrorPage" -> Loader.reload_error_page_module(site)
-      "EventHandlers" -> Loader.reload_event_handlers_module(site)
-      "InfoHandlers" -> Loader.reload_info_handlers_module(site)
+      "ErrorPage" -> Loader.load_error_page_module(site)
+      "EventHandlers" -> Loader.load_event_handlers_module(site)
+      "InfoHandlers" -> Loader.load_info_handlers_module(site)
       _ -> false
     end
   end
