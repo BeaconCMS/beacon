@@ -23,7 +23,11 @@ defmodule Beacon.RouterServer do
     # We store routes by order and length so the most visited pages will likely be in the first rows
     :ets.new(table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
 
-    {:ok, config, {:continue, :async_init}}
+    if config.mode in [:live, :manual] do
+      {:ok, config, {:continue, :async_init}}
+    else
+      {:ok, config}
+    end
   end
 
   def terminate(_reason, config) do
