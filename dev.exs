@@ -139,7 +139,7 @@ defmodule Demo.Beacon.TagsField do
   end
 end
 
-create_layout = fn params ->
+upsert_layout = fn params ->
   %{site: site, title: title} = params
   site = String.to_existing_atom(site)
 
@@ -155,7 +155,7 @@ create_layout = fn params ->
   end
 end
 
-create_page = fn params ->
+upsert_page = fn params ->
   %{site: site, path: path} = params
   site = String.to_existing_atom(site)
 
@@ -171,9 +171,19 @@ create_page = fn params ->
   end
 end
 
+upsert_component = fn params ->
+  %{site: site, name: name} = params
+  site = String.to_existing_atom(site)
+
+  case Beacon.Content.get_component_by(site, name: name) do
+    %Beacon.Content.Component{} = component -> component
+    _ -> Beacon.Content.create_component!(params)
+  end
+end
+
 dev_seeds = fn ->
   layout =
-    create_layout.(%{
+    upsert_layout.(%{
       site: "dev",
       title: "dev",
       meta_tags: [
@@ -189,9 +199,7 @@ dev_seeds = fn ->
       """
     })
 
-  Beacon.Content.publish_layout(layout)
-
-  Beacon.Content.create_component(%{
+  upsert_component.(%{
     site: "dev",
     name: "sample_component",
     attrs: [%{name: "project", type: "any", opts: [required: true]}],
@@ -222,354 +230,349 @@ dev_seeds = fn ->
     }
   )
 
-  _page_home =
-    create_page.(%{
-      path: "/sample",
-      site: "dev",
-      title: "dev home",
-      description: "page used for development",
-      layout_id: layout.id,
-      meta_tags: [
-        %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"}
-      ],
-      raw_schema: [
-        %{
-          "@context": "https://schema.org",
-          "@type": "BlogPosting",
-          headline: "{{ page.description }}",
-          author: %{
-            "@type": "Person",
-            name: "{% helper 'author_name' %}"
-          }
-        }
-      ],
-      extra: %{
-        "author_id" => 1
-      },
-      template: """
-      <main class="custom-font-style">
-        <%!-- Home Page --%>
-
-        <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
-
-        <h1 class="text-violet-500">Dev</h1>
-        <p class="text-sm">Page</p>
-
-        <p><.heroicon name="arrow-up-circle" solid class="animate-spin"/></p>
-
-        <div>
-          <p>Pages:</p>
-          <ul>
-            <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
-            <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
-            <li><.link navigate={~p"/markdown"}>Markdown Page</.link></li>
-            <li><.link navigate={~p"/drag-drop"}>Drag and Drop Page</.link></li>
-          </ul>
-        </div>
-
-        <div>
-          Sample component: <%= my_component("sample_component", project: %{id: 1, name: "Beacon"}) %>
-        </div>
-
-       <div>
-          <p>From data source:</p>
-          <%= @year %>
-        </div>
-
-        <div>
-          <p>From dynamic_helper:</p>
-          <!-- %= dynamic_helper("upcase", %{name: "beacon"}) %> -->
-        </div>
-
-        <div>
-          <p>RANDOM:<%= Enum.random(1..100) %></p>
-        </div>
-      </main>
-      """,
-      helpers: [
-        %{
-          name: "upcase",
-          args: "%{name: name}",
-          code: """
-            String.upcase(name)
-          """
-        }
-      ]
-    })
-
-  _page_author =
-    create_page.(%{
-      path: "/authors/:author_id",
-      site: "dev",
-      title: "dev author",
-      layout_id: layout.id,
-      template: """
-      <main>
-        <h1 class="text-violet-500">Authors</h1>
-
-        <div>
-          <p>Pages:</p>
-          <ul>
-            <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
-            <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
-          </ul>
-        </div>
-
-        <div>
-          <p>path params:</p>
-          <p><%= inspect @beacon.path_params %></p>
-        </div>
-      </main>
-      """
-    })
-
-  _page_post =
-    create_page.(%{
-      path: "/posts/*slug",
-      site: "dev",
-      title: "dev post",
-      layout_id: layout.id,
-      template: """
-      <main>
-        <h1 class="text-violet-500">Post</h1>
-
-        <div>
-          <p>Pages:</p>
-          <ul>
-            <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
-            <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
-          </ul>
-        </div>
-
-        <div>
-          <p>path params:</p>
-          <p><%= inspect @beacon.path_params %></p>
-        </div>
-      </main>
-      """
-    })
-
-  _page_markdown =
-    create_page.(%{
-      path: "/markdown",
-      site: "dev",
-      title: "dev markdown",
-      layout_id: layout.id,
-      format: "markdown",
-      template: """
-      ## Headings
-
-      # H1
-
-      ## H2
-
-      ### H3
-
-      ## Text Decoration
-
-      Bold: **bold text**
-
-      Italics: *italicized text*
-
-      Subscript: H~2~O
-
-      Superscript: X^2^
-
-      Emoji: :joy:
-
-      > blockquote
-
-      ## Lists
-
-      1. ordered list item 1
-      2. ordered list item 2
-      3. ordered list item 3
-
-      - unordered list item
-      - unordered list item
-      - unordered list item
-
-      - [x] Completed task list item
-      - [ ] incomplete task list item
-      - [ ] incomplete task list item
-
-      ## Code
-
-      `inline code`
-
-      ```elixir
+  upsert_page.(%{
+    path: "/sample",
+    site: "dev",
+    title: "dev home",
+    description: "page used for development",
+    layout_id: layout.id,
+    meta_tags: [
+      %{"property" => "og:title", "content" => "title: {{ page.title | upcase }}"}
+    ],
+    raw_schema: [
       %{
-        "firstName" => "John",
-        "lastName" => "Smith",
-        "age" => 25
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: "{{ page.description }}",
+        author: %{
+          "@type": "Person",
+          name: "{% helper 'author_name' %}"
+        }
       }
-      ```
+    ],
+    extra: %{
+      "author_id" => 1
+    },
+    template: """
+    <main class="custom-font-style">
+      <%!-- Home Page --%>
 
-      ## Hyperlink
+      <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
 
-      Back to [Home](/dev)
+      <h1 class="text-violet-500">Dev</h1>
+      <p class="text-sm">Page</p>
 
-      [link](https://example.com)
+      <p><.heroicon name="arrow-up-circle" solid class="animate-spin"/></p>
 
-      ## Image
+      <div>
+        <p>Pages:</p>
+        <ul>
+          <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
+          <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
+          <li><.link navigate={~p"/markdown"}>Markdown Page</.link></li>
+          <li><.link navigate={~p"/drag-drop"}>Drag and Drop Page</.link></li>
+        </ul>
+      </div>
 
-      ![image](https://assets.dockyard.com/images/narwin-press-release-og-v2.svg)
+      <div>
+        Sample component: <%= my_component("sample_component", project: %{id: 1, name: "Beacon"}) %>
+      </div>
 
-      ## Table
+     <div>
+        <p>From data source:</p>
+        <%= @year %>
+      </div>
 
-      | Table | Header |
-      | ----------- | ----------- |
-      | Header | Title |
-      | Paragraph | Text |
+      <div>
+        <p>From dynamic_helper:</p>
+        <!-- %= dynamic_helper("upcase", %{name: "beacon"}) %> -->
+      </div>
 
-      ## Footnote
+      <div>
+        <p>RANDOM:<%= Enum.random(1..100) %></p>
+      </div>
+    </main>
+    """,
+    helpers: [
+      %{
+        name: "upcase",
+        args: "%{name: name}",
+        code: """
+          String.upcase(name)
+        """
+      }
+    ]
+  })
 
-      Here's a sentence with a footnote. [^1]
+  upsert_page.(%{
+    path: "/authors/:author_id",
+    site: "dev",
+    title: "dev author",
+    layout_id: layout.id,
+    template: """
+    <main>
+      <h1 class="text-violet-500">Authors</h1>
 
-      [^1]: This is the footnote.
+      <div>
+        <p>Pages:</p>
+        <ul>
+          <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
+          <li><.link navigate={~p"/posts/2023/my-post"}>Post (navigate)</.link></li>
+        </ul>
+      </div>
 
-      ## Description List
+      <div>
+        <p>path params:</p>
+        <p><%= inspect @beacon.path_params %></p>
+      </div>
+    </main>
+    """
+  })
 
-      term
+  upsert_page.(%{
+    path: "/posts/*slug",
+    site: "dev",
+    title: "dev post",
+    layout_id: layout.id,
+    template: """
+    <main>
+      <h1 class="text-violet-500">Post</h1>
 
-      : definition
+      <div>
+        <p>Pages:</p>
+        <ul>
+          <li><.link navigate={~p"/"}>Home (navigate)</.link></li>
+          <li><.link patch={~p"/authors/1-author"}>Author (patch)</.link></li>
+        </ul>
+      </div>
 
-      First Horizontal Line
+      <div>
+        <p>path params:</p>
+        <p><%= inspect @beacon.path_params %></p>
+      </div>
+    </main>
+    """
+  })
 
-      ***
+  upsert_page.(%{
+    path: "/markdown",
+    site: "dev",
+    title: "dev markdown",
+    layout_id: layout.id,
+    format: "markdown",
+    template: """
+    ## Headings
 
-      Second One
+    # H1
 
-      -----
+    ## H2
 
-      Third
+    ### H3
 
-      _________
+    ## Text Decoration
+
+    Bold: **bold text**
+
+    Italics: *italicized text*
+
+    Subscript: H~2~O
+
+    Superscript: X^2^
+
+    Emoji: :joy:
+
+    > blockquote
+
+    ## Lists
+
+    1. ordered list item 1
+    2. ordered list item 2
+    3. ordered list item 3
+
+    - unordered list item
+    - unordered list item
+    - unordered list item
+
+    - [x] Completed task list item
+    - [ ] incomplete task list item
+    - [ ] incomplete task list item
+
+    ## Code
+
+    `inline code`
+
+    ```elixir
+    %{
+      "firstName" => "John",
+      "lastName" => "Smith",
+      "age" => 25
+    }
+    ```
+
+    ## Hyperlink
+
+    Back to [Home](/dev)
+
+    [link](https://example.com)
+
+    ## Image
+
+    ![image](https://assets.dockyard.com/images/narwin-press-release-og-v2.svg)
+
+    ## Table
+
+    | Table | Header |
+    | ----------- | ----------- |
+    | Header | Title |
+    | Paragraph | Text |
+
+    ## Footnote
+
+    Here's a sentence with a footnote. [^1]
+
+    [^1]: This is the footnote.
+
+    ## Description List
+
+    term
+
+    : definition
+
+    First Horizontal Line
+
+    ***
+
+    Second One
+
+    -----
+
+    Third
+
+    _________
 
 
-      ## Embeds
+    ## Embeds
 
-      <iframe width="560" height="315" src="https://www.youtube.com/embed/J---aiyznGQ?si=Go2Dsrw6mTIiyf2-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/J---aiyznGQ?si=Go2Dsrw6mTIiyf2-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-      <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Read about what people are building with LiveView Native and how easy it&#39;s been for them to get up and going<a href="https://t.co/HtO3a7fYZ7">https://t.co/HtO3a7fYZ7</a><a href="https://twitter.com/hashtag/myelixirstatus?src=hash&amp;ref_src=twsrc%5Etfw">#myelixirstatus</a></p>&mdash; LiveView Native (@liveviewnative) <a href="https://twitter.com/liveviewnative/status/1838621636028731652?ref_src=twsrc%5Etfw">September 24, 2024</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-      """
-    })
+    <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Read about what people are building with LiveView Native and how easy it&#39;s been for them to get up and going<a href="https://t.co/HtO3a7fYZ7">https://t.co/HtO3a7fYZ7</a><a href="https://twitter.com/hashtag/myelixirstatus?src=hash&amp;ref_src=twsrc%5Etfw">#myelixirstatus</a></p>&mdash; LiveView Native (@liveviewnative) <a href="https://twitter.com/liveviewnative/status/1838621636028731652?ref_src=twsrc%5Etfw">September 24, 2024</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    """
+  })
 
-  _page_drag_drop_playground =
-    create_page.(%{
-      path: "/drag-drop",
-      site: "dev",
-      title: "dev drag and drop playground",
-      layout_id: layout.id,
-      template: """
-      <!-- 1. Row using Margins -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">1. Row using Margins</h2>
-        <div class="flex">
-          <div class="mr-4 p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="mr-4 p-2 border rounded">Item 2<br />Small text.</div>
-          <div class="mr-4 p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="mr-4 p-2 border rounded flex-grow">Item 3<br />Wider element text.</div>
-          <div class="mr-4 p-2 border rounded">Item 5<br />Small text.</div>
+  upsert_page.(%{
+    path: "/drag-drop",
+    site: "dev",
+    title: "dev drag and drop playground",
+    layout_id: layout.id,
+    template: """
+    <!-- 1. Row using Margins -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">1. Row using Margins</h2>
+      <div class="flex">
+        <div class="mr-4 p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="mr-4 p-2 border rounded">Item 2<br />Small text.</div>
+        <div class="mr-4 p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="mr-4 p-2 border rounded flex-grow">Item 3<br />Wider element text.</div>
+        <div class="mr-4 p-2 border rounded">Item 5<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 2. Vertical using Margins -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">2. Vertical using Margins</h2>
+      <div>
+        <div class="mb-4 p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="mb-4 p-2 border rounded">Item 2<br />Small text.</div>
+        <div class="mb-4 p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="mb-4 p-2 border rounded">Item 3<br />Small text. <br /> But taller</div>
+        <div class="mb-4 p-2 border rounded">Item 5<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 3. Row using Flexbox -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">3. Row using Flexbox</h2>
+      <div class="flex space-x-4">
+        <div class="p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="p-2 border rounded">Item 2<br />Small text.</div>
+        <div class="p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="p-2 border rounded flex-grow">Item 3<br />Wider element text.</div>
+        <div class="p-2 border rounded">Item 5<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 4. Vertical using Flexbox -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">4. Vertical using Flexbox</h2>
+      <div class="flex flex-col space-y-4">
+        <div class="p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="p-2 border rounded">Item 2<br />Small text.</div>
+        <div class="p-2 border rounded">Item 3<br />Small text. <br /> But taller</div>
+        <div class="p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="p-2 border rounded">Item 5<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 5. Row using CSS Grid -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">5. Row using CSS Grid (Single Row)</h2>
+      <div class="grid grid-cols-6 gap-4">
+        <div class="p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="p-2 border rounded">Item 2<br />Small text.</div>
+        <div class="p-2 border rounded col-span-2">Item 3<br />Wider element text.</div>
+        <div class="p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="p-2 border rounded">Item 5<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 6. Vertical using CSS Grid -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">6. Vertical using CSS Grid</h2>
+      <div class="grid gap-4 grid-rows-6">
+        <div class="p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="p-2 border rounded">Item 2<br />Small text.</div>
+        <div class="p-2 border rounded row-span-2">Item 3<br />Small text. <br /> But taller</div>
+        <div class="p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="p-2 border rounded">Item 5<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 7. 2x3 Grid of Elements -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">7. 2x3 Grid of Elements</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="p-2 border rounded">Item 1<br />Small text.</div>
+        <div class="p-2 border rounded">Item 2<br />Small text.<br /> But taller</div>
+        <div class="p-2 border rounded">Item 3<br />Small text.</div>
+        <div class="p-2 border rounded">Item 4<br />Small text.</div>
+        <div class="p-2 border rounded">Item 5<br />Small text.</div>
+        <div class="p-2 border rounded">Item 6<br />Small text.</div>
+      </div>
+    </div>
+    <!-- 8. Inline-block elements with overflow -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold mb-4">8. Elements with Inline-Block Layout</h2>
+      <div class="text-justify">
+        <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
+          Item 1<br />Small text.
+        </div>
+        <div class="inline-block w-2/5 p-2 border rounded mb-2 mx-2">
+          Item 2<br />Small text.<br />But taller.
+        </div>
+        <div class="inline-block w-1/4 p-2 border rounded mb-2 mx-2">
+          Item 3<br />Small text.
+        </div>
+        <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
+          Item 4<br />Small text.
+        </div>
+        <div class="inline-block w-1/5 p-2 border rounded mb-2 mx-2">
+          Item 5<br />Small text.
+        </div>
+        <div class="inline-block w-9/20 p-2 border rounded mb-2 mx-2">
+          Item 6<br />Small text.
         </div>
       </div>
-      <!-- 2. Vertical using Margins -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">2. Vertical using Margins</h2>
-        <div>
-          <div class="mb-4 p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="mb-4 p-2 border rounded">Item 2<br />Small text.</div>
-          <div class="mb-4 p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="mb-4 p-2 border rounded">Item 3<br />Small text. <br /> But taller</div>
-          <div class="mb-4 p-2 border rounded">Item 5<br />Small text.</div>
-        </div>
-      </div>
-      <!-- 3. Row using Flexbox -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">3. Row using Flexbox</h2>
-        <div class="flex space-x-4">
-          <div class="p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="p-2 border rounded">Item 2<br />Small text.</div>
-          <div class="p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="p-2 border rounded flex-grow">Item 3<br />Wider element text.</div>
-          <div class="p-2 border rounded">Item 5<br />Small text.</div>
-        </div>
-      </div>
-      <!-- 4. Vertical using Flexbox -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">4. Vertical using Flexbox</h2>
-        <div class="flex flex-col space-y-4">
-          <div class="p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="p-2 border rounded">Item 2<br />Small text.</div>
-          <div class="p-2 border rounded">Item 3<br />Small text. <br /> But taller</div>
-          <div class="p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="p-2 border rounded">Item 5<br />Small text.</div>
-        </div>
-      </div>
-      <!-- 5. Row using CSS Grid -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">5. Row using CSS Grid (Single Row)</h2>
-        <div class="grid grid-cols-6 gap-4">
-          <div class="p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="p-2 border rounded">Item 2<br />Small text.</div>
-          <div class="p-2 border rounded col-span-2">Item 3<br />Wider element text.</div>
-          <div class="p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="p-2 border rounded">Item 5<br />Small text.</div>
-        </div>
-      </div>
-      <!-- 6. Vertical using CSS Grid -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">6. Vertical using CSS Grid</h2>
-        <div class="grid gap-4 grid-rows-6">
-          <div class="p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="p-2 border rounded">Item 2<br />Small text.</div>
-          <div class="p-2 border rounded row-span-2">Item 3<br />Small text. <br /> But taller</div>
-          <div class="p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="p-2 border rounded">Item 5<br />Small text.</div>
-        </div>
-      </div>
-      <!-- 7. 2x3 Grid of Elements -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">7. 2x3 Grid of Elements</h2>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="p-2 border rounded">Item 1<br />Small text.</div>
-          <div class="p-2 border rounded">Item 2<br />Small text.<br /> But taller</div>
-          <div class="p-2 border rounded">Item 3<br />Small text.</div>
-          <div class="p-2 border rounded">Item 4<br />Small text.</div>
-          <div class="p-2 border rounded">Item 5<br />Small text.</div>
-          <div class="p-2 border rounded">Item 6<br />Small text.</div>
-        </div>
-      </div>
-      <!-- 8. Inline-block elements with overflow -->
-      <div class="mb-8">
-        <h2 class="text-lg font-semibold mb-4">8. Elements with Inline-Block Layout</h2>
-        <div class="text-justify">
-          <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
-            Item 1<br />Small text.
-          </div>
-          <div class="inline-block w-2/5 p-2 border rounded mb-2 mx-2">
-            Item 2<br />Small text.<br />But taller.
-          </div>
-          <div class="inline-block w-1/4 p-2 border rounded mb-2 mx-2">
-            Item 3<br />Small text.
-          </div>
-          <div class="inline-block w-1/3 p-2 border rounded mb-2 mx-2">
-            Item 4<br />Small text.
-          </div>
-          <div class="inline-block w-1/5 p-2 border rounded mb-2 mx-2">
-            Item 5<br />Small text.
-          </div>
-          <div class="inline-block w-9/20 p-2 border rounded mb-2 mx-2">
-            Item 6<br />Small text.
-          </div>
-        </div>
-      </div>
-      """
-    })
+    </div>
+    """
+  })
 end
 
 dy_seeds = fn ->
-  Beacon.Content.create_component(%{
+  upsert_component.(%{
     site: "dy",
     name: "header",
     template: """
@@ -643,7 +646,7 @@ dy_seeds = fn ->
     example: "<.header />"
   })
 
-  Beacon.Content.create_component(%{
+  upsert_component.(%{
     site: "dy",
     name: "footer",
     template: """
@@ -929,7 +932,7 @@ dy_seeds = fn ->
   })
 
   layout =
-    create_layout.(%{
+    upsert_layout.(%{
       site: "dy",
       title: "main",
       template: """
@@ -939,240 +942,239 @@ dy_seeds = fn ->
       """
     })
 
-  _page_home =
-    create_page.(%{
-      path: "/",
-      site: "dy",
-      title: "home",
-      description: "home",
-      layout_id: layout.id,
-      template: """
-      <main class="font-body text-gray-900">
-        <%!-- Intro --%>
-        <section aria-labelledby="region01">
-          <div class="xl:pb-0 relative flex flex-col pb-5">
-            <%!-- Intro text absolute position --%>
-            <div class="xl:absolute xl:top-10 xl:left-0 xl:w-full 2xl:top-20 px-4">
-              <div class="flex flex-col max-w-4xl mx-auto text-center">
-                <%!-- Intro headings --%>
-                <div class="sm:absolute sm:top-10 sm:left-0 sm:w-full xl:static xl:top-auto xl:left-auto flex flex-col">
-                  <h1 class="font-heading lg:text-4xl lg:leading-normal xl:text-5xl xl:leading-normal mb-3 text-3xl leading-normal" id="region01">
-                    Hi. We’re a
-                    <span class="to-dy-gradient-pink bg-clip-text bg-gradient-to-r from-blue-500 font-bold text-transparent">
-                      digital product consultancy.
-                    </span>
-                  </h1>
-                  <h2 class="-order-1 md:text-base md:leading-7 lg:mb-5 lg:text-lg xl:mb-6 xl:text-xl xl:leading-8 mb-3 text-sm font-semibold leading-6">
-                    Growth, Uninhibited
-                  </h2>
-                </div>
-                <%!-- Intro text --%>
-                <div>
-                  <p class="lg:mb-12 lg:text-2xl lg:leading-loose xl:mb-15 mb-10 text-xl leading-8">
-                    We partner with innovative teams to build products that scale
-                    as their users, features, and complexity grow.
-                  </p>
-                  <.link class="link-default lg:bg-white/50 py-3 px-4" navigate="/contact/hire-us">
-                    Get in Touch with Us
-                  </.link>
-                </div>
+  upsert_page.(%{
+    path: "/",
+    site: "dy",
+    title: "home",
+    description: "home",
+    layout_id: layout.id,
+    template: """
+    <main class="font-body text-gray-900">
+      <%!-- Intro --%>
+      <section aria-labelledby="region01">
+        <div class="xl:pb-0 relative flex flex-col pb-5">
+          <%!-- Intro text absolute position --%>
+          <div class="xl:absolute xl:top-10 xl:left-0 xl:w-full 2xl:top-20 px-4">
+            <div class="flex flex-col max-w-4xl mx-auto text-center">
+              <%!-- Intro headings --%>
+              <div class="sm:absolute sm:top-10 sm:left-0 sm:w-full xl:static xl:top-auto xl:left-auto flex flex-col">
+                <h1 class="font-heading lg:text-4xl lg:leading-normal xl:text-5xl xl:leading-normal mb-3 text-3xl leading-normal" id="region01">
+                  Hi. We’re a
+                  <span class="to-dy-gradient-pink bg-clip-text bg-gradient-to-r from-blue-500 font-bold text-transparent">
+                    digital product consultancy.
+                  </span>
+                </h1>
+                <h2 class="-order-1 md:text-base md:leading-7 lg:mb-5 lg:text-lg xl:mb-6 xl:text-xl xl:leading-8 mb-3 text-sm font-semibold leading-6">
+                  Growth, Uninhibited
+                </h2>
+              </div>
+              <%!-- Intro text --%>
+              <div>
+                <p class="lg:mb-12 lg:text-2xl lg:leading-loose xl:mb-15 mb-10 text-xl leading-8">
+                  We partner with innovative teams to build products that scale
+                  as their users, features, and complexity grow.
+                </p>
+                <.link class="link-default lg:bg-white/50 py-3 px-4" navigate="/contact/hire-us">
+                  Get in Touch with Us
+                </.link>
               </div>
             </div>
-            <%!-- Intro image --%>
-            <div class="-order-1">
-              <%!-- TODO: update with finalized design image if provided --%>
-              <img class="w-full h-auto" width="1920" height="1422" src="https://assets.dockyard.com/images/narwin-home-flare-v2.svg" alt="Narwin waving while standing in front of a vast horizon of ocean waves and mountains" />
-            </div>
           </div>
-          <%!-- Logos --%>
-          <div class="md:py-18 py-15 lg:py-20 xl:pt-0 px-4">
-            <div class="md:mb-12 lg:mb-16 xl:mb-20 max-w-6xl mx-auto mb-10">
-              <ul class="md:grid-cols-3 md:gap-10 lg:grid-cols-4 lg:gap-20 grid items-center grid-cols-2 gap-8">
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client_apple.svg" width="122" height="150" alt="Apple" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-nasdaq-new.svg" width="168" height="48" alt="Nasdaq" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client_netflix.svg" width="300" height="80" alt="Netflix" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-adobe.svg" width="54" height="14" alt="Adobe" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client_mcgraw-hill.svg" width="150" height="150" alt="McGraw Hill" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-livenation.svg" width="1302" height="277" alt="Live Nation" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-collegevine-new.svg" width="147" height="32" alt="CollegeVine" />
-                </li>
-                <li class="basis-1/2 grow-0 shrink flex justify-center h-6">
-                  <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-constant-contact-new.svg" width="332" height="57" alt="Constant Contact" />
-                </li>
-              </ul>
-            </div>
-            <div class="max-w-5xl mx-auto">
-              <p class="font-heading lg:text-2xl lg:leading-loose text-xl font-medium leading-8 text-center">
-                For more than a decade, Fortune 500s and industry disruptors have
-                trusted us to help them overcome complex product challenges and
-                bring products from idea to impact.
-              </p>
-            </div>
+          <%!-- Intro image --%>
+          <div class="-order-1">
+            <%!-- TODO: update with finalized design image if provided --%>
+            <img class="w-full h-auto" width="1920" height="1422" src="https://assets.dockyard.com/images/narwin-home-flare-v2.svg" alt="Narwin waving while standing in front of a vast horizon of ocean waves and mountains" />
           </div>
-        </section>
-        <%!-- Services --%>
-        <section class="py-15 md:py-20 lg:py-24 xl:py-30 bg-gray-50 px-4" aria-labelledby="region02">
-          <div class="max-w-1200 md:grid md:grid-cols-5 md:gap-x-10 lg:gap-x-20 xl:gap-x-30 mx-auto">
-            <div class="mb-15 md:col-span-2 md:mb-0">
-              <h2 class="font-heading md:text-4xl lg:text-5xl xl:text-6xl mb-4 text-3xl font-extrabold" id="region02">
-                How we help
-              </h2>
-              <p class="lg:mb-12 mb-10 text-xl leading-8 text-gray-800">
-                We pair modern technologies with design thinking to turn user
-                insights into production-ready apps (and mentor teams along the
-                way).
-              </p>
-              <.link class="link-default link-default--gray-50" navigate="/services">
-                See All Services
-              </.link>
-            </div>
-            <ul class="md:col-span-3 md:-my-4 xl:-my-10 xl:-mx-10 xl:-space-y-5 -mx-4">
-              <li class="transition-link focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-200 hover:bg-white active:bg-white xl:p-10 rounded-2xl relative block p-4 duration-300">
-                <h3 class="font-heading lg:text-2xl lg:leading-normal xl:text-3xl xl:leading-normal mb-2 text-xl font-medium leading-8">
-                  <.link class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none" navigate="/services/digital-product-strategy">
-                    Product Strategy & Discovery
-                  </.link>
-                </h3>
-                <p class="lg:text-lg lg:leading-loose leading-7 text-gray-800">
-                  We guide clients – uncovering user needs and aligning business
-                  goals – to make sure products are on the right path. Then, we
-                  create a product roadmap that sets the stage for successful
-                  delivery.
-                </p>
+        </div>
+        <%!-- Logos --%>
+        <div class="md:py-18 py-15 lg:py-20 xl:pt-0 px-4">
+          <div class="md:mb-12 lg:mb-16 xl:mb-20 max-w-6xl mx-auto mb-10">
+            <ul class="md:grid-cols-3 md:gap-10 lg:grid-cols-4 lg:gap-20 grid items-center grid-cols-2 gap-8">
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client_apple.svg" width="122" height="150" alt="Apple" />
               </li>
-              <li class="transition-link focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-200 hover:bg-white active:bg-white xl:p-10 rounded-2xl relative block p-4 duration-300">
-                <h3 class="font-heading lg:text-2xl lg:leading-normal xl:text-3xl xl:leading-normal mb-2 text-xl font-medium leading-8">
-                  <.link class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none" navigate="/services/design">
-                    Product Design & Delivery
-                  </.link>
-                </h3>
-                <p class="lg:text-lg lg:leading-loose leading-7 text-gray-800">
-                  We take product visions and add design, UX, and engineering to
-                  create the complete package — aka reliable, scalable,
-                  sustainable, custom software that our clients and their users
-                  will love.
-                </p>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-nasdaq-new.svg" width="168" height="48" alt="Nasdaq" />
               </li>
-              <li class="transition-link focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-200 hover:bg-white active:bg-white xl:p-10 rounded-2xl relative block p-4 duration-300">
-                <h3 class="font-heading lg:text-2xl lg:leading-normal xl:text-3xl xl:leading-normal mb-2 text-xl font-medium leading-8">
-                  <.link class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none" navigate="/services/engineering">
-                    Engineering Consulting & Staffing
-                  </.link>
-                </h3>
-                <p class="lg:text-lg lg:leading-loose leading-7 text-gray-800">
-                  Accelerate time to product success with expert engineering
-                  guidance — whether you need to augment your team, audit an
-                  existing codebase, or train in a specific web technology.
-                </p>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client_netflix.svg" width="300" height="80" alt="Netflix" />
+              </li>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-adobe.svg" width="54" height="14" alt="Adobe" />
+              </li>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client_mcgraw-hill.svg" width="150" height="150" alt="McGraw Hill" />
+              </li>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-livenation.svg" width="1302" height="277" alt="Live Nation" />
+              </li>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-8">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-collegevine-new.svg" width="147" height="32" alt="CollegeVine" />
+              </li>
+              <li class="basis-1/2 grow-0 shrink flex justify-center h-6">
+                <img class="w-auto h-full" src="https://assets.dockyard.com/images/client-constant-contact-new.svg" width="332" height="57" alt="Constant Contact" />
               </li>
             </ul>
           </div>
-        </section>
-        <%!-- Collaboration --%>
-        <section aria-labelledby="big-on-collaboration" class="pb-15 md:pb-20 lg:pb-24 xl:pb-30 px-4">
-          <div class="md:grid-cols-12 md:items-center md:gap-x-10 lg:gap-x-12 xl:gap-x-0 max-w-7xl grid mx-auto">
-            <div class="xlg:col-end-13 md:col-span-6 xl:col-start-8">
-              <h2 class="font-heading lg:text-3xl lg:leading-normal mb-4 text-2xl font-medium" id="big-on-collaboration">
-                Big on collaboration, <br />Small on surprises
-              </h2>
-              <p class="lg:mb-12 lg:text-xl lg:leading-8 mb-10 text-lg leading-loose text-gray-700">
-                We become an extension of your team using constant communication
-                and knowledge sharing each step of the way.
-              </p>
-              <.link class="link-default" navigate="/why-dockyard">
-                Why DockYard?
-              </.link>
-            </div>
-            <div class="-order-1 md:col-span-6 md:mb-0 mb-10">
-              <img class="w-full h-auto max-w-full" width="1087" height="755" src="https://assets.dockyard.com/images/narwin-f2f-meeting-og-v2.svg" alt="Narwin sitting at a table in a face-to-face meeting with two collaborators" loading="lazy" />
-            </div>
-          </div>
-        </section>
-        <%!-- Quote --%>
-        <div class="py-15 md:pb-20 md:pt-24 lg:pb-24 lg:pt-30 xl:pb-30 px-4 bg-gray-100">
-          <figure class="max-w-3xl mx-auto">
-            <blockquote>
-              <div class="lg:mb-8 xl:mb-10 mb-6 mx-auto lg:w-[56px] lg:h-[43px]">
-                <svg class="w-auto h-full mx-auto" width="46" height="35" viewBox="0 0 46 35" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
-                  <path
-                    d="M4.4575 31.3007C1.8825 28.5657 0.5 25.4982 0.5 20.5257C0.5 11.7757 6.6425 3.93316 15.575 0.0556641L17.8075 3.50066C9.47 8.01066 7.84 13.8632 7.19 17.5532C8.5325 16.8582 10.29 16.6157 12.0125 16.7757C16.5225 17.1932 20.0775 20.8957 20.0775 25.4982C20.0775 27.8188 19.1556 30.0444 17.5147 31.6854C15.8737 33.3263 13.6481 34.2482 11.3275 34.2482C10.0441 34.2369 8.77584 33.9706 7.5964 33.4646C6.41697 32.9585 5.34997 32.223 4.4575 31.3007ZM29.4575 31.3007C26.8825 28.5657 25.5 25.4982 25.5 20.5257C25.5 11.7757 31.6425 3.93316 40.575 0.0556641L42.8075 3.50066C34.47 8.01066 32.84 13.8632 32.19 17.5532C33.5325 16.8582 35.29 16.6157 37.0125 16.7757C41.5225 17.1932 45.0775 20.8957 45.0775 25.4982C45.0775 27.8188 44.1556 30.0444 42.5147 31.6854C40.8737 33.3263 38.6481 34.2482 36.3275 34.2482C35.0441 34.2369 33.7758 33.9706 32.5964 33.4646C31.417 32.9585 30.35 32.223 29.4575 31.3007Z"
-                    fill="#CAD5E0"
-                  />
-                </svg>
-              </div>
-              <p class="font-heading lg:text-left mb-8 text-2xl font-medium leading-10 text-center">
-                It would be impossible for me to adequately sum up several years
-                with DockYard that for me was a delight, source of growth, and
-                tremendous learning experience. Overall my experience with the
-                partnership was extremely positive.
-              </p>
-            </blockquote>
-            <figcaption>
-              <div class="gap-x-4 flex items-center justify-center">
-                <div class="text-center">
-                  <p class="text-lg font-bold leading-7 text-gray-800">Tim H.</p>
-                  <p class="block text-sm text-gray-800">Netflix Studios</p>
-                </div>
-              </div>
-            </figcaption>
-          </figure>
-        </div>
-        <%!-- News --%>
-        <section class="py-15 md:py-20 lg:py-24 xl:py-30 px-4" aria-labelledby="news">
-          <div class="max-w-7xl mx-auto text-center">
-            <svg class="md:mb-10 lg:mb-14 xl:mb-20 mx-auto mb-8" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
-              <path
-                d="M35.9326 31.6743L37.8049 32.2551C38.8161 32.5678 39.7909 31.6703 39.5553 30.6346L37.5775 21.8987C37.3419 20.8671 36.0789 20.4731 35.2991 21.192L28.7238 27.2759C27.944 27.9947 28.2364 29.2863 29.2517 29.603L30.9656 30.1351C29.9422 31.3088 28.736 32.316 27.3876 33.112C25.8605 34.0136 24.1832 34.6269 22.4368 34.9193V20.331H26.6566C28.0009 20.331 29.0934 19.2386 29.0934 17.8942C29.0934 16.5499 28.0009 15.4574 26.6566 15.4574H22.4368V13.4471C25.0686 12.4561 26.9449 9.91777 26.9449 6.94487C26.9449 3.11504 23.8299 0 20 0C16.1702 0 13.0552 3.11504 13.0552 6.94487C13.0552 9.91777 14.9315 12.4602 17.5632 13.4471V15.4574H13.3435C11.9992 15.4574 10.9067 16.5499 10.9067 17.8942C10.9067 19.2386 11.9992 20.331 13.3435 20.331H17.5632V34.9193C15.8209 34.6228 14.1395 34.0136 12.6125 33.112C11.2682 32.3119 10.0579 31.3047 9.03444 30.131L10.7483 29.599C11.7596 29.2863 12.052 27.9947 11.2763 27.2718L4.701 21.192C3.92123 20.4732 2.65816 20.8671 2.4226 21.8987L0.444731 30.6386C0.209174 31.6702 1.18389 32.5719 2.19516 32.2591L4.06744 31.6783C5.65948 33.9608 7.73076 35.8859 10.131 37.3073C13.108 39.07 16.5235 40 20 40C23.4765 40 26.8881 39.07 29.8691 37.3073C32.2693 35.8819 34.3405 33.9568 35.9326 31.6743ZM22.0713 6.94081C22.0713 7.2576 21.9982 7.55814 21.8723 7.83024C21.5393 8.52879 20.8245 9.01209 20 9.01209C19.1756 9.01209 18.4608 8.52879 18.1278 7.83024C17.9978 7.5622 17.9288 7.26166 17.9288 6.94081C17.9288 5.79958 18.8588 4.86953 20 4.86953C21.1413 4.86953 22.0713 5.79958 22.0713 6.94081Z"
-                fill="#CAD5E0"
-              />
-            </svg>
-            <h2 class="font-heading lg:text-7xl lg:leading-none xl:text-8xl mx-auto mb-8 text-6xl font-extrabold leading-none" id="news">
-              Share the news
-            </h2>
-            <div class="max-w-xl mx-auto">
-              <p class="font-xl lg:mb-12 lg:text-2xl lg:leading-10 xl:mb-15 mb-10 leading-8">
-                We have been featured in numerous publications and media since our
-                inception a decade ago.
-              </p>
-              <a class="link-default" href="/press/releases">
-                See News and Media
-              </a>
-            </div>
-          </div>
-        </section>
-        <%!-- Product delivery success --%>
-        <section class="bg-dy-purple-light py-15 md:py-20 lg:py-24 xl:py-30 px-4" aria-labelledby="product-delivery-success">
-          <div class="mb-15 md:mb-12 lg:mb-10 xl:mb-6 max-w-lg mx-auto text-center">
-            <h2 class="mb-5 text-3xl font-medium" id="product-delivery-success">
-              Let's accelerate time to product <span class="text-dy-red line-through">delivery</span> success
-            </h2>
-            <p class="mb-8 text-xl leading-8 text-gray-700">
-              Tell us what you’re looking for and how we can help.
+          <div class="max-w-5xl mx-auto">
+            <p class="font-heading lg:text-2xl lg:leading-loose text-xl font-medium leading-8 text-center">
+              For more than a decade, Fortune 500s and industry disruptors have
+              trusted us to help them overcome complex product challenges and
+              bring products from idea to impact.
             </p>
-            <.link class="link-default link-default--purple" navigate="/contact/hire-us">
-              Connect with Us
+          </div>
+        </div>
+      </section>
+      <%!-- Services --%>
+      <section class="py-15 md:py-20 lg:py-24 xl:py-30 bg-gray-50 px-4" aria-labelledby="region02">
+        <div class="max-w-1200 md:grid md:grid-cols-5 md:gap-x-10 lg:gap-x-20 xl:gap-x-30 mx-auto">
+          <div class="mb-15 md:col-span-2 md:mb-0">
+            <h2 class="font-heading md:text-4xl lg:text-5xl xl:text-6xl mb-4 text-3xl font-extrabold" id="region02">
+              How we help
+            </h2>
+            <p class="lg:mb-12 mb-10 text-xl leading-8 text-gray-800">
+              We pair modern technologies with design thinking to turn user
+              insights into production-ready apps (and mentor teams along the
+              way).
+            </p>
+            <.link class="link-default link-default--gray-50" navigate="/services">
+              See All Services
             </.link>
           </div>
-          <div class="max-w-3xl mx-auto">
-            <img class="w-full h-auto" src="https://assets.dockyard.com/images/narwin-trophy-flag-og-v2.svg" width="1067" height="881" alt="Narwin celebrating while holding a trophy for 'Product Success' and a DockYard flag" loading="lazy" />
+          <ul class="md:col-span-3 md:-my-4 xl:-my-10 xl:-mx-10 xl:-space-y-5 -mx-4">
+            <li class="transition-link focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-200 hover:bg-white active:bg-white xl:p-10 rounded-2xl relative block p-4 duration-300">
+              <h3 class="font-heading lg:text-2xl lg:leading-normal xl:text-3xl xl:leading-normal mb-2 text-xl font-medium leading-8">
+                <.link class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none" navigate="/services/digital-product-strategy">
+                  Product Strategy & Discovery
+                </.link>
+              </h3>
+              <p class="lg:text-lg lg:leading-loose leading-7 text-gray-800">
+                We guide clients – uncovering user needs and aligning business
+                goals – to make sure products are on the right path. Then, we
+                create a product roadmap that sets the stage for successful
+                delivery.
+              </p>
+            </li>
+            <li class="transition-link focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-200 hover:bg-white active:bg-white xl:p-10 rounded-2xl relative block p-4 duration-300">
+              <h3 class="font-heading lg:text-2xl lg:leading-normal xl:text-3xl xl:leading-normal mb-2 text-xl font-medium leading-8">
+                <.link class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none" navigate="/services/design">
+                  Product Design & Delivery
+                </.link>
+              </h3>
+              <p class="lg:text-lg lg:leading-loose leading-7 text-gray-800">
+                We take product visions and add design, UX, and engineering to
+                create the complete package — aka reliable, scalable,
+                sustainable, custom software that our clients and their users
+                will love.
+              </p>
+            </li>
+            <li class="transition-link focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-200 hover:bg-white active:bg-white xl:p-10 rounded-2xl relative block p-4 duration-300">
+              <h3 class="font-heading lg:text-2xl lg:leading-normal xl:text-3xl xl:leading-normal mb-2 text-xl font-medium leading-8">
+                <.link class="after:absolute after:inset-0 after:cursor-pointer focus:outline-none" navigate="/services/engineering">
+                  Engineering Consulting & Staffing
+                </.link>
+              </h3>
+              <p class="lg:text-lg lg:leading-loose leading-7 text-gray-800">
+                Accelerate time to product success with expert engineering
+                guidance — whether you need to augment your team, audit an
+                existing codebase, or train in a specific web technology.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+      <%!-- Collaboration --%>
+      <section aria-labelledby="big-on-collaboration" class="pb-15 md:pb-20 lg:pb-24 xl:pb-30 px-4">
+        <div class="md:grid-cols-12 md:items-center md:gap-x-10 lg:gap-x-12 xl:gap-x-0 max-w-7xl grid mx-auto">
+          <div class="xlg:col-end-13 md:col-span-6 xl:col-start-8">
+            <h2 class="font-heading lg:text-3xl lg:leading-normal mb-4 text-2xl font-medium" id="big-on-collaboration">
+              Big on collaboration, <br />Small on surprises
+            </h2>
+            <p class="lg:mb-12 lg:text-xl lg:leading-8 mb-10 text-lg leading-loose text-gray-700">
+              We become an extension of your team using constant communication
+              and knowledge sharing each step of the way.
+            </p>
+            <.link class="link-default" navigate="/why-dockyard">
+              Why DockYard?
+            </.link>
           </div>
-        </section>
-      </main>
-      """
-    })
+          <div class="-order-1 md:col-span-6 md:mb-0 mb-10">
+            <img class="w-full h-auto max-w-full" width="1087" height="755" src="https://assets.dockyard.com/images/narwin-f2f-meeting-og-v2.svg" alt="Narwin sitting at a table in a face-to-face meeting with two collaborators" loading="lazy" />
+          </div>
+        </div>
+      </section>
+      <%!-- Quote --%>
+      <div class="py-15 md:pb-20 md:pt-24 lg:pb-24 lg:pt-30 xl:pb-30 px-4 bg-gray-100">
+        <figure class="max-w-3xl mx-auto">
+          <blockquote>
+            <div class="lg:mb-8 xl:mb-10 mb-6 mx-auto lg:w-[56px] lg:h-[43px]">
+              <svg class="w-auto h-full mx-auto" width="46" height="35" viewBox="0 0 46 35" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
+                <path
+                  d="M4.4575 31.3007C1.8825 28.5657 0.5 25.4982 0.5 20.5257C0.5 11.7757 6.6425 3.93316 15.575 0.0556641L17.8075 3.50066C9.47 8.01066 7.84 13.8632 7.19 17.5532C8.5325 16.8582 10.29 16.6157 12.0125 16.7757C16.5225 17.1932 20.0775 20.8957 20.0775 25.4982C20.0775 27.8188 19.1556 30.0444 17.5147 31.6854C15.8737 33.3263 13.6481 34.2482 11.3275 34.2482C10.0441 34.2369 8.77584 33.9706 7.5964 33.4646C6.41697 32.9585 5.34997 32.223 4.4575 31.3007ZM29.4575 31.3007C26.8825 28.5657 25.5 25.4982 25.5 20.5257C25.5 11.7757 31.6425 3.93316 40.575 0.0556641L42.8075 3.50066C34.47 8.01066 32.84 13.8632 32.19 17.5532C33.5325 16.8582 35.29 16.6157 37.0125 16.7757C41.5225 17.1932 45.0775 20.8957 45.0775 25.4982C45.0775 27.8188 44.1556 30.0444 42.5147 31.6854C40.8737 33.3263 38.6481 34.2482 36.3275 34.2482C35.0441 34.2369 33.7758 33.9706 32.5964 33.4646C31.417 32.9585 30.35 32.223 29.4575 31.3007Z"
+                  fill="#CAD5E0"
+                />
+              </svg>
+            </div>
+            <p class="font-heading lg:text-left mb-8 text-2xl font-medium leading-10 text-center">
+              It would be impossible for me to adequately sum up several years
+              with DockYard that for me was a delight, source of growth, and
+              tremendous learning experience. Overall my experience with the
+              partnership was extremely positive.
+            </p>
+          </blockquote>
+          <figcaption>
+            <div class="gap-x-4 flex items-center justify-center">
+              <div class="text-center">
+                <p class="text-lg font-bold leading-7 text-gray-800">Tim H.</p>
+                <p class="block text-sm text-gray-800">Netflix Studios</p>
+              </div>
+            </div>
+          </figcaption>
+        </figure>
+      </div>
+      <%!-- News --%>
+      <section class="py-15 md:py-20 lg:py-24 xl:py-30 px-4" aria-labelledby="news">
+        <div class="max-w-7xl mx-auto text-center">
+          <svg class="md:mb-10 lg:mb-14 xl:mb-20 mx-auto mb-8" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
+            <path
+              d="M35.9326 31.6743L37.8049 32.2551C38.8161 32.5678 39.7909 31.6703 39.5553 30.6346L37.5775 21.8987C37.3419 20.8671 36.0789 20.4731 35.2991 21.192L28.7238 27.2759C27.944 27.9947 28.2364 29.2863 29.2517 29.603L30.9656 30.1351C29.9422 31.3088 28.736 32.316 27.3876 33.112C25.8605 34.0136 24.1832 34.6269 22.4368 34.9193V20.331H26.6566C28.0009 20.331 29.0934 19.2386 29.0934 17.8942C29.0934 16.5499 28.0009 15.4574 26.6566 15.4574H22.4368V13.4471C25.0686 12.4561 26.9449 9.91777 26.9449 6.94487C26.9449 3.11504 23.8299 0 20 0C16.1702 0 13.0552 3.11504 13.0552 6.94487C13.0552 9.91777 14.9315 12.4602 17.5632 13.4471V15.4574H13.3435C11.9992 15.4574 10.9067 16.5499 10.9067 17.8942C10.9067 19.2386 11.9992 20.331 13.3435 20.331H17.5632V34.9193C15.8209 34.6228 14.1395 34.0136 12.6125 33.112C11.2682 32.3119 10.0579 31.3047 9.03444 30.131L10.7483 29.599C11.7596 29.2863 12.052 27.9947 11.2763 27.2718L4.701 21.192C3.92123 20.4732 2.65816 20.8671 2.4226 21.8987L0.444731 30.6386C0.209174 31.6702 1.18389 32.5719 2.19516 32.2591L4.06744 31.6783C5.65948 33.9608 7.73076 35.8859 10.131 37.3073C13.108 39.07 16.5235 40 20 40C23.4765 40 26.8881 39.07 29.8691 37.3073C32.2693 35.8819 34.3405 33.9568 35.9326 31.6743ZM22.0713 6.94081C22.0713 7.2576 21.9982 7.55814 21.8723 7.83024C21.5393 8.52879 20.8245 9.01209 20 9.01209C19.1756 9.01209 18.4608 8.52879 18.1278 7.83024C17.9978 7.5622 17.9288 7.26166 17.9288 6.94081C17.9288 5.79958 18.8588 4.86953 20 4.86953C21.1413 4.86953 22.0713 5.79958 22.0713 6.94081Z"
+              fill="#CAD5E0"
+            />
+          </svg>
+          <h2 class="font-heading lg:text-7xl lg:leading-none xl:text-8xl mx-auto mb-8 text-6xl font-extrabold leading-none" id="news">
+            Share the news
+          </h2>
+          <div class="max-w-xl mx-auto">
+            <p class="font-xl lg:mb-12 lg:text-2xl lg:leading-10 xl:mb-15 mb-10 leading-8">
+              We have been featured in numerous publications and media since our
+              inception a decade ago.
+            </p>
+            <a class="link-default" href="/press/releases">
+              See News and Media
+            </a>
+          </div>
+        </div>
+      </section>
+      <%!-- Product delivery success --%>
+      <section class="bg-dy-purple-light py-15 md:py-20 lg:py-24 xl:py-30 px-4" aria-labelledby="product-delivery-success">
+        <div class="mb-15 md:mb-12 lg:mb-10 xl:mb-6 max-w-lg mx-auto text-center">
+          <h2 class="mb-5 text-3xl font-medium" id="product-delivery-success">
+            Let's accelerate time to product <span class="text-dy-red line-through">delivery</span> success
+          </h2>
+          <p class="mb-8 text-xl leading-8 text-gray-700">
+            Tell us what you’re looking for and how we can help.
+          </p>
+          <.link class="link-default link-default--purple" navigate="/contact/hire-us">
+            Connect with Us
+          </.link>
+        </div>
+        <div class="max-w-3xl mx-auto">
+          <img class="w-full h-auto" src="https://assets.dockyard.com/images/narwin-trophy-flag-og-v2.svg" width="1067" height="881" alt="Narwin celebrating while holding a trophy for 'Product Success' and a DockYard flag" loading="lazy" />
+        </div>
+      </section>
+    </main>
+    """
+  })
 end
 
 dev_site = [
