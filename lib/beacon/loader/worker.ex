@@ -571,6 +571,7 @@ defmodule Beacon.Loader.Worker do
       {:ok, _pid} ->
         # we are the first worker, let's do the work
         load_fn.()
+        Registry.unregister(Beacon.Registry, module)
         module
 
       {:error, {:already_registered, pid}} ->
@@ -580,7 +581,7 @@ defmodule Beacon.Loader.Worker do
         receive do
           {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} -> module
         after
-          10_000 -> :error
+          1_000 -> :error
         end
     end
   end

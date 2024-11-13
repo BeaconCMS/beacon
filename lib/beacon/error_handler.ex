@@ -51,6 +51,8 @@ defmodule Beacon.ErrorHandler do
   defp load_beacon_resource(nil = _site, _resource), do: false
 
   defp load_beacon_resource(site, resource) do
+    IO.inspect("LOADING #{resource} for #{site}")
+
     case resource do
       "Page" <> page_id -> Loader.load_page_module(site, page_id)
       "Layout" <> layout_id -> Loader.load_layout_module(site, layout_id)

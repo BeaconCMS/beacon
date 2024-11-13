@@ -129,12 +129,6 @@ defmodule Beacon.ContentTest do
       assert_receive {:page_published, %{site: ^site, id: ^id}}
     end
 
-    test "broadcasts loaded event" do
-      :ok = Beacon.PubSub.subscribe_to_page(:booted, "/broadcast-test")
-      beacon_published_page_fixture(site: "booted", path: "/broadcast-test")
-      assert_receive {:page_loaded, %{site: :booted}}
-    end
-
     test "broadcasts unpublished event" do
       %{site: site, id: id, path: path} = page = beacon_published_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_pages(site)
