@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+  - Introduce global process lock for Loader Workers, preventing multiple workers from
+    attempting to compile the same module simultaneously
+
 ## 0.2.1 (2024-11-14)
 
 ### Fixes
