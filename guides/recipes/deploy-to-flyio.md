@@ -108,7 +108,7 @@ defp copy_beacon_files(%{path: path} = release) do
 
   release
 end
-````
+```
 
 Essentially this function will copy the `tailwind-cli` binary and the `app.css` files into the release.
 The `tailwind-cli` binary is required but `app.css` is only used if you actually [reuse it on your sites](reuse-app-css.md).

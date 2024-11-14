@@ -11,7 +11,7 @@ This policy applies to Beacon, BeaconLiveAdmin, and any other project in the Bea
 
 2. Each project has its own lifecycle and releases, one may evolve faster than others.
 
-3. A new major or minor version is released once a month containing features, fixes, and potentially breaking changes.
+3. A new major or minor version is released once a month on the first Wednesday of the month, containing features, fixes, and potentially breaking changes.
 
    * The type of the version, either major or minor is decided based on the changes included in that release and the current version.
    * We might skip releasing a new version if there are no changes in that period of time.
