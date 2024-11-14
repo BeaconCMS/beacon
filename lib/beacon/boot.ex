@@ -15,10 +15,6 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(site) when is_atom(site) do
-    init(%{site: site, mode: :live})
-  end
-
   def init(%{site: site, mode: :manual}) when is_atom(site) do
     Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
     :ignore
