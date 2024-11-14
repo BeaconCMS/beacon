@@ -1,8 +1,21 @@
 defmodule Beacon.Loader.PageTest do
   use Beacon.DataCase, async: false
   use Beacon.Test, site: :my_site
+
   alias Beacon.Loader
   alias Beacon.BeaconTest.Repo
+
+  setup do
+    site = default_site()
+
+    # we aren't passing through PageLive in these tests so we have to manually
+    # enable the ErrorHandler and set the site in the Process dictionary
+    # (which would normally happen in the LiveView mount)
+    Process.put(:__beacon_site__, site)
+    Process.flag(:error_handler, Beacon.ErrorHandler)
+
+    [site: site]
+  end
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do

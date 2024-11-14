@@ -29,20 +29,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = BeaconAssigns.new(site)
   end
 
-  test "build with unpublished page", %{site: site} do
-    page = beacon_page_fixture(path: "/blog")
-
-    assigns = BeaconAssigns.new(site, page, %{}, ["blog"], %{})
-
-    assert %BeaconAssigns{
-             site: @site,
-             page: %{path: "/blog", title: ""},
-             private: %{
-               live_path: ["blog"]
-             }
-           } = assigns
-  end
-
   test "build with published page resolves page title", %{site: site} do
     page = beacon_published_page_fixture(path: "/blog", title: "blog index")
 
@@ -72,7 +58,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with path params", %{site: site} do
-    page = beacon_page_fixture(path: "/blog/:post")
+    page = beacon_published_page_fixture(path: "/blog/:post")
 
     assigns = BeaconAssigns.new(site, page, %{}, ["blog", "hello"], %{})
 
@@ -83,7 +69,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
   end
 
   test "build with live data", %{site: site} do
-    page = beacon_page_fixture(path: "/blog")
+    page = beacon_published_page_fixture(path: "/blog")
 
     live_data = beacon_live_data_fixture(path: "/blog")
     beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")

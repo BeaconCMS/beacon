@@ -11,7 +11,7 @@ defmodule Beacon.Loader.ComponentsTest do
   end
 
   test "load empty module without components" do
-    {:ok, mod} = Loader.load_components_module(default_site())
+    mod = Loader.load_components_module(default_site())
     assert mod.__info__(:functions) == [{:my_component, 1}, {:my_component, 2}]
   end
 
