@@ -69,7 +69,7 @@ defmodule Beacon.LoaderTest do
       Repo.delete_all(Content.Component)
       Loader.reload_components_module(default_site())
 
-      assert_raise Beacon.RuntimeError, fn ->
+      assert_raise Beacon.InvokeError, fn ->
         module.my_component("a", %{})
       end
     end
