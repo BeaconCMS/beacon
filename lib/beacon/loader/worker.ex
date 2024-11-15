@@ -30,14 +30,19 @@ defmodule Beacon.Loader.Worker do
     %{site: site} = config
     path = Path.join(Application.app_dir(:beacon, "priv"), "beacon.png")
 
-    # FIXME: avoid duplicates
-    Beacon.MediaLibrary.UploadMetadata.new(
-      site,
-      path,
-      name: "beacon.png",
-      extra: %{"alt" => "logo"}
-    )
-    |> Beacon.MediaLibrary.upload()
+    case Beacon.MediaLibrary.search(site, "beacon.webp") do
+      [] ->
+        Beacon.MediaLibrary.UploadMetadata.new(
+          site,
+          path,
+          name: "beacon.png",
+          extra: %{"alt" => "logo"}
+        )
+        |> Beacon.MediaLibrary.upload()
+
+      _ ->
+        :skip
+    end
 
     stop(:ok, config)
   end
