@@ -11,21 +11,19 @@ defmodule Beacon.Web.DataSource do
 
   # TODO: revisit this logic to evaluate page_title for unpublished pages
   def page_title(site, page_id, live_data) do
-    page_assigns = page_assigns(site, page_id)
+    %{path: path, title: title} = page_assigns = page_assigns(site, page_id)
 
-    with {:ok, page_assigns} <- page_assigns,
-         {:ok, page_title} <- Beacon.Content.render_snippet(page_assigns.title, %{page: page_assigns, live_data: live_data}) do
+    with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
       page_title
     else
       {:error, error} ->
-        {:ok, %{path: path, title: title}} = page_assigns
-
         Logger.error("""
         failed to interpolate page title variables
 
         will return the original unmodified page title
 
-        site: #{title}
+        site: #{site}
+        title: #{title}
         page path: #{path}
 
         Got:
@@ -44,12 +42,10 @@ defmodule Beacon.Web.DataSource do
     %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
     live_data = Map.take(assigns, live_data_keys)
 
-    {:ok, page_assigns} = page_assigns(site, page_id)
-
     assigns
     |> Beacon.Web.Layouts.meta_tags()
     |> List.wrap()
-    |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns, live_data: live_data}))
+    |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns(site, page_id), live_data: live_data}))
   end
 
   defp interpolate_meta_tag(meta_tag, values) when is_map(meta_tag) do
@@ -68,11 +64,8 @@ defmodule Beacon.Web.DataSource do
   # which is what we need for sites to work properly but
   # the page builder could use this data as well
   defp page_assigns(site, page_id) do
-    assigns =
-      site
-      |> Beacon.Loader.fetch_page_module(page_id)
-      |> Beacon.apply_mfa(:page_assigns, [])
-
-    {:ok, assigns}
+    site
+    |> Beacon.Loader.fetch_page_module(page_id)
+    |> Beacon.apply_mfa(:page_assigns, [])
   end
 end
