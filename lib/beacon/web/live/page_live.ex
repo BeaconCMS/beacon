@@ -20,9 +20,10 @@ defmodule Beacon.Web.PageLive do
     %{"beacon_site" => site} = session
 
     # Use Beacon custom error handler to automatically load modules on-demand
-    if Beacon.Config.fetch!(site).mode == :live do
-      Beacon.ErrorHandler.enable(site)
-      if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
+    Beacon.ErrorHandler.enable(site)
+
+    if Beacon.Config.fetch!(site).mode == :live and connected?(socket) do
+      :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
 
     page = RouterServer.lookup_page!(site, path)
@@ -109,15 +110,19 @@ defmodule Beacon.Web.PageLive do
 
       site ->
         %{"path" => path_info} = params
+
+        if socket.assigns.beacon.site != site do
+          Beacon.ErrorHandler.enable(site)
+
+          if Beacon.Config.fetch!(site).mode == :live do
+            Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
+            Beacon.PubSub.subscribe_to_page(site, path_info)
+          end
+        end
+
         page = RouterServer.lookup_page!(site, path_info)
         live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
         beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
-
-        if socket.assigns.beacon.site != site && Beacon.Config.fetch!(site).mode == :live do
-          Process.put(:__beacon_site__, site)
-          Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
-          Beacon.PubSub.subscribe_to_page(site, path_info)
-        end
 
         socket =
           socket
