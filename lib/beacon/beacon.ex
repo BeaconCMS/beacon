@@ -136,20 +136,6 @@ defmodule Beacon do
   rescue
     error ->
       context = Keyword.get(opts, :context, nil)
-
-      reraise Beacon.RuntimeError,
-              [message: apply_mfa_error_message(module, function, args, nil, context, error)],
-              __STACKTRACE__
-  end
-
-  defp apply_mfa_error_message(module, function, args, reason, context, error) do
-    mfa = Exception.format_mfa(module, function, length(args))
-    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
-    reason = if reason, do: "reason: #{reason}"
-    context = if context, do: "context: #{inspect(context)}"
-    error = if error, do: Exception.message(error)
-
-    lines = for line <- [summary, reason, context, error], line != nil, do: line
-    Enum.join(lines, "\n\n")
+      reraise Beacon.InvokeError, [error: error, args: args, context: context], __STACKTRACE__
   end
 end

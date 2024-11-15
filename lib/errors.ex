@@ -34,6 +34,17 @@ defmodule Beacon.RuntimeError do
   defexception message: "runtime error in Beacon", plug_status: 404
 end
 
+defmodule Beacon.InvokeError do
+  @moduledoc """
+  Raised when Beacon attempts to `apply` a module/function/arguments unsuccessfully.
+
+  If you see this error consistently, make sure the resource being called is created and published,
+  otherwise that might be a bug in Beacon.
+  """
+
+  defexception error: nil, args: [], context: nil, message: "error applying function", plug_status: 404
+end
+
 defmodule Beacon.ParserError do
   @moduledoc """
   Raised when Beacon's Markdown engine attempts to convert Markdown to HTML unsuccessfully.
