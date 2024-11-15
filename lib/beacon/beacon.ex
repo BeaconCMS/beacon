@@ -90,31 +90,32 @@ defmodule Beacon do
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-  defp site_child_spec(opts) do
-    config = Config.new(opts)
+  defp site_child_spec(%Beacon.Config{} = config) do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 
+  defp site_child_spec(opts) do
+    opts
+    |> Config.new()
+    |> site_child_spec()
+  end
+
   @doc """
-  Boot a site executing the initial data population and resources loading.
+  Boot a site.
 
-  It will populate default content data and routes in the router table,
-  enable PubSub events broadcasting, and load resource modules for layouts, pages, and others.
+  It will restart the Site Supervisor if it's already running, otherwise it will start it in the main Beacon Supervisor.
 
-  This function is called by the site supervisor when a site is started and should not be called directly most of the times,
-  but in some scenarions, you want to start Beacon and all related process like the Repo without actually booting the site,
-  for example to seed initial data and in tests.
-
-  In those scenarios you'd define the config `:mode` to `:manual` in your site configuration,
-  execute everything you need and then call `Beacon.boot/1` to finally boot the site if necessary.
-
-  Note that calling this function will update the config `:mode` to `:live` after the site gets booted,
-  so all PubSub events necessary for Beacon to work properly are broadcasted as expected.
+  This function is not necessary to be called in most cases, as Beacon will automatically boot all sites when it starts,
+  but in some cases where a site is started with the `:manual` mode, you may want to call this function to boot the site
+  in the `:live` mode to active resource loading and PubSub events broadcasting.
   """
-  @spec boot(Beacon.Types.Site.t()) :: :ok
-  def boot(site) when is_atom(site) do
-    Beacon.Boot.init(site)
-    :ok
+  @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child()
+  def boot(%Beacon.Config{} = config) do
+    site = config.site
+    Supervisor.terminate_child(__MODULE__, site)
+    Supervisor.delete_child(__MODULE__, site)
+    spec = site_child_spec(config)
+    Supervisor.start_child(__MODULE__, spec)
   end
 
   @tailwind_version "3.4.4"
@@ -135,20 +136,6 @@ defmodule Beacon do
   rescue
     error ->
       context = Keyword.get(opts, :context, nil)
-
-      reraise Beacon.RuntimeError,
-              [message: apply_mfa_error_message(module, function, args, nil, context, error)],
-              __STACKTRACE__
-  end
-
-  defp apply_mfa_error_message(module, function, args, reason, context, error) do
-    mfa = Exception.format_mfa(module, function, length(args))
-    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
-    reason = if reason, do: "reason: #{reason}"
-    context = if context, do: "context: #{inspect(context)}"
-    error = if error, do: Exception.message(error)
-
-    lines = for line <- [summary, reason, context, error], line != nil, do: line
-    Enum.join(lines, "\n\n")
+      reraise Beacon.InvokeError, [error: error, args: args, context: context], __STACKTRACE__
   end
 end

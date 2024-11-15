@@ -8,23 +8,23 @@ defmodule Beacon.Web.ErrorHTML do
     {_, _, %{extra: %{session: %{"beacon_site" => site}}}} = conn.private.phoenix_live_view
     error_module = Beacon.Loader.fetch_error_page_module(site)
 
-    conn
-    |> Plug.Conn.assign(:beacon, Beacon.Web.BeaconAssigns.new(site))
-    |> error_module.render(String.to_integer(status_code))
+    conn = Plug.Conn.assign(conn, :beacon, Beacon.Web.BeaconAssigns.new(site))
+    Beacon.apply_mfa(error_module, :render, [conn, String.to_integer(status_code)])
   rescue
     error ->
-      Logger.error("""
+      Logger.warning("""
       failed to render error page for #{template}, fallbacking to default Phoenix error page
 
-      Got: #{inspect(error)}
+      Got:
 
+      #{inspect(error)}
       """)
 
       Phoenix.Controller.status_message_from_template(template)
   end
 
   def render(template, _assigns) do
-    Logger.error("could not find an error page for #{template}, fallbacking to default Phoenix error page")
+    Logger.warning("could not find an error page for #{template}, fallbacking to default Phoenix error page")
     Phoenix.Controller.status_message_from_template(template)
   end
 end

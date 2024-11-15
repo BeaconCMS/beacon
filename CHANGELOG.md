@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.2.1 (2024-11-14)
+
+### Fixes
+  - Fix site scoping for media asset path/url
+  - Serve media library assets inside aliased scopes
+  - Only reset cache and route table for published pages
+
+### Documentation
+  - Fix identation on install guide
+  - Add upgrade guide from pre-rc to v0.1
+
+### Chores
+  - Rename asset URL from `__beacon_assets__` to `__beacon_media__` to avoid conflicts
+  - Expose option `:root_layout` in `beacon_site`
+
 ## 0.2.0 (2024-11-08)
 
 ### Enhancements
