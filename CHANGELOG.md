@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixes
+  - Do not duplicate default beacon.webp media asset
+  - Load resources on dev.exs script
+
+### Chores
+  - Improve `Beacon.apply_mfa/4` error output
+
+### Enhancements
+
   - Introduce global process lock for Loader Workers, preventing multiple workers from
     attempting to compile the same module simultaneously
 
