@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2 (2024-11-17)
+
+### Fixes
+  - Do not duplicate default beacon.webp media asset
+  - Load resources on dev.exs script
+
+### Chores
+  - Improve `Beacon.apply_mfa/4` error output
+
 ## 0.2.1 (2024-11-14)
 
 ### Fixes
