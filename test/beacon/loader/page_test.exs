@@ -1,21 +1,8 @@
 defmodule Beacon.Loader.PageTest do
   use Beacon.DataCase, async: false
   use Beacon.Test, site: :my_site
-
   alias Beacon.Loader
   alias Beacon.BeaconTest.Repo
-
-  setup do
-    site = default_site()
-
-    # we aren't passing through PageLive in these tests so we have to manually
-    # enable the ErrorHandler and set the site in the Process dictionary
-    # (which would normally happen in the LiveView mount)
-    Process.put(:__beacon_site__, site)
-    Process.flag(:error_handler, Beacon.ErrorHandler)
-
-    [site: site]
-  end
 
   describe "dynamic_helper" do
     test "generate each helper function and the proxy dynamic_helper" do
@@ -88,7 +75,7 @@ defmodule Beacon.Loader.PageTest do
       Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
       Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
       Beacon.Content.publish_page(page)
-      module = Loader.fetch_page_module(page.site, page.id)
+      {:ok, module} = Loader.reload_page_module(page.site, page.id)
 
       assert [
                %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]},

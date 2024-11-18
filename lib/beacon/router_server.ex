@@ -38,11 +38,20 @@ defmodule Beacon.RouterServer do
   # Client
 
   def lookup_page(site, path_info) when is_atom(site) and is_list(path_info) do
-    with {_path, page_id} <- lookup_path(site, path_info) do
-      page_module = Beacon.Loader.fetch_page_module(site, page_id)
-      Beacon.apply_mfa(page_module, :page, [])
+    if Beacon.Config.fetch!(site).mode == :testing do
+      with {_path, page_id} <- lookup_path(site, path_info),
+           {:ok, page_module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
+        Beacon.apply_mfa(page_module, :page, [])
+      else
+        _ -> nil
+      end
     else
-      _ -> nil
+      with {_path, page_id} <- lookup_path(site, path_info) do
+        page_module = Beacon.Loader.fetch_page_module(site, page_id)
+        Beacon.apply_mfa(page_module, :page, [])
+      else
+        _ -> nil
+      end
     end
   end
 
@@ -113,8 +122,7 @@ defmodule Beacon.RouterServer do
   end
 
   def handle_call({:lookup_path, path_info, limit}, _from, config) do
-    lookup_table = table_name(config.site)
-    route = do_lookup_path(lookup_table, path_info, limit)
+    route = do_lookup_path(table_name(config.site), path_info, limit)
     {:reply, route, config}
   end
 

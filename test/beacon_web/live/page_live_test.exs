@@ -276,7 +276,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     test "update resource links on layout publish", %{conn: conn, layout: layout} do
       {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
       {:ok, layout} = Content.publish_layout(layout)
-      Beacon.Loader.load_layout_module(layout.site, layout.id)
+      Beacon.Loader.reload_layout_module(layout.site, layout.id)
       {:ok, _view, html} = live(conn, "/home/hello")
       assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
     end
@@ -384,7 +384,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       assert html =~ "component_test_v1"
 
       Content.update_component(component, %{template: "component_test_v2"})
-      Beacon.Loader.load_components_module(component.site)
+      Beacon.Loader.reload_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")
       assert html =~ "component_test_v2"

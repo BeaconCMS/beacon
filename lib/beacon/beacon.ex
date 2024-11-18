@@ -136,8 +136,6 @@ defmodule Beacon do
   rescue
     error ->
       context = Keyword.get(opts, :context, nil)
-      mfa = Exception.format_mfa(module, function, length(args))
-      message = "error applying #{mfa}"
-      reraise Beacon.InvokeError, [message: message, error: error, args: args, context: context], __STACKTRACE__
+      reraise Beacon.InvokeError, [error: error, args: args, context: context], __STACKTRACE__
   end
 end
