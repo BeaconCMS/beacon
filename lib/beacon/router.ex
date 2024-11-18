@@ -264,7 +264,10 @@ defmodule Beacon.Router do
   #
   # On a node deployed to beacon-site-a.fly.dev, the second `beacon_site`
   # will never match, so starting `:site_b` is a waste of resources
-  # and cause problems on BeaconLiveAdmin since we can't resolve URLs properly.
+  # and a common cause of problems on BeaconLiveAdmin since we can't resolve URLs properly.
+  #
+  # Simillarly, if a `get "/"` is added _before_ either `beacon_site` that `get` would always
+  # match and invalidate the `beacon_site` mount.
   def reachable?(%Beacon.Config{} = config, opts \\ []) do
     %{site: site, endpoint: endpoint, router: router} = config
     host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
