@@ -86,12 +86,37 @@ defmodule Beacon do
 
     :pg.start_link(:beacon_cluster)
 
-    children = Enum.map(sites, &site_child_spec/1)
+    children =
+      sites
+      |> Enum.map(&site_child_spec/1)
+      |> Enum.reject(&is_nil/1)
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 
+  # we only care about starting sites that are valid and reachable
   defp site_child_spec(%Beacon.Config{} = config) do
-    Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
+    if Beacon.Router.reachable?(config) do
+      Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
+    else
+      %{site: site, endpoint: endpoint, router: router} = config
+      prefix = router.__beacon_scoped_prefix_for_site__(site)
+
+      Logger.error("""
+      site #{site} is not reachable
+
+      That means the prefix #{prefix} cannot receive requests on the host #{endpoint.host()}
+      which is commonly caused by another preceding route matching before the beacon_site prefix,
+      or a misconfigured `:host` option.
+
+      Note that if you're using `:host` on the scope and running in localhost,
+      consider adding "localhost" to the list of allowed hosts.
+
+      Check the Beacon.Router documentation for more information: https://hexdocs.pm/beacon/Beacon.Router.html
+      """)
+
+      nil
+    end
   end
 
   defp site_child_spec(opts) do
@@ -109,13 +134,18 @@ defmodule Beacon do
   but in some cases where a site is started with the `:manual` mode, you may want to call this function to boot the site
   in the `:live` mode to active resource loading and PubSub events broadcasting.
   """
-  @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child()
+  @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child() | :error
   def boot(%Beacon.Config{} = config) do
     site = config.site
-    Supervisor.terminate_child(__MODULE__, site)
-    Supervisor.delete_child(__MODULE__, site)
     spec = site_child_spec(config)
-    Supervisor.start_child(__MODULE__, spec)
+
+    if spec do
+      Supervisor.terminate_child(__MODULE__, site)
+      Supervisor.delete_child(__MODULE__, site)
+      Supervisor.start_child(__MODULE__, spec)
+    else
+      :error
+    end
   end
 
   @tailwind_version "3.4.4"
