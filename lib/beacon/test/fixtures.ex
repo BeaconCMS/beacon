@@ -170,7 +170,7 @@ defmodule Beacon.Test.Fixtures do
       content: "body {cursor: zoom-in;}"
     })
     |> Content.create_stylesheet!()
-    |> tap(&Loader.reload_stylesheet_module(&1.site))
+    |> tap(&Loader.load_stylesheet_module(&1.site))
   end
 
   @doc """
@@ -195,7 +195,7 @@ defmodule Beacon.Test.Fixtures do
       example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
     })
     |> Content.create_component!()
-    |> tap(&Loader.reload_components_module(&1.site))
+    |> tap(&Loader.load_components_module(&1.site))
   end
 
   @doc """
@@ -235,7 +235,7 @@ defmodule Beacon.Test.Fixtures do
       |> beacon_layout_fixture()
       |> Content.publish_layout()
 
-    Loader.reload_layout_module(layout.site, layout.id)
+    Loader.load_layout_module(layout.site, layout.id)
 
     layout
   end
@@ -288,8 +288,6 @@ defmodule Beacon.Test.Fixtures do
       |> beacon_page_fixture()
       |> Content.publish_page()
 
-    Loader.reload_page_module(page.site, page.id)
-
     page
   end
 
@@ -328,7 +326,7 @@ defmodule Beacon.Test.Fixtures do
       """
     })
     |> Content.create_snippet_helper!()
-    |> tap(&Loader.reload_snippets_module(&1.site))
+    |> tap(&Loader.load_snippets_module(&1.site))
   end
 
   @doc """
@@ -406,15 +404,10 @@ defmodule Beacon.Test.Fixtures do
         template: template_for(page)
       })
 
-    page_variant =
-      page
-      |> Ecto.build_assoc(:variants)
-      |> Content.PageVariant.changeset(attrs)
-      |> repo(page).insert!()
-
-    Loader.reload_page_module(page.site, page.id)
-
-    page_variant
+    page
+    |> Ecto.build_assoc(:variants)
+    |> Content.PageVariant.changeset(attrs)
+    |> repo(page).insert!()
   end
 
   defp template_for(%{format: :heex} = _page), do: "<div><h1>My Site</h1></div>"
@@ -442,7 +435,7 @@ defmodule Beacon.Test.Fixtures do
       code: "{:noreply, socket}"
     })
     |> Content.create_event_handler!()
-    |> tap(&Loader.reload_event_handlers_module(&1.site))
+    |> tap(&Loader.load_event_handlers_module(&1.site))
   end
 
   @doc """
@@ -466,7 +459,7 @@ defmodule Beacon.Test.Fixtures do
       layout_id: layout.id
     })
     |> Content.create_error_page!()
-    |> tap(&Loader.reload_error_page_module(&1.site))
+    |> tap(&Loader.load_error_page_module(&1.site))
   end
 
   @doc """
@@ -486,7 +479,7 @@ defmodule Beacon.Test.Fixtures do
       path: "/foo/bar"
     })
     |> Content.create_live_data!()
-    |> tap(&Loader.reload_live_data_module(&1.site))
+    |> tap(&Loader.load_live_data_module(&1.site))
   end
 
   @doc """
@@ -515,7 +508,7 @@ defmodule Beacon.Test.Fixtures do
       |> Content.LiveDataAssign.changeset(attrs)
       |> repo(site).insert!()
 
-    Loader.reload_live_data_module(site)
+    Loader.load_live_data_module(site)
 
     live_data
   end
@@ -554,6 +547,6 @@ defmodule Beacon.Test.Fixtures do
       code: code
     })
     |> Content.create_info_handler!()
-    |> tap(&Loader.reload_info_handlers_module(&1.site))
+    |> tap(&Loader.load_info_handlers_module(&1.site))
   end
 end
