@@ -7,6 +7,8 @@ defmodule Beacon.Web.MediaLibraryController do
   alias Beacon.MediaLibrary.Asset
 
   def show(%{assigns: %{site: site}} = conn, %{"file_name" => file_name}) when is_atom(site) do
+    dbg(site)
+
     case MediaLibrary.get_asset_by(site, file_name: file_name) do
       %Asset{} = asset ->
         Beacon.Web.Cache.when_stale(conn, asset, fn conn ->
