@@ -25,6 +25,10 @@ defmodule Beacon.Loader.Components do
     routes_module = Loader.Routes.module_name(site)
     render_functions = Enum.map(components, &render_component/1)
     function_components = Enum.map(components, &function_component/1)
+
+    # `import` modules won't be autoloaded
+    Loader.ensure_loaded!([routes_module], site)
+
     render(module, routes_module, render_functions, function_components)
   end
 

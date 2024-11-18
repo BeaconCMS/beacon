@@ -24,8 +24,8 @@ defmodule Beacon.Boot do
     Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
 
     # load modules that are expected to be available, even empty
-    Beacon.Loader.load_routes_module(site)
-    Beacon.Loader.load_components_module(site)
+    # Beacon.Loader.load_routes_module(site)
+    # Beacon.Loader.load_components_module(site)
     Beacon.Loader.load_live_data_module(site)
 
     :ignore
@@ -46,8 +46,8 @@ defmodule Beacon.Boot do
     %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
 
     # still needed to test Beacon itself
-    Beacon.Loader.load_routes_module(site)
-    Beacon.Loader.load_components_module(site)
+    # Beacon.Loader.load_routes_module(site)
+    # Beacon.Loader.load_components_module(site)
 
     assets = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_js(site) end),

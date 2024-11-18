@@ -229,6 +229,11 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
+  def ensure_loaded!(modules, site) do
+    Beacon.ErrorHandler.enable(site)
+    Enum.each(modules, & &1.__info__(:module))
+  end
+
   # Server
 
   def handle_continue(:async_init, config) do

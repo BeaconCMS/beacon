@@ -23,6 +23,9 @@ defmodule Beacon.Loader.Page do
       dynamic_helper()
     ]
 
+    # `import` modules won't be autoloaded
+    Loader.ensure_loaded!([routes_module, components_module], site)
+
     ast = build(module, routes_module, components_module, functions)
 
     {module, ast}
