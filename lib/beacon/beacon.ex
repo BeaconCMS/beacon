@@ -91,6 +91,7 @@ defmodule Beacon do
   end
 
   defp site_child_spec(%Beacon.Config{} = config) do
+    Beacon.Router.reachable?(config) |> dbg
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 

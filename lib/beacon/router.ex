@@ -246,4 +246,36 @@ defmodule Beacon.Router do
         acc
     end)
   end
+
+  @doc false
+  # Tells if a `beacon_site` is reachable in the current environment.
+  #
+  # Supposed the following router:
+  #
+  #   scope "/", MyAppWeb, host: ["beacon-site-a.fly.dev"] do
+  #     pipe_through [:browser]
+  #     beacon_site "/", site: :site_a
+  #   end
+  #
+  #   scope "/", MyAppWeb, host: ["beacon-site-b.fly.dev"] do
+  #     pipe_through [:browser]
+  #     beacon_site "/", site: :site_b
+  #   end
+  #
+  # On a node deployed to beacon-site-a.fly.dev, the second `beacon_site`
+  # will never match, so starting `:site_b` is a waste of resources
+  # and cause problems on BeaconLiveAdmin since we can't resolve URLs properly.
+  def reachable?(%Beacon.Config{} = config, opts \\ []) do
+    %{site: site, endpoint: endpoint, router: router} = config
+    host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
+    prefix = router.__beacon_scoped_prefix_for_site__(site)
+
+    case Phoenix.Router.route_info(router, "GET", prefix, host) do
+      %{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}}}}} ->
+        true
+
+      _ ->
+        false
+    end
+  end
 end
