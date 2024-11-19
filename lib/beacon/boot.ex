@@ -15,19 +15,8 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, mode: :manual}) when is_atom(site) do
-    Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
-    :ignore
-  end
-
-  def init(%{site: site, mode: :testing}) when is_atom(site) do
-    Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
-
-    # load modules that are expected to be available, even empty
-    # Beacon.Loader.load_routes_module(site)
-    # Beacon.Loader.load_components_module(site)
-    Beacon.Loader.load_live_data_module(site)
-
+  def init(%{site: site, mode: mode}) when is_atom(site) and mode in [:manual, :testing] do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on #{mode} mode")
     :ignore
   end
 
@@ -44,10 +33,6 @@ defmodule Beacon.Boot do
     Beacon.Loader.populate_default_home_page(site)
 
     %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
-
-    # still needed to test Beacon itself
-    # Beacon.Loader.load_routes_module(site)
-    # Beacon.Loader.load_components_module(site)
 
     assets = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_js(site) end),
