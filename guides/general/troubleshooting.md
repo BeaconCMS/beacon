@@ -37,3 +37,8 @@ Note that if you're using `:host` on the scope and running in `localhost`,
 consider adding `"localhost"` to the list of allowed hosts.
 
 Also check the [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) for more information.
+
+## RuntimeError - could not find persistent term for endpoint
+
+`Beacon` should be started after your host's `Endpoint`, please review the application children
+and make sure is declared after the endpoint.
