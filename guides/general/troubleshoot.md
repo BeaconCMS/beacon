@@ -1,4 +1,4 @@
-# Troubleshoot
+# Troubleshooting
 
 Solutions to common problems.
 

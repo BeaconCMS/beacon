@@ -266,7 +266,7 @@ defmodule Beacon.Router do
   # will never match, so starting `:site_b` is a waste of resources
   # and a common cause of problems on BeaconLiveAdmin since we can't resolve URLs properly.
   #
-  # Simillarly, if a `get "/"` is added _before_ either `beacon_site` that `get` would always
+  # Similarly, if a `get "/"` is added _before_ either `beacon_site` that `get` would always
   # match and invalidate the `beacon_site` mount.
   def reachable?(%Beacon.Config{} = config, opts \\ []) do
     %{site: site, endpoint: endpoint, router: router} = config
