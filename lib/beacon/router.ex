@@ -268,7 +268,13 @@ defmodule Beacon.Router do
   #
   # Simillarly, if a `get "/"` is added _before_ either `beacon_site` that `get` would always
   # match and invalidate the `beacon_site` mount.
-  def reachable?(%Beacon.Config{} = config, opts \\ []) do
+  def reachable?(config, opts \\ [])
+
+  def reachable?(%{mode: :test}, _opts) do
+    true
+  end
+
+  def reachable?(config, opts) do
     %{site: site, endpoint: endpoint, router: router} = config
     host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
     prefix = router.__beacon_scoped_prefix_for_site__(site)
