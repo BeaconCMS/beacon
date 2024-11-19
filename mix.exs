@@ -201,9 +201,9 @@ defmodule Beacon.MixProject do
     [
       Introduction: ~r"guides/introduction/",
       Recipes: ~r"guides/recipes/",
-      Troubleshoot: ~r"troubleshoot.md",
-      Upgrading: ~r"guides/upgrading/",
-      Deployment: ~r"guides/deployment/"
+      General: ~r"guides/general/",
+      Deployment: ~r"guides/deployment/",
+      Upgrading: ~r"guides/upgrading/"
     ]
   end
 
