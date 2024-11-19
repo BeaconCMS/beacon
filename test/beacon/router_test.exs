@@ -1,5 +1,6 @@
 defmodule Beacon.RouterTest do
   use ExUnit.Case, async: true
+  use Beacon.Test
 
   alias Beacon.Router
 
@@ -59,5 +60,15 @@ defmodule Beacon.RouterTest do
     assert Router.path_params("/posts/*slug", ["posts", "2023", "my-post"]) == %{"slug" => ["2023", "my-post"]}
     assert Router.path_params("/posts/:author", ["posts", "1-author"]) == %{"author" => "1-author"}
     assert Router.path_params("/posts/:author/:category", ["posts", "1-author", "test"]) == %{"author" => "1-author", "category" => "test"}
+  end
+
+  describe "reachable?" do
+    test "test" do
+      site = :host_test
+      config = Beacon.Config.fetch!(site)
+      assert Router.reachable?(config, host: config.endpoint.host())
+      refute Router.reachable?(%{config | site: :my_site}, host: config.endpoint.host())
+      refute Router.reachable?(config, host: "other.com")
+    end
   end
 end

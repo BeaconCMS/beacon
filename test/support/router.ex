@@ -16,6 +16,11 @@ defmodule Beacon.BeaconTest.Router do
     beacon_site "/media", site: :s3_site
   end
 
+  # test :host
+  scope path: "/", host: "localhost" do
+    beacon_site "/", site: :host_test
+  end
+
   # `alias` is not really used but is present here to verify that `beacon_site` has no conflicts with custom aliases
   scope path: "/", alias: AnyAlias do
     pipe_through :browser

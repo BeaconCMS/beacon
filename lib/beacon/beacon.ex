@@ -124,14 +124,23 @@ defmodule Beacon do
   This function is not necessary to be called in most cases, as Beacon will automatically boot all sites when it starts,
   but in some cases where a site is started with the `:manual` mode, you may want to call this function to boot the site
   in the `:live` mode to active resource loading and PubSub events broadcasting.
+
+  Note that `:live` sites that are not reachable will not be started,
+  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topology.html) for more info.
   """
   @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child()
   def boot(%Beacon.Config{} = config) do
-    site = config.site
-    Supervisor.terminate_child(__MODULE__, site)
-    Supervisor.delete_child(__MODULE__, site)
-    spec = site_child_spec(config)
-    Supervisor.start_child(__MODULE__, spec)
+    if config.mode == :live && !Beacon.Router.reachable?(config) do
+      Logger.error(
+        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+      )
+    else
+      site = config.site
+      Supervisor.terminate_child(__MODULE__, site)
+      Supervisor.delete_child(__MODULE__, site)
+      spec = site_child_spec(config)
+      Supervisor.start_child(__MODULE__, spec)
+    end
   end
 
   @tailwind_version "3.4.4"
