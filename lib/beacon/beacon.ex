@@ -101,24 +101,7 @@ defmodule Beacon do
     else
       %{site: site, endpoint: endpoint, router: router} = config
       prefix = router.__beacon_scoped_prefix_for_site__(site)
-
-      Logger.warning("""
-      site #{site} is not reachable and will not be started.
-
-      That means the prefix #{prefix} cannot receive requests on the host #{endpoint.host()}
-
-      Which is not necessarily an error if you have multiple sites in the same project
-      and each scope filter requets on the `:host` option.
-
-      But it may indicte a misconfiguration, as a preceding route matching the prefix
-      that was supposed to be handled by this site, or a misconfigured `:host` option.
-
-      Note that if you're using `:host` on the scope and running in localhost,
-      consider adding "localhost" to the list of allowed hosts.
-
-      Check the Beacon.Router documentation for more information: https://hexdocs.pm/beacon/Beacon.Router.html
-      """)
-
+      Logger.warning("site #{site} is not reachable and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html")
       nil
     end
   end
