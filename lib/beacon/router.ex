@@ -55,7 +55,7 @@ defmodule Beacon.Router do
       end
 
   There's no difference between the two approaches, but that is important to group and organize your routes and sites,
-  for example a scope might be served through a different pipeline:application
+  for example a scope might be served through a different pipeline:
 
       scope "/marketing", MyAppWeb do
         pipe_through :browser_analytics
@@ -71,7 +71,7 @@ defmodule Beacon.Router do
   which means that any route after the `prefix` may match a published page. For example `/contact` may be a valid
   page published under the mounted `beacon_site "/, site: :marketing` site.
 
-  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:application
+  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:
 
       /*
       /super-campaign

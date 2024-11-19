@@ -107,8 +107,8 @@ defmodule Beacon do
 
       That means the prefix #{prefix} cannot receive requests on the host #{endpoint.host()}
 
-      Which is not necessarily an error if you have multiple sites in the same project,
-      and each scope filter requets by `:host`.
+      Which is not necessarily an error if you have multiple sites in the same project
+      and each scope filter requets on the `:host` option.
 
       But it may indicte a misconfiguration, as a preceding route matching the prefix
       that was supposed to be handled by this site, or a misconfigured `:host` option.
