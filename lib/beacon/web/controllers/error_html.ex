@@ -1,9 +1,12 @@
 defmodule Beacon.Web.ErrorHTML do
-  @moduledoc false
+  @moduledoc """
+  Render `Beacon.Content.ErrorPage`.
+  """
 
   use Beacon.Web, :html
   require Logger
 
+  @doc false
   def render(<<status_code::binary-size(3), _rest::binary>> = template, %{conn: conn}) do
     {_, _, %{extra: %{session: %{"beacon_site" => site}}}} = conn.private.phoenix_live_view
     error_module = Beacon.Loader.fetch_error_page_module(site)
