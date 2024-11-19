@@ -17,7 +17,7 @@ defmodule Beacon.BeaconTest.Router do
   end
 
   # test :host
-  scope path: "/", host: "localhost" do
+  scope path: "/", host: "host.com" do
     beacon_site "/", site: :host_test
   end
 

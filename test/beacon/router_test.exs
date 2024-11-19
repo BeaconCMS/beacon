@@ -66,8 +66,10 @@ defmodule Beacon.RouterTest do
     test "test" do
       site = :host_test
       config = Beacon.Config.fetch!(site)
-      assert Router.reachable?(config, host: config.endpoint.host())
-      refute Router.reachable?(%{config | site: :my_site}, host: config.endpoint.host())
+      valid_host = "host.com"
+
+      assert Router.reachable?(config, host: valid_host)
+      refute Router.reachable?(%{config | site: :my_site}, host: valid_host)
       refute Router.reachable?(config, host: "other.com")
     end
   end
