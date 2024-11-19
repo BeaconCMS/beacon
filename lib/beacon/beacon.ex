@@ -142,14 +142,9 @@ defmodule Beacon do
   def boot(%Beacon.Config{} = config) do
     site = config.site
     spec = site_child_spec(config)
-
-    if spec do
-      Supervisor.terminate_child(__MODULE__, site)
-      Supervisor.delete_child(__MODULE__, site)
-      Supervisor.start_child(__MODULE__, spec)
-    else
-      :error
-    end
+    Supervisor.terminate_child(__MODULE__, site)
+    Supervisor.delete_child(__MODULE__, site)
+    Supervisor.start_child(__MODULE__, spec)
   end
 
   @tailwind_version "3.4.4"
