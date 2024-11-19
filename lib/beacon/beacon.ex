@@ -43,6 +43,8 @@ defmodule Beacon do
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
   campaign that may receive too much traffic.
 
+  See `Beacon.Router` and [Deployment Topologies](https://hexdocs.pm/beacon/deployment-topologies.html) for more information.
+
   ## Options
 
   Each site in `:sites` may have its own configuration, see all available options at `Beacon.Config.new/1`.
@@ -77,7 +79,7 @@ defmodule Beacon do
   def init(opts) do
     sites =
       Keyword.get(opts, :sites) ||
-        Logger.warning("Beacon will be started with no sites configured. See `Beacon.start_link/1` for more info.")
+        Logger.warning("Beacon will start with no sites configured. See `Beacon.start_link/1` for more info.")
 
     # TODO: pubsub per site?
     # children = [
@@ -86,18 +88,32 @@ defmodule Beacon do
 
     :pg.start_link(:beacon_cluster)
 
-    children = Enum.map(sites, &site_child_spec/1)
+    children =
+      Enum.reduce(sites, [], fn opts, acc ->
+        config = Config.new(opts)
+
+        # we only care about starting sites that are valid and reachable
+        cond do
+          Beacon.Config.env_test?() ->
+            [site_child_spec(config) | acc]
+
+          Beacon.Router.reachable?(config) ->
+            [site_child_spec(config) | acc]
+
+          :else ->
+            Logger.warning(
+              "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+            )
+
+            acc
+        end
+      end)
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 
   defp site_child_spec(%Beacon.Config{} = config) do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
-  end
-
-  defp site_child_spec(opts) do
-    opts
-    |> Config.new()
-    |> site_child_spec()
   end
 
   @doc """
@@ -108,14 +124,25 @@ defmodule Beacon do
   This function is not necessary to be called in most cases, as Beacon will automatically boot all sites when it starts,
   but in some cases where a site is started with the `:manual` mode, you may want to call this function to boot the site
   in the `:live` mode to active resource loading and PubSub events broadcasting.
+
+  Note that `:live` sites that are not reachable will not be started,
+  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topology.html) for more info.
   """
-  @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child()
+  @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child() | {:error, :unreachable}
   def boot(%Beacon.Config{} = config) do
-    site = config.site
-    Supervisor.terminate_child(__MODULE__, site)
-    Supervisor.delete_child(__MODULE__, site)
-    spec = site_child_spec(config)
-    Supervisor.start_child(__MODULE__, spec)
+    if config.mode == :live && !Beacon.Router.reachable?(config) do
+      Logger.error(
+        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+      )
+
+      {:error, :unreachable}
+    else
+      site = config.site
+      Supervisor.terminate_child(__MODULE__, site)
+      Supervisor.delete_child(__MODULE__, site)
+      spec = site_child_spec(config)
+      Supervisor.start_child(__MODULE__, spec)
+    end
   end
 
   @tailwind_version "3.4.4"
