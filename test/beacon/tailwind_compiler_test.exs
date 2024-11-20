@@ -57,6 +57,10 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
     :ok
   end
 
+  test "config" do
+    assert TailwindCompiler.config(default_site()) =~ "export default"
+  end
+
   test "css" do
     assert TailwindCompiler.css(default_site()) =~ ".custom-font-style { @apply font-sans; color: #5e5e5e }"
   end
