@@ -582,11 +582,12 @@ defmodule Beacon.Loader.Worker do
       {:error, {:already_registered, pid}} ->
         # another worker already started, let's wait for it
         _ref = Process.monitor(pid)
+        time_to_wait = if(Beacon.Config.env_test?(), do: 500, else: 15_000)
 
         receive do
           {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} -> module
         after
-          1_000 -> :error
+          time_to_wait -> :error
         end
     end
   end
