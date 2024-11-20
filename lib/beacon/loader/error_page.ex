@@ -9,7 +9,7 @@ defmodule Beacon.Loader.ErrorPage do
     module = module_name(site)
     routes_module = Loader.Routes.module_name(site)
     layout_functions = Enum.map(error_pages, &build_layout_fn/1)
-    render_functions = Enum.map(error_pages, &build_render_fn(&1, module))
+    render_functions = Enum.map(error_pages, &build_render_fn/1)
 
     # `import` modules won't be autoloaded
     Loader.ensure_loaded!([routes_module], site)
@@ -61,14 +61,14 @@ defmodule Beacon.Loader.ErrorPage do
     end
   end
 
-  defp build_render_fn(error_page, error_module) do
+  defp build_render_fn(error_page) do
     %{template: template, status: status} = error_page
     compiled = EEx.compile_string(template, engine: Phoenix.HTML.Engine)
 
     quote do
       def render(var!(conn), unquote(status)) do
-        var!(assigns) = %{conn: var!(conn), inner_content: unquote(error_module).layout(unquote(status), %{inner_content: unquote(compiled)})}
-        unquote(error_module).root_layout(var!(assigns))
+        var!(assigns) = %{conn: var!(conn), inner_content: layout(unquote(status), %{inner_content: unquote(compiled)})}
+        root_layout(var!(assigns))
       end
     end
   end
