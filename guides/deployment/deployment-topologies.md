@@ -305,12 +305,12 @@ host = System.get_env("PHX_HOST")
 config :my_app, MyAppWeb.Endpoint, url: [host: host]
 
 # router
-scope "/", scope: "campaigns.mysite.com" do
+scope "/", host: "campaigns.mysite.com" do
   beacon_live_admin "/admin"
   beacon_site "/", site: :campaigns
 end
 
-scope "/", scope: "mysite.com" do
+scope "/", host: "mysite.com" do
   beacon_live_admin "/admin"
   beacon_site "/", site: :root
 end
@@ -358,15 +358,15 @@ host = System.get_env("PHX_HOST")
 config :my_app, MyAppWeb.Endpoint, url: [host: host]
 
 # router
-scope "/admin", scope: "admin.mysite.com" do
+scope "/admin", host: "admin.mysite.com" do
   beacon_live_admin "/"
 end
 
-scope "/", scope: "campaigns.mysite.com" do
+scope "/", host: "campaigns.mysite.com" do
   beacon_site "/", site: :campaigns
 end
 
-scope "/", scope: "mysite.com" do
+scope "/", host: "mysite.com" do
   beacon_site "/", site: :root
 end
 ```
