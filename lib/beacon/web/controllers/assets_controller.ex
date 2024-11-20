@@ -4,7 +4,7 @@ defmodule Beacon.Web.AssetsController do
 
   import Plug.Conn
 
-  def init(asset) when asset in [:css, :js], do: asset
+  def init(asset) when asset in [:css_config, :css, :js], do: asset
 
   def call(%{assigns: %{site: site}} = conn, asset) when asset in [:css, :js] do
     {content, content_type} = content_and_type(site, asset)
@@ -22,11 +22,31 @@ defmodule Beacon.Web.AssetsController do
     |> halt()
   end
 
+  # TODO: encoding (compress) and caching
+  def call(%{assigns: %{site: site}} = conn, :css_config) do
+    {content, content_type} = content_and_type(site, :css_config)
+
+    # The static files are served for sites,
+    # and we need to disable csrf protection because
+    # serving script files is forbidden by the CSRFProtection plug.
+    conn = put_private(conn, :plug_skip_csrf_protection, true)
+
+    conn
+    |> put_resp_header("content-type", content_type)
+    |> put_resp_header("access-control-allow-origin", "*")
+    |> send_resp(200, content)
+    |> halt()
+  end
+
   defp content_and_type(site, :css) do
     {Beacon.RuntimeCSS.fetch(site), "text/css"}
   end
 
   defp content_and_type(_site, :js) do
     {Beacon.RuntimeJS.fetch(), "text/javascript"}
+  end
+
+  defp content_and_type(site, :css_config) do
+    {Beacon.RuntimeCSS.config(site), "text/javascript"}
   end
 end
