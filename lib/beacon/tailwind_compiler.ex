@@ -18,14 +18,6 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
   @behaviour Beacon.RuntimeCSS
 
-  @impl Beacon.RuntimeCSS
-  @spec config(Beacon.Types.Site.t()) :: String.t()
-  def config(site) when is_atom(site) do
-    site
-    |> tailwind_config_path!()
-    |> File.read!()
-  end
-
   @doc false
   def css(site) when is_atom(site) do
     site
