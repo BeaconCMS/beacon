@@ -11,6 +11,8 @@ defmodule Beacon.ErrorHandler do
 
   alias Beacon.Loader
 
+  require Logger
+
   def undefined_function(module, fun, args) do
     ensure_loaded(module) or load_resource(module)
     :error_handler.undefined_function(module, fun, args)
@@ -51,6 +53,9 @@ defmodule Beacon.ErrorHandler do
   defp load_beacon_resource(nil = _site, _resource), do: false
 
   defp load_beacon_resource(site, resource) do
+    # TODO eventually replace Logger with Beacon telemetry
+    Logger.debug("#{__MODULE__} loading #{resource} for #{site}")
+
     case resource do
       "Page" <> page_id -> Loader.load_page_module(site, page_id)
       "Layout" <> layout_id -> Loader.load_layout_module(site, layout_id)
