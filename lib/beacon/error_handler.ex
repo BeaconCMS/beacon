@@ -54,7 +54,7 @@ defmodule Beacon.ErrorHandler do
 
   defp load_beacon_resource(site, resource) do
     # TODO eventually replace Logger with Beacon telemetry
-    Logger.debug("#{__MODULE__} loading #{resource} for #{site}")
+    Logger.info("Beacon - loading #{resource} for #{site}")
 
     case resource do
       "Page" <> page_id -> Loader.load_page_module(site, page_id)
