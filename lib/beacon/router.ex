@@ -139,9 +139,6 @@ defmodule Beacon.Router do
         live_session session_name, session_opts do
           get "/__beacon_media__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: opts[:site]}
 
-          # TODO: css_config-:md5 caching
-          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, assigns: %{site: opts[:site]}
-
           get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: opts[:site]}
           get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
 
