@@ -45,7 +45,7 @@ See [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) and [Phoenix.R
 
 ### URL Matching
 
-A common technique to host multiple sites (hosts) in the same application is matching the `:host` in the scope:
+A common technique to [host multiple sites](https://hexdocs.pm/beacon/multiple-domains-hosting.html) (hosts) in the same application is matching the `:host` in the scope:
 
 ```elixir
 # only matches requests from sitea.com
@@ -87,10 +87,23 @@ end
 ```
 
 Two routes in the same prefix will cause a conflict.
-That might look obvious but that's a common source of confusion, especially in long and more complex router files,
-so Beacon won't try to boot `:site_a` in this case, but a warning will be displayed.
 
-### Admin Discovery
+Or this other example:
+
+```elixir
+scope do
+  beacon_site "/", site: :main_site
+  beacon_site "/campaigns", site: :campaigns_site
+end
+```
+
+The macro `beacon_site` creates a catch-all route `/*` so the second site will never be reached since `/campaigns`
+is a valid route for the first site.
+
+Those might look obvious but that's a common source of confusion, especially in long and more complex router files.
+So Beacon won't try to boot sites that can't be reached, but a warning will be displayed.
+
+### Admin Sites Discovery
 
 BeaconLiveAdmin is designed to scan the all apps connected in the same cluster to find running sites
 and make them available in the admin interface as displayed below:
@@ -223,10 +236,14 @@ flowchart TD
 ```
 
 ### Clustered applications with separated admin
-You can observe the previous strategy duplicates the admin interface in each node, which works fairly well with a couple of sites
-but tend to become harder to manage and a waste of resources if you start booting more site and more nodes.
+You can observe the previous strategy duplicates the admin interface in each node, which works fairly well when you have
+no more than a couple of sites, but that setup tends to become harder to manage and also become a waste of resources
+if you start booting more site and more nodes.
 
-So an optimization is to move the Admin interface into its own project and node:
+So an optimization is to move the Admin interface into its own project and node (a new Phoenix project),
+and keep the sites in their own projects.
+
+Note that in order to Admin find the sites, all the apps must be connected in the same cluster.
 
 ```elixir
 # endpoint
@@ -337,7 +354,7 @@ Similar setup as the previous strategy but now connecting the apps in the same c
 
 ```elixir
 # endpoint
-host = ... # define host dynamically
+host = System.get_env("PHX_HOST")
 config :my_app, MyAppWeb.Endpoint, url: [host: host]
 
 # router
