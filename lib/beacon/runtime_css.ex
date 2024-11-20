@@ -8,23 +8,9 @@ defmodule Beacon.RuntimeCSS do
   alias Beacon.Types.Site
 
   @doc """
-  Returns the CSS compiler config.
-
-  For Tailwind that would be the content of the tailwind config file,
-  or return an empty string `""` if the provided engine doesn't have a config file.
-  """
-  @callback config(site :: Site.t()) :: String.t()
-
-  @doc """
   Executes the compilation to generate the CSS for the site using the provided `:css_compiler` in `Beacon.Config`.
   """
   @callback compile(site :: Site.t()) :: {:ok, String.t()} | {:error, any()}
-
-  @doc false
-  # TODO: compress and fetch from ETS
-  def config(site) when is_atom(site) do
-    Beacon.Config.fetch!(site).css_compiler.config(site)
-  end
 
   @doc false
   def compile(site) when is_atom(site) do
