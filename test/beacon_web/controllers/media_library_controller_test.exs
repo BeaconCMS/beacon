@@ -1,6 +1,12 @@
 defmodule Beacon.Web.Controllers.MediaLibraryControllerTest do
   use Beacon.Web.ConnCase, async: true
 
+  setup do
+    Process.flag(:error_handler, Beacon.ErrorHandler)
+    Process.put(:__beacon_site__, :my_site)
+    :ok
+  end
+
   test "show", %{conn: conn} do
     %{file_name: file_name} = Beacon.Test.Fixtures.beacon_media_library_asset_fixture(site: :my_site)
     routes = Beacon.Loader.fetch_routes_module(:my_site)

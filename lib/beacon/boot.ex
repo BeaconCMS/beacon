@@ -15,19 +15,8 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, mode: :manual}) when is_atom(site) do
-    Logger.debug("Beacon.Boot is disabled for site #{site} on manual mode")
-    :ignore
-  end
-
-  def init(%{site: site, mode: :testing}) when is_atom(site) do
-    Logger.debug("Beacon.Boot is disabled for site #{site} on testing mode")
-
-    # reload modules that are expected to be available, even empty
-    Beacon.Loader.reload_routes_module(site)
-    Beacon.Loader.reload_components_module(site)
-    Beacon.Loader.reload_live_data_module(site)
-
+  def init(%{site: site, mode: mode}) when is_atom(site) and mode in [:manual, :testing] do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on #{mode} mode")
     :ignore
   end
 
@@ -35,7 +24,7 @@ defmodule Beacon.Boot do
     Logger.info("Beacon.Boot booting site #{site}")
     task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
 
-    # temporary disable module reloading so we can populate data more efficiently
+    # temporary disable module loading so we can populate data more efficiently
     %{mode: :manual} = Beacon.Config.update_value(site, :mode, :manual)
     Beacon.Loader.populate_default_media(site)
     Beacon.Loader.populate_default_components(site)
@@ -45,13 +34,9 @@ defmodule Beacon.Boot do
 
     %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
 
-    # still needed to test Beacon itself
-    Beacon.Loader.reload_routes_module(site)
-    Beacon.Loader.reload_components_module(site)
-
     assets = [
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_css(site) end)
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_js(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_css(site) end)
     ]
 
     # TODO: revisit this timeout after we upgrade to Tailwind v4

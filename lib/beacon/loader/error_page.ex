@@ -11,6 +11,9 @@ defmodule Beacon.Loader.ErrorPage do
     layout_functions = Enum.map(error_pages, &build_layout_fn/1)
     render_functions = Enum.map(error_pages, &build_render_fn(&1, module))
 
+    # `import` modules won't be autoloaded
+    Loader.ensure_loaded!([routes_module], site)
+
     quote do
       defmodule unquote(module) do
         require Logger

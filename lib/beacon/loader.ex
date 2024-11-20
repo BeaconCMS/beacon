@@ -93,12 +93,12 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), :populate_default_home_page, @timeout)
   end
 
-  def reload_runtime_js(site) do
-    GenServer.call(worker(site), :reload_runtime_js, :timer.minutes(2))
+  def load_runtime_js(site) do
+    GenServer.call(worker(site), :load_runtime_js, :timer.minutes(2))
   end
 
-  def reload_runtime_css(site) do
-    GenServer.call(worker(site), :reload_runtime_css, :timer.minutes(2))
+  def load_runtime_css(site) do
+    GenServer.call(worker(site), :load_runtime_css, :timer.minutes(2))
   end
 
   def fetch_snippets_module(site) do
@@ -153,61 +153,62 @@ defmodule Beacon.Loader do
     Loader.InfoHandlers.module_name(site)
   end
 
-  def maybe_reload_page_module(site, page_id) do
-    maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
+  def load_snippets_module(site) do
+    call_worker(site, :load_snippets_module, {:load_snippets_module, [site]})
   end
 
-  def reload_snippets_module(site) do
-    call_worker(site, :reload_snippets_module, {:reload_snippets_module, [site]})
+  def load_routes_module(site) do
+    call_worker(site, :load_routes_module, {:load_routes_module, [site]})
   end
 
-  def reload_routes_module(site) do
-    call_worker(site, :reload_routes_module, {:reload_routes_module, [site]})
+  def load_components_module(site) do
+    call_worker(site, :load_components_module, {:load_components_module, [site]})
   end
 
-  def reload_components_module(site) do
-    call_worker(site, :reload_components_module, {:reload_components_module, [site]})
+  def load_live_data_module(site) do
+    call_worker(site, :load_live_data_module, {:load_live_data_module, [site]})
   end
 
-  def reload_live_data_module(site) do
-    call_worker(site, :reload_live_data_module, {:reload_live_data_module, [site]})
+  def load_error_page_module(site) do
+    call_worker(site, :load_error_page_module, {:load_error_page_module, [site]})
   end
 
-  def reload_error_page_module(site) do
-    call_worker(site, :reload_error_page_module, {:reload_error_page_module, [site]})
+  def load_stylesheet_module(site) do
+    call_worker(site, :load_stylesheet_module, {:load_stylesheet_module, [site]})
   end
 
-  def reload_stylesheet_module(site) do
-    call_worker(site, :reload_stylesheet_module, {:reload_stylesheet_module, [site]})
+  def load_event_handlers_module(site) do
+    call_worker(site, :load_event_handlers_module, {:load_event_handlers_module, [site]})
   end
 
-  def reload_event_handlers_module(site) do
-    call_worker(site, :reload_event_handlers_module, {:reload_event_handlers_module, [site]})
+  def load_info_handlers_module(site) do
+    call_worker(site, :load_info_handlers_module, {:load_info_handlers_module, [site]})
   end
 
-  def reload_info_handlers_module(site) do
-    call_worker(site, :reload_info_handlers_module, {:reload_info_handlers_module, [site]})
+  def load_layouts_modules(site) do
+    site
+    |> Content.list_published_layouts()
+    |> Enum.map(&load_layout_module(&1.site, &1.id))
   end
 
-  def reload_layouts_modules(site) do
-    Enum.map(Content.list_published_layouts(site), &reload_layout_module(&1.site, &1.id))
+  def load_layout_module(site, layout_id) do
+    call_worker(site, {:load_layout_module, layout_id}, {:load_layout_module, [site, layout_id]})
   end
 
-  def reload_layout_module(site, layout_id) do
-    call_worker(site, {:reload_layout_module, layout_id}, {:reload_layout_module, [site, layout_id]})
-  end
-
-  def reload_pages_modules(site, opts \\ []) do
+  def load_pages_modules(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, :infinity)
-    Enum.map(Content.list_published_pages(site, per_page: per_page), &reload_page_module(&1.site, &1.id))
+
+    site
+    |> Content.list_published_pages(per_page: per_page)
+    |> Enum.map(&load_page_module(&1.site, &1.id))
   end
 
-  def reload_page_module(site, page_id) do
-    call_worker(site, {:reload_page_module, page_id}, {:reload_page_module, [site, page_id]})
+  def load_page_module(site, page_id) do
+    call_worker(site, {:load_page_module, page_id}, {:load_page_module, [site, page_id]})
   end
 
   # call worker asyncly or syncly depending on the current site mode
-  # or skip if mode is manual so we don't reload modules
+  # or skip if mode is manual so we don't load modules
   defp call_worker(site, async_request, sync_request) do
     mode = Beacon.Config.fetch!(site).mode
 
@@ -228,12 +229,9 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
-  defp maybe_reload(module, reload_fun) do
-    if :erlang.module_loaded(module) do
-      {:ok, module}
-    else
-      reload_fun.()
-    end
+  def ensure_loaded!(modules, site) do
+    Beacon.ErrorHandler.enable(site)
+    Enum.each(modules, & &1.__info__(:module))
   end
 
   # Server
@@ -258,7 +256,7 @@ defmodule Beacon.Loader do
     |> Loader.Layout.module_name(id)
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -270,7 +268,7 @@ defmodule Beacon.Loader do
     |> Loader.Page.module_name(id)
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -284,7 +282,7 @@ defmodule Beacon.Loader do
       |> unload()
     end
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -300,7 +298,7 @@ defmodule Beacon.Loader do
     |> Loader.Stylesheet.module_name()
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -310,7 +308,7 @@ defmodule Beacon.Loader do
     |> Loader.Snippets.module_name()
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -320,7 +318,7 @@ defmodule Beacon.Loader do
     |> Loader.ErrorPage.module_name()
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -330,7 +328,7 @@ defmodule Beacon.Loader do
     |> Loader.Components.module_name()
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -340,7 +338,7 @@ defmodule Beacon.Loader do
     |> Loader.LiveData.module_name()
     |> unload()
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
