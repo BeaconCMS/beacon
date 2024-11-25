@@ -20,7 +20,7 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  def init(%{site: site, mode: :live}) when is_atom(site) do
+  def init(%{site: site, mode: :live} = config) when is_atom(site) do
     Logger.info("Beacon.Boot booting site #{site}")
     task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
 
@@ -42,9 +42,33 @@ defmodule Beacon.Boot do
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(assets, :timer.minutes(5))
 
+    warm_pages(config)
+
     # TODO: add telemetry to measure booting time
     Logger.info("Beacon.Boot finished booting site #{site}")
 
     :ignore
+  end
+
+  defp warm_pages(config) do
+    pages =
+      case config.page_warming do
+        {:shortest_paths, count} ->
+          Logger.info("Beacon.Boot warming pages - #{count} shortest paths")
+          Beacon.Content.list_published_pages(config.site, sort: {:length, :path}, limit: count)
+
+        {:specify_paths, paths} ->
+          Logger.info("Beacon.Boot warming pages - specified paths")
+          Beacon.Content.list_published_pages_for_paths(config.site, paths)
+
+        :none ->
+          Logger.info("Beacon.Boot page warming disabled")
+          []
+      end
+
+    Enum.each(pages, fn page ->
+      Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
+      Beacon.Loader.load_page_module(config.site, page.id)
+    end)
   end
 end
