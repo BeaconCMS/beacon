@@ -467,7 +467,7 @@ defmodule Beacon.Config do
 
       _ ->
         raise ConfigError, """
-        site #{inspect(site)} was not found. Make sure it's configured and started,
+        site #{inspect(site)} not found. Make sure it's configured and started,
         see `Beacon.start_link/1` for more info.
         """
     end
