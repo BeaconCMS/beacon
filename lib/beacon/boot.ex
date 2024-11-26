@@ -34,15 +34,14 @@ defmodule Beacon.Boot do
 
     %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
 
-    assets = [
+    tasks = [
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_js(site) end),
       Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_css(site) end)
+      | warm_pages_async(task_supervisor, config)
     ]
 
     # TODO: revisit this timeout after we upgrade to Tailwind v4
-    Task.await_many(assets, :timer.minutes(5))
-
-    warm_pages(config)
+    Task.await_many(tasks, :timer.minutes(5))
 
     # TODO: add telemetry to measure booting time
     Logger.info("Beacon.Boot finished booting site #{site}")
@@ -50,7 +49,7 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  defp warm_pages(config) do
+  defp warm_pages_async(task_supervisor, config) do
     pages =
       case config.page_warming do
         {:shortest_paths, count} ->
@@ -66,9 +65,9 @@ defmodule Beacon.Boot do
           []
       end
 
-    Enum.each(pages, fn page ->
+    Enum.map(pages, fn page ->
       Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
-      Beacon.Loader.load_page_module(config.site, page.id)
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_page_module(config.site, page.id) end)
     end)
   end
 end
