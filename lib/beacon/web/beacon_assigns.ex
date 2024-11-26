@@ -59,13 +59,13 @@ defmodule Beacon.Web.BeaconAssigns do
   end
 
   @doc false
-  def new(site, %Beacon.Content.Page{} = page, live_data, path_info, query_params)
+  def new(site, %Beacon.Content.Page{} = page, live_data, path_info, query_params, source \\ :beacon)
       when is_atom(site) and is_map(live_data) and is_list(path_info) and is_map(query_params) do
     %{site: ^site} = page
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
     path_params = Beacon.Router.path_params(page.path, path_info)
-    page_title = Beacon.Web.DataSource.page_title(site, page.id, live_data)
+    page_title = Beacon.Web.DataSource.page_title(site, page.id, live_data, source)
     components_module = Beacon.Loader.Components.module_name(site)
     info_handlers_module = Beacon.Loader.InfoHandlers.module_name(site)
     event_handlers_module = Beacon.Loader.EventHandlers.module_name(site)
