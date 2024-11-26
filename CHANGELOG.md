@@ -6,6 +6,8 @@
 
   - Introduce global process lock for Loader Workers, preventing multiple workers from
     attempting to compile the same module simultaneously
+  - Page Warming - Beacon will now eagerly load a small number of pages (default 10) at boot time for SEO 
+  - `Beacon.Config` option `:page_warming` can change the number of pages to warm, specify which pages, or disable warming per site
 
 ## 0.2.2 (2024-11-17)
 
