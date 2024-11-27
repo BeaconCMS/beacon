@@ -40,7 +40,7 @@ defmodule Beacon.RouterServer do
   def lookup_page(site, path_info) when is_atom(site) and is_list(path_info) do
     with {_path, page_id} <- lookup_path(site, path_info) do
       page_module = Beacon.Loader.fetch_page_module(site, page_id)
-      Beacon.apply_mfa(page_module, :page, [])
+      Beacon.apply_mfa(site, page_module, :page, [])
     else
       _ -> nil
     end

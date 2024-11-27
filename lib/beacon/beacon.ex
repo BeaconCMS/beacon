@@ -159,14 +159,12 @@ defmodule Beacon do
   end
 
   @doc false
-  # This should always be used when calling dynamic modules to provide better error messages
-  def apply_mfa(module, function, args, opts \\ []) when is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
-    apply(module, function, args)
-  rescue
-    error ->
-      context = Keyword.get(opts, :context, nil)
-      mfa = Exception.format_mfa(module, function, length(args))
-      message = "error applying #{mfa}"
-      reraise Beacon.InvokeError, [message: message, error: error, args: args, context: context], __STACKTRACE__
+  # This should always be used when calling dynamic modules
+  # 1. Isolate function calls
+  # 2. Enable Beacon's autoloading mechanism (ErrorHandler)
+  # 3. Provide more meaningful error messages
+  def apply_mfa(site, module, function, args, opts \\ [])
+      when is_atom(site) and is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
+    Beacon.Loader.safe_apply_mfa(site, module, function, args, opts)
   end
 end
