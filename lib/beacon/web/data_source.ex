@@ -9,9 +9,8 @@ defmodule Beacon.Web.DataSource do
     |> Beacon.apply_mfa(:live_data, [path_info, params])
   end
 
-  # TODO: revisit this logic to evaluate page_title for unpublished pages
-  def page_title(site, page_id, live_data) do
-    %{path: path, title: title} = page_assigns = page_assigns(site, page_id)
+  def page_title(site, page_id, live_data, source) do
+    %{path: path, title: title} = page_assigns = page_assigns(site, page_id, source)
 
     with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
       page_title
@@ -45,7 +44,7 @@ defmodule Beacon.Web.DataSource do
     assigns
     |> Beacon.Web.Layouts.meta_tags()
     |> List.wrap()
-    |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns(site, page_id), live_data: live_data}))
+    |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns(site, page_id, :beacon), live_data: live_data}))
   end
 
   defp interpolate_meta_tag(meta_tag, values) when is_map(meta_tag) do
@@ -60,12 +59,29 @@ defmodule Beacon.Web.DataSource do
     end
   end
 
-  # only published pages will have the title evaluated,
-  # which is what we need for sites to work properly but
-  # the page builder could use this data as well
-  defp page_assigns(site, page_id) do
+  # only published pages will have the title evaluated for beacon
+  defp page_assigns(site, page_id, :beacon) do
     site
     |> Beacon.Loader.fetch_page_module(page_id)
     |> Beacon.apply_mfa(:page_assigns, [])
+  end
+
+  # beacon_live_admin needs the title for unpublished pages also
+  defp page_assigns(site, page_id, :admin) do
+    page = Beacon.Content.get_page(site, page_id)
+
+    %{
+      id: page.id,
+      site: page.site,
+      layout_id: page.layout_id,
+      title: page.title,
+      meta_tags: page.meta_tags,
+      raw_schema: Beacon.Loader.Page.interpolate_raw_schema(page),
+      path: page.path,
+      description: page.description,
+      order: page.order,
+      format: page.format,
+      extra: page.extra
+    }
   end
 end

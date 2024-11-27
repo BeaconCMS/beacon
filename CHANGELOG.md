@@ -9,6 +9,10 @@
   - Page Warming - Beacon will now eagerly load a small number of pages (default 10) at boot time for SEO 
   - `Beacon.Config` option `:page_warming` can change the number of pages to warm, specify which pages, or disable warming per site
 
+### Fixes
+
+  - Allow `:admin` source for BeaconAssigns in unpublished Pages
+
 ## 0.2.2 (2024-11-17)
 
 ### Fixes

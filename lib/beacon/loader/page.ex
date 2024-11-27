@@ -94,7 +94,7 @@ defmodule Beacon.Loader.Page do
     end
   end
 
-  defp interpolate_raw_schema(page) do
+  def interpolate_raw_schema(page) do
     page.raw_schema
     |> List.wrap()
     |> Enum.map(&interpolate_raw_schema_record(&1, page))
