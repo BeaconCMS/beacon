@@ -32,7 +32,7 @@ defmodule Beacon.LoaderTest do
 
     test "undefined module" do
       assert_raise Beacon.InvokeError, "error applying Foo.bar/0 on site my_site", fn ->
-        Loader.safe_apply_mfa(default_site(), Foo, :bar, []) |> dbg
+        Loader.safe_apply_mfa(default_site(), Foo, :bar, [])
       end
     end
 
