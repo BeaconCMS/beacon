@@ -291,6 +291,31 @@ defmodule Beacon.ContentTest do
       assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
     end
 
+    test "list_published_pages sort by path length" do
+      beacon_published_page_fixture(path: "/")
+      beacon_published_page_fixture(path: "/foo")
+      beacon_published_page_fixture(path: "/a")
+
+      assert [
+               %Page{path: "/"},
+               %Page{path: "/a"},
+               %Page{path: "/foo"}
+             ] = Content.list_published_pages(:my_site, sort: {:length, :path})
+    end
+
+    test "list_published_pages_for_paths/2" do
+      beacon_published_page_fixture(path: "/foo")
+      beacon_published_page_fixture(path: "/bar")
+      beacon_published_page_fixture(path: "/baz")
+      beacon_published_page_fixture(path: "/bong")
+      beacon_page_fixture(path: "/unpublished")
+
+      assert [
+               %Page{path: "/bar"},
+               %Page{path: "/baz"}
+             ] = Content.list_published_pages_for_paths(:my_site, ["/bar", "/baz", "/unpublished"])
+    end
+
     test "list_page_events" do
       page = beacon_page_fixture()
       Content.publish_page(page)
