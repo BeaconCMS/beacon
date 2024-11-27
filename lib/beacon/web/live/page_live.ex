@@ -19,9 +19,6 @@ defmodule Beacon.Web.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    # Use Beacon custom error handler to automatically load modules on-demand
-    Beacon.ErrorHandler.enable(site)
-
     if Beacon.Config.fetch!(site).mode == :live and connected?(socket) do
       :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
@@ -119,8 +116,6 @@ defmodule Beacon.Web.PageLive do
         %{"path" => path_info} = params
 
         if socket.assigns.beacon.site != site do
-          Beacon.ErrorHandler.enable(site)
-
           if Beacon.Config.fetch!(site).mode == :live do
             Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
             Beacon.PubSub.subscribe_to_page(site, path_info)
