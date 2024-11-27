@@ -7,6 +7,10 @@
   - Introduce global process lock for Loader Workers, preventing multiple workers from
     attempting to compile the same module simultaneously
 
+### Fixes
+
+  - Allow `:admin` source for BeaconAssigns in unpublished Pages
+
 ## 0.2.2 (2024-11-17)
 
 ### Fixes
