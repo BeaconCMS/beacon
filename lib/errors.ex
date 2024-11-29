@@ -42,7 +42,25 @@ defmodule Beacon.InvokeError do
   otherwise that might be a bug in Beacon.
   """
 
-  defexception error: nil, args: [], context: nil, message: "error applying function", plug_status: 404
+  defexception site: nil, error: nil, module: nil, function: nil, args: [], context: nil, message: "error applying function", plug_status: 404
+
+  @impl true
+  def message(%{site: site, module: module, function: function, args: args, context: context}) do
+    mfa = Exception.format_mfa(module, function, length(args))
+
+    if context do
+      """
+      error applying #{mfa} on site #{site}
+
+      Context:
+
+        #{inspect(context)}
+
+      """
+    else
+      "error applying #{mfa} on site #{site}"
+    end
+  end
 end
 
 defmodule Beacon.ParserError do

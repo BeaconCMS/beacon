@@ -10,9 +10,8 @@ defmodule Beacon.Web.ErrorHTML do
   def render(<<status_code::binary-size(3), _rest::binary>> = template, %{conn: conn}) do
     {_, _, %{extra: %{session: %{"beacon_site" => site}}}} = conn.private.phoenix_live_view
     error_module = Beacon.Loader.fetch_error_page_module(site)
-
     conn = Plug.Conn.assign(conn, :beacon, Beacon.Web.BeaconAssigns.new(site))
-    Beacon.apply_mfa(error_module, :render, [conn, String.to_integer(status_code)])
+    Beacon.apply_mfa(site, error_module, :render, [conn, String.to_integer(status_code)])
   rescue
     error ->
       Logger.warning("""

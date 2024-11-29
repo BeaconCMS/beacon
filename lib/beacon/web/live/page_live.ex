@@ -19,9 +19,6 @@ defmodule Beacon.Web.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    # Use Beacon custom error handler to automatically load modules on-demand
-    Beacon.ErrorHandler.enable(site)
-
     if Beacon.Config.fetch!(site).mode == :live and connected?(socket) do
       :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
@@ -33,10 +30,13 @@ defmodule Beacon.Web.PageLive do
   end
 
   def render(assigns) do
-    %{beacon: %{private: %{page_module: page_module}}} = assigns
+    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
 
-    page_module
-    |> Beacon.apply_mfa(:page, [])
+    # do not allow overwritring site to avoid rendering a leaked page
+    %{site: ^site} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site]])
+
+    site
+    |> Beacon.apply_mfa(page_module, :page, [])
     |> Lifecycle.Template.render_template(assigns, __ENV__)
   end
 
@@ -56,11 +56,12 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_info(msg, socket) do
-    %{page_module: page_module, live_path: live_path, info_handlers_module: info_handlers_module} = socket.assigns.beacon.private
-    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
+    %{beacon: %{site: site, private: %{page_module: page_module, live_path: live_path, info_handlers_module: info_handlers_module}}} = socket.assigns
+    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
 
     result =
       Beacon.apply_mfa(
+        site,
         info_handlers_module,
         :handle_info,
         [msg, socket],
@@ -78,11 +79,14 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    %{page_module: page_module, live_path: live_path, event_handlers_module: event_handlers_module} = socket.assigns.beacon.private
-    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
+    %{beacon: %{site: site, private: %{page_module: page_module, live_path: live_path, event_handlers_module: event_handlers_module}}} =
+      socket.assigns
+
+    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
 
     result =
       Beacon.apply_mfa(
+        site,
         event_handlers_module,
         :handle_event,
         [event_name, event_params, socket],
@@ -112,8 +116,6 @@ defmodule Beacon.Web.PageLive do
         %{"path" => path_info} = params
 
         if socket.assigns.beacon.site != site do
-          Beacon.ErrorHandler.enable(site)
-
           if Beacon.Config.fetch!(site).mode == :live do
             Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
             Beacon.PubSub.subscribe_to_page(site, path_info)

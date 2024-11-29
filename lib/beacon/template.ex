@@ -60,8 +60,8 @@ defmodule Beacon.Template do
         env = Beacon.Web.PageLive.make_env(site)
 
         template =
-          page_module
-          |> Beacon.apply_mfa(:page, [])
+          site
+          |> Beacon.apply_mfa(page_module, :page, [])
           |> Beacon.Lifecycle.Template.render_template(assigns, env)
 
         {:ok, template}

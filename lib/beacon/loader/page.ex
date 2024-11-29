@@ -20,7 +20,7 @@ defmodule Beacon.Loader.Page do
         fun.(page)
       end,
       render(page),
-      dynamic_helper()
+      dynamic_helper(site)
     ]
 
     # `import` modules won't be autoloaded
@@ -228,10 +228,10 @@ defmodule Beacon.Loader.Page do
 
   defp load_variants(page), do: raise(Beacon.LoaderError, message: "failed to load variants for page #{page.id} - #{page.path}")
 
-  defp dynamic_helper do
+  defp dynamic_helper(site) do
     quote do
       def dynamic_helper(helper_name, args) do
-        Beacon.apply_mfa(__MODULE__, String.to_atom(helper_name), [args])
+        Beacon.apply_mfa(unquote(site), __MODULE__, String.to_atom(helper_name), [args])
       end
     end
   end

@@ -27,6 +27,14 @@ defmodule Beacon.Loader.Worker do
     stop(:pong, config)
   end
 
+  def handle_call({:apply_mfa, module, function, args}, _from, config) do
+    result = apply(module, function, args)
+    {:stop, :shutdown, {:ok, result}, config}
+  rescue
+    error ->
+      {:stop, :shutdown, {:error, error, __STACKTRACE__}, config}
+  end
+
   def handle_call(:populate_default_media, _from, config) do
     %{site: site} = config
     path = Path.join(Application.app_dir(:beacon, "priv"), "beacon.png")

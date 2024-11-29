@@ -26,6 +26,27 @@ defmodule Beacon.Loader do
     end
   end
 
+  def safe_apply_mfa(site, module, function, args, opts \\ []) do
+    if :erlang.module_loaded(module) do
+      apply(module, function, args)
+    else
+      case GenServer.call(worker(site), {:apply_mfa, module, function, args}) do
+        {:ok, result} ->
+          result
+
+        {:error, error, stacktrace} ->
+          raise_invoke_error(site, error, module, function, args, opts[:context], stacktrace)
+      end
+    end
+  rescue
+    error ->
+      raise_invoke_error(site, error, module, function, args, opts[:context], __STACKTRACE__)
+  end
+
+  defp raise_invoke_error(site, error, module, function, args, context, stacktrace) do
+    reraise Beacon.InvokeError, [site: site, error: error, module: module, function: function, args: args, context: context], stacktrace
+  end
+
   defp worker(site) do
     supervisor = Beacon.Registry.via({site, Beacon.LoaderSupervisor})
     config = %{site: site}

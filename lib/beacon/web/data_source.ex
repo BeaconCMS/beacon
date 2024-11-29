@@ -4,9 +4,7 @@ defmodule Beacon.Web.DataSource do
   require Logger
 
   def live_data(site, path_info, params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(params) do
-    site
-    |> Beacon.Loader.fetch_live_data_module()
-    |> Beacon.apply_mfa(:live_data, [path_info, params])
+    Beacon.apply_mfa(site, Beacon.Loader.fetch_live_data_module(site), :live_data, [path_info, params])
   end
 
   def page_title(site, page_id, live_data, source) do
@@ -37,8 +35,8 @@ defmodule Beacon.Web.DataSource do
 
   # TODO: revisit this logic to evaluate meta_tags for unpublished pages
   def meta_tags(assigns) do
-    %{beacon: %{private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
-    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
+    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
+    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
     live_data = Map.take(assigns, live_data_keys)
 
     assigns
@@ -61,9 +59,7 @@ defmodule Beacon.Web.DataSource do
 
   # only published pages will have the title evaluated for beacon
   defp page_assigns(site, page_id, :beacon) do
-    site
-    |> Beacon.Loader.fetch_page_module(page_id)
-    |> Beacon.apply_mfa(:page_assigns, [])
+    Beacon.apply_mfa(site, Beacon.Loader.fetch_page_module(site, page_id), :page_assigns, [])
   end
 
   # beacon_live_admin needs the title for unpublished pages also
