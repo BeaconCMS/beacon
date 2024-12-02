@@ -3,15 +3,23 @@
 ## Unreleased
 
 ### Enhancements
-
   - Introduce global process lock for Loader Workers, preventing multiple workers from
     attempting to compile the same module simultaneously
-  - Page Warming - Beacon will now eagerly load a small number of pages (default 10) at boot time for SEO 
+  - Page Warming - Beacon will now eagerly load a small number of pages (default 10) at boot time for SEO
   - `Beacon.Config` option `:page_warming` can change the number of pages to warm, specify which pages, or disable warming per site
+  - Only start reachable sites on boot to save resources
+  - Warn when a site defined in the router is not reachable
+
 
 ### Fixes
-
+  - Remove self dependency on ErrorPage module
   - Allow `:admin` source for BeaconAssigns in unpublished Pages
+
+### Chores
+  - Isolate dynamic function calls
+
+### Documentation
+  - Add Deployment Topologies guide
 
 ## 0.2.2 (2024-11-17)
 
