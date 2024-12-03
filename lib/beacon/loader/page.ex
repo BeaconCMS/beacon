@@ -197,7 +197,7 @@ defmodule Beacon.Loader.Page do
           def render(var!(assigns)) when is_map(var!(assigns)) do
             var!(assigns)
             |> templates()
-            |> Beacon.Template.choose_template()
+            |> Beacon.Template.choose_template(var!(assigns).beacon.private[:variant_roll])
           end
 
           def templates(var!(assigns)) when is_map(var!(assigns)) do
