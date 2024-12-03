@@ -28,8 +28,8 @@ defmodule Beacon.Template.HEEx.HEExDecoderTest do
 
   test "eex expressions" do
     assert_equal(~S|{_a = true}|)
-    assert_equal(~S|value: <%= 1 %>|)
-    assert_equal(~S|<% _a = 1 %>|)
+    assert_equal(~S|value: {1}|)
+    assert_equal(~S|{_a = 1}|)
   end
 
   test "eex blocks" do
