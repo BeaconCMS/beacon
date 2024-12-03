@@ -42,7 +42,8 @@ defmodule Beacon.Web.BeaconAssigns do
               info_handlers_module: nil,
               event_handlers_module: nil,
               live_data_keys: [],
-              live_path: []
+              live_path: [],
+              variant_roll: nil
             }
 
   @doc false
@@ -52,15 +53,23 @@ defmodule Beacon.Web.BeaconAssigns do
   end
 
   @doc false
-  def new(site, %Beacon.Content.Page{} = page) do
+  def new(site, %Beacon.Content.Page{} = page, variant_roll) do
     components_module = Beacon.Loader.Components.module_name(site)
     page_module = Beacon.Loader.Page.module_name(site, page.id)
-    %__MODULE__{site: site, private: %{components_module: components_module, page_module: page_module}}
+
+    %__MODULE__{
+      site: site,
+      private: %{
+        components_module: components_module,
+        page_module: page_module,
+        variant_roll: variant_roll
+      }
+    }
   end
 
   @doc false
-  def new(site, %Beacon.Content.Page{} = page, live_data, path_info, query_params, source \\ :beacon)
-      when is_atom(site) and is_map(live_data) and is_list(path_info) and is_map(query_params) do
+  def new(site, %Beacon.Content.Page{} = page, live_data, path_info, query_params, source, variant_roll \\ nil)
+      when is_atom(site) and is_map(live_data) and is_list(path_info) and is_map(query_params) and source in [:beacon, :admin] do
     %{site: ^site} = page
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
@@ -81,7 +90,8 @@ defmodule Beacon.Web.BeaconAssigns do
         info_handlers_module: info_handlers_module,
         event_handlers_module: event_handlers_module,
         live_data_keys: Map.keys(live_data),
-        live_path: path_info
+        live_path: path_info,
+        variant_roll: variant_roll
       }
     }
   end
