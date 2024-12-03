@@ -175,6 +175,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
       |> element("a", "go_to_other_site")
       |> render_click()
 
+      # wait for event
+      :sys.get_state(view)
+
       assert has_element?(view, "h1", "not_booted")
     end
 
