@@ -42,7 +42,8 @@ defmodule Beacon.Web.BeaconAssigns do
               info_handlers_module: nil,
               event_handlers_module: nil,
               live_data_keys: [],
-              live_path: []
+              live_path: [],
+              variant_roll: nil
             }
 
   @doc false

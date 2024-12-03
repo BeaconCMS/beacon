@@ -26,8 +26,12 @@ defmodule Beacon.Web.PageLive do
     variant_roll =
       case session["beacon_variant_roll"] do
         nil ->
-          msg = "Beacon.Plug is missing from the Router pipeline;  Page Variants will not be used."
-          Logger.warning(msg)
+          Logger.warning("""
+          Beacon.Plug is missing from the Router pipeline.
+
+          Page Variants will not be used.
+          """)
+
           nil
 
         roll ->
