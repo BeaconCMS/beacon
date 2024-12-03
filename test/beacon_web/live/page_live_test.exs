@@ -176,7 +176,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       |> render_click()
 
       # wait for event
-      :sys.get_state(view)
+      :sys.get_state(view.pid)
 
       assert has_element?(view, "h1", "not_booted")
     end
