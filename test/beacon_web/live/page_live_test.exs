@@ -178,7 +178,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       # wait for event
       :sys.get_state(view.pid)
 
-      assert render(view) =~ "thiswillnotbefound"
+      assert String.slice(render(view), -50..-1) =~ "thiswillnotbefound"
 
       assert has_element?(view, "h1", "not_booted")
     end
