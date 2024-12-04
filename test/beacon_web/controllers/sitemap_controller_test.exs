@@ -20,14 +20,15 @@ defmodule Beacon.Web.SitemapControllerTest do
     conn = get(conn, "/sitemap.xml")
 
     assert response(conn, 200) == """
-    &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-    &lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
-        &lt;url&gt;
-            &lt;loc&gt;#{routes.beacon_page_url(page)}&lt;/loc&gt;
-            &lt;lastmod&gt;#{DateTime.to_string(page.updated_at)}&lt;/lastmod&gt;
-        &lt;/url&gt;
-    &lt;/urlset&gt;
-    """
+           &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+           &lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
+               &lt;url&gt;
+                   &lt;loc&gt;#{routes.beacon_page_url(page)}&lt;/loc&gt;
+                   &lt;lastmod&gt;#{DateTime.to_string(page.updated_at)}&lt;/lastmod&gt;
+               &lt;/url&gt;
+           &lt;/urlset&gt;
+           """
+
     assert response_content_type(conn, :xml) =~ "charset=utf-8"
   end
 end
