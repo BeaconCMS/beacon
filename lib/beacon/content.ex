@@ -1342,7 +1342,7 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        template: ~S|<.dynamic_tag tag_name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
         example: ~S|<.html_tag name="p" class="text-xl">content</.tag>|,
         category: :element
       },
