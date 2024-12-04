@@ -27,6 +27,15 @@ defmodule Beacon.Loader.LiveDataTest do
     assert assigns_for_path("/bar") == %{product_id: "678"}
   end
 
+  test "forward errors" do
+    live_data = beacon_live_data_fixture(path: "/error")
+    beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "String.foo()")
+
+    assert_raise UndefinedFunctionError, "function String.foo/0 is undefined or private", fn ->
+      assert assigns_for_path("/error")
+    end
+  end
+
   defp assigns_for_path(path) do
     path_list = String.split(path, "/", trim: true)
     module = Beacon.Loader.fetch_live_data_module(default_site())
