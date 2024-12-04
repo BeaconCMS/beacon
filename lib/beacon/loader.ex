@@ -41,6 +41,8 @@ defmodule Beacon.Loader do
   rescue
     error ->
       if live_data_module?(module) do
+        # LiveData is user-provided code, which always has the possibility of errors.
+        # In this case, we want to ensure the original error is surfaced to the user for easier debugging.
         reraise error, __STACKTRACE__
       else
         raise_invoke_error(site, error, module, function, args, opts[:context], __STACKTRACE__)
