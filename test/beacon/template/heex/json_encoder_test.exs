@@ -422,7 +422,7 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        template: ~S|<.dynamic_tag tag_name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
         example: ~S|<.html_tag name="p">content</.tag>|
       )
 
