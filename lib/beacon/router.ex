@@ -55,7 +55,7 @@ defmodule Beacon.Router do
       end
 
   There's no difference between the two approaches, but that is important to group and organize your routes and sites,
-  for example a scope might be served through a different pipeline:application
+  for example a scope might be served through a different pipeline:
 
       scope "/marketing", MyAppWeb do
         pipe_through :browser_analytics
@@ -71,7 +71,7 @@ defmodule Beacon.Router do
   which means that any route after the `prefix` may match a published page. For example `/contact` may be a valid
   page published under the mounted `beacon_site "/, site: :marketing` site.
 
-  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:application
+  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:
 
       /*
       /super-campaign
@@ -245,5 +245,40 @@ defmodule Beacon.Router do
       _, _, acc ->
         acc
     end)
+  end
+
+  @doc false
+  # Tells if a `beacon_site` is reachable in the current environment.
+  #
+  # Supposed the following router:
+  #
+  #   scope "/", MyAppWeb, host: ["beacon-site-a.fly.dev"] do
+  #     pipe_through [:browser]
+  #     beacon_site "/", site: :site_a
+  #   end
+  #
+  #   scope "/", MyAppWeb, host: ["beacon-site-b.fly.dev"] do
+  #     pipe_through [:browser]
+  #     beacon_site "/", site: :site_b
+  #   end
+  #
+  # On a node deployed to beacon-site-a.fly.dev, the second `beacon_site`
+  # will never match, so starting `:site_b` is a waste of resources
+  # and a common cause of problems on BeaconLiveAdmin since we can't resolve URLs properly.
+  #
+  # Similarly, if a `get "/"` is added _before_ either `beacon_site` that `get` would always
+  # match and invalidate the `beacon_site` mount.
+  def reachable?(%Beacon.Config{} = config, opts \\ []) do
+    %{site: site, endpoint: endpoint, router: router} = config
+    host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
+    prefix = router.__beacon_scoped_prefix_for_site__(site)
+
+    case Phoenix.Router.route_info(router, "GET", prefix, host) do
+      %{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}}}}} ->
+        true
+
+      _ ->
+        false
+    end
   end
 end

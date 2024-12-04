@@ -10,6 +10,10 @@ defmodule Beacon.Loader.Layout do
     routes_module = Loader.Routes.module_name(site)
     components_module = Loader.Components.module_name(site)
     render_function = render_layout(layout)
+
+    # `import` modules won't be autoloaded
+    Loader.ensure_loaded!([routes_module, components_module], site)
+
     render(module, routes_module, components_module, render_function)
   end
 

@@ -21,10 +21,9 @@ defmodule Beacon.Web.API.PageJSON do
   end
 
   defp data(%Page{} = page) do
-    Beacon.ErrorHandler.enable(page.site)
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
     live_data = Beacon.Web.DataSource.live_data(page.site, path_info, %{})
-    beacon_assigns = BeaconAssigns.new(page.site, page, live_data, path_info, %{})
+    beacon_assigns = BeaconAssigns.new(page.site, page, live_data, path_info, %{}, :admin)
 
     assigns =
       live_data

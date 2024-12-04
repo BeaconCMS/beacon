@@ -5,17 +5,17 @@ You can host multiple domains or subdomains with Phoenix by using the `:host` op
 `:host` - a string or list of strings containing the host scope, or prefix host scope (e.g. `"foo.bar.com"`, `"foo."`)
 
 ```elixir
-# match admin. subdomain
+# match `admin.` subdomain
 scope "/", MyAppWeb, host: "admin." do
   live "/", AdminLive, :new
 end
 
-# match example.com, and "example2.com"
+# match `example.com` and `example2.com`
 scope "/", MyAppWeb, host: ["example.com", "example2.com"] do
   live "/", LandingLive, :new
 end
 
-# match my-example.org
+# match only `my-example.org`
 scope "/", MyAppWeb, host: "my-example.org" do
   live "/", HomeLive, :new
 end

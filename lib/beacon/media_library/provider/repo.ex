@@ -37,7 +37,7 @@ defmodule Beacon.MediaLibrary.Provider.Repo do
   @doc false
   def url_for(asset) do
     routes = Beacon.Loader.fetch_routes_module(asset.site)
-    Beacon.apply_mfa(routes, :beacon_media_url, [asset.file_name])
+    Beacon.apply_mfa(asset.site, routes, :beacon_media_url, [asset.file_name])
   end
 
   @doc false

@@ -129,12 +129,6 @@ defmodule Beacon.ContentTest do
       assert_receive {:page_published, %{site: ^site, id: ^id}}
     end
 
-    test "broadcasts loaded event" do
-      :ok = Beacon.PubSub.subscribe_to_page(:booted, "/broadcast-test")
-      beacon_published_page_fixture(site: "booted", path: "/broadcast-test")
-      assert_receive {:page_loaded, %{site: :booted}}
-    end
-
     test "broadcasts unpublished event" do
       %{site: site, id: id, path: path} = page = beacon_published_page_fixture(site: "booted")
       :ok = Beacon.PubSub.subscribe_to_pages(site)
@@ -295,6 +289,31 @@ defmodule Beacon.ContentTest do
     test "list_published_pages query by extra field with string value" do
       beacon_published_page_fixture(path: "/with-tags", extra: %{"tags" => "tag1,tag2"})
       assert [%Page{path: "/with-tags"}] = Content.list_published_pages(:my_site, search: %{extra: %{"tags" => "tag1"}})
+    end
+
+    test "list_published_pages sort by path length" do
+      beacon_published_page_fixture(path: "/")
+      beacon_published_page_fixture(path: "/foo")
+      beacon_published_page_fixture(path: "/a")
+
+      assert [
+               %Page{path: "/"},
+               %Page{path: "/a"},
+               %Page{path: "/foo"}
+             ] = Content.list_published_pages(:my_site, sort: {:length, :path})
+    end
+
+    test "list_published_pages_for_paths/2" do
+      beacon_published_page_fixture(path: "/foo")
+      beacon_published_page_fixture(path: "/bar")
+      beacon_published_page_fixture(path: "/baz")
+      beacon_published_page_fixture(path: "/bong")
+      beacon_page_fixture(path: "/unpublished")
+
+      assert [
+               %Page{path: "/bar"},
+               %Page{path: "/baz"}
+             ] = Content.list_published_pages_for_paths(:my_site, ["/bar", "/baz", "/unpublished"])
     end
 
     test "list_page_events" do

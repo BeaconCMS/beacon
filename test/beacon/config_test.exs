@@ -20,7 +20,7 @@ defmodule Beacon.ConfigTest do
     end
 
     test "raises for non existing site" do
-      assert_raise Beacon.ConfigError, ~r/site :invalid was not found/, fn ->
+      assert_raise Beacon.ConfigError, ~r/site :invalid not found/, fn ->
         Config.fetch!(:invalid)
       end
     end

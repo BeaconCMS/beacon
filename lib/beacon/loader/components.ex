@@ -14,10 +14,7 @@ defmodule Beacon.Loader.Components do
 
   def build_ast(site, [] = _components) do
     routes_module = Loader.Routes.module_name(site)
-
-    site
-    |> module_name()
-    |> render(routes_module)
+    render(site, module_name(site), routes_module)
   end
 
   def build_ast(site, components) do
@@ -25,12 +22,16 @@ defmodule Beacon.Loader.Components do
     routes_module = Loader.Routes.module_name(site)
     render_functions = Enum.map(components, &render_component/1)
     function_components = Enum.map(components, &function_component/1)
-    render(module, routes_module, render_functions, function_components)
+
+    # `import` modules won't be autoloaded
+    Loader.ensure_loaded!([routes_module], site)
+
+    render(site, module, routes_module, render_functions, function_components)
   end
 
   # generate the module even without functions because it gets
   # imported into other modules
-  defp render(component_module, routes_module) do
+  defp render(site, component_module, routes_module) do
     quote do
       defmodule unquote(component_module) do
         import Phoenix.HTML
@@ -47,13 +48,13 @@ defmodule Beacon.Loader.Components do
 
         # TODO: remove my_component/2
         def my_component(name, assigns \\ []) do
-          Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
+          Beacon.apply_mfa(unquote(site), __MODULE__, :render, [name, Enum.into(assigns, %{})])
         end
       end
     end
   end
 
-  defp render(component_module, routes_module, render_functions, function_components) do
+  defp render(site, component_module, routes_module, render_functions, function_components) do
     quote do
       defmodule unquote(component_module) do
         import Phoenix.Component.Declarative
@@ -81,7 +82,7 @@ defmodule Beacon.Loader.Components do
 
         # TODO: remove my_component/2
         def my_component(name, assigns \\ []) do
-          Beacon.apply_mfa(__MODULE__, :render, [name, Enum.into(assigns, %{})])
+          Beacon.apply_mfa(unquote(site), __MODULE__, :render, [name, Enum.into(assigns, %{})])
         end
 
         unquote_splicing(render_functions)

@@ -980,6 +980,20 @@ defmodule Beacon.Content do
     |> Enum.map(&extract_page_snapshot/1)
   end
 
+  @doc """
+  Similar to `list_published_pages/2`, but does not accept any options.  Instead, provide a list
+  of paths, and this function will return any published pages which match one of those paths.
+  """
+  @doc type: :pages
+  @spec list_published_pages_for_paths(Site.t(), [String.t()]) :: [Page.t()]
+  def list_published_pages_for_paths(site, paths) do
+    site
+    |> query_list_published_pages_base()
+    |> then(fn query -> from(q in query, where: q.path in ^paths) end)
+    |> repo(site).all()
+    |> Enum.map(&extract_page_snapshot/1)
+  end
+
   defp query_list_published_pages_base(site) do
     events =
       from event in PageEvent,
@@ -1026,6 +1040,7 @@ defmodule Beacon.Content do
 
   defp query_list_published_pages_search(query, _search), do: query
 
+  defp query_list_published_pages_sort(query, {:length, key}), do: from(q in query, order_by: [{:asc, fragment("length(?)", field(q, ^key))}])
   defp query_list_published_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """

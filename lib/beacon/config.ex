@@ -194,6 +194,11 @@ defmodule Beacon.Config do
   """
   @type default_meta_tags :: [%{binary() => binary()}]
 
+  @typedoc """
+  The strategy for pre-loading page modules at boot time.
+  """
+  @type page_warming :: {:shortest_paths, integer()} | {:specify_paths, [String.t()]} | :none
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -211,7 +216,8 @@ defmodule Beacon.Config do
           lifecycle: lifecycle(),
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
-          default_meta_tags: default_meta_tags()
+          default_meta_tags: default_meta_tags(),
+          page_warming: page_warming()
         }
 
   @default_load_template [
@@ -257,7 +263,8 @@ defmodule Beacon.Config do
             ],
             extra_page_fields: [],
             extra_asset_fields: [],
-            default_meta_tags: []
+            default_meta_tags: [],
+            page_warming: {:shortest_paths, 10}
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -277,6 +284,7 @@ defmodule Beacon.Config do
           | {:extra_page_fields, extra_page_fields()}
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
+          | {:page_warming, page_warming()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -324,6 +332,8 @@ defmodule Beacon.Config do
 
     * `:default_meta_tags` - `t:default_meta_tags/0` (optional). Defaults to `%{}`.
 
+    * `:page_warming` - `t:page_warming/0` (optional). Defaults to `{:shortest_paths, 10}`.
+
   ## Example
 
       iex> Beacon.Config.new(
@@ -352,7 +362,8 @@ defmodule Beacon.Config do
           after_publish_page: [
             notify_admin: fn page -> {:cont, MyApp.Admin.send_email(page)} end
           ]
-        ]
+        ],
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
       )
       %Beacon.Config{
         site: :my_site,
@@ -400,7 +411,8 @@ defmodule Beacon.Config do
         ],
         extra_page_fields: [],
         extra_asset_fields: [],
-        default_meta_tags: []
+        default_meta_tags: [],
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
       }
 
   """
@@ -442,6 +454,8 @@ defmodule Beacon.Config do
     default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
     extra_asset_fields = Keyword.get(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
+    page_warming = Keyword.get(opts, :page_warming, {:shortest_paths, 10})
+
     opts =
       opts
       |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
@@ -452,6 +466,7 @@ defmodule Beacon.Config do
       |> Keyword.put(:assets, assets)
       |> Keyword.put(:default_meta_tags, default_meta_tags)
       |> Keyword.put(:extra_asset_fields, extra_asset_fields)
+      |> Keyword.put(:page_warming, page_warming)
 
     struct!(__MODULE__, opts)
   end
@@ -467,7 +482,7 @@ defmodule Beacon.Config do
 
       _ ->
         raise ConfigError, """
-        site #{inspect(site)} was not found. Make sure it's configured and started,
+        site #{inspect(site)} not found. Make sure it's configured and started,
         see `Beacon.start_link/1` for more info.
         """
     end

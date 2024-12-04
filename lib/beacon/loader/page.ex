@@ -20,8 +20,11 @@ defmodule Beacon.Loader.Page do
         fun.(page)
       end,
       render(page),
-      dynamic_helper()
+      dynamic_helper(site)
     ]
+
+    # `import` modules won't be autoloaded
+    Loader.ensure_loaded!([routes_module, components_module], site)
 
     ast = build(module, routes_module, components_module, functions)
 
@@ -91,7 +94,7 @@ defmodule Beacon.Loader.Page do
     end
   end
 
-  defp interpolate_raw_schema(page) do
+  def interpolate_raw_schema(page) do
     page.raw_schema
     |> List.wrap()
     |> Enum.map(&interpolate_raw_schema_record(&1, page))
@@ -194,7 +197,7 @@ defmodule Beacon.Loader.Page do
           def render(var!(assigns)) when is_map(var!(assigns)) do
             var!(assigns)
             |> templates()
-            |> Beacon.Template.choose_template()
+            |> Beacon.Template.choose_template(var!(assigns).beacon.private[:variant_roll])
           end
 
           def templates(var!(assigns)) when is_map(var!(assigns)) do
@@ -225,10 +228,10 @@ defmodule Beacon.Loader.Page do
 
   defp load_variants(page), do: raise(Beacon.LoaderError, message: "failed to load variants for page #{page.id} - #{page.path}")
 
-  defp dynamic_helper do
+  defp dynamic_helper(site) do
     quote do
       def dynamic_helper(helper_name, args) do
-        Beacon.apply_mfa(__MODULE__, String.to_atom(helper_name), [args])
+        Beacon.apply_mfa(unquote(site), __MODULE__, String.to_atom(helper_name), [args])
       end
     end
   end
