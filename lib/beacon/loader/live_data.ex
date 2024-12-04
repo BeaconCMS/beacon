@@ -64,8 +64,25 @@ defmodule Beacon.Loader.LiveData do
             acc,
             String.to_atom(assign.key),
             case assign.format do
-              :text -> assign.value
-              :elixir -> assign.value |> Code.eval_string(unquote(bindings), __ENV__) |> elem(0)
+              :text ->
+                assign.value
+
+              :elixir ->
+                try do
+                  assign.value |> Code.eval_string(unquote(bindings), __ENV__) |> elem(0)
+                rescue
+                  error ->
+                    path = "/" <> Enum.join(unquote(path_list), "/")
+
+                    Logger.error("""
+                    failed to evaluate Live Data
+
+                    assign: @#{assign.key}
+                    path: #{path}
+                    """)
+
+                    reraise error, __STACKTRACE__
+                end
             end
           )
         end)

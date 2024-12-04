@@ -40,11 +40,22 @@ defmodule Beacon.Loader do
     end
   rescue
     error ->
-      raise_invoke_error(site, error, module, function, args, opts[:context], __STACKTRACE__)
+      if live_data_module?(module) do
+        reraise error, __STACKTRACE__
+      else
+        raise_invoke_error(site, error, module, function, args, opts[:context], __STACKTRACE__)
+      end
   end
 
   defp raise_invoke_error(site, error, module, function, args, context, stacktrace) do
     reraise Beacon.InvokeError, [site: site, error: error, module: module, function: function, args: args, context: context], stacktrace
+  end
+
+  defp live_data_module?(module) do
+    case module |> Module.split() |> List.last() do
+      "LiveData" -> true
+      _ -> false
+    end
   end
 
   defp worker(site) do
