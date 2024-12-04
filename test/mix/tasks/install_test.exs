@@ -28,10 +28,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     project
     |> Igniter.compose_task("beacon.install")
     |> assert_has_patch("lib/test_web/router.ex", """
-      9  9   |    plug(:protect_from_forgery)
-     10 10   |    plug(:put_secure_browser_headers)
         11 + |    plug Beacon.Plug
-     11 12   |  end
     """)
   end
 
