@@ -68,7 +68,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
           @beacon.query_params=<%= @beacon.query_params["query"] %>
 
           <.page_link path="/about">go_to_about_page</.page_link>
-          <.link patch={"#{Beacon.BeaconTest.Endpoint.url()}/other"}>go_to_other_site</.link>
+          <.link navigate="/other">go_to_other_site</.link>
 
           <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
             Name: <%= text_input f, :name %>
@@ -171,9 +171,11 @@ defmodule Beacon.Web.Live.PageLiveTest do
     test "patch to another site resets site data", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/home/hello")
 
-      view
-      |> element("a", "go_to_other_site")
-      |> render_click()
+      {:ok, view, _html} =
+        view
+        |> element("a", "go_to_other_site")
+        |> render_click()
+        |> follow_redirect(conn, "/other")
 
       assert has_element?(view, "h1", "not_booted")
     end
