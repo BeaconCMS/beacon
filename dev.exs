@@ -77,6 +77,7 @@ defmodule DemoWeb.Router do
     plug :fetch_live_flash
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug Beacon.Plug
   end
 
   scope "/", DemoWeb do

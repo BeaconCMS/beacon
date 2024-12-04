@@ -217,9 +217,15 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
       end),
       Task.async(fn ->
         Enum.map(Content.list_published_pages(site, per_page: :infinity), fn page ->
+          # TODO: post process variant templates
+          variants =
+            Enum.reduce(page.variants, "", fn variant, acc ->
+              acc <> variant.template
+            end)
+
           page_path = Path.join(tmp_dir, "#{site}_page_#{remove_special_chars(page.path)}.template")
           post_processed_template = Beacon.Lifecycle.Template.load_template(page)
-          File.write!(page_path, post_processed_template)
+          File.write!(page_path, post_processed_template <> variants)
           page_path
         end)
       end),
