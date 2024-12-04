@@ -39,10 +39,7 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     project
     |> Igniter.compose_task("beacon.install", ~w(--site my_site --path /my_site))
     |> assert_has_patch("lib/test_web/router.ex", """
-    20 + |  scope "/" do
-    21 + |    pipe_through [:browser]
-    22 + |    beacon_site "/my_site", site: :my_site
-    23 + |  end
+    24 + |    beacon_site "/my_site", site: :my_site
     """)
   end
 end

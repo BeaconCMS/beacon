@@ -41,6 +41,21 @@ defmodule Beacon.LoaderTest do
         Loader.safe_apply_mfa(default_site(), String, :foo, ["bar"])
       end
     end
+
+    test "forwards live data errors" do
+      live_data = beacon_live_data_fixture(path: "/error")
+      beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "String.foo()")
+
+      assert_raise UndefinedFunctionError, "function String.foo/0 is undefined or private", fn ->
+        assert assigns_for_path("/error")
+      end
+    end
+
+    defp assigns_for_path(path) do
+      path_list = String.split(path, "/", trim: true)
+      module = Beacon.Loader.fetch_live_data_module(default_site())
+      module.live_data(path_list, %{})
+    end
   end
 
   describe "populate default components" do

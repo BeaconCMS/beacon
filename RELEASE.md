@@ -33,11 +33,12 @@ into the `v0.2.x` branch because new features and breaking changes require a ver
 
 1. Checkout the `main` branch and make sure it's up to date with upstream
 2. Run `mix assets.build`
-3. Update the `CHANGELOG.md` file to list all changes included in the "Unreleased" section
-4. Commit the changes to upstream `main` if necessary
-5. Checkout the release branch and make sure it's up to date with upstream
-6. Make sure all the relevant changes have been cherry-picked from `main` to the release branch
-3. Update the `CHANGELOG.md` and replace Unreleased with the actual version and date, and list only the changes included in the version
+3. Update the `CHANGELOG.md` file and move all items from "Unreleased" to a new version section (the one being released),
+   and leave unfinished or incomplete item in "Unrelease" section (the ones that will not be included in the release).
+5. Commit the changes to upstream `main` if necessary
+6. Checkout the release branch and make sure it's up to date with upstream
+7. Make sure all the relevant changes have been cherry-picked from `main` to the release branch
+3. Update the `CHANGELOG.md` to remove the "Unreleased" section, it should display this release as latest version.
 7. Update the version in the files `mix.exs` and `package.json` and throughout docs/ files
 8. Run `mix assets.build`
 9. Make sure all relevant changes, especially breaking changes, are documented in an upgrade guide in `guides/upgrading`
