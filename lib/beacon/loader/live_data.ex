@@ -77,8 +77,9 @@ defmodule Beacon.Loader.LiveData do
                     Logger.error("""
                     failed to evaluate Live Data
 
-                    assign: @#{assign.key}
                     path: #{path}
+                    params: #{inspect(unquote(params_var))}
+                    assign: @#{assign.key}
                     """)
 
                     reraise error, __STACKTRACE__
