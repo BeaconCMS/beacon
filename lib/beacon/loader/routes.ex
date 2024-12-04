@@ -49,6 +49,11 @@ defmodule Beacon.Loader.Routes do
           @endpoint.url() <> beacon_media_path(file_name)
         end
 
+        def beacon_page_url(%{path: path} = page) do
+          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
+          Path.join([@endpoint.url(), prefix, path])
+        end
+
         defp sanitize_path(path) do
           String.replace(path, "//", "/")
         end
