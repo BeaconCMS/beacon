@@ -32,7 +32,7 @@ jobs:
           - otp: "27"
             elixir: "1.17"
             phoenix: "~> 1.7"
-            phoenix-live-view: "~> 1.0.0-rc.7"
+            phoenix-live-view: "~> 1.0"
             postgres: '16.4-alpine'
 
     env:
@@ -98,7 +98,7 @@ jobs:
           - otp: "27"
             elixir: "1.17"
             phoenix: "~> 1.7"
-            phoenix-live-view: "~> 1.0.0-rc.7"
+            phoenix-live-view: "~> 1.0"
 
     env:
       MIX_ENV: dev
@@ -131,16 +131,17 @@ jobs:
 
       - run: mix compile --warnings-as-errors
 
-      - run: mix assets.setup
-
-      - run: mix format.all
-
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: auto format code
-
-      - run: mix format.all.check
-
       - run: mix deps.unlock --check-unused
 
       - run: mix credo --strict
+
+      - run: mix assets.setup
+
+      # TODO: enable auto-format after requiring min LiveView ~> 1.0
+      # - run: mix format.all
+      #
+      # - uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     commit_message: auto format code
+
+      - run: mix format.all.check

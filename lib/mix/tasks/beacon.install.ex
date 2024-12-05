@@ -49,9 +49,11 @@ defmodule Mix.Tasks.Beacon.Install do
     argv = igniter.args.argv
     options = igniter.args.options
 
+    {igniter, router} = Igniter.Libs.Phoenix.select_router(igniter)
+
     igniter
     |> add_beacon_plugin_formatter()
-    |> replace_error_html()
+    |> replace_error_html(router)
     |> maybe_gen_site(options, argv)
   end
 
@@ -59,10 +61,9 @@ defmodule Mix.Tasks.Beacon.Install do
     Igniter.Project.Formatter.import_dep(igniter, :beacon)
   end
 
-  defp replace_error_html(igniter) do
+  defp replace_error_html(igniter, router) do
     app_name = Igniter.Project.Application.app_name(igniter)
 
-    {igniter, router} = Igniter.Libs.Phoenix.select_router(igniter)
     {igniter, [endpoint]} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
 
     Igniter.Project.Config.configure(
