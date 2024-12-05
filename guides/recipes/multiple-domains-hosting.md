@@ -55,11 +55,12 @@ In `config/runtime.exs` edit the following config to include your domains:
 
 ```elixir
 config :my_app, MyAppWeb.Endpoint,
-  ...
+  # ...
   check_origin: [
     "https://beacon-demo.com/",
     "https://demo.org",
     "https://blog.com"
-  ],
-  ...
+  ]
 ```
+
+Check out the [Deployment Topologies](https://hexdocs.pm/beacon/deployment-topologies.html) guide for more information.
