@@ -9,7 +9,8 @@
   - `Beacon.Config` option `:page_warming` can change the number of pages to warm, specify which pages, or disable warming per site
   - Only start reachable sites on boot to save resources
   - Warn when a site defined in the router is not reachable
-
+  - Add `Beacon.Plug` for consistent rendering when using Page Variants
+  - `mix beacon.install` now adds `Beacon.Plug` to host app Router
 
 ### Fixes
   - Remove self dependency on ErrorPage module

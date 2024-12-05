@@ -24,11 +24,19 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     """)
   end
 
+  test "add Beacon.Plug to router pipeline", %{project: project} do
+    project
+    |> Igniter.compose_task("beacon.install")
+    |> assert_has_patch("lib/test_web/router.ex", """
+        11 + |    plug Beacon.Plug
+    """)
+  end
+
   test "optionally generates new site", %{project: project} do
     project
     |> Igniter.compose_task("beacon.install", ~w(--site my_site --path /my_site))
     |> assert_has_patch("lib/test_web/router.ex", """
-    23 + |    beacon_site "/my_site", site: :my_site
+    24 + |    beacon_site "/my_site", site: :my_site
     """)
   end
 end
