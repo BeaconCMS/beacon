@@ -68,11 +68,22 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
 
+    test "add Beacon.Plug to beacon pipeline", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
+      |> assert_has_patch("lib/test_web/router.ex", """
+      6 + |  pipeline :beacon do
+      7 + |    plug Beacon.Plug
+      8 + |  end
+      """)
+    end
+
     test "mount site in router", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("lib/test_web/router.ex", """
-      24 + |    beacon_site "/", site: :my_site
+      24 + |    pipe_through [:browser, :beacon]
+      25 + |    beacon_site "/", site: :my_site
       """)
     end
 
@@ -82,8 +93,9 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> apply_igniter!()
       |> Igniter.compose_task("beacon.gen.site", @opts_other_site)
       |> assert_has_patch("lib/test_web/router.ex", """
-      24 24   |    beacon_site "/", site: :my_site
-         25 + |    beacon_site "/other", site: :other
+      24 24   |    pipe_through [:browser, :beacon]
+      25 25   |    beacon_site "/", site: :my_site
+         26 + |    beacon_site "/other", site: :other
       """)
     end
   end
