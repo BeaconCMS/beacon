@@ -24,6 +24,9 @@ defmodule Beacon.BeaconTest.Router do
   # `alias` is not really used but is present here to verify that `beacon_site` has no conflicts with custom aliases
   scope path: "/", alias: AnyAlias do
     pipe_through :browser
+
+    beacon_sitemap_index("sitemap_index.xml")
+
     beacon_site "/other", site: :not_booted
     beacon_site "/", site: :my_site
   end

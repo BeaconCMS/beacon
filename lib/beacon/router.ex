@@ -91,7 +91,7 @@ defmodule Beacon.Router do
   defp prelude do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
-      import Beacon.Router, only: [beacon_site: 2]
+      import Beacon.Router, only: [beacon_site: 2, beacon_sitemap_index: 1]
       @before_compile unquote(__MODULE__)
     end
   end
@@ -152,6 +152,21 @@ defmodule Beacon.Router do
       end
 
       @beacon_sites {opts[:site], Phoenix.Router.scoped_path(__MODULE__, prefix)}
+    end
+  end
+
+  @doc """
+  Creates a beacon sitemap index.
+  """
+  defmacro beacon_sitemap_index(filename) do
+    quote bind_quoted: binding(), location: :keep do
+      import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
+
+      scope "/", alias: false, as: false do
+        get "/sitemap_index.xml", Beacon.Web.SitemapController, :index,
+          as: :beacon_sitemap,
+          assigns: %{sites: @beacon_sites}
+      end
     end
   end
 

@@ -1,7 +1,7 @@
 defmodule Beacon.Web.SitemapControllerTest do
   use Beacon.Web.ConnCase, async: false
 
-  test "show", %{conn: conn} do
+  setup do
     site = :my_site
 
     layout =
@@ -17,6 +17,17 @@ defmodule Beacon.Web.SitemapControllerTest do
     page = beacon_published_page_fixture(site: site, path: "/foo", layout_id: layout.id)
 
     routes = Beacon.Loader.fetch_routes_module(site)
+
+    [site: site, layout: layout, page: page, routes: routes]
+  end
+
+  test "index", %{conn: conn} do
+    conn = get(conn, "/sitemap_index.xml")
+
+    assert response(conn, 200) =~ "/other"
+  end
+
+  test "show", %{conn: conn, page: page, routes: routes} do
     conn = get(conn, "/sitemap.xml")
 
     assert response(conn, 200) == """
