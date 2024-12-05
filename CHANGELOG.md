@@ -18,7 +18,7 @@
   - `mix beacon.install` now adds `Beacon.Plug` to host app Router
 
 ### Fixes
-  - Rename arg from `name` to `tag_name` in dynamic_tag component (#685)
+  - Rename arg from `name` to `tag_name` in dynamic_tag component
   - Remove self dependency on ErrorPage module
   - Allow `:admin` source for BeaconAssigns in unpublished Pages
 
