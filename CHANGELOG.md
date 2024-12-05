@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 (2024-12-05)
+
 ### Enhancements
   - Support Phoenix LiveView 1.0
   - Add `Beacon.Plug` in the `:beacon` pipeline
