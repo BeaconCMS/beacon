@@ -133,6 +133,10 @@ jobs:
 
       - run: mix assets.setup
 
+      - run: mix deps.unlock --check-unused
+
+      - run: mix credo --strict
+
       # TODO: enable auto-format after requiring min LiveView ~> 1.0
       # - run: mix format.all
       #
@@ -141,7 +145,3 @@ jobs:
       #     commit_message: auto format code
 
       - run: mix format.all.check
-
-      - run: mix deps.unlock --check-unused
-
-      - run: mix credo --strict
