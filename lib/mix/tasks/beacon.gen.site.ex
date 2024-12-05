@@ -51,6 +51,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     igniter
     |> create_migration(repo)
     |> add_use_beacon_in_router(router)
+    |> add_beacon_pipeline_in_router(router)
     |> mount_site_in_router(router, site, path)
     |> add_site_config_in_config_runtime(site, repo, router, endpoint)
     |> add_beacon_config_in_app_supervisor(site, repo, endpoint)
@@ -108,6 +109,15 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     end)
   end
 
+  defp add_beacon_pipeline_in_router(igniter, router) do
+    Igniter.Libs.Phoenix.add_pipeline(
+      igniter,
+      :beacon,
+      "plug Beacon.Plug",
+      router: router
+    )
+  end
+
   defp create_migration(igniter, repo) do
     timestamp = if @test?, do: [timestamp: 0], else: []
 
@@ -146,7 +156,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
             """
             beacon_site #{inspect(path)}, site: #{inspect(site)}
             """,
-            with_pipelines: [:browser],
+            with_pipelines: [:browser, :beacon],
             router: router,
             arg2: Igniter.Libs.Phoenix.web_module(igniter)
           )
