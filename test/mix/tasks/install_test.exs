@@ -10,8 +10,8 @@ defmodule Mix.Tasks.Beacon.InstallTest do
     project
     |> Igniter.compose_task("beacon.install")
     |> assert_has_patch(".formatter.exs", """
-    7    - |  import_deps: [:ecto, :ecto_sql, :phoenix],
-       7 + |  import_deps: [:beacon, :ecto, :ecto_sql, :phoenix],
+    8    - |  import_deps: [:ecto, :ecto_sql, :phoenix],
+       8 + |  import_deps: [:beacon, :ecto, :ecto_sql, :phoenix],
     """)
   end
 
