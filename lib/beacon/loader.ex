@@ -362,6 +362,7 @@ defmodule Beacon.Loader do
     |> Loader.Components.module_name()
     |> unload()
 
+    load_components_module(site)
     load_runtime_css(site)
 
     {:noreply, config}
