@@ -24,7 +24,22 @@ defmodule Beacon.Web.SitemapControllerTest do
   test "index", %{conn: conn} do
     conn = get(conn, "/sitemap_index.xml")
 
-    assert response(conn, 200) =~ "/other"
+    assert response(conn, 200) == """
+           &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+           &lt;sitemapindex xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
+             &lt;sitemap&gt;
+               &lt;loc&gt;http://localhost:4000/nested/media/sitemap.xml&lt;/loc&gt;
+             &lt;/sitemap&gt;&lt;sitemap&gt;
+               &lt;loc&gt;http://localhost:4000/nested/site/sitemap.xml&lt;/loc&gt;
+             &lt;/sitemap&gt;&lt;sitemap&gt;
+               &lt;loc&gt;http://localhost:4000/other/sitemap.xml&lt;/loc&gt;
+             &lt;/sitemap&gt;&lt;sitemap&gt;
+               &lt;loc&gt;http://localhost:4000/sitemap.xml&lt;/loc&gt;
+             &lt;/sitemap&gt;&lt;sitemap&gt;
+               &lt;loc&gt;http://localhost:4000/sitemap.xml&lt;/loc&gt;
+             &lt;/sitemap&gt;
+           &lt;/sitemapindex&gt;
+           """
   end
 
   test "show", %{conn: conn, page: page, routes: routes} do

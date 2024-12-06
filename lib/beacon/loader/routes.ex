@@ -55,8 +55,9 @@ defmodule Beacon.Loader.Routes do
         end
 
         def beacon_sitemap_url do
-          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
-          Path.join([@endpoint.url(), prefix, "sitemap.xml"])
+          if prefix = @router.__beacon_scoped_prefix_for_site__(@site) do
+            Path.join([@endpoint.url(), prefix, "sitemap.xml"])
+          end
         end
 
         defp sanitize_path(path) do

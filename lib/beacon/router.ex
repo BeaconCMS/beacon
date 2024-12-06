@@ -111,6 +111,7 @@ defmodule Beacon.Router do
       @doc false
       def __beacon_sites__, do: unquote(Macro.escape(sites))
       unquote(prefixes)
+      def __beacon_scoped_prefix_for_site__(_), do: nil
     end
   end
 
@@ -163,9 +164,7 @@ defmodule Beacon.Router do
       import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
 
       scope "/", alias: false, as: false do
-        get "/sitemap_index.xml", Beacon.Web.SitemapController, :index,
-          as: :beacon_sitemap,
-          assigns: %{sites: @beacon_sites}
+        get "/sitemap_index.xml", Beacon.Web.SitemapController, :index, as: :beacon_sitemap
       end
     end
   end
