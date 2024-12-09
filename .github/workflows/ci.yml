@@ -137,11 +137,10 @@ jobs:
 
       - run: mix assets.setup
 
-      # TODO: enable auto-format after requiring min LiveView ~> 1.0
-      # - run: mix format.all
-      #
-      # - uses: stefanzweifel/git-auto-commit-action@v5
-      #   with:
-      #     commit_message: auto format code
+      - run: mix format.all
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: auto format code
 
       - run: mix format.all.check
