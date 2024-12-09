@@ -362,7 +362,10 @@ defmodule Beacon.Loader do
     |> Loader.Components.module_name()
     |> unload()
 
+    # consider implementing HTML and Tag engines
+    # to intercept component module calls
     load_components_module(site)
+
     load_runtime_css(site)
 
     {:noreply, config}
