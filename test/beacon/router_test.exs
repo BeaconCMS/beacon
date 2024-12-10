@@ -76,7 +76,7 @@ defmodule Beacon.RouterTest do
 
     test "existing nested conflicting route", %{config: config} do
       valid_host = "host.com"
-      refute Router.reachable?(config, host: valid_host, prefix: "/some_page")
+      refute Router.reachable?(config, host: valid_host, prefix: "/nested/some_page")
     end
 
     test "with no specific host", %{config: config} do

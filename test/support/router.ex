@@ -21,7 +21,7 @@ defmodule Beacon.BeaconTest.Router do
 
     live_session :default do
       live "/", Beacon.BeaconTest.LiveViews.FooBarLive
-      live "/:page", Beacon.BeaconTest.LiveViews.FooBarLive
+      live "/nested/:page", Beacon.BeaconTest.LiveViews.FooBarLive
     end
   end
 
