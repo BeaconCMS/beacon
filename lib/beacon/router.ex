@@ -118,19 +118,21 @@ defmodule Beacon.Router do
   @doc """
   Mounts a site in the `prefix` in your host application router.
 
+  This will automatically serve a `sitemap.xml` file from the `prefix` path defined for this site.
+
   ## Options
 
     * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name.
       Note that the name has to match the one used in your site configuration.
       See the module doc and `Beacon.Config` for more info.
     * `:root_layout` - override the default root layout for the site. Defaults to `{Beacon.Web.Layouts, :runtime}`.
-    See `Beacon.Web.Layouts` and `Phoenix.LiveView.Router.live_session/3` for more info.
-    Use with caution.
+      See `Beacon.Web.Layouts` and `Phoenix.LiveView.Router.live_session/3` for more info.
+      Use with caution.
 
   """
   defmacro beacon_site(prefix, opts) do
     # TODO: raise on duplicated sites defined on the same prefix
-    quote bind_quoted: binding(), location: :keep do
+    quote bind_quoted: binding(), location: :keep, generated: true do
       import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
       import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
@@ -157,14 +159,59 @@ defmodule Beacon.Router do
   end
 
   @doc """
-  Creates a beacon sitemap index.
+  Creates a sitemap index at the given path (including the filename and extension).
+
+  ## Example
+
+    defmodule MyApp.Router do
+      ...
+      scope "/" do
+        pipe_through :browser
+
+        beacon_sitemap_index "/sitemap_index.xml"
+
+        beacon_site "/other", site: :other
+        beacon_site "/", site: :home
+      end
+    end
+
+  In the above example, there are two Beacon sites, so Beacon will serve two sitemaps:
+    * `my_domain.com/sitemap.xml` for site `:home`
+    * `my_domain.com/other/sitemap.xml` for site `:other`
+
+  Then Beacon will reference both of those sitemaps in the top-level index:
+    * `my_domain.com/sitemap_index.xml`
+
+  ## Requirements
+
+  Note that your sitemap index cannot have a path which is "deeper" in the directory structure than
+  your Beacon sites (which will be contained in the index).
+
+  For example, the following is NOT allowed:
+
+    scope "/" do
+      ...
+      beacon_sitemap_index "/root/nested/sitemap_index.xml"
+
+      beacon_site "/root", site: :root
+    end
+
+  However, the opposite case (nesting the sites deeper than the index) is perfectly fine:
+
+    scope "/" do
+      ...
+      beacon_sitemap_index "/sitemap_index.xml"
+
+      beacon_site "/nested/path/to/site", site: :nested
+    end
+
   """
-  defmacro beacon_sitemap_index(filename) do
-    quote bind_quoted: binding(), location: :keep do
-      import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
+  defmacro beacon_sitemap_index(path_with_filename) do
+    quote bind_quoted: binding(), location: :keep, generated: true do
+      import Phoenix.Router, only: [scope: 3, get: 4]
 
       scope "/", alias: false, as: false do
-        get "/sitemap_index.xml", Beacon.Web.SitemapController, :index, as: :beacon_sitemap
+        get path_with_filename, Beacon.Web.SitemapController, :index, as: :beacon_sitemap
       end
     end
   end
