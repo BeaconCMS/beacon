@@ -278,7 +278,7 @@ defmodule Beacon.Router do
         router.__beacon_scoped_prefix_for_site__(site)
       end)
 
-    case Phoenix.Router.route_info(router, "GET", prefix, host) do
+    case Phoenix.Router.route_info(router, "GET", prefix, host) |> dbg do
       # bypass and allow booting beacon sites even though there's a route conflict
       # but only for root paths, for example:
       #   live /

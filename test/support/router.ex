@@ -1,4 +1,5 @@
 defmodule Beacon.BeaconTest.Router do
+  alias Beacon.BeaconTest
   use Beacon.BeaconTest.Web, :router
   use Beacon.Router
 
@@ -16,11 +17,12 @@ defmodule Beacon.BeaconTest.Router do
     beacon_site "/media", site: :s3_site
   end
 
-  scope "/", Beacon.BeaconTest do
+  scope "/", Beacon.BeaconTest.Web do
     pipe_through :browser
 
     live_session :default do
       live "/", Beacon.BeaconTest.LiveViews.FooBarLive
+      live "/:page", Beacon.BeaconTest.LiveViews.FooBarLive
     end
   end
 
