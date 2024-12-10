@@ -17,14 +17,11 @@ defmodule Beacon.ProxyEndpoint do
       session_options = proxy_options[:session] || raise Beacon.RuntimeError, "FIXME 3"
       Module.put_attribute(__MODULE__, :session_options, session_options)
 
-      endpoints =
-        Keyword.get_lazy(unquote(opts), :endpoints, fn ->
-          require Logger
-          Logger.warning("FIXME 4")
-          []
-        end)
-
+      endpoints = Keyword.get(unquote(opts), :endpoints, [])
       Module.put_attribute(__MODULE__, :__beacon_proxy_endpoints__, endpoints)
+
+      fallback = Keyword.get(unquote(opts), :fallback) || raise Beacon.RuntimeError, "FIXME 4"
+      Module.put_attribute(__MODULE__, :__beacon_proxy_fallback__, fallback)
 
       use Phoenix.Endpoint, otp_app: otp_app
 
@@ -36,14 +33,8 @@ defmodule Beacon.ProxyEndpoint do
 
       def proxy(conn, opts) do
         %{host: host} = conn
-
-        endpoint = Enum.find(@__beacon_proxy_endpoints__, &(&1.host() == host))
-
-        if endpoint do
-          endpoint.call(conn, endpoint.init(opts))
-        else
-          raise Beacon.RuntimeError, "FIXME 5"
-        end
+        endpoint = Enum.find(@__beacon_proxy_endpoints__, @__beacon_proxy_fallback__, &(&1.host() == host))
+        endpoint.call(conn, endpoint.init(opts))
       end
     end
   end
