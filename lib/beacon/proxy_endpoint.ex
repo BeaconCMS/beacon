@@ -33,6 +33,7 @@ defmodule Beacon.ProxyEndpoint do
 
       def proxy(conn, opts) do
         %{host: host} = conn
+        # TODO: generate pattern match clauses
         endpoint = Enum.find(@__beacon_proxy_endpoints__, @__beacon_proxy_fallback__, &(&1.host() == host))
         endpoint.call(conn, endpoint.init(opts))
       end
