@@ -86,5 +86,10 @@ defmodule Beacon.RouterTest do
     test "do not match any existing host/path", %{config: config} do
       refute Router.reachable?(config, host: nil, prefix: "/nested/invalid")
     end
+
+    test "router without beacon routes" do
+      config = Beacon.Config.fetch!(:no_routes)
+      refute Router.reachable?(config)
+    end
   end
 end

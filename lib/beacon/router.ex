@@ -271,6 +271,14 @@ defmodule Beacon.Router do
   def reachable?(%Beacon.Config{} = config, opts \\ []) do
     %{site: site, endpoint: endpoint, router: router} = config
 
+    if function_exported?(router, :__beacon_scoped_prefix_for_site__, 1) do
+      reachable?(site, endpoint, router, opts)
+    else
+      false
+    end
+  end
+
+  defp reachable?(site, endpoint, router, opts) do
     host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
 
     prefix =
