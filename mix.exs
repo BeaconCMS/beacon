@@ -45,7 +45,8 @@ defmodule Beacon.MixProject do
         Website: @homepage_url,
         DockYard: "https://dockyard.com"
       },
-      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
+      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md),
+      exclude_patterns: ["/priv/plts"]
     ]
   end
 
