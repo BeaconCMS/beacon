@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Doc
+
+  - Add missing instructions on Upgrade Guide v0.3.0 where to place the Beacon tuple
+
+### Chore
+
+  - Exclude Dialyzer files from package
+
 ## 0.3.1 (2024-12-10)
 
 ### Fixes
