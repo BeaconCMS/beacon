@@ -80,7 +80,7 @@ defmodule Beacon.RouterTest do
     end
 
     test "with no specific host", %{config: config} do
-      assert Router.reachable?(config, host: nil, prefix: "/")
+      assert Router.reachable?(config, host: nil)
     end
 
     test "do not match any existing host/path", %{config: config} do

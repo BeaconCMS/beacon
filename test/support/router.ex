@@ -1,5 +1,4 @@
 defmodule Beacon.BeaconTest.Router do
-  alias Beacon.BeaconTest
   use Beacon.BeaconTest.Web, :router
   use Beacon.Router
 
