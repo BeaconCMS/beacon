@@ -50,7 +50,7 @@ defmodule Beacon.Web.SitemapControllerTest do
            &lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
                &lt;url&gt;
                    &lt;loc&gt;#{routes.beacon_page_url(conn, page)}&lt;/loc&gt;
-                   &lt;lastmod&gt;#{DateTime.to_string(page.updated_at)}&lt;/lastmod&gt;
+                   &lt;lastmod&gt;#{DateTime.to_iso8601(page.updated_at)}&lt;/lastmod&gt;
                &lt;/url&gt;
            &lt;/urlset&gt;
            """

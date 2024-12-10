@@ -38,7 +38,7 @@ defmodule Beacon.Web.SitemapController do
     |> Enum.map(fn page ->
       %{
         loc: Beacon.apply_mfa(site, routes_module, :beacon_page_url, [conn, page]),
-        lastmod: page.updated_at
+        lastmod: DateTime.to_iso8601(page.updated_at)
       }
     end)
   end

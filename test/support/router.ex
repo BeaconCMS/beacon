@@ -12,7 +12,7 @@ defmodule Beacon.BeaconTest.Router do
 
   scope "/" do
     pipe_through :browser
-    beacon_sitemap_index "sitemap_index.xml"
+    beacon_sitemap_index "/sitemap_index.xml"
   end
 
   scope "/nested" do
