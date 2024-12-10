@@ -16,8 +16,16 @@ defmodule Beacon.BeaconTest.Router do
     beacon_site "/media", site: :s3_site
   end
 
-  # test :host
+  scope "/", Beacon.BeaconTest do
+    pipe_through :browser
+
+    live_session :default do
+      live "/", Beacon.BeaconTest.LiveViews.FooBarLive
+    end
+  end
+
   scope path: "/", host: "host.com" do
+    pipe_through :browser
     beacon_site "/", site: :host_test
   end
 
