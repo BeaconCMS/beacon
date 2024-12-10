@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 (2024-12-10)
+
+### Fixes
+
+  - Avoid unloading imported dynamic Components modules without a replacement
+
 ## 0.3.0 (2024-12-05)
 
 ### Enhancements
