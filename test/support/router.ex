@@ -16,7 +16,7 @@ defmodule Beacon.BeaconTest.Router do
     beacon_site "/media", site: :s3_site
   end
 
-  scope "/", Beacon.BeaconTest.Web do
+  scope "/" do
     pipe_through :browser
 
     live_session :default do
