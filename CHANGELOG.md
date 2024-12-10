@@ -1,9 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Enhancements
+  - Beacon will now automatically generate a `sitemap.xml` for each `beacon_site` defined in the Router
+  - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
+
 ## 0.3.1 (2024-12-10)
 
 ### Fixes
-
   - Avoid unloading imported dynamic Components modules without a replacement
 
 ## 0.3.0 (2024-12-05)
