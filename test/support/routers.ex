@@ -1,3 +1,7 @@
+defmodule Beacon.BeaconTest.NoRoutesRouter do
+  use Beacon.BeaconTest.Web, :router
+end
+
 defmodule Beacon.BeaconTest.Router do
   use Beacon.BeaconTest.Web, :router
   use Beacon.Router

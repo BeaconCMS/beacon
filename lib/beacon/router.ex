@@ -270,7 +270,10 @@ defmodule Beacon.Router do
   # match and invalidate the `beacon_site` mount.
   def reachable?(%Beacon.Config{} = config, opts \\ []) do
     %{site: site, endpoint: endpoint, router: router} = config
+    function_exported?(router, :__beacon_scoped_prefix_for_site__, 1) && reachable?(site, endpoint, router, opts)
+  end
 
+  defp reachable?(site, endpoint, router, opts) do
     host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
 
     prefix =
