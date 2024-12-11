@@ -94,5 +94,10 @@ defmodule Beacon.RouterTest do
       config = config(:my_site, router: Beacon.BeaconTest.NoRoutesRouter)
       refute Router.reachable?(config)
     end
+
+    test "router without beacon routes" do
+      config = Beacon.Config.fetch!(:no_routes)
+      refute Router.reachable?(config)
+    end
   end
 end
