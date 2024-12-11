@@ -63,14 +63,33 @@ defmodule Beacon.RouterTest do
   end
 
   describe "reachable?" do
-    test "test" do
+    setup do
       site = :host_test
       config = Beacon.Config.fetch!(site)
-      valid_host = "host.com"
+      [config: config]
+    end
 
+    test "match existing host", %{config: config} do
+      valid_host = "host.com"
       assert Router.reachable?(config, host: valid_host)
-      refute Router.reachable?(%{config | site: :my_site}, host: valid_host)
-      refute Router.reachable?(config, host: "other.com")
+    end
+
+    test "existing nested conflicting route", %{config: config} do
+      valid_host = "host.com"
+      refute Router.reachable?(config, host: valid_host, prefix: "/nested/some_page")
+    end
+
+    test "with no specific host", %{config: config} do
+      assert Router.reachable?(config, host: nil)
+    end
+
+    test "do not match any existing host/path", %{config: config} do
+      refute Router.reachable?(config, host: nil, prefix: "/nested/invalid")
+    end
+
+    test "router without beacon routes" do
+      config = Beacon.Config.fetch!(:no_routes)
+      refute Router.reachable?(config)
     end
   end
 end
