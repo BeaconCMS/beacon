@@ -145,6 +145,7 @@ defmodule Beacon.Router do
           get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: opts[:site]}
           get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
 
+          # simulate a beacon page inside site prefix so we can check this site is reachable?/2
           get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
 
           live "/*path", Beacon.Web.PageLive, :path
