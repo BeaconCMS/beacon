@@ -149,6 +149,7 @@ defmodule Beacon.Router do
           get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
 
           get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
+          get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
 
           live "/*path", Beacon.Web.PageLive, :path
         end
