@@ -1,8 +1,11 @@
 defmodule Beacon.ProxyEndpoint do
   @moduledoc """
-  TODO: moduledoc
+  Proxy Endpoint to redirect requests to each site endpoint in a multiple domains setup.
 
-      use Beacon.ProxyEndpoint, otp_app: :my_app, endpoints: [MyAppWeb.EndpointSiteA, MyAppWeb.EndpointSiteB]
+      TODO: beacon.deploy.add_domain fobar
+
+      TODO: use Beacon.ProxyEndpoint, otp_app: :my_app, endpoints: [MyAppWeb.EndpointSiteA, MyAppWeb.EndpointSiteB]
+
   """
 
   @doc """
@@ -12,7 +15,7 @@ defmodule Beacon.ProxyEndpoint do
     quote location: :keep, generated: true do
       otp_app = Keyword.get(unquote(opts), :otp_app) || raise Beacon.RuntimeError, "FIXME 1"
 
-      proxy_options = Application.compile_env!(otp_app, __MODULE__) || raise Beacon.RuntimeError, "FIXME 2"
+      proxy_options = Application.compile_env!(otp_app, :endpoint) || raise Beacon.RuntimeError, "FIXME 2"
 
       session_options = proxy_options[:session] || raise Beacon.RuntimeError, "FIXME 3"
       Module.put_attribute(__MODULE__, :session_options, session_options)
