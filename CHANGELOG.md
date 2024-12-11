@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+## 0.3.2 (2024-12-11)
+
+### Fixes
+
+  - Make the logic to find reachable sites less strict
+  - Prevent components module reloading in manual mode
+
+### Doc
+
+  - Add missing instructions on Upgrade Guide v0.3.0 where to place the Beacon tuple
+
+### Chore
+
+  - Exclude Dialyzer files from package
+
 ## 0.3.1 (2024-12-10)
 
 ### Fixes
