@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.2 (2024-12-11)
+
 ### Fixes
 
   - Make the logic to find reachable sites less strict
