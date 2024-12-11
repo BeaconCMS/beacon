@@ -333,10 +333,24 @@ defmodule Beacon.Router do
   # match and invalidate the `beacon_site` mount.
   def reachable?(%Beacon.Config{} = config, opts \\ []) do
     %{site: site, endpoint: endpoint, router: router} = config
+
     host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
-    prefix = router.__beacon_scoped_prefix_for_site__(site)
+
+    prefix =
+      Keyword.get_lazy(opts, :prefix, fn ->
+        router.__beacon_scoped_prefix_for_site__(site)
+      end)
 
     case Phoenix.Router.route_info(router, "GET", prefix, host) do
+      # bypass and allow booting beacon sites even though there's a route conflict
+      # but only for root paths, for example:
+      #   live /
+      #   beacon_site /
+      # that's because even though they share the same prefix,
+      # beacon can still serve pages at /:page
+      %{route: "/"} ->
+        true
+
       %{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}}}}} ->
         true
 

@@ -364,7 +364,7 @@ defmodule Beacon.Loader do
 
     # consider implementing HTML and Tag engines
     # to intercept component module calls
-    load_components_module(site)
+    if config.mode != :manual, do: load_components_module(site)
 
     load_runtime_css(site)
 
