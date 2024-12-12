@@ -23,8 +23,6 @@ defmodule Beacon.Web.PageLive do
       :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
 
-    page = RouterServer.lookup_page!(site, path)
-
     variant_roll =
       case session["beacon_variant_roll"] do
         nil ->
@@ -40,6 +38,7 @@ defmodule Beacon.Web.PageLive do
           roll
       end
 
+    page = RouterServer.lookup_page!(site, path)
     socket = Component.assign(socket, beacon: BeaconAssigns.new(site, page, variant_roll))
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
