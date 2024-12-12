@@ -30,7 +30,12 @@ defmodule Beacon.ProxyEndpoint do
       plug :proxy
 
       def proxy(conn, opts) do
+        require Logger
+
         %{host: host} = conn
+
+        Logger.debug("@session_options => #{inspect(@session_options)}")
+        Logger.debug("conn.host => #{host}")
 
         endpoint =
           Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
@@ -42,6 +47,8 @@ defmodule Beacon.ProxyEndpoint do
               {:cont, default}
             end
           end)
+
+        Logger.debug("endpoint => #{inspect(endpoint)}")
 
         endpoint.call(conn, endpoint.init(opts))
       end
