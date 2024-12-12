@@ -13,17 +13,12 @@ defmodule Beacon.ProxyEndpoint do
   """
   defmacro __using__(opts) do
     quote location: :keep, generated: true do
-      otp_app = Keyword.get(unquote(opts), :otp_app) || raise Beacon.RuntimeError, "FIXME 1"
+      otp_app = Keyword.get(unquote(opts), :otp_app) || raise Beacon.RuntimeError, "FIXME missing otp_app"
 
-      proxy_options = Application.compile_env!(otp_app, :endpoint) || raise Beacon.RuntimeError, "FIXME 2"
-
-      session_options = proxy_options[:session] || raise Beacon.RuntimeError, "FIXME 3"
+      session_options = Keyword.get(unquote(opts), :session_options) || raise Beacon.RuntimeError, "FIXME missing session_options"
       Module.put_attribute(__MODULE__, :session_options, session_options)
 
-      endpoints = Keyword.get(unquote(opts), :endpoints, [])
-      Module.put_attribute(__MODULE__, :__beacon_proxy_endpoints__, endpoints)
-
-      fallback = Keyword.get(unquote(opts), :fallback) || raise Beacon.RuntimeError, "FIXME 4"
+      fallback = Keyword.get(unquote(opts), :fallback) || raise Beacon.RuntimeError, "FIXME missing fallback"
       Module.put_attribute(__MODULE__, :__beacon_proxy_fallback__, fallback)
 
       use Phoenix.Endpoint, otp_app: otp_app
@@ -36,8 +31,18 @@ defmodule Beacon.ProxyEndpoint do
 
       def proxy(conn, opts) do
         %{host: host} = conn
-        # TODO: generate pattern match clauses
-        endpoint = Enum.find(@__beacon_proxy_endpoints__, @__beacon_proxy_fallback__, &(&1.host() == host))
+
+        endpoint =
+          Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
+            %{endpoint: endpoint} = Beacon.Config.fetch!(site)
+
+            if endpoint.host() == host do
+              {:halt, endpoint}
+            else
+              {:cont, default}
+            end
+          end)
+
         endpoint.call(conn, endpoint.init(opts))
       end
     end
