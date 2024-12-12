@@ -21,5 +21,18 @@ defmodule Beacon.Plug do
   def init(_opts), do: []
 
   @impl Plug
-  def call(conn, _opts), do: Plug.Conn.put_session(conn, :beacon_variant_roll, Enum.random(1..100))
+  def call(conn, _opts) do
+    site =
+      case conn do
+        %{private: %{phoenix_live_view: {_page_live, _lv_opts, %{extra: %{session: %{"beacon_site" => site}}}}}} -> site
+        %{} -> nil
+      end
+
+    path_list = conn.path_params["path"]
+
+    case site && path_list && Beacon.RouterServer.lookup_page(site, path_list) do
+      nil -> conn
+      _page -> Plug.Conn.put_session(conn, "beacon_variant_roll", Enum.random(1..100))
+    end
+  end
 end
