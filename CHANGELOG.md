@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3 (2024-12-13)
+
+### Fixes
+
+  - Support LiveView v1.0.1
+  - Fix variant roll changing when fetching assets
+
 ## 0.3.2 (2024-12-11)
 
 ### Fixes
