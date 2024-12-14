@@ -6,6 +6,8 @@ defmodule Beacon.Private do
 
   # Should be avoided as much as possible.
 
+  @phoenix_live_view_version to_string(Application.spec(:phoenix_live_view)[:vsn])
+
   @doc """
   On page navigation, the request might actually hit a different site than the one defined by the current session.
 
@@ -20,7 +22,7 @@ defmodule Beacon.Private do
   We use the private function `Phoenix.LiveView.Route.live_link_info/3` in order to keep the same behavior as LV.
   """
   def site_from_session(endpoint, router, url, view) do
-    case Phoenix.LiveView.Route.live_link_info(endpoint, router, url) do
+    case live_link_info(endpoint, router, url) do
       {_,
        %{
          view: ^view,
@@ -34,6 +36,16 @@ defmodule Beacon.Private do
 
       _ ->
         nil
+    end
+  end
+
+  if Version.compare("1.0.0", @phoenix_live_view_version) in [:lt, :eq] do
+    defp live_link_info(endpoint, router, url) do
+      Phoenix.LiveView.Route.live_link_info_without_checks(endpoint, router, url)
+    end
+  else
+    defp live_link_info(endpoint, router, url) do
+      Phoenix.LiveView.Route.live_link_info(endpoint, router, url)
     end
   end
 end
