@@ -39,7 +39,7 @@ defmodule Beacon.Private do
     end
   end
 
-  if Version.compare("1.0.0", @phoenix_live_view_version) in [:lt, :eq] do
+  if Version.compare(@phoenix_live_view_version, "1.0.0") == :gt do
     defp live_link_info(endpoint, router, url) do
       Phoenix.LiveView.Route.live_link_info_without_checks(endpoint, router, url)
     end
