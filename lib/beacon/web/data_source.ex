@@ -7,8 +7,8 @@ defmodule Beacon.Web.DataSource do
     Beacon.apply_mfa(site, Beacon.Loader.fetch_live_data_module(site), :live_data, [path_info, params])
   end
 
-  def page_title(site, page_id, live_data, source) do
-    %{path: path, title: title} = page_assigns = page_assigns(site, page_id, source)
+  def page_title(site, page, live_data, source) do
+    %{path: path, title: title} = page_assigns = page_assigns(site, page, source)
 
     with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
       page_title
@@ -58,13 +58,14 @@ defmodule Beacon.Web.DataSource do
   end
 
   # only published pages will have the title evaluated for beacon
-  defp page_assigns(site, page_id, :beacon) do
-    Beacon.apply_mfa(site, Beacon.Loader.fetch_page_module(site, page_id), :page_assigns, [])
+  defp page_assigns(site, page, :beacon) do
+    Beacon.apply_mfa(site, Beacon.Loader.fetch_page_module(site, page.id), :page_assigns, [])
   end
 
   # beacon_live_admin needs the title for unpublished pages also
-  defp page_assigns(site, page_id, :admin) do
-    page = Beacon.Content.get_page(site, page_id)
+  defp page_assigns(site, page, :admin) do
+    # new pages are not yet in the database
+    page = if page.id, do: Beacon.Content.get_page(site, page.id), else: page
 
     %{
       id: page.id,

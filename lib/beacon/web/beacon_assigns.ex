@@ -74,7 +74,7 @@ defmodule Beacon.Web.BeaconAssigns do
     page_module = Beacon.Loader.Page.module_name(site, page.id)
     live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(query_params, ["path"]))
     path_params = Beacon.Router.path_params(page.path, path_info)
-    page_title = Beacon.Web.DataSource.page_title(site, page.id, live_data, source)
+    page_title = Beacon.Web.DataSource.page_title(site, page, live_data, source)
     components_module = Beacon.Loader.Components.module_name(site)
     info_handlers_module = Beacon.Loader.InfoHandlers.module_name(site)
     event_handlers_module = Beacon.Loader.EventHandlers.module_name(site)
