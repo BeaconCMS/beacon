@@ -44,8 +44,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     path = Keyword.fetch!(options, :path)
     validate_options!(site, path)
 
-    {igniter, router} = Igniter.Libs.Phoenix.select_router(igniter)
-    {igniter, [endpoint]} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
+    {igniter, router} = Beacon.Igniter.select_router!(igniter)
+    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
     repo = Igniter.Project.Module.module_name(igniter, "Repo")
 
     igniter
