@@ -70,7 +70,7 @@ defmodule Beacon.MixProject do
       {:image, "~> 0.40"},
       {:vix, "<= 0.30.0 or >= 0.31.1"},
       {:jason, "~> 1.0"},
-      {:oembed, "~> 0.4.1"},
+      {:oembed, "~> 0.5.0"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
