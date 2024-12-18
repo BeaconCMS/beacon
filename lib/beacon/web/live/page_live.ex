@@ -39,7 +39,7 @@ defmodule Beacon.Web.PageLive do
       end
 
     page = RouterServer.lookup_page!(site, path)
-    socket = Component.assign(socket, beacon: BeaconAssigns.new(site, page, variant_roll))
+    socket = Component.assign(socket, beacon: BeaconAssigns.new(page, variant_roll: variant_roll))
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
   end
@@ -130,16 +130,14 @@ defmodule Beacon.Web.PageLive do
       site ->
         %{"path" => path_info} = params
 
-        if socket.assigns.beacon.site != site do
-          if Beacon.Config.fetch!(site).mode == :live do
-            Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
-            Beacon.PubSub.subscribe_to_page(site, path_info)
-          end
+        if socket.assigns.beacon.site != site && Beacon.Config.fetch!(site).mode == :live do
+          Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
+          Beacon.PubSub.subscribe_to_page(site, path_info)
         end
 
         page = RouterServer.lookup_page!(site, path_info)
         live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
-        beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params, :beacon, socket.assigns.beacon.private.variant_roll)
+        beacon_assigns = BeaconAssigns.new(page, path_info: path_info, query_params: params, variant_roll: socket.assigns.beacon.private.variant_roll)
 
         socket =
           socket
@@ -151,7 +149,7 @@ defmodule Beacon.Web.PageLive do
           # TODO: remove deprecated @beacon_query_params
           |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
           |> Component.assign(:beacon, beacon_assigns)
-          |> Component.assign(:page_title, Beacon.Web.DataSource.page_title(site, page.id, live_data, :beacon))
+          |> Component.assign(:page_title, beacon_assigns.page.title)
 
         {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
     end

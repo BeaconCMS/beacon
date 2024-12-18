@@ -250,6 +250,8 @@ defmodule Beacon.Router do
     end)
   end
 
+  def path_params(_page_path, _path_info), do: %{}
+
   @doc false
   # Tells if a `beacon_site` is reachable in the current environment.
   #
