@@ -14,12 +14,7 @@ defmodule Beacon.Web.BeaconAssignsTest do
     Process.put(:__beacon_site__, site)
     Process.flag(:error_handler, Beacon.ErrorHandler)
 
-    [
-      socket: %Phoenix.LiveView.Socket{
-        assigns: %{__changed__: %{beacon: true}, beacon: %BeaconAssigns{}}
-      },
-      site: site
-    ]
+    [site: site]
   end
 
   test "build with site", %{site: site} do
@@ -29,10 +24,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = BeaconAssigns.new(site)
   end
 
-  test "build with published page resolves page title", %{site: site} do
+  test "build with published page resolves page title" do
     page = beacon_published_page_fixture(path: "/blog", title: "blog index")
 
-    assigns = BeaconAssigns.new(site, page, %{}, ["blog"], %{}, :beacon)
+    assigns = BeaconAssigns.new(page, path_info: ["blog"])
 
     assert %BeaconAssigns{
              site: @site,
@@ -43,10 +38,38 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with path info and query params", %{site: site} do
+  test "build with unpublished page stored in the database" do
+    page = beacon_page_fixture(path: "/blog", title: "blog index")
+
+    assigns = BeaconAssigns.new(page, path_info: ["blog"])
+
+    assert %BeaconAssigns{
+             site: @site,
+             page: %{path: "/blog", title: "blog index"},
+             private: %{
+               live_path: ["blog"]
+             }
+           } = assigns
+  end
+
+  test "build with new in-memory page " do
+    page = %Beacon.Content.Page{site: @site, path: "/blog", title: "blog index"}
+
+    assigns = BeaconAssigns.new(page, path_info: ["blog"])
+
+    assert %BeaconAssigns{
+             site: @site,
+             page: %{path: "/blog", title: "blog index"},
+             private: %{
+               live_path: ["blog"]
+             }
+           } = assigns
+  end
+
+  test "build with path info and query params" do
     page = beacon_published_page_fixture(path: "/blog")
 
-    assigns = BeaconAssigns.new(site, page, %{}, ["blog"], %{source: "search"}, :beacon)
+    assigns = BeaconAssigns.new(page, path_info: ["blog"], query_params: %{source: "search"})
 
     assert %BeaconAssigns{
              site: @site,
@@ -57,10 +80,10 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with path params", %{site: site} do
+  test "build with path params" do
     page = beacon_published_page_fixture(path: "/blog/:post")
 
-    assigns = BeaconAssigns.new(site, page, %{}, ["blog", "hello"], %{}, :beacon)
+    assigns = BeaconAssigns.new(page, path_info: ["blog", "hello"])
 
     assert %BeaconAssigns{
              site: @site,
@@ -68,13 +91,13 @@ defmodule Beacon.Web.BeaconAssignsTest do
            } = assigns
   end
 
-  test "build with live data", %{site: site} do
+  test "build with live data" do
     page = beacon_published_page_fixture(path: "/blog")
 
     live_data = beacon_live_data_fixture(path: "/blog")
     beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "customer_id", value: "123")
 
-    assigns = BeaconAssigns.new(site, page, live_data, ["blog"], %{}, :beacon)
+    assigns = BeaconAssigns.new(page, path_info: ["blog"])
 
     assert %BeaconAssigns{
              site: @site,
@@ -82,10 +105,5 @@ defmodule Beacon.Web.BeaconAssignsTest do
                live_data_keys: [:customer_id]
              }
            } = assigns
-  end
-
-  test "update/3", %{socket: socket} do
-    assert %{assigns: %{beacon: %BeaconAssigns{site: "one"}}} = BeaconAssigns.update(socket, :site, "one")
-    assert %{assigns: %{beacon: %BeaconAssigns{site: "two"}}} = BeaconAssigns.update(socket, :site, "two")
   end
 end
