@@ -2,19 +2,12 @@ Application.ensure_all_started(:postgrex)
 
 Beacon.BeaconTest.Repo.start_link()
 
-Application.put_env(:beacon, Beacon.BeaconTest.Endpoint,
-  url: [host: "localhost", port: 4000],
-  secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
-  live_view: [signing_salt: "ykjYicLHN3EuW0FO"],
-  render_errors: [view: Beacon.BeaconTest.ErrorView],
-  pubsub_server: Beacon.BeaconTest.PubSub,
-  check_origin: false,
-  debug_errors: true
-)
-
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: Beacon.BeaconTest.PubSub},
+    Beacon.BeaconTest.Endpoint,
+    Beacon.BeaconTest.EndpointB,
+    Beacon.BeaconTest.ProxyEndpoint,
     {Beacon,
      sites: [
        [
@@ -46,8 +39,15 @@ Supervisor.start_link(
        [
          site: :host_test,
          mode: :testing,
-         endpoint: Beacon.BeaconTest.Endpoint,
+         endpoint: Beacon.BeaconTest.EndpointB,
          router: Beacon.BeaconTest.Router,
+         repo: Beacon.BeaconTest.Repo
+       ],
+       [
+         site: :no_routes,
+         mode: :testing,
+         endpoint: Beacon.BeaconTest.Endpoint,
+         router: Beacon.BeaconTest.NoRoutesRouter,
          repo: Beacon.BeaconTest.Repo
        ],
        [
@@ -159,8 +159,7 @@ Supervisor.start_link(
            ]
          ]
        ]
-     ]},
-    Beacon.BeaconTest.Endpoint
+     ]}
   ],
   strategy: :one_for_one
 )

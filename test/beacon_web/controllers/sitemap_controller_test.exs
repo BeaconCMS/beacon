@@ -28,8 +28,6 @@ defmodule Beacon.Web.SitemapControllerTest do
            &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
            &lt;sitemapindex xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
              &lt;sitemap&gt;
-               &lt;loc&gt;http://host.com/sitemap.xml&lt;/loc&gt;
-             &lt;/sitemap&gt;&lt;sitemap&gt;
                &lt;loc&gt;http://localhost:4000/nested/media/sitemap.xml&lt;/loc&gt;
              &lt;/sitemap&gt;&lt;sitemap&gt;
                &lt;loc&gt;http://localhost:4000/nested/site/sitemap.xml&lt;/loc&gt;
@@ -37,6 +35,8 @@ defmodule Beacon.Web.SitemapControllerTest do
                &lt;loc&gt;http://localhost:4000/other/sitemap.xml&lt;/loc&gt;
              &lt;/sitemap&gt;&lt;sitemap&gt;
                &lt;loc&gt;http://localhost:4000/sitemap.xml&lt;/loc&gt;
+             &lt;/sitemap&gt;&lt;sitemap&gt;
+               &lt;loc&gt;http://site_b.com:4000/sitemap.xml&lt;/loc&gt;
              &lt;/sitemap&gt;
            &lt;/sitemapindex&gt;
            """

@@ -77,16 +77,6 @@ which is not a big problem when you have a couple of small sites, but that becom
 
 To avoid this problem, Beacon will selectively boot only the sites that are reachable in the current host, so in the example above,
 only `:site_a` will be booted in the node hosting `sitea.com` and only `:site_b` in the node hosting `siteb.com`.
-This behavior also applies to route conflicts as well, for example:
-
-```elixir
-scope do
-  get "/", PageController, :hello
-  beacon_site "/", site: :site_a
-end
-```
-
-Two routes in the same prefix will cause a conflict.
 
 Or this other example:
 
@@ -105,7 +95,7 @@ So Beacon won't try to boot sites that can't be reached, but a warning will be d
 
 ### Admin Sites Discovery
 
-BeaconLiveAdmin is designed to scan the all apps connected in the same cluster to find running sites
+[BeaconLiveAdmin](https://hex.pm/packages/beacon_live_admin) is designed to scan the all apps connected in the same cluster to find running sites
 and make them available in the admin interface as displayed below:
 
 ```mermaid
@@ -160,8 +150,11 @@ With these constraints in mind, let's check some deployment strategies.
 
 ## Strategies
 
-### Single application
-The most simple strategy is a single project with one or more sites and the admin interface in the same project.
+Below we'll describe some common deployment strategies but Beacon is not limited to the strategies below,
+you can adapt to your needs.
+
+### 1. Single application on same host
+The most simple strategy is a single project with one or more sites and the admin interface in the same host.
 
 ```elixir
 # endpoint
@@ -197,7 +190,7 @@ flowchart TD
     r3["mysite.com/admin"] --> Admin
 ```
 
-### Clustered single applications
+### 2. Clustered single applications
 Same project as the previous strategy but with multiple nodes deployed in the same cluster.
 
 ```mermaid
@@ -235,7 +228,7 @@ flowchart TD
     r3["mysite.com/admin"] --> Node2Admin
 ```
 
-### Clustered applications with separated admin
+### 3. Clustered applications with separated admin
 You can observe the previous strategy duplicates the admin interface in each node, which works fairly well when you have
 no more than a couple of sites, but that setup tends to become harder to manage and also become a waste of resources
 if you start booting more site and more nodes.
@@ -288,16 +281,26 @@ flowchart TD
 
 A huge benefit of this topology is the flexibility to protect the Admin interface behind a VPN or scale it independently from the main applications.
 
-### Multiple hosts in single project, separated hosting apps
+### 4. Multiple hosts in single project, separated hosting apps
 Still a single project but now serving multiple sites at the root path for different dynamic hosts.
 
-In this example let's assume the most simple scenario where you'd create a new app in the hosting platform
-to serve each domain:
+In this case we're still deploying just one application but serving multiple domains for each site:
+
+- :campaigns -> campaigns.mysite.com
+- :root -> mysite.com
+
+TODO: diagram
+
+TODO: gen task and constraints
+
+### 5. Multiple hosts in single project, separated hosting apps
+Similar to the previous strategy but this time we're splitting each domain into its own app:
 
 - App1 -> mysite.com
 - App2 -> campaigns.mysite.com
 
-That means isolated apps not connected to each other, just sharing the same codebase.
+That means deploying isolated apps for each domain/site, not connected to each other,
+but still sharing the same codebase.
 
 ```elixir
 # endpoint
@@ -349,7 +352,7 @@ flowchart TD
     r4["campaigns.mysite.com/admin"] --> Node2Admin
 ```
 
-### Multiple hosts in single project, connected hosting apps
+### 6. Multiple hosts in single project, connected hosting apps
 Similar setup as the previous strategy but now connecting the apps in the same cluster with a separated admin interface.
 
 ```elixir
