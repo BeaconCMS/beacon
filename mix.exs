@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.3.2"
+  @version "0.3.3"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -70,7 +70,7 @@ defmodule Beacon.MixProject do
       {:image, "~> 0.40"},
       {:vix, "<= 0.30.0 or >= 0.31.1"},
       {:jason, "~> 1.0"},
-      {:oembed, "~> 0.4.1"},
+      {:oembed, "~> 0.4"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
