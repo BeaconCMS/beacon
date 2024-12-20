@@ -118,7 +118,7 @@ defmodule Beacon.Router do
   @doc """
   Mounts a site in the `prefix` in your host application router.
 
-  This will automatically serve a `sitemap.xml` file from the `prefix` path defined for this site.
+  This will automatically serve `sitemap.xml` and `robots.txt` files from the `prefix` path defined for this site.
 
   ## Options
 
