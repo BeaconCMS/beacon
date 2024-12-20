@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
+  @moduledoc false
+
   use Igniter.Mix.Task
 
   @example "mix beacon.gen.proxy_endpoint"
