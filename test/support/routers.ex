@@ -1,5 +1,6 @@
 defmodule Beacon.BeaconTest.NoRoutesRouter do
   use Beacon.BeaconTest.Web, :router
+  use Beacon.Router
 end
 
 defmodule Beacon.BeaconTest.ReachTestRouter do
@@ -50,6 +51,11 @@ defmodule Beacon.BeaconTest.Router do
   scope "/" do
     pipe_through :browser
     beacon_sitemap_index "/sitemap_index.xml"
+  end
+
+  scope host: "site_b.com" do
+    pipe_through :browser
+    beacon_site "/", site: :host_test
   end
 
   scope "/nested" do
