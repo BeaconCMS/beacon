@@ -24,12 +24,12 @@ defmodule Beacon.Web.DataSourceTest do
   describe "page_title" do
     test "renders static content", %{site: site} do
       page = beacon_published_page_fixture(site: site, title: "my title")
-      assert DataSource.page_title(page.site, page.id, %{}, :beacon) == "my title"
+      assert DataSource.page_title(page, %{}) == "my title"
     end
 
     test "renders snippet", %{site: site} do
       page = beacon_published_page_fixture(site: site, title: "{{ page.path | upcase }}")
-      assert DataSource.page_title(page.site, page.id, %{}, :beacon) == "/HOME"
+      assert DataSource.page_title(page, %{}) == "/HOME"
     end
   end
 end

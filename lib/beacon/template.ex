@@ -27,8 +27,8 @@ defmodule Beacon.Template do
 
       page ->
         page_module = Beacon.Loader.fetch_page_module(page.site, page.id)
-        live_data = Beacon.Web.DataSource.live_data(site, path_info)
-        beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, query_params, :beacon)
+        live_data = Beacon.Web.DataSource.live_data(site, path_info, query_params)
+        beacon_assigns = BeaconAssigns.new(page, path_info: path_info, query_params: query_params)
         assigns = Map.put(live_data, :beacon, beacon_assigns)
         env = Beacon.Web.PageLive.make_env(site)
 
