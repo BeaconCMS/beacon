@@ -5,6 +5,7 @@
 ### Enhancements
   - Beacon will now automatically generate a `sitemap.xml` for each `beacon_site` defined in the Router
   - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
+  - Beacon will now automatically generate a `robots.txt` for each `beacon_site` defined in the Router
 
 ## 0.3.3 (2024-12-13)
 

@@ -118,7 +118,7 @@ defmodule Beacon.Router do
   @doc """
   Mounts a site in the `prefix` in your host application router.
 
-  This will automatically serve a `sitemap.xml` file from the `prefix` path defined for this site.
+  This will automatically serve `sitemap.xml` and `robots.txt` files from the `prefix` path defined for this site.
 
   ## Options
 
@@ -149,6 +149,7 @@ defmodule Beacon.Router do
           get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
 
           get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
+          get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
 
           # simulate a beacon page inside site prefix so we can check this site is reachable?/2
           get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
