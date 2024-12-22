@@ -4,6 +4,7 @@ defmodule Beacon.Lifecycle.Asset do
   alias Beacon.Lifecycle
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Processors
+  alias Beacon.MediaLibrary.Provider
 
   @behaviour Beacon.Lifecycle
 
@@ -48,4 +49,16 @@ defmodule Beacon.Lifecycle.Asset do
   end
 
   def variant_480w(asset, _metadata), do: {:cont, asset}
+
+  def delete_uploaded_asset(%MediaLibrary.Asset{site: site, media_type: media_type} = asset) do
+    config =
+      site
+      |> Beacon.Config.fetch!()
+      |> Beacon.Config.config_for_media_type(media_type)
+      |> Enum.into(%{})
+
+    Provider.soft_delete(asset, config)
+
+    {:cont, asset}
+  end
 end
