@@ -59,7 +59,7 @@ First add the [Igniter](https://hex.pm/packages/igniter) dependency into your pr
 ```elixir
 defp deps do
   [
-    {:igniter, "~> 0.4"}
+    {:igniter, "~> 0.5"}
   ]
 end
 ```
