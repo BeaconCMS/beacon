@@ -368,7 +368,7 @@ defmodule Beacon.Test.Fixtures do
 
     attrs = Map.put_new(attrs, :file_path, path_for(attrs.file_name))
 
-    UploadMetadata.new(attrs.site, attrs.file_path, name: attrs.file_name, size: attrs.file_size, extra: attrs.extra)
+    UploadMetadata.new(attrs.site, attrs.file_path, Node.self(), name: attrs.file_name, size: attrs.file_size, extra: attrs.extra)
   end
 
   defp path_for(file_name) do

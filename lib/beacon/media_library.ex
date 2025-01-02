@@ -347,4 +347,51 @@ defmodule Beacon.MediaLibrary do
       _ -> :error
     end
   end
+
+  @doc """
+  Returns the contents of an uploaded file as a binary.
+  """
+  @spec read_binary(UploadMetadata.t()) :: {:ok, binary()} | {:error, atom()}
+  def read_binary(metadata) do
+    cond do
+      metadata.node == Node.self() ->
+        File.read(metadata.path)
+
+      Node.connect(metadata.node) == true ->
+        :erpc.call(metadata.node, File, :read, [metadata.path])
+
+      :otherwise ->
+        {:error, :node_not_available}
+    end
+  end
+
+  @doc """
+  Same as `read_binary/1` but raises if the file is not found.
+  """
+  @spec read_binary!(UploadMetadata.t()) :: binary()
+  def read_binary!(metadata) do
+    case read_binary(metadata) do
+      {:ok, binary} -> binary
+      {:error, error} -> raise RuntimeError, "Failed to read #{metadata.path} on #{metadata.node} (#{error})"
+    end
+  end
+
+  @doc """
+  Returns information about the uploaded file.
+
+  See `File.stat/2` for more information.
+  """
+  @spec file_stat(String.t(), Node.t()) :: {:ok, File.Stat.t()} | {:error, :atom}
+  def file_stat(path, node) do
+    cond do
+      node == Node.self() ->
+        File.stat(path)
+
+      Node.connect(node) == true ->
+        :erpc.call(node, File, :stat, [path])
+
+      :otherwise ->
+        {:error, :node_not_available}
+    end
+  end
 end
