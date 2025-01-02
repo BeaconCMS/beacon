@@ -351,18 +351,11 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Returns the contents of an uploaded file as a binary.
   """
-  @spec read_binary(UploadMetadata.t()) :: {:ok, binary()} | {:error, atom()}
+  @spec read_binary(UploadMetadata.t()) :: {:ok, binary()} | {:error, any()}
   def read_binary(metadata) do
-    cond do
-      metadata.node == Node.self() ->
-        File.read(metadata.path)
-
-      Node.connect(metadata.node) == true ->
-        :erpc.call(metadata.node, File, :read, [metadata.path])
-
-      :otherwise ->
-        {:error, :node_not_available}
-    end
+    :erpc.call(metadata.node, File, :read, [metadata.path])
+  rescue
+    error -> {:error, error}
   end
 
   @doc """
@@ -372,7 +365,7 @@ defmodule Beacon.MediaLibrary do
   def read_binary!(metadata) do
     case read_binary(metadata) do
       {:ok, binary} -> binary
-      {:error, error} -> raise RuntimeError, "Failed to read #{metadata.path} on #{metadata.node} (#{error})"
+      {:error, error} -> raise RuntimeError, "Failed to read #{metadata.path} on #{metadata.node}: #{inspect(error)}"
     end
   end
 
@@ -381,17 +374,10 @@ defmodule Beacon.MediaLibrary do
 
   See `File.stat/2` for more information.
   """
-  @spec file_stat(String.t(), Node.t()) :: {:ok, File.Stat.t()} | {:error, :atom}
+  @spec file_stat(String.t(), Node.t()) :: {:ok, File.Stat.t()} | {:error, any()}
   def file_stat(path, node) do
-    cond do
-      node == Node.self() ->
-        File.stat(path)
-
-      Node.connect(node) == true ->
-        :erpc.call(node, File, :stat, [path])
-
-      :otherwise ->
-        {:error, :node_not_available}
-    end
+    :erpc.call(node, File, :stat, [path])
+  rescue
+    error -> {:error, error}
   end
 end
