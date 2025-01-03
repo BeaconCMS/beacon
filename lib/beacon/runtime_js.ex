@@ -57,7 +57,7 @@ defmodule Beacon.RuntimeJS do
   def current_hash do
     case :ets.match(:beacon_assets, {:js, {:"$1", :_, :_}}) do
       [[hash]] -> hash
-      _ -> ""
+      _ -> nil
     end
   end
 end

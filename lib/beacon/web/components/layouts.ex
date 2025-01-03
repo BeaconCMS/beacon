@@ -21,7 +21,7 @@ defmodule Beacon.Web.Layouts do
   """
   # TODO: style nonce
   def asset_path(conn, asset) when asset in [:css, :js] do
-    %{assigns: %{beacon: %{site: site}}} = conn
+    site = site(conn)
     prefix = router(conn).__beacon_scoped_prefix_for_site__(site)
 
     hash =
@@ -32,6 +32,13 @@ defmodule Beacon.Web.Layouts do
 
     path = Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/#{asset}-#{hash}")
     Phoenix.VerifiedRoutes.unverified_path(conn, conn.private.phoenix_router, path)
+  end
+
+  defp site(%{assigns: %{beacon: %{site: site}}}), do: site
+
+  defp site(_site) do
+    Logger.error("Failed to find site to serve assets")
+    nil
   end
 
   defp router(%Plug.Conn{private: %{phoenix_router: router}}), do: router
