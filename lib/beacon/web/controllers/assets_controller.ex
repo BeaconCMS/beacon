@@ -22,10 +22,6 @@ defmodule Beacon.Web.AssetsController do
     |> halt()
   end
 
-  def call(conn, asset) when asset in [:css, :js] do
-    raise Beacon.Web.ServerError, "failed to serve asset #{asset}"
-  end
-
   # TODO: encoding (compress) and caching
   def call(%{assigns: %{site: site}} = conn, :css_config) do
     {content, content_type} = content_and_type(site, :css_config)
@@ -40,6 +36,10 @@ defmodule Beacon.Web.AssetsController do
     |> put_resp_header("access-control-allow-origin", "*")
     |> send_resp(200, content)
     |> halt()
+  end
+
+  def call(_conn, asset) do
+    raise Beacon.Web.ServerError, "failed to serve asset #{asset}"
   end
 
   defp content_and_type(site, :css) do
