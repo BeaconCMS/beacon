@@ -77,18 +77,6 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def current_hash(site) do
-    case get_current_hash(site) do
-      nil ->
-        # retry once if not found
-        Beacon.Loader.load_runtime_css(site)
-        get_current_hash(site)
-
-      hash ->
-        hash
-    end
-  end
-
-  defp get_current_hash(site) do
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
       [[hash]] ->
         hash
