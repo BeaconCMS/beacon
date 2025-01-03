@@ -35,8 +35,9 @@ defmodule Beacon.Content do
   alias Beacon.Content.ComponentSlot
   alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
-  alias Beacon.Content.InfoHandler
   alias Beacon.Content.EventHandler
+  alias Beacon.Content.InfoHandler
+  alias Beacon.Content.JSHook
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -1246,6 +1247,58 @@ defmodule Beacon.Content do
       from s in Stylesheet,
         where: s.site == ^site
     )
+  end
+
+  # JS HOOKS
+
+  @doc """
+  Creates a JS Hook.
+
+  Returns `{:ok, js_hook}` if successful, otherwise `{:error, changeset}`.
+
+  ## Example
+
+      iex >create_js_hook(%{
+        site: :my_site,
+        name: "CloseOnGlobalClick",
+        content: ~S|
+        mounted() {
+          this.button = this.el.querySelector("button");
+          this.handle = () => {
+            if (this.button.matches("[data-opened]")) {
+              this.button.click();
+            }
+          };
+          window.addEventListener("click", this.handle);
+        },
+
+        destroyed() {
+          window.removeEventListener("click", this.handle);
+        },
+        |
+      })
+      {:ok, %JSHook{}}
+
+  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def create_js_hook(attrs \\ %{}) do
+    changeset = JSHook.changeset(%JSHook{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  List all JS Hooks for a site.
+  """
+  @doc type: :js_hooks
+  @spec list_js_hooks(Site.t()) :: [JSHook.t()]
+  def list_js_hooks(site) do
+    repo(site).all(from h in JSHook, where: h.site == ^site)
   end
 
   # COMPONENTS
