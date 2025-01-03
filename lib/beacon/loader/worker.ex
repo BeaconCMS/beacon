@@ -394,7 +394,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def handle_call(:load_runtime_js, _from, config) do
-    stop(Beacon.RuntimeJS.load!(), config)
+    stop(Beacon.RuntimeJS.load!(config.site), config)
   end
 
   def handle_call(:load_runtime_css, _from, config) do

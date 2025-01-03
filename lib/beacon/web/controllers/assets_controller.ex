@@ -43,7 +43,7 @@ defmodule Beacon.Web.AssetsController do
   end
 
   defp content_and_type(_site, :js) do
-    {Beacon.RuntimeJS.fetch(), "text/javascript"}
+    {Beacon.RuntimeJS.fetch(site), "text/javascript"}
   end
 
   defp content_and_type(site, :css_config) do

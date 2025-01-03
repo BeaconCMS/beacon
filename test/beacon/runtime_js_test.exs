@@ -4,7 +4,7 @@ defmodule Beacon.RuntimeJSTest do
   alias Beacon.RuntimeJS
 
   test "load" do
-    assert RuntimeJS.load!() == :ok
-    assert RuntimeJS.fetch() |> :erlang.size() > 100
+    assert RuntimeJS.load!(:my_site) == :ok
+    assert RuntimeJS.fetch(:my_site) |> :erlang.size() > 100
   end
 end

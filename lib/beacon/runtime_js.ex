@@ -5,7 +5,7 @@ defmodule Beacon.RuntimeJS do
   # merge beacon js with host application dependencies js
   # similar to https://github.com/phoenixframework/phoenix_live_dashboard/blob/9140f56c34201237f0feeeff747528eed2795c0c/lib/phoenix/live_dashboard/controllers/assets.ex#L6-L11
   # TODO: build and minfy at runtime with esbuild
-  def build do
+  def build(site) do
     assets =
       if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
         [
@@ -29,24 +29,25 @@ defmodule Beacon.RuntimeJS do
       |> Application.app_dir(["priv", "static", asset])
       |> File.read!()
       |> String.replace("//# sourceMappingURL=", "// ")
+      |> String.replace("// BEACON_HOOKS", get_hooks(site))
     end)
     |> IO.iodata_to_binary()
   end
 
-  def fetch do
-    case :ets.match(:beacon_assets, {:js, {:_, :_, :"$1"}}) do
+  def fetch(site) do
+    case :ets.match(:beacon_assets, {{site, :js}, {:_, :_, :"$1"}}) do
       [[js]] -> js
       _ -> "// JS not found"
     end
   end
 
-  def load! do
-    js = build()
+  def load!(site) do
+    js = build(site)
 
     case ExBrotli.compress(js) do
       {:ok, compressed} ->
         hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
-        true = :ets.insert(:beacon_assets, {:js, {hash, js, compressed}})
+        true = :ets.insert(:beacon_assets, {{site, :js}, {hash, js, compressed}})
         :ok
 
       error ->
@@ -54,10 +55,18 @@ defmodule Beacon.RuntimeJS do
     end
   end
 
-  def current_hash do
-    case :ets.match(:beacon_assets, {:js, {:"$1", :_, :_}}) do
+  def current_hash(site) do
+    case :ets.match(:beacon_assets, {{site, :js}, {:"$1", :_, :_}}) do
       [[hash]] -> hash
       _ -> ""
     end
+  end
+
+  defp get_hooks(site) do
+    site
+    |> Beacon.Content.list_js_hooks()
+    |> Enum.map_join(",\n", fn hook ->
+      "#{hook.name}: { #{hook.content} }"
+    end)
   end
 end
