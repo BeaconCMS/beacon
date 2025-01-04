@@ -49,14 +49,14 @@ defmodule Beacon.RuntimeCSS do
   def fetch(site, :compressed) do
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
       [[css]] -> css
-      _ -> "/* CSS not found for site #{inspect(site)} */"
+      _ -> nil
     end
   end
 
   def fetch(site, :uncompressed) do
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :"$1", :_}}) do
       [[css]] -> css
-      _ -> "/* CSS not found for site #{inspect(site)} */"
+      _ -> nil
     end
   end
 
@@ -78,19 +78,8 @@ defmodule Beacon.RuntimeCSS do
   @doc false
   def current_hash(site) do
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
-      [[hash]] ->
-        hash
-
-      found ->
-        Logger.warning("""
-        failed to fetch current css hash
-
-        Got:
-
-          #{inspect(found)}
-        """)
-
-        nil
+      [[hash]] -> hash
+      _ -> nil
     end
   end
 end

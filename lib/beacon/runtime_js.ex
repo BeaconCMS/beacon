@@ -36,7 +36,7 @@ defmodule Beacon.RuntimeJS do
   def fetch do
     case :ets.match(:beacon_assets, {:js, {:_, :_, :"$1"}}) do
       [[js]] -> js
-      _ -> "// JS not found"
+      _ -> nil
     end
   end
 

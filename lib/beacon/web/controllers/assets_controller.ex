@@ -6,7 +6,8 @@ defmodule Beacon.Web.AssetsController do
 
   def init(asset) when asset in [:css_config, :css, :js], do: asset
 
-  def call(%{assigns: %{site: site}, params: %{"md5" => hash}} = conn, asset) when asset in [:css, :js] when is_binary(hash) do
+  def call(%{params: %{"md5" => hash}} = conn, asset) when is_binary(hash) and asset in [:css, :js] do
+    site = site(conn)
     {content, content_type} = content_and_type(site, asset)
 
     # The static files are served for sites,
@@ -23,7 +24,8 @@ defmodule Beacon.Web.AssetsController do
   end
 
   # TODO: encoding (compress) and caching
-  def call(%{assigns: %{site: site}} = conn, :css_config) do
+  def call(conn, :css_config) do
+    site = site(conn)
     {content, content_type} = content_and_type(site, :css_config)
 
     # The static files are served for sites,
@@ -38,19 +40,25 @@ defmodule Beacon.Web.AssetsController do
     |> halt()
   end
 
-  def call(_conn, asset) do
-    raise Beacon.Web.ServerError, "failed to serve asset #{asset}"
-  end
+  def call(_conn, asset), do: server_error("failed to serve asset #{asset}")
+
+  defp site(%{assigns: %{site: site}}), do: site
+  defp site(_conn), do: server_error("failed to find site to serve assets")
 
   defp content_and_type(site, :css) do
-    {Beacon.RuntimeCSS.fetch(site), "text/css"}
+    content = Beacon.RuntimeCSS.fetch(site) || server_error("empty css content for site #{site}")
+    {content, "text/css"}
   end
 
-  defp content_and_type(_site, :js) do
-    {Beacon.RuntimeJS.fetch(), "text/javascript"}
+  defp content_and_type(site, :js) do
+    content = Beacon.RuntimeJS.fetch() || server_error("empty js content for site #{site}")
+    {content, "text/javascript"}
   end
 
   defp content_and_type(site, :css_config) do
-    {Beacon.RuntimeCSS.config(site), "text/javascript"}
+    content = Beacon.RuntimeCSS.config(site) || server_error("empty css_config for site #{site}")
+    {content, "text/javascript"}
   end
+
+  defp server_error(msg), do: raise(Beacon.Web.ServerError, msg)
 end
