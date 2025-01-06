@@ -397,6 +397,12 @@ defmodule Beacon.Loader do
     {:noreply, config}
   end
 
+  def handle_info({:content_updated, :js_hook, %{site: site}}, config) do
+    load_runtime_js(site)
+
+    {:noreply, config}
+  end
+
   def handle_info(msg, config) do
     raise inspect(msg)
     Logger.warning("Beacon.Loader can not handle the message: #{inspect(msg)}")

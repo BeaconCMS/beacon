@@ -17,17 +17,34 @@ defmodule Beacon.Content.JSHook do
   @type t :: %__MODULE__{}
 
   schema "beacon_js_hooks" do
-    field :content, :string
     field :name, :string
     field :site, Beacon.Types.Site
+
+    field :mounted, :string
+    field :beforeUpdate, :string
+    field :updated, :string
+    field :destroyed, :string
+    field :disconnected, :string
+    field :reconnected, :string
 
     timestamps()
   end
 
   @doc false
   def changeset(js_hook, attrs) do
+    required = [:name, :site]
+
+    optional = [
+      :mounted,
+      :beforeUpdate,
+      :updated,
+      :destroyed,
+      :disconnected,
+      :reconnected
+    ]
+
     js_hook
-    |> cast(attrs, [:name, :content, :site])
-    |> validate_required([:name, :content, :site])
+    |> cast(attrs, required ++ optional)
+    |> validate_required(required)
   end
 end

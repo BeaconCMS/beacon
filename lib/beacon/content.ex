@@ -1252,6 +1252,21 @@ defmodule Beacon.Content do
   # JS HOOKS
 
   @doc """
+  Returns an `%Ecto.Changeset{}` for tracking JS Hook changes.
+
+  ## Example
+
+      iex> change_js_hook(js_hook, %{name: "MyCustomHook"})
+      %Ecto.Changeset{data: %JSHook{}}
+
+  """
+  @doc type: :js_hooks
+  @spec change_js_hook(JSHook.t(), map()) :: Changeset.t()
+  def change_js_hook(%JSHook{} = js_hook, attrs \\ %{}) do
+    JSHook.changeset(js_hook, attrs)
+  end
+
+  @doc """
   Creates a JS Hook.
 
   Returns `{:ok, js_hook}` if successful, otherwise `{:error, changeset}`.
@@ -1261,20 +1276,17 @@ defmodule Beacon.Content do
       iex >create_js_hook(%{
         site: :my_site,
         name: "CloseOnGlobalClick",
-        content: ~S|
-        mounted() {
-          this.button = this.el.querySelector("button");
-          this.handle = () => {
-            if (this.button.matches("[data-opened]")) {
-              this.button.click();
-            }
-          };
-          window.addEventListener("click", this.handle);
-        },
-
-        destroyed() {
-          window.removeEventListener("click", this.handle);
-        },
+        mounted: ~S|
+        this.button = this.el.querySelector("button");
+        this.handle = () => {
+          if (this.button.matches("[data-opened]")) {
+            this.button.click();
+          }
+        };
+        window.addEventListener("click", this.handle);
+        |,
+        destroyed: ~S|
+        window.removeEventListener("click", this.handle);
         |
       })
       {:ok, %JSHook{}}
@@ -1293,12 +1305,35 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  List all JS Hooks for a site.
+  Lists all JS Hooks for a site.
   """
   @doc type: :js_hooks
   @spec list_js_hooks(Site.t()) :: [JSHook.t()]
   def list_js_hooks(site) do
     repo(site).all(from h in JSHook, where: h.site == ^site)
+  end
+
+  @doc """
+  Updates a JS Hook.
+  """
+  @doc type: :js_hooks
+  @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def update_js_hook(js_hook, attrs) do
+    js_hook
+    |> JSHook.changeset(attrs)
+    |> repo(js_hook).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  Deletes a JS Hook.
+  """
+  @doc type: :js_hooks
+  @spec delete_js_hook(JSHook.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def delete_js_hook(js_hook) do
+    js_hook
+    |> repo(js_hook).delete()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
   end
 
   # COMPONENTS

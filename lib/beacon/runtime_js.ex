@@ -66,7 +66,26 @@ defmodule Beacon.RuntimeJS do
     site
     |> Beacon.Content.list_js_hooks()
     |> Enum.map_join(",\n", fn hook ->
-      "#{hook.name}: { #{hook.content} }"
+      code =
+        IO.iodata_to_binary([
+          if(hook.mounted, do: format_callback(hook, :mounted), else: []),
+          if(hook.beforeUpdate, do: format_callback(hook, :beforeUpdate), else: []),
+          if(hook.updated, do: format_callback(hook, :updated), else: []),
+          if(hook.destroyed, do: format_callback(hook, :destroyed), else: []),
+          if(hook.disconnected, do: format_callback(hook, :disconnected), else: []),
+          if(hook.reconnected, do: format_callback(hook, :reconnected), else: [])
+        ])
+
+      "#{hook.name}: {\n  #{code}\n}"
     end)
+  end
+
+  defp format_callback(hook, callback) do
+    IO.iodata_to_binary([
+      to_string(callback),
+      "() {\n",
+      Map.fetch!(hook, callback),
+      "\n},\n"
+    ])
   end
 end
