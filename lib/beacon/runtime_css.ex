@@ -5,6 +5,8 @@ defmodule Beacon.RuntimeCSS do
   Beacon supports Tailwind by default implemented by `Beacon.RuntimeCSS.TailwindCompiler`,
   you can use that module as template to implement any ther CSS engine as needed.
   """
+
+  require Logger
   alias Beacon.Types.Site
 
   @doc """
@@ -76,8 +78,19 @@ defmodule Beacon.RuntimeCSS do
   @doc false
   def current_hash(site) do
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
-      [[hash]] -> hash
-      _ -> ""
+      [[hash]] ->
+        hash
+
+      found ->
+        Logger.warning("""
+        failed to fetch current css hash
+
+        Got:
+
+          #{inspect(found)}
+        """)
+
+        nil
     end
   end
 end

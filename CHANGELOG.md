@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+  - Fixed a bug where MediaLibrary could check for file contents on the wrong node in multi-node deployments
+
 ## 0.3.3 (2024-12-13)
 
 ### Fixes
