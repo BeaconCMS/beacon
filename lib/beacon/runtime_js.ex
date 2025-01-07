@@ -76,16 +76,17 @@ defmodule Beacon.RuntimeJS do
           if(hook.reconnected, do: format_callback(hook, :reconnected), else: [])
         ])
 
-      "#{hook.name}: {\n  #{code}\n}"
+      "    #{hook.name}: {\n#{code}    }"
     end)
   end
 
   defp format_callback(hook, callback) do
     IO.iodata_to_binary([
+      "      ",
       to_string(callback),
-      "() {\n",
-      Map.fetch!(hook, callback),
-      "\n},\n"
+      "() {\n        ",
+      Map.fetch!(hook, callback) |> String.replace("\n", "\n        "),
+      "\n      },\n"
     ])
   end
 end

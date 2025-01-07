@@ -140,7 +140,8 @@ defmodule Beacon.MixProject do
         "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
         "Functions: Live Data": &(&1[:type] == :live_data),
-        "Functions: Info Handlers": &(&1[:type] == :info_handlers)
+        "Functions: Info Handlers": &(&1[:type] == :info_handlers),
+        "Functions: JS Hooks": &(&1[:type] == :js_hooks)
       ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
       before_closing_body_tag: &before_closing_body_tag/1
@@ -225,6 +226,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ErrorPage,
         Beacon.Content.EventHandler,
         Beacon.Content.InfoHandler,
+        Beacon.Content.JSHook,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
         Beacon.Content.LayoutSnapshot,
