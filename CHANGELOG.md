@@ -2,36 +2,33 @@
 
 ## Unreleased
 
-### Fixes
+### Enhancements
+  - Added support for user-defined JS Hooks
 
+### Fixes
   - Fixed a bug where MediaLibrary could check for file contents on the wrong node in multi-node deployments
 
 ## 0.3.3 (2024-12-13)
 
 ### Fixes
-
   - Support LiveView v1.0.1
   - Fix variant roll changing when fetching assets
 
 ## 0.3.2 (2024-12-11)
 
 ### Fixes
-
   - Make the logic to find reachable sites less strict
   - Prevent components module reloading in manual mode
 
 ### Doc
-
   - Add missing instructions on Upgrade Guide v0.3.0 where to place the Beacon tuple
 
 ### Chore
-
   - Exclude Dialyzer files from package
 
 ## 0.3.1 (2024-12-10)
 
 ### Fixes
-
   - Avoid unloading imported dynamic Components modules without a replacement
 
 ## 0.3.0 (2024-12-05)
