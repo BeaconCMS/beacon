@@ -1305,6 +1305,18 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Creates a JS Hook, raising an error if unsuccessful.
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook!(map()) :: JSHook.t()
+  def create_js_hook!(attrs \\ %{}) do
+    case create_js_hook(attrs) do
+      {:ok, js_hook} -> js_hook
+      {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
   Lists all JS Hooks for a site.
   """
   @doc type: :js_hooks

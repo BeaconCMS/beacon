@@ -128,7 +128,7 @@ defmodule Beacon.Loader do
   end
 
   def load_runtime_js(site) do
-    GenServer.call(worker(site), :load_runtime_js, :timer.minutes(2))
+    call_worker(site, :load_runtime_js, {:load_runtime_js, [site]}, timeout: :timer.minutes(2))
   end
 
   def load_runtime_css(site) do
@@ -243,12 +243,13 @@ defmodule Beacon.Loader do
 
   # call worker asyncly or syncly depending on the current site mode
   # or skip if mode is manual so we don't load modules
-  defp call_worker(site, async_request, sync_request) do
+  defp call_worker(site, async_request, sync_request, opts \\ []) do
     mode = Beacon.Config.fetch!(site).mode
+    timeout = Keyword.get(opts, :timeout, @timeout)
 
     case mode do
       :live ->
-        GenServer.call(worker(site), async_request, @timeout)
+        GenServer.call(worker(site), async_request, timeout)
 
       :testing ->
         {sync_fun, sync_args} = sync_request

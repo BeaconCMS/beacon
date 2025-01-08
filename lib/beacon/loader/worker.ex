@@ -535,6 +535,10 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
+  def load_runtime_js(site) do
+    Beacon.RuntimeJS.load!(site)
+  end
+
   defp stop(reply, state) do
     {:stop, {:shutdown, :loaded}, reply, state}
   end

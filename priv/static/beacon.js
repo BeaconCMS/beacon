@@ -18,7 +18,7 @@ var Beacon = (() => {
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
   var Hooks = {
-// BEACON_HOOKS 
+/* BEACON_HOOKS */ 
   }
   var liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {
     params: { _csrf_token: csrfToken },
