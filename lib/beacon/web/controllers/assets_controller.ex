@@ -6,7 +6,7 @@ defmodule Beacon.Web.AssetsController do
 
   def init(asset) when asset in [:css_config, :css, :js], do: asset
 
-  def call(%{assigns: %{site: site}} = conn, asset) when asset in [:css, :js] do
+  def call(%{assigns: %{site: site}, params: %{"md5" => hash}} = conn, asset) when asset in [:css, :js] when is_binary(hash) do
     {content, content_type} = content_and_type(site, asset)
 
     # The static files are served for sites,
@@ -36,6 +36,10 @@ defmodule Beacon.Web.AssetsController do
     |> put_resp_header("access-control-allow-origin", "*")
     |> send_resp(200, content)
     |> halt()
+  end
+
+  def call(_conn, asset) do
+    raise Beacon.Web.ServerError, "failed to serve asset #{asset}"
   end
 
   defp content_and_type(site, :css) do
