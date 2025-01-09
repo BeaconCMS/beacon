@@ -106,7 +106,7 @@ defmodule Beacon do
 
           :else ->
             Logger.warning(
-              "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+              "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshooting.html"
             )
 
             acc
@@ -130,13 +130,13 @@ defmodule Beacon do
   in the `:live` mode to activate resource loading and PubSub events broadcasting.
 
   Note that `:live` sites that are not reachable will not be started,
-  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topology.html) for more info.
+  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topologies.html) for more info.
   """
   @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child() | {:error, :unreachable}
   def boot(%Beacon.Config{} = config) do
     if config.mode == :live && !Beacon.Router.reachable?(config) do
       Logger.error(
-        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshooting.html"
       )
 
       {:error, :unreachable}
