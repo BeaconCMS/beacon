@@ -153,4 +153,56 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
   end
+
+  describe "--host option" do
+    setup do
+      [project: phoenix_project()]
+    end
+
+    test "init test", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+      |> assert_creates("lib/test_web/example_endpoint.ex", """
+      defmodule TestWeb.ExampleEndpoint do
+        use Phoenix.Endpoint, otp_app: :test
+
+        @session_options Application.compile_env!(:test, :session_options)
+
+        # socket /live must be in the proxy endpoint
+
+        # Serve at "/" the static files from "priv/static" directory.
+        #
+        # You should set gzip to true if you are running phx.digest
+        # when deploying your static files in production.
+        plug Plug.Static,
+          at: "/",
+          from: :test,
+          gzip: false,
+          only: TestWeb.static_paths()
+
+        # Code reloading can be explicitly enabled under the
+        # :code_reloader configuration of your endpoint.
+        if code_reloading? do
+          socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+          plug Phoenix.LiveReloader
+          plug Phoenix.CodeReloader
+          plug Phoenix.Ecto.CheckRepoStatus, otp_app: :test
+        end
+
+        plug Plug.RequestId
+        plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+        plug Plug.Parsers,
+          parsers: [:urlencoded, :multipart, :json],
+          pass: ["*/*"],
+          son_decoder: Phoenix.json_library()
+
+        plug Plug.MethodOverride
+        plug Plug.Head
+        plug Plug.Session, @session_options
+        plug TestWeb.Router
+      end
+      """)
+    end
+  end
 end
