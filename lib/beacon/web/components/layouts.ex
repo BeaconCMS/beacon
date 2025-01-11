@@ -27,7 +27,7 @@ defmodule Beacon.Web.Layouts do
     hash =
       cond do
         asset == :css -> Beacon.RuntimeCSS.current_hash(site)
-        asset == :js -> Beacon.RuntimeJS.current_hash()
+        asset == :js -> Beacon.RuntimeJS.current_hash(site)
       end
 
     path = Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/#{asset}-#{hash}")
