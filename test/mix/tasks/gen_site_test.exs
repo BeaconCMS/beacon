@@ -243,11 +243,17 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
       |> assert_has_patch("config/runtime.exs", """
-         6 + |  endpoint: TestWeb.ExampleEndpoint,
+         3 + |config :test, TestWeb.ExampleEndpoint,
+         4 + |  url: [host: "example.com", port: 443, scheme: "https"],
+         5 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
+         6 + |  secret_key_base: secret_key_base
+         7 + |
       """)
       |> assert_has_patch("config/runtime.exs", """
-        29 - |  config :test, TestWeb.Endpoint, server: true
-        29 + |  config :test, TestWeb.ProxyEndpoint, server: true
+         8 + |config :test, TestWeb.ProxyEndpoint, check_origin: ["example.com"]
+      """)
+      |> assert_has_patch("config/runtime.exs", """
+         9 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
       """)
     end
   end

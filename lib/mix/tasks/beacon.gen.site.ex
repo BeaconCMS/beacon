@@ -49,7 +49,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     otp_app = Igniter.Project.Application.app_name(igniter)
     web_module = Igniter.Libs.Phoenix.web_module(igniter)
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
-    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
     repo = Igniter.Project.Module.module_name(igniter, "Repo")
 
     igniter
@@ -57,8 +56,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> add_use_beacon_in_router(router)
     |> add_beacon_pipeline_in_router(router)
     |> mount_site_in_router(router, site, path, web_module)
-    |> add_site_config_in_config_runtime(site, repo, router, endpoint)
-    |> add_beacon_config_in_app_supervisor(site, repo, endpoint)
+    |> add_site_config_in_config_runtime(site, repo, router, host)
+    |> add_beacon_config_in_app_supervisor(site, repo, router)
     |> maybe_create_proxy_endpoint(host)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
     |> maybe_configure_new_endpoint(host, otp_app)
@@ -174,7 +173,13 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     end
   end
 
-  defp add_site_config_in_config_runtime(igniter, site, repo, router, endpoint) do
+  defp add_site_config_in_config_runtime(igniter, site, repo, router, host) do
+    {igniter, endpoint} =
+      case host do
+        nil -> Beacon.Igniter.select_endpoint!(igniter, router)
+        host -> {igniter, new_endpoint_module(igniter, host)}
+      end
+
     Igniter.Project.Config.configure(
       igniter,
       "runtime.exs",
@@ -187,7 +192,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp add_beacon_config_in_app_supervisor(igniter, site, repo, endpoint) do
+  defp add_beacon_config_in_app_supervisor(igniter, site, repo, router) do
+    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
+
     Igniter.Project.Application.add_new_child(
       igniter,
       {Beacon,
@@ -282,6 +289,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   defp maybe_configure_new_endpoint(igniter, host, otp_app) do
     new_endpoint = new_endpoint_module(igniter, host)
+    proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
     error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
     error_json = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorJSON")
     pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
@@ -336,7 +344,24 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
        """)}
     )
     # runtime.exs
-    |> Igniter.Project.Config.configure("runtime.exs")
+    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :url, :host], host)
+    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :url, :port], 443)
+    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :url, :scheme], "https")
+    |> Igniter.Project.Config.configure(
+      "runtime.exs",
+      otp_app,
+      [new_endpoint, :http, :ip],
+      {:code, Sourceror.parse_string!("{0, 0, 0, 0, 0, 0, 0, 0}")}
+    )
+    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :http, :port], {:code, Sourceror.parse_string!("port")})
+    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :secret_key_base], {:code, Sourceror.parse_string!("secret_key_base")})
+    |> Igniter.Project.Config.configure(
+      "runtime.exs",
+      otp_app,
+      [proxy_endpoint, :check_origin],
+      [],
+      updater: fn zipper -> Igniter.Code.List.append_to_list(zipper, host) end
+    )
   end
 
   defp new_endpoint_module(igniter, host) do

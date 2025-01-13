@@ -45,17 +45,19 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   end
 
   defp create_proxy_endpoint_module(igniter, otp_app, fallback_endpoint, proxy_endpoint_module_name) do
-    if Igniter.Project.Module.module_exists(igniter, proxy_endpoint_module_name) do
-      Igniter.add_notice(igniter, """
-      Module #{inspect(proxy_endpoint_module_name)} already exists. Skipping.
-      """)
-    else
-      Igniter.Project.Module.create_module(igniter, proxy_endpoint_module_name, """
-        use Beacon.ProxyEndpoint,
-          otp_app: #{inspect(otp_app)},
-          session_options: Application.compile_env!(#{inspect(otp_app)}, :session_options),
-          fallback: #{inspect(fallback_endpoint)}
-      """)
+    case Igniter.Project.Module.module_exists(igniter, proxy_endpoint_module_name) do
+      {true, igniter} ->
+        Igniter.add_notice(igniter, """
+        Module #{inspect(proxy_endpoint_module_name)} already exists. Skipping.
+        """)
+
+      {false, igniter} ->
+        Igniter.Project.Module.create_module(igniter, proxy_endpoint_module_name, """
+          use Beacon.ProxyEndpoint,
+            otp_app: #{inspect(otp_app)},
+            session_options: Application.compile_env!(#{inspect(otp_app)}, :session_options),
+            fallback: #{inspect(fallback_endpoint)}
+        """)
     end
   end
 
@@ -93,6 +95,12 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       otp_app,
       [proxy_endpoint_module_name, :live_view, :signing_salt],
       signing_salt
+    )
+    |> Igniter.Project.Config.configure(
+      "runtime.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :check_origin],
+      {:code, Sourceror.parse_string!("[]")}
     )
   end
 
