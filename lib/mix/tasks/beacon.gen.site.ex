@@ -238,9 +238,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     web_module = Igniter.Libs.Phoenix.web_module(igniter)
 
     Igniter.Project.Module.create_module(igniter, module_name, """
-    use Phoenix.Endpoint, otp_app: #{otp_app}
+    use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
 
-    @session_options Application.compile_env!(#{otp_app}, :session_options)
+    @session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)
 
     # socket /live must be in the proxy endpoint
 
@@ -250,7 +250,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     # when deploying your static files in production.
     plug Plug.Static,
       at: "/",
-      from: #{otp_app},
+      from: #{inspect(otp_app)},
       gzip: false,
       only: #{web_module}.static_paths()
 
@@ -260,7 +260,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
       plug Phoenix.LiveReloader
       plug Phoenix.CodeReloader
-      plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{otp_app}
+      plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{inspect(otp_app)}
     end
 
     plug Plug.RequestId
