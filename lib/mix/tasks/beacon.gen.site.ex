@@ -252,7 +252,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       at: "/",
       from: #{inspect(otp_app)},
       gzip: false,
-      only: #{web_module}.static_paths()
+      only: #{inspect(web_module)}.static_paths()
 
     # Code reloading can be explicitly enabled under the
     # :code_reloader configuration of your endpoint.
@@ -274,7 +274,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     plug Plug.MethodOverride
     plug Plug.Head
     plug Plug.Session, @session_options
-    plug #{web_module}.Router
+    plug #{inspect(web_module)}.Router
     """)
   end
 end
