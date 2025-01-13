@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   use Igniter.Mix.Task
 
   @example "mix beacon.gen.proxy_endpoint"
-  @shortdoc "TODO"
+  @shortdoc "Generates a ProxyEndpoint in the current project, enabling Beacon to serve sites at multiple hosts."
 
   @moduledoc """
   #{@shortdoc}
@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
     {igniter, fallback_endpoint} = Beacon.Igniter.select_endpoint(igniter, router, "Select a fallback endpoint (default app Endpoint):")
     proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
-    signing_salt = Keyword.get_lazy(igniter.args.options, :signing_salt, fn -> random_string(8) end)
+    signing_salt = Keyword.get_lazy(igniter.args.argv, :signing_salt, fn -> random_string(8) end)
 
     igniter
     |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
@@ -38,7 +38,9 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name, signing_salt)
     |> update_fallback_endpoint_signing_salt(otp_app, fallback_endpoint, signing_salt)
     |> Igniter.add_notice("""
-    TODO
+    ProxyEndpoint generated successfully.
+
+    This enables your application to serve sites at multiple hosts, each with their own Endpoint.
     """)
   end
 
@@ -96,7 +98,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   defp update_fallback_endpoint_signing_salt(igniter, otp_app, fallback_endpoint, signing_salt) do
     fallback_endpoint = String.to_atom("#{fallback_endpoint}")
-    dbg(fallback_endpoint)
 
     Igniter.Project.Config.configure(
       igniter,
@@ -108,6 +109,10 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   end
 
   # https://github.com/phoenixframework/phoenix/blob/c9b431f3a5d3bdc6a1d0ff3c29a229226e991195/installer/lib/phx_new/generator.ex#L451
-  defp random_string(length),
-    do: :crypto.strong_rand_bytes(length) |> Base.encode64() |> binary_part(0, length)
+  defp random_string(length) do
+    length
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode64()
+    |> binary_part(0, length)
+  end
 end
