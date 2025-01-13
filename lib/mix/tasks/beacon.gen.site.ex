@@ -47,6 +47,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     validate_options!(site, path, host)
 
     otp_app = Igniter.Project.Application.app_name(igniter)
+    web_module = Igniter.Libs.Phoenix.web_module(igniter)
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
     {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
     repo = Igniter.Project.Module.module_name(igniter, "Repo")
@@ -55,11 +56,11 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> create_migration(repo)
     |> add_use_beacon_in_router(router)
     |> add_beacon_pipeline_in_router(router)
-    |> mount_site_in_router(router, site, path)
+    |> mount_site_in_router(router, site, path, web_module)
     |> add_site_config_in_config_runtime(site, repo, router, endpoint)
     |> add_beacon_config_in_app_supervisor(site, repo, endpoint)
     |> maybe_create_proxy_endpoint(host)
-    |> maybe_create_new_endpoint(host, otp_app)
+    |> maybe_create_new_endpoint(host, otp_app, web_module)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
 
@@ -140,7 +141,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp mount_site_in_router(igniter, router, site, path) do
+  defp mount_site_in_router(igniter, router, site, path, web_module) do
     case Igniter.Project.Module.find_module(igniter, router) do
       {:ok, {_igniter, _source, zipper}} ->
         exists? =
@@ -163,7 +164,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
             """,
             with_pipelines: [:browser, :beacon],
             router: router,
-            arg2: Igniter.Libs.Phoenix.web_module(igniter)
+            arg2: web_module
           )
         end
 
@@ -230,12 +231,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   defp maybe_create_new_endpoint(igniter, nil, _), do: igniter
 
-  defp maybe_create_new_endpoint(igniter, host, otp_app) do
+  defp maybe_create_new_endpoint(igniter, host, otp_app, web_module) do
     [implicit_prefix | _] = String.split(host, ".")
-
-    otp_app = Igniter.Project.Application.app_name(igniter)
     module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
-    web_module = Igniter.Libs.Phoenix.web_module(igniter)
 
     Igniter.Project.Module.create_module(igniter, module_name, """
     use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
