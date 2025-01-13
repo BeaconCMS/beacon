@@ -159,7 +159,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       [project: phoenix_project()]
     end
 
-    test "init test", %{project: project} do
+    test "creates endpoint", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
       |> assert_creates("lib/test_web/example_endpoint.ex", """
@@ -202,6 +202,52 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         plug Plug.Session, @session_options
         plug TestWeb.Router
       end
+      """)
+    end
+
+    test "updates config.exs", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+      |> assert_has_patch("config/config.exs", """
+         10 + |config :test, TestWeb.ExampleEndpoint,
+         11 + |  url: [host: "localhost"],
+         12 + |  adapter: Bandit.PhoenixAdapter,
+         13 + |  render_errors: [
+         14 + |    formats: [html: TestWeb.ErrorHTML, json: TestWeb.ErrorJSON],
+         15 + |    layout: false
+         16 + |  ],
+         17 + |  pubsub_server: Test.PubSub,
+         18 + |  live_view: [signing_salt: "O68x1k5A"]
+      """)
+    end
+
+    test "updates dev.exs", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+      |> assert_has_patch("config/dev.exs", """
+         3 + |config :test, TestWeb.ExampleEndpoint,
+         4 + |  http: [ip: {127, 0, 0, 1}, port: 4002],
+         5 + |  check_origin: false,
+         6 + |  code_reloader: true,
+         7 + |  debug_errors: true,
+         8 + |  secret_key_base: "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp",
+         9 + |  watchers: [
+        10 + |    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+        11 + |    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+        12 + |  ]
+        13 + |
+      """)
+    end
+
+    test "updates runtime.exs", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+      |> assert_has_patch("config/runtime.exs", """
+         6 + |  endpoint: TestWeb.ExampleEndpoint,
+      """)
+      |> assert_has_patch("config/runtime.exs", """
+        29 - |  config :test, TestWeb.Endpoint, server: true
+        29 + |  config :test, TestWeb.ProxyEndpoint, server: true
       """)
     end
   end

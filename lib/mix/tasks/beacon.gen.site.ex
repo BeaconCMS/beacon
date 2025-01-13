@@ -61,6 +61,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> add_beacon_config_in_app_supervisor(site, repo, endpoint)
     |> maybe_create_proxy_endpoint(host)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
+    |> maybe_configure_new_endpoint(host, otp_app)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
 
@@ -232,47 +233,114 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_create_new_endpoint(igniter, nil, _, _), do: igniter
 
   defp maybe_create_new_endpoint(igniter, host, otp_app, web_module) do
+    Igniter.Project.Module.create_module(
+      igniter,
+      new_endpoint_module(igniter, host),
+      """
+      use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
+
+      @session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)
+
+      # socket /live must be in the proxy endpoint
+
+      # Serve at "/" the static files from "priv/static" directory.
+      #
+      # You should set gzip to true if you are running phx.digest
+      # when deploying your static files in production.
+      plug Plug.Static,
+        at: "/",
+        from: #{inspect(otp_app)},
+        gzip: false,
+        only: #{inspect(web_module)}.static_paths()
+
+      # Code reloading can be explicitly enabled under the
+      # :code_reloader configuration of your endpoint.
+      if code_reloading? do
+        socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+        plug Phoenix.LiveReloader
+        plug Phoenix.CodeReloader
+        plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{inspect(otp_app)}
+      end
+
+      plug Plug.RequestId
+      plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :multipart, :json],
+        pass: ["*/*"],
+        json_decoder: Phoenix.json_library()
+
+      plug Plug.MethodOverride
+      plug Plug.Head
+      plug Plug.Session, @session_options
+      plug #{inspect(web_module)}.Router
+      """
+    )
+  end
+
+  defp maybe_configure_new_endpoint(igniter, nil, _), do: igniter
+
+  defp maybe_configure_new_endpoint(igniter, host, otp_app) do
+    new_endpoint = new_endpoint_module(igniter, host)
+    error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
+    error_json = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorJSON")
+    pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
+
+    igniter
+    # config.exs
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :url, :host], "localhost")
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :adapter], {:code, Sourceror.parse_string!("Bandit.PhoenixAdapter")})
+    |> Igniter.Project.Config.configure(
+      "config.exs",
+      otp_app,
+      [new_endpoint, :render_errors],
+      {:code,
+       Sourceror.parse_string!("""
+       [
+         formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
+         layout: false
+       ]
+       """)}
+    )
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :pubsub_server], pubsub)
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :live_view, :signing_salt], "O68x1k5A")
+    # dev.exs
+    # TODO: ensure port valid
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [new_endpoint, :http],
+      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: 4002]")}
+    )
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :check_origin], {:code, Sourceror.parse_string!("false")})
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :code_reloader], {:code, Sourceror.parse_string!("true")})
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :debug_errors], {:code, Sourceror.parse_string!("true")})
+    # TODO: ensure secret key valid
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [new_endpoint, :secret_key_base],
+      "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
+    )
+    # TODO: beacon_tailwind_config watcher
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [new_endpoint, :watchers],
+      {:code,
+       Sourceror.parse_string!("""
+       [
+         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+       ]
+       """)}
+    )
+    # runtime.exs
+    |> Igniter.Project.Config.configure("runtime.exs")
+  end
+
+  defp new_endpoint_module(igniter, host) do
     [implicit_prefix | _] = String.split(host, ".")
-    module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
-
-    Igniter.Project.Module.create_module(igniter, module_name, """
-    use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
-
-    @session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)
-
-    # socket /live must be in the proxy endpoint
-
-    # Serve at "/" the static files from "priv/static" directory.
-    #
-    # You should set gzip to true if you are running phx.digest
-    # when deploying your static files in production.
-    plug Plug.Static,
-      at: "/",
-      from: #{inspect(otp_app)},
-      gzip: false,
-      only: #{inspect(web_module)}.static_paths()
-
-    # Code reloading can be explicitly enabled under the
-    # :code_reloader configuration of your endpoint.
-    if code_reloading? do
-      socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-      plug Phoenix.LiveReloader
-      plug Phoenix.CodeReloader
-      plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{inspect(otp_app)}
-    end
-
-    plug Plug.RequestId
-    plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-
-    plug Plug.Parsers,
-      parsers: [:urlencoded, :multipart, :json],
-      pass: ["*/*"],
-      json_decoder: Phoenix.json_library()
-
-    plug Plug.MethodOverride
-    plug Plug.Head
-    plug Plug.Session, @session_options
-    plug #{inspect(web_module)}.Router
-    """)
+    Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
   end
 end
