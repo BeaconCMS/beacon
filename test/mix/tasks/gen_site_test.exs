@@ -195,7 +195,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         plug Plug.Parsers,
           parsers: [:urlencoded, :multipart, :json],
           pass: ["*/*"],
-          son_decoder: Phoenix.json_library()
+          json_decoder: Phoenix.json_library()
 
         plug Plug.MethodOverride
         plug Plug.Head
