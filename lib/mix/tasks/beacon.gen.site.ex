@@ -233,12 +233,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_create_new_endpoint(igniter, host, otp_app) do
     [implicit_prefix | _] = String.split(host, ".")
 
-    module_name =
-      Module.concat([
-        Mix.Phoenix.base(),
-        "#{String.capitalize(implicit_prefix)}Endpoint"
-      ])
-      |> IO.inspect()
+    module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
 
     Igniter.Project.Module.create_module(igniter, module_name, """
     use Phoenix.Endpoint, otp_app: :beacon_demo
