@@ -229,7 +229,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_create_proxy_endpoint(igniter, nil), do: igniter
   defp maybe_create_proxy_endpoint(igniter, _host), do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint")
 
-  defp maybe_create_new_endpoint(igniter, nil, _), do: igniter
+  defp maybe_create_new_endpoint(igniter, nil, _, _), do: igniter
 
   defp maybe_create_new_endpoint(igniter, host, otp_app, web_module) do
     [implicit_prefix | _] = String.split(host, ".")
