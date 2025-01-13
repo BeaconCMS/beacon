@@ -233,12 +233,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_create_new_endpoint(igniter, host, otp_app) do
     [implicit_prefix | _] = String.split(host, ".")
 
+    otp_app = Igniter.Project.Application.app_name(igniter)
     module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
+    web_module = Igniter.Libs.Phoenix.web_module(igniter)
 
     Igniter.Project.Module.create_module(igniter, module_name, """
-    use Phoenix.Endpoint, otp_app: :beacon_demo
+    use Phoenix.Endpoint, otp_app: #{otp_app}
 
-    @session_options Application.compile_env!(:beacon_demo, :session_options)
+    @session_options Application.compile_env!(#{otp_app}, :session_options)
 
     # socket /live must be in the proxy endpoint
 
@@ -248,9 +250,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     # when deploying your static files in production.
     plug Plug.Static,
       at: "/",
-      from: :beacon_demo,
+      from: #{otp_app},
       gzip: false,
-      only: BeaconDemoWeb.static_paths()
+      only: #{web_module}.static_paths()
 
     # Code reloading can be explicitly enabled under the
     # :code_reloader configuration of your endpoint.
@@ -258,7 +260,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
       plug Phoenix.LiveReloader
       plug Phoenix.CodeReloader
-      plug Phoenix.Ecto.CheckRepoStatus, otp_app: :beacon_demo
+      plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{otp_app}
     end
 
     plug Plug.RequestId
@@ -272,7 +274,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     plug Plug.MethodOverride
     plug Plug.Head
     plug Plug.Session, @session_options
-    plug BeaconDemoWeb.Router
+    plug #{web_module}.Router
     """)
   end
 end
