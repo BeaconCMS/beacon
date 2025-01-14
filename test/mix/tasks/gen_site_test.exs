@@ -256,5 +256,25 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
          9 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
       """)
     end
+
+    test "updates application.ex", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+      |> assert_has_patch("lib/test/application.ex", """
+        14 + | TestWeb.ExampleEndpoint,
+      """)
+    end
+
+    test "updates router", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+      |> assert_has_patch("lib/test_web/router.ex", """
+        23 + |  scope "/", host: "example.com" do
+        24 + |    pipe_through [:browser, :beacon]
+        25 + |    beacon_site "/", site: :my_site
+        26 + |  end
+        27 + |
+      """)
+    end
   end
 end

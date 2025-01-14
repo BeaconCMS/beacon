@@ -55,12 +55,13 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> create_migration(repo)
     |> add_use_beacon_in_router(router)
     |> add_beacon_pipeline_in_router(router)
-    |> mount_site_in_router(router, site, path, web_module)
+    |> mount_site_in_router(router, site, path, host)
     |> add_site_config_in_config_runtime(site, repo, router, host)
     |> add_beacon_config_in_app_supervisor(site, repo, router)
     |> maybe_create_proxy_endpoint(host)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
     |> maybe_configure_new_endpoint(host, otp_app)
+    |> maybe_add_new_endpoint_to_application(host, repo)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
 
@@ -141,7 +142,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp mount_site_in_router(igniter, router, site, path, web_module) do
+  defp mount_site_in_router(igniter, router, site, path, host) do
     case Igniter.Project.Module.find_module(igniter, router) do
       {:ok, {_igniter, _source, zipper}} ->
         exists? =
@@ -156,16 +157,17 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
             "Site already exists: #{site}, skipping creation."
           )
         else
-          Igniter.Libs.Phoenix.append_to_scope(
-            igniter,
-            "/",
+          content =
             """
             beacon_site #{inspect(path)}, site: #{inspect(site)}
-            """,
-            with_pipelines: [:browser, :beacon],
-            router: router,
-            arg2: web_module
-          )
+            """
+
+          opts =
+            if host,
+              do: [with_pipelines: [:browser, :beacon], router: router, arg2: [host: host]],
+              else: [with_pipelines: [:browser, :beacon], router: router]
+
+          Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content, opts)
         end
 
       _ ->
@@ -362,6 +364,12 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       [],
       updater: fn zipper -> Igniter.Code.List.append_to_list(zipper, host) end
     )
+  end
+
+  defp maybe_add_new_endpoint_to_application(igniter, nil, _), do: igniter
+
+  defp maybe_add_new_endpoint_to_application(igniter, host, repo) do
+    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module(igniter, host), after: repo)
   end
 
   defp new_endpoint_module(igniter, host) do
