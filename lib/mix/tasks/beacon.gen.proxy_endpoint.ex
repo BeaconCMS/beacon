@@ -42,6 +42,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
         igniter
         |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
+        |> add_endpoint_to_application(fallback_endpoint, proxy_endpoint_module_name)
         |> add_session_options_config(otp_app, signing_salt, igniter.args.options)
         |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name, signing_salt)
         |> update_fallback_endpoint_signing_salt(otp_app, fallback_endpoint, signing_salt)
@@ -60,6 +61,10 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         session_options: Application.compile_env!(#{inspect(otp_app)}, :session_options),
         fallback: #{inspect(fallback_endpoint)}
     """)
+  end
+
+  defp add_endpoint_to_application(igniter, fallback_endpoint, proxy_endpoint_module_name) do
+    Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint])
   end
 
   def add_session_options_config(igniter, otp_app, signing_salt, options) do

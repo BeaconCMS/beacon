@@ -28,6 +28,16 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     """)
   end
 
+  test "add endpoint to application.ex", %{project: project} do
+    project
+    |> Igniter.compose_task("beacon.gen.proxy_endpoint", signing_salt: "SNUXnTNM")
+    |> assert_has_patch("lib/test/application.ex", """
+    20    - |      TestWeb.Endpoint
+       20 + |      TestWeb.Endpoint,
+       21 + |      TestWeb.ProxyEndpoint
+    """)
+  end
+
   test "update config.exs", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", signing_salt: "SNUXnTNM")
