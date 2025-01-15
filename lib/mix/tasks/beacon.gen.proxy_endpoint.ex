@@ -97,26 +97,26 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       [proxy_endpoint_module_name, :live_view, :signing_salt],
       signing_salt
     )
-    |> Igniter.Project.Config.configure(
-      "runtime.exs",
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
       otp_app,
       [proxy_endpoint_module_name, :check_origin],
       {:code, Sourceror.parse_string!("[]")}
     )
-    |> Igniter.Project.Config.configure(
-      "runtime.exs",
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
       otp_app,
       [proxy_endpoint_module_name, :url],
       {:code, Sourceror.parse_string!("[port: 443, scheme: \"https\"]")}
     )
-    |> Igniter.Project.Config.configure(
-      "runtime.exs",
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
       otp_app,
       [proxy_endpoint_module_name, :http],
       {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port]")}
     )
-    |> Igniter.Project.Config.configure(
-      "runtime.exs",
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
       otp_app,
       [proxy_endpoint_module_name, :secret_key_base],
       {:code, Sourceror.parse_string!("secret_key_base")}

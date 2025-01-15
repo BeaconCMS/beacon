@@ -346,19 +346,24 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
        """)}
     )
     # runtime.exs
-    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :url, :host], host)
-    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :url, :port], 443)
-    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :url, :scheme], "https")
-    |> Igniter.Project.Config.configure(
-      "runtime.exs",
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host)
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], 443)
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
       otp_app,
       [new_endpoint, :http, :ip],
       {:code, Sourceror.parse_string!("{0, 0, 0, 0, 0, 0, 0, 0}")}
     )
-    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :http, :port], {:code, Sourceror.parse_string!("port")})
-    |> Igniter.Project.Config.configure("runtime.exs", otp_app, [new_endpoint, :secret_key_base], {:code, Sourceror.parse_string!("secret_key_base")})
-    |> Igniter.Project.Config.configure(
-      "runtime.exs",
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :http, :port], {:code, Sourceror.parse_string!("port")})
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
+      otp_app,
+      [new_endpoint, :secret_key_base],
+      {:code, Sourceror.parse_string!("secret_key_base")}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
       otp_app,
       [proxy_endpoint, :check_origin],
       [],

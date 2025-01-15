@@ -72,12 +72,12 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", signing_salt: "SNUXnTNM")
     |> assert_has_patch("config/runtime.exs", """
-        3 + |config :test, TestWeb.ProxyEndpoint,
-        4 + |  check_origin: [],
-        5 + |  url: [port: 443, scheme: "https"],
-        6 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
-        7 + |  secret_key_base: secret_key_base
-        8 + |
+       53 + |config :test, TestWeb.ProxyEndpoint,
+       54 + |  check_origin: [],
+       55 + |  url: [port: 443, scheme: "https"],
+       56 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
+       57 + |  secret_key_base: secret_key_base
+       58 + |
     """)
   end
 end
