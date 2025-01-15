@@ -3,6 +3,8 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
 
   import Igniter.Test
 
+  @secret_key_base "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
+
   setup do
     [project: phoenix_project()]
   end
@@ -67,14 +69,18 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
 
   test "update dev.exs", %{project: project} do
     project
-    |> Igniter.compose_task("beacon.gen.proxy_endpoint", signing_salt: "SNUXnTNM")
+    |> Igniter.compose_task("beacon.gen.proxy_endpoint", signing_salt: "SNUXnTNM", secret_key_base: @secret_key_base)
     |> assert_has_patch("config/dev.exs", """
         3 + |config :test, TestWeb.ProxyEndpoint,
         4 + |  http: [ip: {127, 0, 0, 1}, port: 4000],
         5 + |  check_origin: false,
         6 + |  debug_errors: true,
-        7 + |  secret_key_base: "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
+        7 + |  secret_key_base: "#{@secret_key_base}"
         8 + |
+    """)
+    |> assert_has_patch("config/dev.exs", """
+    12    - |  http: [ip: {127, 0, 0, 1}, port: 4000],
+       18 + |  http: [ip: {127, 0, 0, 1}, port: 4100],
     """)
   end
 

@@ -196,6 +196,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   defp add_beacon_config_in_app_supervisor(igniter, site, repo, router) do
     {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
+    proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
 
     Igniter.Project.Application.add_new_child(
       igniter,
@@ -204,7 +205,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
         quote do
           [sites: [Application.fetch_env!(:beacon, unquote(site))]]
         end}},
-      after: [repo, endpoint],
+      after: [repo, endpoint, proxy_endpoint],
       opts_updater: fn zipper ->
         with {:ok, zipper} <-
                Igniter.Code.Keyword.put_in_keyword(
