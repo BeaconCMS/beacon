@@ -250,10 +250,10 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         64 + |
       """)
       |> assert_has_patch("config/runtime.exs", """
-         8 + |config :test, TestWeb.ProxyEndpoint, check_origin: ["example.com"]
+        55 + |    check_origin: ["example.com"],
       """)
       |> assert_has_patch("config/runtime.exs", """
-         9 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
+         2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
       """)
     end
 
