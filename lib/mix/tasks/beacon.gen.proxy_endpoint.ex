@@ -26,25 +26,8 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   @doc false
   def igniter(igniter) do
-    otp_app = Igniter.Project.Application.app_name(igniter)
-    {igniter, router} = Beacon.Igniter.select_router!(igniter)
-    {igniter, fallback_endpoint} = Beacon.Igniter.select_endpoint(igniter, router, "Select a fallback endpoint (default app Endpoint):")
     proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
-    signing_salt = Keyword.get_lazy(igniter.args.argv, :signing_salt, fn -> random_string(8) end)
 
-    igniter
-    |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
-    |> add_session_options_config(otp_app, signing_salt, igniter.args.options)
-    |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name, signing_salt)
-    |> update_fallback_endpoint_signing_salt(otp_app, fallback_endpoint, signing_salt)
-    |> Igniter.add_notice("""
-    ProxyEndpoint generated successfully.
-
-    This enables your application to serve sites at multiple hosts, each with their own Endpoint.
-    """)
-  end
-
-  defp create_proxy_endpoint_module(igniter, otp_app, fallback_endpoint, proxy_endpoint_module_name) do
     case Igniter.Project.Module.module_exists(igniter, proxy_endpoint_module_name) do
       {true, igniter} ->
         Igniter.add_notice(igniter, """
@@ -52,13 +35,31 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         """)
 
       {false, igniter} ->
-        Igniter.Project.Module.create_module(igniter, proxy_endpoint_module_name, """
-          use Beacon.ProxyEndpoint,
-            otp_app: #{inspect(otp_app)},
-            session_options: Application.compile_env!(#{inspect(otp_app)}, :session_options),
-            fallback: #{inspect(fallback_endpoint)}
+        otp_app = Igniter.Project.Application.app_name(igniter)
+        {igniter, router} = Beacon.Igniter.select_router!(igniter)
+        {igniter, fallback_endpoint} = Beacon.Igniter.select_endpoint(igniter, router, "Select a fallback endpoint (default app Endpoint):")
+        signing_salt = Keyword.get_lazy(igniter.args.argv, :signing_salt, fn -> random_string(8) end)
+
+        igniter
+        |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
+        |> add_session_options_config(otp_app, signing_salt, igniter.args.options)
+        |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name, signing_salt)
+        |> update_fallback_endpoint_signing_salt(otp_app, fallback_endpoint, signing_salt)
+        |> Igniter.add_notice("""
+        ProxyEndpoint generated successfully.
+
+        This enables your application to serve sites at multiple hosts, each with their own Endpoint.
         """)
     end
+  end
+
+  defp create_proxy_endpoint_module(igniter, otp_app, fallback_endpoint, proxy_endpoint_module_name) do
+    Igniter.Project.Module.create_module(igniter, proxy_endpoint_module_name, """
+      use Beacon.ProxyEndpoint,
+        otp_app: #{inspect(otp_app)},
+        session_options: Application.compile_env!(#{inspect(otp_app)}, :session_options),
+        fallback: #{inspect(fallback_endpoint)}
+    """)
   end
 
   def add_session_options_config(igniter, otp_app, signing_salt, options) do
@@ -101,6 +102,39 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       otp_app,
       [proxy_endpoint_module_name, :check_origin],
       {:code, Sourceror.parse_string!("[]")}
+    )
+    |> Igniter.Project.Config.configure(
+      "runtime.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :url],
+      {:code, Sourceror.parse_string!("[port: 443, scheme: \"https\"]")}
+    )
+    |> Igniter.Project.Config.configure(
+      "runtime.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :http],
+      {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port]")}
+    )
+    |> Igniter.Project.Config.configure(
+      "runtime.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :secret_key_base],
+      {:code, Sourceror.parse_string!("secret_key_base")}
+    )
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :http],
+      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: 4000]")}
+    )
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :check_origin], {:code, Sourceror.parse_string!("false")})
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :debug_errors], {:code, Sourceror.parse_string!("true")})
+    # TODO: ensure secret key valid
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :secret_key_base],
+      "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
     )
   end
 
