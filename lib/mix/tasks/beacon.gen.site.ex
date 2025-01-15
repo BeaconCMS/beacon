@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Beacon.Gen.Site do
   use Igniter.Mix.Task
 
-  @example "mix beacon.gen.site --site my_site --path /"
+  @example "mix beacon.gen.site --site my_site --path / --host my_site.com"
   @shortdoc "Generates a new Beacon site in the current project."
 
   @test? Beacon.Config.env_test?()
@@ -22,6 +22,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   * `--site` or `-s` (required) - The name of your site. Should not contain special characters nor start with "beacon_"
   * `--path` or `-p` (optional, defaults to "/") - Where your site will be mounted. Follows the same convention as Phoenix route prefixes.
+  * `--host` or `-h` (optional) - If provided, a new endpoint will be created for this site with the given URL.
 
   """
 
@@ -30,8 +31,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     %Igniter.Mix.Task.Info{
       group: :beacon,
       example: @example,
-      schema: [site: :string, path: :string],
-      aliases: [s: :site, p: :path],
+      schema: [site: :string, path: :string, host: :string],
+      aliases: [s: :site, p: :path, h: :host],
       defaults: [path: "/"],
       required: [:site]
     }
@@ -42,19 +43,25 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     options = igniter.args.options
     site = Keyword.fetch!(options, :site) |> String.to_atom()
     path = Keyword.fetch!(options, :path)
-    validate_options!(site, path)
+    host = Keyword.get(options, :host)
+    validate_options!(site, path, host)
 
+    otp_app = Igniter.Project.Application.app_name(igniter)
+    web_module = Igniter.Libs.Phoenix.web_module(igniter)
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
-    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
     repo = Igniter.Project.Module.module_name(igniter, "Repo")
 
     igniter
     |> create_migration(repo)
     |> add_use_beacon_in_router(router)
     |> add_beacon_pipeline_in_router(router)
-    |> mount_site_in_router(router, site, path)
-    |> add_site_config_in_config_runtime(site, repo, router, endpoint)
-    |> add_beacon_config_in_app_supervisor(site, repo, endpoint)
+    |> mount_site_in_router(router, site, path, host)
+    |> add_site_config_in_config_runtime(site, repo, router, host)
+    |> add_beacon_config_in_app_supervisor(site, repo, router)
+    |> maybe_create_proxy_endpoint(host)
+    |> maybe_create_new_endpoint(host, otp_app, web_module)
+    |> maybe_configure_new_endpoint(host, otp_app)
+    |> maybe_add_new_endpoint_to_application(host, repo)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
 
@@ -68,7 +75,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     """)
   end
 
-  defp validate_options!(site, path) do
+  defp validate_options!(site, path, _host) do
     cond do
       !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.", site, path)
       !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".", site, path)
@@ -81,11 +88,11 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     Mix.raise("""
     #{msg}
 
-    mix beacon.install expects a valid site name, for example:
+    For example:
 
-        mix beacon.install --site blog
+        mix beacon.gen.site --site blog
         or
-        mix beacon.install --site blog --path "/blog_path"
+        mix beacon.gen.site --site blog --path "/blog_path"
 
     Got:
 
@@ -135,7 +142,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp mount_site_in_router(igniter, router, site, path) do
+  defp mount_site_in_router(igniter, router, site, path, host) do
     case Igniter.Project.Module.find_module(igniter, router) do
       {:ok, {_igniter, _source, zipper}} ->
         exists? =
@@ -150,16 +157,17 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
             "Site already exists: #{site}, skipping creation."
           )
         else
-          Igniter.Libs.Phoenix.append_to_scope(
-            igniter,
-            "/",
+          content =
             """
             beacon_site #{inspect(path)}, site: #{inspect(site)}
-            """,
-            with_pipelines: [:browser, :beacon],
-            router: router,
-            arg2: Igniter.Libs.Phoenix.web_module(igniter)
-          )
+            """
+
+          opts =
+            if host,
+              do: [with_pipelines: [:browser, :beacon], router: router, arg2: [host: host]],
+              else: [with_pipelines: [:browser, :beacon], router: router]
+
+          Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content, opts)
         end
 
       _ ->
@@ -167,7 +175,13 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     end
   end
 
-  defp add_site_config_in_config_runtime(igniter, site, repo, router, endpoint) do
+  defp add_site_config_in_config_runtime(igniter, site, repo, router, host) do
+    {igniter, endpoint} =
+      case host do
+        nil -> Beacon.Igniter.select_endpoint!(igniter, router)
+        host -> {igniter, new_endpoint_module(igniter, host)}
+      end
+
     Igniter.Project.Config.configure(
       igniter,
       "runtime.exs",
@@ -180,7 +194,10 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp add_beacon_config_in_app_supervisor(igniter, site, repo, endpoint) do
+  defp add_beacon_config_in_app_supervisor(igniter, site, repo, router) do
+    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
+    proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
+
     Igniter.Project.Application.add_new_child(
       igniter,
       {Beacon,
@@ -188,7 +205,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
         quote do
           [sites: [Application.fetch_env!(:beacon, unquote(site))]]
         end}},
-      after: [repo, endpoint],
+      after: [repo, endpoint, proxy_endpoint],
       opts_updater: fn zipper ->
         with {:ok, zipper} <-
                Igniter.Code.Keyword.put_in_keyword(
@@ -218,5 +235,151 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
         end
       end
     )
+  end
+
+  defp maybe_create_proxy_endpoint(igniter, nil), do: igniter
+  defp maybe_create_proxy_endpoint(igniter, _host), do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint")
+
+  defp maybe_create_new_endpoint(igniter, nil, _, _), do: igniter
+
+  defp maybe_create_new_endpoint(igniter, host, otp_app, web_module) do
+    Igniter.Project.Module.create_module(
+      igniter,
+      new_endpoint_module(igniter, host),
+      """
+      use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
+
+      @session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)
+
+      # socket /live must be in the proxy endpoint
+
+      # Serve at "/" the static files from "priv/static" directory.
+      #
+      # You should set gzip to true if you are running phx.digest
+      # when deploying your static files in production.
+      plug Plug.Static,
+        at: "/",
+        from: #{inspect(otp_app)},
+        gzip: false,
+        only: #{inspect(web_module)}.static_paths()
+
+      # Code reloading can be explicitly enabled under the
+      # :code_reloader configuration of your endpoint.
+      if code_reloading? do
+        socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+        plug Phoenix.LiveReloader
+        plug Phoenix.CodeReloader
+        plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{inspect(otp_app)}
+      end
+
+      plug Plug.RequestId
+      plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :multipart, :json],
+        pass: ["*/*"],
+        json_decoder: Phoenix.json_library()
+
+      plug Plug.MethodOverride
+      plug Plug.Head
+      plug Plug.Session, @session_options
+      plug #{inspect(web_module)}.Router
+      """
+    )
+  end
+
+  defp maybe_configure_new_endpoint(igniter, nil, _), do: igniter
+
+  defp maybe_configure_new_endpoint(igniter, host, otp_app) do
+    new_endpoint = new_endpoint_module(igniter, host)
+    proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
+    error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
+    error_json = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorJSON")
+    pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
+
+    igniter
+    # config.exs
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :url, :host], "localhost")
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :adapter], {:code, Sourceror.parse_string!("Bandit.PhoenixAdapter")})
+    |> Igniter.Project.Config.configure(
+      "config.exs",
+      otp_app,
+      [new_endpoint, :render_errors],
+      {:code,
+       Sourceror.parse_string!("""
+       [
+         formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
+         layout: false
+       ]
+       """)}
+    )
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :pubsub_server], pubsub)
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :live_view, :signing_salt], "O68x1k5A")
+    # dev.exs
+    # TODO: ensure port valid
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [new_endpoint, :http],
+      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: 4002]")}
+    )
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :check_origin], {:code, Sourceror.parse_string!("false")})
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :code_reloader], {:code, Sourceror.parse_string!("true")})
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :debug_errors], {:code, Sourceror.parse_string!("true")})
+    # TODO: ensure secret key valid
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [new_endpoint, :secret_key_base],
+      "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
+    )
+    # TODO: beacon_tailwind_config watcher
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [new_endpoint, :watchers],
+      {:code,
+       Sourceror.parse_string!("""
+       [
+         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+       ]
+       """)}
+    )
+    # runtime.exs
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host)
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], 443)
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
+      otp_app,
+      [new_endpoint, :http, :ip],
+      {:code, Sourceror.parse_string!("{0, 0, 0, 0, 0, 0, 0, 0}")}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :http, :port], {:code, Sourceror.parse_string!("port")})
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
+      otp_app,
+      [new_endpoint, :secret_key_base],
+      {:code, Sourceror.parse_string!("secret_key_base")}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
+      otp_app,
+      [proxy_endpoint, :check_origin],
+      [],
+      updater: fn zipper -> Igniter.Code.List.append_to_list(zipper, host) end
+    )
+  end
+
+  defp maybe_add_new_endpoint_to_application(igniter, nil, _), do: igniter
+
+  defp maybe_add_new_endpoint_to_application(igniter, host, repo) do
+    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module(igniter, host), after: [repo, Phoenix.PubSub, Finch])
+  end
+
+  defp new_endpoint_module(igniter, host) do
+    [implicit_prefix | _] = String.split(host, ".")
+    Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
   end
 end
