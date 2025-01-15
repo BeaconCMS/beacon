@@ -18,14 +18,9 @@ defmodule Beacon.Web.AssetsController do
 
     content =
       cond do
-        @brotli in accept_encoding ->
-          Map.put(content_and_type(site, asset, :brotli), :encoding, @brotli)
-
-        @gzip in accept_encoding ->
-          Map.put(content_and_type(site, asset, :gzip), :encoding, @gzip)
-
-        :else ->
-          content_and_type(site, asset, :deflate)
+        @brotli in accept_encoding -> content_and_type(site, asset, :brotli)
+        @gzip in accept_encoding -> content_and_type(site, asset, :gzip)
+        :else -> content_and_type(site, asset, :deflate)
       end
 
     # The static files are served for sites,
@@ -35,8 +30,8 @@ defmodule Beacon.Web.AssetsController do
 
     conn
     |> then(fn conn ->
-      if content[:encoding] do
-        put_resp_header(conn, "content-encoding", content[:encoding])
+      if content.encoding do
+        put_resp_header(conn, "content-encoding", content.encoding)
       else
         conn
       end
@@ -67,17 +62,43 @@ defmodule Beacon.Web.AssetsController do
     raise Beacon.Web.ServerError, "failed to serve asset #{asset}"
   end
 
-  defp content_and_type(site, asset, version \\ :compreseed)
+  defp content_and_type(site, :css, :brotli) do
+    body = Beacon.RuntimeCSS.fetch(site, :brotli)
 
-  defp content_and_type(site, :css, version) do
-    %{body: Beacon.RuntimeCSS.fetch(site, version), type: "text/css"}
+    if body do
+      %{body: body, type: "text/css", encoding: @brotli}
+    else
+      content_and_type(site, :css, :gzip)
+    end
   end
 
-  defp content_and_type(_site, :js, version) do
-    %{body: Beacon.RuntimeJS.fetch(version), type: "text/javascript"}
+  defp content_and_type(site, :css, :gzip) do
+    %{body: Beacon.RuntimeCSS.fetch(site, :gzip), type: "text/css", encoding: @gzip}
   end
 
-  defp content_and_type(site, :css_config, _version) do
+  defp content_and_type(site, :css, :deflate) do
+    %{body: Beacon.RuntimeCSS.fetch(site, :deflate), type: "text/css", encoding: nil}
+  end
+
+  defp content_and_type(site, :js, :brotli) do
+    body = Beacon.RuntimeJS.fetch(:brotli)
+
+    if body do
+      %{body: body, type: "text/javascript", encoding: @brotli}
+    else
+      content_and_type(site, :js, :gzip)
+    end
+  end
+
+  defp content_and_type(_site, :js, :gzip) do
+    %{body: Beacon.RuntimeJS.fetch(:gzip), type: "text/javascript", encoding: @gzip}
+  end
+
+  defp content_and_type(_site, :js, :deflate) do
+    %{body: Beacon.RuntimeJS.fetch(:deflate), type: "text/javascript", encoding: nil}
+  end
+
+  defp content_and_type(site, :css_config) do
     %{body: Beacon.RuntimeCSS.config(site), type: "text/javascript"}
   end
 end

@@ -47,7 +47,7 @@ defmodule Beacon.RuntimeCSS do
   def fetch(site, version \\ :brotli)
   def fetch(site, :brotli), do: do_fetch(site, {:_, :_, :"$1", :_})
   def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :_, :"$1"})
-  def fetch(site, _deflate), do: do_fetch(site, {:_, :"$1", :_, :_})
+  def fetch(site, :deflate), do: do_fetch(site, {:_, :"$1", :_, :_})
 
   defp do_fetch(site, guard) do
     case :ets.match(:beacon_assets, {{site, :css}, guard}) do
