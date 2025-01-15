@@ -33,8 +33,13 @@ defmodule Beacon.RuntimeJS do
     |> IO.iodata_to_binary()
   end
 
-  def fetch do
-    case :ets.match(:beacon_assets, {:js, {:_, :_, :"$1"}}) do
+  def fetch(version \\ :brotli)
+  def fetch(:brotli), do: do_fetch({:_, :_, :"$1", :_})
+  def fetch(:gzip), do: do_fetch({:_, :_, :_, :"$1"})
+  def fetch(_deflate), do: do_fetch({:_, :"$1", :_, :_})
+
+  defp do_fetch(guard) do
+    case :ets.match(:beacon_assets, {:js, guard}) do
       [[js]] -> js
       _ -> "// JS not found"
     end
@@ -43,19 +48,25 @@ defmodule Beacon.RuntimeJS do
   def load! do
     js = build()
 
-    case ExBrotli.compress(js) do
-      {:ok, compressed} ->
-        hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
-        true = :ets.insert(:beacon_assets, {:js, {hash, js, compressed}})
-        :ok
+    hash = Base.encode16(:crypto.hash(:md5, js), case: :lower)
 
-      error ->
-        raise Beacon.LoaderError, "failed to compress js: #{inspect(error)}"
+    brotli =
+      case ExBrotli.compress(js) do
+        {:ok, content} -> content
+        _ -> nil
+      end
+
+    gzip = :zlib.gzip(js)
+
+    if :ets.insert(:beacon_assets, {:js, {hash, js, brotli, gzip}}) do
+      :ok
+    else
+      raise Beacon.LoaderError, "failed to compress js"
     end
   end
 
   def current_hash do
-    case :ets.match(:beacon_assets, {:js, {:"$1", :_, :_}}) do
+    case :ets.match(:beacon_assets, {:js, {:"$1", :_, :_, :_}}) do
       [[hash]] -> hash
       _ -> nil
     end

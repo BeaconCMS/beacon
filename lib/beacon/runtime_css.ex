@@ -44,17 +44,13 @@ defmodule Beacon.RuntimeCSS do
   end
 
   @doc false
-  def fetch(site, version \\ :compressed)
+  def fetch(site, version \\ :brotli)
+  def fetch(site, :brotli), do: do_fetch(site, {:_, :_, :"$1", :_})
+  def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :_, :"$1"})
+  def fetch(site, _deflate), do: do_fetch(site, {:_, :"$1", :_, :_})
 
-  def fetch(site, :compressed) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
-      [[css]] -> css
-      _ -> "/* CSS not found for site #{inspect(site)} */"
-    end
-  end
-
-  def fetch(site, :uncompressed) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:_, :"$1", :_}}) do
+  defp do_fetch(site, guard) do
+    case :ets.match(:beacon_assets, {{site, :css}, guard}) do
       [[css]] -> css
       _ -> "/* CSS not found for site #{inspect(site)} */"
     end
@@ -62,22 +58,32 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def load!(site) do
-    {:ok, css} = compile(site)
+    css =
+      case compile(site) do
+        {:ok, css} -> css
+        {:error, error} -> raise Beacon.LoaderError, "failed to compress css: #{inspect(error)}"
+      end
 
-    case ExBrotli.compress(css) do
-      {:ok, compressed} ->
-        hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
-        true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})
-        :ok
+    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
 
-      error ->
-        raise Beacon.LoaderError, "failed to compress css: #{inspect(error)}"
+    brotli =
+      case ExBrotli.compress(css) do
+        {:ok, content} -> content
+        _ -> nil
+      end
+
+    gzip = :zlib.gzip(css)
+
+    if :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}}) do
+      :ok
+    else
+      raise Beacon.LoaderError, "failed to compress css"
     end
   end
 
   @doc false
   def current_hash(site) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_, :_}}) do
       [[hash]] ->
         hash
 
