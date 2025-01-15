@@ -61,7 +61,7 @@ defmodule Beacon.RuntimeCSS do
     css =
       case compile(site) do
         {:ok, css} -> css
-        {:error, error} -> raise Beacon.LoaderError, "failed to compress css: #{inspect(error)}"
+        {:error, error} -> raise Beacon.LoaderError, "failed to compile css: #{inspect(error)}"
       end
 
     hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
