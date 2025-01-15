@@ -110,7 +110,8 @@ defmodule Beacon.Test.Fixtures do
               :beacon_error_page_fixture,
               :beacon_live_data_fixture,
               :beacon_live_data_assign_fixture,
-              :beacon_info_handler_fixture
+              :beacon_info_handler_fixture,
+              :beacon_js_hook_fixture
             ] do
           quote do
             def unquote(fun)() do
@@ -548,5 +549,30 @@ defmodule Beacon.Test.Fixtures do
     })
     |> Content.create_info_handler!()
     |> tap(&Loader.load_info_handlers_module(&1.site))
+  end
+
+  @doc """
+  Creates a `Beacon.Content.JSHook`.
+
+  ## Example
+
+      iex> beacon_js_hook_fixture(mounted: ~S|
+      console.log("mounted!");
+      |)
+      %Beacon.Content.JSHook{}
+
+  """
+  @spec beacon_js_hook_fixture(map() | Keyword.t()) :: Beacon.Content.JSHook.t()
+  def beacon_js_hook_fixture(attrs \\ %{}) do
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      name: "TestHook#{System.unique_integer([:positive])}",
+      mounted: ~S"""
+      console.log("mounted!");
+      """
+    })
+    |> Content.create_js_hook!()
+    |> tap(&Loader.load_runtime_js(&1.site))
   end
 end
