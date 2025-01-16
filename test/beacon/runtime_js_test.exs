@@ -3,18 +3,20 @@ defmodule Beacon.RuntimeJSTest do
 
   alias Beacon.RuntimeJS
 
+  @site :my_site
+
   test "load" do
-    assert RuntimeJS.load!() == :ok
+    assert RuntimeJS.load!(@site) == :ok
   end
 
   test "fetch defaults to compressed" do
-    RuntimeJS.load!()
-    assert RuntimeJS.fetch() |> :erlang.size() > 100
+    RuntimeJS.load!(@site)
+    assert RuntimeJS.fetch(@site) |> :erlang.size() > 100
   end
 
   test "fetch uncompressed deflate" do
-    RuntimeJS.load!()
-    assert RuntimeJS.fetch(:deflate) =~ "Beacon"
+    RuntimeJS.load!(@site)
+    assert RuntimeJS.fetch(@site, :deflate) =~ "Beacon"
   end
 
   describe "build_hooks/2" do
@@ -25,7 +27,7 @@ defmodule Beacon.RuntimeJSTest do
     end
 
     test "default" do
-      assert RuntimeJS.build_hooks(:my_site, _minify = false) ==
+      assert RuntimeJS.build_hooks(@site, _minify = false) ==
                """
                    Hook1: {
                      mounted() {
@@ -41,7 +43,7 @@ defmodule Beacon.RuntimeJSTest do
     end
 
     test "minified" do
-      assert RuntimeJS.build_hooks(:my_site, _minify = true) ==
+      assert RuntimeJS.build_hooks(@site, _minify = true) ==
                "Hook1:{mounted(){console.log(\"mounted!\");},},Hook2:{mounted(){console.log(\"mounted!\");},}"
     end
   end
