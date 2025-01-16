@@ -59,7 +59,7 @@ defmodule Beacon.Private do
   end
 
   def endpoint_config(otp_app, endpoint) do
-    Phoenix.Endpoint.Supervisor.config(otp_app, endpoint)[:url]
+    Phoenix.Endpoint.Supervisor.config(otp_app, endpoint)
   end
 
   def endpoint_host(otp_app, endpoint) do
