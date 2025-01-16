@@ -24,7 +24,7 @@ to get it installed or updated. It's important to install a recent Tailwind vers
 
 ## Site not booting because it's not reachable
 
-Depending on the [deployment topology](https://hexdocs.pm/beacon/deployment-topology.html) and your router configuration,
+Depending on the [deployment topology](https://hexdocs.pm/beacon/deployment-topologies.html) and your router configuration,
 a site prefix can never match and it will never receive requests.
 
 That's is not necessarily an error if you have multiple sites in the same project

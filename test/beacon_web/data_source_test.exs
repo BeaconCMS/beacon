@@ -15,10 +15,18 @@ defmodule Beacon.Web.DataSourceTest do
     [site: site]
   end
 
-  test "live_data", %{site: site} do
-    live_data = beacon_live_data_fixture()
-    beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "name", value: "beacon")
-    assert DataSource.live_data(site, ["foo", "bar"], %{}) == %{name: "beacon"}
+  describe "live_data" do
+    test "with existing data", %{site: site} do
+      live_data = beacon_live_data_fixture()
+      beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "name", value: "beacon")
+      assert DataSource.live_data(site, ["foo", "bar"], %{}) == %{name: "beacon"}
+    end
+
+    test "query params defaults to empty map", %{site: site} do
+      live_data = beacon_live_data_fixture()
+      beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "name", value: "beacon")
+      assert DataSource.live_data(site, ["foo", "bar"]) == %{name: "beacon"}
+    end
   end
 
   describe "page_title" do

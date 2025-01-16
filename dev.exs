@@ -44,7 +44,7 @@ Demo.Repo.stop()
 
 Application.put_env(:beacon, DemoWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
-  http: [ip: {127, 0, 0, 1}, port: 4001],
+  http: [ip: {0, 0, 0, 0}, port: 4001],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),

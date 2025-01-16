@@ -3,6 +3,8 @@ defmodule Beacon.Web.DataSource do
 
   require Logger
 
+  def live_data(site, path_info, query_params \\ %{})
+
   def live_data(site, path_info, query_params) when is_atom(site) and is_list(path_info) and is_map(query_params) do
     Beacon.apply_mfa(site, Beacon.Loader.fetch_live_data_module(site), :live_data, [path_info, query_params])
   end

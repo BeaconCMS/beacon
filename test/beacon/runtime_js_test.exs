@@ -4,8 +4,17 @@ defmodule Beacon.RuntimeJSTest do
   alias Beacon.RuntimeJS
 
   test "load" do
-    assert RuntimeJS.load!(:my_site) == :ok
-    assert RuntimeJS.fetch(:my_site) |> :erlang.size() > 100
+    assert RuntimeJS.load!() == :ok
+  end
+
+  test "fetch defaults to compressed" do
+    RuntimeJS.load!()
+    assert RuntimeJS.fetch() |> :erlang.size() > 100
+  end
+
+  test "fetch uncompressed deflate" do
+    RuntimeJS.load!()
+    assert RuntimeJS.fetch(:deflate) =~ "Beacon"
   end
 
   describe "build_hooks/2" do
