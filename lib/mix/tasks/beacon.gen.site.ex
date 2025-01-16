@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     %Igniter.Mix.Task.Info{
       group: :beacon,
       example: @example,
-      schema: [site: :string, path: :string, host: :string],
+      schema: [site: :string, path: :string, host: :string, port: :integer, secure_port: :integer, secret_key_base: :string, signing_salt: :string],
       aliases: [s: :site, p: :path, h: :host],
       defaults: [path: "/"],
       required: [:site]
@@ -46,6 +46,11 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     host = Keyword.get(options, :host)
     validate_options!(site, path, host)
 
+    port = Keyword.get_lazy(options, :port, fn -> Enum.random(4101..4999) end)
+    secure_port = Keyword.get_lazy(options, :secure_port, fn -> Enum.random(8444..8999) end)
+    signing_salt = Keyword.get_lazy(options, :signing_salt, fn -> random_string(8) end)
+    secret_key_base = Keyword.get_lazy(options, :secret_key_base, fn -> random_string(64) end)
+
     otp_app = Igniter.Project.Application.app_name(igniter)
     web_module = Igniter.Libs.Phoenix.web_module(igniter)
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
@@ -58,9 +63,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> mount_site_in_router(router, site, path, host)
     |> add_site_config_in_config_runtime(site, repo, router, host)
     |> add_beacon_config_in_app_supervisor(site, repo, router)
-    |> maybe_create_proxy_endpoint(host)
+    |> maybe_create_proxy_endpoint(host, signing_salt, secret_key_base)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
-    |> maybe_configure_new_endpoint(host, otp_app)
+    |> maybe_configure_new_endpoint(host, otp_app, port, secure_port, secret_key_base, signing_salt)
     |> maybe_add_new_endpoint_to_application(host, repo)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
@@ -237,8 +242,10 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp maybe_create_proxy_endpoint(igniter, nil), do: igniter
-  defp maybe_create_proxy_endpoint(igniter, _host), do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint")
+  defp maybe_create_proxy_endpoint(igniter, nil, _, _), do: igniter
+
+  defp maybe_create_proxy_endpoint(igniter, _host, signing_salt, secret_key_base),
+    do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint", signing_salt: signing_salt, secret_key_base: secret_key_base)
 
   defp maybe_create_new_endpoint(igniter, nil, _, _), do: igniter
 
@@ -288,9 +295,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp maybe_configure_new_endpoint(igniter, nil, _), do: igniter
+  defp maybe_configure_new_endpoint(igniter, nil, _, _, _, _, _), do: igniter
 
-  defp maybe_configure_new_endpoint(igniter, host, otp_app) do
+  defp maybe_configure_new_endpoint(igniter, host, otp_app, port, secure_port, secret_key_base, signing_salt) do
     new_endpoint = new_endpoint_module(igniter, host)
     proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
     error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
@@ -314,26 +321,18 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
        """)}
     )
     |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :pubsub_server], pubsub)
-    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :live_view, :signing_salt], "O68x1k5A")
+    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :live_view, :signing_salt], signing_salt)
     # dev.exs
-    # TODO: ensure port valid
     |> Igniter.Project.Config.configure(
       "dev.exs",
       otp_app,
       [new_endpoint, :http],
-      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: 4002]")}
+      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: #{port}]")}
     )
     |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :check_origin], {:code, Sourceror.parse_string!("false")})
     |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :code_reloader], {:code, Sourceror.parse_string!("true")})
     |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :debug_errors], {:code, Sourceror.parse_string!("true")})
-    # TODO: ensure secret key valid
-    |> Igniter.Project.Config.configure(
-      "dev.exs",
-      otp_app,
-      [new_endpoint, :secret_key_base],
-      "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
-    )
-    # TODO: beacon_tailwind_config watcher
+    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :secret_key_base], secret_key_base)
     |> Igniter.Project.Config.configure(
       "dev.exs",
       otp_app,
@@ -348,15 +347,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
     # runtime.exs
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host)
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], 443)
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
-      [new_endpoint, :http, :ip],
-      {:code, Sourceror.parse_string!("{0, 0, 0, 0, 0, 0, 0, 0}")}
+      [new_endpoint, :http],
+      {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]")}
     )
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :http, :port], {:code, Sourceror.parse_string!("port")})
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
@@ -381,5 +379,13 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp new_endpoint_module(igniter, host) do
     [implicit_prefix | _] = String.split(host, ".")
     Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
+  end
+
+  # https://github.com/phoenixframework/phoenix/blob/c9b431f3a5d3bdc6a1d0ff3c29a229226e991195/installer/lib/phx_new/generator.ex#L451
+  defp random_string(length) do
+    length
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode64()
+    |> binary_part(0, length)
   end
 end

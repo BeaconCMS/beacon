@@ -148,8 +148,25 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :http], [],
         updater: fn zipper ->
           if port_matches_value?(zipper, 4000) do
-            updated_opts = update_port(zipper, 4100)
-            {:ok, Igniter.Code.Common.replace_code(zipper, "#{inspect(updated_opts)}")}
+            {:ok, Igniter.Code.Common.replace_code(zipper, update_port(zipper, 4100))}
+          else
+            {:ok, zipper}
+          end
+        end
+      )
+      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [endpoint, :http], [],
+        updater: fn zipper ->
+          if port_matches_variable?(zipper) do
+            {:ok, Igniter.Code.Common.replace_code(zipper, update_port(zipper, 4100))}
+          else
+            {:ok, zipper}
+          end
+        end
+      )
+      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [endpoint, :url], [],
+        updater: fn zipper ->
+          if port_matches_value?(zipper, 443) do
+            {:ok, Igniter.Code.Common.replace_code(zipper, update_port(zipper, 8443))}
           else
             {:ok, zipper}
           end
@@ -167,14 +184,26 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     Enum.any?(ast, &match?({{:__block__, _, [:port]}, {:__block__, _, [^value]}}, &1))
   end
 
+  defp port_matches_variable?(zipper) do
+    ast =
+      zipper
+      |> Igniter.Code.Common.maybe_move_to_single_child_block()
+      |> Sourceror.Zipper.node()
+
+    Enum.any?(ast, &match?({{:__block__, _, [:port]}, {:port, _, nil}}, &1))
+  end
+
   defp update_port(zipper, value) do
     {opts, _} =
       zipper
       |> Igniter.Code.Common.maybe_move_to_single_child_block()
       |> Sourceror.Zipper.node()
-      |> Code.eval_quoted()
+      |> Code.eval_quoted(port: nil, host: :__host_placeholder__)
 
-    Keyword.replace(opts, :port, value)
+    opts
+    |> Keyword.replace(:port, value)
+    |> inspect()
+    |> String.replace(":__host_placeholder__", "host")
   end
 
   # https://github.com/phoenixframework/phoenix/blob/c9b431f3a5d3bdc6a1d0ff3c29a229226e991195/installer/lib/phx_new/generator.ex#L451
