@@ -261,7 +261,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
       |> assert_has_patch("lib/test/application.ex", """
-        14 + | TestWeb.ExampleEndpoint,
+        21 + | TestWeb.ExampleEndpoint,
       """)
     end
 
