@@ -137,8 +137,13 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("lib/test/application.ex", """
-      20 + |      TestWeb.Endpoint,
-      21 + |      {Beacon, [sites: [Application.fetch_env!(:beacon, :my_site)]]}
+            ...|
+       12 12   |      Test.Repo,
+       13 13   |      {DNSCluster, query: Application.get_env(:test, :dns_cluster_query) || :ignore},
+          14 + |      {Beacon, [sites: [Application.fetch_env!(:beacon, :my_site)]]},
+       14 15   |      {Phoenix.PubSub, name: Test.PubSub},
+       15 16   |      # Start the Finch HTTP client for sending emails
+            ...|
       """)
     end
 
