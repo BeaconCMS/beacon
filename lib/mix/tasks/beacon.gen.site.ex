@@ -67,7 +67,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> add_beacon_pipeline_in_router(router)
     |> mount_site_in_router(router, site, path, host)
     |> add_site_config_in_config_runtime(site, repo, router, host)
-    |> add_beacon_config_in_app_supervisor(site, repo, router)
+    |> add_beacon_config_in_app_supervisor(site, repo)
     |> maybe_create_proxy_endpoint(host, signing_salt, secret_key_base)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
     |> maybe_configure_new_endpoint(host, otp_app, port, secure_port, secret_key_base, signing_salt)
@@ -206,10 +206,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp add_beacon_config_in_app_supervisor(igniter, site, repo, router) do
-    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
-    proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
-
+  defp add_beacon_config_in_app_supervisor(igniter, site, repo) do
     Igniter.Project.Application.add_new_child(
       igniter,
       {Beacon,
@@ -367,6 +364,12 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       otp_app,
       [new_endpoint, :secret_key_base],
       {:code, Sourceror.parse_string!("secret_key_base")}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
+      otp_app,
+      [new_endpoint, :server],
+      {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,

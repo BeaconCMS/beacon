@@ -137,6 +137,12 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       [proxy_endpoint_module_name, :secret_key_base],
       {:code, Sourceror.parse_string!("secret_key_base")}
     )
+    |> Igniter.Project.Config.configure_runtime_env(
+      :prod,
+      otp_app,
+      [proxy_endpoint_module_name, :server],
+      {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
+    )
     |> Igniter.Project.Config.configure(
       "dev.exs",
       otp_app,

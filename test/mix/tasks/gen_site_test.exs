@@ -280,8 +280,9 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         53 + |config :test, TestWeb.ExampleEndpoint,
         54 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
         55 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{@port}],
-        56 + |  secret_key_base: secret_key_base
-        57 + |
+        56 + |  secret_key_base: secret_key_base,
+        57 + |  server: !!System.get_env("PHX_SERVER")
+        58 + |
       """)
     end
 

@@ -118,8 +118,9 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
        47 + |  check_origin: [host],
        48 + |  url: [port: 443, scheme: "https"],
        49 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
-       50 + |  secret_key_base: secret_key_base
-       51 + |
+       50 + |  secret_key_base: secret_key_base,
+       51 + |  server: !!System.get_env("PHX_SERVER")
+       52 + |
     """)
   end
 end
