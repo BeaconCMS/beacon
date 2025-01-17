@@ -277,12 +277,12 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
       # add config for new endpoint
       |> assert_has_patch("config/runtime.exs", """
-        53 + |config :test, TestWeb.ExampleEndpoint,
-        54 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
-        55 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{@port}],
-        56 + |  secret_key_base: secret_key_base,
-        57 + |  server: !!System.get_env("PHX_SERVER")
-        58 + |
+        54 + |config :test, TestWeb.ExampleEndpoint,
+        55 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
+        56 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{@port}],
+        57 + |  secret_key_base: secret_key_base,
+        58 + |  server: !!System.get_env("PHX_SERVER")
+        59 + |
       """)
     end
 
@@ -290,7 +290,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
       |> assert_has_patch("lib/test/application.ex", """
-        21 + | TestWeb.ExampleEndpoint,
+        22 + | TestWeb.ExampleEndpoint,
       """)
     end
 
