@@ -14,6 +14,12 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   ```bash
   #{@example}
   ```
+
+  ## Options
+
+  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.  By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+  * `--signing-salt` (optional) The value to use for signing_salt in your app config.  By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the signing_salt from your app config and provide it here.
+
   """
 
   @doc false
