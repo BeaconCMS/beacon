@@ -33,6 +33,18 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     """)
   end
 
+  test "update existing endpoint module", %{project: project} do
+    project
+    |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
+    |> assert_has_patch("lib/test_web/endpoint.ex", """
+    14    - |  socket("/live", Phoenix.LiveView.Socket,
+    15    - |    websocket: [connect_info: [session: @session_options]],
+    16    - |    longpoll: [connect_info: [session: @session_options]]
+    17    - |  )
+    18    - |
+    """)
+  end
+
   test "add endpoint to application.ex", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
