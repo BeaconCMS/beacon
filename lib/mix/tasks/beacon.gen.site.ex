@@ -217,7 +217,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
         quote do
           [sites: [Application.fetch_env!(:beacon, unquote(site))]]
         end}},
-      after: [repo, endpoint, proxy_endpoint],
+      after: [repo],
       opts_updater: fn zipper ->
         with {:ok, zipper} <-
                Igniter.Code.Keyword.put_in_keyword(
