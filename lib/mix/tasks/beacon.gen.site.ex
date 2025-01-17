@@ -396,7 +396,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_add_new_endpoint_to_application(igniter, nil, _), do: igniter
 
   defp maybe_add_new_endpoint_to_application(igniter, host, repo) do
-    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module(igniter, host), after: [repo, Phoenix.PubSub, Finch])
+    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module(igniter, host), after: [repo, Phoenix.PubSub, Finch, Beacon])
   end
 
   defp new_endpoint_module(igniter, host) do

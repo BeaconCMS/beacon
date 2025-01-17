@@ -75,7 +75,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   end
 
   defp add_endpoint_to_application(igniter, fallback_endpoint, proxy_endpoint_module_name) do
-    Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint])
+    Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint, Beacon])
   end
 
   def add_session_options_config(igniter, otp_app, signing_salt, options) do

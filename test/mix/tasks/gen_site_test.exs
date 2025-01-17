@@ -267,18 +267,21 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     test "updates runtime.exs", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
+      # add beacon site config
+      |> assert_has_patch("config/runtime.exs", """
+         2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
+      """)
+      # adds host to proxy endpoint allowed origins
+      |> assert_has_patch("config/runtime.exs", """
+        48 + |    check_origin: [host, "example.com"],
+      """)
+      # add config for new endpoint
       |> assert_has_patch("config/runtime.exs", """
         53 + |config :test, TestWeb.ExampleEndpoint,
         54 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
         55 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{@port}],
         56 + |  secret_key_base: secret_key_base
         57 + |
-      """)
-      |> assert_has_patch("config/runtime.exs", """
-        48 + |    check_origin: [host, "example.com"],
-      """)
-      |> assert_has_patch("config/runtime.exs", """
-         2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
       """)
     end
 
