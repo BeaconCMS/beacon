@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Enhancements
+
+  - Added `--host` option for `mix beacon.gen.site` to serve your site at an alternative domain
+
 ### Fixes
 
   - Fixed a bug where MediaLibrary could check for file contents on the wrong node in multi-node deployments
