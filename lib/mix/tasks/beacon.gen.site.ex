@@ -54,6 +54,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     otp_app = Igniter.Project.Application.app_name(igniter)
     web_module = Igniter.Libs.Phoenix.web_module(igniter)
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
+    {igniter, existing_endpoints} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
     repo = Igniter.Project.Module.module_name(igniter, "Repo")
 
     igniter
@@ -66,6 +67,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> maybe_create_proxy_endpoint(host, signing_salt, secret_key_base)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
     |> maybe_configure_new_endpoint(host, otp_app, port, secure_port, secret_key_base, signing_salt)
+    |> maybe_update_existing_endpoints(host, otp_app, existing_endpoints, signing_salt, secret_key_base)
+    |> maybe_update_session_options(host, otp_app, signing_salt)
     |> maybe_add_new_endpoint_to_application(host, repo)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
@@ -245,7 +248,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_create_proxy_endpoint(igniter, nil, _, _), do: igniter
 
   defp maybe_create_proxy_endpoint(igniter, _host, signing_salt, secret_key_base),
-    do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint", signing_salt: signing_salt, secret_key_base: secret_key_base)
+    do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint", ~w(--signing-salt #{signing_salt} --secret-key-base #{secret_key_base}))
 
   defp maybe_create_new_endpoint(igniter, nil, _, _), do: igniter
 
@@ -368,6 +371,22 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       [],
       updater: fn zipper -> Igniter.Code.List.append_to_list(zipper, host) end
     )
+  end
+
+  defp maybe_update_existing_endpoints(igniter, nil, _, _, _, _), do: igniter
+
+  defp maybe_update_existing_endpoints(igniter, _host, otp_app, existing_endpoints, signing_salt, secret_key_base) do
+    Enum.reduce(existing_endpoints, igniter, fn endpoint, acc ->
+      acc
+      |> Igniter.Project.Config.configure("config.exs", otp_app, [endpoint, :live_view, :signing_salt], signing_salt)
+      |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :secret_key_base], secret_key_base)
+    end)
+  end
+
+  defp maybe_update_session_options(igniter, nil, _, _), do: igniter
+
+  defp maybe_update_session_options(igniter, _host, otp_app, signing_salt) do
+    Igniter.Project.Config.configure(igniter, "config.exs", otp_app, [:session_options, :signing_salt], signing_salt)
   end
 
   defp maybe_add_new_endpoint_to_application(igniter, nil, _), do: igniter

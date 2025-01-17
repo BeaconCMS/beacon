@@ -214,6 +214,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     test "updates config.exs", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
+      # add config for new endpoint
       |> assert_has_patch("config/config.exs", """
          10 + |config :test, TestWeb.ExampleEndpoint,
          11 + |  url: [host: "localhost"],
@@ -225,11 +226,20 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
          17 + |  pubsub_server: Test.PubSub,
          18 + |  live_view: [signing_salt: "#{@signing_salt}"]
       """)
+      # update signing salt for host app session_options
+      |> assert_has_patch("config/config.exs", """
+         28 + |    signing_salt: "#{@signing_salt}",
+      """)
+      # update signing salt for existing endpoint
+      |> assert_has_patch("config/config.exs", """
+         41 + |  live_view: [signing_salt: "#{@signing_salt}"]
+      """)
     end
 
     test "updates dev.exs", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
+      # add config for new endpoint
       |> assert_has_patch("config/dev.exs", """
          3 + |config :test, TestWeb.ExampleEndpoint,
          4 + |  http: [ip: {127, 0, 0, 1}, port: #{@port}],
@@ -242,6 +252,10 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         11 + |    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
         12 + |  ]
         13 + |
+      """)
+      # update secret key base for existing endpoint
+      |> assert_has_patch("config/dev.exs", """
+          33 + |  secret_key_base: "#{@secret_key_base}",
       """)
     end
 
@@ -256,7 +270,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         57 + |
       """)
       |> assert_has_patch("config/runtime.exs", """
-        48 + |    check_origin: ["example.com"],
+        48 + |    check_origin: [host, "example.com"],
       """)
       |> assert_has_patch("config/runtime.exs", """
          2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
