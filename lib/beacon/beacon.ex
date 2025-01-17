@@ -58,13 +58,12 @@ defmodule Beacon do
         children = [
           MyApp.Repo,
           {Phoenix.PubSub, name: MyApp.PubSub},
-          MyAppWeb.Endpoint,
-          {Beacon,
-           [
-             sites: [
-               Application.fetch_env!(:beacon, :my_site)
-             ]
-           ]}
+          {Beacon, [
+            sites: [
+              Application.fetch_env!(:beacon, :my_site)
+            ]
+          ]},
+          MyAppWeb.Endpoint
         ]
 
         opts = [strategy: :one_for_one, name: MyApp.Supervisor]

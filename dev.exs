@@ -1220,8 +1220,8 @@ Task.start(fn ->
   children = [
     Demo.Repo,
     {Phoenix.PubSub, [name: Demo.PubSub]},
-    DemoWeb.Endpoint,
-    {Beacon, sites: [dev_site, dy_site]}
+    {Beacon, sites: [dev_site, dy_site]},
+    DemoWeb.Endpoint
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
