@@ -176,7 +176,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
           opts =
             if host,
-              do: [with_pipelines: [:browser, :beacon], router: router, arg2: [host: host]],
+              do: [with_pipelines: [:browser, :beacon], router: router, arg2: [host: ["localhost", host]]],
               else: [with_pipelines: [:browser, :beacon], router: router]
 
           Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content, opts)

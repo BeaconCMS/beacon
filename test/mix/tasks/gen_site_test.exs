@@ -289,7 +289,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
       |> assert_has_patch("lib/test_web/router.ex", """
-        23 + |  scope "/", host: "example.com" do
+        23 + |  scope "/", host: ["localhost", "example.com"] do
         24 + |    pipe_through [:browser, :beacon]
         25 + |    beacon_site "/", site: :my_site
         26 + |  end
