@@ -2,7 +2,7 @@
 
 Beacon provides support for custom client-side JavaScript via LiveView's [JS Hooks](https://hexdocs.pm/phoenix_live_view/js-interop.html#client-hooks-via-phx-hook).
 
-Hooks are blocks of custom JS code which run when an element in a beacon template reaches a specific
+Hooks are blocks of custom JS code which run when an element in a Beacon template reaches a specific
 stage of its lifecycle.  There are six possible stages which you can use:
 
   * `mounted` - the element has been added to the DOM and its server

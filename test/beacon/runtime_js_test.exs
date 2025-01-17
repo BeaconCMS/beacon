@@ -21,8 +21,16 @@ defmodule Beacon.RuntimeJSTest do
 
   describe "build_hooks/2" do
     setup do
-      beacon_js_hook_fixture(name: "Hook1")
-      beacon_js_hook_fixture(name: "Hook2")
+      beacon_js_hook_fixture(
+        name: "Hook1",
+        mounted: ~S"""
+        console.log("mounted!");
+        console.log("second line");
+        """,
+        updated: "console.log(\"updated!\");"
+      )
+
+      beacon_js_hook_fixture(name: "Hook2", before_update: "console.log(\"before update!\");")
       :ok
     end
 
@@ -32,11 +40,15 @@ defmodule Beacon.RuntimeJSTest do
                    Hook1: {
                      mounted() {
                        console.log("mounted!");
+                       console.log("second line");
+                     },
+                     updated() {
+                       console.log("updated!");
                      },
                    },
                    Hook2: {
-                     mounted() {
-                       console.log("mounted!");
+                     beforeUpdate() {
+                       console.log("before update!");
                      },
                    }\
                """
@@ -44,7 +56,7 @@ defmodule Beacon.RuntimeJSTest do
 
     test "minified" do
       assert RuntimeJS.build_hooks(@site, _minify = true) ==
-               "Hook1:{mounted(){console.log(\"mounted!\");},},Hook2:{mounted(){console.log(\"mounted!\");},}"
+               "Hook1:{mounted(){console.log(\"mounted!\");console.log(\"second line\");},updated(){console.log(\"updated!\");},},Hook2:{beforeUpdate(){console.log(\"before update!\");},}"
     end
   end
 end

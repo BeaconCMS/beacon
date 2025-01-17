@@ -9,7 +9,7 @@ defmodule Beacon.Migrations.V003 do
       add :name, :text, null: false
 
       add :mounted, :text
-      add :beforeUpdate, :text
+      add :before_update, :text
       add :updated, :text
       add :destroyed, :text
       add :disconnected, :text

@@ -567,10 +567,7 @@ defmodule Beacon.Test.Fixtures do
     attrs
     |> Enum.into(%{
       site: "my_site",
-      name: "TestHook#{System.unique_integer([:positive])}",
-      mounted: ~S"""
-      console.log("mounted!");
-      """
+      name: "TestHook#{System.unique_integer([:positive])}"
     })
     |> Content.create_js_hook!()
     |> tap(&Loader.load_runtime_js(&1.site))

@@ -21,7 +21,7 @@ defmodule Beacon.Content.JSHook do
     field :site, Beacon.Types.Site
 
     field :mounted, :string
-    field :beforeUpdate, :string
+    field :before_update, :string
     field :updated, :string
     field :destroyed, :string
     field :disconnected, :string
@@ -36,7 +36,7 @@ defmodule Beacon.Content.JSHook do
 
     optional = [
       :mounted,
-      :beforeUpdate,
+      :before_update,
       :updated,
       :destroyed,
       :disconnected,

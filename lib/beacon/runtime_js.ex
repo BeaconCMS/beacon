@@ -81,42 +81,44 @@ defmodule Beacon.RuntimeJS do
     site
     |> Beacon.Content.list_js_hooks()
     |> Enum.map_join(joiner, fn hook ->
-      code =
-        IO.iodata_to_binary([
-          if(hook.mounted, do: format_callback(hook, :mounted, minify?), else: []),
-          if(hook.beforeUpdate, do: format_callback(hook, :beforeUpdate, minify?), else: []),
-          if(hook.updated, do: format_callback(hook, :updated, minify?), else: []),
-          if(hook.destroyed, do: format_callback(hook, :destroyed, minify?), else: []),
-          if(hook.disconnected, do: format_callback(hook, :disconnected, minify?), else: []),
-          if(hook.reconnected, do: format_callback(hook, :reconnected, minify?), else: [])
-        ])
+      callbacks =
+        hook
+        |> Map.take([:mounted, :before_update, :updated, :destroyed, :disconnected, :reconnected])
+        |> Map.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.map(&format_callback(&1, minify?))
 
-      if minify? do
-        "#{hook.name}:{#{code}}"
-      else
-        "    #{hook.name}: {\n#{code}    }"
-      end
+      hooks =
+        if minify? do
+          [hook.name, ":{", callbacks, "}"]
+        else
+          ["    ", hook.name, ": {\n", callbacks, "    }"]
+        end
+
+      IO.iodata_to_binary(hooks)
     end)
   end
 
-  defp format_callback(hook, callback, minify?)
+  defp format_callback(kv_pair, minify?)
 
-  defp format_callback(hook, callback, false) do
-    IO.iodata_to_binary([
+  defp format_callback({callback_key, code}, false) do
+    [
       "      ",
-      to_string(callback),
+      format_key(callback_key),
       "() {\n        ",
-      hook |> Map.fetch!(callback) |> String.trim_trailing() |> String.replace("\n", "\n        "),
+      code |> String.trim_trailing() |> String.replace("\n", "\n        "),
       "\n      },\n"
-    ])
+    ]
   end
 
-  defp format_callback(hook, callback, true) do
-    IO.iodata_to_binary([
-      to_string(callback),
+  defp format_callback({callback_key, code}, true) do
+    [
+      format_key(callback_key),
       "(){",
-      hook |> Map.fetch!(callback) |> String.replace("\n", ""),
+      String.replace(code, "\n", ""),
       "},"
-    ])
+    ]
   end
+
+  defp format_key(:before_update), do: "beforeUpdate"
+  defp format_key(other), do: to_string(other)
 end
