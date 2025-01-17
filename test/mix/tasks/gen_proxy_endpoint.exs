@@ -46,6 +46,11 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
   test "update config.exs", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
+    # add proxy endpoint config
+    |> assert_has_patch("config/config.exs", """
+       10 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: "#{@signing_salt}"]
+       11 + |
+    """)
     # add session options config
     |> assert_has_patch("config/config.exs", """
     10 12   |config :test,
@@ -59,11 +64,6 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
        19 + |    same_site: "Lax"
        20 + |  ]
     """)
-    # add proxy endpoint config
-    |> assert_has_patch("config/config.exs", """
-       10 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: "#{@signing_salt}"]
-       11 + |
-    """)
     # update fallback endpoint signing salt
     |> assert_has_patch("config/config.exs", """
        31 + |  live_view: [signing_salt: "#{@signing_salt}"]
@@ -73,6 +73,7 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
   test "update dev.exs", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
+    # add proxy endpoint config
     |> assert_has_patch("config/dev.exs", """
         3 + |config :test, TestWeb.ProxyEndpoint,
         4 + |  http: [ip: {127, 0, 0, 1}, port: 4000],
@@ -81,26 +82,24 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
         7 + |  secret_key_base: "#{@secret_key_base}"
         8 + |
     """)
+    # update existing endpoint to port 4100
     |> assert_has_patch("config/dev.exs", """
     12    - |  http: [ip: {127, 0, 0, 1}, port: 4000],
        18 + |  http: [ip: {127, 0, 0, 1}, port: 4100],
+    """)
+    # update existing endpoint secret_key_base
+    |> assert_has_patch("config/dev.exs", """
+       22 + |  secret_key_base: "#{@secret_key_base}",
     """)
   end
 
   test "update runtime.exs", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
-    |> assert_has_patch("config/runtime.exs", """
-       46 + |config :test, TestWeb.ProxyEndpoint,
-       47 + |  check_origin: [],
-       48 + |  url: [port: 443, scheme: "https"],
-       49 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
-       50 + |  secret_key_base: secret_key_base
-       51 + |
-    """)
+    # update existing endpoint config
     |> assert_has_patch("config/runtime.exs", """
     41  41   |  config :test, TestWeb.Endpoint,
-    42     - |    url: [host: host, port: 8443, scheme: "https"],
+    42     - |    url: [host: host, port: 443, scheme: "https"],
     43     - |    http: [
     44     - |      # Enable IPv6 and bind on all interfaces.
     45     - |      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -112,6 +111,15 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
         42 + |    url: [host: host, port: 8443, scheme: "https"],
         43 + |    http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: 4100],
     51  44   |    secret_key_base: secret_key_base
+    """)
+    # add proxy endpoint config
+    |> assert_has_patch("config/runtime.exs", """
+       46 + |config :test, TestWeb.ProxyEndpoint,
+       47 + |  check_origin: [host],
+       48 + |  url: [port: 443, scheme: "https"],
+       49 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
+       50 + |  secret_key_base: secret_key_base
+       51 + |
     """)
   end
 end

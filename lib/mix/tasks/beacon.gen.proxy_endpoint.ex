@@ -28,6 +28,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   @doc false
   def igniter(igniter) do
+    options = igniter.args.options
     proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
 
     case Igniter.Project.Module.module_exists(igniter, proxy_endpoint_module_name) do
@@ -41,14 +42,14 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         {igniter, router} = Beacon.Igniter.select_router!(igniter)
         {igniter, fallback_endpoint} = Beacon.Igniter.select_endpoint(igniter, router, "Select a fallback endpoint (default app Endpoint):")
         {igniter, existing_endpoints} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
-        signing_salt = Keyword.get_lazy(igniter.args.argv, :signing_salt, fn -> random_string(8) end)
-        secret_key_base = Keyword.get_lazy(igniter.args.argv, :secret_key_base, fn -> random_string(64) end)
+        signing_salt = Keyword.get_lazy(options, :signing_salt, fn -> random_string(8) end)
+        secret_key_base = Keyword.get_lazy(options, :secret_key_base, fn -> random_string(64) end)
 
         igniter
         |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
         |> add_endpoint_to_application(fallback_endpoint, proxy_endpoint_module_name)
         |> add_session_options_config(otp_app, signing_salt, igniter.args.options)
-        |> update_existing_endpoints(otp_app, existing_endpoints, signing_salt)
+        |> update_existing_endpoints(otp_app, existing_endpoints, signing_salt, secret_key_base)
         |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name, signing_salt, secret_key_base)
         |> Igniter.add_notice("""
         ProxyEndpoint generated successfully.
@@ -110,7 +111,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       :prod,
       otp_app,
       [proxy_endpoint_module_name, :check_origin],
-      {:code, Sourceror.parse_string!("[]")}
+      {:code, Sourceror.parse_string!("[host]")}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
@@ -141,10 +142,11 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :secret_key_base], secret_key_base)
   end
 
-  defp update_existing_endpoints(igniter, otp_app, existing_endpoints, signing_salt) do
+  defp update_existing_endpoints(igniter, otp_app, existing_endpoints, signing_salt, secret_key_base) do
     Enum.reduce(existing_endpoints, igniter, fn endpoint, acc ->
       acc
       |> Igniter.Project.Config.configure("config.exs", otp_app, [endpoint, :live_view, :signing_salt], signing_salt)
+      |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :secret_key_base], secret_key_base)
       |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :http], [],
         updater: fn zipper ->
           if port_matches_value?(zipper, 4000) do
