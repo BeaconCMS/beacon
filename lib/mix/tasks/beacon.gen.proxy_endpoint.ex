@@ -17,8 +17,9 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   ## Options
 
-  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.  By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
-  * `--signing-salt` (optional) The value to use for signing_salt in your app config.  By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the signing_salt from your app config and provide it here.
+  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config. By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+  * `--signing-salt` (optional) The value to use for signing_salt in your app config. By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the signing_salt from your app config and provide it here.
+  * `--same-site` (optional) Set the cookie session SameSite attributes, defaults to "Lax".
 
   """
 
@@ -230,7 +231,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   defp random_string(length) do
     length
     |> :crypto.strong_rand_bytes()
-    |> Base.encode64()
+    |> Base.encode64(padding: false)
     |> binary_part(0, length)
   end
 end

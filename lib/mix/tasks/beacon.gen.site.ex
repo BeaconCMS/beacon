@@ -36,7 +36,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       group: :beacon,
       example: @example,
       schema: [site: :string, path: :string, host: :string, port: :integer, secure_port: :integer, secret_key_base: :string, signing_salt: :string],
-      aliases: [s: :site, p: :path, h: :host],
       defaults: [path: "/"],
       required: [:site]
     }
