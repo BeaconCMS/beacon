@@ -20,13 +20,13 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   ## Options
 
-  * `--site` or `-s` (required) - The name of your site. Should not contain special characters nor start with "beacon_"
-  * `--path` or `-p` (optional, defaults to "/") - Where your site will be mounted. Follows the same convention as Phoenix route prefixes.
-  * `--host` or `-h` (optional) - If provided, a new endpoint will be created for this site with the given URL.
-  * `--port` (optional) - The port to use for http requests.  Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
-  * `--secure-port` (optional) - The port to use for https requests.  Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
-  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.  By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
-  * `--signing-salt` (optional) The value to use for signing_salt in your app config.  By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the signing_salt from your app config and provide it here.
+  * `--site` (required) - The name of your site. Should not contain special characters nor start with "beacon_"
+  * `--path` (optional, defaults to "/") - Where your site will be mounted. Follows the same convention as Phoenix route prefixes.
+  * `--host` (optional) - If provided, a new endpoint will be created for this site with the given URL.
+  * `--port` (optional) - The port to use for http requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
+  * `--secure-port` (optional) - The port to use for https requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
+  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config. By default, Beacon will generate a new value and update all existing config to match that value. If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+  * `--signing-salt` (optional) The value to use for signing_salt in your app config. By default, Beacon will generate a new value and update all existing config to match that value. If you don't want this behavior, copy the signing_salt from your app config and provide it here.
 
   """
 
