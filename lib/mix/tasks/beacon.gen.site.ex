@@ -44,10 +44,9 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   @doc false
   def igniter(igniter) do
     options = igniter.args.options
-    site = Keyword.fetch!(options, :site) |> String.to_atom()
-    path = Keyword.fetch!(options, :path)
-    host = Keyword.get(options, :host)
-    validate_options!(site, path, host)
+    site = Keyword.fetch!(options, :site) |> validate_site!()
+    path = Keyword.fetch!(options, :path) |> validate_path!()
+    host = Keyword.get(options, :host) |> validate_host!()
 
     port = Keyword.get_lazy(options, :port, fn -> Enum.random(4101..4999) end)
     secure_port = Keyword.get_lazy(options, :secure_port, fn -> Enum.random(8444..8999) end)
@@ -86,31 +85,56 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     """)
   end
 
-  defp validate_options!(site, path, _host) do
-    cond do
-      !Beacon.Types.Site.valid?(site) -> raise_with_help!("Invalid site name. It should not contain special characters.", site, path)
-      !Beacon.Types.Site.valid_name?(site) -> raise_with_help!("Invalid site name. The site name can't start with \"beacon_\".", site, path)
-      !Beacon.Types.Site.valid_path?(path) -> raise_with_help!("Invalid path value. It should start with /.", site, path)
-      :else -> :ok
+  defp validate_site!(site) do
+    Beacon.Types.Site.valid?(site) ||
+      Mix.raise("""
+      invalid site
+
+      It should not contain special characters
+      """)
+
+    Beacon.Types.Site.valid_name?(site) ||
+      Mix.raise("""
+      invalid site
+
+      The site name can't start with \"beacon_\".
+      """)
+
+    String.to_atom(site)
+  end
+
+  defp validate_path!(path) do
+    Beacon.Types.Site.valid_path?(path) ||
+      Mix.raise("""
+      invalid path
+
+      It should start with /
+      """)
+
+    path
+  end
+
+  defp validate_host!(nil = host), do: host
+
+  defp validate_host!(host) do
+    case domain_prefix(host) do
+      {:ok, _} ->
+        host
+
+      _ ->
+        Mix.raise("""
+        invalid host
+        """)
     end
   end
 
-  defp raise_with_help!(msg, site, path) do
-    Mix.raise("""
-    #{msg}
-
-    For example:
-
-        mix beacon.gen.site --site blog
-        or
-        mix beacon.gen.site --site blog --path "/blog_path"
-
-    Got:
-
-      site: #{inspect(site)}
-      path: #{inspect(path)}
-
-    """)
+  defp domain_prefix(host) do
+    with {:ok, %{host: host}} <- URI.new("//" <> host),
+         [prefix, _] <- String.split(host, ".", trim: 2, parts: 2) do
+      {:ok, prefix}
+    else
+      _ -> :error
+    end
   end
 
   defp add_use_beacon_in_router(igniter, router) do
@@ -174,9 +198,19 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
             """
 
           opts =
-            if host,
-              do: [with_pipelines: [:browser, :beacon], router: router, arg2: [host: ["localhost", host]]],
-              else: [with_pipelines: [:browser, :beacon], router: router]
+            if host do
+              [
+                with_pipelines: [:browser, :beacon],
+                router: router,
+                arg2: [alias: Igniter.Libs.Phoenix.web_module(igniter), host: ["localhost", host]]
+              ]
+            else
+              [
+                with_pipelines: [:browser, :beacon],
+                router: router,
+                arg2: [alias: Igniter.Libs.Phoenix.web_module(igniter)]
+              ]
+            end
 
           Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content, opts)
         end
@@ -190,7 +224,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     {igniter, endpoint} =
       case host do
         nil -> Beacon.Igniter.select_endpoint!(igniter, router)
-        host -> {igniter, new_endpoint_module(igniter, host)}
+        host -> {igniter, new_endpoint_module!(igniter, host)}
       end
 
     Igniter.Project.Config.configure(
@@ -255,7 +289,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_create_new_endpoint(igniter, host, otp_app, web_module) do
     Igniter.Project.Module.create_module(
       igniter,
-      new_endpoint_module(igniter, host),
+      new_endpoint_module!(igniter, host),
       """
       use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
 
@@ -301,7 +335,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_configure_new_endpoint(igniter, nil, _, _, _, _, _), do: igniter
 
   defp maybe_configure_new_endpoint(igniter, host, otp_app, port, secure_port, secret_key_base, signing_salt) do
-    new_endpoint = new_endpoint_module(igniter, host)
+    new_endpoint = new_endpoint_module!(igniter, host)
     proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
     error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
     error_json = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorJSON")
@@ -398,12 +432,19 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   defp maybe_add_new_endpoint_to_application(igniter, nil, _), do: igniter
 
   defp maybe_add_new_endpoint_to_application(igniter, host, repo) do
-    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module(igniter, host), after: [repo, Phoenix.PubSub, Finch, Beacon])
+    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module!(igniter, host), after: [repo, Phoenix.PubSub, Finch, Beacon])
   end
 
-  defp new_endpoint_module(igniter, host) do
-    [implicit_prefix | _] = String.split(host, ".")
-    Igniter.Libs.Phoenix.web_module_name(igniter, "#{String.capitalize(implicit_prefix)}Endpoint")
+  defp new_endpoint_module!(igniter, host) do
+    {:ok, prefix} = domain_prefix(host)
+
+    suffix =
+      prefix
+      |> String.split(~r/[^[:alnum:]]+/)
+      |> Enum.map_join("", &String.capitalize/1)
+      |> Kernel.<>("Endpoint")
+
+    Igniter.Libs.Phoenix.web_module_name(igniter, suffix)
   end
 
   # https://github.com/phoenixframework/phoenix/blob/c9b431f3a5d3bdc6a1d0ff3c29a229226e991195/installer/lib/phx_new/generator.ex#L451
