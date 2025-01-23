@@ -28,6 +28,7 @@ defmodule Beacon.Content do
   use GenServer
 
   import Ecto.Query
+  import Beacon.Auth, only: [authorize: 3]
   import Beacon.Utils, only: [repo: 1, transact: 2]
 
   alias Beacon.Content.Component
@@ -127,35 +128,47 @@ defmodule Beacon.Content do
   @doc """
   Creates a layout.
 
-  ## Example
+  ## Options
 
-      iex> create_layout(%{title: "Home"})
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> create_layout(%{title: "Home"}, auth: false)
       {:ok, %Layout{}}
+      iex> create_layout(%{title: "Home"}, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
 
   """
   @doc type: :layouts
-  @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
-  def create_layout(attrs) do
+  @spec create_layout(map(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_layout(attrs, opts \\ []) do
     changeset = Layout.changeset(%Layout{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    transact(repo(site), fn ->
-      with {:ok, changeset} <- validate_layout_template(changeset),
-           {:ok, layout} <- repo(site).insert(changeset),
-           {:ok, _event} <- create_layout_event(layout, "created") do
-        {:ok, layout}
-      end
-    end)
+    with :ok <- authorize(site, :create_layout, opts) do
+      transact(repo(site), fn ->
+        with {:ok, changeset} <- validate_layout_template(changeset),
+             {:ok, layout} <- repo(site).insert(changeset),
+             {:ok, _event} <- create_layout_event(layout, "created") do
+          {:ok, layout}
+        end
+      end)
+    end
   end
 
   @doc """
-  Creates a layout.
+  Creates a layout, raising an error if unsuccessful.
+
+  See `create_layout/2` for options.
   """
   @doc type: :layouts
-  @spec create_layout!(map()) :: Layout.t()
-  def create_layout!(attrs) do
-    case create_layout(attrs) do
+  @spec create_layout!(map(), keyword()) :: Layout.t()
+  def create_layout!(attrs, opts \\ []) do
+    case create_layout(attrs, opts) do
       {:ok, layout} -> layout
+      {:error, :not_authorized} -> raise "failed to create layout: not authorized"
       {:error, changeset} -> raise "failed to create layout, got: #{inspect(changeset.errors)}"
     end
   end
@@ -163,19 +176,27 @@ defmodule Beacon.Content do
   @doc """
   Updates a layout.
 
-  ## Example
+  ## Options
 
-      iex> update_layout(layout, %{title: "New Home"})
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> update_layout(layout, %{title: "New Home"}, auth: false)
       {:ok, %Layout{}}
+      iex> update_layout(layout, %{title: "New Home"}, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
 
   """
   @doc type: :layouts
-  @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
-  def update_layout(%Layout{} = layout, attrs) do
+  @spec update_layout(Layout.t(), map(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_layout(%Layout{} = layout, attrs, opts \\ []) do
     changeset = Layout.changeset(layout, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    with {:ok, changeset} <- validate_layout_template(changeset) do
+    with :ok <- authorize(site, :update_layout, opts),
+         {:ok, changeset} <- validate_layout_template(changeset) do
       repo(site).update(changeset)
     end
   end
@@ -187,33 +208,50 @@ defmodule Beacon.Content do
   Event + snapshot
 
   This operation is serialized.
+
+  ## Options
+
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> publish_layout(layout, auth: false)
+      {:ok, %Layout{}}
+      iex> publish_layout(layout, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
+
   """
   @doc type: :layouts
-  @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
-  def publish_layout(%Layout{} = layout) do
-    case Beacon.Config.fetch!(layout.site).mode do
-      :live ->
-        GenServer.call(name(layout.site), {:publish_layout, layout})
+  @spec publish_layout(Layout.t() | keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
+  def publish_layout(%Layout{} = layout, opts \\ []) do
+    with :ok <- authorize(site, :publish_layout, opts) do
+      case Beacon.Config.fetch!(layout.site).mode do
+        :live ->
+          GenServer.call(name(layout.site), {:publish_layout, layout})
 
-      :testing ->
-        layout
-        |> insert_published_layout()
-        |> tap(fn {:ok, layout} -> reset_published_layout(layout.site, layout.id) end)
+        :testing ->
+          layout
+          |> insert_published_layout()
+          |> tap(fn {:ok, layout} -> reset_published_layout(layout.site, layout.id) end)
 
-      :manual ->
-        insert_published_layout(layout)
+        :manual ->
+          insert_published_layout(layout)
+      end
     end
   end
 
   @doc """
   Same as `publish_layout/2` but accepts a `site` and `layout_id` with which to lookup the layout.
+
+  See `publish_layout/2` for accepted options.
   """
   @doc type: :layouts
-  @spec publish_layout(Site.t(), UUID.t()) :: {:ok, Layout.t()} | any()
-  def publish_layout(site, layout_id) when is_atom(site) and is_binary(layout_id) do
+  @spec publish_layout(Site.t(), UUID.t(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
+  def publish_layout(site, layout_id, opts \\ []) when is_atom(site) and is_binary(layout_id) do
     site
     |> get_layout(layout_id)
-    |> publish_layout()
+    |> publish_layout(opts)
   end
 
   defp validate_layout_template(changeset) do
@@ -528,11 +566,6 @@ defmodule Beacon.Content do
   @doc """
   Creates a new page that's not published.
 
-  ## Example
-
-      iex> create_page(%{"title" => "My New Page"})
-      {:ok, %Page{}}
-
   `attrs` may contain the following keys:
 
     * `path` - String.t()
@@ -549,10 +582,23 @@ defmodule Beacon.Content do
 
   It will insert a `created` event into the page timeline,
   and no snapshot is created.
+
+  ## Options
+
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> create_page(%{"title" => "My New Page"}, auth: false)
+      {:ok, %Page{}}
+      iex> create_page(%{"title" => "My New Page"}, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
+
   """
   @doc type: :pages
-  @spec create_page(map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def create_page(attrs) when is_map(attrs) do
+  @spec create_page(map(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_page(attrs, opts \\ []) when is_map(attrs) do
     attrs =
       Map.new(attrs, fn
         {key, val} when is_binary(key) -> {key, val}
@@ -562,14 +608,16 @@ defmodule Beacon.Content do
     {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
     changeset = Page.create_changeset(%Page{}, maybe_put_default_meta_tags(site, attrs))
 
-    transact(repo(site), fn ->
-      with {:ok, changeset} <- validate_page_template(changeset),
-           {:ok, page} <- repo(site).insert(changeset),
-           {:ok, _event} <- create_page_event(page, "created"),
-           %Page{} = page <- Lifecycle.Page.after_create_page(page) do
-        {:ok, page}
-      end
-    end)
+    with :ok <- authorize(site, :create_page, opts) do
+      transact(repo(site), fn ->
+        with {:ok, changeset} <- validate_page_template(changeset),
+             {:ok, page} <- repo(site).insert(changeset),
+             {:ok, _event} <- create_page_event(page, "created"),
+             %Page{} = page <- Lifecycle.Page.after_create_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   defp maybe_put_default_meta_tags(site, attrs) do
@@ -578,15 +626,16 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Creates a page.
+  Creates a page, raising an error if unsuccessful.
 
-  Raises an error if unsuccessful.
+  See `create_page/2` for accepted options.
   """
   @doc type: :pages
-  @spec create_page!(map()) :: Page.t()
-  def create_page!(attrs) do
-    case create_page(attrs) do
+  @spec create_page!(map(), keyword()) :: Page.t()
+  def create_page!(attrs, opts \\ []) do
+    case create_page(attrs, opts) do
       {:ok, page} -> page
+      {:error, :not_authorized} -> raise "failed to create page: not authorized"
       {:error, changeset} -> raise "failed to create page, got: #{inspect(changeset.errors)}"
     end
   end
@@ -594,15 +643,22 @@ defmodule Beacon.Content do
   @doc """
   Updates a page.
 
-  ## Example
+  ## Options
 
-      iex> update_page(page, %{title: "New Home"})
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> update_page(page, %{title: "New Home"}, auth: false)
       {:ok, %Page{}}
+      iex> update_page(page, %{title: "New Home"}, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
 
   """
   @doc type: :pages
-  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def update_page(%Page{} = page, attrs) do
+  @spec update_page(Page.t(), map(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_page(%Page{} = page, attrs, opts \\ []) do
     {ast, attrs} = Map.pop(attrs, "ast")
 
     attrs =
@@ -614,13 +670,15 @@ defmodule Beacon.Content do
 
     changeset = Page.update_changeset(page, attrs)
 
-    transact(repo(page), fn ->
-      with {:ok, changeset} <- validate_page_template(changeset),
-           {:ok, page} <- repo(page.site).update(changeset),
-           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-        {:ok, page}
-      end
-    end)
+    with :ok <- authorize(page.site, :update_page, opts) do
+      transact(repo(page), fn ->
+        with {:ok, changeset} <- validate_page_template(changeset),
+             {:ok, page} <- repo(page.site).update(changeset),
+             %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   @doc """
@@ -631,52 +689,73 @@ defmodule Beacon.Content do
   can keep editing the page as needed without impacting the published page.
 
   This operation is serialized.
+
+  ## Options
+
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> publish_page(page, auth: false)
+      {:ok, %Page{}}
+      iex> publish_page(page, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
+
   """
   @doc type: :pages
-  @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
-  def publish_page(%Page{} = page) do
-    case Beacon.Config.fetch!(page.site).mode do
-      :live ->
-        GenServer.call(name(page.site), {:publish_page, page})
+  @spec publish_page(Page.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
+  def publish_page(%Page{} = page, opts \\ []) do
+    with :ok <- authorize(page.site, :publish_page, opts) do
+      case Beacon.Config.fetch!(page.site).mode do
+        :live ->
+          GenServer.call(name(page.site), {:publish_page, page})
 
-      :testing ->
-        page
-        |> insert_published_page()
-        |> tap(fn {:ok, page} -> reset_published_page(page.site, page.id) end)
+        :testing ->
+          page
+          |> insert_published_page()
+          |> tap(fn {:ok, page} -> reset_published_page(page.site, page.id) end)
 
-      :manual ->
-        insert_published_page(page)
+        :manual ->
+          insert_published_page(page)
+      end
     end
   end
 
   @doc """
-  Same as `publish_page/1` but accepts a `site` and `page_id` with which to lookup the page.
+  Same as `publish_page/2` but accepts a `site` and `page_id` with which to lookup the page.
+
+  See `publish_page/2` for allowed options.
   """
   @doc type: :pages
-  @spec publish_page(Site.t(), UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def publish_page(site, page_id) when is_atom(site) and is_binary(page_id) do
+  @spec publish_page(Site.t(), UUID.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def publish_page(site, page_id, opts \\ []) when is_atom(site) and is_binary(page_id) do
     site
     |> get_page(page_id)
-    |> publish_page()
+    |> publish_page(opts)
   end
 
   # TODO: only publish if there were actual changes compared to the last snapshot
   @doc """
   Publish multiple `pages`.
 
-  Similar to `publish_page/1` but defers loading dependent resources
+  Similar to `publish_page/2` but defers loading dependent resources
   as late as possible making the process faster.
+
+  See `publish_page/2` for allowed options.
   """
   @doc type: :pages
   @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
-  def publish_pages(pages) when is_list(pages) do
+  def publish_pages(pages, opts \\ []) when is_list(pages) do
     publish = fn page ->
-      transact(repo(page), fn ->
-        with {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event) do
-          {:ok, page}
-        end
-      end)
+      with :ok <- authorize(page.site, :publish_page, opts) do
+        transact(repo(page), fn ->
+          with {:ok, event} <- create_page_event(page, "published"),
+               {:ok, _snapshot} <- create_page_snapshot(page, event) do
+            {:ok, page}
+          end
+        end)
+      end
     end
 
     pages =
@@ -710,16 +789,31 @@ defmodule Beacon.Content do
 
   Note that page will be removed from your site
   and it will return error 404 for new requests.
+
+  ## Options
+
+    * `:actor` - the identity to check for authorization
+    * `:auth` - pass `false` to disable authorization (defaults to `true`)
+
+  ## Examples
+
+      iex> unpublish_page(page, auth: false)
+      {:ok, %Page{}}
+      iex> unpublish_page(page, actor: "user-id-with-read-only-access")
+      {:error, :not_authorized}
+
   """
   @doc type: :pages
-  @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def unpublish_page(%Page{} = page) do
-    transact(repo(page), fn ->
-      with {:ok, _event} <- create_page_event(page, "unpublished") do
-        :ok = Beacon.PubSub.page_unpublished(page)
-        {:ok, page}
-      end
-    end)
+  @spec unpublish_page(Page.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def unpublish_page(%Page{} = page, opts \\ []) do
+    with :ok <- authorize(page.site, :unpublish_page, opts) do
+      transact(repo(page), fn ->
+        with {:ok, _event} <- create_page_event(page, "unpublished") do
+          :ok = Beacon.PubSub.page_unpublished(page)
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   @doc false

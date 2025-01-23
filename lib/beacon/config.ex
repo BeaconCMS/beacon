@@ -199,6 +199,11 @@ defmodule Beacon.Config do
   """
   @type page_warming :: {:shortest_paths, integer()} | {:specify_paths, [String.t()]} | :none
 
+  @typedoc """
+  A module that implements `Beacon.Auth`.
+  """
+  @type auth_module :: module()
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -217,7 +222,8 @@ defmodule Beacon.Config do
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags(),
-          page_warming: page_warming()
+          page_warming: page_warming(),
+          auth_module: auth_module()
         }
 
   @default_load_template [
@@ -240,8 +246,6 @@ defmodule Beacon.Config do
             router: nil,
             repo: nil,
             mode: :live,
-            # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
-            # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: nil,
             tailwind_css: nil,
@@ -264,7 +268,8 @@ defmodule Beacon.Config do
             extra_page_fields: [],
             extra_asset_fields: [],
             default_meta_tags: [],
-            page_warming: {:shortest_paths, 10}
+            page_warming: {:shortest_paths, 10},
+            auth_module: Beacon.Auth.Default
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -285,6 +290,7 @@ defmodule Beacon.Config do
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
           | {:page_warming, page_warming()}
+          | {:auth_module, auth_module()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -315,10 +321,10 @@ defmodule Beacon.Config do
 
         Defaults to:
 
-              [
-                {:heex, "HEEx (HTML)"},
-                {:markdown, "Markdown (GitHub Flavored version)"}
-              ]
+          [
+            heex: "HEEx (HTML)",
+            markdown: "Markdown (GitHub Flavored version)"
+          ]
 
     Note that the default config is merged with your config.
 
@@ -333,6 +339,8 @@ defmodule Beacon.Config do
     * `:default_meta_tags` - `t:default_meta_tags/0` (optional). Defaults to `%{}`.
 
     * `:page_warming` - `t:page_warming/0` (optional). Defaults to `{:shortest_paths, 10}`.
+
+    * `:auth_module` - `t:auth_module/0` (optional). Defaults to `Beacon.Auth.Default`.
 
   ## Example
 
@@ -363,7 +371,8 @@ defmodule Beacon.Config do
             notify_admin: fn page -> {:cont, MyApp.Admin.send_email(page)} end
           ]
         ],
-        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]},
+        auth_module: MyApp.BeaconAuth
       )
       %Beacon.Config{
         site: :my_site,
@@ -412,7 +421,8 @@ defmodule Beacon.Config do
         extra_page_fields: [],
         extra_asset_fields: [],
         default_meta_tags: [],
-        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]},
+        auth_module: MyApp.BeaconAuth
       }
 
   """
@@ -455,6 +465,7 @@ defmodule Beacon.Config do
     extra_asset_fields = Keyword.get(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
     page_warming = Keyword.get(opts, :page_warming, {:shortest_paths, 10})
+    auth_module = Keyword.get(opts, :auth_module, Beacon.Auth.Default)
 
     opts =
       opts
@@ -467,6 +478,7 @@ defmodule Beacon.Config do
       |> Keyword.put(:default_meta_tags, default_meta_tags)
       |> Keyword.put(:extra_asset_fields, extra_asset_fields)
       |> Keyword.put(:page_warming, page_warming)
+      |> Keyword.put(:auth_module, auth_module)
 
     struct!(__MODULE__, opts)
   end
