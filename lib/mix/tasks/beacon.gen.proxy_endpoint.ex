@@ -190,10 +190,15 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         end
       )
       |> Igniter.Project.Module.find_and_update_module!(endpoint, fn zipper ->
-        {:ok, zipper} = Igniter.Code.Function.move_to_function_call(zipper, :socket, 3)
-        # TODO replace the node with a commented-out version of itself
-        # blocked by https://github.com/ash-project/igniter/pull/200
-        {:ok, Sourceror.Zipper.remove(zipper)}
+        case Igniter.Code.Function.move_to_function_call(zipper, :socket, 3) do
+          {:ok, zipper} ->
+            # TODO replace the node with a commented-out version of itself
+            # blocked by https://github.com/ash-project/igniter/pull/200
+            {:ok, Sourceror.Zipper.remove(zipper)}
+
+          _ ->
+            {:ok, zipper}
+        end
       end)
       |> Igniter.Project.Module.find_and_update_module!(endpoint, fn zipper ->
         case Beacon.Igniter.move_to_constant(zipper, :session_options) do
