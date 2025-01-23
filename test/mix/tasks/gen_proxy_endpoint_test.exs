@@ -43,6 +43,14 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     17    - |  )
     18    - |
     """)
+    |> assert_has_patch("lib/test_web/endpoint.ex", """
+       3 + |  @session_options Application.compile_env!(:test, :session_options)
+    3  4   |
+    4    - |  # The session will be stored in the cookie and signed,
+    5    - |  # this means its contents can be read but not tampered with.
+    6    - |  # Set :encryption_salt if you would also like to encrypt it.
+    7    - |  @session_options [
+    """)
   end
 
   test "add endpoint to application.ex", %{project: project} do

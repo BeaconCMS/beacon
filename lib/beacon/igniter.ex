@@ -33,4 +33,11 @@ defmodule Beacon.Igniter do
       found -> found
     end
   end
+
+  def move_to_constant(zipper, name) do
+    case Sourceror.Zipper.find(zipper, &match?({:@, _, [{^name, _, _}]}, &1)) do
+      nil -> :error
+      value -> {:ok, value}
+    end
+  end
 end

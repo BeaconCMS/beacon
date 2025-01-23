@@ -18,8 +18,10 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   ## Options
 
   * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config. By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
-  * `--signing-salt` (optional) The value to use for signing_salt in your app config. By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the signing_salt from your app config and provide it here.
-  * `--same-site` (optional, defaults to "Lax") Set the cookie session SameSite attributes.
+  * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
+                                  By default, Beacon will generate a new value and update all existing config to match that value. 
+                                  but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
+  * `--same-site` (optional, defaults to "Lax") - Set the cookie session SameSite attributes.
 
   """
 
@@ -192,6 +194,16 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         # TODO replace the node with a commented-out version of itself
         # blocked by https://github.com/ash-project/igniter/pull/200
         {:ok, Sourceror.Zipper.remove(zipper)}
+      end)
+      |> Igniter.Project.Module.find_and_update_module!(endpoint, fn zipper ->
+        case Beacon.Igniter.move_to_constant(zipper, :session_options) do
+          {:ok, zipper} ->
+            new = Sourceror.parse_string!("@session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)")
+            {:ok, Sourceror.Zipper.replace(zipper, new)}
+
+          _ ->
+            {:ok, zipper}
+        end
       end)
     end)
   end

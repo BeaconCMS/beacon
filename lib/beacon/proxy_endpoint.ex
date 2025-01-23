@@ -1,12 +1,6 @@
 defmodule Beacon.ProxyEndpoint do
   @moduledoc false
 
-  # Proxy Endpoint to redirect requests to each site endpoint in a multiple domains setup.
-  #
-  #     TODO: beacon.deploy.add_domain fobar
-  #
-  #     TODO: use Beacon.ProxyEndpoint, otp_app: :my_app, endpoints: [MyAppWeb.EndpointSiteA, MyAppWeb.EndpointSiteB]
-
   defmacro __using__(opts) do
     quote location: :keep, generated: true do
       otp_app = Keyword.get(unquote(opts), :otp_app) || raise Beacon.RuntimeError, "missing required option :otp_app in Beacon.ProxyEndpoint"
