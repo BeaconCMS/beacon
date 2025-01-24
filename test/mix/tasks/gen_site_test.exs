@@ -279,9 +279,9 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> assert_has_patch("config/runtime.exs", """
          2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
       """)
-      # adds host to proxy endpoint allowed origins
+      # configure check_origin for ProxyEndpoint
       |> assert_has_patch("config/runtime.exs", """
-        48 + |    check_origin: [host, "example.com"],
+        48 + |    check_origin: {TestWeb.ProxyEndpoint, :check_origin, []},
       """)
       # add config for new endpoint
       |> assert_has_patch("config/runtime.exs", """
