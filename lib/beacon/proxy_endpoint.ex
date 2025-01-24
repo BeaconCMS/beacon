@@ -39,6 +39,18 @@ defmodule Beacon.ProxyEndpoint do
         endpoint.call(conn, endpoint.init(opts))
       end
 
+      @doc """
+      Check origin dynamically.
+
+      Used in the ProxyEndpoint `:check_origin` config to check the origin request
+      against the fallback endpoint and all running site's endpoints.
+
+      It checks if the requested scheme://host is the same as any of the available endpoints.
+
+      It doesn't check the scheme if not available, so in some cases it might check only the host.
+      Port is never checked since the proxied (children) endpoints don't use the same port as
+      as the requested URI.
+      """
       def check_origin(%URI{} = uri) do
         check_origin_fallback_endpoint = fn ->
           url = @__beacon_proxy_fallback__.config(:url)
