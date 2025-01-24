@@ -135,7 +135,7 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     # add proxy endpoint config
     |> assert_has_patch("config/runtime.exs", """
        46 + |config :test, TestWeb.ProxyEndpoint,
-       47 + |  check_origin: [host],
+       47 + |  check_origin: {TestWeb.ProxyEndpoint, :check_origin, []},
        48 + |  url: [port: 443, scheme: "https"],
        49 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: port],
        50 + |  secret_key_base: secret_key_base,

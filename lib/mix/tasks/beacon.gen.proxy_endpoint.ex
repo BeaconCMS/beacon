@@ -120,7 +120,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       :prod,
       otp_app,
       [proxy_endpoint_module_name, :check_origin],
-      {:code, Sourceror.parse_string!("[host]")}
+      {:code, Sourceror.parse_string!("{#{inspect(proxy_endpoint_module_name)}, :check_origin, []}")}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
