@@ -38,6 +38,24 @@ defmodule Beacon.ProxyEndpoint do
 
         endpoint.call(conn, endpoint.init(opts))
       end
+
+      def check_origin(%URI{} = uri) do
+        check_origin_fallback_endpoint = fn ->
+          url = @__beacon_proxy_fallback__.config(:url)
+          check_origin(uri, url[:scheme], url[:host])
+        end
+
+        Enum.any?(Beacon.Registry.running_sites(), fn site ->
+          url = Beacon.Config.fetch!(site).endpoint.config(:url)
+          check_origin(uri, url[:scheme], url[:host])
+        end) || check_origin_fallback_endpoint.()
+      end
+
+      def check_origin(_), do: false
+
+      defp check_origin(%{scheme: scheme, host: host}, scheme, host) when is_binary(scheme) and is_binary(host), do: true
+      defp check_origin(%{host: host}, nil, host) when is_binary(host), do: true
+      defp check_origin(_, _), do: false
     end
   end
 end
