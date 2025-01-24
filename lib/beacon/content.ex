@@ -219,7 +219,7 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec publish_layout(Layout.t() | keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout, opts \\ []) do
-    with :ok <- authorize(site, :publish_layout, opts) do
+    with :ok <- authorize(layout.site, :publish_layout, opts) do
       case Beacon.Config.fetch!(layout.site).mode do
         :live ->
           GenServer.call(name(layout.site), {:publish_layout, layout})
@@ -242,8 +242,8 @@ defmodule Beacon.Content do
   in the module documentation.
   """
   @doc type: :layouts
-  @spec publish_layout(Site.t(), UUID.t(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
-  def publish_layout(site, layout_id, opts \\ []) when is_atom(site) and is_binary(layout_id) do
+  @spec publish_layout_id(Site.t(), UUID.t(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
+  def publish_layout_id(site, layout_id, opts \\ []) when is_atom(site) and is_binary(layout_id) do
     site
     |> get_layout(layout_id)
     |> publish_layout(opts)
@@ -695,8 +695,8 @@ defmodule Beacon.Content do
   in the module documentation.
   """
   @doc type: :pages
-  @spec publish_page(Site.t(), UUID.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
-  def publish_page(site, page_id, opts \\ []) when is_atom(site) and is_binary(page_id) do
+  @spec publish_page_id(Site.t(), UUID.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def publish_page_id(site, page_id, opts \\ []) when is_atom(site) and is_binary(page_id) do
     site
     |> get_page(page_id)
     |> publish_page(opts)
@@ -3089,7 +3089,7 @@ defmodule Beacon.Content do
   @doc type: :components
   @spec update_component(Component.t(), map(), keyword()) :: {:ok, Component.t()} | {:error, Changeset.t() | :not_authorized}
   def update_component(%Component{} = component, attrs, opts \\ []) do
-    with :ok <- authorize(site, :update_component, opts) do
+    with :ok <- authorize(component.site, :update_component, opts) do
       component
       |> Component.changeset(attrs)
       |> validate_component_template()
@@ -3847,7 +3847,7 @@ defmodule Beacon.Content do
   @doc type: :event_handlers
   @spec update_event_handler(EventHandler.t(), map(), keyword()) :: {:ok, EventHandler.t()} | {:error, Changeset.t() | :not_authorized}
   def update_event_handler(event_handler, attrs, opts \\ []) do
-    with :ok <- authorize(site, :update_event_handler, opts) do
+    with :ok <- authorize(event_handler.site, :update_event_handler, opts) do
       event_handler
       |> EventHandler.changeset(attrs)
       |> validate_event_handler()
@@ -4422,7 +4422,7 @@ defmodule Beacon.Content do
   @doc type: :info_handlers
   @spec delete_info_handler(InfoHandler.t(), keyword()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t() | :not_authorized}
   def delete_info_handler(info_handler, opts \\ []) do
-    with :ok <- authorize(site, :delete_info_handler, opts) do
+    with :ok <- authorize(info_handler.site, :delete_info_handler, opts) do
       info_handler
       |> repo(info_handler).delete()
       |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
