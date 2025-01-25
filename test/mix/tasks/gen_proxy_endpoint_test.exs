@@ -66,50 +66,53 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
   test "update config.exs", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
+    # add signing_salt variable
+    |> assert_has_patch("config/config.exs", """
+       10 + |signing_salt = "#{@signing_salt}"
+    """)
     # add proxy endpoint config
     |> assert_has_patch("config/config.exs", """
-       10 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: "#{@signing_salt}"]
-       11 + |
+       11 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: signing_salt]
+       12 + |
     """)
     # add session options config
     |> assert_has_patch("config/config.exs", """
-    10 12   |config :test,
-    11 13   |  ecto_repos: [Test.Repo],
+    10 13   |config :test,
+    11 14   |  ecto_repos: [Test.Repo],
     12    - |  generators: [timestamp_type: :utc_datetime]
-       14 + |  generators: [timestamp_type: :utc_datetime],
-       15 + |  session_options: [
-       16 + |    store: :cookie,
-       17 + |    key: "_test_key",
-       18 + |    signing_salt: "#{@signing_salt}",
-       19 + |    same_site: "Lax"
-       20 + |  ]
+       15 + |  generators: [timestamp_type: :utc_datetime],
+       16 + |  session_options: [
+       17 + |    store: :cookie,
+       18 + |    key: "_test_key",
+       19 + |    signing_salt: signing_salt,
+       20 + |    same_site: "Lax"
+       21 + |  ]
     """)
     # update fallback endpoint signing salt
     |> assert_has_patch("config/config.exs", """
-       31 + |  live_view: [signing_salt: "#{@signing_salt}"]
+       32 + |  live_view: [signing_salt: signing_salt]
     """)
   end
 
   test "update dev.exs", %{project: project} do
     project
     |> Igniter.compose_task("beacon.gen.proxy_endpoint", @opts)
+    # add secret_key_base variable
+    |> assert_has_patch("config/dev.exs", """
+        2 + |secret_key_base = "#{@secret_key_base}"
+    """)
     # add proxy endpoint config
     |> assert_has_patch("config/dev.exs", """
-        3 + |config :test, TestWeb.ProxyEndpoint,
-        4 + |  http: [ip: {127, 0, 0, 1}, port: 4000],
-        5 + |  check_origin: false,
-        6 + |  debug_errors: true,
-        7 + |  secret_key_base: "#{@secret_key_base}"
-        8 + |
+        3 + |config :test, TestWeb.ProxyEndpoint, http: [ip: {127, 0, 0, 1}, port: 4000], check_origin: false, debug_errors: true, secret_key_base: secret_key_base
     """)
     # update existing endpoint to port 4100
     |> assert_has_patch("config/dev.exs", """
     12    - |  http: [ip: {127, 0, 0, 1}, port: 4000],
-       18 + |  http: [ip: {127, 0, 0, 1}, port: 4100],
+       14 + |  http: [ip: {127, 0, 0, 1}, port: 4100],
     """)
     # update existing endpoint secret_key_base
     |> assert_has_patch("config/dev.exs", """
-       22 + |  secret_key_base: "#{@secret_key_base}",
+       18 + |  secret_key_base: secret_key_base,
     """)
   end
 

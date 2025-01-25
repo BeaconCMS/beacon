@@ -19,7 +19,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config. By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
   * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
-                                  By default, Beacon will generate a new value and update all existing config to match that value. 
+                                  By default, Beacon will generate a new value and update all existing config to match that value.
                                   but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
   * `--same-site` (optional, defaults to "Lax") - Set the cookie session SameSite attributes.
 
@@ -57,9 +57,10 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         igniter
         |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
         |> add_endpoint_to_application(fallback_endpoint, proxy_endpoint_module_name)
-        |> add_session_options_config(otp_app, signing_salt, igniter.args.options)
-        |> update_existing_endpoints(otp_app, existing_endpoints, signing_salt, secret_key_base)
-        |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name, signing_salt, secret_key_base)
+        |> add_session_options_config(otp_app, igniter.args.options)
+        |> update_existing_endpoints(otp_app, existing_endpoints)
+        |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name)
+        |> add_variables_to_config(signing_salt, secret_key_base)
         |> Igniter.add_notice("""
         ProxyEndpoint generated successfully.
 
@@ -81,7 +82,31 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint, Beacon])
   end
 
-  def add_session_options_config(igniter, otp_app, signing_salt, options) do
+  def add_variables_to_config(igniter, signing_salt, secret_key_base) do
+    igniter
+    |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
+      case Beacon.Igniter.move_to_variable(zipper, :signing_salt) do
+        {:ok, _already_exists} ->
+          zipper
+
+        :error ->
+          {:ok, at_import} = Beacon.Igniter.move_to_import(zipper, Config)
+          Igniter.Code.Common.add_code(at_import, "signing_salt = \"#{signing_salt}\"", placement: :after)
+      end
+    end)
+    |> Igniter.update_elixir_file("config/dev.exs", fn zipper ->
+      case Beacon.Igniter.move_to_variable(zipper, :secret_key_base) do
+        {:ok, _already_exists} ->
+          zipper
+
+        :error ->
+          {:ok, at_import} = Beacon.Igniter.move_to_import(zipper, Config)
+          Igniter.Code.Common.add_code(at_import, "secret_key_base = \"#{secret_key_base}\"", placement: :after)
+      end
+    end)
+  end
+
+  def add_session_options_config(igniter, otp_app, options) do
     key = Keyword.get_lazy(options, :key, fn -> "_#{otp_app}_key" end)
     same_site = Keyword.get(options, :same_site, "Lax")
 
@@ -95,14 +120,14 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
        [
          store: :cookie,
          key: "#{key}",
-         signing_salt: "#{signing_salt}",
+         signing_salt: signing_salt,
          same_site: "#{same_site}"
        ]
        """)}
     )
   end
 
-  def add_proxy_endpoint_config(igniter, otp_app, proxy_endpoint_module_name, signing_salt, secret_key_base) do
+  def add_proxy_endpoint_config(igniter, otp_app, proxy_endpoint_module_name) do
     igniter
     |> Igniter.Project.Config.configure(
       "config.exs",
@@ -114,7 +139,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       "config.exs",
       otp_app,
       [proxy_endpoint_module_name, :live_view, :signing_salt],
-      signing_salt
+      {:code, Sourceror.parse_string!("signing_salt")}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
@@ -154,14 +179,24 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     )
     |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :check_origin], {:code, Sourceror.parse_string!("false")})
     |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :debug_errors], {:code, Sourceror.parse_string!("true")})
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :secret_key_base], secret_key_base)
+    |> Igniter.Project.Config.configure(
+      "dev.exs",
+      otp_app,
+      [proxy_endpoint_module_name, :secret_key_base],
+      {:code, Sourceror.parse_string!("secret_key_base")}
+    )
   end
 
-  defp update_existing_endpoints(igniter, otp_app, existing_endpoints, signing_salt, secret_key_base) do
+  defp update_existing_endpoints(igniter, otp_app, existing_endpoints) do
     Enum.reduce(existing_endpoints, igniter, fn endpoint, acc ->
       acc
-      |> Igniter.Project.Config.configure("config.exs", otp_app, [endpoint, :live_view, :signing_salt], signing_salt)
-      |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :secret_key_base], secret_key_base)
+      |> Igniter.Project.Config.configure(
+        "config.exs",
+        otp_app,
+        [endpoint, :live_view, :signing_salt],
+        {:code, Sourceror.parse_string!("signing_salt")}
+      )
+      |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :secret_key_base], {:code, Sourceror.parse_string!("secret_key_base")})
       |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :http], [],
         updater: fn zipper ->
           if port_matches_value?(zipper, 4000) do
