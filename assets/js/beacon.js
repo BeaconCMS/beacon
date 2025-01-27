@@ -28,6 +28,16 @@ window.addEventListener("phx:beacon:page-updated", (e) => {
 
 let socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live"
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-let liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, { params: { _csrf_token: csrfToken } })
+let Hooks = {
+  /* __BEACON_HOOKS__ */
+}
+let liveSocket = new LiveView.LiveSocket(
+  socketPath,
+  Phoenix.Socket,
+  {
+    params: { _csrf_token: csrfToken },
+    hooks: Hooks
+  }
+)
 liveSocket.connect()
 window.liveSocket = liveSocket

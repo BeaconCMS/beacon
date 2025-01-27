@@ -31,7 +31,7 @@ defmodule Beacon.RuntimeJS do
       |> Application.app_dir(["priv", "static", asset])
       |> File.read!()
       |> String.replace("//# sourceMappingURL=", "// ")
-      |> String.replace("/* BEACON_HOOKS */", build_hooks(site, minify?))
+      |> String.replace("/* __BEACON_HOOKS__ */", build_hooks(site, minify?))
     end)
     |> IO.iodata_to_binary()
   end
