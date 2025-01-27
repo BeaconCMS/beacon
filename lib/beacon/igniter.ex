@@ -48,6 +48,11 @@ defmodule Beacon.Igniter do
     end
   end
 
+  def move_to_variable!(zipper, name) do
+    {:ok, zipper} = move_to_variable(zipper, name)
+    zipper
+  end
+
   def move_to_import(zipper, name) when is_atom(name) do
     module_as_list =
       name

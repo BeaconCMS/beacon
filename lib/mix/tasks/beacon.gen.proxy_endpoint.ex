@@ -57,7 +57,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         igniter
         |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
         |> add_endpoint_to_application(fallback_endpoint, proxy_endpoint_module_name)
-        |> init_proxy_endpoint_config(otp_app, proxy_endpoint_module_name)
         |> add_variables_to_config(signing_salt, secret_key_base)
         |> add_session_options_config(otp_app, igniter.args.options)
         |> update_existing_endpoints(otp_app, existing_endpoints)
@@ -81,17 +80,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   defp add_endpoint_to_application(igniter, fallback_endpoint, proxy_endpoint_module_name) do
     Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint, Beacon])
-  end
-
-  # We need to add this first config option now so doesn't get placed before the signing_salt variable
-  defp init_proxy_endpoint_config(igniter, otp_app, proxy_endpoint) do
-    Igniter.Project.Config.configure(
-      igniter,
-      "config.exs",
-      otp_app,
-      [proxy_endpoint, :adapter],
-      {:code, Sourceror.parse_string!("Bandit.PhoenixAdapter")}
-    )
   end
 
   def add_variables_to_config(igniter, signing_salt, secret_key_base) do
@@ -141,12 +129,35 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   def add_proxy_endpoint_config(igniter, otp_app, proxy_endpoint_module_name) do
     igniter
-    |> Igniter.Project.Config.configure(
-      "config.exs",
-      otp_app,
-      [proxy_endpoint_module_name, :live_view, :signing_salt],
-      {:code, Sourceror.parse_string!("signing_salt")}
-    )
+    |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
+      {:ok,
+       zipper
+       |> Beacon.Igniter.move_to_variable!(:signing_salt)
+       |> Igniter.Project.Config.modify_configuration_code(
+         [proxy_endpoint_module_name],
+         otp_app,
+         Sourceror.parse_string!("""
+         [adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: signing_salt]]
+         """)
+       )}
+    end)
+    |> Igniter.update_elixir_file("config/dev.exs", fn zipper ->
+      {:ok,
+       zipper
+       |> Beacon.Igniter.move_to_variable!(:secret_key_base)
+       |> Igniter.Project.Config.modify_configuration_code(
+         [proxy_endpoint_module_name],
+         otp_app,
+         Sourceror.parse_string!("""
+         [
+           http: [ip: {127, 0, 0, 1}, port: 4000],
+           check_origin: false,
+           debug_errors: true,
+           secret_key_base: secret_key_base
+         ]
+         """)
+       )}
+    end)
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
@@ -176,20 +187,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       otp_app,
       [proxy_endpoint_module_name, :server],
       {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
-    )
-    |> Igniter.Project.Config.configure(
-      "dev.exs",
-      otp_app,
-      [proxy_endpoint_module_name, :http],
-      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: 4000]")}
-    )
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :check_origin], {:code, Sourceror.parse_string!("false")})
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [proxy_endpoint_module_name, :debug_errors], {:code, Sourceror.parse_string!("true")})
-    |> Igniter.Project.Config.configure(
-      "dev.exs",
-      otp_app,
-      [proxy_endpoint_module_name, :secret_key_base],
-      {:code, Sourceror.parse_string!("secret_key_base")}
     )
   end
 

@@ -72,25 +72,25 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     """)
     # add proxy endpoint config
     |> assert_has_patch("config/config.exs", """
-       11 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: signing_salt]
-       12 + |
+       12 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: signing_salt]
+       13 + |
     """)
     # add session options config
     |> assert_has_patch("config/config.exs", """
-    10 13   |config :test,
-    11 14   |  ecto_repos: [Test.Repo],
+    10 14   |config :test,
+    11 15   |  ecto_repos: [Test.Repo],
     12    - |  generators: [timestamp_type: :utc_datetime]
-       15 + |  generators: [timestamp_type: :utc_datetime],
-       16 + |  session_options: [
-       17 + |    store: :cookie,
-       18 + |    key: "_test_key",
-       19 + |    signing_salt: signing_salt,
-       20 + |    same_site: "Lax"
-       21 + |  ]
+       16 + |  generators: [timestamp_type: :utc_datetime],
+       17 + |  session_options: [
+       18 + |    store: :cookie,
+       19 + |    key: "_test_key",
+       20 + |    signing_salt: signing_salt,
+       21 + |    same_site: "Lax"
+       22 + |  ]
     """)
     # update fallback endpoint signing salt
     |> assert_has_patch("config/config.exs", """
-       32 + |  live_view: [signing_salt: signing_salt]
+       33 + |  live_view: [signing_salt: signing_salt]
     """)
   end
 
@@ -103,16 +103,21 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     """)
     # add proxy endpoint config
     |> assert_has_patch("config/dev.exs", """
-        3 + |config :test, TestWeb.ProxyEndpoint, http: [ip: {127, 0, 0, 1}, port: 4000], check_origin: false, debug_errors: true, secret_key_base: secret_key_base
+        4 + |config :test,
+        5 + |       TestWeb.ProxyEndpoint,
+        6 + |       http: [ip: {127, 0, 0, 1}, port: 4000],
+        7 + |       check_origin: false,
+        8 + |       debug_errors: true,
+        9 + |       secret_key_base: secret_key_base
     """)
     # update existing endpoint to port 4100
     |> assert_has_patch("config/dev.exs", """
     12    - |  http: [ip: {127, 0, 0, 1}, port: 4000],
-       14 + |  http: [ip: {127, 0, 0, 1}, port: 4100],
+       20 + |  http: [ip: {127, 0, 0, 1}, port: 4100],
     """)
     # update existing endpoint secret_key_base
     |> assert_has_patch("config/dev.exs", """
-       18 + |  secret_key_base: secret_key_base,
+       24 + |  secret_key_base: secret_key_base,
     """)
   end
 

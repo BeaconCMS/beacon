@@ -227,6 +227,9 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     test "updates config.exs", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
+      |> assert_has_patch("config/config.exs", """
+          4 + |signing_salt = "#{@signing_salt}"
+      """)
       # add config for new endpoint
       |> assert_has_patch("config/config.exs", """
          10 + |config :test, TestWeb.ExampleEndpoint,
@@ -237,21 +240,24 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
          15 + |    layout: false
          16 + |  ],
          17 + |  pubsub_server: Test.PubSub,
-         18 + |  live_view: [signing_salt: "#{@signing_salt}"]
+         18 + |  live_view: [signing_salt: signing_salt]
       """)
       # update signing salt for host app session_options
       |> assert_has_patch("config/config.exs", """
-         28 + |    signing_salt: "#{@signing_salt}",
+         28 + |    signing_salt: signing_salt,
       """)
       # update signing salt for existing endpoint
       |> assert_has_patch("config/config.exs", """
-         41 + |  live_view: [signing_salt: "#{@signing_salt}"]
+         41 + |  live_view: [signing_salt: signing_salt]
       """)
     end
 
     test "updates dev.exs", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
+      |> assert_has_patch("config/dev.exs", """
+          4 + |secret_key_base = "#{@secret_key_base}"
+      """)
       # add config for new endpoint
       |> assert_has_patch("config/dev.exs", """
          3 + |config :test, TestWeb.ExampleEndpoint,
@@ -259,7 +265,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
          5 + |  check_origin: false,
          6 + |  code_reloader: true,
          7 + |  debug_errors: true,
-         8 + |  secret_key_base: "#{@secret_key_base}",
+         8 + |  secret_key_base: secret_key_base,
          9 + |  watchers: [
         10 + |    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
         11 + |    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
@@ -268,7 +274,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
       # update secret key base for existing endpoint
       |> assert_has_patch("config/dev.exs", """
-          33 + |  secret_key_base: "#{@secret_key_base}",
+          33 + |  secret_key_base: secret_key_base,
       """)
     end
 
