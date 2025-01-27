@@ -217,6 +217,13 @@ dev_seeds = fn ->
     """
   })
 
+  Beacon.Content.create_js_hook(%{
+    site: "dev",
+    name: "ConsoleLog",
+    mounted: "console.log('[dev] page mounted')",
+    destroyed: "console.log('[dev] page destroyed')"
+  })
+
   home_live_data =
     Beacon.Content.get_live_data_by(:dev, path: "/sample") || Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
 
@@ -255,7 +262,7 @@ dev_seeds = fn ->
       "author_id" => 1
     },
     template: """
-    <main class="custom-font-style">
+    <main id="dev-sample" class="custom-font-style" phx-hook="ConsoleLog">
       <%!-- Home Page --%>
 
       <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
