@@ -80,4 +80,11 @@ defmodule Beacon.Igniter do
       value -> {:ok, value}
     end
   end
+
+  def diff_file(igniter, file) do
+    igniter.rewrite.sources
+    |> Map.fetch!(file)
+    |> Rewrite.Source.diff()
+    |> IO.iodata_to_binary()
+  end
 end
