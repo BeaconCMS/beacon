@@ -1139,7 +1139,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_stylesheet(%{
+      iex> create_stylesheet(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1173,7 +1173,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_stylesheet!(%{
+      iex> create_stylesheet!(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1273,7 +1273,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_js_hook(%{
+      iex> create_js_hook(%{
         site: :my_site,
         name: "CloseOnGlobalClick",
         mounted: ~S|
@@ -1314,6 +1314,22 @@ defmodule Beacon.Content do
       {:ok, js_hook} -> js_hook
       {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
     end
+  end
+
+  @doc """
+  Gets a single JS hooks by `clauses`.
+
+  ## Example
+
+      iex> get_component_by(site, name: "CloseOnGlobalClick")
+      %JSHook{}
+
+  """
+  @doc type: :js_hooks
+  @spec get_js_hook_by(Site.t(), keyword(), keyword()) :: JSHook.t() | nil
+  def get_js_hook_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    clauses = Keyword.put(clauses, :site, site)
+    repo(site).get_by(JSHook, clauses, opts)
   end
 
   @doc """

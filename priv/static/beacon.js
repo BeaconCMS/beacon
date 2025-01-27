@@ -17,17 +17,10 @@ var Beacon = (() => {
   });
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
-  var Hooks = {
-    /* __BEACON_HOOKS__ */
-  };
-  var liveSocket = new LiveView.LiveSocket(
-    socketPath,
-    Phoenix.Socket,
-    {
-      params: { _csrf_token: csrfToken },
-      hooks: Hooks
-    }
-  );
+  var liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {
+    params: { _csrf_token: csrfToken },
+    hooks: {}
+  });
   liveSocket.connect();
   window.liveSocket = liveSocket;
 })();

@@ -26,12 +26,18 @@ defmodule Beacon.RuntimeJS do
       end
 
     assets
-    |> Enum.map(fn {app, asset} ->
-      app
-      |> Application.app_dir(["priv", "static", asset])
-      |> File.read!()
-      |> String.replace("//# sourceMappingURL=", "// ")
-      |> String.replace("/* __BEACON_HOOKS__ */", build_hooks(site, minify?))
+    |> Enum.map(fn
+      {:beacon, asset} ->
+        :beacon
+        |> Application.app_dir(["priv", "static", asset])
+        |> File.read!()
+        |> String.replace(~r/hooks:.*{}/, build_hooks(site, minify?))
+
+      {app, asset} ->
+        app
+        |> Application.app_dir(["priv", "static", asset])
+        |> File.read!()
+        |> String.replace("//# sourceMappingURL=", "// ")
     end)
     |> IO.iodata_to_binary()
   end
@@ -89,9 +95,9 @@ defmodule Beacon.RuntimeJS do
 
       hooks =
         if minify? do
-          [hook.name, ":{", callbacks, "}"]
+          ["hooks: {", hook.name, ":{", callbacks, "}", "}"]
         else
-          ["    ", hook.name, ": {\n", callbacks, "    }"]
+          ["hooks: {\n    ", hook.name, ": {\n", callbacks, "    }", "\n}\n"]
         end
 
       IO.iodata_to_binary(hooks)

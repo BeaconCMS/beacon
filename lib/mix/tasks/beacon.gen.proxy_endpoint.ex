@@ -96,7 +96,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   defp update_fallback_endpoint_signing_salt(igniter, otp_app, fallback_endpoint, signing_salt) do
     fallback_endpoint = String.to_atom("#{fallback_endpoint}")
-    dbg(fallback_endpoint)
 
     Igniter.Project.Config.configure(
       igniter,
