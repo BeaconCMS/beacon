@@ -57,10 +57,11 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         igniter
         |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
         |> add_endpoint_to_application(fallback_endpoint, proxy_endpoint_module_name)
+        |> init_proxy_endpoint_config(otp_app, proxy_endpoint_module_name)
+        |> add_variables_to_config(signing_salt, secret_key_base)
         |> add_session_options_config(otp_app, igniter.args.options)
         |> update_existing_endpoints(otp_app, existing_endpoints)
         |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name)
-        |> add_variables_to_config(signing_salt, secret_key_base)
         |> Igniter.add_notice("""
         ProxyEndpoint generated successfully.
 
@@ -80,6 +81,17 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   defp add_endpoint_to_application(igniter, fallback_endpoint, proxy_endpoint_module_name) do
     Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint, Beacon])
+  end
+
+  # We need to add this first config option now so doesn't get placed before the signing_salt variable
+  defp init_proxy_endpoint_config(igniter, otp_app, proxy_endpoint) do
+    Igniter.Project.Config.configure(
+      igniter,
+      "config.exs",
+      otp_app,
+      [proxy_endpoint, :adapter],
+      {:code, Sourceror.parse_string!("Bandit.PhoenixAdapter")}
+    )
   end
 
   def add_variables_to_config(igniter, signing_salt, secret_key_base) do
@@ -129,12 +141,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   def add_proxy_endpoint_config(igniter, otp_app, proxy_endpoint_module_name) do
     igniter
-    |> Igniter.Project.Config.configure(
-      "config.exs",
-      otp_app,
-      [proxy_endpoint_module_name, :adapter],
-      {:code, Sourceror.parse_string!("Bandit.PhoenixAdapter")}
-    )
     |> Igniter.Project.Config.configure(
       "config.exs",
       otp_app,
