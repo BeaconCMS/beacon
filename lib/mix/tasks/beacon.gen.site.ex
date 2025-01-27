@@ -342,52 +342,49 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
 
     igniter
-    # config.exs
-    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :url, :host], "localhost")
-    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :adapter], {:code, Sourceror.parse_string!("Bandit.PhoenixAdapter")})
-    |> Igniter.Project.Config.configure(
-      "config.exs",
-      otp_app,
-      [new_endpoint, :render_errors],
-      {:code,
-       Sourceror.parse_string!("""
-       [
-         formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
-         layout: false
-       ]
-       """)}
-    )
-    |> Igniter.Project.Config.configure("config.exs", otp_app, [new_endpoint, :pubsub_server], pubsub)
-    |> Igniter.Project.Config.configure(
-      "config.exs",
-      otp_app,
-      [new_endpoint, :live_view, :signing_salt],
-      {:code, Sourceror.parse_string!("signing_salt")}
-    )
-    # dev.exs
-    |> Igniter.Project.Config.configure(
-      "dev.exs",
-      otp_app,
-      [new_endpoint, :http],
-      {:code, Sourceror.parse_string!("[ip: {127, 0, 0, 1}, port: #{port}]")}
-    )
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :check_origin], {:code, Sourceror.parse_string!("false")})
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :code_reloader], {:code, Sourceror.parse_string!("true")})
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :debug_errors], {:code, Sourceror.parse_string!("true")})
-    |> Igniter.Project.Config.configure("dev.exs", otp_app, [new_endpoint, :secret_key_base], {:code, Sourceror.parse_string!("secret_key_base")})
-    |> Igniter.Project.Config.configure(
-      "dev.exs",
-      otp_app,
-      [new_endpoint, :watchers],
-      {:code,
-       Sourceror.parse_string!("""
-       [
-         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
-       ]
-       """)}
-    )
-    # runtime.exs
+    |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
+      {:ok,
+       zipper
+       |> Beacon.Igniter.move_to_variable!(:signing_salt)
+       |> Igniter.Project.Config.modify_configuration_code(
+         [new_endpoint],
+         otp_app,
+         Sourceror.parse_string!("""
+         [
+           url: [host: "localhost"],
+           adapter: Bandit.PhoenixAdapter,
+           render_errors: [
+             formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
+             layout: false
+           ],
+           pubsub_server: #{inspect(pubsub)},
+           live_view: [signing_salt: signing_salt]
+         ]
+         """)
+       )}
+    end)
+    |> Igniter.update_elixir_file("config/dev.exs", fn zipper ->
+      {:ok,
+       zipper
+       |> Beacon.Igniter.move_to_variable!(:secret_key_base)
+       |> Igniter.Project.Config.modify_configuration_code(
+         [new_endpoint],
+         otp_app,
+         Sourceror.parse_string!("""
+         [
+           http: [ip: {127, 0, 0, 1}, port: #{port}],
+           check_origin: false,
+           code_reloader: true,
+           debug_errors: true,
+           secret_key_base: secret_key_base,
+           watchers: [
+             esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+             tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+           ]
+         ]
+         """)
+       )}
+    end)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")

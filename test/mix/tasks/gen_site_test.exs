@@ -228,27 +228,29 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
       |> assert_has_patch("config/config.exs", """
-          4 + |signing_salt = "#{@signing_salt}"
+         10 + |signing_salt = "#{@signing_salt}"
       """)
       # add config for new endpoint
       |> assert_has_patch("config/config.exs", """
-         10 + |config :test, TestWeb.ExampleEndpoint,
-         11 + |  url: [host: "localhost"],
-         12 + |  adapter: Bandit.PhoenixAdapter,
-         13 + |  render_errors: [
-         14 + |    formats: [html: TestWeb.ErrorHTML, json: TestWeb.ErrorJSON],
-         15 + |    layout: false
-         16 + |  ],
-         17 + |  pubsub_server: Test.PubSub,
-         18 + |  live_view: [signing_salt: signing_salt]
+      10 12   |config :test,
+         13 + |       TestWeb.ExampleEndpoint,
+         14 + |       url: [host: "localhost"],
+         15 + |       adapter: Bandit.PhoenixAdapter,
+         16 + |       render_errors: [
+         17 + |         formats: [html: TestWeb.ErrorHTML, json: TestWeb.ErrorJSON],
+         18 + |         layout: false
+         19 + |       ],
+         20 + |       pubsub_server: Test.PubSub,
+         21 + |       live_view: [signing_salt: signing_salt]
+         22 + |
       """)
       # update signing salt for host app session_options
       |> assert_has_patch("config/config.exs", """
-         28 + |    signing_salt: signing_salt,
+         31 + |    signing_salt: signing_salt,
       """)
       # update signing salt for existing endpoint
       |> assert_has_patch("config/config.exs", """
-         41 + |  live_view: [signing_salt: signing_salt]
+         44 + |  live_view: [signing_salt: signing_salt]
       """)
     end
 
@@ -256,25 +258,26 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
       |> assert_has_patch("config/dev.exs", """
-          4 + |secret_key_base = "#{@secret_key_base}"
+          2 + |secret_key_base = "#{@secret_key_base}"
       """)
       # add config for new endpoint
       |> assert_has_patch("config/dev.exs", """
-         3 + |config :test, TestWeb.ExampleEndpoint,
-         4 + |  http: [ip: {127, 0, 0, 1}, port: #{@port}],
-         5 + |  check_origin: false,
-         6 + |  code_reloader: true,
-         7 + |  debug_errors: true,
-         8 + |  secret_key_base: secret_key_base,
-         9 + |  watchers: [
-        10 + |    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-        11 + |    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
-        12 + |  ]
-        13 + |
+          4 + |config :test,
+          5 + |       TestWeb.ExampleEndpoint,
+          6 + |       http: [ip: {127, 0, 0, 1}, port: 4041],
+          7 + |       check_origin: false,
+          8 + |       code_reloader: true,
+          9 + |       debug_errors: true,
+         10 + |       secret_key_base: secret_key_base,
+         11 + |       watchers: [
+         12 + |         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+         13 + |         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+         14 + |       ]
+         15 + |
       """)
       # update secret key base for existing endpoint
       |> assert_has_patch("config/dev.exs", """
-          33 + |  secret_key_base: secret_key_base,
+         36 + |  secret_key_base: secret_key_base,
       """)
     end
 
