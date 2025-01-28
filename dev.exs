@@ -227,18 +227,18 @@ dev_seeds = fn ->
     """
   })
 
-  get_or_insert_js_hook.(%{
-    site: "dev",
-    name: "ConsoleLogHook",
-    mounted: ~S|
-    const now = new Date()
-    console.log('[dev] page mounted at ' + now)
-    |,
-    destroyed: ~S|
-    const now = new Date()
-    console.log('[dev] page destroyed at ' + now)
-    |
-  })
+  # get_or_insert_js_hook.(%{
+  #   site: "dev",
+  #   name: "ConsoleLogHook",
+  #   mounted: ~S|
+  #   const now = new Date()
+  #   console.log('[dev] page mounted at ' + now)
+  #   |,
+  #   destroyed: ~S|
+  #   const now = new Date()
+  #   console.log('[dev] page destroyed at ' + now)
+  #   |
+  # })
 
   home_live_data =
     Beacon.Content.get_live_data_by(:dev, path: "/sample") || Beacon.Content.create_live_data!(%{site: "dev", path: "/sample"})
