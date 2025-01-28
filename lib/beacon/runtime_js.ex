@@ -28,10 +28,12 @@ defmodule Beacon.RuntimeJS do
     assets
     |> Enum.map(fn
       {:beacon, asset} ->
-        :beacon
-        |> Application.app_dir(["priv", "static", asset])
-        |> File.read!()
-        |> String.replace(~r/hooks:.*{}/, build_hooks(site, minify?))
+        beacon_js =
+          :beacon
+          |> Application.app_dir(["priv", "static", asset])
+          |> File.read!()
+
+        build_hooks(site, minify?) <> "\n" <> beacon_js
 
       {app, asset} ->
         app
@@ -81,27 +83,16 @@ defmodule Beacon.RuntimeJS do
     end
   end
 
+  # TODO: iterate over existing hooks, call esbuild on hooks body (js content), replace `export default` with `hooks.{HOOK_NAME} =`
   def build_hooks(site, minify?) do
-    joiner = if(minify?, do: ",", else: ",\n")
-
-    site
-    |> Beacon.Content.list_js_hooks()
-    |> Enum.map_join(joiner, fn hook ->
-      callbacks =
-        hook
-        |> Map.take([:mounted, :before_update, :updated, :destroyed, :disconnected, :reconnected])
-        |> Map.reject(fn {_k, v} -> is_nil(v) end)
-        |> Enum.map(&format_callback(&1, minify?))
-
-      hooks =
-        if minify? do
-          ["hooks: {", hook.name, ":{", callbacks, "}", "}"]
-        else
-          ["hooks: {\n    ", hook.name, ": {\n", callbacks, "    }", "\n}\n"]
-        end
-
-      IO.iodata_to_binary(hooks)
-    end)
+    ~s"""
+    let hooks = {}
+    hooks.ConsoleLog = {
+      mounted() {
+        console.log("hello")
+      }
+    }
+    """
   end
 
   defp format_callback(kv_pair, minify?)
