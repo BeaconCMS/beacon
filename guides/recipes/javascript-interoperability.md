@@ -17,13 +17,14 @@ stage of its lifecycle.  There are six possible stages which you can use:
   * `reconnected` - the element's parent LiveView has reconnected to the server
 
 To add code to one or more of these, first go into your BeaconLiveAdmin dashboard and navigate to the 
-"JS Hooks" section.  Create a new hook with the name of your choice, and you will see empty code blocks
-for each of the above callbacks.  For an example, let's add a log message to output to the console when
+"JS Hooks" section.  Create a new hook with the name of your choice, and you will see a code editor
+with each of the above callbacks.  For an example, let's add a log message to output to the console when
 our page's logo is mounted:
 
 ```javascript
-// In mounted()
-console.log("logo mounted!")
+mounted() {
+  console.log("logo mounted!");
+}
 ```
 
 Then in the page's template, add a `phx-hook` attr to the desired element:

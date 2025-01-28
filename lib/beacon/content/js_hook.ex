@@ -11,7 +11,6 @@ defmodule Beacon.Content.JSHook do
   > in inconsistent behavior and crashes.
 
   """
-
   use Beacon.Schema
 
   @type t :: %__MODULE__{}
@@ -19,32 +18,17 @@ defmodule Beacon.Content.JSHook do
   schema "beacon_js_hooks" do
     field :name, :string
     field :site, Beacon.Types.Site
-
-    field :mounted, :string
-    field :before_update, :string
-    field :updated, :string
-    field :destroyed, :string
-    field :disconnected, :string
-    field :reconnected, :string
+    field :code, :string
 
     timestamps()
   end
 
   @doc false
   def changeset(js_hook, attrs) do
-    required = [:name, :site]
-
-    optional = [
-      :mounted,
-      :before_update,
-      :updated,
-      :destroyed,
-      :disconnected,
-      :reconnected
-    ]
+    fields = [:name, :site, :code]
 
     js_hook
-    |> cast(attrs, required ++ optional)
-    |> validate_required(required)
+    |> cast(attrs, fields)
+    |> validate_required(fields)
   end
 end

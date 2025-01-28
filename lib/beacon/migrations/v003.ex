@@ -7,13 +7,7 @@ defmodule Beacon.Migrations.V003 do
       add :id, :binary_id, primary_key: true
       add :site, :text, null: false
       add :name, :text, null: false
-
-      add :mounted, :text
-      add :before_update, :text
-      add :updated, :text
-      add :destroyed, :text
-      add :disconnected, :text
-      add :reconnected, :text
+      add :code, :text, null: false
 
       timestamps(type: :utc_datetime_usec)
     end

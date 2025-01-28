@@ -1273,33 +1273,38 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_js_hook(%{
-        site: :my_site,
-        name: "CloseOnGlobalClick",
-        mounted: ~S|
-        this.button = this.el.querySelector("button");
-        this.handle = () => {
-          if (this.button.matches("[data-opened]")) {
-            this.button.click();
-          }
-        };
-        window.addEventListener("click", this.handle);
-        |,
-        destroyed: ~S|
-        window.removeEventListener("click", this.handle);
-        |
-      })
+      iex> create_js_hook(:my_site, "CloseOnGlobalClick")
       {:ok, %JSHook{}}
 
-  Note that escape characters must be preserved, so you should use `~S` to avoid issues.
   """
   @doc type: :js_hooks
-  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def create_js_hook(attrs \\ %{}) do
-    changeset = JSHook.changeset(%JSHook{}, attrs)
-    site = Changeset.get_field(changeset, :site)
+  @spec create_js_hook(Site.t(), String.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def create_js_hook(site, name) do
+    code = """
+    export const #{name} = {
+      mounted() {
 
-    changeset
+      },
+      beforeUpdate() {
+
+      },
+      updated() {
+
+      },
+      destroyed() {
+
+      },
+      disconnected() {
+
+      },
+      reconnected() {
+
+      },
+    };
+    """
+
+    %JSHook{}
+    |> JSHook.changeset(%{site: site, name: name, code: code})
     |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
   end
@@ -1308,9 +1313,9 @@ defmodule Beacon.Content do
   Creates a JS Hook, raising an error if unsuccessful.
   """
   @doc type: :js_hooks
-  @spec create_js_hook!(map()) :: JSHook.t()
-  def create_js_hook!(attrs \\ %{}) do
-    case create_js_hook(attrs) do
+  @spec create_js_hook!(Site.t(), String.t()) :: JSHook.t()
+  def create_js_hook!(site, name) do
+    case create_js_hook(site, name) do
       {:ok, js_hook} -> js_hook
       {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
     end
@@ -1347,6 +1352,8 @@ defmodule Beacon.Content do
   @doc type: :js_hooks
   @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
   def update_js_hook(js_hook, attrs) do
+    # TODO check if name has changed in the code, if so keep the `:name` field in sync
+
     js_hook
     |> JSHook.changeset(attrs)
     |> repo(js_hook).update()

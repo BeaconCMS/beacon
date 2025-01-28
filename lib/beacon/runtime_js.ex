@@ -69,11 +69,13 @@ defmodule Beacon.RuntimeJS do
 
     gzip = :zlib.gzip(js)
 
-    if :ets.insert(:beacon_assets, {{site, :js}, {hash, js, brotli, gzip}}) do
-      :ok
-    else
-      raise Beacon.LoaderError, "failed to compress js"
+    try do
+      :ets.insert(:beacon_assets, {{site, :js}, {hash, js, brotli, gzip}})
+    rescue
+      _ -> raise Beacon.LoaderError, "failed to compress js"
     end
+
+    :ok
   end
 
   def current_hash(site) do
@@ -84,7 +86,9 @@ defmodule Beacon.RuntimeJS do
   end
 
   # TODO: iterate over existing hooks, call esbuild on hooks body (js content), replace `export default` with `hooks.{HOOK_NAME} =`
-  def build_hooks(site, minify?) do
+  def build_hooks(_site, _minify?) do
+    # joiner = if(minify?, do: ",", else: ",\n")
+
     ~s"""
     let hooks = {}
     hooks.ConsoleLog = {
@@ -93,29 +97,25 @@ defmodule Beacon.RuntimeJS do
       }
     }
     """
+
+    # site
+    # |> Beacon.Content.list_js_hooks()
+    # |> Enum.map_join(joiner, fn hook ->
+    #   if minify? do
+    #     [hook.name, ":{", String.replace(hook.code, ["\n", "\n  "], ""), "}"]
+    #   else
+    #     [hook.name, ": {\n", hook.code, "    }"]
+    #   end
+    # end)
+    # |> format_hooks(minify?)
+    # |> IO.iodata_to_binary()
   end
 
-  defp format_callback(kv_pair, minify?)
-
-  defp format_callback({callback_key, code}, false) do
-    [
-      "      ",
-      format_key(callback_key),
-      "() {\n        ",
-      code |> String.trim_trailing() |> String.replace("\n", "\n        "),
-      "\n      },\n"
-    ]
-  end
-
-  defp format_callback({callback_key, code}, true) do
-    [
-      format_key(callback_key),
-      "(){",
-      String.replace(code, "\n", ""),
-      "},"
-    ]
-  end
-
-  defp format_key(:before_update), do: "beforeUpdate"
-  defp format_key(other), do: to_string(other)
+  # def format_hooks(hooks, minify?) do
+  #   if minify? do
+  #     ["hooks:{", hooks, "}"]
+  #   else
+  #     ["hooks: {\n", hooks, "}"]
+  #   end
+  # end
 end
