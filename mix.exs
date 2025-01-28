@@ -79,6 +79,7 @@ defmodule Beacon.MixProject do
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
+      {:esbuild, "~> 0.5"},
       {:igniter, "~> 0.5"},
 
       # Dev, Test, Docs
@@ -86,7 +87,6 @@ defmodule Beacon.MixProject do
       {:bandit, "~> 1.0", only: :dev, optional: true},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
-      {:esbuild, "~> 0.5", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
       {:bypass, "~> 2.1", only: :test},
       {:phx_new, "~> 1.7", only: :test, runtime: false}

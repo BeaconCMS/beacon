@@ -45,10 +45,43 @@ defmodule Beacon.RuntimeJS do
     # results in the `hooks` string below
     # which creates `window.BeaconHooks` when evaluated by the browser
     # _build/esbuild-darwin-arm64 hook.js --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks
-    
+
+    # TODO: delete tmp files after
+    tmp_dir = tmp_dir!()
+
+    hook_a_path = Path.join(tmp_dir, "hook_a.js")
+    File.write!(hook_a_path, ~s"""
+    const message = "mounted"
+
+    const ConsoleLogHook = {
+      mounted() {
+        console.log(message)
+      }
+    }
+
+    export default ConsoleLogHook
+    """)
+
+    hooks_js_path = Path.join(tmp_dir, "hooks.js") |> dbg
+
     hooks = ~s"""
-    var BeaconHooks=(()=>{var l=Object.defineProperty;var s=Object.getOwnPropertyDescriptor;var u=Object.getOwnPropertyNames;var c=Object.prototype.hasOwnProperty;var g=(e,o)=>{for(var t in o)l(e,t,{get:o[t],enumerable:!0})},m=(e,o,t,d)=>{if(o&&typeof o=="object"||typeof o=="function")for(let n of u(o))!c.call(e,n)&&n!==t&&l(e,n,{get:()=>o[n],enumerable:!(d=s(o,n))||d.enumerable});return e};var a=e=>m(l({},"__esModule",{value:!0}),e);var p={};g(p,{default:()=>k});var f={mounted(){console.log("mounted")}},k={ConsoleLogHook:f};return a(p);})();
+    import ConsoleLogHook from '#{hook_a_path}'
+
+    export default {
+      ConsoleLogHook,
+    }
     """
+
+    File.write!(hooks_js_path, hooks)
+
+    # TODO: minify on/off
+    args = ~w(#{hooks_js_path} --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks) |> dbg
+    opts = [cd: File.cwd!(), stderr_to_stdout: true]
+
+    # TODO: check if esbuild bin exist, similar to TailwindCompiler
+    # TODO: copy esbuild bin into the release
+    # TODO: handle errors
+    {hooks, 0} = System.cmd(Esbuild.bin_path(), args, opts) |> dbg
 
     js_deps =
       assets
@@ -63,6 +96,14 @@ defmodule Beacon.RuntimeJS do
 
     IO.iodata_to_binary(js_deps)
   end
+
+  defp tmp_dir! do
+    tmp_dir = Path.join(System.tmp_dir!(), random_dir())
+    File.mkdir_p!(tmp_dir)
+    tmp_dir
+  end
+
+  defp random_dir, do: :crypto.strong_rand_bytes(12) |> Base.encode16()
 
   def fetch(site, version \\ :brotli)
   def fetch(site, :brotli), do: do_fetch(site, {:_, :_, :"$1", :_})
