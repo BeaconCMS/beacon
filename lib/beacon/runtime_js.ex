@@ -25,14 +25,43 @@ defmodule Beacon.RuntimeJS do
         ]
       end
 
-    assets
-    |> Enum.map(fn {app, asset} ->
-      app
-      |> Application.app_dir(["priv", "static", asset])
-      |> File.read!()
-      |> String.replace("//# sourceMappingURL=", "// ")
-    end)
-    |> IO.iodata_to_binary()
+    # hooks (simulate hooks defined in live admin)
+    # 1. concat all hooks
+    # 2. export them into as a single object
+    # 3. bundle for browser using esbuild
+    #
+    # // hook 1
+    # const ConsoleLogHook = {
+    #   mounted() {
+    #     console.log("mounted")
+    #   }
+    # }
+    #
+    # export default {
+    #   ConsoleLogHook,
+    # }
+
+    # step 3
+    # results in the `hooks` string below
+    # which creates `window.BeaconHooks` when evaluated by the browser
+    # _build/esbuild-darwin-arm64 hook.js --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks
+    
+    hooks = ~s"""
+    var BeaconHooks=(()=>{var l=Object.defineProperty;var s=Object.getOwnPropertyDescriptor;var u=Object.getOwnPropertyNames;var c=Object.prototype.hasOwnProperty;var g=(e,o)=>{for(var t in o)l(e,t,{get:o[t],enumerable:!0})},m=(e,o,t,d)=>{if(o&&typeof o=="object"||typeof o=="function")for(let n of u(o))!c.call(e,n)&&n!==t&&l(e,n,{get:()=>o[n],enumerable:!(d=s(o,n))||d.enumerable});return e};var a=e=>m(l({},"__esModule",{value:!0}),e);var p={};g(p,{default:()=>k});var f={mounted(){console.log("mounted")}},k={ConsoleLogHook:f};return a(p);})();
+    """
+
+    js_deps =
+      assets
+      |> Enum.map(fn {app, asset} ->
+        app
+        |> Application.app_dir(["priv", "static", asset])
+        |> File.read!()
+        |> String.replace("//# sourceMappingURL=", "// ")
+      end)
+
+    js_deps = [hooks, "\n", js_deps]
+
+    IO.iodata_to_binary(js_deps)
   end
 
   def fetch(site, version \\ :brotli)
