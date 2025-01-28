@@ -555,10 +555,8 @@ defmodule Beacon.Test.Fixtures do
   Creates a `Beacon.Content.JSHook`.
 
   ## Example
-
-      iex> beacon_js_hook_fixture(mounted: ~S|
-      console.log("mounted!");
-      |)
+      iex> code = "export const MyHook = {mounted() {console.log(\"foo\")}}"
+      iex> beacon_js_hook_fixture(site: :my_site, name: "MyHook", code: code)
       %Beacon.Content.JSHook{}
 
   """

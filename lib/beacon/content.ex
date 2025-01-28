@@ -1273,14 +1273,41 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_js_hook(:my_site, "CloseOnGlobalClick")
+      iex> code = "export const ConsoleLogHook = {mounted() {console.log(\"foo\")}}"
+      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code})
       {:ok, %JSHook{}}
 
   """
   @doc type: :js_hooks
-  @spec create_js_hook(Site.t(), String.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def create_js_hook(site, name) do
-    code = """
+  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def create_js_hook(attrs) do
+    changeset = JSHook.changeset(%JSHook{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    attrs
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  Creates a JS Hook, raising an error if unsuccessful.
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook!(map()) :: JSHook.t()
+  def create_js_hook!(attrs) do
+    case create_js_hook(attrs) do
+      {:ok, js_hook} -> js_hook
+      {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Generates an empty Hook template for the given name.
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook!(String.t()) :: String.t()
+  def default_hook_code(name) do
+    """
     export const #{name} = {
       mounted() {
 
@@ -1302,23 +1329,6 @@ defmodule Beacon.Content do
       },
     };
     """
-
-    %JSHook{}
-    |> JSHook.changeset(%{site: site, name: name, code: code})
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
-  end
-
-  @doc """
-  Creates a JS Hook, raising an error if unsuccessful.
-  """
-  @doc type: :js_hooks
-  @spec create_js_hook!(Site.t(), String.t()) :: JSHook.t()
-  def create_js_hook!(site, name) do
-    case create_js_hook(site, name) do
-      {:ok, js_hook} -> js_hook
-      {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
-    end
   end
 
   @doc """
