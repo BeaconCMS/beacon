@@ -24,7 +24,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
 
   # TODO: https://github.com/BeaconCMS/beacon/pull/239#discussion_r1194160478
   @doc false
-  def new(site, path, node, opts \\ []) do
+  def new(site, path,  opts \\ []) do
     opts =
       Keyword.reject(opts, fn
         {_, ""} -> true
@@ -33,6 +33,7 @@ defmodule Beacon.MediaLibrary.UploadMetadata do
 
     config = Beacon.Config.fetch!(site)
     name = Keyword.get(opts, :name, Path.basename(path))
+    node = opts[:node] || Node.self()
 
     media_type =
       opts

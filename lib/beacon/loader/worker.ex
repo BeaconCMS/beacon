@@ -44,7 +44,6 @@ defmodule Beacon.Loader.Worker do
         Beacon.MediaLibrary.UploadMetadata.new(
           site,
           path,
-          Node.self(),
           name: "beacon.png",
           extra: %{"alt" => "logo"}
         )
