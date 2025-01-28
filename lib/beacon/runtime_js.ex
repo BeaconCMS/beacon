@@ -26,20 +26,11 @@ defmodule Beacon.RuntimeJS do
       end
 
     assets
-    |> Enum.map(fn
-      {:beacon, asset} ->
-        beacon_js =
-          :beacon
-          |> Application.app_dir(["priv", "static", asset])
-          |> File.read!()
-
-        build_hooks(site, minify?) <> "\n" <> beacon_js
-
-      {app, asset} ->
-        app
-        |> Application.app_dir(["priv", "static", asset])
-        |> File.read!()
-        |> String.replace("//# sourceMappingURL=", "// ")
+    |> Enum.map(fn {app, asset} ->
+      app
+      |> Application.app_dir(["priv", "static", asset])
+      |> File.read!()
+      |> String.replace("//# sourceMappingURL=", "// ")
     end)
     |> IO.iodata_to_binary()
   end
@@ -84,38 +75,4 @@ defmodule Beacon.RuntimeJS do
       _ -> nil
     end
   end
-
-  # TODO: iterate over existing hooks, call esbuild on hooks body (js content), replace `export default` with `hooks.{HOOK_NAME} =`
-  def build_hooks(_site, _minify?) do
-    # joiner = if(minify?, do: ",", else: ",\n")
-
-    ~s"""
-    let hooks = {}
-    hooks.ConsoleLog = {
-      mounted() {
-        console.log("hello")
-      }
-    }
-    """
-
-    # site
-    # |> Beacon.Content.list_js_hooks()
-    # |> Enum.map_join(joiner, fn hook ->
-    #   if minify? do
-    #     [hook.name, ":{", String.replace(hook.code, ["\n", "\n  "], ""), "}"]
-    #   else
-    #     [hook.name, ": {\n", hook.code, "    }"]
-    #   end
-    # end)
-    # |> format_hooks(minify?)
-    # |> IO.iodata_to_binary()
-  end
-
-  # def format_hooks(hooks, minify?) do
-  #   if minify? do
-  #     ["hooks:{", hooks, "}"]
-  #   else
-  #     ["hooks: {\n", hooks, "}"]
-  #   end
-  # end
 end

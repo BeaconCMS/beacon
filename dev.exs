@@ -229,7 +229,7 @@ dev_seeds = fn ->
 
   get_or_insert_js_hook.(%{
     site: "dev",
-    name: "ConsoleLog",
+    name: "ConsoleLogHook",
     mounted: ~S|
     const now = new Date()
     console.log('[dev] page mounted at ' + now)
@@ -278,7 +278,7 @@ dev_seeds = fn ->
       "author_id" => 1
     },
     template: """
-    <main id="dev-sample" class="custom-font-style" phx-hook="ConsoleLog">
+    <main id="dev-sample" class="custom-font-style" phx-hook="ConsoleLogHook">
       <%!-- Home Page --%>
 
       <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />

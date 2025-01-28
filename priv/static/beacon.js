@@ -17,9 +17,10 @@ var Beacon = (() => {
   });
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
+  var _a, _b;
   var liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {
     params: { _csrf_token: csrfToken },
-    hooks: hooks != null ? hooks : {}
+    hooks: (_b = (_a = window == null ? void 0 : window.BeaconHooks) == null ? void 0 : _a.default) != null ? _b : {}
   });
   liveSocket.connect();
   window.liveSocket = liveSocket;
