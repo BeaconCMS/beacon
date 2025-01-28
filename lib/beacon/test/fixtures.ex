@@ -169,7 +169,7 @@ defmodule Beacon.Test.Fixtures do
       name: "sample_stylesheet",
       content: "body {cursor: zoom-in;}"
     })
-    |> Content.create_stylesheet!()
+    |> Content.create_stylesheet!(auth: false)
     |> tap(&Loader.load_stylesheet_module(&1.site))
   end
 
@@ -194,7 +194,7 @@ defmodule Beacon.Test.Fixtures do
       template: ~S|<span id={"project-#{@project.id}"}><%= @project.name %></span>|,
       example: ~S|<.sample_component project={%{id: 1, name: "Beacon"}} />|
     })
-    |> Content.create_component!()
+    |> Content.create_component!(auth: false)
     |> tap(&Loader.load_components_module(&1.site))
   end
 
@@ -222,7 +222,7 @@ defmodule Beacon.Test.Fixtures do
       <%= @inner_content %>
       """
     })
-    |> Content.create_layout!()
+    |> Content.create_layout!(auth: false)
   end
 
   @doc """
@@ -233,7 +233,7 @@ defmodule Beacon.Test.Fixtures do
     {:ok, layout} =
       attrs
       |> beacon_layout_fixture()
-      |> Content.publish_layout()
+      |> Content.publish_layout(auth: false)
 
     Loader.load_layout_module(layout.site, layout.id)
 
@@ -270,7 +270,7 @@ defmodule Beacon.Test.Fixtures do
       """,
       format: :heex
     })
-    |> Content.create_page!()
+    |> Content.create_page!(auth: false)
   end
 
   @doc """
@@ -286,7 +286,7 @@ defmodule Beacon.Test.Fixtures do
     {:ok, page} =
       attrs
       |> beacon_page_fixture()
-      |> Content.publish_page()
+      |> Content.publish_page(auth: false)
 
     page
   end
@@ -325,7 +325,7 @@ defmodule Beacon.Test.Fixtures do
       |> String.upcase()
       """
     })
-    |> Content.create_snippet_helper!()
+    |> Content.create_snippet_helper!(auth: false)
     |> tap(&Loader.load_snippets_module(&1.site))
   end
 
@@ -434,7 +434,7 @@ defmodule Beacon.Test.Fixtures do
       name: "Event Handler #{System.unique_integer([:positive])}",
       code: "{:noreply, socket}"
     })
-    |> Content.create_event_handler!()
+    |> Content.create_event_handler!(auth: false)
     |> tap(&Loader.load_event_handlers_module(&1.site))
   end
 
@@ -458,7 +458,7 @@ defmodule Beacon.Test.Fixtures do
       template: "Uh-oh!",
       layout_id: layout.id
     })
-    |> Content.create_error_page!()
+    |> Content.create_error_page!(auth: false)
     |> tap(&Loader.load_error_page_module(&1.site))
   end
 
@@ -478,7 +478,7 @@ defmodule Beacon.Test.Fixtures do
       site: "my_site",
       path: "/foo/bar"
     })
-    |> Content.create_live_data!()
+    |> Content.create_live_data!(auth: false)
     |> tap(&Loader.load_live_data_module(&1.site))
   end
 
@@ -546,7 +546,7 @@ defmodule Beacon.Test.Fixtures do
       msg: msg,
       code: code
     })
-    |> Content.create_info_handler!()
+    |> Content.create_info_handler!(auth: false)
     |> tap(&Loader.load_info_handlers_module(&1.site))
   end
 end
