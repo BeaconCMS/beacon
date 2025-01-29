@@ -52,7 +52,7 @@ defmodule Beacon.Content.JSHookTest do
         """
       }
 
-      changeset = JSHook.changeset(%JSHook{}, attrs) |> IO.inspect()
+      changeset = JSHook.changeset(%JSHook{}, attrs)
 
       assert changeset.valid? == true
       assert changeset.errors == []
