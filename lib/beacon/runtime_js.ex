@@ -25,53 +25,41 @@ defmodule Beacon.RuntimeJS do
         ]
       end
 
-    # hooks (simulate hooks defined in live admin)
-    # 1. concat all hooks
-    # 2. export them into as a single object
-    # 3. bundle for browser using esbuild
-    #
-    # // hook 1
-    # const ConsoleLogHook = {
-    #   mounted() {
-    #     console.log("mounted")
-    #   }
-    # }
-    #
-    # export default {
-    #   ConsoleLogHook,
-    # }
-
-    # step 3
-    # results in the `hooks` string below
-    # which creates `window.BeaconHooks` when evaluated by the browser
-    # _build/esbuild-darwin-arm64 hook.js --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks
-
     # TODO: delete tmp files after
     tmp_dir = tmp_dir!()
 
-    hooks = Beacon.Content.list_js_hooks(site)
+    {hooks, imports, consts} =
+      Enum.reduce(Beacon.Content.list_js_hooks(site), {[], [], []}, fn hook, {hooks, imports, consts} ->
+        hook_js_path = Path.join(tmp_dir, hook.name <> ".js")
+        File.write!(hook_js_path, hook.code)
 
-    hooks_code = for hook <- hooks, do: hook.code
-    hooks_names = for hook <- hooks, do: [hook.name, ",\n"]
+        module = hook.name <> "Module"
+        import = "import * as #{module} from '#{hook_js_path}';"
+        const = "const #{hook.name} = #{module}.default || #{module}.#{hook.name} || {};"
 
-    hooks_js_path = Path.join(tmp_dir, "hooks.js") |> dbg
+        {[hook.name | hooks], [import | imports], [const | consts]}
+      end)
 
     hooks = [
-      hooks_code,
-      "\nexport default {",
-      hooks_names,
-      "}"
+      Enum.intersperse(imports, "\n"),
+      "\n",
+      Enum.intersperse(consts, "\n"),
+      "\n",
+      "export default {\n",
+      Enum.intersperse(hooks, ",\n"),
+      "\n}"
     ]
 
+    hooks_js_path = Path.join(tmp_dir, "hooks.js")
     File.write!(hooks_js_path, hooks)
 
     # TODO: minify on/off
-    args = ~w(#{hooks_js_path} --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks) |> dbg
+    args = ~w(#{hooks_js_path} --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks --log-level=error)
     opts = [cd: File.cwd!(), stderr_to_stdout: true]
 
     # TODO: check if esbuild bin exist, similar to TailwindCompiler
     # TODO: copy esbuild bin into the release
-    # TODO: handle errors
+    # TODO: handle errors (exit != 0)
     {hooks, 0} = System.cmd(Esbuild.bin_path(), args, opts) |> dbg
 
     js_deps =
@@ -83,9 +71,7 @@ defmodule Beacon.RuntimeJS do
         |> String.replace("//# sourceMappingURL=", "// ")
       end)
 
-    js_deps = [hooks, "\n", js_deps]
-
-    IO.iodata_to_binary(js_deps)
+    IO.iodata_to_binary([js_deps, "\n", hooks])
   end
 
   defp tmp_dir! do
@@ -124,7 +110,7 @@ defmodule Beacon.RuntimeJS do
     try do
       :ets.insert(:beacon_assets, {{site, :js}, {hash, js, brotli, gzip}})
     rescue
-      _ -> raise Beacon.LoaderError, "failed to compress js"
+      _ -> reraise Beacon.LoaderError, [message: "failed to compress js"], __STACKTRACE__
     end
 
     :ok

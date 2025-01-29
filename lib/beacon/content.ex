@@ -1305,7 +1305,7 @@ defmodule Beacon.Content do
   Generates an empty Hook template for the given name.
   """
   @doc type: :js_hooks
-  @spec create_js_hook!(String.t()) :: String.t()
+  @spec default_hook_code(String.t()) :: String.t()
   def default_hook_code(name) do
     """
     export const #{name} = {
