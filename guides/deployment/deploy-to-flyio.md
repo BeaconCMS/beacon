@@ -91,7 +91,7 @@ defp copy_beacon_files(%{path: path} = release) do
 
       Execute the following command to install it before proceeding:
 
-          mix tailwind.install
+          mix tailwind.install --no-assets
 
       """
 
