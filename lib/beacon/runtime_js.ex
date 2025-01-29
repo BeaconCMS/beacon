@@ -37,20 +37,18 @@ defmodule Beacon.RuntimeJS do
 
         File.write!(hook_js_path, hook.code)
 
-        {_, 0} = System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts) |> dbg
+        {_, 0} = System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts)
 
         # TODO: handle errors (invalid json or more than one export, it should have a single export)
         export =
-          with {:ok, meta} <- File.read(meta_json_path) |> dbg,
-               {:ok, meta} <- Jason.decode(meta) |> dbg,
-               {_, meta} <- Enum.at(meta["outputs"] || %{}, 0) |> dbg,
+          with {:ok, meta} <- File.read(meta_json_path),
+               {:ok, meta} <- Jason.decode(meta),
+               {_, meta} <- Enum.at(meta["outputs"] || %{}, 0),
                [export] <- meta["exports"] do
             export
           else
             _ -> nil
           end
-
-        dbg(export)
 
         import =
           cond do
@@ -67,6 +65,7 @@ defmodule Beacon.RuntimeJS do
         if import do
           {[hook.name | hooks], [import | imports]}
         else
+          # TODO: warn? error?
           acc
         end
       end)
@@ -90,7 +89,7 @@ defmodule Beacon.RuntimeJS do
     # TODO: check if esbuild bin exist, similar to TailwindCompiler
     # TODO: copy esbuild bin into the release
     # TODO: handle errors (exit != 0)
-    {hooks, 0} = System.cmd(Esbuild.bin_path(), args, cmd_opts) |> dbg
+    {hooks, 0} = System.cmd(Esbuild.bin_path(), args, cmd_opts)
 
     js_deps =
       assets
