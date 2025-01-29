@@ -180,7 +180,7 @@ defmodule Beacon.RuntimeJS do
 
   defp validate_esbuild_install! do
     case Esbuild.bin_version() do
-      {:ok, version} ->
+      {:ok, _version} ->
         :ok
 
       :error ->
