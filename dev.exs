@@ -231,7 +231,7 @@ dev_seeds = fn ->
     site: "dev",
     name: "ConsoleLogHook",
     code: ~S"""
-    export default {
+    export const MyHook = {
       mounted() {
         const now = new Date()
         console.log('[dev] page mounted at ' + now)

@@ -95,7 +95,7 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
       {:code,
        Sourceror.parse_string!("""
          [
-           args: ~w(beacon.tailwind.config.js --bundle --format=esm --target=es2020 --outfile=../priv/beacon.tailwind.config.bundle.js),
+           args: ~w(beacon.tailwind.config.js --bundle --format=esm --target=es2016 --outfile=../priv/beacon.tailwind.config.bundle.js),
            cd: Path.expand("../assets", __DIR__),
            env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
          ]

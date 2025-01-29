@@ -23,7 +23,7 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
     |> assert_has_patch("config/config.exs", """
        41 + |  ],
        42 + |  beacon_tailwind_config: [
-       43 + |    args: ~w(beacon.tailwind.config.js --bundle --format=esm --target=es2020 --outfile=../priv/beacon.tailwind.config.bundle.js),
+       43 + |    args: ~w(beacon.tailwind.config.js --bundle --format=esm --target=es2016 --outfile=../priv/beacon.tailwind.config.bundle.js),
        44 + |    cd: Path.expand("../assets", __DIR__),
        45 + |    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
     41 46   |  ]

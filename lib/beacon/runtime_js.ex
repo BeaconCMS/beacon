@@ -27,40 +27,70 @@ defmodule Beacon.RuntimeJS do
 
     # TODO: delete tmp files after
     tmp_dir = tmp_dir!()
+    cmd_opts = [cd: File.cwd!(), stderr_to_stdout: true]
 
-    {hooks, imports, consts} =
-      Enum.reduce(Beacon.Content.list_js_hooks(site), {[], [], []}, fn hook, {hooks, imports, consts} ->
+    {hooks, imports} =
+      Enum.reduce(Beacon.Content.list_js_hooks(site), {[], []}, fn hook, {hooks, imports} = acc ->
         hook_js_path = Path.join(tmp_dir, hook.name <> ".js")
+        meta_json_path = Path.join(tmp_dir, hook.name <> ".json")
+        meta_out_js_path = Path.join(tmp_dir, hook.name <> "_meta.js")
+
         File.write!(hook_js_path, hook.code)
 
-        module = hook.name <> "Module"
-        import = "import * as #{module} from '#{hook_js_path}';"
-        const = "const #{hook.name} = #{module}.default || #{module}.#{hook.name} || {};"
+        {_, 0} = System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts) |> dbg
 
-        {[hook.name | hooks], [import | imports], [const | consts]}
+        # TODO: handle errors (invalid json or more than one export, it should have a single export)
+        export =
+          with {:ok, meta} <- File.read(meta_json_path) |> dbg,
+               {:ok, meta} <- Jason.decode(meta) |> dbg,
+               {_, meta} <- Enum.at(meta["outputs"] || %{}, 0) |> dbg,
+               [export] <- meta["exports"] do
+            export
+          else
+            _ -> nil
+          end
+
+        dbg(export)
+
+        import =
+          cond do
+            export == "default" ->
+              "import #{hook.name} from '#{hook_js_path}';"
+
+            is_binary(export) ->
+              "import { #{export} as #{hook.name} } from '#{hook_js_path}';"
+
+            :else ->
+              nil
+          end
+
+        if import do
+          {[hook.name | hooks], [import | imports]}
+        else
+          acc
+        end
       end)
 
     hooks = [
       Enum.intersperse(imports, "\n"),
-      "\n",
-      Enum.intersperse(consts, "\n"),
       "\n",
       "export default {\n",
       Enum.intersperse(hooks, ",\n"),
       "\n}"
     ]
 
+    IO.puts(hooks)
+
     hooks_js_path = Path.join(tmp_dir, "hooks.js")
     File.write!(hooks_js_path, hooks)
 
-    # TODO: minify on/off
-    args = ~w(#{hooks_js_path} --bundle --minify --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks --log-level=error)
-    opts = [cd: File.cwd!(), stderr_to_stdout: true]
+    # TODO: minify on/off (--minify)
+    args = ~w(#{hooks_js_path} --bundle --format=iife --target=es2016 --platform=browser --global-name=BeaconHooks --log-level=error)
 
     # TODO: check if esbuild bin exist, similar to TailwindCompiler
     # TODO: copy esbuild bin into the release
     # TODO: handle errors (exit != 0)
-    {hooks, 0} = System.cmd(Esbuild.bin_path(), args, opts) |> dbg
+    {hooks, 0} = System.cmd(Esbuild.bin_path(), args, cmd_opts) |> dbg
 
     js_deps =
       assets
@@ -71,7 +101,7 @@ defmodule Beacon.RuntimeJS do
         |> String.replace("//# sourceMappingURL=", "// ")
       end)
 
-    IO.iodata_to_binary([js_deps, "\n", hooks])
+    IO.iodata_to_binary([hooks, "\n", js_deps])
   end
 
   defp tmp_dir! do
