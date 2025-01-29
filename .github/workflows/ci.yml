@@ -82,6 +82,8 @@ jobs:
 
       - run: mix tailwind.install
 
+      - run: mix esbuild.install
+
       - name: mix test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
