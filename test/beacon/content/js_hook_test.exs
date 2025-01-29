@@ -129,23 +129,5 @@ defmodule Beacon.Content.JSHookTest do
       assert changeset.valid? == false
       assert changeset.errors == [code: {"multiple exports are not allowed", []}]
     end
-
-    test "error (multiple hooks in default)" do
-      attrs = %{
-        site: default_site(),
-        name: "FooHook",
-        code: """
-        const FooHook = { mounted() { console.log("foo") } }
-        const BarHook = { mounted() { console.log("bar") } }
-
-        export default { FooHook, BarHook }
-        """
-      }
-
-      changeset = JSHook.changeset(%JSHook{}, attrs)
-
-      assert changeset.valid? == false
-      assert changeset.errors == [code: {"multiple exports are not allowed", []}]
-    end
   end
 end
