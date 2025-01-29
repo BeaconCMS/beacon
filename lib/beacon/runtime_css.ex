@@ -77,7 +77,7 @@ defmodule Beacon.RuntimeCSS do
     try do
       :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}})
     rescue
-      _ -> raise Beacon.LoaderError, "failed to compress css"
+      _ -> reraise Beacon.LoaderError, [message: "failed to compress css"], __STACKTRACE__
     end
 
     :ok

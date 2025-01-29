@@ -1362,8 +1362,6 @@ defmodule Beacon.Content do
   @doc type: :js_hooks
   @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
   def update_js_hook(js_hook, attrs) do
-    # TODO check if name has changed in the code, if so keep the `:name` field in sync
-
     js_hook
     |> JSHook.changeset(attrs)
     |> repo(js_hook).update()
