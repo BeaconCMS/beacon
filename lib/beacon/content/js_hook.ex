@@ -40,14 +40,21 @@ defmodule Beacon.Content.JSHook do
   def validate_code(changeset) do
     hook = apply_changes(changeset)
 
-    validate_change(changeset, :code, fn :code, _code ->
-      case RuntimeJS.get_export(hook, cleanup: true) do
-        {:ok, export} when export in ["default", hook.name] -> []
-        {:ok, export} -> [name: {"does not match export", export: export}]
-        {:error, :no_export} -> [code: "no export found"]
-        {:error, :multiple_exports} -> [code: "multiple exports are not allowed"]
-        {:error, _} -> [code: "syntax error: please double-check your code and try again"]
-      end
-    end)
+    case RuntimeJS.get_export(hook, cleanup: true) do
+      {:ok, export} when export in ["default", hook.name] ->
+        changeset
+
+      {:ok, export} ->
+        add_error(changeset, :name, "does not match export", export: export)
+
+      {:error, :no_export} ->
+        add_error(changeset, :code, "no export found")
+
+      {:error, :multiple_exports} ->
+        add_error(changeset, :code, "multiple exports are not allowed")
+
+      {:error, _} ->
+        add_error(changeset, :code, "syntax error: please double-check your code and try again")
+    end
   end
 end

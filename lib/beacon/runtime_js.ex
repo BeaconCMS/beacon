@@ -41,7 +41,7 @@ defmodule Beacon.RuntimeJS do
         export =
           case get_export(hook, dir: tmp_dir, cleanup: false) do
             {:ok, export} when export in ["default", hook.name] -> export
-            {:error, _error} -> nil
+            _ -> nil
           end
 
         import_code =
