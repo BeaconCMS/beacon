@@ -19,12 +19,12 @@ defmodule Beacon.RuntimeJSTest do
     assert RuntimeJS.fetch(@site, :deflate) =~ "Beacon"
   end
 
-  describe "build_hooks/2" do
+  describe "build/1" do
     setup do
       beacon_js_hook_fixture(
-        name: "Hook1",
+        name: "CloseOnGlobalClick",
         code: ~S"""
-        export const CloseOnGlobalClick = {
+        const MyHook = {
           mounted() {
             this.button = this.el.querySelector("button");
             this.handle = () => {
@@ -39,11 +39,13 @@ defmodule Beacon.RuntimeJSTest do
             window.removeEventListener("click", this.handle);
           },
         };
+
+        export default MyHook;
         """
       )
 
       beacon_js_hook_fixture(
-        name: "Hook2",
+        name: "InvalidZipDisplay",
         code: ~S"""
         export const InvalidZipDisplay = {
           mounted() {
@@ -61,31 +63,62 @@ defmodule Beacon.RuntimeJSTest do
       :ok
     end
 
-    @tag :skip
-    test "default" do
-      assert RuntimeJS.build_hooks(@site, _minify = false) ==
-               """
-                   Hook1: {
-                     mounted() {
-                       console.log("mounted!");
-                       console.log("second line");
-                     },
-                     updated() {
-                       console.log("updated!");
-                     },
-                   },
-                   Hook2: {
-                     beforeUpdate() {
-                       console.log("before update!");
-                     },
-                   }\
-               """
-    end
+    test "success" do
+      js = RuntimeJS.build(@site)
 
-    @tag :skip
-    test "minified" do
-      assert RuntimeJS.build_hooks(@site, _minify = true) ==
-               "Hook1:{mounted(){console.log(\"mounted!\");console.log(\"second line\");},updated(){console.log(\"updated!\");},},Hook2:{beforeUpdate(){console.log(\"before update!\");},}"
+      assert js =~
+               """
+                 var hooks_exports = {};
+                 __export(hooks_exports, {
+                   default: () => hooks_default
+                 });
+               """
+
+      assert js =~
+               """
+                 var InvalidZipDisplay = {
+                   mounted() {
+                     this.handleEvent(\"invalid-zip\", (e) => {
+                       this.el.setCustomValidity(e.message);
+                     });
+                     this.handleEvent(\"valid-zip\", (e) => {
+                       this.el.setCustomValidity(\"\");
+                     });
+                   }
+                 };
+               """
+
+      assert js =~
+               """
+                 var MyHook = {
+                   mounted() {
+                     this.button = this.el.querySelector(\"button\");
+                     this.handle = () => {
+                       if (this.button.matches(\"[data-opened]\")) {
+                         this.button.click();
+                       }
+                     };
+                     window.addEventListener(\"click\", this.handle);
+                   },
+                   destroyed() {
+                     window.removeEventListener(\"click\", this.handle);
+                   }
+                 };
+                 var CloseOnGlobalClick_default = MyHook;
+               """
+
+      assert js =~
+               """
+                 var hooks_default = {
+                   InvalidZipDisplay,
+                   CloseOnGlobalClick: CloseOnGlobalClick_default
+                 };
+               """
+
+      assert js =~
+               """
+                 return __toCommonJS(hooks_exports);
+               """
     end
   end
 end

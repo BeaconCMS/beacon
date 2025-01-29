@@ -1,6 +1,8 @@
 defmodule Beacon.RuntimeJS do
   # Runtime compilation and processing of JS files.
   @moduledoc false
+  alias Beacon.Content
+  alias Beacon.Content.JSHook
 
   # merge beacon js with host application dependencies js
   # similar to https://github.com/phoenixframework/phoenix_live_dashboard/blob/9140f56c34201237f0feeeff747528eed2795c0c/lib/phoenix/live_dashboard/controllers/assets.ex#L6-L11
@@ -30,25 +32,18 @@ defmodule Beacon.RuntimeJS do
     cmd_opts = [cd: File.cwd!(), stderr_to_stdout: true]
 
     {hooks, imports} =
-      Enum.reduce(Beacon.Content.list_js_hooks(site), {[], []}, fn hook, {hooks, imports} = acc ->
-        hook_js_path = Path.join(tmp_dir, hook.name <> ".js")
-        meta_json_path = Path.join(tmp_dir, hook.name <> ".json")
-        meta_out_js_path = Path.join(tmp_dir, hook.name <> "_meta.js")
-
-        File.write!(hook_js_path, hook.code)
-
-        {_, 0} = System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts)
-
+      Enum.reduce(Content.list_js_hooks(site), {[], []}, fn hook, {hooks, imports} = acc ->
         # TODO: handle errors (invalid json or more than one export, it should have a single export)
         export =
-          with {:ok, meta} <- File.read(meta_json_path),
-               {:ok, meta} <- Jason.decode(meta),
+          with meta when not is_nil(meta) <- JSHook.get_code_metadata(hook, tmp_dir),
                {_, meta} <- Enum.at(meta["outputs"] || %{}, 0),
                [export] <- meta["exports"] do
             export
           else
             _ -> nil
           end
+
+        hook_js_path = Path.join(tmp_dir, hook.name <> ".js")
 
         import =
           cond do
