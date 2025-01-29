@@ -17,11 +17,14 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
   ## Options
 
-  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config. By default, Beacon will generate a new value and update all existing config to match that value.  If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
+                                     By default, Beacon will generate a new value and update all existing config to match that value. 
+                                     If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
   * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
                                   By default, Beacon will generate a new value and update all existing config to match that value.
                                   but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
-  * `--same-site` (optional, defaults to "Lax") - Set the cookie session SameSite attributes.
+  * `--session-key` (optional) - The value to use for key in the session config. Defaults to `"_your_app_name_key"`
+  * `--same-site` (optional) - Set the cookie session SameSite attributes. Defaults to "Lax"
 
   """
 
@@ -30,8 +33,13 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     %Igniter.Mix.Task.Info{
       group: :beacon,
       example: @example,
-      schema: [key: :string, signing_salt: :string, secret_key_base: :string, same_site: :string],
-      defaults: [same_site: "Lax"]
+      schema: [
+        secret_key_base: :string,
+        signing_salt: :string,
+        session_key: :string,
+        session_same_site: :string
+      ],
+      defaults: [session_same_site: "Lax"]
     }
   end
 
@@ -107,8 +115,8 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
   end
 
   def add_session_options_config(igniter, otp_app, options) do
-    key = Keyword.get_lazy(options, :key, fn -> "_#{otp_app}_key" end)
-    same_site = Keyword.get(options, :same_site, "Lax")
+    session_key = Keyword.get_lazy(options, :session_key, fn -> "_#{otp_app}_key" end)
+    session_same_site = Keyword.get(options, :session_same_site, "Lax")
 
     Igniter.Project.Config.configure(
       igniter,
@@ -119,9 +127,9 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
        Sourceror.parse_string!("""
        [
          store: :cookie,
-         key: "#{key}",
+         key: "#{session_key}",
          signing_salt: signing_salt,
-         same_site: "#{same_site}"
+         same_site: "#{session_same_site}"
        ]
        """)}
     )
@@ -230,7 +238,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
       |> Igniter.Project.Module.find_and_update_module!(endpoint, fn zipper ->
         case Igniter.Code.Function.move_to_function_call(zipper, :socket, 3) do
           {:ok, zipper} ->
-            # TODO replace the node with a commented-out version of itself
+            # TODO: replace the node with a commented-out version of itself
             # blocked by https://github.com/ash-project/igniter/pull/200
             {:ok, Sourceror.Zipper.remove(zipper)}
 

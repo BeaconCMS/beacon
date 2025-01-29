@@ -21,12 +21,18 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   ## Options
 
   * `--site` (required) - The name of your site. Should not contain special characters nor start with "beacon_"
-  * `--path` (optional, defaults to "/") - Where your site will be mounted. Follows the same convention as Phoenix route prefixes.
+  * `--path` (optional) - Where your site will be mounted. Follows the same convention as Phoenix route prefixes. Defaults to `"/"`
   * `--host` (optional) - If provided, a new endpoint will be created for this site with the given URL.
   * `--port` (optional) - The port to use for http requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
   * `--secure-port` (optional) - The port to use for https requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
-  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config. By default, Beacon will generate a new value and update all existing config to match that value. If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
-  * `--signing-salt` (optional) The value to use for signing_salt in your app config. By default, Beacon will generate a new value and update all existing config to match that value. If you don't want this behavior, copy the signing_salt from your app config and provide it here.
+  * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
+                                     By default, Beacon will generate a new value and update all existing config to match that value. 
+                                     If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+  * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
+                                  By default, Beacon will generate a new value and update all existing config to match that value.
+                                  but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
+  * `--session-key` (optional) - The value to use for key in the session config. Defaults to `"_your_app_name_key"`
+  * `--session-same-site` (optional) - Set the cookie session SameSite attributes. Defaults to "Lax"
 
   """
 
@@ -35,7 +41,17 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     %Igniter.Mix.Task.Info{
       group: :beacon,
       example: @example,
-      schema: [site: :string, path: :string, host: :string, port: :integer, secure_port: :integer, secret_key_base: :string, signing_salt: :string],
+      schema: [
+        site: :string,
+        path: :string,
+        host: :string,
+        port: :integer,
+        secure_port: :integer,
+        secret_key_base: :string,
+        signing_salt: :string,
+        session_key: :string,
+        session_same_site: :string
+      ],
       defaults: [path: "/"],
       required: [:site]
     }
@@ -44,14 +60,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   @doc false
   def igniter(igniter) do
     options = igniter.args.options
+    argv = igniter.args.argv
+
     site = Keyword.fetch!(options, :site) |> validate_site!()
     path = Keyword.fetch!(options, :path) |> validate_path!()
     host = Keyword.get(options, :host) |> validate_host!()
 
     port = Keyword.get_lazy(options, :port, fn -> Enum.random(4101..4999) end)
     secure_port = Keyword.get_lazy(options, :secure_port, fn -> Enum.random(8444..8999) end)
-    signing_salt = Keyword.get_lazy(options, :signing_salt, fn -> random_string(8) end)
-    secret_key_base = Keyword.get_lazy(options, :secret_key_base, fn -> random_string(64) end)
 
     otp_app = Igniter.Project.Application.app_name(igniter)
     web_module = Igniter.Libs.Phoenix.web_module(igniter)
@@ -66,7 +82,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> mount_site_in_router(router, site, path, host)
     |> add_site_config_in_config_runtime(site, repo, router, host)
     |> add_beacon_config_in_app_supervisor(site, repo)
-    |> maybe_create_proxy_endpoint(host, signing_salt, secret_key_base)
+    |> maybe_create_proxy_endpoint(host, argv)
     |> maybe_create_new_endpoint(host, otp_app, web_module)
     |> maybe_configure_new_endpoint(host, otp_app, port, secure_port)
     |> maybe_update_existing_endpoints(host, otp_app, existing_endpoints)
@@ -279,10 +295,10 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  defp maybe_create_proxy_endpoint(igniter, nil, _, _), do: igniter
+  defp maybe_create_proxy_endpoint(igniter, nil, _argv), do: igniter
 
-  defp maybe_create_proxy_endpoint(igniter, _host, signing_salt, secret_key_base),
-    do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint", ~w(--signing-salt #{signing_salt} --secret-key-base #{secret_key_base}))
+  defp maybe_create_proxy_endpoint(igniter, _host, argv),
+    do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint", argv)
 
   defp maybe_create_new_endpoint(igniter, nil, _, _), do: igniter
 
@@ -458,13 +474,5 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       |> Kernel.<>("Endpoint")
 
     Igniter.Libs.Phoenix.web_module_name(igniter, suffix)
-  end
-
-  # https://github.com/phoenixframework/phoenix/blob/c9b431f3a5d3bdc6a1d0ff3c29a229226e991195/installer/lib/phx_new/generator.ex#L451
-  defp random_string(length) do
-    length
-    |> :crypto.strong_rand_bytes()
-    |> Base.encode64()
-    |> binary_part(0, length)
   end
 end
