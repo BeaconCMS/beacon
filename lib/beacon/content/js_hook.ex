@@ -26,13 +26,13 @@ defmodule Beacon.Content.JSHook do
   end
 
   @doc false
-  # TODO: validate name is a valid JS object name
   def changeset(js_hook, attrs) do
     fields = [:name, :site, :code]
 
     js_hook
     |> cast(attrs, fields)
     |> validate_required(fields)
+    |> validate_format(:name, ~r/[a-zA-Z_][a-zA-Z0-9_]*/)
     |> validate_code()
   end
 

@@ -3,11 +3,14 @@ defmodule Beacon.RuntimeJS do
   @moduledoc false
   alias Beacon.Content
 
+  require Logger
+
   # merge beacon js with host application dependencies js
   # similar to https://github.com/phoenixframework/phoenix_live_dashboard/blob/9140f56c34201237f0feeeff747528eed2795c0c/lib/phoenix/live_dashboard/controllers/assets.ex#L6-L11
-  # TODO: build and minfy at runtime with esbuild
   def build(site) do
     minify? = !(Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev])
+
+    validate_esbuild_install!()
 
     assets =
       if minify? do
@@ -51,7 +54,7 @@ defmodule Beacon.RuntimeJS do
         if import_code do
           {[hook.name | names], [import_code | imports], [hook_js_path | paths]}
         else
-          # TODO: warn? error?
+          Logger.error("failed to import hook: #{inspect(hook)}")
           acc
         end
       end)
@@ -94,9 +97,6 @@ defmodule Beacon.RuntimeJS do
 
     cmd_opts = [cd: File.cwd!(), stderr_to_stdout: true]
 
-    # TODO: check if esbuild bin exist, similar to TailwindCompiler
-    # TODO: copy esbuild bin into the release
-    # TODO: handle errors (exit != 0)
     case System.cmd(Esbuild.bin_path(), args, cmd_opts) do
       {hooks, 0} -> hooks
       _ -> []
@@ -155,8 +155,9 @@ defmodule Beacon.RuntimeJS do
   def get_export(hook, opts \\ []) do
     dir = Keyword.get(opts, :dir, tmp_dir!())
     cleanup? = Keyword.get(opts, :cleanup, true)
-
     hook_js_path = Path.join(dir, hook.name <> ".js")
+
+    validate_esbuild_install!()
 
     if !File.exists?(hook_js_path), do: File.write!(hook_js_path, hook.code)
 
@@ -174,6 +175,23 @@ defmodule Beacon.RuntimeJS do
       _ ->
         if cleanup?, do: cleanup([hook], dir)
         {:error, :esbuild_failed}
+    end
+  end
+
+  defp validate_esbuild_install! do
+    case Esbuild.bin_version() do
+      {:ok, version} ->
+        :ok
+
+      :error ->
+        raise Beacon.LoaderError, """
+        esbuild binary not found or the installation is invalid.
+
+        Execute the following command to install the binary used to process JS:
+
+            mix esbuild.install
+
+        """
     end
   end
 
