@@ -41,6 +41,23 @@ defmodule Beacon.Content.JSHookTest do
       assert changeset.errors == []
     end
 
+    test "success (object)" do
+      attrs = %{
+        site: default_site(),
+        name: "FooHook",
+        code: """
+        const FooHook = { mounted() { console.log("mounted") } }
+
+        export { FooHook };
+        """
+      }
+
+      changeset = JSHook.changeset(%JSHook{}, attrs) |> IO.inspect()
+
+      assert changeset.valid? == true
+      assert changeset.errors == []
+    end
+
     test "error (name mismatch)" do
       attrs = %{
         site: default_site(),
@@ -95,7 +112,25 @@ defmodule Beacon.Content.JSHookTest do
       assert changeset.errors == [code: {"multiple exports are not allowed", []}]
     end
 
-    test "error (default contains multiple hooks)" do
+    test "error (multiple hooks in export)" do
+      attrs = %{
+        site: default_site(),
+        name: "FooHook",
+        code: """
+        const FooHook = { mounted() { console.log("foo") } }
+        const BarHook = { mounted() { console.log("bar") } }
+
+        export { FooHook, BarHook }
+        """
+      }
+
+      changeset = JSHook.changeset(%JSHook{}, attrs)
+
+      assert changeset.valid? == false
+      assert changeset.errors == [code: {"multiple exports are not allowed", []}]
+    end
+
+    test "error (multiple hooks in default)" do
       attrs = %{
         site: default_site(),
         name: "FooHook",
