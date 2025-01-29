@@ -1284,7 +1284,7 @@ defmodule Beacon.Content do
     changeset = JSHook.changeset(%JSHook{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    attrs
+    changeset
     |> repo(site).insert()
     |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
   end

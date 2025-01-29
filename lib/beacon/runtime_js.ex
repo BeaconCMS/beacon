@@ -49,28 +49,19 @@ defmodule Beacon.RuntimeJS do
     # TODO: delete tmp files after
     tmp_dir = tmp_dir!()
 
-    hook_a_path = Path.join(tmp_dir, "hook_a.js")
-    File.write!(hook_a_path, ~s"""
-    const message = "mounted"
+    hooks = Beacon.Content.list_js_hooks(site)
 
-    const ConsoleLogHook = {
-      mounted() {
-        console.log(message)
-      }
-    }
-
-    export default ConsoleLogHook
-    """)
+    hooks_code = for hook <- hooks, do: hook.code
+    hooks_names = for hook <- hooks, do: [hook.name, ",\n"]
 
     hooks_js_path = Path.join(tmp_dir, "hooks.js") |> dbg
 
-    hooks = ~s"""
-    import ConsoleLogHook from '#{hook_a_path}'
-
-    export default {
-      ConsoleLogHook,
-    }
-    """
+    hooks = [
+      hooks_code,
+      "\nexport default {",
+      hooks_names,
+      "}"
+    ]
 
     File.write!(hooks_js_path, hooks)
 
