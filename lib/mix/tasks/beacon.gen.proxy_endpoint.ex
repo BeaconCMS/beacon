@@ -65,10 +65,11 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
         igniter
         |> create_proxy_endpoint_module(otp_app, fallback_endpoint, proxy_endpoint_module_name)
         |> add_endpoint_to_application(fallback_endpoint, proxy_endpoint_module_name)
-        |> add_variables_to_config(signing_salt, secret_key_base)
-        |> add_session_options_config(otp_app, igniter.args.options)
+        |> add_signing_salt_to_config_exs(signing_salt)
+        |> add_session_options_to_config_exs(otp_app, igniter.args.options)
+        |> add_secret_key_base_to_dev_exs(secret_key_base)
         |> update_existing_endpoints(otp_app, existing_endpoints)
-        |> add_proxy_endpoint_config(otp_app, proxy_endpoint_module_name)
+        |> configure_proxy_endpoint(otp_app, proxy_endpoint_module_name)
         |> Igniter.add_notice("""
         ProxyEndpoint generated successfully.
 
@@ -90,9 +91,8 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     Igniter.Project.Application.add_new_child(igniter, proxy_endpoint_module_name, after: [fallback_endpoint, Beacon])
   end
 
-  def add_variables_to_config(igniter, signing_salt, secret_key_base) do
-    igniter
-    |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
+  defp add_signing_salt_to_config_exs(igniter, signing_salt) do
+    Igniter.update_elixir_file(igniter, "config/config.exs", fn zipper ->
       case Beacon.Igniter.move_to_variable(zipper, :signing_salt) do
         {:ok, _already_exists} ->
           zipper
@@ -102,7 +102,10 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
           Igniter.Code.Common.add_code(at_import, "signing_salt = \"#{signing_salt}\"", placement: :after)
       end
     end)
-    |> Igniter.update_elixir_file("config/dev.exs", fn zipper ->
+  end
+
+  defp add_secret_key_base_to_dev_exs(igniter, secret_key_base) do
+    Igniter.update_elixir_file(igniter, "config/dev.exs", fn zipper ->
       case Beacon.Igniter.move_to_variable(zipper, :secret_key_base) do
         {:ok, _already_exists} ->
           zipper
@@ -114,7 +117,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     end)
   end
 
-  def add_session_options_config(igniter, otp_app, options) do
+  defp add_session_options_to_config_exs(igniter, otp_app, options) do
     session_key = Keyword.get_lazy(options, :session_key, fn -> "_#{otp_app}_key" end)
     session_same_site = Keyword.get(options, :session_same_site, "Lax")
 
@@ -135,7 +138,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
     )
   end
 
-  def add_proxy_endpoint_config(igniter, otp_app, proxy_endpoint_module_name) do
+  defp configure_proxy_endpoint(igniter, otp_app, proxy_endpoint_module_name) do
     igniter
     |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
       {:ok,
