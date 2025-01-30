@@ -8,6 +8,7 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.EventHandler
   alias Beacon.Content.InfoHandler
+  alias Beacon.Content.JSHook
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -453,6 +454,53 @@ defmodule Beacon.ContentTest do
       :ok = Beacon.PubSub.subscribe_to_content(site)
       Content.update_stylesheet(stylesheet, %{body: "/* test */"})
       assert_receive {:content_updated, :stylesheet, %{site: ^site}}
+    end
+  end
+
+  describe "js hooks" do
+    test "create_js_hook/1" do
+      attrs = %{
+        site: :my_site,
+        name: "FooHook",
+        code: """
+        export const FooHook = {
+          mounted() {
+            console.log("foo")
+          }
+        }
+        """
+      }
+
+      assert {:ok, js_hook} = Content.create_js_hook(attrs)
+      assert %JSHook{name: "FooHook"} = js_hook
+    end
+
+    test "get_js_hook_by/3" do
+      js_hook = beacon_js_hook_fixture(name: "TestHook")
+
+      assert Content.get_js_hook_by(:my_site, name: "TestHook") == js_hook
+    end
+
+    test "list_js_hooks/1" do
+      js_hooks = for i <- 1..3, do: beacon_js_hook_fixture(site: :my_site, name: "Hook#{i}")
+
+      result = Content.list_js_hooks(:my_site)
+
+      assert Enum.sort(js_hooks) == Enum.sort(result)
+    end
+
+    test "update_js_hook/2" do
+      js_hook = beacon_js_hook_fixture()
+      attrs = %{name: "Changed", code: "export const Changed = { mounted() {} }"}
+
+      assert {:ok, updated_js_hook} = Content.update_js_hook(js_hook, attrs)
+      assert %JSHook{name: "Changed", code: "export const Changed = { mounted() {} }"} = updated_js_hook
+    end
+
+    test "delete_js_hook/1" do
+      %{id: id} = js_hook = beacon_js_hook_fixture()
+
+      assert {:ok, %{id: ^id}} = Content.delete_js_hook(js_hook)
     end
   end
 

@@ -562,10 +562,19 @@ defmodule Beacon.Test.Fixtures do
   """
   @spec beacon_js_hook_fixture(map() | Keyword.t()) :: Beacon.Content.JSHook.t()
   def beacon_js_hook_fixture(attrs \\ %{}) do
+    name = attrs[:name] || "TestHook#{System.unique_integer([:positive])}"
+
     attrs
     |> Enum.into(%{
       site: "my_site",
-      name: "TestHook#{System.unique_integer([:positive])}"
+      name: name,
+      code: """
+      export const #{name} = {
+        mounted() {
+          console.log("mounted")
+        }
+      }
+      """
     })
     |> Content.create_js_hook!()
     |> tap(&Loader.load_runtime_js(&1.site))
