@@ -336,55 +336,67 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   defp maybe_configure_new_endpoint(igniter, host, otp_app, port, secure_port) do
     new_endpoint = new_endpoint_module!(igniter, host)
-    proxy_endpoint = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
     error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
     error_json = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorJSON")
     pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
 
+    # TODO: replace the first two steps with `configure/6` once the `:after` option is allowed
     igniter
-    |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
-      {:ok,
-       zipper
-       |> Beacon.Igniter.move_to_variable!(:signing_salt)
-       |> Igniter.Project.Config.modify_configuration_code(
-         [new_endpoint],
-         otp_app,
-         Sourceror.parse_string!("""
-         [
-           url: [host: "localhost"],
-           adapter: Bandit.PhoenixAdapter,
-           render_errors: [
-             formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
-             layout: false
-           ],
-           pubsub_server: #{inspect(pubsub)},
-           live_view: [signing_salt: signing_salt]
-         ]
-         """)
-       )}
-    end)
-    |> Igniter.update_elixir_file("config/dev.exs", fn zipper ->
-      {:ok,
-       zipper
-       |> Beacon.Igniter.move_to_variable!(:secret_key_base)
-       |> Igniter.Project.Config.modify_configuration_code(
-         [new_endpoint],
-         otp_app,
-         Sourceror.parse_string!("""
-         [
-           http: [ip: {127, 0, 0, 1}, port: #{port}],
-           check_origin: false,
-           code_reloader: true,
-           debug_errors: true,
-           secret_key_base: secret_key_base,
-           watchers: [
-             esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-             tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
-           ]
-         ]
-         """)
-       )}
-    end)
+    |> then(
+      &if(Igniter.Project.Config.configures_key?(&1, "config.exs", otp_app, new_endpoint),
+        do: &1,
+        else:
+          Igniter.update_elixir_file(&1, "config/config.exs", fn zipper ->
+            {:ok,
+             zipper
+             |> Beacon.Igniter.move_to_variable!(:signing_salt)
+             |> Igniter.Project.Config.modify_configuration_code(
+               [new_endpoint],
+               otp_app,
+               Sourceror.parse_string!("""
+               [
+                 url: [host: "localhost"],
+                 adapter: Bandit.PhoenixAdapter,
+                 render_errors: [
+                   formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
+                   layout: false
+                 ],
+                 pubsub_server: #{inspect(pubsub)},
+                 live_view: [signing_salt: signing_salt]
+               ]
+               """)
+             )}
+          end)
+      )
+    )
+    |> then(
+      &if(Igniter.Project.Config.configures_key?(&1, "dev.exs", otp_app, new_endpoint),
+        do: &1,
+        else:
+          Igniter.update_elixir_file(&1, "config/dev.exs", fn zipper ->
+            {:ok,
+             zipper
+             |> Beacon.Igniter.move_to_variable!(:secret_key_base)
+             |> Igniter.Project.Config.modify_configuration_code(
+               [new_endpoint],
+               otp_app,
+               Sourceror.parse_string!("""
+               [
+                 http: [ip: {127, 0, 0, 1}, port: #{port}],
+                 check_origin: false,
+                 code_reloader: true,
+                 debug_errors: true,
+                 secret_key_base: secret_key_base,
+                 watchers: [
+                   esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+                   tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+                 ]
+               ]
+               """)
+             )}
+          end)
+      )
+    )
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
@@ -405,13 +417,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       otp_app,
       [new_endpoint, :server],
       {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
-    )
-    |> Igniter.Project.Config.configure_runtime_env(
-      :prod,
-      otp_app,
-      [proxy_endpoint, :check_origin],
-      [],
-      updater: fn zipper -> Igniter.Code.List.append_to_list(zipper, host) end
     )
   end
 

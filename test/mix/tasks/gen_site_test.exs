@@ -37,6 +37,14 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     |> assert_unchanged()
   end
 
+  test "host option does not duplicate files and configs" do
+    phoenix_project()
+    |> Igniter.compose_task("beacon.gen.site", @opts_host)
+    |> apply_igniter!()
+    |> Igniter.compose_task("beacon.gen.site", @opts_host)
+    |> assert_unchanged()
+  end
+
   describe "migration" do
     setup do
       [project: phoenix_project()]
