@@ -21,11 +21,9 @@ defmodule Beacon.ProxyEndpoint do
 
       plug :proxy
 
-      def proxy(conn, opts) do
-        %{host: host} = conn
-
-        # TODO: cache endpoint resolver
-        endpoint =
+      # TODO: cache endpoint resolver
+      def proxy(%{host: host} = conn, opts) do
+        matching_endpoint = fn ->
           Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
             %{endpoint: endpoint} = Beacon.Config.fetch!(site)
 
@@ -35,6 +33,16 @@ defmodule Beacon.ProxyEndpoint do
               {:cont, default}
             end
           end)
+        end
+
+        # fallback endpoint has higher priority in case of conflicts,
+        # for eg when all endpoints' host are localhost
+        endpoint =
+          if @__beacon_proxy_fallback__.host() == host do
+            @__beacon_proxy_fallback__
+          else
+            matching_endpoint.()
+          end
 
         endpoint.call(conn, endpoint.init(opts))
       end
