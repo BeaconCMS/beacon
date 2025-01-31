@@ -6,15 +6,7 @@ defmodule Beacon.Web.MediaLibraryController do
   alias Beacon.MediaLibrary
   alias Beacon.MediaLibrary.Asset
 
-  def show(conn, %{"file_name" => file_name}) do
-    site =
-      case conn.path_info do
-        ["__beacon_assets__", site | _] -> String.to_existing_atom(site)
-        _ -> nil
-      end
-
-    site || raise Beacon.Web.NotFoundError, "failed to serve asset #{file_name}"
-
+  def show(%{assigns: %{site: site}} = conn, %{"file_name" => file_name}) when is_atom(site) do
     case MediaLibrary.get_asset_by(site, file_name: file_name) do
       %Asset{} = asset ->
         Beacon.Web.Cache.when_stale(conn, asset, fn conn ->
@@ -27,6 +19,10 @@ defmodule Beacon.Web.MediaLibraryController do
       _ ->
         raise Beacon.Web.NotFoundError, "asset #{inspect(file_name)} not found"
     end
+  end
+
+  def show(_conn, %{"file_name" => file_name}) do
+    raise Beacon.Web.NotFoundError, "failed to serve asset #{file_name}"
   end
 
   def show(_conn, _params) do

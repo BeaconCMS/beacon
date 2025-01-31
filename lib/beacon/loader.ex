@@ -18,18 +18,7 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def modules_table_name(site) do
-    String.to_atom("beacon_modules_#{site}")
-  end
-
-  def resources_table_name(site) do
-    String.to_atom("beacon_resources_#{site}")
-  end
-
   def init(config) do
-    :ets.new(modules_table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
-    :ets.new(resources_table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
-
     if Beacon.Config.env_test?() do
       {:ok, config}
     else
@@ -37,10 +26,38 @@ defmodule Beacon.Loader do
     end
   end
 
-  def terminate(_reason, config) do
-    :ets.delete(modules_table_name(config.site))
-    :ets.delete(resources_table_name(config.site))
-    :ok
+  def safe_apply_mfa(site, module, function, args, opts \\ []) do
+    if :erlang.module_loaded(module) do
+      apply(module, function, args)
+    else
+      case GenServer.call(worker(site), {:apply_mfa, module, function, args}) do
+        {:ok, result} ->
+          result
+
+        {:error, error, stacktrace} ->
+          raise_invoke_error(site, error, module, function, args, opts[:context], stacktrace)
+      end
+    end
+  rescue
+    error ->
+      if live_data_module?(module) do
+        # LiveData is user-provided code, which always has the possibility of errors.
+        # In this case, we want to ensure the original error is surfaced to the user for easier debugging.
+        reraise error, __STACKTRACE__
+      else
+        raise_invoke_error(site, error, module, function, args, opts[:context], __STACKTRACE__)
+      end
+  end
+
+  defp raise_invoke_error(site, error, module, function, args, context, stacktrace) do
+    reraise Beacon.InvokeError, [site: site, error: error, module: module, function: function, args: args, context: context], stacktrace
+  end
+
+  defp live_data_module?(module) do
+    case module |> Module.split() |> List.last() do
+      "LiveData" -> true
+      _ -> false
+    end
   end
 
   defp worker(site) do
@@ -62,10 +79,27 @@ defmodule Beacon.Loader do
     end
   end
 
+  @doc """
+  Remove OLD and move NEW to OLD.
+
+  Existing processes can continue using OLD while making room for NEW version.
+  """
+  def unload(module) when is_atom(module) do
+    :code.purge(module)
+    :code.delete(module)
+    :ok
+  end
+
+  def unload(_module), do: :skip
+
   # Client
 
   def module_name(site, resource) do
-    site_hash = :md5 |> :crypto.hash(Atom.to_string(site)) |> Base.encode16(case: :lower)
+    site_hash =
+      :md5
+      |> :crypto.hash(Atom.to_string(site))
+      |> Base.encode16(case: :lower)
+
     Module.concat([Beacon.Web.LiveRenderer, "#{site_hash}", "#{resource}"])
   end
 
@@ -73,24 +107,8 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), :ping, @timeout)
   end
 
-  def add_module(site, module, {_md5, _error, _diagnostics} = metadata) when is_atom(site) do
-    :ets.insert(modules_table_name(site), {module, metadata})
-    :ok
-  end
-
-  def lookup_module(site, module) when is_atom(site) do
-    match = {module, :_}
-    guards = []
-    body = [:"$_"]
-
-    case :ets.select(modules_table_name(site), [{match, guards, body}]) do
-      [match] -> match
-      _ -> nil
-    end
-  end
-
-  def dump_modules(site) when is_atom(site) do
-    site |> modules_table_name() |> :ets.match(:"$1") |> List.flatten()
+  def populate_default_media(site) do
+    GenServer.call(worker(site), :populate_default_media, @timeout)
   end
 
   def populate_default_components(site) do
@@ -109,12 +127,12 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), :populate_default_home_page, @timeout)
   end
 
-  def reload_runtime_js(site) do
-    GenServer.call(worker(site), :reload_runtime_js, :timer.minutes(2))
+  def load_runtime_js(site) do
+    call_worker(site, :load_runtime_js, {:load_runtime_js, [site]}, timeout: :timer.minutes(2))
   end
 
-  def reload_runtime_css(site) do
-    GenServer.call(worker(site), :reload_runtime_css, :timer.minutes(2))
+  def load_runtime_css(site) do
+    GenServer.call(worker(site), :load_runtime_css, :timer.minutes(2))
   end
 
   def fetch_snippets_module(site) do
@@ -169,69 +187,86 @@ defmodule Beacon.Loader do
     Loader.InfoHandlers.module_name(site)
   end
 
-  def maybe_reload_page_module(site, page_id) do
-    maybe_reload(Loader.Page.module_name(site, page_id), fn -> reload_page_module(site, page_id) end)
+  def load_snippets_module(site) do
+    call_worker(site, :load_snippets_module, {:load_snippets_module, [site]})
   end
 
-  def reload_snippets_module(site) do
-    GenServer.call(worker(site), :reload_snippets_module, @timeout)
+  def load_routes_module(site) do
+    call_worker(site, :load_routes_module, {:load_routes_module, [site]})
   end
 
-  def reload_routes_module(site) do
-    GenServer.call(worker(site), :reload_routes_module, @timeout)
+  def load_components_module(site) do
+    call_worker(site, :load_components_module, {:load_components_module, [site]})
   end
 
-  def reload_components_module(site) do
-    GenServer.call(worker(site), :reload_components_module, @timeout)
+  def load_live_data_module(site) do
+    call_worker(site, :load_live_data_module, {:load_live_data_module, [site]})
   end
 
-  def reload_live_data_module(site) do
-    GenServer.call(worker(site), :reload_live_data_module, @timeout)
+  def load_error_page_module(site) do
+    call_worker(site, :load_error_page_module, {:load_error_page_module, [site]})
   end
 
-  def reload_error_page_module(site) do
-    GenServer.call(worker(site), :reload_error_page_module, @timeout)
+  def load_stylesheet_module(site) do
+    call_worker(site, :load_stylesheet_module, {:load_stylesheet_module, [site]})
   end
 
-  def reload_stylesheet_module(site) do
-    GenServer.call(worker(site), :reload_stylesheet_module, @timeout)
+  def load_event_handlers_module(site) do
+    call_worker(site, :load_event_handlers_module, {:load_event_handlers_module, [site]})
   end
 
-  def reload_event_handlers_module(site) do
-    GenServer.call(worker(site), :reload_event_handlers_module, @timeout)
+  def load_info_handlers_module(site) do
+    call_worker(site, :load_info_handlers_module, {:load_info_handlers_module, [site]})
   end
 
-  def reload_layouts_modules(site) do
-    Enum.map(Content.list_published_layouts(site), &reload_layout_module(&1.site, &1.id))
+  def load_layouts_modules(site) do
+    site
+    |> Content.list_published_layouts()
+    |> Enum.map(&load_layout_module(&1.site, &1.id))
   end
 
-  def reload_layout_module(site, layout_id) do
-    GenServer.call(worker(site), {:reload_layout_module, layout_id}, @timeout)
+  def load_layout_module(site, layout_id) do
+    call_worker(site, {:load_layout_module, layout_id}, {:load_layout_module, [site, layout_id]})
   end
 
-  def reload_pages_modules(site, opts \\ []) do
+  def load_pages_modules(site, opts \\ []) do
     per_page = Keyword.get(opts, :per_page, :infinity)
-    Enum.map(Content.list_published_pages(site, per_page: per_page), &reload_page_module(&1.site, &1.id))
+
+    site
+    |> Content.list_published_pages(per_page: per_page)
+    |> Enum.map(&load_page_module(&1.site, &1.id))
   end
 
-  def reload_page_module(site, page_id) do
-    GenServer.call(worker(site), {:reload_page_module, page_id}, @timeout)
+  def load_page_module(site, page_id) do
+    call_worker(site, {:load_page_module, page_id}, {:load_page_module, [site, page_id]})
+  end
+
+  # call worker asyncly or syncly depending on the current site mode
+  # or skip if mode is manual so we don't load modules
+  defp call_worker(site, async_request, sync_request, opts \\ []) do
+    mode = Beacon.Config.fetch!(site).mode
+    timeout = Keyword.get(opts, :timeout, @timeout)
+
+    case mode do
+      :live ->
+        GenServer.call(worker(site), async_request, timeout)
+
+      :testing ->
+        {sync_fun, sync_args} = sync_request
+        apply(Beacon.Loader.Worker, sync_fun, sync_args)
+
+      :manual ->
+        :skip
+    end
   end
 
   def unload_page_module(site, page_id) do
     GenServer.call(worker(site), {:unload_page_module, page_id}, @timeout)
   end
 
-  def reload_info_handlers_module(site) do
-    GenServer.call(worker(site), :reload_info_handlers_module, @timeout)
-  end
-
-  defp maybe_reload(module, reload_fun) do
-    if :erlang.module_loaded(module) do
-      {:ok, module}
-    else
-      reload_fun.()
-    end
+  def ensure_loaded!(modules, site) do
+    Beacon.ErrorHandler.enable(site)
+    Enum.each(modules, & &1.__info__(:module))
   end
 
   # Server
@@ -246,24 +281,43 @@ defmodule Beacon.Loader do
     {:noreply, config}
   end
 
+  # Published resources are just unloaded so `Beacon.ErrorHandler`
+  # takes care of loading them on the next request.
+
   def handle_info({:layout_published, %{site: site, id: id}}, config) do
-    reload_layout_module(site, id)
-    reload_runtime_css(site)
+    Beacon.Content.reset_published_layout(site, id)
+
+    site
+    |> Loader.Layout.module_name(id)
+    |> unload()
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:page_published, %{site: site, id: id}}, config) do
-    reload_page_module(site, id)
-    reload_runtime_css(site)
+    Beacon.Content.reset_published_page(site, id)
+
+    site
+    |> Loader.Page.module_name(id)
+    |> unload()
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:pages_published, site, pages}, config) do
     for %{id: id} <- pages do
-      reload_page_module(site, id)
+      Beacon.Content.reset_published_page(site, id)
+
+      site
+      |> Loader.Page.module_name(id)
+      |> unload()
     end
 
-    reload_runtime_css(site)
+    load_runtime_css(site)
 
     {:noreply, config}
   end
@@ -275,42 +329,78 @@ defmodule Beacon.Loader do
   end
 
   def handle_info({:content_updated, :stylesheet, %{site: site}}, config) do
-    reload_stylesheet_module(site)
-    reload_runtime_css(site)
+    site
+    |> Loader.Stylesheet.module_name()
+    |> unload()
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :snippet_helper, %{site: site}}, config) do
-    reload_snippets_module(site)
-    reload_runtime_css(site)
+    site
+    |> Loader.Snippets.module_name()
+    |> unload()
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :error_page, %{site: site}}, config) do
-    reload_error_page_module(site)
-    reload_runtime_css(site)
+    site
+    |> Loader.ErrorPage.module_name()
+    |> unload()
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :component, %{site: site}}, config) do
-    reload_components_module(site)
-    reload_runtime_css(site)
+    site
+    |> Loader.Components.module_name()
+    |> unload()
+
+    # consider implementing HTML and Tag engines
+    # to intercept component module calls
+    if config.mode != :manual, do: load_components_module(site)
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :live_data, %{site: site}}, config) do
-    reload_live_data_module(site)
-    reload_runtime_css(site)
+    site
+    |> Loader.LiveData.module_name()
+    |> unload()
+
+    load_runtime_css(site)
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
-    reload_info_handlers_module(site)
+    site
+    |> Loader.InfoHandlers.module_name()
+    |> unload()
+
     {:noreply, config}
   end
 
   def handle_info({:content_updated, :event_handler, %{site: site}}, config) do
-    reload_event_handlers_module(site)
+    site
+    |> Loader.EventHandlers.module_name()
+    |> unload()
+
+    {:noreply, config}
+  end
+
+  def handle_info({:content_updated, :js_hook, %{site: site}}, config) do
+    load_runtime_js(site)
+
     {:noreply, config}
   end
 

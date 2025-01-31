@@ -2,7 +2,7 @@ defmodule Beacon.Content.Stylesheet do
   @moduledoc """
   Stores CSS content to use when rendering pages with Beacon.
 
-  > #### Do not create or edit page snapshots manually {: .warning}
+  > #### Do not create or edit stylesheets manually {: .warning}
   >
   > Use the public functions in `Beacon.Content` instead.
   > The functions in that module guarantee that all dependencies

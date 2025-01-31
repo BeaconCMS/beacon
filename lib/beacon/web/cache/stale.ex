@@ -40,8 +40,7 @@ defimpl Beacon.Web.Cache.Stale, for: Any do
           [last_modified, Any.recurse_fields(schema, assocs, &Stale.last_modified/1)]
         end
 
-        defp fetch_last_modified(_schema, nil), do: ~N[0000-01-01 00:00:00]
-        defp fetch_last_modified(schema, key), do: Map.fetch!(schema, key)
+        defp fetch_last_modified(schema, key), do: Map.get(schema, key) || ~N[0000-01-01 00:00:00]
       end
     end
   end

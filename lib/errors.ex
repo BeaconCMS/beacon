@@ -34,6 +34,35 @@ defmodule Beacon.RuntimeError do
   defexception message: "runtime error in Beacon", plug_status: 404
 end
 
+defmodule Beacon.InvokeError do
+  @moduledoc """
+  Raised when Beacon attempts to `apply` a module/function/arguments unsuccessfully.
+
+  If you see this error consistently, make sure the resource being called is created and published,
+  otherwise that might be a bug in Beacon.
+  """
+
+  defexception site: nil, error: nil, module: nil, function: nil, args: [], context: nil, message: "error applying function", plug_status: 404
+
+  @impl true
+  def message(%{site: site, module: module, function: function, args: args, context: context}) do
+    mfa = Exception.format_mfa(module, function, length(args))
+
+    if context do
+      """
+      error applying #{mfa} on site #{site}
+
+      Context:
+
+        #{inspect(context)}
+
+      """
+    else
+      "error applying #{mfa} on site #{site}"
+    end
+  end
+end
+
 defmodule Beacon.ParserError do
   @moduledoc """
   Raised when Beacon's Markdown engine attempts to convert Markdown to HTML unsuccessfully.

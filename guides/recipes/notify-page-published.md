@@ -28,7 +28,7 @@ And the corresponding function in `MyApp.CMS` module:
 ```elixir
 defmodule MyApp.CMS do
   def notify_page_published(%Beacon.Content.Page{path: path} = page) do
-    email =  MyApp.CMSEmail.notify(%{path: path})
+    email =  MyApp.CMS.notify_email(%{path: path})
 
     case MyApp.Mailer.deliver(email) do
       {:ok, _} ->

@@ -5,17 +5,17 @@ You can host multiple domains or subdomains with Phoenix by using the `:host` op
 `:host` - a string or list of strings containing the host scope, or prefix host scope (e.g. `"foo.bar.com"`, `"foo."`)
 
 ```elixir
-# match admin. subdomain
+# match `admin.` subdomain
 scope "/", MyAppWeb, host: "admin." do
   live "/", AdminLive, :new
 end
 
-# match example.com, and "example2.com"
+# match `example.com` and `example2.com`
 scope "/", MyAppWeb, host: ["example.com", "example2.com"] do
   live "/", LandingLive, :new
 end
 
-# match my-example.org
+# match only `my-example.org`
 scope "/", MyAppWeb, host: "my-example.org" do
   live "/", HomeLive, :new
 end
@@ -55,11 +55,12 @@ In `config/runtime.exs` edit the following config to include your domains:
 
 ```elixir
 config :my_app, MyAppWeb.Endpoint,
-  ...
+  # ...
   check_origin: [
     "https://beacon-demo.com/",
     "https://demo.org",
     "https://blog.com"
-  ],
-  ...
+  ]
 ```
+
+Check out the [Deployment Topologies](https://hexdocs.pm/beacon/deployment-topologies.html) guide for more information.

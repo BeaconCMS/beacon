@@ -3,36 +3,28 @@ defmodule Beacon.Web.DataSource do
 
   require Logger
 
-  def live_data(site, path_info, params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(params) do
-    site
-    |> Beacon.Loader.fetch_live_data_module()
-    |> Beacon.apply_mfa(:live_data, [path_info, params])
+  def live_data(site, path_info, query_params \\ %{})
+
+  def live_data(site, path_info, query_params) when is_atom(site) and is_list(path_info) and is_map(query_params) do
+    Beacon.apply_mfa(site, Beacon.Loader.fetch_live_data_module(site), :live_data, [path_info, query_params])
   end
 
-  # TODO: revisit this logic to evaluate page_title for unpublished pages
-  def page_title(site, page_id, live_data) do
-    page_assigns = page_assigns(site, page_id)
+  def live_data(_site, _path_info, _query_params), do: %{}
 
-    with {:ok, page_assigns} <- page_assigns,
-         {:ok, page_title} <- Beacon.Content.render_snippet(page_assigns.title, %{page: page_assigns, live_data: live_data}) do
+  def page_title(%Beacon.Content.Page{} = page, live_data) do
+    %{path: path, title: title} = page_assigns = page_assigns(page)
+
+    with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
       page_title
     else
-      {:error, :page_module_not_found} ->
-        ""
-
       {:error, error} ->
-        {path, original_title} =
-          case page_assigns do
-            {:ok, page_assigns} -> {page_assigns.path, page_assigns.title}
-            _ -> {nil, ""}
-          end
-
         Logger.error("""
         failed to interpolate page title variables
 
         will return the original unmodified page title
 
-        site: #{site}
+        site: #{page.site}
+        title: #{title}
         page path: #{path}
 
         Got:
@@ -41,34 +33,21 @@ defmodule Beacon.Web.DataSource do
 
         """)
 
-        original_title
+        title
     end
   end
 
   # TODO: revisit this logic to evaluate meta_tags for unpublished pages
   def meta_tags(assigns) do
-    %{beacon: %{page: page, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
-    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
+    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
+    %{site: ^site} = page_assigns = Beacon.apply_mfa(site, page_module, :page_assigns, [])
+
     live_data = Map.take(assigns, live_data_keys)
 
-    case page_assigns(site, page_id) do
-      {:error, _} ->
-        Logger.error("""
-        failed to interpolate page meta tags, returning empty list of meta tags
-
-        Site: #{site}
-        Page path: #{page.path}
-
-        """)
-
-        []
-
-      {:ok, page_assigns} ->
-        assigns
-        |> Beacon.Web.Layouts.meta_tags()
-        |> List.wrap()
-        |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns, live_data: live_data}))
-    end
+    assigns
+    |> Beacon.Web.Layouts.meta_tags()
+    |> List.wrap()
+    |> Enum.map(&interpolate_meta_tag(&1, %{page: page_assigns, live_data: live_data}))
   end
 
   defp interpolate_meta_tag(meta_tag, values) when is_map(meta_tag) do
@@ -83,16 +62,33 @@ defmodule Beacon.Web.DataSource do
     end
   end
 
-  # only published pages will have the title evaluated,
-  # which is what we need for sites to work properly but
-  # the page builder could use this data as well
-  defp page_assigns(site, page_id) do
-    page_module = Beacon.Loader.fetch_page_module(site, page_id)
+  # return the page assigns from unpublished page assigns,
+  # either saved in the database or page in-memory (for new pages)
+  # this fallback is here mostly to support  beacon_live_admin visual editor,
+  # which makes use of the `@beacon` assign when creating or editing pages
+  defp page_assigns(%Beacon.Content.Page{id: nil} = page) do
+    unpublished_page_assigns(page)
+  end
 
-    if :erlang.module_loaded(page_module) do
-      {:ok, Beacon.apply_mfa(page_module, :page_assigns, [])}
-    else
-      {:error, :page_module_not_found}
-    end
+  defp page_assigns(%Beacon.Content.Page{} = page) do
+    Beacon.apply_mfa(page.site, Beacon.Loader.fetch_page_module(page.site, page.id), :page_assigns, [])
+  rescue
+    _ -> unpublished_page_assigns(page)
+  end
+
+  defp unpublished_page_assigns(page) do
+    %{
+      id: page.id,
+      site: page.site,
+      layout_id: page.layout_id,
+      title: page.title,
+      meta_tags: page.meta_tags,
+      raw_schema: Beacon.Loader.Page.interpolate_raw_schema(page),
+      path: page.path,
+      description: page.description,
+      order: page.order,
+      format: page.format,
+      extra: page.extra
+    }
   end
 end

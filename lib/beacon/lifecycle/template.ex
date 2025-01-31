@@ -102,7 +102,7 @@ defmodule Beacon.Lifecycle.Template do
   @spec render_template(Beacon.Content.Page.t(), map(), Macro.Env.t()) :: Beacon.Template.t()
   def render_template(page, assigns, env) do
     page_module = Beacon.Loader.fetch_page_module(page.site, page.id)
-    template = Beacon.apply_mfa(page_module, :render, [assigns])
+    template = Beacon.apply_mfa(page.site, page_module, :render, [assigns])
     context = [path: page.path, assigns: assigns, env: env]
     lifecycle = Lifecycle.execute(__MODULE__, page.site, :render_template, template, sub_key: page.format, context: context)
     lifecycle.output

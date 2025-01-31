@@ -4,13 +4,6 @@ defmodule Beacon.BeaconTest.Endpoint do
   # which expects that a real "application" is settled.
   use Phoenix.Endpoint, otp_app: :beacon
 
-  @session_options [store: :cookie, key: "_beacon_test_key", signing_salt: "LKBurgGF"]
-
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
-
-  socket "/custom_live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
-
-  plug Plug.Session, store: :cookie, key: "_beacon_app_key", signing_salt: "5Ude+fet"
-
+  plug Plug.Session, Application.compile_env!(:beacon, :session_options)
   plug Beacon.BeaconTest.Router
 end

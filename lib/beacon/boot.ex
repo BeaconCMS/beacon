@@ -15,63 +15,59 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, skip_boot?: true}) do
-    Logger.debug("Beacon.Boot is disabled on site #{site}")
+  def init(%{site: site, mode: mode}) when is_atom(site) and mode in [:manual, :testing] do
+    Logger.debug("Beacon.Boot is disabled for site #{site} on #{mode} mode")
+    :ignore
+  end
 
-    # Router helpers are always available
-    Beacon.Loader.reload_routes_module(site)
+  def init(%{site: site, mode: :live} = config) when is_atom(site) do
+    Logger.info("Beacon.Boot booting site #{site}")
+    task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
+
+    # temporary disable module loading so we can populate data more efficiently
+    %{mode: :manual} = Beacon.Config.update_value(site, :mode, :manual)
+    Beacon.Loader.populate_default_media(site)
+    Beacon.Loader.populate_default_components(site)
+    Beacon.Loader.populate_default_layouts(site)
+    Beacon.Loader.populate_default_error_pages(site)
+    Beacon.Loader.populate_default_home_page(site)
+
+    %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
+
+    tasks = [
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_js(site) end),
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_css(site) end)
+      | warm_pages_async(task_supervisor, config)
+    ]
+
+    # TODO: revisit this timeout after we upgrade to Tailwind v4
+    Task.await_many(tasks, :timer.minutes(5))
+
+    # TODO: add telemetry to measure booting time
+    Logger.info("Beacon.Boot finished booting site #{site}")
 
     :ignore
   end
 
-  def init(config), do: do_init(config)
+  defp warm_pages_async(task_supervisor, config) do
+    pages =
+      case config.page_warming do
+        {:shortest_paths, count} ->
+          Logger.info("Beacon.Boot warming pages - #{count} shortest paths")
+          Beacon.Content.list_published_pages(config.site, sort: {:length, :path}, limit: count)
 
-  def do_init(config) do
-    Logger.info("Beacon.Boot booting site #{config.site}")
+        {:specify_paths, paths} ->
+          Logger.info("Beacon.Boot warming pages - specified paths")
+          Beacon.Content.list_published_pages_for_paths(config.site, paths)
 
-    task_supervisor = Beacon.Registry.via({config.site, TaskSupervisor})
+        :none ->
+          Logger.info("Beacon.Boot page warming disabled")
+          []
+      end
 
-    # Sigils and router helpers
-    Beacon.Loader.reload_routes_module(config.site)
-
-    # Layouts and pages depend on the components module so we need to load it first
-    Beacon.Loader.populate_default_components(config.site)
-    Beacon.Loader.reload_components_module(config.site)
-
-    Beacon.Loader.populate_default_layouts(config.site)
-
-    # Pages depend on default layouts
-    Beacon.Loader.populate_default_error_pages(config.site)
-    Beacon.Loader.populate_default_home_page(config.site)
-
-    assets = [
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_js(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_runtime_css(config.site) end)
-    ]
-
-    modules = [
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_stylesheet_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_snippets_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_live_data_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_layouts_modules(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_error_page_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_pages_modules(config.site, per_page: 20) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_info_handlers_module(config.site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.reload_event_handlers_module(config.site) end)
-      # TODO: load main pages (order_by: path, per_page: 10) to avoid SEO issues
-    ]
-
-    Task.await_many(modules, :timer.minutes(10))
-
-    # TODO: revisit this timeout after we upgrade to Tailwind v4
-    Task.await_many(assets, :timer.minutes(5))
-
-    # Reset option to enable event broadcasting even after booting manually
-    Beacon.Config.update_value(config.site, :skip_boot?, false)
-
-    # TODO: add telemetry to measure booting time
-    Logger.info("Beacon.Boot finished booting site #{config.site}")
-
-    :ignore
+    Enum.map(pages, fn page ->
+      Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
+      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_page_module(config.site, page.id) end)
+    end)
   end
 end

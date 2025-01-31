@@ -1,15 +1,12 @@
 defmodule Beacon.Registry do
   @moduledoc false
 
-  @doc false
   def child_spec(_arg) do
     Registry.child_spec(keys: :unique, name: __MODULE__)
   end
 
-  @doc false
   def via(key), do: {:via, Registry, {__MODULE__, key}}
 
-  @doc false
   def via(key, value), do: {:via, Registry, {__MODULE__, key, value}}
 
   @doc """
@@ -24,7 +21,6 @@ defmodule Beacon.Registry do
     Registry.select(__MODULE__, [{match, guards, body}])
   end
 
-  @doc false
   def update_config(site, fun) when is_atom(site) and is_function(fun, 1) do
     result =
       Registry.update_value(__MODULE__, {:site, site}, fn config ->
@@ -37,7 +33,6 @@ defmodule Beacon.Registry do
     end
   end
 
-  @doc false
   def lookup(key) do
     __MODULE__
     |> Registry.lookup(key)

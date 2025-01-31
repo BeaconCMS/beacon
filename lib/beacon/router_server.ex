@@ -23,10 +23,10 @@ defmodule Beacon.RouterServer do
     # We store routes by order and length so the most visited pages will likely be in the first rows
     :ets.new(table_name(config.site), [:ordered_set, :named_table, :public, read_concurrency: true])
 
-    if config.skip_boot? do
-      {:ok, config}
-    else
+    if config.mode == :live do
       {:ok, config, {:continue, :async_init}}
+    else
+      {:ok, config}
     end
   end
 
@@ -37,20 +37,32 @@ defmodule Beacon.RouterServer do
 
   # Client
 
-  def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
-    with {_path, page_id} <- lookup_path(site, path_info),
-         {:ok, page_module} <- Beacon.Loader.maybe_reload_page_module(site, page_id) do
-      Beacon.apply_mfa(page_module, :page, [])
+  def lookup_page(site, path_info) when is_atom(site) and is_list(path_info) do
+    with {_path, page_id} <- lookup_path(site, path_info) do
+      page_module = Beacon.Loader.fetch_page_module(site, page_id)
+      Beacon.apply_mfa(site, page_module, :page, [])
     else
-      _ ->
-        raise Beacon.Web.NotFoundError, """
-        no page was found for site #{site} and path #{inspect(path_info)}
-
-        Make sure a page was created for that path.
-        """
+      _ -> nil
     end
   end
 
+  def lookup_page!(site, path_info) when is_atom(site) and is_list(path_info) do
+    case lookup_page(site, path_info) do
+      nil ->
+        raise Beacon.Web.NotFoundError, """
+        no page found for site #{site} and path #{inspect(path_info)}
+
+        Make sure a page was created for that path.
+        """
+
+      page ->
+        page
+    end
+  end
+
+  @doc """
+  Inserts or replace a page in the router.
+  """
   def add_page(site, id, path) when is_atom(site) and is_binary(id) and is_binary(path) do
     GenServer.call(name(site), {:add_page, id, path})
   end
@@ -101,7 +113,8 @@ defmodule Beacon.RouterServer do
   end
 
   def handle_call({:lookup_path, path_info, limit}, _from, config) do
-    route = do_lookup_path(table_name(config.site), path_info, limit)
+    lookup_table = table_name(config.site)
+    route = do_lookup_path(lookup_table, path_info, limit)
     {:reply, route, config}
   end
 

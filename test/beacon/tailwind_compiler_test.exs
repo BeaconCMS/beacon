@@ -1,16 +1,14 @@
 defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   use Beacon.DataCase, async: false
+  use Beacon.Test, site: :my_site
 
   import ExUnit.CaptureIO
-  import Beacon.Fixtures
   alias Beacon.RuntimeCSS.TailwindCompiler
 
-  @site :my_site
-
   defp create_page(_) do
-    stylesheet_fixture()
+    beacon_stylesheet_fixture()
 
-    component_fixture(
+    beacon_component_fixture(
       template: ~S"""
       <li id={"my-component-#{@val}"}>
         <span class="text-gray-50"><%= @val %></span>
@@ -19,40 +17,34 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
     )
 
     layout =
-      published_layout_fixture(
+      beacon_published_layout_fixture(
         template: """
         <header class="text-gray-100">Page header</header>
         <%= @inner_content %>
         """
       )
 
-    published_page_fixture(
+    beacon_published_page_fixture(
       layout_id: layout.id,
       path: "/tailwind-test",
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
-        <%= for val <- @vals do %>
-          <%= my_component("sample_component", val: val) %>
-        <% end %>
       </main>
       """
     )
 
-    published_page_fixture(
+    beacon_published_page_fixture(
       layout_id: layout.id,
       path: "/tailwind-test-post-process",
       template: """
       <main>
         <h2 class="text-gray-200">Some Values:</h2>
-        <%= for val <- @vals do %>
-          <%= my_component("sample_component", val: val) %>
-        <% end %>
       </main>
       """
     )
 
-    page_fixture(
+    beacon_page_fixture(
       layout_id: layout.id,
       path: "/b",
       template: """
@@ -66,7 +58,11 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
   end
 
   test "config" do
-    assert TailwindCompiler.config(@site) =~ "export default"
+    assert TailwindCompiler.config(default_site()) =~ "export default"
+  end
+
+  test "css" do
+    assert TailwindCompiler.css(default_site()) =~ ".custom-font-style { @apply font-sans; color: #5e5e5e }"
   end
 
   describe "compile site" do
@@ -74,7 +70,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
 
     test "includes classes from all resources" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(@site)
+        assert {:ok, output} = TailwindCompiler.compile(default_site())
 
         # test/support/templates/*.*ex
         assert output =~ "text-red-50"
@@ -89,14 +85,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompilerTest do
 
     test "do not include classes from unpublished pages" do
       capture_io(fn ->
-        assert {:ok, output} = TailwindCompiler.compile(@site)
+        assert {:ok, output} = TailwindCompiler.compile(default_site())
 
         refute output =~ "text-gray-300"
       end)
     end
 
     test "fetch post processed page templates" do
-      assert {:ok, output} = TailwindCompiler.compile(@site)
+      assert {:ok, output} = TailwindCompiler.compile(default_site())
       assert output =~ "text-blue-200"
     end
   end

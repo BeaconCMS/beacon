@@ -5,6 +5,10 @@ defmodule Beacon.Application do
 
   @impl true
   def start(_type, _args) do
+    # Force loading ErrorHandler before it's needed,
+    # otherwise we get race conditions auto loading Beacon resource modules.
+    {:module, _} = Code.ensure_loaded(Beacon.ErrorHandler)
+
     # Starts just the minimum required apps for beacon to work.
     # - Keep loading sites as children of main sup to have control of where and when to trigger it.
     # - Loading repo allows to run seeds without triggering module and css recompilation.
@@ -16,6 +20,6 @@ defmodule Beacon.Application do
     # TODO: scope by site
     :ets.new(:beacon_assets, [:set, :named_table, :public, read_concurrency: true])
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
+    Supervisor.start_link(children, strategy: :one_for_one, name: Beacon.Supervisor)
   end
 end

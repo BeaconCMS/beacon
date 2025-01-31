@@ -1,8 +1,13 @@
-# How to Contribute
+# Contributing to Beacon
 
-## Issue Tags
+## Guidelines
 
-The tag [good first issue](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) is recommended for fist time contributors, they are usually small fixes or improvements that don't require too much knowledge of the project. The tag [help wanted](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22good+first+issue%22+) represents issues that would benefit from contributors but may need more knowledge or discussion over the requirements.
+* Issues aligned with our [roadmap](https://github.com/BeaconCMS/beacon_live_admin/blob/main/ROADMAP.md) have higher priority
+  and those are [labeled as roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap)
+* [Bugs](https://github.com/BeaconCMS/beacon/labels/bug) tend to have higher priority unless they are of minor impact
+* If unsure where to start, look for issues tagged as [good first issue](https://github.com/BeaconCMS/beacon/labels/good%20first%20issue) to find good candidates for your first contribution
+* Issues tagged [help wanted](https://github.com/BeaconCMS/beacon/labels/help%20wanted) are also good candidates but may require more project knowledge and/or time investment
+* Issues are usually tagged by type and area to help identify their priority aligned to our roadmap
 
 ## Improve documentation
 
@@ -15,25 +20,11 @@ Pull requests correcting spelling or grammar mistakes are always welcome.
 
 ## Found a bug?
 
-Please try to answer at least the following questions when reporting a bug:
-
- - Which version of the project did you use when you noticed the bug?
- - How do you reproduce the error condition?
- - What happened that you think is a bug?
- - What should it do instead?
-
-It would really help the maintainers if you could provide a reduced test case
-that reproduces the error condition.
+Please open a [bug report](https://github.com/BeaconCMS/beacon/issues/new?template=bug_report.md&labes=bug).
 
 ## Have a feature request?
 
-Please provide some thoughful commentary and code samples on what this feature
-should do and why it should be added (your use case). The minimal questions you
-should answer when submitting a feature request should be:
-
- - What will it allow you to do that you can't do today?
- - Why do you need this feature and how will it benefit other users?
- - Are there any drawbacks to this feature?
+Please open a [feature request](https://github.com/BeaconCMS/beacon/issues/new?template=feature_request.md&labes=feature-request).
 
 ## Submitting a pull-request?
 
@@ -45,3 +36,14 @@ get accepted:
 
 If your pull-request addresses an issue then please add the corresponding
 issue's number to the description of your pull-request.
+
+## Prioritization
+
+Issues tagged as [roadmap](https://github.com/BeaconCMS/beacon/labels/roadmap) indicate the work that is planned to be done
+next in the short term. Those have more priority over the other issues and will be included in the next releases.
+
+Engaging on [feature request issues](https://github.com/BeaconCMS/beacon/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request) also helps us to prioritize the work,
+so feel free to add comments or discuss on feature requests you'd like to see implemented and those will have more priority over the other issues.
+
+Finally keep in mind that we can't guarantee which exact issues will be included in the very next release; the core team may
+give more priority to specific issues as needed.
