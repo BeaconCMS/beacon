@@ -137,7 +137,7 @@ defmodule Beacon.RuntimeJS do
     gzip = :zlib.gzip(js)
 
     try do
-      :ets.insert(:beacon_assets, {{site, :js}, {hash, js, brotli, gzip}})
+      true = :ets.insert(:beacon_assets, {{site, :js}, {hash, js, brotli, gzip}})
     rescue
       _ -> reraise Beacon.LoaderError, [message: "failed to compress js"], __STACKTRACE__
     end

@@ -75,7 +75,7 @@ defmodule Beacon.RuntimeCSS do
     gzip = :zlib.gzip(css)
 
     try do
-      :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}})
+      true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}})
     rescue
       _ -> reraise Beacon.LoaderError, [message: "failed to compress css"], __STACKTRACE__
     end
