@@ -81,7 +81,7 @@ defmodule Beacon.Web.AssetsController do
   end
 
   defp content_and_type(site, :js, :brotli) do
-    body = Beacon.RuntimeJS.fetch(:brotli)
+    body = Beacon.RuntimeJS.fetch(site, :brotli)
 
     if body do
       %{body: body, type: "text/javascript", encoding: @brotli}
@@ -90,12 +90,12 @@ defmodule Beacon.Web.AssetsController do
     end
   end
 
-  defp content_and_type(_site, :js, :gzip) do
-    %{body: Beacon.RuntimeJS.fetch(:gzip), type: "text/javascript", encoding: @gzip}
+  defp content_and_type(site, :js, :gzip) do
+    %{body: Beacon.RuntimeJS.fetch(site, :gzip), type: "text/javascript", encoding: @gzip}
   end
 
-  defp content_and_type(_site, :js, :deflate) do
-    %{body: Beacon.RuntimeJS.fetch(:deflate), type: "text/javascript", encoding: nil}
+  defp content_and_type(site, :js, :deflate) do
+    %{body: Beacon.RuntimeJS.fetch(site, :deflate), type: "text/javascript", encoding: nil}
   end
 
   defp content_and_type(site, :css_config) do

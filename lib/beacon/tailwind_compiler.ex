@@ -241,15 +241,6 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
     |> List.flatten()
   end
 
-  defp generate_template_files!(tmp_dir, templates) when is_list(templates) do
-    Enum.map(templates, fn template ->
-      hash = Base.encode16(:crypto.hash(:md5, template), case: :lower)
-      template_path = Path.join(tmp_dir, "#{hash}.template")
-      File.write!(template_path, template)
-      template_path
-    end)
-  end
-
   defp generate_input_css_file!(tmp_dir, site) do
     tailwind_css_path = tailwind_css_path!(site)
 

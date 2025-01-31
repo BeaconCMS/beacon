@@ -35,8 +35,9 @@ defmodule Beacon.Content do
   alias Beacon.Content.ComponentSlot
   alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
-  alias Beacon.Content.InfoHandler
   alias Beacon.Content.EventHandler
+  alias Beacon.Content.InfoHandler
+  alias Beacon.Content.JSHook
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -1138,7 +1139,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_stylesheet(%{
+      iex> create_stylesheet(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1172,7 +1173,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_stylesheet!(%{
+      iex> create_stylesheet!(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1246,6 +1247,136 @@ defmodule Beacon.Content do
       from s in Stylesheet,
         where: s.site == ^site
     )
+  end
+
+  # JS HOOKS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking JS Hook changes.
+
+  ## Example
+
+      iex> change_js_hook(js_hook, %{name: "MyCustomHook"})
+      %Ecto.Changeset{data: %JSHook{}}
+
+  """
+  @doc type: :js_hooks
+  @spec change_js_hook(JSHook.t(), map()) :: Changeset.t()
+  def change_js_hook(%JSHook{} = js_hook, attrs \\ %{}) do
+    JSHook.changeset(js_hook, attrs)
+  end
+
+  @doc """
+  Creates a JS Hook.
+
+  Returns `{:ok, js_hook}` if successful, otherwise `{:error, changeset}`.
+
+  ## Example
+
+      iex> code = "export const ConsoleLogHook = {mounted() {console.log(\"foo\")}}"
+      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code})
+      {:ok, %JSHook{}}
+
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def create_js_hook(attrs) do
+    changeset = JSHook.changeset(%JSHook{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  Creates a JS Hook, raising an error if unsuccessful.
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook!(map()) :: JSHook.t()
+  def create_js_hook!(attrs) do
+    case create_js_hook(attrs) do
+      {:ok, js_hook} -> js_hook
+      {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Generates an empty Hook template for the given name.
+  """
+  @doc type: :js_hooks
+  @spec default_hook_code(String.t()) :: String.t()
+  def default_hook_code(name) do
+    """
+    export const #{name} = {
+      mounted() {
+
+      },
+      beforeUpdate() {
+
+      },
+      updated() {
+
+      },
+      destroyed() {
+
+      },
+      disconnected() {
+
+      },
+      reconnected() {
+
+      },
+    };
+    """
+  end
+
+  @doc """
+  Gets a single JS hooks by `clauses`.
+
+  ## Example
+
+      iex> get_component_by(site, name: "CloseOnGlobalClick")
+      %JSHook{}
+
+  """
+  @doc type: :js_hooks
+  @spec get_js_hook_by(Site.t(), keyword(), keyword()) :: JSHook.t() | nil
+  def get_js_hook_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    clauses = Keyword.put(clauses, :site, site)
+    repo(site).get_by(JSHook, clauses, opts)
+  end
+
+  @doc """
+  Lists all JS Hooks for a site.
+  """
+  @doc type: :js_hooks
+  @spec list_js_hooks(Site.t()) :: [JSHook.t()]
+  def list_js_hooks(site) do
+    repo(site).all(from h in JSHook, where: h.site == ^site)
+  end
+
+  @doc """
+  Updates a JS Hook.
+  """
+  @doc type: :js_hooks
+  @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def update_js_hook(js_hook, attrs) do
+    js_hook
+    |> JSHook.changeset(attrs)
+    |> repo(js_hook).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  Deletes a JS Hook.
+  """
+  @doc type: :js_hooks
+  @spec delete_js_hook(JSHook.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def delete_js_hook(js_hook) do
+    js_hook
+    |> repo(js_hook).delete()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
   end
 
   # COMPONENTS

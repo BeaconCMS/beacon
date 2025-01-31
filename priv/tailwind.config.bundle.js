@@ -1,4 +1,23 @@
+var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (__hasOwnProp.call(b, prop))
+      __defNormalProp(a, prop, b[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b)) {
+      if (__propIsEnum.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    }
+  return a;
+};
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -223,8 +242,7 @@ var require_config_full = __commonJS({
       darkMode: "media",
       // or 'class'
       theme: {
-        accentColor: ({ theme }) => ({
-          ...theme("colors"),
+        accentColor: ({ theme }) => __spreadProps(__spreadValues({}, theme("colors")), {
           auto: "auto"
         }),
         animation: {
@@ -299,8 +317,7 @@ var require_config_full = __commonJS({
           "2xl": "40px",
           "3xl": "64px"
         },
-        borderColor: ({ theme }) => ({
-          ...theme("colors"),
+        borderColor: ({ theme }) => __spreadProps(__spreadValues({}, theme("colors")), {
           DEFAULT: theme("colors.gray.200", "currentColor")
         }),
         borderOpacity: ({ theme }) => theme("opacity"),
@@ -315,9 +332,7 @@ var require_config_full = __commonJS({
           "3xl": "1.5rem",
           full: "9999px"
         },
-        borderSpacing: ({ theme }) => ({
-          ...theme("spacing")
-        }),
+        borderSpacing: ({ theme }) => __spreadValues({}, theme("spacing")),
         borderWidth: {
           DEFAULT: "1px",
           0: "0px",
@@ -470,19 +485,18 @@ var require_config_full = __commonJS({
           "2xl": "0 25px 25px rgb(0 0 0 / 0.15)",
           none: "0 0 #0000"
         },
-        fill: ({ theme }) => ({
-          none: "none",
-          ...theme("colors")
-        }),
+        fill: ({ theme }) => __spreadValues({
+          none: "none"
+        }, theme("colors")),
         flex: {
           1: "1 1 0%",
           auto: "1 1 auto",
           initial: "0 1 auto",
           none: "none"
         },
-        flexBasis: ({ theme }) => ({
-          auto: "auto",
-          ...theme("spacing"),
+        flexBasis: ({ theme }) => __spreadProps(__spreadValues({
+          auto: "auto"
+        }, theme("spacing")), {
           "1/2": "50%",
           "1/3": "33.333333%",
           "2/3": "66.666667%",
@@ -736,9 +750,9 @@ var require_config_full = __commonJS({
           11: "repeat(11, minmax(0, 1fr))",
           12: "repeat(12, minmax(0, 1fr))"
         },
-        height: ({ theme }) => ({
-          auto: "auto",
-          ...theme("spacing"),
+        height: ({ theme }) => __spreadProps(__spreadValues({
+          auto: "auto"
+        }, theme("spacing")), {
           "1/2": "50%",
           "1/3": "33.333333%",
           "2/3": "66.666667%",
@@ -771,9 +785,9 @@ var require_config_full = __commonJS({
           90: "90deg",
           180: "180deg"
         },
-        inset: ({ theme }) => ({
-          auto: "auto",
-          ...theme("spacing"),
+        inset: ({ theme }) => __spreadProps(__spreadValues({
+          auto: "auto"
+        }, theme("spacing")), {
           "1/2": "50%",
           "1/3": "33.333333%",
           "2/3": "66.666667%",
@@ -846,10 +860,9 @@ var require_config_full = __commonJS({
         listStyleImage: {
           none: "none"
         },
-        margin: ({ theme }) => ({
-          auto: "auto",
-          ...theme("spacing")
-        }),
+        margin: ({ theme }) => __spreadValues({
+          auto: "auto"
+        }, theme("spacing")),
         lineClamp: {
           1: "1",
           2: "2",
@@ -858,8 +871,7 @@ var require_config_full = __commonJS({
           5: "5",
           6: "6"
         },
-        maxHeight: ({ theme }) => ({
-          ...theme("spacing"),
+        maxHeight: ({ theme }) => __spreadProps(__spreadValues({}, theme("spacing")), {
           none: "none",
           full: "100%",
           screen: "100vh",
@@ -870,8 +882,7 @@ var require_config_full = __commonJS({
           max: "max-content",
           fit: "fit-content"
         }),
-        maxWidth: ({ theme, breakpoints }) => ({
-          ...theme("spacing"),
+        maxWidth: ({ theme, breakpoints }) => __spreadValues(__spreadProps(__spreadValues({}, theme("spacing")), {
           none: "none",
           xs: "20rem",
           sm: "24rem",
@@ -888,11 +899,9 @@ var require_config_full = __commonJS({
           min: "min-content",
           max: "max-content",
           fit: "fit-content",
-          prose: "65ch",
-          ...breakpoints(theme("screens"))
-        }),
-        minHeight: ({ theme }) => ({
-          ...theme("spacing"),
+          prose: "65ch"
+        }), breakpoints(theme("screens"))),
+        minHeight: ({ theme }) => __spreadProps(__spreadValues({}, theme("spacing")), {
           full: "100%",
           screen: "100vh",
           svh: "100svh",
@@ -902,8 +911,7 @@ var require_config_full = __commonJS({
           max: "max-content",
           fit: "fit-content"
         }),
-        minWidth: ({ theme }) => ({
-          ...theme("spacing"),
+        minWidth: ({ theme }) => __spreadProps(__spreadValues({}, theme("spacing")), {
           full: "100%",
           min: "min-content",
           max: "max-content",
@@ -978,10 +986,9 @@ var require_config_full = __commonJS({
         padding: ({ theme }) => theme("spacing"),
         placeholderColor: ({ theme }) => theme("colors"),
         placeholderOpacity: ({ theme }) => theme("opacity"),
-        ringColor: ({ theme }) => ({
-          DEFAULT: theme("colors.blue.500", "#3b82f6"),
-          ...theme("colors")
-        }),
+        ringColor: ({ theme }) => __spreadValues({
+          DEFAULT: theme("colors.blue.500", "#3b82f6")
+        }, theme("colors")),
         ringOffsetColor: ({ theme }) => theme("colors"),
         ringOffsetWidth: {
           0: "0px",
@@ -990,10 +997,9 @@ var require_config_full = __commonJS({
           4: "4px",
           8: "8px"
         },
-        ringOpacity: ({ theme }) => ({
-          DEFAULT: "0.5",
-          ...theme("opacity")
-        }),
+        ringOpacity: ({ theme }) => __spreadValues({
+          DEFAULT: "0.5"
+        }, theme("opacity")),
         ringWidth: {
           DEFAULT: "3px",
           0: "0px",
@@ -1039,9 +1045,7 @@ var require_config_full = __commonJS({
           xl: "1280px",
           "2xl": "1536px"
         },
-        scrollMargin: ({ theme }) => ({
-          ...theme("spacing")
-        }),
+        scrollMargin: ({ theme }) => __spreadValues({}, theme("spacing")),
         scrollPadding: ({ theme }) => theme("spacing"),
         sepia: {
           0: "0",
@@ -1055,9 +1059,7 @@ var require_config_full = __commonJS({
           6: "6deg",
           12: "12deg"
         },
-        space: ({ theme }) => ({
-          ...theme("spacing")
-        }),
+        space: ({ theme }) => __spreadValues({}, theme("spacing")),
         spacing: {
           px: "1px",
           0: "0px",
@@ -1095,10 +1097,9 @@ var require_config_full = __commonJS({
           80: "20rem",
           96: "24rem"
         },
-        stroke: ({ theme }) => ({
-          none: "none",
-          ...theme("colors")
-        }),
+        stroke: ({ theme }) => __spreadValues({
+          none: "none"
+        }, theme("colors")),
         strokeWidth: {
           0: "0",
           1: "1",
@@ -1117,9 +1118,7 @@ var require_config_full = __commonJS({
           4: "4px",
           8: "8px"
         },
-        textIndent: ({ theme }) => ({
-          ...theme("spacing")
-        }),
+        textIndent: ({ theme }) => __spreadValues({}, theme("spacing")),
         textOpacity: ({ theme }) => theme("opacity"),
         textUnderlineOffset: {
           auto: "auto",
@@ -1179,8 +1178,7 @@ var require_config_full = __commonJS({
           out: "cubic-bezier(0, 0, 0.2, 1)",
           "in-out": "cubic-bezier(0.4, 0, 0.2, 1)"
         },
-        translate: ({ theme }) => ({
-          ...theme("spacing"),
+        translate: ({ theme }) => __spreadProps(__spreadValues({}, theme("spacing")), {
           "1/2": "50%",
           "1/3": "33.333333%",
           "2/3": "66.666667%",
@@ -1189,9 +1187,9 @@ var require_config_full = __commonJS({
           "3/4": "75%",
           full: "100%"
         }),
-        size: ({ theme }) => ({
-          auto: "auto",
-          ...theme("spacing"),
+        size: ({ theme }) => __spreadProps(__spreadValues({
+          auto: "auto"
+        }, theme("spacing")), {
           "1/2": "50%",
           "1/3": "33.333333%",
           "2/3": "66.666667%",
@@ -1223,9 +1221,9 @@ var require_config_full = __commonJS({
           max: "max-content",
           fit: "fit-content"
         }),
-        width: ({ theme }) => ({
-          auto: "auto",
-          ...theme("spacing"),
+        width: ({ theme }) => __spreadProps(__spreadValues({
+          auto: "auto"
+        }, theme("spacing")), {
           "1/2": "50%",
           "1/3": "33.333333%",
           "2/3": "66.666667%",
@@ -4225,7 +4223,7 @@ var require_styles = __commonJS({
         }
       }
     };
-    module.exports = {
+    module.exports = __spreadValues({
       DEFAULT: {
         css: [
           {
@@ -4459,9 +4457,8 @@ var require_styles = __commonJS({
           defaultModifiers.gray.css,
           ...defaultModifiers.base.css
         ]
-      },
-      ...defaultModifiers
-    };
+      }
+    }, defaultModifiers);
   }
 });
 
@@ -8092,7 +8089,7 @@ var require_utils = __commonJS({
           if (!pseudos) {
             continue;
           }
-          let values = new Set(pseudos.map((p) => p.value));
+          let values = /* @__PURE__ */ new Set([...pseudos.map((p) => p.value)]);
           if (values.size > 1) {
             break;
           }

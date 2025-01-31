@@ -140,7 +140,7 @@ defmodule Demo.Beacon.TagsField do
   end
 end
 
-upsert_layout = fn params ->
+get_or_insert_layout = fn params ->
   %{site: site, title: title} = params
   site = String.to_existing_atom(site)
 
@@ -156,7 +156,7 @@ upsert_layout = fn params ->
   end
 end
 
-upsert_page = fn params ->
+get_or_insert_page = fn params ->
   %{site: site, path: path} = params
   site = String.to_existing_atom(site)
 
@@ -172,7 +172,7 @@ upsert_page = fn params ->
   end
 end
 
-upsert_component = fn params ->
+get_or_insert_component = fn params ->
   %{site: site, name: name} = params
   site = String.to_existing_atom(site)
 
@@ -182,9 +182,19 @@ upsert_component = fn params ->
   end
 end
 
+get_or_insert_js_hook = fn params ->
+  %{site: site, name: name} = params
+  site = String.to_existing_atom(site)
+
+  case Beacon.Content.get_js_hook_by(site, name: name) do
+    %Beacon.Content.JSHook{} = js_hook -> js_hook
+    _ -> Beacon.Content.create_js_hook!(params)
+  end
+end
+
 dev_seeds = fn ->
   layout =
-    upsert_layout.(%{
+    get_or_insert_layout.(%{
       site: "dev",
       title: "dev",
       meta_tags: [
@@ -200,7 +210,7 @@ dev_seeds = fn ->
       """
     })
 
-  upsert_component.(%{
+  get_or_insert_component.(%{
     site: "dev",
     name: "sample_component",
     attrs: [%{name: "project", type: "any", opts: [required: true]}],
@@ -214,6 +224,21 @@ dev_seeds = fn ->
     body: ~S"""
     author_id = get_in(assigns, ["page", "extra", "author_id"])
     "author_#{author_id}"
+    """
+  })
+
+  get_or_insert_js_hook.(%{
+    site: "dev",
+    name: "ConsoleLogHook",
+    code: ~S"""
+    const now = new Date()
+    const message = '[dev] page mounted at ' + now
+
+    export const ConsoleLogHook = {
+      mounted() {
+        console.log(message)
+      }
+    }
     """
   })
 
@@ -231,7 +256,7 @@ dev_seeds = fn ->
     }
   )
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/sample",
     site: "dev",
     title: "dev home",
@@ -255,7 +280,7 @@ dev_seeds = fn ->
       "author_id" => 1
     },
     template: """
-    <main class="custom-font-style">
+    <main id="dev-sample" class="custom-font-style" phx-hook="ConsoleLogHook">
       <%!-- Home Page --%>
 
       <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
@@ -305,7 +330,7 @@ dev_seeds = fn ->
     ]
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/authors/:author_id",
     site: "dev",
     title: "dev author",
@@ -330,7 +355,7 @@ dev_seeds = fn ->
     """
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/posts/*slug",
     site: "dev",
     title: "dev post",
@@ -355,7 +380,7 @@ dev_seeds = fn ->
     """
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/markdown",
     site: "dev",
     title: "dev markdown",
@@ -460,7 +485,7 @@ dev_seeds = fn ->
     """
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/drag-drop",
     site: "dev",
     title: "dev drag and drop playground",
@@ -573,7 +598,7 @@ dev_seeds = fn ->
 end
 
 dy_seeds = fn ->
-  upsert_component.(%{
+  get_or_insert_component.(%{
     site: "dy",
     name: "header",
     template: """
@@ -647,7 +672,7 @@ dy_seeds = fn ->
     example: "<.header />"
   })
 
-  upsert_component.(%{
+  get_or_insert_component.(%{
     site: "dy",
     name: "footer",
     template: """
@@ -933,7 +958,7 @@ dy_seeds = fn ->
   })
 
   layout =
-    upsert_layout.(%{
+    get_or_insert_layout.(%{
       site: "dy",
       title: "main",
       template: """
@@ -943,7 +968,7 @@ dy_seeds = fn ->
       """
     })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/",
     site: "dy",
     title: "home",
