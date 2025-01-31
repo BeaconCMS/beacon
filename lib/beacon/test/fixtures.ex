@@ -562,7 +562,7 @@ defmodule Beacon.Test.Fixtures do
   """
   @spec beacon_js_hook_fixture(map() | Keyword.t()) :: Beacon.Content.JSHook.t()
   def beacon_js_hook_fixture(attrs \\ %{}) do
-    name = attrs[:name] || "TestHook#{System.unique_integer([:positive])}"
+    name = attrs[:name] || attrs["name"] || "TestHook#{System.unique_integer([:positive])}"
 
     attrs
     |> Enum.into(%{

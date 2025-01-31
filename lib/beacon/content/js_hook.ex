@@ -11,17 +11,23 @@ defmodule Beacon.Content.JSHook do
   > in inconsistent behavior and crashes.
 
   """
-  use Beacon.Schema
 
+  use Beacon.Schema
   alias Beacon.RuntimeJS
 
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{
+          id: UUID.t(),
+          site: Site.t(),
+          name: binary(),
+          code: binary(),
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
+        }
 
   schema "beacon_js_hooks" do
-    field :name, :string
     field :site, Beacon.Types.Site
+    field :name, :string
     field :code, :string
-
     timestamps()
   end
 

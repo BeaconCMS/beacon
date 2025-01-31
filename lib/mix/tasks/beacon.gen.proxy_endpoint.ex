@@ -244,7 +244,6 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
             # TODO: replace the node with a commented-out version of itself
             # blocked by https://github.com/ash-project/igniter/pull/200
             {:ok, Sourceror.Zipper.remove(zipper)}
->>>>>>> main
 
           _ ->
             {:ok, zipper}

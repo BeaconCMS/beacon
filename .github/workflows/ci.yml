@@ -80,7 +80,7 @@ jobs:
 
       - run: mix deps.get --only-test
 
-      - run: mix tailwind.install
+      - run: mix tailwind.install --no-assets
 
       - run: mix esbuild.install
 
