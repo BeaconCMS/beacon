@@ -20,7 +20,7 @@ var Beacon = (() => {
   var _a, _b;
   var liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {
     params: { _csrf_token: csrfToken },
-    hooks: (_b = (_a = window == null ? void 0 : window.BeaconHooks) == null ? void 0 : _a.default) != null ? _b : {}
+    hooks: (_b = (_a = window.BeaconHooks) == null ? void 0 : _a.default) != null ? _b : {}
   });
   liveSocket.connect();
   window.liveSocket = liveSocket;

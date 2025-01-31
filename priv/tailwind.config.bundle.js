@@ -8089,7 +8089,7 @@ var require_utils = __commonJS({
           if (!pseudos) {
             continue;
           }
-          let values = new Set(pseudos.map((p) => p.value));
+          let values = /* @__PURE__ */ new Set([...pseudos.map((p) => p.value)]);
           if (values.size > 1) {
             break;
           }
