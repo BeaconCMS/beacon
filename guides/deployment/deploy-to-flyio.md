@@ -46,6 +46,13 @@ RUN apt-get update -y && apt-get install -y build-essential git npm \
 RUN npm install --prefix assets
 ```
 
+3. Add the following code before `RUN mix release`:
+
+```dockerfile
+RUN mix tailwind.install --no-assets --if-missing
+RUN mix esbuild.install --if-missing
+```
+
 ## Copy files into the release
 
 Open the file `mix.exs` and locate the `project/0` function. Add a new `:releases` config that contains a custom step to copy Beacon files:
@@ -84,25 +91,33 @@ Now create a new function `copy_beacon_files/1` at any place in the `mix.exs` fi
 
 ```elixir
 defp copy_beacon_files(%{path: path} = release) do
-  case Path.wildcard("_build/tailwind-*") do
-    [] ->
-      raise """
-      tailwind-cli not found
+  build_path = Path.join([path, "bin", "_build"])
+  File.mkdir_p!(build_path)
 
-      Execute the following command to install it before proceeding:
+  copy_bin! = fn name, pattern, cmd ->
+    case Path.wildcard(pattern) do
+      [] ->
+        raise """
+        #{name} binary not found in the release package
 
-          mix tailwind.install
+        You should execute the following command to download it:
 
-      """
+            #{cmd}
 
-    tailwind_bin_path ->
-      build_path = Path.join([path, "bin", "_build"])
-      File.mkdir_p!(build_path)
+        Note the binary must be present in the environment where the
+        release is generated, either locally or in the Dockerfile for example.
 
-      for file <- tailwind_bin_path do
-        File.cp!(file, Path.join(build_path, Path.basename(file)))
-      end
+        """
+
+      bin_path ->
+        for file <- bin_path do
+          File.cp!(file, Path.join(build_path, Path.basename(file)))
+        end
+    end
   end
+
+  copy_bin!.("tailwind", "_build/tailwind-*", "mix tailwind.install --no-assets")
+  copy_bin!.("esbuild", "_build/esbuild-*", "mix esbuild.install")
 
   File.cp!(Path.join(["assets", "css", "app.css"]), Path.join(path, "app.css"))
 
@@ -110,8 +125,10 @@ defp copy_beacon_files(%{path: path} = release) do
 end
 ```
 
-Essentially this function will copy the `tailwind-cli` binary and the `app.css` files into the release.
-The `tailwind-cli` binary is required but `app.css` is only used if you actually [reuse it on your sites](reuse-app-css.md).
+Essentially this function will copy the `tailwind-cli` and `esbuild` binaries, and the `app.css` files into the release.
+
+Note that both `tailwind-cli` and `esbuild` are required but the `app.css` file is actually optional,
+it's only used if you [reuse it on your sites](reuse-app-css.md), so you can adjust `copy_beacon_files/1` for your own project needs.
 
 See  https://hexdocs.pm/mix/Mix.Tasks.Release.html for more info about releases configuration.
 

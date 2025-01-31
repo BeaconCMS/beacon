@@ -36,7 +36,6 @@ defmodule Beacon.Web.API.PageJSON do
       layout_id: page.layout_id,
       path: page.path,
       site: page.site,
-      template: page.template,
       format: page.format,
       ast: page_ast(page, assigns)
     }
@@ -50,12 +49,12 @@ defmodule Beacon.Web.API.PageJSON do
     end
   end
 
-  defp maybe_include_layout(%{template: page_template} = data, %Page{layout: %Layout{} = layout}, assigns) do
+  defp maybe_include_layout(data, %Page{layout: %Layout{} = layout} = page, assigns) do
     layout =
       layout
       |> Map.from_struct()
       |> Map.drop([:__meta__])
-      |> Map.put(:ast, layout_ast(layout, page_template, assigns))
+      |> Map.put(:ast, layout_ast(layout, page.template, assigns))
 
     Map.put(data, :layout, layout)
   end

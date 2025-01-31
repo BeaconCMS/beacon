@@ -4,6 +4,15 @@
   <img src="https://raw.githubusercontent.com/BeaconCMS/beacon/main/assets/images/beacon.png" width="256" alt="Beacon logo">
 </p>
 
+<div align="center">
+  
+  [![GitHub Release Version](https://img.shields.io/github/v/release/beaconCMS/beacon?color=blue)](https://hex.pm/packages/beacon)
+  [![GitHub Release Date](https://img.shields.io/github/release-date/beaconCMS/beacon)](https://github.com/BeaconCMS/beacon/releases)
+  [![GitHub License](https://img.shields.io/github/license/beaconCMS/beacon?color=orange)](https://github.com/BeaconCMS/beacon/blob/main/LICENSE.md)
+  [![Documentation](https://img.shields.io/badge/documentation-555555)](https://hexdocs.pm/beacon)
+  
+</div>
+
 <p align="center">
   Beacon is a content management system (CMS) built with Phoenix LiveView. It brings the rendering speed benefits of Phoenix to even the most content-heavy pages with faster render times to boost SEO performance.
 </p>
@@ -50,7 +59,7 @@ First add the [Igniter](https://hex.pm/packages/igniter) dependency into your pr
 ```elixir
 defp deps do
   [
-    {:igniter, "~> 0.4"}
+    {:igniter, "~> 0.5"}
   ]
 end
 ```
