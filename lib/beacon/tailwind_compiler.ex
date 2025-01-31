@@ -128,7 +128,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
           Execute the following command to install the binary used to compile CSS:
 
-              mix tailwind.install
+              mix tailwind.install --no-assets
 
           """
       end

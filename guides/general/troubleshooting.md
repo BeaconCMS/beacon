@@ -41,3 +41,11 @@ Note that if you're using `:host` on the scope and running in `localhost`,
 consider adding `"localhost"` to the list of allowed hosts.
 
 Also check the [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) for more information.
+
+## Could not resolve "tailwindcss/plugin"
+
+Usually caused by having installed Tailwind v4 instead of Tailwind v3
+
+Tailwind v4 doesn't have the `plugin` module and is not supported yet,
+so make sure your `package.json` file specify `tailwindcss` 3.x
+

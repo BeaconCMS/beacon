@@ -24,7 +24,6 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
     %Igniter.Mix.Task.Info{
       example: @example,
       schema: [site: :string],
-      aliases: [s: :site],
       required: [:site]
     }
   end
