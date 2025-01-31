@@ -90,6 +90,7 @@ defmodule Beacon.RuntimeJS do
 
     File.write!(path, hooks_code)
 
+    # --log-level=error is required to avoid gargabe in stdout
     args =
       ~w(#{path} --bundle --format=iife --target=es2016 --platform=browser) ++
         ~w(--global-name=BeaconHooks --log-level=error) ++
@@ -201,9 +202,8 @@ defmodule Beacon.RuntimeJS do
     meta_out_js_path = Path.join(dir, hook.name <> "_meta.js")
     cmd_opts = [cd: File.cwd!(), stderr_to_stdout: true]
 
-    {_, 0} = System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts)
-
-    with {:ok, meta} <- File.read(meta_json_path),
+    with {_, 0} <- System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts),
+         {:ok, meta} <- File.read(meta_json_path),
          {:ok, meta} <- Jason.decode(meta) do
       cleanup([meta_json_path, meta_out_js_path])
       meta
