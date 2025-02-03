@@ -5,8 +5,9 @@ defmodule Beacon.Web.RobotsControllerTest do
     conn = get(conn, "/robots.txt")
 
     assert response(conn, 200) == """
-           # http://www.robotstxt.org
            User-agent: *
+           Allow: /
+
            Sitemap: http://localhost:4000/sitemap.xml
            """
 
@@ -16,8 +17,15 @@ defmodule Beacon.Web.RobotsControllerTest do
     conn = get(conn, "/other/robots.txt")
 
     assert response(conn, 200) == """
-           # http://www.robotstxt.org
+           User-agent: BadBot
+           User-agent: AnotherBot
+           Disallow: /
+
            User-agent: *
+           Disallow: /some/path
+           Disallow: /another/path
+           Allow: /
+
            Sitemap: http://localhost:4000/other/sitemap.xml
            """
 
