@@ -174,7 +174,7 @@ defmodule Beacon.RuntimeJS do
       end
     else
       _ ->
-        if cleanup?, do: cleanup([hook], dir)
+        if cleanup?, do: cleanup([hook_js_path], dir)
         {:error, :esbuild_failed}
     end
   end
@@ -200,9 +200,11 @@ defmodule Beacon.RuntimeJS do
     hook_js_path = Path.join(dir, hook.name <> ".js")
     meta_json_path = Path.join(dir, hook.name <> ".json")
     meta_out_js_path = Path.join(dir, hook.name <> "_meta.js")
+
+    cmd_args = ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path})
     cmd_opts = [cd: File.cwd!(), stderr_to_stdout: true]
 
-    with {_, 0} <- System.cmd(Esbuild.bin_path(), ~w(#{hook_js_path} --metafile=#{meta_json_path} --outfile=#{meta_out_js_path}), cmd_opts),
+    with {_, 0} <- System.cmd(Esbuild.bin_path(), cmd_args, cmd_opts),
          {:ok, meta} <- File.read(meta_json_path),
          {:ok, meta} <- Jason.decode(meta) do
       cleanup([meta_json_path, meta_out_js_path])
