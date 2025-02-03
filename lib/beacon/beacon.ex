@@ -2,21 +2,23 @@ defmodule Beacon do
   @moduledoc """
   Beacon is a Content Management System for [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view).
 
-  * Rendering pages fast.
-  * Reloading content at runtime.
-  * Reduced resources usage and scalability.
-  * Integration with existing Phoenix applications.
+  Key features include:
+
+  * Rendering pages fast
+  * Reloading content at runtime
+  * Improved resource usage and scalability
+  * Integration with existing Phoenix applications
 
   You can build virtually any type of website with Beacon, from a simple blog to a complex business site.
 
-  Following are the main APIs provided by Beacon. You can find out more information on the module documentation of each one of those modules:
+  The following are the main APIs provided by Beacon. You can find more information in the documentation for each of these modules:
 
-  * `Beacon.Config` - configuration of sites.
-  * `Beacon.Router` - mount one or more sites into the router of your Phoenix application.
-  * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
-  * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
-  * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
-  * `Beacon.Test` - testings utilities.
+  * `Beacon.Config` - configure your site(s)
+  * `Beacon.Router` - mount site(s) into the router of your Phoenix application
+  * `Beacon.Lifecycle` - inject custom logic into Beacon's lifecycle to change how pages are loaded, rendered, and more
+  * `Beacon.Content` - manage content such as layouts, pages, page variants, snippets, etc.
+  * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content
+  * `Beacon.Test` - utilities for testing
 
   Get started with [your first site](https://hexdocs.pm/beacon/your-first-site.html) and check out the guides for more information.
   """
@@ -56,13 +58,12 @@ defmodule Beacon do
         children = [
           MyApp.Repo,
           {Phoenix.PubSub, name: MyApp.PubSub},
-          MyAppWeb.Endpoint,
-          {Beacon,
-           [
-             sites: [
-               Application.fetch_env!(:beacon, :my_site)
-             ]
-           ]}
+          {Beacon, [
+            sites: [
+              Application.fetch_env!(:beacon, :my_site)
+            ]
+          ]},
+          MyAppWeb.Endpoint
         ]
 
         opts = [strategy: :one_for_one, name: MyApp.Supervisor]
@@ -104,7 +105,7 @@ defmodule Beacon do
 
           :else ->
             Logger.warning(
-              "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+              "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshooting.html"
             )
 
             acc
@@ -125,16 +126,16 @@ defmodule Beacon do
 
   This function is not necessary to be called in most cases, as Beacon will automatically boot all sites when it starts,
   but in some cases where a site is started with the `:manual` mode, you may want to call this function to boot the site
-  in the `:live` mode to active resource loading and PubSub events broadcasting.
+  in the `:live` mode to activate resource loading and PubSub events broadcasting.
 
   Note that `:live` sites that are not reachable will not be started,
-  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topology.html) for more info.
+  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topologies.html) for more info.
   """
   @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child() | {:error, :unreachable}
   def boot(%Beacon.Config{} = config) do
     if config.mode == :live && !Beacon.Router.reachable?(config) do
       Logger.error(
-        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshoot.html"
+        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshooting.html"
       )
 
       {:error, :unreachable}

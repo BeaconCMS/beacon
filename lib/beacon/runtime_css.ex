@@ -5,6 +5,8 @@ defmodule Beacon.RuntimeCSS do
   Beacon supports Tailwind by default implemented by `Beacon.RuntimeCSS.TailwindCompiler`,
   you can use that module as template to implement any ther CSS engine as needed.
   """
+
+  require Logger
   alias Beacon.Types.Site
 
   @doc """
@@ -42,17 +44,13 @@ defmodule Beacon.RuntimeCSS do
   end
 
   @doc false
-  def fetch(site, version \\ :compressed)
+  def fetch(site, version \\ :brotli)
+  def fetch(site, :brotli), do: do_fetch(site, {:_, :_, :"$1", :_})
+  def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :_, :"$1"})
+  def fetch(site, :deflate), do: do_fetch(site, {:_, :"$1", :_, :_})
 
-  def fetch(site, :compressed) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
-      [[css]] -> css
-      _ -> "/* CSS not found for site #{inspect(site)} */"
-    end
-  end
-
-  def fetch(site, :uncompressed) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:_, :"$1", :_}}) do
+  defp do_fetch(site, guard) do
+    case :ets.match(:beacon_assets, {{site, :css}, guard}) do
       [[css]] -> css
       _ -> "/* CSS not found for site #{inspect(site)} */"
     end
@@ -60,24 +58,47 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def load!(site) do
-    {:ok, css} = compile(site)
+    css =
+      case compile(site) do
+        {:ok, css} -> css
+        {:error, error} -> raise Beacon.LoaderError, "failed to compile css: #{inspect(error)}"
+      end
 
-    case ExBrotli.compress(css) do
-      {:ok, compressed} ->
-        hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
-        true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, compressed}})
-        :ok
+    hash = Base.encode16(:crypto.hash(:md5, css), case: :lower)
 
-      error ->
-        raise Beacon.LoaderError, "failed to compress css: #{inspect(error)}"
+    brotli =
+      case ExBrotli.compress(css) do
+        {:ok, content} -> content
+        _ -> nil
+      end
+
+    gzip = :zlib.gzip(css)
+
+    try do
+      true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}})
+    rescue
+      _ -> reraise Beacon.LoaderError, [message: "failed to compress css"], __STACKTRACE__
     end
+
+    :ok
   end
 
   @doc false
   def current_hash(site) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
-      [[hash]] -> hash
-      _ -> ""
+    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_, :_}}) do
+      [[hash]] ->
+        hash
+
+      found ->
+        Logger.warning("""
+        failed to fetch current css hash
+
+        Got:
+
+          #{inspect(found)}
+        """)
+
+        nil
     end
   end
 end

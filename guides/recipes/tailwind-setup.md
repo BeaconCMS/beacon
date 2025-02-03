@@ -57,7 +57,7 @@ The config we'll generate imports the plugins `@tailwindcss/forms` and `@tailwin
 Execute at the root of your project:
 
 ```sh
-npm install --prefix assets --save @tailwindcss/forms @tailwindcss/typography
+npm install --prefix assets --save tailwindcss@3 @tailwindcss/forms @tailwindcss/typography
 ```
 
 ### Create a new valid config file and update site config

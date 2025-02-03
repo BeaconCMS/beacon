@@ -3,7 +3,7 @@ defmodule Beacon.MediaLibrary.Processors.Default do
   alias Beacon.MediaLibrary.UploadMetadata
 
   def process!(%UploadMetadata{} = metadata) do
-    output = File.read!(metadata.path)
+    output = Beacon.MediaLibrary.read_binary!(metadata)
 
     config = UploadMetadata.config_for_media_type(metadata, metadata.media_type)
 

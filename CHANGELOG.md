@@ -4,8 +4,18 @@
 
 ### Enhancements
   - Beacon will now automatically generate a `sitemap.xml` for each `beacon_site` defined in the Router
-  - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
   - Beacon will now automatically generate a `robots.txt` for each `beacon_site` defined in the Router
+  - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
+  - Added support for user-defined JS Hooks
+  - Added `--host` option for `mix beacon.gen.site` to serve your site at an alternative domain
+
+### Fixes
+  - Fixed a bug where MediaLibrary could check for file contents on the wrong node in multi-node deployments
+
+### Breaking Changes
+  - `beacon.install` - removed command aliases `-s` and `-p`
+  - `beacon.gen.site` - removed command aliases `-s` and `-p`
+  - `beacon.gen.tailwind_config` - removed command alias `-s`
 
 ## 0.3.3 (2024-12-13)
 

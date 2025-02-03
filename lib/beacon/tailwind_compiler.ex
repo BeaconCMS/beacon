@@ -128,7 +128,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
           Execute the following command to install the binary used to compile CSS:
 
-              mix tailwind.install
+              mix tailwind.install --no-assets
 
           """
       end
@@ -239,15 +239,6 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
     ]
     |> Task.await_many(:timer.minutes(4))
     |> List.flatten()
-  end
-
-  defp generate_template_files!(tmp_dir, templates) when is_list(templates) do
-    Enum.map(templates, fn template ->
-      hash = Base.encode16(:crypto.hash(:md5, template), case: :lower)
-      template_path = Path.join(tmp_dir, "#{hash}.template")
-      File.write!(template_path, template)
-      template_path
-    end)
   end
 
   defp generate_input_css_file!(tmp_dir, site) do

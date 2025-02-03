@@ -4,7 +4,7 @@ The routing system in Phoenix combined with the OTP distribution model opens man
 
 Code examples might be abbreviated and infrastructure details like load balancers are not covered in this guide to keep it short.
 
-Clustering your application is also not covered in this guide but you can find the documentation on the platform's site you're using,
+Clustering your application is also not covered in this guide but you can find the documentation on the platform's docs,
 for example https://fly.io/docs/elixir/the-basics/clustering and https://www.gigalixir.com/docs/cluster.
 
 ## Core Concepts
@@ -32,7 +32,7 @@ end
 Results in:
 
 ```
-http://mysite.com/2024/campaigns/christmas`
+http://mysite.com/2024/campaigns/christmas
 ^                 ^    ^         ^
 |                 |    |         |
 endpoint          |    |         page path
@@ -59,7 +59,7 @@ scope host: "siteb.com" do
 end
 ```
 
-The downside of having such flexibility is creating a configuration that is either invalid or not optimized. Take for instance this configuration:
+The downside of having such flexibility is that it's also easy to create a configuration that is invalid or not optimized. Take for instance this configuration:
 
 ```elixir
 scope host: "sitea.com" do
@@ -76,7 +76,7 @@ You can already tell that starting `:site_b` in the node that is hosting `sitea.
 which is not a big problem when you have a couple of small sites, but that becomes a problem as your environment grows.
 
 To avoid this problem, Beacon will selectively boot only the sites that are reachable in the current host, so in the example above,
-only `:site_a` will be booted in the node hosting `sitea.com` and only `:site_b` in the node hosting `siteb.com`.
+only `:site_a` will boot in the node hosting `sitea.com` and only `:site_b` in the node hosting `siteb.com`.
 
 Or this other example:
 
@@ -91,7 +91,8 @@ The macro `beacon_site` creates a catch-all route `/*` so the second site will n
 is a valid route for the first site.
 
 Those might look obvious but that's a common source of confusion, especially in long and more complex router files.
-So Beacon won't try to boot sites that can't be reached, but a warning will be displayed.
+
+For these cases, whenever possible, Beacon will emit warnings during the boot process. 
 
 ### Admin Sites Discovery
 
@@ -153,7 +154,7 @@ With these constraints in mind, let's check some deployment strategies.
 Below we'll describe some common deployment strategies but Beacon is not limited to the strategies below,
 you can adapt to your needs.
 
-### 1. Single application on same host
+### 1. Single application on the same host
 The most simple strategy is a single project with one or more sites and the admin interface in the same host.
 
 ```elixir
@@ -192,6 +193,8 @@ flowchart TD
 
 ### 2. Clustered single applications
 Same project as the previous strategy but with multiple nodes deployed in the same cluster.
+
+Gives more capacity to serve more requests but still sharing the same Endpoint and same host.
 
 ```mermaid
 flowchart TD
@@ -236,7 +239,9 @@ if you start booting more site and more nodes.
 So an optimization is to move the Admin interface into its own project and node (a new Phoenix project),
 and keep the sites in their own projects.
 
-Note that in order to Admin find the sites, all the apps must be connected in the same cluster.
+That scenario also opens the possibility to deploy the admin interface behind a VPN to increase security.
+
+Note that in order for BeaconLiveAdmin to find all running sites, all the apps must be connected in the same cluster.
 
 ```elixir
 # endpoint
@@ -281,126 +286,35 @@ flowchart TD
 
 A huge benefit of this topology is the flexibility to protect the Admin interface behind a VPN or scale it independently from the main applications.
 
-### 4. Multiple hosts in single project, separated hosting apps
-Still a single project but now serving multiple sites at the root path for different dynamic hosts.
+### 4. Multiple hosts in single project
+Still a single project but now it will serve each site on its own host (domain).
+
+This scenario introduces a [Proxy Endpoint](https://hexdocs.pm/beacon/Beacon.ProxyEndpoint.html) to route requests to the appropriate Endpoint serving the site,
+this configuration can be generated with `mix beacon.gen.site --site my_site --host mysite.com` - see [docs](https://hexdocs.pm/beacon/Mix.Tasks.Beacon.Gen.Site.html) for more info.
 
 In this case we're still deploying just one application but serving multiple domains for each site:
 
-- :campaigns -> campaigns.mysite.com
-- :root -> mysite.com
-
-TODO: diagram
-
-TODO: gen task and constraints
-
-### 5. Multiple hosts in single project, separated hosting apps
-Similar to the previous strategy but this time we're splitting each domain into its own app:
-
-- App1 -> mysite.com
-- App2 -> campaigns.mysite.com
-
-That means deploying isolated apps for each domain/site, not connected to each other,
-but still sharing the same codebase.
-
-```elixir
-# endpoint
-host = System.get_env("PHX_HOST")
-config :my_app, MyAppWeb.Endpoint, url: [host: host]
-
-# router
-scope "/", host: "campaigns.mysite.com" do
-  beacon_live_admin "/admin"
-  beacon_site "/", site: :campaigns
-end
-
-scope "/", host: "mysite.com" do
-  beacon_live_admin "/admin"
-  beacon_site "/", site: :root
-end
-```
-
 ```mermaid
 flowchart TD
     subgraph Node1["Node1"]
-        n1_site["/, site: :root"]
-        subgraph Node1Admin["/admin"]
-          n1_admin_site[":root"]
+        proxy["ProxyEndpoint"]
+        site_a["site: :my_site, endpoint: MySiteEndpoint"]
+        site_b["site: :campaigns, endpoint: CampaignsEndpoint"]
+        subgraph Admin["/admin"]
+          admin_site_a[":my_site"]
+          admin_site_b[":campaigns"]
         end
-    end
-    subgraph Node2["Node1"]
-        n2_site["/, site: :campaigns"]
-        subgraph Node2Admin["/admin"]
-          n2_admin_site[":campaigns"]
-        end
-    end
-    subgraph App1["App mysite.com"]
-      subgraph Cluster1["Cluster"]
-          Node1
-      end
-    end
-    subgraph App2["App campaigns.mysite.com"]
-      subgraph Cluster2["Cluster"]
-          Node2
-      end
-    end
-
-    n1_site --> n1_admin_site
-    n2_site --> n2_admin_site
-    r1["mysite.com/campaigns/christmas"] --> n2_site
-    r2["mysite.com/contact"] --> n1_site
-    r3["mysite.com/admin"] --> Node1Admin
-    r4["campaigns.mysite.com/admin"] --> Node2Admin
-```
-
-### 6. Multiple hosts in single project, connected hosting apps
-Similar setup as the previous strategy but now connecting the apps in the same cluster with a separated admin interface.
-
-```elixir
-# endpoint
-host = System.get_env("PHX_HOST")
-config :my_app, MyAppWeb.Endpoint, url: [host: host]
-
-# router
-scope "/admin", host: "admin.mysite.com" do
-  beacon_live_admin "/"
-end
-
-scope "/", host: "campaigns.mysite.com" do
-  beacon_site "/", site: :campaigns
-end
-
-scope "/", host: "mysite.com" do
-  beacon_site "/", site: :root
-end
-```
-
-```mermaid
-flowchart TD
-    subgraph Node1["Node1"]
-        n1_site["/, site: :root"]
-    end
-    subgraph Node2["Node2"]
-        n2_site["/, site: :campaigns"]
-    end
-    subgraph Admin["NodeAdmin"]
-        admin_site_a[":root"]
-        admin_site_b[":campaigns"]
     end
     subgraph Cluster["Cluster"]
-      subgraph App1["App1 mysite.com"]
-          Node1
-      end
-      subgraph App2["App2 campaigns.mysite.com"]
-          Node2
-      end
-      subgraph AppAdmin["App admin.mysite.com"]
-          Admin
-      end
+        Node1
+        Admin
     end
 
-    n1_site --> admin_site_a
-    n2_site --> admin_site_b
-    r1["mysite.com/campaigns/christmas"] --> n2_site
-    r2["mysite.com/contact"] --> n1_site
-    r3["admin.mysite.com"] --> Admin
+    site_a --> admin_site_a
+    site_b --> admin_site_b
+    r1["mysite.com"] --> proxy
+    r2["campaigns.mysite.com"] --> proxy
+    proxy --> site_a
+    proxy --> site_b
+    r3["mysite.com/admin"] --> Admin
 ```

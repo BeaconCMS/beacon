@@ -24,7 +24,7 @@ to get it installed or updated. It's important to install a recent Tailwind vers
 
 ## Site not booting because it's not reachable
 
-Depending on the [deployment topology](https://hexdocs.pm/beacon/deployment-topology.html) and your router configuration,
+Depending on the [deployment topology](https://hexdocs.pm/beacon/deployment-topologies.html) and your router configuration,
 a site prefix can never match and it will never receive requests.
 
 That's is not necessarily an error if you have multiple sites in the same project
@@ -42,7 +42,10 @@ consider adding `"localhost"` to the list of allowed hosts.
 
 Also check the [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) for more information.
 
-## RuntimeError - could not find persistent term for endpoint
+## Could not resolve "tailwindcss/plugin"
 
-`Beacon` should be started after your host's `Endpoint`, please review the application children
-and make sure is declared after the endpoint.
+Usually caused by having installed Tailwind v4 instead of Tailwind v3
+
+Tailwind v4 doesn't have the `plugin` module and is not supported yet,
+so make sure your `package.json` file specify `tailwindcss` 3.x
+

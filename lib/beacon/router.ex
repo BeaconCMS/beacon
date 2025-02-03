@@ -321,15 +321,16 @@ defmodule Beacon.Router do
   #
   # It's considered reachable if a dynamic page can be served on the site prefix.
   def reachable?(%Beacon.Config{} = config, opts \\ []) do
+    otp_app = Beacon.Private.otp_app!(config)
     %{site: site, endpoint: endpoint, router: router} = config
-    reachable?(site, endpoint, router, opts)
+    reachable?(site, endpoint, router, otp_app, opts)
   rescue
     # missing router or missing beacon macros in the router
     _ -> false
   end
 
-  defp reachable?(site, endpoint, router, opts) do
-    host = Keyword.get_lazy(opts, :host, fn -> endpoint.host() end)
+  defp reachable?(site, endpoint, router, otp_app, opts) do
+    host = Keyword.get_lazy(opts, :host, fn -> Beacon.Private.endpoint_host(otp_app, endpoint) end)
 
     prefix =
       Keyword.get_lazy(opts, :prefix, fn ->

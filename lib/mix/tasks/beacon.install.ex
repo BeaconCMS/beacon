@@ -39,7 +39,6 @@ defmodule Mix.Tasks.Beacon.Install do
       example: @example,
       composes: ["beacon.gen.site"],
       schema: [site: :string, path: :string],
-      aliases: [s: :site, p: :path],
       defaults: [path: "/"]
     }
   end
