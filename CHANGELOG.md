@@ -4,6 +4,7 @@
 
 ### Enhancements
   - Beacon will now automatically generate a `sitemap.xml` for each `beacon_site` defined in the Router
+  - Beacon will now automatically generate a `robots.txt` for each `beacon_site` defined in the Router
   - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
   - Added support for user-defined JS Hooks
   - Added `--host` option for `mix beacon.gen.site` to serve your site at an alternative domain
