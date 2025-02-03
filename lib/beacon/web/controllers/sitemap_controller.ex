@@ -6,6 +6,7 @@ defmodule Beacon.Web.SitemapController do
 
   def call(conn, :index) do
     conn
+    |> accepts(["xml"])
     |> put_view(Beacon.Web.SitemapXML)
     |> put_resp_content_type("text/xml")
     |> put_resp_header("cache-control", "public max-age=300")
@@ -14,6 +15,7 @@ defmodule Beacon.Web.SitemapController do
 
   def call(%{assigns: %{site: site}} = conn, :show) do
     conn
+    |> accepts(["xml"])
     |> put_view(Beacon.Web.SitemapXML)
     |> put_resp_content_type("text/xml")
     |> put_resp_header("cache-control", "public max-age=300")
