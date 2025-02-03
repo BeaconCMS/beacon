@@ -205,7 +205,8 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
           at: "/",
           from: :test,
           gzip: false,
-          only: TestWeb.static_paths()
+          # robots.txt is served by Beacon
+          only: ~w(assets fonts images favicon.ico)
 
         # Code reloading can be explicitly enabled under the
         # :code_reloader configuration of your endpoint.

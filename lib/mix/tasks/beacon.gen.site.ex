@@ -321,7 +321,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
         at: "/",
         from: #{inspect(otp_app)},
         gzip: false,
-        only: #{inspect(web_module)}.static_paths()
+        # robots.txt is served by Beacon
+        only: ~w(assets fonts images favicon.ico)
 
       # Code reloading can be explicitly enabled under the
       # :code_reloader configuration of your endpoint.
