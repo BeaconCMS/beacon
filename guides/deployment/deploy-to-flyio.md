@@ -162,6 +162,17 @@ fly open /
 
 If you have created a custom page, simply replace `/` in the above command to match its prefix.
 
+## Certificates
+
+If the site was [generated with a custom host](https://hexdocs.pm/beacon/Mix.Tasks.Beacon.Gen.Site.html),
+you'll need a certificate to access that domain:
+
+```sh
+fly certs add your-domain.com
+```
+
+See the [fly certs](https://fly.io/docs/flyctl/certs/) doc for more info.
+
 ## More commands
 
 You can find all available commands in the [Fly.io docs](https://fly.io/docs/flyctl) and also find more tips on the official [Phoenix Deploying on Fly.io guide](https://fly.io/docs/elixir/getting-started/).
