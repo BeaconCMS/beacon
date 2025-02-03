@@ -1,5 +1,6 @@
 defmodule Beacon.BeaconTest.NoRoutesRouter do
   use Beacon.BeaconTest.Web, :router
+  use Beacon.Router
 end
 
 defmodule Beacon.BeaconTest.ReachTestRouter do
@@ -47,6 +48,16 @@ defmodule Beacon.BeaconTest.Router do
     plug :put_secure_browser_headers
   end
 
+  scope "/" do
+    pipe_through :browser
+    beacon_sitemap_index "/sitemap_index.xml"
+  end
+
+  scope host: "site_b.com" do
+    pipe_through :browser
+    beacon_site "/", site: :host_test
+  end
+
   scope "/nested" do
     pipe_through :browser
     beacon_site "/site", site: :booted
@@ -56,6 +67,7 @@ defmodule Beacon.BeaconTest.Router do
   # `alias` is not really used but is present here to verify that `beacon_site` has no conflicts with custom aliases
   scope path: "/", alias: AnyAlias do
     pipe_through :browser
+
     beacon_site "/other", site: :not_booted
     beacon_site "/", site: :my_site
   end

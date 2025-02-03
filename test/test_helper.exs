@@ -6,7 +6,7 @@ Supervisor.start_link(
   [
     {Phoenix.PubSub, name: Beacon.BeaconTest.PubSub},
     Beacon.BeaconTest.Endpoint,
-    Beacon.BeaconTest.EndpointSite,
+    Beacon.BeaconTest.EndpointB,
     Beacon.BeaconTest.ProxyEndpoint,
     {Beacon,
      sites: [
@@ -39,7 +39,7 @@ Supervisor.start_link(
        [
          site: :host_test,
          mode: :testing,
-         endpoint: Beacon.BeaconTest.EndpointSite,
+         endpoint: Beacon.BeaconTest.EndpointB,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo
        ],
