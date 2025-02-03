@@ -25,20 +25,20 @@ defmodule Beacon.Web.SitemapControllerTest do
     conn = get(conn, "/sitemap_index.xml")
 
     assert response(conn, 200) == """
-           &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-           &lt;sitemapindex xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
-             &lt;sitemap&gt;
-               &lt;loc&gt;http://localhost:4000/nested/media/sitemap.xml&lt;/loc&gt;
-             &lt;/sitemap&gt;&lt;sitemap&gt;
-               &lt;loc&gt;http://localhost:4000/nested/site/sitemap.xml&lt;/loc&gt;
-             &lt;/sitemap&gt;&lt;sitemap&gt;
-               &lt;loc&gt;http://localhost:4000/other/sitemap.xml&lt;/loc&gt;
-             &lt;/sitemap&gt;&lt;sitemap&gt;
-               &lt;loc&gt;http://localhost:4000/sitemap.xml&lt;/loc&gt;
-             &lt;/sitemap&gt;&lt;sitemap&gt;
-               &lt;loc&gt;http://site_b.com:4000/sitemap.xml&lt;/loc&gt;
-             &lt;/sitemap&gt;
-           &lt;/sitemapindex&gt;
+           <?xml version="1.0" encoding="UTF-8"?>
+           <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+             <sitemap>
+               <loc>http://localhost:4000/nested/media/sitemap.xml</loc>
+             </sitemap><sitemap>
+               <loc>http://localhost:4000/nested/site/sitemap.xml</loc>
+             </sitemap><sitemap>
+               <loc>http://localhost:4000/other/sitemap.xml</loc>
+             </sitemap><sitemap>
+               <loc>http://localhost:4000/sitemap.xml</loc>
+             </sitemap><sitemap>
+               <loc>http://site_b.com:4000/sitemap.xml</loc>
+             </sitemap>
+           </sitemapindex>
            """
   end
 
@@ -46,13 +46,13 @@ defmodule Beacon.Web.SitemapControllerTest do
     conn = get(conn, "/sitemap.xml")
 
     assert response(conn, 200) == """
-           &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-           &lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;
-               &lt;url&gt;
-                   &lt;loc&gt;#{routes.beacon_page_url(conn, page)}&lt;/loc&gt;
-                   &lt;lastmod&gt;#{DateTime.to_iso8601(page.updated_at)}&lt;/lastmod&gt;
-               &lt;/url&gt;
-           &lt;/urlset&gt;
+           <?xml version="1.0" encoding="UTF-8"?>
+           <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+               <url>
+                   <loc>#{routes.beacon_page_url(conn, page)}</loc>
+                   <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
+               </url>
+           </urlset>
            """
 
     assert response_content_type(conn, :xml) =~ "charset=utf-8"

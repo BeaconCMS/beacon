@@ -150,7 +150,7 @@ defmodule Beacon.Router do
 
           get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
           get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
-
+          
           # simulate a beacon page inside site prefix so we can check this site is reachable?/2
           get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
 
