@@ -19,7 +19,14 @@ defmodule Beacon.ProxyEndpoint do
         websocket: [connect_info: [session: @session_options]],
         longpoll: [connect_info: [session: @session_options]]
 
+      plug :port
       plug :proxy
+
+      def port(conn, opts) do
+        IO.puts("port")
+        IO.inspect(conn)
+        conn
+      end
 
       # TODO: cache endpoint resolver
       def proxy(%{host: host} = conn, opts) do

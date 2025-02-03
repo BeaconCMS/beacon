@@ -14,6 +14,7 @@ defmodule Beacon.Web.SitemapController do
   end
 
   def call(%{assigns: %{site: site}} = conn, :show) do
+    IO.puts("sitemap.xml")
     IO.inspect(conn)
 
     conn
