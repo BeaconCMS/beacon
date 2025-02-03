@@ -144,13 +144,12 @@ defmodule Beacon.Router do
 
           # TODO: css_config-:md5 caching
           get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, assigns: %{site: opts[:site]}
-
           get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: opts[:site]}
           get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
 
           get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
           get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
-          
+
           # simulate a beacon page inside site prefix so we can check this site is reachable?/2
           get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
 
