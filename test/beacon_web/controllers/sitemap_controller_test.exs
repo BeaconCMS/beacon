@@ -16,9 +16,7 @@ defmodule Beacon.Web.SitemapControllerTest do
 
     page = beacon_published_page_fixture(site: site, path: "/foo", layout_id: layout.id)
 
-    routes = Beacon.Loader.fetch_routes_module(site)
-
-    [site: site, layout: layout, page: page, routes: routes]
+    [site: site, layout: layout, page: page]
   end
 
   test "index only includes sitemap of mounted sites", %{conn: conn} do
@@ -46,14 +44,14 @@ defmodule Beacon.Web.SitemapControllerTest do
            """
   end
 
-  test "show", %{conn: conn, page: page, routes: routes} do
+  test "show", %{conn: conn, page: page} do
     conn = get(conn, "/sitemap.xml")
 
     assert response(conn, 200) == """
            <?xml version="1.0" encoding="UTF-8"?>
            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
                <url>
-                   <loc>#{routes.public_page_url(page)}</loc>
+                   <loc>http://localhost/foo</loc>
                    <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
                </url>
            </urlset>

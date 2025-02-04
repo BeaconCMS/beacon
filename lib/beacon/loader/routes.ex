@@ -79,7 +79,7 @@ defmodule Beacon.Loader.Routes do
         def public_page_url(%{site: site} = page) do
           site == @site || raise Beacon.RuntimeError, message: "failed to generate public page url "
           prefix = @router.__beacon_scoped_prefix_for_site__(@site)
-          path = sanitize_path("#{prefix}/#{page.path}")
+          path = sanitize_path("#{prefix}#{page.path}")
           String.Chars.URI.to_string(%{Beacon.ProxyEndpoint.public_uri(@site) | path: path})
         end
 
