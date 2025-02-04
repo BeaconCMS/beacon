@@ -346,8 +346,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
   defp configure_new_endpoint(igniter, site, host, otp_app, port, secure_port) do
     new_endpoint = new_endpoint_module!(igniter, site)
-    error_html = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorHTML")
-    error_json = Igniter.Libs.Phoenix.web_module_name(igniter, "ErrorJSON")
+    error_html = "Beacon.Web.ErrorHTML"
     pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
 
     # TODO: replace the first two steps with `configure/6` once the `:after` option is allowed
@@ -368,7 +367,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
                  url: [host: "localhost"],
                  adapter: Bandit.PhoenixAdapter,
                  render_errors: [
-                   formats: [html: #{inspect(error_html)}, json: #{inspect(error_json)}],
+                   formats: [html: #{error_html}],
                    layout: false
                  ],
                  pubsub_server: #{inspect(pubsub)},

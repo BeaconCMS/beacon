@@ -248,7 +248,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
          14 + |       url: [host: "localhost"],
          15 + |       adapter: Bandit.PhoenixAdapter,
          16 + |       render_errors: [
-         17 + |         formats: [html: TestWeb.ErrorHTML, json: TestWeb.ErrorJSON],
+         17 + |         formats: [html: Beacon.Web.ErrorHTML],
          18 + |         layout: false
          19 + |       ],
          20 + |       pubsub_server: Test.PubSub,
