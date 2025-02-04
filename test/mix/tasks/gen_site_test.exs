@@ -157,12 +157,11 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
          14 + |       url: [host: "localhost"],
          15 + |       adapter: Bandit.PhoenixAdapter,
          16 + |       render_errors: [
-         17 + |         formats: [html: TestWeb.ErrorHTML, json: TestWeb.ErrorJSON],
+         17 + |         formats: [html: Beacon.Web.ErrorHTML],
          18 + |         layout: false
          19 + |       ],
          20 + |       pubsub_server: Test.PubSub,
          21 + |       live_view: [signing_salt: signing_salt]
-         22 + |
       """)
       # update signing salt for host app session_options
       |> assert_has_patch("config/config.exs", """
@@ -288,11 +287,15 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
 
-    test "add new endpoint", %{project: project} do
+    test "add new site endpoint after Beacon supervisor", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("lib/test/application.ex", """
-        22 + | TestWeb.MySiteEndpoint,
+         14 + |      {Beacon, [sites: [Application.fetch_env!(:beacon, :my_site)]]},
+      14 15   |      {Phoenix.PubSub, name: Test.PubSub},
+      15 16   |      # Start the Finch HTTP client for sending emails
+      16 17   |      {Finch, name: Test.Finch},
+         18 + |      TestWeb.MySiteEndpoint,
       """)
     end
   end
