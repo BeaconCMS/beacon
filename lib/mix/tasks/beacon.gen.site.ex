@@ -406,7 +406,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
           end)
       )
     )
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host)
+    |> configure_runtime_env_host(otp_app, new_endpoint, host)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
     |> Igniter.Project.Config.configure_runtime_env(
@@ -427,6 +427,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       [new_endpoint, :server],
       {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
     )
+  end
+
+  def configure_runtime_env_host(igniter, otp_app, new_endpoint, nil = _host) do
+    Igniter.Project.Config.configure_runtime_env(igniter, :prod, otp_app, [new_endpoint, :url, :host], {:code, Sourceror.parse_string!("host")})
+  end
+
+  def configure_runtime_env_host(igniter, otp_app, new_endpoint, host) do
+    Igniter.Project.Config.configure_runtime_env(igniter, :prod, otp_app, [new_endpoint, :url, :host], host)
   end
 
   defp maybe_update_existing_endpoints(igniter, nil, _, _), do: igniter
