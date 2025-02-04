@@ -33,10 +33,16 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
   test "add endpoint watcher", %{project: project} do
     project
     |> Igniter.compose_task("beacon.install")
+    |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("config/dev.exs", """
-       20 + |    beacon_tailwind_config: {Esbuild, :install_and_run, [:beacon_tailwind_config, ~w(--watch)]}
+    11 11   |       watchers: [
+    12 12   |         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+    13    - |         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+       13 + |         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]},
+       14 + |         beacon_tailwind_config: {Esbuild, :install_and_run, [:beacon_tailwind_config, ~w(--watch)]}
+    14 15   |       ]
     """)
   end
 
@@ -67,13 +73,13 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("config/runtime.exs", """
-    2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+    2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.MySiteEndpoint, router: TestWeb.Router]
     3   2   |
         3 + |config :beacon,
         4 + |  my_site: [
         5 + |    site: :my_site,
         6 + |    repo: Test.Repo,
-        7 + |    endpoint: TestWeb.Endpoint,
+        7 + |    endpoint: TestWeb.MySiteEndpoint,
         8 + |    router: TestWeb.Router,
         9 + |    tailwind_config: Path.join(Application.app_dir(:test, "priv"), "beacon.tailwind.config.bundle.js")
        10 + |  ]

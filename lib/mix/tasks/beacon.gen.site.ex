@@ -470,7 +470,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> Kernel.<>("Endpoint")
   end
 
-  defp new_endpoint_module!(igniter, site) when is_atom(site) do
+  @doc false
+  def new_endpoint_module!(igniter, site) when is_atom(site) do
     suffix = new_endpoint_module!(site)
     Igniter.Libs.Phoenix.web_module_name(igniter, suffix)
   end
