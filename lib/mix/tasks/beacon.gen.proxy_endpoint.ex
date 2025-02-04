@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
 
     case Igniter.Project.Module.module_exists(igniter, proxy_endpoint_module_name) do
       {true, igniter} ->
-        Igniter.add_notice(igniter, """
+        Igniter.add_warning(igniter, """
         Module #{inspect(proxy_endpoint_module_name)} already exists. Skipping.
         """)
 
