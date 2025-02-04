@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   * `--port` (optional) - The port to use for http requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
   * `--secure-port` (optional) - The port to use for https requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
   * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
-                                     By default, Beacon will generate a new value and update all existing config to match that value. 
+                                     By default, Beacon will generate a new value and update all existing config to match that value.
                                      If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
   * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
                                   By default, Beacon will generate a new value and update all existing config to match that value.
@@ -72,7 +72,6 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     otp_app = Igniter.Project.Application.app_name(igniter)
     web_module = Igniter.Libs.Phoenix.web_module(igniter)
     {igniter, router} = Beacon.Igniter.select_router!(igniter)
-    {igniter, existing_endpoints} = Igniter.Libs.Phoenix.endpoints_for_router(igniter, router)
     repo = Igniter.Project.Module.module_name(igniter, "Repo")
 
     igniter
@@ -85,8 +84,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     |> create_proxy_endpoint(argv)
     |> create_new_endpoint(site, otp_app, web_module)
     |> configure_new_endpoint(site, host, otp_app, port, secure_port)
-    |> maybe_update_existing_endpoints(host, otp_app, existing_endpoints)
-    |> maybe_update_session_options(host, otp_app)
+    |> update_session_options(otp_app)
     |> add_new_endpoint_to_application(site, repo)
     |> Igniter.add_notice("""
     Site #{inspect(site)} generated successfully.
@@ -406,7 +404,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
           end)
       )
     )
-    |> configure_runtime_env_host(otp_app, new_endpoint, host)
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")})
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
     |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
     |> Igniter.Project.Config.configure_runtime_env(
@@ -429,32 +427,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
     )
   end
 
-  def configure_runtime_env_host(igniter, otp_app, new_endpoint, nil = _host) do
-    Igniter.Project.Config.configure_runtime_env(igniter, :prod, otp_app, [new_endpoint, :url, :host], {:code, Sourceror.parse_string!("host")})
-  end
-
-  def configure_runtime_env_host(igniter, otp_app, new_endpoint, host) do
-    Igniter.Project.Config.configure_runtime_env(igniter, :prod, otp_app, [new_endpoint, :url, :host], host)
-  end
-
-  defp maybe_update_existing_endpoints(igniter, nil, _, _), do: igniter
-
-  defp maybe_update_existing_endpoints(igniter, _host, otp_app, existing_endpoints) do
-    Enum.reduce(existing_endpoints, igniter, fn endpoint, acc ->
-      acc
-      |> Igniter.Project.Config.configure(
-        "config.exs",
-        otp_app,
-        [endpoint, :live_view, :signing_salt],
-        {:code, Sourceror.parse_string!("signing_salt")}
-      )
-      |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :secret_key_base], {:code, Sourceror.parse_string!("secret_key_base")})
-    end)
-  end
-
-  defp maybe_update_session_options(igniter, nil, _), do: igniter
-
-  defp maybe_update_session_options(igniter, _host, otp_app) do
+  defp update_session_options(igniter, otp_app) do
     Igniter.Project.Config.configure(
       igniter,
       "config.exs",
@@ -465,7 +438,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   end
 
   defp add_new_endpoint_to_application(igniter, site, repo) do
-    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module!(igniter, site), after: [repo, Phoenix.PubSub, Finch, Beacon])
+    Igniter.Project.Application.add_new_child(igniter, new_endpoint_module!(igniter, site), after: [repo, Phoenix.PubSub, Beacon])
   end
 
   @doc false
