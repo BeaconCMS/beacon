@@ -334,7 +334,4 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
   end
-
-  test "new_endpoint_module!" do
-  end
 end

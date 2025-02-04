@@ -5,7 +5,7 @@ defmodule Beacon.Web.SitemapController do
   def init(action) when action in [:index, :show], do: action
 
   def call(conn, :index) do
-    sites = Beacon.Private.router(conn).__beacon_sites__
+    sites = Beacon.Private.router(conn).__beacon_sites__()
 
     conn
     |> accepts(["xml"])

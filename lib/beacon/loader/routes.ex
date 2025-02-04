@@ -53,9 +53,8 @@ defmodule Beacon.Loader.Routes do
         end
 
         def public_site_host do
-          @site
-          |> Beacon.ProxyEndpoint.public_uri()
-          |> String.Chars.URI.to_string()
+          uri = Beacon.ProxyEndpoint.public_uri(@site)
+          String.Chars.URI.to_string(%URI{scheme: uri.scheme, host: uri.host, port: uri.port})
         end
 
         @doc """
@@ -68,9 +67,10 @@ defmodule Beacon.Loader.Routes do
         """
         def public_site_url do
           uri =
-            case @router.__beacon_scoped_prefix_for_site__(@site) do
-              "/" -> Beacon.ProxyEndpoint.public_uri(@site)
-              prefix -> %{Beacon.ProxyEndpoint.public_uri(@site) | path: prefix}
+            case Beacon.ProxyEndpoint.public_uri(@site) do
+              # remove path: "/"  to build URL without the / suffix
+              %{path: "/"} = uri -> %{uri | path: nil}
+              uri -> uri
             end
 
           String.Chars.URI.to_string(uri)

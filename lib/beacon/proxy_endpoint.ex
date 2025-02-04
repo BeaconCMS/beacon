@@ -81,14 +81,15 @@ defmodule Beacon.ProxyEndpoint do
     end
   end
 
-  # TODO: docs, spec, error handling
-
   # https://github.com/phoenixframework/phoenix/blob/2614f2a0d95a3b4b745bdf88ccd9f3b7f6d5966a/lib/phoenix/endpoint/supervisor.ex#L386
-  # proxy is the public facing entrypoint, ie: scheme and port
-  # host is defined by the site endpoint, which is used to generate links
+  @doc """
+  Similar to `public_url/1` but returns a `%URI{}` instead.
+  """
+  @spec public_uri(Beacon.Types.Site.t()) :: URI.t()
   def public_uri(site) do
     site_endpoint = Beacon.Config.fetch!(site).endpoint
     proxy_endpoint = site_endpoint.proxy_endpoint()
+    router = Beacon.Config.fetch!(site).router
 
     proxy_url = proxy_endpoint.config(:url)
     site_url = site_endpoint.config(:url)
@@ -106,17 +107,21 @@ defmodule Beacon.ProxyEndpoint do
     scheme = proxy_url[:scheme] || scheme
     host = host_to_binary(site_url[:host] || "localhost")
     port = port_to_integer(proxy_url[:port] || port)
+    path = router.__beacon_scoped_prefix_for_site__(site)
 
     if host =~ ~r"[^:]:\d" do
       Logger.warning("url: [host: ...] configuration value #{inspect(host)} for #{inspect(site_endpoint)} is invalid")
     end
 
-    %URI{scheme: scheme, port: port, host: host}
+    %URI{scheme: scheme, host: host, port: port, path: path}
   end
 
   @doc """
-  TODO
+  Returns the public URL of a given `site`.
+
+  Scheme and port are fetched from the Proxy Endpoint to resolve the URL correctly
   """
+  @spec public_url(Beacon.Types.Site.t()) :: String.t()
   def public_url(site) do
     site
     |> public_uri()
