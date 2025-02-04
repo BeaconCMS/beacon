@@ -21,22 +21,26 @@ defmodule Beacon.Web.SitemapControllerTest do
     [site: site, layout: layout, page: page, routes: routes]
   end
 
-  test "index", %{conn: conn} do
+  test "index only includes sitemap of mounted sites", %{conn: conn} do
     conn = get(conn, "/sitemap_index.xml")
 
     assert response(conn, 200) == """
            <?xml version="1.0" encoding="UTF-8"?>
            <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
              <sitemap>
-               <loc>http://localhost:4000/nested/media/sitemap.xml</loc>
-             </sitemap><sitemap>
-               <loc>http://localhost:4000/nested/site/sitemap.xml</loc>
-             </sitemap><sitemap>
-               <loc>http://localhost:4000/other/sitemap.xml</loc>
-             </sitemap><sitemap>
-               <loc>http://localhost:4000/sitemap.xml</loc>
-             </sitemap><sitemap>
-               <loc>http://site_b.com:4000/sitemap.xml</loc>
+               <loc>http://localhost/nested/media/sitemap.xml</loc>
+             </sitemap>
+             <sitemap>
+               <loc>http://localhost/nested/site/sitemap.xml</loc>
+             </sitemap>
+             <sitemap>
+               <loc>http://localhost/other/sitemap.xml</loc>
+             </sitemap>
+             <sitemap>
+               <loc>http://localhost/sitemap.xml</loc>
+             </sitemap>
+             <sitemap>
+               <loc>http://site_b.com/sitemap.xml</loc>
              </sitemap>
            </sitemapindex>
            """
@@ -49,7 +53,7 @@ defmodule Beacon.Web.SitemapControllerTest do
            <?xml version="1.0" encoding="UTF-8"?>
            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
                <url>
-                   <loc>#{routes.beacon_page_url(conn, page)}</loc>
+                   <loc>#{routes.public_page_url(page)}</loc>
                    <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
                </url>
            </urlset>

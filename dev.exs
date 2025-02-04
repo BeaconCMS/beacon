@@ -42,9 +42,19 @@ Demo.Repo.start_link()
 Ecto.Migrator.run(Demo.Repo, path, :up, all: true, log_migrations_sql: true)
 Demo.Repo.stop()
 
+Application.put_env(:beacon, DemoWeb.ProxyEndpoint,
+  adapter: Bandit.PhoenixAdapter,
+  check_origin: {DemoWeb.ProxyEndpoint, :check_origin, []},
+  url: [port: 4001, scheme: "http"],
+  http: [ip: {0, 0, 0, 0}, port: 4001],
+  live_view: [signing_salt: "aaaaaaaa"],
+  secret_key_base: String.duplicate("a", 64),
+  server: true
+)
+
 Application.put_env(:beacon, DemoWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
-  http: [ip: {0, 0, 0, 0}, port: 4001],
+  http: [ip: {0, 0, 0, 0}, port: 4100],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),
@@ -87,12 +97,21 @@ defmodule DemoWeb.Router do
   end
 end
 
+defmodule DemoWeb.ProxyEndpoint do
+  use Beacon.ProxyEndpoint,
+    otp_app: :beacon,
+    session_options: [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"],
+    fallback: DemoWeb.Endpoint
+end
+
 defmodule DemoWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :beacon
 
   @session_options [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"]
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  # TODO: add this function in the `gen.site` generator
+  def proxy_endpoint, do: DemoWeb.ProxyEndpoint
+
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
 
   plug Phoenix.LiveReloader
@@ -1246,7 +1265,8 @@ Task.start(fn ->
     Demo.Repo,
     {Phoenix.PubSub, [name: Demo.PubSub]},
     {Beacon, sites: [dev_site, dy_site]},
-    DemoWeb.Endpoint
+    DemoWeb.Endpoint,
+    DemoWeb.ProxyEndpoint
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
