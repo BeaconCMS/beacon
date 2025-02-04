@@ -60,6 +60,11 @@ defmodule Beacon.Loader.Routes do
 
         @doc """
         Returns the full public-facing site URL, including the prefix.
+
+        Scheme and port are fetched from the Proxy Endpoint, if available,
+        since that's the entry point for all requests.
+
+        Host is fetched from the site endpoint.
         """
         def public_site_url do
           uri =
@@ -86,6 +91,7 @@ defmodule Beacon.Loader.Routes do
           public_site_url() <> "/__beacon_assets__/css_config"
         end
 
+        # TODO: remove sanitize_path/1
         defp sanitize_path(path) do
           String.replace(path, "//", "/")
         end

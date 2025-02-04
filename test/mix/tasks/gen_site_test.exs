@@ -131,7 +131,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("config/runtime.exs", """
-      2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+      2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.MySiteEndpoint, router: TestWeb.Router]
       """)
     end
 
@@ -141,11 +141,11 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> apply_igniter!()
       |> Igniter.compose_task("beacon.gen.site", @opts_other_site)
       |> assert_has_patch("config/runtime.exs", """
-      2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+      2     - |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.MySiteEndpoint, router: TestWeb.Router]
       3   2   |
           3 + |config :beacon,
-          4 + |  my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router],
-          5 + |  other: [site: :other, repo: Test.Repo, endpoint: TestWeb.Endpoint, router: TestWeb.Router]
+          4 + |  my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.MySiteEndpoint, router: TestWeb.Router],
+          5 + |  other: [site: :other, repo: Test.Repo, endpoint: TestWeb.OtherEndpoint, router: TestWeb.Router]
       """)
     end
   end
@@ -181,7 +181,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     end
   end
 
-  describe "--host option" do
+  describe "site endpoint" do
     setup do
       [project: phoenix_project()]
     end
@@ -189,11 +189,13 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     test "creates endpoint", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
-      |> assert_creates("lib/test_web/example_endpoint.ex", """
-      defmodule TestWeb.ExampleEndpoint do
+      |> assert_creates("lib/test_web/my_site_endpoint.ex", """
+      defmodule TestWeb.MySiteEndpoint do
         use Phoenix.Endpoint, otp_app: :test
 
         @session_options Application.compile_env!(:test, :session_options)
+
+        def proxy_endpoint, do: TestWeb.ProxyEndpoint
 
         # socket /live must be in the proxy endpoint
 
@@ -242,7 +244,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       # add config for new endpoint
       |> assert_has_patch("config/config.exs", """
       10 12   |config :test,
-         13 + |       TestWeb.ExampleEndpoint,
+         13 + |       TestWeb.MySiteEndpoint,
          14 + |       url: [host: "localhost"],
          15 + |       adapter: Bandit.PhoenixAdapter,
          16 + |       render_errors: [
@@ -272,7 +274,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       # add config for new endpoint
       |> assert_has_patch("config/dev.exs", """
           4 + |config :test,
-          5 + |       TestWeb.ExampleEndpoint,
+          5 + |       TestWeb.MySiteEndpoint,
           6 + |       http: [ip: {127, 0, 0, 1}, port: 4041],
           7 + |       check_origin: false,
           8 + |       code_reloader: true,
@@ -295,7 +297,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
       # add beacon site config
       |> assert_has_patch("config/runtime.exs", """
-         2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.ExampleEndpoint, router: TestWeb.Router]
+         2 + |config :beacon, my_site: [site: :my_site, repo: Test.Repo, endpoint: TestWeb.MySiteEndpoint, router: TestWeb.Router]
       """)
       # configure check_origin for ProxyEndpoint
       |> assert_has_patch("config/runtime.exs", """
@@ -303,7 +305,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
       # add config for new endpoint
       |> assert_has_patch("config/runtime.exs", """
-        54 + |config :test, TestWeb.ExampleEndpoint,
+        54 + |config :test, TestWeb.MySiteEndpoint,
         55 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
         56 + |  http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{@port}],
         57 + |  secret_key_base: secret_key_base,
@@ -316,7 +318,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_host)
       |> assert_has_patch("lib/test/application.ex", """
-        22 + | TestWeb.ExampleEndpoint,
+        22 + | TestWeb.MySiteEndpoint,
       """)
     end
 
@@ -331,5 +333,8 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         27 + |
       """)
     end
+  end
+
+  test "new_endpoint_module!" do
   end
 end
