@@ -25,9 +25,16 @@ defmodule Beacon.ProxyEndpoint do
 
       # TODO: cache endpoint resolver
       def proxy(%{host: host} = conn, opts) do
+        IO.puts("proxy")
+        IO.inspect(host)
+        IO.inspect(@__beacon_proxy_fallback__.host())
+
         matching_endpoint = fn ->
           Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
             %{endpoint: endpoint} = Beacon.Config.fetch!(site)
+
+            IO.inspect(site)
+            IO.inspect(endpoint.host())
 
             if endpoint.host() == host do
               {:halt, endpoint}
@@ -45,6 +52,9 @@ defmodule Beacon.ProxyEndpoint do
           else
             matching_endpoint.()
           end
+
+        IO.inspect(opts)
+        IO.inspect(endpoint.init(opts))
 
         endpoint.call(conn, endpoint.init(opts))
       end
