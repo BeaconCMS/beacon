@@ -24,10 +24,14 @@ config :beacon,
     same_site: "Lax"
   ]
 
-config :beacon, Beacon.BeaconTest.ProxyEndpoint, live_view: [signing_salt: "LKBurgGF"]
+config :beacon, Beacon.BeaconTest.ProxyEndpoint,
+  url: [port: 80],
+  secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
+  live_view: [signing_salt: "LKBurgGF"],
+  check_origin: false
 
 config :beacon, Beacon.BeaconTest.Endpoint,
-  url: [host: "localhost", port: 4000],
+  url: [host: "site_a.com", port: 4002],
   secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
   live_view: [signing_salt: "LKBurgGF"],
   render_errors: [view: Beacon.BeaconTest.ErrorView],
@@ -36,7 +40,7 @@ config :beacon, Beacon.BeaconTest.Endpoint,
   debug_errors: true
 
 config :beacon, Beacon.BeaconTest.EndpointB,
-  url: [host: "site_b.com", port: 4000],
+  url: [host: "site_b.com", port: 4002],
   secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
   live_view: [signing_salt: "LKBurgGF"],
   render_errors: [view: Beacon.BeaconTest.ErrorView],

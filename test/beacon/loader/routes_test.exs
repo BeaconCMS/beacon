@@ -29,23 +29,23 @@ defmodule Beacon.Loader.RoutesTest do
   end
 
   test "beacon_media_url" do
-    assert MyRoutes.beacon_media_url("logo.webp") == "http://localhost/nested/media/__beacon_media__/logo.webp"
+    assert MyRoutes.beacon_media_url("logo.webp") == "http://site_a.com/nested/media/__beacon_media__/logo.webp"
   end
 
   test "public_site_url" do
-    assert MyRoutes.public_site_url() == "http://localhost/nested/media"
+    assert MyRoutes.public_site_url() == "http://site_a.com/nested/media"
   end
 
   test "public_page_url" do
-    assert MyRoutes.public_page_url(%Beacon.Content.Page{site: :s3_site, path: "/"}) == "http://localhost/nested/media/"
-    assert MyRoutes.public_page_url(%Beacon.Content.Page{site: :s3_site, path: "/about"}) == "http://localhost/nested/media/about"
+    assert MyRoutes.public_page_url(%Beacon.Content.Page{site: :s3_site, path: "/"}) == "http://site_a.com/nested/media/"
+    assert MyRoutes.public_page_url(%Beacon.Content.Page{site: :s3_site, path: "/about"}) == "http://site_a.com/nested/media/about"
   end
 
   test "sitemap_index" do
   end
 
   test "public_sitemap_url" do
-    assert MyRoutes.public_sitemap_url() == "http://localhost/nested/media/sitemap.xml"
+    assert MyRoutes.public_sitemap_url() == "http://site_a.com/nested/media/sitemap.xml"
   end
 
   describe "sigil_p" do
