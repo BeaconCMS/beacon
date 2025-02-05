@@ -42,12 +42,25 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     |> assert_unchanged()
   end
 
-  test "do not duplicate files and configs with --host option" do
+  test "can upgrade site with --host option" do
     phoenix_project()
-    |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+    |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
-    |> assert_unchanged()
+    |> assert_has_patch("lib/test_web/router.ex", """
+    23     - |  scope "/", alias: TestWeb do
+    24     - |    pipe_through [:browser, :beacon]
+    25     - |    beacon_site "/", site: :my_site
+    26     - |  end
+        23 + |  scope "/", alias: TestWeb, host: ["localhost", "example.com"] do
+        24 + |    pipe_through [:browser, :beacon]
+        25 + |    beacon_site "/", site: :my_site
+        26 + |  end
+    """)
+    |> assert_has_patch("config/runtime.exs", """
+    55     - |  url: [host: host, port: #{@secure_port}, scheme: "https"],
+        55 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
+    """)
   end
 
   describe "migration" do
