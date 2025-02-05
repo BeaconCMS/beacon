@@ -49,13 +49,7 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
     |> assert_has_patch("lib/test_web/router.ex", """
     23     - |  scope "/", alias: TestWeb do
-    24     - |    pipe_through [:browser, :beacon]
-    25     - |    beacon_site "/", site: :my_site
-    26     - |  end
         23 + |  scope "/", alias: TestWeb, host: ["localhost", "example.com"] do
-        24 + |    pipe_through [:browser, :beacon]
-        25 + |    beacon_site "/", site: :my_site
-        26 + |  end
     """)
     |> assert_has_patch("config/runtime.exs", """
     55     - |  url: [host: host, port: #{@secure_port}, scheme: "https"],

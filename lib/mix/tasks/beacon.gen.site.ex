@@ -192,8 +192,10 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   end
 
   defp mount_site_in_router(igniter, router, site, path, host) do
+    web_module = Igniter.Libs.Phoenix.web_module(igniter)
+
     case Igniter.Project.Module.find_module(igniter, router) do
-      {:ok, {_igniter, _source, zipper}} ->
+      {:ok, {igniter, _source, zipper}} ->
         exists? =
           Sourceror.Zipper.find(
             zipper,
@@ -201,10 +203,17 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
           )
 
         if exists? do
-          Igniter.add_warning(
-            igniter,
-            "Site already exists: #{site}, skipping creation."
-          )
+          Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
+            {:ok,
+             zipper
+             |> Sourceror.Zipper.find(&match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1))
+             # Move up to the scope which contains the site
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
+          end)
         else
           content =
             """
@@ -216,13 +225,13 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
               [
                 with_pipelines: [:browser, :beacon],
                 router: router,
-                arg2: [alias: Igniter.Libs.Phoenix.web_module(igniter), host: ["localhost", host]]
+                arg2: [alias: web_module, host: ["localhost", host]]
               ]
             else
               [
                 with_pipelines: [:browser, :beacon],
                 router: router,
-                arg2: [alias: Igniter.Libs.Phoenix.web_module(igniter)]
+                arg2: [alias: web_module]
               ]
             end
 
@@ -232,6 +241,14 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       _ ->
         :skip
     end
+  end
+
+  defp add_host_to_scope({:scope, scope, [scope_path, scope_opts, rest]}, host) do
+    {opts, _} = Code.eval_quoted(scope_opts)
+
+    updated_opts = Keyword.delete(opts, :host) ++ [host: ["localhost", host]]
+
+    {:scope, scope, [scope_path, updated_opts, rest]}
   end
 
   defp add_site_config_in_config_runtime(igniter, site, repo, router) do
