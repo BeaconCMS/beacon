@@ -31,7 +31,7 @@ config :beacon, Beacon.BeaconTest.ProxyEndpoint,
   check_origin: false
 
 config :beacon, Beacon.BeaconTest.Endpoint,
-  url: [host: "site_a.com", port: 4002],
+  url: [host: "site_a.com", port: 4001],
   secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
   live_view: [signing_salt: "LKBurgGF"],
   render_errors: [view: Beacon.BeaconTest.ErrorView],
