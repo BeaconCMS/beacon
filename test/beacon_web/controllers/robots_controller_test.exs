@@ -7,7 +7,7 @@ defmodule Beacon.Web.RobotsControllerTest do
     assert response(conn, 200) == """
            # http://www.robotstxt.org
            User-agent: *
-           Sitemap: http://localhost/sitemap.xml
+           Sitemap: http://site_a.com/sitemap.xml
            """
 
     assert response_content_type(conn, :txt) =~ "charset=utf-8"
@@ -18,7 +18,7 @@ defmodule Beacon.Web.RobotsControllerTest do
     assert response(conn, 200) == """
            # http://www.robotstxt.org
            User-agent: *
-           Sitemap: http://localhost/other/sitemap.xml
+           Sitemap: http://site_a.com/other/sitemap.xml
            """
 
     assert response_content_type(conn, :txt) =~ "charset=utf-8"

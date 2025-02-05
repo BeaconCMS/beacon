@@ -12,10 +12,10 @@ Supervisor.start_link(
      sites: [
        [
          site: :my_site,
+         mode: :testing,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         mode: :testing,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js"]),
          tailwind_css: Path.join([File.cwd!(), "test", "support", "tailwind.custom.css"]),
          live_socket_path: "/custom_live",
@@ -65,10 +65,10 @@ Supervisor.start_link(
        ],
        [
          site: :s3_site,
+         mode: :testing,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         mode: :testing,
          assets: [
            {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3, Beacon.MediaLibrary.Provider.Repo], validations: []]}
          ],
@@ -100,10 +100,10 @@ Supervisor.start_link(
        ],
        [
          site: :lifecycle_test,
+         mode: :testing,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         mode: :testing,
          lifecycle: [
            load_template: [
              {:markdown,
@@ -149,10 +149,10 @@ Supervisor.start_link(
        ],
        [
          site: :lifecycle_test_fail,
+         mode: :testing,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
-         mode: :testing,
          lifecycle: [
            render_template: [
              {:markdown, [assigns: fn template, _metadata -> {:cont, template} end]}

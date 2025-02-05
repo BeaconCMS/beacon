@@ -26,16 +26,16 @@ defmodule Beacon.Web.SitemapControllerTest do
            <?xml version="1.0" encoding="UTF-8"?>
            <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
              <sitemap>
-               <loc>http://localhost/nested/media/sitemap.xml</loc>
+               <loc>http://site_a.com/nested/media/sitemap.xml</loc>
              </sitemap>
              <sitemap>
-               <loc>http://localhost/nested/site/sitemap.xml</loc>
+               <loc>http://site_a.com/nested/site/sitemap.xml</loc>
              </sitemap>
              <sitemap>
-               <loc>http://localhost/other/sitemap.xml</loc>
+               <loc>http://site_a.com/other/sitemap.xml</loc>
              </sitemap>
              <sitemap>
-               <loc>http://localhost/sitemap.xml</loc>
+               <loc>http://site_a.com/sitemap.xml</loc>
              </sitemap>
              <sitemap>
                <loc>http://site_b.com/sitemap.xml</loc>
@@ -51,7 +51,7 @@ defmodule Beacon.Web.SitemapControllerTest do
            <?xml version="1.0" encoding="UTF-8"?>
            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
                <url>
-                   <loc>http://localhost/foo</loc>
+                   <loc>http://site_a.com/foo</loc>
                    <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
                </url>
            </urlset>
