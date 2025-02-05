@@ -41,9 +41,6 @@ defmodule Beacon.Loader.RoutesTest do
     assert MyRoutes.public_page_url(%Beacon.Content.Page{site: :s3_site, path: "/about"}) == "http://site_a.com/nested/media/about"
   end
 
-  test "sitemap_index" do
-  end
-
   test "public_sitemap_url" do
     assert MyRoutes.public_sitemap_url() == "http://site_a.com/nested/media/sitemap.xml"
   end
