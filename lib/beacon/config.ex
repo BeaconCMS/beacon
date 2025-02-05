@@ -199,6 +199,24 @@ defmodule Beacon.Config do
   """
   @type page_warming :: {:shortest_paths, integer()} | {:specify_paths, [String.t()]} | :none
 
+  @typedoc """
+  Configure the site's `robots.txt` file with custom rules.
+  """
+  @type robots :: [robot_rule()]
+
+  @typedoc """
+  A rule to customize your `robots.txt` file.
+  """
+  @type robot_rule :: [robot_rule_opt()]
+
+  @typedoc """
+  Possible options for a `robots.txt` rule.
+  """
+  @type robot_rule_opt ::
+          {:user_agent, String.t() | [String.t()]}
+          | {:allow, String.t() | [String.t()]}
+          | {:disallow, String.t() | [String.t()]}
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -217,7 +235,8 @@ defmodule Beacon.Config do
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags(),
-          page_warming: page_warming()
+          page_warming: page_warming(),
+          robots: robots()
         }
 
   @default_load_template [
@@ -234,6 +253,10 @@ defmodule Beacon.Config do
   ]
 
   @default_media_types ["image/jpeg", "image/gif", "image/png", "image/webp", ".pdf"]
+
+  @default_robots [
+    [user_agent: "*", allow: "/"]
+  ]
 
   defstruct site: nil,
             endpoint: nil,
@@ -264,7 +287,8 @@ defmodule Beacon.Config do
             extra_page_fields: [],
             extra_asset_fields: [],
             default_meta_tags: [],
-            page_warming: {:shortest_paths, 10}
+            page_warming: {:shortest_paths, 10},
+            robots: @default_robots
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -285,6 +309,7 @@ defmodule Beacon.Config do
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
           | {:page_warming, page_warming()}
+          | {:robots, robots()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -334,6 +359,8 @@ defmodule Beacon.Config do
 
     * `:page_warming` - `t:page_warming/0` (optional). Defaults to `{:shortest_paths, 10}`.
 
+    * `:robots` - `t:robots/0` (optional). Defaults to `[[user_agent: "*", allow: "/"]]`
+
   ## Example
 
       iex> Beacon.Config.new(
@@ -363,7 +390,11 @@ defmodule Beacon.Config do
             notify_admin: fn page -> {:cont, MyApp.Admin.send_email(page)} end
           ]
         ],
-        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]},
+        robots: [
+          [user_agent: "*", disallow: ["/priv/path", "/other/path"]],
+          [user_agent: ["SomeBot", "OtherBot"], disallow: "/"]
+        ]
       )
       %Beacon.Config{
         site: :my_site,
@@ -412,7 +443,11 @@ defmodule Beacon.Config do
         extra_page_fields: [],
         extra_asset_fields: [],
         default_meta_tags: [],
-        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]},
+        robots: [
+          [user_agent: "*", disallow: ["/priv/path", "/other/path"]],
+          [user_agent: ["SomeBot", "OtherBot"], disallow: "/"]
+        ]
       }
 
   """
@@ -455,6 +490,7 @@ defmodule Beacon.Config do
     extra_asset_fields = Keyword.get(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
     page_warming = Keyword.get(opts, :page_warming, {:shortest_paths, 10})
+    robots = Keyword.get(opts, :robots, @default_robots)
 
     opts =
       opts
@@ -467,6 +503,7 @@ defmodule Beacon.Config do
       |> Keyword.put(:default_meta_tags, default_meta_tags)
       |> Keyword.put(:extra_asset_fields, extra_asset_fields)
       |> Keyword.put(:page_warming, page_warming)
+      |> Keyword.put(:robots, robots)
 
     struct!(__MODULE__, opts)
   end

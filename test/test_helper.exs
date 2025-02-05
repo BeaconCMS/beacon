@@ -55,7 +55,11 @@ Supervisor.start_link(
          mode: :testing,
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
-         repo: Beacon.BeaconTest.Repo
+         repo: Beacon.BeaconTest.Repo,
+         robots: [
+           [user_agent: ["BadBot", "AnotherBot"], disallow: "/"],
+           [user_agent: "*", allow: "/", disallow: ["/some/path", "/another/path"]]
+         ]
        ],
        [
          site: :booted,

@@ -10,7 +10,16 @@ defmodule Beacon.Web.RobotsController do
     |> put_view(Beacon.Web.RobotsTxt)
     |> put_resp_content_type("text/txt")
     |> put_resp_header("cache-control", "public max-age=300")
-    |> render(:robots, sitemap_url: get_sitemap_url(site))
+    |> render(:robots,
+      rules: get_rules(site),
+      sitemap_url: get_sitemap_url(site)
+    )
+  end
+
+  defp get_rules(site) do
+    site
+    |> Beacon.Config.fetch!()
+    |> Map.fetch!(:robots)
   end
 
   defp get_sitemap_url(site) do

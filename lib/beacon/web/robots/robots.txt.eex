@@ -1,3 +1,5 @@
-# http://www.robotstxt.org
-User-agent: *
+<%= for rule <- @rules do %><%= for agent <- List.wrap(Keyword.get(rule, :user_agent, [])) do %>User-agent: <%= agent %>
+<% end %><%= for disallow <- List.wrap(Keyword.get(rule, :disallow, [])) do %>Disallow: <%= disallow %>
+<% end %><%= for allow <- List.wrap(Keyword.get(rule, :allow, [])) do %>Allow: <%= allow %><% end %>
+<% end %>
 Sitemap: <%= @sitemap_url %>
