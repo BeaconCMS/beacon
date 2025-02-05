@@ -203,17 +203,21 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
           )
 
         if exists? do
-          Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
-            {:ok,
-             zipper
-             |> Sourceror.Zipper.find(&match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1))
-             # Move up to the scope which contains the site
-             |> Sourceror.Zipper.up()
-             |> Sourceror.Zipper.up()
-             |> Sourceror.Zipper.up()
-             |> Sourceror.Zipper.up()
-             |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
-          end)
+          if host do
+            Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
+              {:ok,
+               zipper
+               |> Sourceror.Zipper.find(&match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1))
+               # Move up to the scope which contains the site
+               |> Sourceror.Zipper.up()
+               |> Sourceror.Zipper.up()
+               |> Sourceror.Zipper.up()
+               |> Sourceror.Zipper.up()
+               |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
+            end)
+          else
+            igniter
+          end
         else
           content =
             """
@@ -421,26 +425,35 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
           end)
       )
     )
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")})
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, host || Sourceror.parse_string!("host"))}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port,
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("#{secure_port}"))}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https",
+      updater: &{:ok, Sourceror.Zipper.replace(&1, "https")}
+    )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
       [new_endpoint, :http],
-      {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]")}
+      {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]"))}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
       [new_endpoint, :secret_key_base],
-      {:code, Sourceror.parse_string!("secret_key_base")}
+      {:code, Sourceror.parse_string!("secret_key_base")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("secret_key_base"))}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
       [new_endpoint, :server],
-      {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
+      {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")"))}
     )
   end
 
