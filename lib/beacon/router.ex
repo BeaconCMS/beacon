@@ -185,6 +185,9 @@ defmodule Beacon.Router do
   Then Beacon will reference both of those sitemaps in the top-level index:
     * `my_domain.com/sitemap_index.xml`
 
+  Note that `beacon_sitemap_index` will include the sitemap URL of all mounted sites
+  in the router, so that macro should be at the root and not duplicated.
+
   ## Requirements
 
   Note that your sitemap index cannot have a path which is "deeper" in the directory structure than

@@ -1,6 +1,8 @@
 defmodule Beacon.ProxyEndpoint do
   @moduledoc false
 
+  require Logger
+
   defmacro __using__(opts) do
     quote location: :keep, generated: true do
       otp_app = Keyword.get(unquote(opts), :otp_app) || raise Beacon.RuntimeError, "missing required option :otp_app in Beacon.ProxyEndpoint"
@@ -78,4 +80,60 @@ defmodule Beacon.ProxyEndpoint do
       defp check_origin(_, _), do: false
     end
   end
+
+  # https://github.com/phoenixframework/phoenix/blob/2614f2a0d95a3b4b745bdf88ccd9f3b7f6d5966a/lib/phoenix/endpoint/supervisor.ex#L386
+  @doc """
+  Similar to `public_url/1` but returns a `%URI{}` instead.
+  """
+  @spec public_uri(Beacon.Types.Site.t()) :: URI.t()
+  def public_uri(site) do
+    site_endpoint = Beacon.Config.fetch!(site).endpoint
+    proxy_endpoint = site_endpoint.proxy_endpoint()
+    router = Beacon.Config.fetch!(site).router
+
+    proxy_url = proxy_endpoint.config(:url)
+    site_url = site_endpoint.config(:url)
+
+    https = proxy_endpoint.config(:https)
+    http = proxy_endpoint.config(:http)
+
+    {scheme, port} =
+      cond do
+        https -> {"https", https[:port] || 443}
+        http -> {"http", http[:port] || 80}
+        true -> {"http", 80}
+      end
+
+    scheme = proxy_url[:scheme] || scheme
+    host = host_to_binary(site_url[:host] || "localhost")
+    port = port_to_integer(proxy_url[:port] || port)
+    path = router.__beacon_scoped_prefix_for_site__(site)
+
+    if host =~ ~r"[^:]:\d" do
+      Logger.warning("url: [host: ...] configuration value #{inspect(host)} for #{inspect(site_endpoint)} is invalid")
+    end
+
+    %URI{scheme: scheme, host: host, port: port, path: path}
+  end
+
+  @doc """
+  Returns the public URL of a given `site`.
+
+  Scheme and port are fetched from the Proxy Endpoint to resolve the URL correctly
+  """
+  @spec public_url(Beacon.Types.Site.t()) :: String.t()
+  def public_url(site) do
+    site
+    |> public_uri()
+    |> String.Chars.URI.to_string()
+  end
+
+  # TODO: Remove the first function clause once {:system, env_var} tuples are removed
+  defp host_to_binary({:system, env_var}), do: host_to_binary(System.get_env(env_var))
+  defp host_to_binary(host), do: host
+
+  # TODO: Remove the first function clause once {:system, env_var} tuples are removed
+  defp port_to_integer({:system, env_var}), do: port_to_integer(System.get_env(env_var))
+  defp port_to_integer(port) when is_binary(port), do: String.to_integer(port)
+  defp port_to_integer(port) when is_integer(port), do: port
 end

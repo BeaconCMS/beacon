@@ -8,7 +8,7 @@ defmodule Beacon.Web.RobotsControllerTest do
            User-agent: *
            Allow: /
 
-           Sitemap: http://localhost:4000/sitemap.xml
+           Sitemap: http://localhost/sitemap.xml
            """
 
     assert response_content_type(conn, :txt) =~ "charset=utf-8"
@@ -26,7 +26,7 @@ defmodule Beacon.Web.RobotsControllerTest do
            Disallow: /another/path
            Allow: /
 
-           Sitemap: http://localhost:4000/other/sitemap.xml
+           Sitemap: http://localhost/other/sitemap.xml
            """
 
     assert response_content_type(conn, :txt) =~ "charset=utf-8"

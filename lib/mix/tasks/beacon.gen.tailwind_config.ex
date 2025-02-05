@@ -34,8 +34,7 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
     site = Keyword.fetch!(options, :site) |> String.to_atom()
 
     app_name = Igniter.Project.Application.app_name(igniter)
-    {igniter, router} = Beacon.Igniter.select_router!(igniter)
-    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
+    endpoint = Mix.Tasks.Beacon.Gen.Site.new_endpoint_module!(igniter, site)
 
     igniter
     |> create_tailwind_config()

@@ -12,7 +12,7 @@ defmodule Beacon.Web.RobotsController do
     |> put_resp_header("cache-control", "public max-age=300")
     |> render(:robots,
       rules: get_rules(site),
-      sitemap_url: get_sitemap_url(conn, site)
+      sitemap_url: get_sitemap_url(site)
     )
   end
 
@@ -22,8 +22,8 @@ defmodule Beacon.Web.RobotsController do
     |> Map.fetch!(:robots)
   end
 
-  defp get_sitemap_url(conn, site) do
+  defp get_sitemap_url(site) do
     routes_module = Beacon.Loader.fetch_routes_module(site)
-    Beacon.apply_mfa(site, routes_module, :beacon_sitemap_url, [conn])
+    Beacon.apply_mfa(site, routes_module, :public_sitemap_url, [])
   end
 end

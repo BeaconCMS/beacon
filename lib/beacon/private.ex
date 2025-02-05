@@ -70,4 +70,6 @@ defmodule Beacon.Private do
   # https://github.com/phoenixframework/phoenix/blob/4ebefb9d1f710c576f08c517f5852498dd9b935c/lib/phoenix/endpoint/supervisor.ex#L301-L302
   defp host_to_binary({:system, env_var}), do: host_to_binary(System.get_env(env_var))
   defp host_to_binary(host), do: host
+
+  def router(%{private: %{phoenix_router: router}}), do: router
 end
