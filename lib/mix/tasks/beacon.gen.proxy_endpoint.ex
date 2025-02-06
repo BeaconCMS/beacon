@@ -24,7 +24,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
                                   By default, Beacon will generate a new value and update all existing config to match that value.
                                   but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
   * `--session-key` (optional) - The value to use for key in the session config. Defaults to `"_your_app_name_key"`
-  * `--same-site` (optional) - Set the cookie session SameSite attributes. Defaults to "Lax"
+  * `--session-same-site` (optional) - Set the cookie session SameSite attributes. Defaults to "Lax"
 
   """
 
