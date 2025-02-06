@@ -204,17 +204,7 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
 
         if exists? do
           if host do
-            Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
-              {:ok,
-               zipper
-               |> Sourceror.Zipper.find(&match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1))
-               # Move up to the scope which contains the site
-               |> Sourceror.Zipper.up()
-               |> Sourceror.Zipper.up()
-               |> Sourceror.Zipper.up()
-               |> Sourceror.Zipper.up()
-               |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
-            end)
+            Igniter.Project.Module.find_and_update_module!(igniter, router, &update_scope_for_site(&1, path, site, host))
           else
             igniter
           end
@@ -245,6 +235,18 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
       _ ->
         :skip
     end
+  end
+
+  defp update_scope_for_site(zipper, path, site, host) do
+    {:ok,
+     zipper
+     |> Sourceror.Zipper.find(&match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1))
+     # Move up to the scope which contains the site
+     |> Sourceror.Zipper.up()
+     |> Sourceror.Zipper.up()
+     |> Sourceror.Zipper.up()
+     |> Sourceror.Zipper.up()
+     |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
   end
 
   defp add_host_to_scope({:scope, scope, [scope_path, scope_opts, rest]}, host) do
