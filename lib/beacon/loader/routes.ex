@@ -83,6 +83,10 @@ defmodule Beacon.Loader.Routes do
           String.Chars.URI.to_string(%{Beacon.ProxyEndpoint.public_uri(@site) | path: path})
         end
 
+        def public_sitemap_index_url do
+          public_site_host() <> "/sitemap_index.xml"
+        end
+
         def public_sitemap_url do
           public_site_url() <> "/sitemap.xml"
         end

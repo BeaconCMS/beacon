@@ -138,6 +138,11 @@ defmodule Beacon.Router do
 
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
 
+      scope "/", alias: false, as: false do
+        get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
+        get "/sitemap_index.xml", Beacon.Web.SitemapController, :index, as: :beacon_sitemap, assigns: %{site: opts[:site]}
+      end
+
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
           get "/__beacon_media__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: opts[:site]}
@@ -148,7 +153,6 @@ defmodule Beacon.Router do
           get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
 
           get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
-          get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
 
           # simulate a beacon page inside site prefix so we can check this site is reachable?/2
           get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
@@ -212,12 +216,16 @@ defmodule Beacon.Router do
     end
 
   """
-  defmacro beacon_sitemap_index(path_with_filename) do
+  # TODO: integrate with default index at root
+  # TODO: add opt :additional_sitemaps
+  # TODO: validate can't start with / (index is always served in the root)
+  # TODO: use `filename` in robots.txt
+  defmacro beacon_sitemap_index(filename) do
     quote bind_quoted: binding(), location: :keep, generated: true do
       import Phoenix.Router, only: [scope: 3, get: 4]
 
       scope "/", alias: false, as: false do
-        get path_with_filename, Beacon.Web.SitemapController, :index, as: :beacon_sitemap
+        get filename, Beacon.Web.SitemapController, :index, as: :beacon_sitemap
       end
     end
   end

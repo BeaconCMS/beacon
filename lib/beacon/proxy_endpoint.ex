@@ -136,4 +136,17 @@ defmodule Beacon.ProxyEndpoint do
   defp port_to_integer({:system, env_var}), do: port_to_integer(System.get_env(env_var))
   defp port_to_integer(port) when is_binary(port), do: String.to_integer(port)
   defp port_to_integer(port) when is_integer(port), do: port
+
+  @doc false
+  def sites_per_host(host) when is_binary(host) do
+    Enum.reduce(Beacon.Registry.running_sites(), [], fn site, acc ->
+      %{endpoint: endpoint} = Beacon.Config.fetch!(site)
+
+      if endpoint.host() == host do
+        [site | acc]
+      else
+        acc
+      end
+    end)
+  end
 end

@@ -4,8 +4,8 @@ defmodule Beacon.Web.SitemapController do
 
   def init(action) when action in [:index, :show], do: action
 
-  def call(conn, :index) do
-    sites = Beacon.Private.router(conn).__beacon_sites__()
+  def call(%{host: host} = conn, :index) do
+    sites = Beacon.ProxyEndpoint.sites_per_host(host)
 
     conn
     |> accepts(["xml"])
@@ -26,12 +26,13 @@ defmodule Beacon.Web.SitemapController do
 
   defp get_sitemap_urls(sites) do
     sites
-    |> Enum.map(fn {site, _} ->
+    |> Enum.map(fn site ->
       routes_module = Beacon.Loader.fetch_routes_module(site)
       Beacon.apply_mfa(site, routes_module, :public_sitemap_url, [])
     end)
     |> Enum.reject(&is_nil/1)
     |> Enum.sort()
+    |> Enum.uniq()
   end
 
   defp get_pages(site) do
