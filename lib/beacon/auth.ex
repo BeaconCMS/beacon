@@ -30,6 +30,10 @@ defmodule Beacon.Auth do
   """
   @callback check_role(actor :: any()) :: role :: any()
 
+  @doc """
+  Check if an action is allowed.
+  """
+  @spec authorize(Site.t(), atom(), keyword()) :: :ok | {:error, :not_authorized}
   def authorize(site, action, opts) do
     if Keyword.get(opts, :auth, true) do
       do_authorize(site, opts[:actor], action)
@@ -51,15 +55,39 @@ defmodule Beacon.Auth do
     end
   end
 
-  # defp get_actor(site, session) do
-  #   Config.fetch!(site).auth_module.actor_from_session(session)
-  # end
+  @doc """
+  Uses a site's `:auth_module` from `Beacon.Config` to find the actor for a given session.
+  """
+  @spec get_actor(Site.t(), map()) :: any()
+  def get_actor(site, session) do
+    Config.fetch!(site).auth_module.actor_from_session(session)
+  end
 
   defp get_role(site, actor) do
     Config.fetch!(site).auth_module.check_role(actor)
   end
 
-  defp list_capabilities do
+  @doc """
+  Creates a changeset with the given role and optional map of changes.
+  """
+  @spec change_role(Role.t(), map()) :: Changeset.t()
+  def change_role(role, attrs \\ %{}) do
+    Role.changeset(role, attrs)
+  end
+
+  @doc """
+  Lists all roles available for a given site.
+  """
+  @spec list_roles(Site.t()) :: [Role.t()]
+  def list_roles(site) do
+    repo(site).all(from r in Role, where: r.site == ^to_string(site))
+  end
+
+  @doc """
+  Lists all possible capabilities a Beacon role can have.
+  """
+  @spec list_capabilities() :: [:atom]
+  def list_capabilities do
     [
       :create_layout,
       :update_layout,
