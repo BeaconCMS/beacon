@@ -110,7 +110,8 @@ defmodule Beacon.Test.Fixtures do
               :beacon_error_page_fixture,
               :beacon_live_data_fixture,
               :beacon_live_data_assign_fixture,
-              :beacon_info_handler_fixture
+              :beacon_info_handler_fixture,
+              :beacon_js_hook_fixture
             ] do
           quote do
             def unquote(fun)() do
@@ -368,7 +369,7 @@ defmodule Beacon.Test.Fixtures do
 
     attrs = Map.put_new(attrs, :file_path, path_for(attrs.file_name))
 
-    UploadMetadata.new(attrs.site, attrs.file_path, Node.self(), name: attrs.file_name, size: attrs.file_size, extra: attrs.extra)
+    UploadMetadata.new(attrs.site, attrs.file_path, name: attrs.file_name, size: attrs.file_size, extra: attrs.extra)
   end
 
   defp path_for(file_name) do
@@ -548,5 +549,34 @@ defmodule Beacon.Test.Fixtures do
     })
     |> Content.create_info_handler!(auth: false)
     |> tap(&Loader.load_info_handlers_module(&1.site))
+  end
+
+  @doc """
+  Creates a `Beacon.Content.JSHook`.
+
+  ## Example
+      iex> code = "export const MyHook = {mounted() {console.log(\"foo\")}}"
+      iex> beacon_js_hook_fixture(site: :my_site, name: "MyHook", code: code)
+      %Beacon.Content.JSHook{}
+
+  """
+  @spec beacon_js_hook_fixture(map() | Keyword.t()) :: Beacon.Content.JSHook.t()
+  def beacon_js_hook_fixture(attrs \\ %{}) do
+    name = attrs[:name] || attrs["name"] || "TestHook#{System.unique_integer([:positive])}"
+
+    attrs
+    |> Enum.into(%{
+      site: "my_site",
+      name: name,
+      code: """
+      export const #{name} = {
+        mounted() {
+          console.log("mounted")
+        }
+      }
+      """
+    })
+    |> Content.create_js_hook!()
+    |> tap(&Loader.load_runtime_js(&1.site))
   end
 end

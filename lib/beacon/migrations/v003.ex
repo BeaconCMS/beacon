@@ -3,17 +3,17 @@ defmodule Beacon.Migrations.V003 do
   use Ecto.Migration
 
   def up do
-    create_if_not_exists table(:beacon_roles, primary_key: false) do
+    create_if_not_exists table(:beacon_js_hooks, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :name, :text, null: false
       add :site, :text, null: false
-      add :capabilities, {:array, :string}
+      add :name, :text, null: false
+      add :code, :text, null: false
 
       timestamps(type: :utc_datetime_usec)
     end
   end
 
   def down do
-    drop_if_exists table(:beacon_roles)
+    drop_if_exists table(:beacon_js_hooks)
   end
 end

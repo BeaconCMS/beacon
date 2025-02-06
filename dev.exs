@@ -42,9 +42,19 @@ Demo.Repo.start_link()
 Ecto.Migrator.run(Demo.Repo, path, :up, all: true, log_migrations_sql: true)
 Demo.Repo.stop()
 
+Application.put_env(:beacon, DemoWeb.ProxyEndpoint,
+  adapter: Bandit.PhoenixAdapter,
+  check_origin: {DemoWeb.ProxyEndpoint, :check_origin, []},
+  url: [port: 4001, scheme: "http"],
+  http: [ip: {0, 0, 0, 0}, port: 4001],
+  live_view: [signing_salt: "aaaaaaaa"],
+  secret_key_base: String.duplicate("a", 64),
+  server: true
+)
+
 Application.put_env(:beacon, DemoWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
-  http: [ip: {0, 0, 0, 0}, port: 4001],
+  http: [ip: {0, 0, 0, 0}, port: 4100],
   server: true,
   live_view: [signing_salt: "aaaaaaaa"],
   secret_key_base: String.duplicate("a", 64),
@@ -87,12 +97,21 @@ defmodule DemoWeb.Router do
   end
 end
 
+defmodule DemoWeb.ProxyEndpoint do
+  use Beacon.ProxyEndpoint,
+    otp_app: :beacon,
+    session_options: [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"],
+    fallback: DemoWeb.Endpoint
+end
+
 defmodule DemoWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :beacon
 
   @session_options [store: :cookie, key: "_beacon_dev_key", signing_salt: "pMQYsz0UKEnwxJnQrVwovkBAKvU3MiuL"]
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  # TODO: add this function in the `gen.site` generator
+  def proxy_endpoint, do: DemoWeb.ProxyEndpoint
+
   socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
 
   plug Phoenix.LiveReloader
@@ -140,7 +159,7 @@ defmodule Demo.Beacon.TagsField do
   end
 end
 
-upsert_layout = fn params ->
+get_or_insert_layout = fn params ->
   %{site: site, title: title} = params
   site = String.to_existing_atom(site)
 
@@ -156,7 +175,7 @@ upsert_layout = fn params ->
   end
 end
 
-upsert_page = fn params ->
+get_or_insert_page = fn params ->
   %{site: site, path: path} = params
   site = String.to_existing_atom(site)
 
@@ -172,7 +191,7 @@ upsert_page = fn params ->
   end
 end
 
-upsert_component = fn params ->
+get_or_insert_component = fn params ->
   %{site: site, name: name} = params
   site = String.to_existing_atom(site)
 
@@ -182,9 +201,19 @@ upsert_component = fn params ->
   end
 end
 
+get_or_insert_js_hook = fn params ->
+  %{site: site, name: name} = params
+  site = String.to_existing_atom(site)
+
+  case Beacon.Content.get_js_hook_by(site, name: name) do
+    %Beacon.Content.JSHook{} = js_hook -> js_hook
+    _ -> Beacon.Content.create_js_hook!(params)
+  end
+end
+
 dev_seeds = fn ->
   layout =
-    upsert_layout.(%{
+    get_or_insert_layout.(%{
       site: "dev",
       title: "dev",
       meta_tags: [
@@ -200,7 +229,7 @@ dev_seeds = fn ->
       """
     })
 
-  upsert_component.(%{
+  get_or_insert_component.(%{
     site: "dev",
     name: "sample_component",
     attrs: [%{name: "project", type: "any", opts: [required: true]}],
@@ -214,6 +243,21 @@ dev_seeds = fn ->
     body: ~S"""
     author_id = get_in(assigns, ["page", "extra", "author_id"])
     "author_#{author_id}"
+    """
+  })
+
+  get_or_insert_js_hook.(%{
+    site: "dev",
+    name: "ConsoleLogHook",
+    code: ~S"""
+    const now = new Date()
+    const message = '[dev] page mounted at ' + now
+
+    export const ConsoleLogHook = {
+      mounted() {
+        console.log(message)
+      }
+    }
     """
   })
 
@@ -231,7 +275,7 @@ dev_seeds = fn ->
     }
   )
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/sample",
     site: "dev",
     title: "dev home",
@@ -255,7 +299,7 @@ dev_seeds = fn ->
       "author_id" => 1
     },
     template: """
-    <main class="custom-font-style">
+    <main id="dev-sample" class="custom-font-style" phx-hook="ConsoleLogHook">
       <%!-- Home Page --%>
 
       <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
@@ -305,7 +349,7 @@ dev_seeds = fn ->
     ]
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/authors/:author_id",
     site: "dev",
     title: "dev author",
@@ -330,7 +374,7 @@ dev_seeds = fn ->
     """
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/posts/*slug",
     site: "dev",
     title: "dev post",
@@ -355,7 +399,7 @@ dev_seeds = fn ->
     """
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/markdown",
     site: "dev",
     title: "dev markdown",
@@ -460,7 +504,7 @@ dev_seeds = fn ->
     """
   })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/drag-drop",
     site: "dev",
     title: "dev drag and drop playground",
@@ -573,7 +617,7 @@ dev_seeds = fn ->
 end
 
 dy_seeds = fn ->
-  upsert_component.(%{
+  get_or_insert_component.(%{
     site: "dy",
     name: "header",
     template: """
@@ -647,7 +691,7 @@ dy_seeds = fn ->
     example: "<.header />"
   })
 
-  upsert_component.(%{
+  get_or_insert_component.(%{
     site: "dy",
     name: "footer",
     template: """
@@ -933,7 +977,7 @@ dy_seeds = fn ->
   })
 
   layout =
-    upsert_layout.(%{
+    get_or_insert_layout.(%{
       site: "dy",
       title: "main",
       template: """
@@ -943,7 +987,7 @@ dy_seeds = fn ->
       """
     })
 
-  upsert_page.(%{
+  get_or_insert_page.(%{
     path: "/",
     site: "dy",
     title: "home",
@@ -1221,7 +1265,8 @@ Task.start(fn ->
     Demo.Repo,
     {Phoenix.PubSub, [name: Demo.PubSub]},
     {Beacon, sites: [dev_site, dy_site]},
-    DemoWeb.Endpoint
+    DemoWeb.Endpoint,
+    DemoWeb.ProxyEndpoint
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)

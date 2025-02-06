@@ -31,11 +31,10 @@ defmodule Beacon.RuntimeCSS do
   @doc """
   Returns the URL to fetch the CSS config used to generate the site stylesheet.
   """
-  @spec asset_url(Site.t()) :: String.t()
-  def asset_url(site) do
-    %{endpoint: endpoint, router: router} = Beacon.Config.fetch!(site)
-    prefix = router.__beacon_scoped_prefix_for_site__(site)
-    endpoint.url() <> Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/css_config")
+  @spec css_config_url(Site.t()) :: String.t()
+  def css_config_url(site) do
+    routes_module = Beacon.Loader.fetch_routes_module(site)
+    Beacon.apply_mfa(site, routes_module, :public_css_config_url, [])
   end
 
   @doc false
@@ -74,11 +73,13 @@ defmodule Beacon.RuntimeCSS do
 
     gzip = :zlib.gzip(css)
 
-    if :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}}) do
-      :ok
-    else
-      raise Beacon.LoaderError, "failed to compress css"
+    try do
+      true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}})
+    rescue
+      _ -> reraise Beacon.LoaderError, [message: "failed to compress css"], __STACKTRACE__
     end
+
+    :ok
   end
 
   @doc false

@@ -44,7 +44,6 @@ defmodule Beacon.Loader.Worker do
         Beacon.MediaLibrary.UploadMetadata.new(
           site,
           path,
-          Node.self(),
           name: "beacon.png",
           extra: %{"alt" => "logo"}
         )
@@ -395,7 +394,7 @@ defmodule Beacon.Loader.Worker do
   end
 
   def handle_call(:load_runtime_js, _from, config) do
-    stop(Beacon.RuntimeJS.load!(), config)
+    stop(Beacon.RuntimeJS.load!(config.site), config)
   end
 
   def handle_call(:load_runtime_css, _from, config) do
@@ -533,6 +532,10 @@ defmodule Beacon.Loader.Worker do
           :ok = Beacon.PubSub.page_loaded(page)
         end)
     end
+  end
+
+  def load_runtime_js(site) do
+    Beacon.RuntimeJS.load!(site)
   end
 
   defp stop(reply, state) do

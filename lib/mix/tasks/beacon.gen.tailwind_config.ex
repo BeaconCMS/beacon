@@ -24,7 +24,6 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
     %Igniter.Mix.Task.Info{
       example: @example,
       schema: [site: :string],
-      aliases: [s: :site],
       required: [:site]
     }
   end
@@ -35,8 +34,7 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
     site = Keyword.fetch!(options, :site) |> String.to_atom()
 
     app_name = Igniter.Project.Application.app_name(igniter)
-    {igniter, router} = Beacon.Igniter.select_router!(igniter)
-    {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
+    endpoint = Mix.Tasks.Beacon.Gen.Site.new_endpoint_module!(igniter, site)
 
     igniter
     |> create_tailwind_config()
@@ -95,7 +93,7 @@ defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
       {:code,
        Sourceror.parse_string!("""
          [
-           args: ~w(beacon.tailwind.config.js --bundle --format=esm --target=es2020 --outfile=../priv/beacon.tailwind.config.bundle.js),
+           args: ~w(beacon.tailwind.config.js --bundle --format=esm --target=es2016 --outfile=../priv/beacon.tailwind.config.bundle.js),
            cd: Path.expand("../assets", __DIR__),
            env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
          ]
