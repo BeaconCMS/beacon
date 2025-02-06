@@ -49,10 +49,10 @@ defmodule Beacon.Web.SitemapControllerTest do
     assert response(conn, 200) == """
            <?xml version="1.0" encoding="UTF-8"?>
            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-               <url>
-                   <loc>http://site_a.com/foo</loc>
-                   <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
-               </url>
+             <url>
+               <loc>http://site_a.com/foo</loc>
+               <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
+             </url>
            </urlset>
            """
 
