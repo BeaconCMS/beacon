@@ -31,7 +31,7 @@ defmodule Beacon.Content do
   {:ok, %Page{}}
   ```
 
-  Beacon will use your site's `Beacon.Config.auth_module/0` to determine the role for the given actor,
+  Beacon will use your site's `t:Beacon.Config.auth_module/0` to determine the role for the given actor,
   and prevent the function from running if the role should not have access:
 
   ```
