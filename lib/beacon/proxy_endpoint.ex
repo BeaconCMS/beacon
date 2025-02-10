@@ -28,7 +28,7 @@ defmodule Beacon.ProxyEndpoint do
       plug :proxy
 
       defp robots(%{path_info: ["robots.txt"]} = conn, _opts) do
-        sitemap_index_url = Beacon.ProxyEndpoint.public_url(__MODULE__, conn.host) <> "/sitemap_index.xml"
+        sitemap_index_url = String.Chars.URI.to_string(%{Beacon.ProxyEndpoint.public_uri(__MODULE__, conn.host) | path: "/sitemap_index.xml"})
 
         conn
         |> accepts(["txt"])
@@ -142,13 +142,6 @@ defmodule Beacon.ProxyEndpoint do
     port = port_to_integer(url[:port] || port)
 
     %URI{scheme: scheme, host: host, port: port}
-  end
-
-  @doc false
-  def public_url(endpoint, host) do
-    endpoint
-    |> public_uri(host)
-    |> String.Chars.URI.to_string()
   end
 
   # https://github.com/phoenixframework/phoenix/blob/2614f2a0d95a3b4b745bdf88ccd9f3b7f6d5966a/lib/phoenix/endpoint/supervisor.ex#L386
