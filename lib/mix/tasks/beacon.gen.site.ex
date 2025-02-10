@@ -192,46 +192,63 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
   end
 
   defp mount_site_in_router(igniter, router, site, path, host) do
-    case Igniter.Project.Module.find_module(igniter, router) do
-      {:ok, {_igniter, _source, zipper}} ->
-        exists? =
-          Sourceror.Zipper.find(
-            zipper,
-            &match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1)
-          )
+    web_module = Igniter.Libs.Phoenix.web_module(igniter)
 
-        if exists? do
-          Igniter.add_warning(
-            igniter,
-            "Site already exists: #{site}, skipping creation."
-          )
-        else
+    with {:ok, {igniter, _source, zipper}} <- Igniter.Project.Module.find_module(igniter, router) do
+      beacon_site_search_result =
+        Sourceror.Zipper.find(
+          zipper,
+          &match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1)
+        )
+
+      cond do
+        is_nil(beacon_site_search_result) ->
+          # add a new scope
           content =
             """
             beacon_site #{inspect(path)}, site: #{inspect(site)}
             """
 
-          opts =
-            if host do
-              [
-                with_pipelines: [:browser, :beacon],
-                router: router,
-                arg2: [alias: Igniter.Libs.Phoenix.web_module(igniter), host: ["localhost", host]]
-              ]
-            else
-              [
-                with_pipelines: [:browser, :beacon],
-                router: router,
-                arg2: [alias: Igniter.Libs.Phoenix.web_module(igniter)]
-              ]
-            end
+          Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content,
+            with_pipelines: [:browser, :beacon],
+            router: router,
+            arg2:
+              if(host,
+                do: [alias: web_module, host: ["localhost", host]],
+                else: [alias: web_module]
+              )
+          )
 
-          Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content, opts)
-        end
+        is_nil(host) ->
+          # keep existing scope unchanged
+          igniter
 
-      _ ->
-        :skip
+        :beacon_site_exists_and_host_provided ->
+          # update the existing scope to use the provided host option
+          Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
+            {:ok,
+             zipper
+             # search for the site again because we're in a new zipper
+             |> Sourceror.Zipper.find(&match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1))
+             # Move up to the scope which contains the site
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.up()
+             |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
+          end)
+      end
+    else
+      _ -> :skip
     end
+  end
+
+  defp add_host_to_scope({:scope, scope, [scope_path, scope_opts, rest]}, host) do
+    {opts, _} = Code.eval_quoted(scope_opts)
+
+    updated_opts = Keyword.delete(opts, :host) ++ [host: ["localhost", host]]
+
+    {:scope, scope, [scope_path, updated_opts, rest]}
   end
 
   defp add_site_config_in_config_runtime(igniter, site, repo, router) do
@@ -404,26 +421,35 @@ defmodule Mix.Tasks.Beacon.Gen.Site do
           end)
       )
     )
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")})
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port)
-    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https")
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, host || Sourceror.parse_string!("host"))}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port,
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("#{secure_port}"))}
+    )
+    |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https",
+      updater: &{:ok, Sourceror.Zipper.replace(&1, "https")}
+    )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
       [new_endpoint, :http],
-      {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]")}
+      {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]"))}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
       [new_endpoint, :secret_key_base],
-      {:code, Sourceror.parse_string!("secret_key_base")}
+      {:code, Sourceror.parse_string!("secret_key_base")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("secret_key_base"))}
     )
     |> Igniter.Project.Config.configure_runtime_env(
       :prod,
       otp_app,
       [new_endpoint, :server],
-      {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")}
+      {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")},
+      updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")"))}
     )
   end
 
