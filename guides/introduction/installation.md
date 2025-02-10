@@ -21,27 +21,28 @@ Currently, only PostgreSQL is supported.
 
 Check out the official [Elixir install guide](https://elixir-lang.org/install.html) for more info.
 
-## Install as a new application
+3. Either install as a new application or add into an existing application
 
-If you're starting a new project, you can follow these steps to generate a new Phoenix application with Beacon and Beacon LiveAdmin installed.
-Otherwise, skip to the next section to install Beacon in an existing application.
-
-1. Update Hex
+Firstly update Hex:
 
 ```sh
 mix local.hex
 ```
 
-2. Install or update Phoenix and Igniter Installers
+Then install or update Phoenix and Igniter Installers
 
 ```sh
 mix archive.install hex phx_new
 mix archive.install hex igniter_new
 ```
 
-Check out the official [Phoenix install guide](https://hexdocs.pm/phoenix/installation.html) for more info.
+Now choose one of the methods below:
 
-3. Generate the new application
+### Install as a new application
+
+If you're starting a new project, you can follow these steps to generate a new Phoenix application with Beacon and Beacon LiveAdmin installed.
+
+Run the following to generate a new app:
 
 ```sh
 mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new
@@ -49,27 +50,9 @@ mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new
 
 Replace `my_app` with the name of your application and follow the prompts.
 
-## Install in an existing application
+### Install in an existing application
 
-Follow these steps to install Beacon and Beacon LiveAdmin in an existing Phoenix application.
-
-1. Add the [Igniter](https://hex.pm/packages/igniter) dependency in your project `mix.exs` file:
-
-```elixir
-defp deps do
-  [
-    {:igniter, "~> 0.5"}
-  ]
-end
-```
-
-2. Install dependencies
-
-```sh
-mix deps.get
-```
-
-3. Install Beacon and Beacon LiveAdmin
+Run the following to install Beacon and Beacon LiveAdmin in an existing Phoenix application.
 
 ```sh
 mix igniter.install beacon,beacon_live_admin
