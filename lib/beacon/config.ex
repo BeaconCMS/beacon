@@ -199,6 +199,11 @@ defmodule Beacon.Config do
   """
   @type page_warming :: {:shortest_paths, integer()} | {:specify_paths, [String.t()]} | :none
 
+  @typedoc """
+  Sitemap path.
+  """
+  @type sitemap_path :: binary()
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -217,7 +222,8 @@ defmodule Beacon.Config do
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags(),
-          page_warming: page_warming()
+          page_warming: page_warming(),
+          sitemap_path: sitemap_path()
         }
 
   @default_load_template [
@@ -264,7 +270,8 @@ defmodule Beacon.Config do
             extra_page_fields: [],
             extra_asset_fields: [],
             default_meta_tags: [],
-            page_warming: {:shortest_paths, 10}
+            page_warming: {:shortest_paths, 10},
+            sitemap_path: "sitemap.xml"
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -285,6 +292,7 @@ defmodule Beacon.Config do
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
           | {:page_warming, page_warming()}
+          | {:sitemap_path, sitemap_path()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -334,6 +342,8 @@ defmodule Beacon.Config do
 
     * `:page_warming` - `t:page_warming/0` (optional). Defaults to `{:shortest_paths, 10}`.
 
+    * `:sitemap_path` - `t:sitemap_path/0` (optional). Defaults to `"sitemap.xml"`.
+
   ## Example
 
       iex> Beacon.Config.new(
@@ -363,7 +373,8 @@ defmodule Beacon.Config do
             notify_admin: fn page -> {:cont, MyApp.Admin.send_email(page)} end
           ]
         ],
-        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]},
+        sitemap_path: "mysite_sitemap.xml"
       )
       %Beacon.Config{
         site: :my_site,
@@ -412,7 +423,8 @@ defmodule Beacon.Config do
         extra_page_fields: [],
         extra_asset_fields: [],
         default_meta_tags: [],
-        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]},
+        sitemap_path: "mysite_sitemap.xml"
       }
 
   """
@@ -456,6 +468,8 @@ defmodule Beacon.Config do
 
     page_warming = Keyword.get(opts, :page_warming, {:shortest_paths, 10})
 
+    sitemap_path = Keyword.get(opts, :sitemap_path) || "sitemap.xml"
+
     opts =
       opts
       |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
@@ -467,6 +481,7 @@ defmodule Beacon.Config do
       |> Keyword.put(:default_meta_tags, default_meta_tags)
       |> Keyword.put(:extra_asset_fields, extra_asset_fields)
       |> Keyword.put(:page_warming, page_warming)
+      |> Keyword.put(:sitemap_path, sitemap_path)
 
     struct!(__MODULE__, opts)
   end
