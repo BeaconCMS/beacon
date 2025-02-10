@@ -19,49 +19,39 @@ defmodule Beacon.Auth do
 
   To add auth to your Beacon application, there are two callbacks to implement:
 
-    * `actor_from_session/1` - a function which receives the user's session data, and returns some unique identifier for that user
-    * `check_role/1` - a function which receives the identifier, and returns what role that user should have
+    * `actor_from_session/1` - a function which receives the user's session data, and returns a tuple
+      containing a unique ID and a human-readable label
+    * `list_actors/0` - a function to return a list of actors, in the same format as above: `{id, label}`
 
   This allows you to integrate Beacon with any type of authentication system your app might require.
 
   ## Implementing the Beacon.Auth behaviour
 
-  Let's take a look at the case where [`mix phx.gen.auth`](https://hexdocs.pm/phoenix/mix_phx_gen_auth.html) was used to register and sign in users.
-
-  The first question is "How does my app determine the access level (role) of a given user?".
-  Some examples solutions might be:
-
-    * Add a `role` column to the users table, and `:role` field on the User schema
-    * Calculate the role dynamically based on other fields such as `admin?` or `registered_at`
-    * Create a separate table to map each `user_id` to a `role`
-
-  Regardless of which approach you choose, let's assume that logic is used in a function called
-  `determine_role/1`.  Then we can create an auth module which implements `Beacon.Auth` behaviour:
+  Let's take a look at the case where [`mix phx.gen.auth`](https://hexdocs.pm/phoenix/mix_phx_gen_auth.html)
+  was used to register and sign in users.
 
   ```
   defmodule MyApp.Auth do
     @behaviour Beacon.Auth
 
     def actor_from_session(session) do
-      Map.get(session, "user_token")
+      user = MyApp.Accounts.get_user_by_session_token(session["user_token"])
+
+      {user.id, user.email}
     end
 
-    def check_role(user_token) do
-      user_token
-      |> MyApp.Accounts.get_user_by_session_token()
-      |> determine_role()
-    end
-
-    defp determine_role(user) do
-      ...
+    def list_actors do
+      Repo.all(from u in MyApp.Accounts.User, select: {u.id, u.email})
     end
   end
   ```
 
   In the above example, the `actor_from_session/1` function retrieves the `user_token` which is put
-  into the session when a user logs in.
+  into the session when a user logs in.  With that token, it fetches the `%User{}` struct from the database
+  and returns the ID with the user's email as the label.
 
-  Then `check_role/1` will receive that token, look up the user, and then determine the role of that user.
+  `list_actors/0` provides the database query for Beacon to find the actors in your app and return
+  them in the expected `{id, label}` format.
 
   This module can then be provided to `Beacon.Config` as an `:auth_module` option:
 
@@ -102,28 +92,23 @@ defmodule Beacon.Auth do
   import Beacon.Utils, only: [repo: 1]
   import Ecto.Query
 
+  alias Beacon.Auth.ActorRole
   alias Beacon.Auth.Role
   alias Beacon.Config
   alias Ecto.Changeset
 
+  @type actor_tuple :: {id :: String.t(), label :: String.t()}
+
   @doc """
   Parses the actor's identity from the session.
   """
-  @callback actor_from_session(session :: map()) :: actor :: any()
+  @callback actor_from_session(session :: map()) :: actor_tuple() | nil
 
   @doc """
-  Checks the role of a given actor.
-
-  Warning: this function should always check for the most recent data, in case it has changed.
-
-  ```elixir
-  # bad
-  def check_role(actor), do: actor.role
-  # good
-  def check_role(actor), do: MyApp.Repo.one(from u in Users, where: u.id == ^actor, select: u.role)
-  ```
+  Lists all actors for your beacon site, each in the form of a tuple containing a unique ID as well
+  as a human-readable label.
   """
-  @callback check_role(actor :: any()) :: role :: any()
+  @callback list_actors() :: [actor_tuple()]
 
   @doc """
   Check if an action is allowed.
@@ -138,11 +123,7 @@ defmodule Beacon.Auth do
   end
 
   defp do_authorize(site, actor, action) do
-    role = get_role(site, actor)
-
-    query = from r in Role, where: r.site == ^site, where: r.name == ^to_string(role)
-
-    with %{} = role <- repo(site).one(query),
+    with %{} = role <- get_role(site, actor),
          true <- to_string(action) in role.capabilities do
       :ok
     else
@@ -151,15 +132,30 @@ defmodule Beacon.Auth do
   end
 
   @doc """
+  Uses a site's `:auth_module` from `Beacon.Config` to list all actors for a site.
+  """
+  @spec list_actors(Site.t()) :: [actor_tuple()]
+  def list_actors(site) do
+    Config.fetch!(site).auth_module.list_actors()
+  end
+
+  @doc """
   Uses a site's `:auth_module` from `Beacon.Config` to find the actor for a given session.
   """
-  @spec get_actor(Site.t(), map()) :: any()
+  @spec get_actor(Site.t(), map()) :: actor_tuple()
   def get_actor(site, session) do
     Config.fetch!(site).auth_module.actor_from_session(session)
   end
 
   defp get_role(site, actor) do
-    Config.fetch!(site).auth_module.check_role(actor)
+    repo(site).one(
+      from ar in ActorRole,
+        join: r in Role,
+        on: ar.role_id == r.id,
+        where: ar.site == ^site,
+        where: ar.actor_id == ^actor,
+        select: r
+    )
   end
 
   @doc """
