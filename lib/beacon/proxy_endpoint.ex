@@ -144,6 +144,7 @@ defmodule Beacon.ProxyEndpoint do
     %URI{scheme: scheme, host: host, port: port}
   end
 
+  @doc false
   def public_url(endpoint, host) do
     endpoint
     |> public_uri(host)
