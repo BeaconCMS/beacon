@@ -5,10 +5,8 @@ defmodule Beacon.Web.ConnCase do
 
   using do
     quote do
-      # The default endpoint for testing
-      @endpoint Beacon.BeaconTest.Endpoint
+      @endpoint Beacon.BeaconTest.ProxyEndpoint
 
-      # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
       import Phoenix.LiveViewTest
