@@ -5,9 +5,9 @@ Beacon.BeaconTest.Repo.start_link()
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: Beacon.BeaconTest.PubSub},
+    Beacon.BeaconTest.ProxyEndpoint,
     Beacon.BeaconTest.Endpoint,
     Beacon.BeaconTest.EndpointB,
-    Beacon.BeaconTest.ProxyEndpoint,
     {Beacon,
      sites: [
        [
