@@ -54,17 +54,7 @@ Replace `my_app` and `my_site` with the names you want to generate and follow th
 
 If you already have a Phoenix project with Phoenix LiveView then you can just add Beacon into that project.
 
-First add the [Igniter](https://hex.pm/packages/igniter) dependency into your project:
-
-```elixir
-defp deps do
-  [
-    {:igniter, "~> 0.5"}
-  ]
-end
-```
-
-Run `mix deps.get` and now you'll be able to execute either one of the installers below:
+Similar to starting a new project, you can install Beacon and BeaconLiveAdmin and generate a new site:
 
 - Using latest published [beacon](https://hex.pm/packages/beacon) and [beacon_live_admin](https://hex.pm/packages/beacon_live_admin) packages:
 
@@ -80,7 +70,7 @@ beacon@github:BeaconCMS/beacon,beacon_live_admin@github:BeaconCMS/beacon_live_ad
 --beacon.site my_site
 ```
 
-Replace `my_app` and `my_site` with the names you want to generate and follow the prompts.
+Replace `my_site` with the names you want to generate and follow the prompts.
 </details>
 
 To finish, install dependencies, run the server, and open http://localhost:4000 to see the default home page or http://localhost:4000/admin to manage your new site.
