@@ -1,16 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2024-02-10)
 
 ### Enhancements
-  - Beacon will now automatically generate a `sitemap.xml` for each `beacon_site` defined in the Router
-  - Beacon will now automatically generate a `robots.txt` for each `beacon_site` defined in the Router
   - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
   - Added support for user-defined JS Hooks
+  - Added `Beacon.ProxyEndpoint` for serving multiple domains within a single app
+  - `mix beacon.gen.site` now creates a new Endpoint per site
   - Added `--host` option for `mix beacon.gen.site` to serve your site at an alternative domain
+  - Beacon will now automatically generate a `robots.txt` for each domain served by your app
+  - Beacon will now automatically generate a `sitemap_index.txt` for each domain, and `sitemap.txt` for each site
 
 ### Fixes
   - Fixed a bug where MediaLibrary could check for file contents on the wrong node in multi-node deployments
+  - Fixed a missing function error when using Beacon with LiveView 1.0.0
+  - Visual Editor no longer crashes when attempting to edit a new page before saving
+  - Asset requests now properly follow `accept-encoding` headers
+  - Prevent app Endpoints from accepting requests before Beacon is ready to serve them
+  - `Beacon.Config` now falls back to the default value when a `nil` option is provided
 
 ### Breaking Changes
   - `beacon.install` - removed command aliases `-s` and `-p`
