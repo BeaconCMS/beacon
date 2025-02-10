@@ -2,7 +2,7 @@ defmodule Beacon.Web.RobotsControllerTest do
   use Beacon.Web.ConnCase, async: false
 
   test "show", %{conn: conn} do
-    conn = get(conn, "/robots.txt")
+    conn = get(%{conn | host: "site_a.com"}, "/robots.txt")
 
     assert response(conn, 200) == """
            # http://www.robotstxt.org

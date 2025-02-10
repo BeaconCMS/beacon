@@ -16,15 +16,64 @@ defmodule Beacon.ProxyEndpoint do
       Module.put_attribute(__MODULE__, :__beacon_proxy_fallback__, fallback)
 
       use Phoenix.Endpoint, otp_app: otp_app
+      import Plug.Conn, only: [put_resp_content_type: 2, put_resp_header: 3, halt: 1]
+      import Phoenix.Controller, only: [accepts: 2, put_view: 2, render: 3]
 
       socket "/live", Phoenix.LiveView.Socket,
         websocket: [connect_info: [session: @session_options]],
         longpoll: [connect_info: [session: @session_options]]
 
+      plug :robots
+      plug :sitemap_index
       plug :proxy
 
+      defp robots(%{path_info: ["robots.txt"]} = conn, _opts) do
+        sitemap_index_url =
+          String.Chars.URI.to_string(%URI{scheme: Atom.to_string(conn.scheme), host: conn.host, port: conn.port, path: "/sitemap_index.xml"})
+
+        conn
+        |> accepts(["txt"])
+        |> put_view(Beacon.Web.RobotsTxt)
+        |> put_resp_content_type("text/txt")
+        |> put_resp_header("cache-control", "public max-age=300")
+        |> render(:robots, sitemap_index_url: sitemap_index_url)
+        |> halt()
+      end
+
+      defp robots(conn, _opts), do: conn
+
+      defp sitemap_index(%{path_info: ["sitemap_index.xml"]} = conn, _opts) do
+        sites = Beacon.ProxyEndpoint.sites_per_host(conn.host)
+
+        conn
+        |> accepts(["xml"])
+        |> put_view(Beacon.Web.SitemapXML)
+        |> put_resp_content_type("text/xml")
+        |> put_resp_header("cache-control", "public max-age=300")
+        |> render(:sitemap_index, urls: get_sitemap_urls(sites))
+        |> halt()
+      end
+
+      defp sitemap_index(conn, _opts), do: conn
+
+      defp get_sitemap_urls(sites) do
+        sites
+        |> Enum.map(fn site ->
+          routes_module = Beacon.Loader.fetch_routes_module(site)
+          Beacon.apply_mfa(site, routes_module, :public_sitemap_url, [])
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.sort()
+        |> Enum.uniq()
+      end
+
+      # defp get_sitemap_index_url(site) do
+      #   routes_module = Beacon.Loader.fetch_routes_module(site)
+      #   Beacon.apply_mfa(site, routes_module, :public_sitemap_index_url, [])
+      # end
+
       # TODO: cache endpoint resolver
-      def proxy(%{host: host} = conn, opts) do
+      defp proxy(%{host: host} = conn, opts) do
         matching_endpoint = fn ->
           Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
             %{endpoint: endpoint} = Beacon.Config.fetch!(site)

@@ -91,7 +91,7 @@ defmodule Beacon.Router do
   defp prelude do
     quote do
       Module.register_attribute(__MODULE__, :beacon_sites, accumulate: true)
-      import Beacon.Router, only: [beacon_site: 2, beacon_sitemap_index: 1]
+      import Beacon.Router, only: [beacon_site: 2]
       @before_compile unquote(__MODULE__)
     end
   end
@@ -118,7 +118,8 @@ defmodule Beacon.Router do
   @doc """
   Mounts a site in the `prefix` in your host application router.
 
-  This will automatically serve `sitemap.xml` and `robots.txt` files from the `prefix` path defined for this site.
+  This will automatically serve `sitemap.xml` from the `prefix` path defined for this site,
+  and also `robots.txt` and `sitemap_index.xml` in the top-level host.
 
   ## Options
 
@@ -137,11 +138,6 @@ defmodule Beacon.Router do
       import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
-
-      scope "/", alias: false, as: false do
-        get "/robots.txt", Beacon.Web.RobotsController, :show, as: :beacon_robots, assigns: %{site: opts[:site]}
-        get "/sitemap_index.xml", Beacon.Web.SitemapController, :index, as: :beacon_sitemap, assigns: %{site: opts[:site]}
-      end
 
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
@@ -162,71 +158,6 @@ defmodule Beacon.Router do
       end
 
       @beacon_sites {opts[:site], Phoenix.Router.scoped_path(__MODULE__, prefix)}
-    end
-  end
-
-  @doc """
-  Creates a sitemap index at the given path (including the filename and extension).
-
-  ## Example
-
-    defmodule MyApp.Router do
-      ...
-      scope "/" do
-        pipe_through :browser
-
-        beacon_sitemap_index "/sitemap_index.xml"
-
-        beacon_site "/other", site: :other
-        beacon_site "/", site: :home
-      end
-    end
-
-  In the above example, there are two Beacon sites, so Beacon will serve two sitemaps:
-    * `my_domain.com/sitemap.xml` for site `:home`
-    * `my_domain.com/other/sitemap.xml` for site `:other`
-
-  Then Beacon will reference both of those sitemaps in the top-level index:
-    * `my_domain.com/sitemap_index.xml`
-
-  Note that `beacon_sitemap_index` will include the sitemap URL of all mounted sites
-  in the router, so that macro should be at the root and not duplicated.
-
-  ## Requirements
-
-  Note that your sitemap index cannot have a path which is "deeper" in the directory structure than
-  your Beacon sites (which will be contained in the index).
-
-  For example, the following is NOT allowed:
-
-    scope "/" do
-      ...
-      beacon_sitemap_index "/root/nested/sitemap_index.xml"
-
-      beacon_site "/root", site: :root
-    end
-
-  However, the opposite case (nesting the sites deeper than the index) is perfectly fine:
-
-    scope "/" do
-      ...
-      beacon_sitemap_index "/sitemap_index.xml"
-
-      beacon_site "/nested/path/to/site", site: :nested
-    end
-
-  """
-  # TODO: integrate with default index at root
-  # TODO: add opt :additional_sitemaps
-  # TODO: validate can't start with / (index is always served in the root)
-  # TODO: use `filename` in robots.txt
-  defmacro beacon_sitemap_index(filename) do
-    quote bind_quoted: binding(), location: :keep, generated: true do
-      import Phoenix.Router, only: [scope: 3, get: 4]
-
-      scope "/", alias: false, as: false do
-        get filename, Beacon.Web.SitemapController, :index, as: :beacon_sitemap
-      end
     end
   end
 

@@ -43,9 +43,3 @@ end
 defmodule Beacon.BeaconTest.LayoutView do
   use Beacon.BeaconTest.Web, :view
 end
-
-defmodule Beacon.BeaconTest.ErrorView do
-  use Beacon.BeaconTest.Web, :view
-
-  def render(_template, _assigns), do: "Error"
-end
