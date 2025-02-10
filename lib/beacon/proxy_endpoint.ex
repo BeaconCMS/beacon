@@ -67,11 +67,6 @@ defmodule Beacon.ProxyEndpoint do
         |> Enum.uniq()
       end
 
-      # defp get_sitemap_index_url(site) do
-      #   routes_module = Beacon.Loader.fetch_routes_module(site)
-      #   Beacon.apply_mfa(site, routes_module, :public_sitemap_index_url, [])
-      # end
-
       # TODO: cache endpoint resolver
       defp proxy(%{host: host} = conn, opts) do
         matching_endpoint = fn ->
