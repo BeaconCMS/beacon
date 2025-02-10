@@ -437,7 +437,7 @@ defmodule Beacon.Config do
     opts[:router] || raise ConfigError, "missing required option :router"
     ensure_repo(opts[:repo])
 
-    tailwind_css = Keyword.get(opts, :tailwind_css) || Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css")
+    tailwind_css = get_opt(opts, :tailwind_css, Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css"))
 
     template_formats =
       Keyword.merge(
@@ -445,7 +445,7 @@ defmodule Beacon.Config do
           {:heex, "HEEx (HTML)"},
           {:markdown, "Markdown (GitHub Flavored version)"}
         ],
-        Keyword.get(opts, :template_formats, [])
+        get_opt(opts, :template_formats, [])
       )
 
     lifecycle = [
@@ -457,34 +457,38 @@ defmodule Beacon.Config do
       upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 
-    allowed_media_accept_types = Keyword.get(opts, :allowed_media_accept_types, @default_media_types)
+    allowed_media_accept_types = get_opt(opts, :allowed_media_accept_types, @default_media_types)
     validate_allowed_media_accept_types!(allowed_media_accept_types)
 
-    assigned_assets = Keyword.get(opts, :assets, [])
+    assigned_assets = get_opt(opts, :assets, [])
     assets = process_assets_config(allowed_media_accept_types, assigned_assets)
 
-    default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
-    extra_asset_fields = Keyword.get(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
+    default_meta_tags = get_opt(opts, :default_meta_tags, [])
+    extra_asset_fields = get_opt(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
-    page_warming = Keyword.get(opts, :page_warming, {:shortest_paths, 10})
+    page_warming = get_opt(opts, :page_warming, {:shortest_paths, 10})
 
-    sitemap_path = Keyword.get(opts, :sitemap_path) || "sitemap.xml"
+    sitemap_path = get_opt(opts, :sitemap_path, "sitemap.xml")
 
-    opts =
-      opts
-      |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
-      |> Keyword.put(:tailwind_css, tailwind_css)
-      |> Keyword.put(:template_formats, template_formats)
-      |> Keyword.put(:lifecycle, lifecycle)
-      |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)
-      |> Keyword.put(:assets, assets)
-      |> Keyword.put(:default_meta_tags, default_meta_tags)
-      |> Keyword.put(:extra_asset_fields, extra_asset_fields)
-      |> Keyword.put(:page_warming, page_warming)
-      |> Keyword.put(:sitemap_path, sitemap_path)
-
-    struct!(__MODULE__, opts)
+    struct!(
+      __MODULE__,
+      Keyword.merge(opts,
+        tailwind_config: ensure_tailwind_config(opts[:tailwind_config]),
+        tailwind_css: tailwind_css,
+        template_formats: template_formats,
+        lifecycle: lifecycle,
+        allowed_media_accept_types: allowed_media_accept_types,
+        assets: assets,
+        default_meta_tags: default_meta_tags,
+        extra_asset_fields: extra_asset_fields,
+        page_warming: page_warming,
+        sitemap_path: sitemap_path
+      )
+    )
   end
+
+  # Get `key` from `opts` keyword, otherwise returns `default` even if the key is present but returns `nil`.
+  defp get_opt(opts, key, default), do: Keyword.get(opts, key) || default
 
   @doc """
   Returns the `Beacon.Config` for `site`.
