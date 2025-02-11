@@ -17,8 +17,20 @@
   - Asset requests now properly follow `accept-encoding` headers
   - Prevent app Endpoints from accepting requests before Beacon is ready to serve them
   - `Beacon.Config` now falls back to the default value when a `nil` option is provided
+  - Live Data `query_params` now defauls to `%{}`
+
+### Docs
+  - Setup Tailwind v3
+  - Updated Deploy to Fly.io guides to properly install tailwind and esbuild
+  - Updated Install guides to use `igniter.install` instead of manually adding deps
+
+### Chores
+  - Relax `:oembed` to `~> 0.4`
+  - Make `:igniter` optional
 
 ### Breaking Changes
+  - Require `esbuild` binary in releases
+  - Require minimum `:igniter` v0.5
   - `beacon.install` - removed command aliases `-s` and `-p`
   - `beacon.gen.site` - removed command aliases `-s` and `-p`
   - `beacon.gen.tailwind_config` - removed command alias `-s`
