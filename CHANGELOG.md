@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 (2024-02-10)
+## 0.4.0-dev
 
 ### Enhancements
   - Added support for user-defined JS Hooks
