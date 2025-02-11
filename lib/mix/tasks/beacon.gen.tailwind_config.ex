@@ -108,7 +108,7 @@ if Code.ensure_loaded?(Igniter) do
         "dev.exs",
         app_name,
         [endpoint, :watchers],
-        [],
+        {:code, Sourceror.parse_string!("[beacon_tailwind_config: {Esbuild, :install_and_run, [:beacon_tailwind_config, ~w(--watch)]}]")},
         updater: fn zipper ->
           Igniter.Code.Keyword.put_in_keyword(
             zipper,

@@ -37,12 +37,9 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.tailwind_config", @opts_my_site)
     |> assert_has_patch("config/dev.exs", """
-    11 11   |       watchers: [
-    12 12   |         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-    13    - |         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
-       13 + |         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]},
-       14 + |         beacon_tailwind_config: {Esbuild, :install_and_run, [:beacon_tailwind_config, ~w(--watch)]}
-    14 15   |       ]
+    10    - |       secret_key_base: secret_key_base
+       10 + |       secret_key_base: secret_key_base,
+       11 + |       watchers: [beacon_tailwind_config: {Esbuild, :install_and_run, [:beacon_tailwind_config, ~w(--watch)]}]
     """)
   end
 
