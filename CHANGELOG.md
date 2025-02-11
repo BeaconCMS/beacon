@@ -3,7 +3,6 @@
 ## 0.4.0 (2024-02-10)
 
 ### Enhancements
-  - Add macro `beacon_sitemap_index` for use in the Router to serve a sitemap index
   - Added support for user-defined JS Hooks
   - Added `Beacon.ProxyEndpoint` for serving multiple domains within a single app
   - `mix beacon.gen.site` now creates a new Endpoint per site
