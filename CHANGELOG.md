@@ -23,6 +23,7 @@
   - Setup Tailwind v3
   - Updated Deploy to Fly.io guides to properly install tailwind and esbuild
   - Updated Install guides to use `igniter.install` instead of manually adding deps
+  - Recipe on how to use external JS libraries in JS hooks
 
 ### Chores
   - Relax `:oembed` to `~> 0.4`
