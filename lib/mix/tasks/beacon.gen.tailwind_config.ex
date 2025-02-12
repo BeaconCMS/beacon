@@ -72,18 +72,6 @@ if Code.ensure_loaded?(Igniter) do
       |> add_esbuild_cmd_into_assets_build_alias()
       |> add_esbuild_cmd_into_assets_deploy_alias()
       |> add_tailwind_config_into_site_config(app_name, site)
-      # TODO: remove this notice after Igniter supports Umbrella config files properly
-      |> Igniter.add_warning("""
-      Notice for Umbrella apps.
-      Ignore if not running 'beacon.gen.tailwind_config' in an Umbrella child app.
-
-      In this version we can't yet find the config files correctly,
-      so it creates new files at ./config in the child app dir,
-      which may not be correct as usually config files in Umbrella apps
-      are located in the root of the project.
-      If that's the case, please insert the suggested changes into the config files
-      at the root of your project and remove the created config/ file from the child app.
-      """)
     end
 
     defp create_tailwind_config(igniter) do

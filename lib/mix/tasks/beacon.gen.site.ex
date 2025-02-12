@@ -390,7 +390,7 @@ if Code.ensure_loaded?(Igniter) do
         &if(Igniter.Project.Config.configures_key?(&1, "config.exs", otp_app, new_endpoint),
           do: &1,
           else:
-            Igniter.update_elixir_file(&1, "config/config.exs", fn zipper ->
+            Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "config.exs"), fn zipper ->
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:signing_salt)
@@ -417,7 +417,7 @@ if Code.ensure_loaded?(Igniter) do
         &if(Igniter.Project.Config.configures_key?(&1, "dev.exs", otp_app, new_endpoint),
           do: &1,
           else:
-            Igniter.update_elixir_file(&1, "config/dev.exs", fn zipper ->
+            Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "dev.exs"), fn zipper ->
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:secret_key_base)

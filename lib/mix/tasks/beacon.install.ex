@@ -83,18 +83,6 @@ if Code.ensure_loaded?(Igniter) do
       |> add_beacon_plugin_formatter()
       |> replace_error_html(router)
       |> maybe_gen_site(options, argv)
-      # TODO: remove this notice after Igniter supports Umbrella config files properly
-      |> Igniter.add_warning("""
-      Notice for Umbrella apps.
-      Ignore if not running 'beacon.install' in an Umbrella child app.
-
-      In this version we can't yet find the config files correctly,
-      so it creates new files at ./config in the child app dir,
-      which may not be correct as usually config files in Umbrella apps
-      are located in the root of the project.
-      If that's the case, please insert the suggested changes into the config files
-      at the root of your project and remove the created config/ file from the child app.
-      """)
     end
 
     defp add_beacon_plugin_formatter(igniter) do

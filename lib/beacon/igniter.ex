@@ -88,5 +88,14 @@ if Code.ensure_loaded?(Igniter) do
       |> Rewrite.Source.diff()
       |> IO.iodata_to_binary()
     end
+
+    def config_file_path(igniter, file_name) do
+      case igniter |> Igniter.Project.Application.config_path() |> Path.split() do
+        [path] -> [path]
+        path -> Enum.drop(path, -1)
+      end
+      |> Path.join()
+      |> Path.join(file_name)
+    end
   end
 end

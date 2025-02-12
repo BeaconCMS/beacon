@@ -85,17 +85,6 @@ if Code.ensure_loaded?(Igniter) do
           |> add_secret_key_base_to_dev_exs(secret_key_base)
           |> update_existing_endpoints(otp_app, existing_endpoints)
           |> configure_proxy_endpoint(otp_app, proxy_endpoint_module_name)
-          |> Igniter.add_warning("""
-          Notice for Umbrella apps.
-          Ignore if not running 'beacon.gen.proxy_endpoint' in an Umbrella child app.
-
-          In this version we can't yet find the config files correctly,
-          so it creates new files at ./config in the child app dir,
-          which may not be correct as usually config files in Umbrella apps
-          are located in the root of the project.
-          If that's the case, please insert the suggested changes into the config files
-          at the root of your project and remove the created config/ file from the child app.
-          """)
       end
     end
 
@@ -120,7 +109,7 @@ if Code.ensure_loaded?(Igniter) do
         signing_salt = \"#{signing_salt}\"
         """
 
-      Igniter.create_or_update_elixir_file(igniter, "config/config.exs", default, fn zipper ->
+      Igniter.create_or_update_elixir_file(igniter, Beacon.Igniter.config_file_path(igniter, "config.exs"), default, fn zipper ->
         case Beacon.Igniter.move_to_variable(zipper, :signing_salt) do
           {:ok, _already_exists} ->
             zipper
@@ -140,7 +129,7 @@ if Code.ensure_loaded?(Igniter) do
         secret_key_base = \"#{secret_key_base}\"
         """
 
-      Igniter.create_or_update_elixir_file(igniter, "config/dev.exs", default, fn zipper ->
+      Igniter.create_or_update_elixir_file(igniter, Beacon.Igniter.config_file_path(igniter, "dev.exs"), default, fn zipper ->
         case Beacon.Igniter.move_to_variable(zipper, :secret_key_base) do
           {:ok, _already_exists} ->
             zipper
