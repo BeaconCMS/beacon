@@ -1,39 +1,53 @@
-if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
-    use Igniter.Mix.Task
+defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint.Docs do
+  @moduledoc false
 
-    require Igniter.Code.Common
+  def short_doc do
+    "Generates a ProxyEndpoint in the current project, enabling Beacon to serve sites at multiple hosts."
+  end
 
-    @example "mix beacon.gen.proxy_endpoint"
-    @shortdoc "Generates a ProxyEndpoint in the current project, enabling Beacon to serve sites at multiple hosts."
+  def example do
+    "mix beacon.gen.proxy_endpoint"
+  end
 
-    @moduledoc """
-    #{@shortdoc}
+  def long_doc do
+    """
+    #{short_doc()}
 
     ## Example
 
     ```bash
-    #{@example}
+    #{example()}
     ```
 
     ## Options
 
     * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
-                                       By default, Beacon will generate a new value and update all existing config to match that value. 
-                                       If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+      By default, Beacon will generate a new value and update all existing config to match that value. 
+      If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
     * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
-                                    By default, Beacon will generate a new value and update all existing config to match that value.
-                                    but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
+      By default, Beacon will generate a new value and update all existing config to match that value.
+      But in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
     * `--session-key` (optional) - The value to use for key in the session config. Defaults to `"_your_app_name_key"`
-    * `--session-same-site` (optional) - Set the cookie session SameSite attributes. Defaults to "Lax"
+    * `--session-same-site` (optional) - Set the cookie session SameSite attributes. Defaults to `"Lax"`
 
     """
+  end
+end
 
-    @doc false
+if Code.ensure_loaded?(Igniter) do
+  defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
+    use Igniter.Mix.Task
+    require Igniter.Code.Common
+
+    @shortdoc "#{__MODULE__.Docs.short_doc()}"
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
         group: :beacon,
-        example: @example,
+        example: __MODULE__.Docs.example(),
         schema: [
           secret_key_base: :string,
           signing_salt: :string,
@@ -44,7 +58,7 @@ if Code.ensure_loaded?(Igniter) do
       }
     end
 
-    @doc false
+    @impl Igniter.Mix.Task
     def igniter(igniter) do
       options = igniter.args.options
       proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
@@ -300,6 +314,24 @@ if Code.ensure_loaded?(Igniter) do
       |> :crypto.strong_rand_bytes()
       |> Base.encode64(padding: false)
       |> binary_part(0, length)
+    end
+  end
+else
+  defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint do
+    @shortdoc "Install `igniter` in order to run Beacon generators."
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    use Mix.Task
+
+    def run(_argv) do
+      Mix.shell().error("""
+      The task 'beacon.gen.proxy_endpoint' requires igniter. Please install igniter and try again.
+
+      For more information, see: https://hexdocs.pm/igniter/readme.html#installation
+      """)
+
+      exit({:shutdown, 1})
     end
   end
 end
