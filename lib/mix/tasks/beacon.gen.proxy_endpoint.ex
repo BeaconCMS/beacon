@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint.Docs do
     ## Options
 
     * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
-      By default, Beacon will generate a new value and update all existing config to match that value. 
+      By default, Beacon will generate a new value and update all existing config to match that value.
       If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
     * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
       By default, Beacon will generate a new value and update all existing config to match that value.
@@ -177,6 +177,8 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp configure_proxy_endpoint(igniter, otp_app, proxy_endpoint_module_name) do
+      pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
+
       igniter
       |> Igniter.Project.Config.configure(
         "config.exs",
@@ -184,7 +186,11 @@ if Code.ensure_loaded?(Igniter) do
         [proxy_endpoint_module_name],
         {:code,
          Sourceror.parse_string!("""
-         [adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: signing_salt]]
+         [
+           adapter: Bandit.PhoenixAdapter,
+           pubsub_server: #{inspect(pubsub)},
+           live_view: [signing_salt: signing_salt]
+         ]
          """)},
         after: &match?({:=, _, [{:signing_salt, _, _}, _]}, &1.node)
       )
