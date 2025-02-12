@@ -36,6 +36,9 @@ if Code.ensure_loaded?(Igniter) do
     @moduledoc __MODULE__.Docs.long_doc()
 
     @impl Igniter.Mix.Task
+    def supports_umbrella?, do: true
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
         example: __MODULE__.Docs.example(),
@@ -46,6 +49,16 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
+      if Mix.Project.umbrella?() do
+        Mix.shell().error("""
+        Running 'mix beacon.gen.tailwind_config' in the root of Umbrella apps is not supported yet.
+
+        Please execute that task inside a child app.
+        """)
+
+        exit({:shutdown, 1})
+      end
+
       options = igniter.args.options
       site = Keyword.fetch!(options, :site) |> String.to_atom()
 

@@ -44,6 +44,9 @@ if Code.ensure_loaded?(Igniter) do
     @moduledoc __MODULE__.Docs.long_doc()
 
     @impl Igniter.Mix.Task
+    def supports_umbrella?, do: true
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
         group: :beacon,
@@ -60,6 +63,16 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
+      if Mix.Project.umbrella?() do
+        Mix.shell().error("""
+        Running 'mix beacon.gen.proxy_endpoint' in the root of Umbrella apps is not supported yet.
+
+        Please execute that task inside a child app.
+        """)
+
+        exit({:shutdown, 1})
+      end
+
       options = igniter.args.options
       proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
 
@@ -85,11 +98,6 @@ if Code.ensure_loaded?(Igniter) do
           |> add_secret_key_base_to_dev_exs(secret_key_base)
           |> update_existing_endpoints(otp_app, existing_endpoints)
           |> configure_proxy_endpoint(otp_app, proxy_endpoint_module_name)
-          |> Igniter.add_notice("""
-          ProxyEndpoint generated successfully.
-
-          This enables your application to serve sites at multiple hosts, each with their own Endpoint.
-          """)
       end
     end
 
@@ -107,7 +115,14 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp add_signing_salt_to_config_exs(igniter, signing_salt) do
-      Igniter.update_elixir_file(igniter, "config/config.exs", fn zipper ->
+      default =
+        """
+        import Config
+
+        signing_salt = \"#{signing_salt}\"
+        """
+
+      Igniter.create_or_update_elixir_file(igniter, Beacon.Igniter.config_file_path(igniter, "config.exs"), default, fn zipper ->
         case Beacon.Igniter.move_to_variable(zipper, :signing_salt) do
           {:ok, _already_exists} ->
             zipper
@@ -120,7 +135,14 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp add_secret_key_base_to_dev_exs(igniter, secret_key_base) do
-      Igniter.update_elixir_file(igniter, "config/dev.exs", fn zipper ->
+      default =
+        """
+        import Config
+
+        secret_key_base = \"#{secret_key_base}\"
+        """
+
+      Igniter.create_or_update_elixir_file(igniter, Beacon.Igniter.config_file_path(igniter, "dev.exs"), default, fn zipper ->
         case Beacon.Igniter.move_to_variable(zipper, :secret_key_base) do
           {:ok, _already_exists} ->
             zipper
@@ -149,7 +171,8 @@ if Code.ensure_loaded?(Igniter) do
            signing_salt: signing_salt,
            same_site: "#{session_same_site}"
          ]
-         """)}
+         """)},
+        after: &match?({:=, _, [{:signing_salt, _, _}, _]}, &1.node)
       )
     end
 
@@ -157,39 +180,35 @@ if Code.ensure_loaded?(Igniter) do
       pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
 
       igniter
-      |> Igniter.update_elixir_file("config/config.exs", fn zipper ->
-        {:ok,
-         zipper
-         |> Beacon.Igniter.move_to_variable!(:signing_salt)
-         |> Igniter.Project.Config.modify_configuration_code(
-           [proxy_endpoint_module_name],
-           otp_app,
-           Sourceror.parse_string!("""
-           [
-             adapter: Bandit.PhoenixAdapter,
-             pubsub_server: #{inspect(pubsub)},
-             live_view: [signing_salt: signing_salt]
-           ]
-           """)
-         )}
-      end)
-      |> Igniter.update_elixir_file("config/dev.exs", fn zipper ->
-        {:ok,
-         zipper
-         |> Beacon.Igniter.move_to_variable!(:secret_key_base)
-         |> Igniter.Project.Config.modify_configuration_code(
-           [proxy_endpoint_module_name],
-           otp_app,
-           Sourceror.parse_string!("""
-           [
-             http: [ip: {127, 0, 0, 1}, port: 4000],
-             check_origin: false,
-             debug_errors: true,
-             secret_key_base: secret_key_base
-           ]
-           """)
-         )}
-      end)
+      |> Igniter.Project.Config.configure(
+        "config.exs",
+        otp_app,
+        [proxy_endpoint_module_name],
+        {:code,
+         Sourceror.parse_string!("""
+         [
+           adapter: Bandit.PhoenixAdapter,
+           pubsub_server: #{inspect(pubsub)},
+           live_view: [signing_salt: signing_salt]
+         ]
+         """)},
+        after: &match?({:=, _, [{:signing_salt, _, _}, _]}, &1.node)
+      )
+      |> Igniter.Project.Config.configure(
+        "dev.exs",
+        otp_app,
+        [proxy_endpoint_module_name],
+        {:code,
+         Sourceror.parse_string!("""
+         [
+           http: [ip: {127, 0, 0, 1}, port: 4000],
+           check_origin: false,
+           debug_errors: true,
+           secret_key_base: secret_key_base
+         ]
+         """)},
+        after: &match?({:=, _, [{:secret_key_base, _, _}, _]}, &1.node)
+      )
       |> Igniter.Project.Config.configure_runtime_env(
         :prod,
         otp_app,
@@ -229,9 +248,16 @@ if Code.ensure_loaded?(Igniter) do
           "config.exs",
           otp_app,
           [endpoint, :live_view, :signing_salt],
-          {:code, Sourceror.parse_string!("signing_salt")}
+          {:code, Sourceror.parse_string!("signing_salt")},
+          after: &match?({:=, _, [{:signing_salt, _, _}, _]}, &1.node)
         )
-        |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :secret_key_base], {:code, Sourceror.parse_string!("secret_key_base")})
+        |> Igniter.Project.Config.configure(
+          "dev.exs",
+          otp_app,
+          [endpoint, :secret_key_base],
+          {:code, Sourceror.parse_string!("secret_key_base")},
+          after: &match?({:=, _, [{:secret_key_base, _, _}, _]}, &1.node)
+        )
         |> Igniter.Project.Config.configure("dev.exs", otp_app, [endpoint, :http], [],
           updater: fn zipper ->
             if port_matches_value?(zipper, 4000) do

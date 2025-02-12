@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Beacon.Install.Docs do
     ```
 
     ```bash
-    "mix beacon.install --site my_site --path /
+    mix beacon.install --site my_site --path /
     ```
 
     ## Options
@@ -49,6 +49,9 @@ if Code.ensure_loaded?(Igniter) do
     @moduledoc __MODULE__.Docs.long_doc()
 
     @impl Igniter.Mix.Task
+    def supports_umbrella?, do: true
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
         group: :beacon,
@@ -61,6 +64,16 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
+      if Mix.Project.umbrella?() do
+        Mix.shell().error("""
+        Running 'mix beacon.install' in the root of Umbrella apps is not supported yet.
+
+        Please execute that task inside a child app.
+        """)
+
+        exit({:shutdown, 1})
+      end
+
       argv = igniter.args.argv
       options = igniter.args.options
 
