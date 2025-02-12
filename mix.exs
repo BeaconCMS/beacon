@@ -80,7 +80,7 @@ defmodule Beacon.MixProject do
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
       {:esbuild, "~> 0.5"},
-      {:igniter, "~> 0.5", optional: true},
+      {:igniter, ">= 0.5.23", optional: true},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
