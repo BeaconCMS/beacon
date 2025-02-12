@@ -1,12 +1,17 @@
-if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
-    use Igniter.Mix.Task
+defmodule Mix.Tasks.Beacon.Gen.TailwindConfig.Docs do
+  @moduledoc false
 
-    @example "mix beacon.gen.tailwind_config"
-    @shortdoc "Generates a new Tailwind config in the format expected by Beacon"
+  def short_doc do
+    "Generates a new Tailwind config in the format expected by Beacon"
+  end
 
-    @moduledoc """
-    #{@shortdoc}
+  def example do
+    "mix beacon.gen.tailwind_config"
+  end
+
+  def long_doc do
+    """
+    #{short_doc()}
 
     It will also update your Phoenix project configuration to bundle the Tailwind configuration.
 
@@ -15,21 +20,31 @@ if Code.ensure_loaded?(Igniter) do
     ## Example
 
     ```bash
-    #{@example}
+    #{example()}
     ```
 
     """
+  end
+end
 
-    @doc false
+if Code.ensure_loaded?(Igniter) do
+  defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
+    use Igniter.Mix.Task
+
+    @shortdoc "#{__MODULE__.Docs.short_doc()}"
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
-        example: @example,
+        example: __MODULE__.Docs.example(),
         schema: [site: :string],
         required: [:site]
       }
     end
 
-    @doc false
+    @impl Igniter.Mix.Task
     def igniter(igniter) do
       options = igniter.args.options
       site = Keyword.fetch!(options, :site) |> String.to_atom()
@@ -142,6 +157,24 @@ if Code.ensure_loaded?(Igniter) do
           )
         end
       )
+    end
+  end
+else
+  defmodule Mix.Tasks.Beacon.Gen.TailwindConfig do
+    @shortdoc "Install `igniter` in order to run Beacon generators."
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    use Mix.Task
+
+    def run(_argv) do
+      Mix.shell().error("""
+      The task 'beacon.gen.tailwind_config' requires igniter. Please install igniter and try again.
+
+      For more information, see: https://hexdocs.pm/igniter/readme.html#installation
+      """)
+
+      exit({:shutdown, 1})
     end
   end
 end

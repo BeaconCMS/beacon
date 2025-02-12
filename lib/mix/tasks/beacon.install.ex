@@ -1,12 +1,17 @@
-if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.Beacon.Install do
-    use Igniter.Mix.Task
+defmodule Mix.Tasks.Beacon.Install.Docs do
+  @moduledoc false
 
-    @example "mix beacon.install --site my_site --path /"
-    @shortdoc "Installs Beacon in a Phoenix LiveView app."
+  def short_doc do
+    "Installs Beacon in a Phoenix LiveView app."
+  end
 
-    @moduledoc """
-    #{@shortdoc}
+  def example do
+    "mix beacon.install"
+  end
+
+  def long_doc do
+    """
+    #{short_doc()}
 
     It will add the necessary dependencies and configuration into your Phoenix LiveView app.
 
@@ -19,32 +24,42 @@ if Code.ensure_loaded?(Igniter) do
     ## Examples
 
     ```bash
-    mix beacon.install
+    #{example()}
     ```
 
     ```bash
-    #{@example}
+    "mix beacon.install --site my_site --path /
     ```
 
     ## Options
 
-    * `--site` or `-s` (optional) - The name of your site. Should not contain special characters nor start with "beacon_"
-    * `--path` or `-p` (optional, defaults to "/") - Where your site will be mounted. Follows the same convention as Phoenix route prefixes.
+    * `--site` (optional) - The name of your site. Should not contain special characters nor start with `"beacon_"`.
+    * `--path` (optional, defaults to `"/"`) - Where your site will be mounted. Follows the same convention as Phoenix route prefixes.
 
     """
+  end
+end
 
-    @doc false
+if Code.ensure_loaded?(Igniter) do
+  defmodule Mix.Tasks.Beacon.Install do
+    use Igniter.Mix.Task
+
+    @shortdoc "#{__MODULE__.Docs.short_doc()}"
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
         group: :beacon,
-        example: @example,
+        example: __MODULE__.Docs.example(),
         composes: ["beacon.gen.site"],
         schema: [site: :string, path: :string],
         defaults: [path: "/"]
       }
     end
 
-    @doc false
+    @impl Igniter.Mix.Task
     def igniter(igniter) do
       argv = igniter.args.argv
       options = igniter.args.options
@@ -81,6 +96,24 @@ if Code.ensure_loaded?(Igniter) do
       else
         igniter
       end
+    end
+  end
+else
+  defmodule Mix.Tasks.Beacon.Install do
+    @shortdoc "Install `igniter` in order to run Beacon generators."
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    use Mix.Task
+
+    def run(_argv) do
+      Mix.shell().error("""
+      The task 'beacon.install' requires igniter. Please install igniter and try again.
+
+      For more information, see: https://hexdocs.pm/igniter/readme.html#installation
+      """)
+
+      exit({:shutdown, 1})
     end
   end
 end
