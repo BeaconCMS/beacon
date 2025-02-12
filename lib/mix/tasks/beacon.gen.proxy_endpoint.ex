@@ -1,6 +1,3 @@
-==> igniter
-Compiling 54 files (.ex)
-Generated igniter app
 defmodule Mix.Tasks.Beacon.Gen.ProxyEndpoint.Docs do
   @moduledoc false
 
