@@ -2,6 +2,8 @@ defmodule Mix.Tasks.Beacon.GenTailwindConfigTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
+  @moduletag :igniter
+
   @opts_my_site ~w(--site my_site)
 
   setup do

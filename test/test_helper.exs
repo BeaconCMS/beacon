@@ -177,5 +177,5 @@ Enum.each(
   &Beacon.BeaconTest.Repo.delete_all/1
 )
 
-ExUnit.start(exclude: [:skip])
+ExUnit.start(exclude: [:skip, :igniter])
 Ecto.Adapters.SQL.Sandbox.mode(Beacon.BeaconTest.Repo, :manual)
