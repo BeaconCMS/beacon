@@ -1317,7 +1317,7 @@ var require_picocolors_browser = __commonJS({
   "node_modules/picocolors/picocolors.browser.js"(exports, module) {
     var x = String;
     var create = function() {
-      return { isColorSupported: false, reset: x, bold: x, dim: x, italic: x, underline: x, inverse: x, hidden: x, strikethrough: x, black: x, red: x, green: x, yellow: x, blue: x, magenta: x, cyan: x, white: x, gray: x, bgBlack: x, bgRed: x, bgGreen: x, bgYellow: x, bgBlue: x, bgMagenta: x, bgCyan: x, bgWhite: x, blackBright: x, redBright: x, greenBright: x, yellowBright: x, blueBright: x, magentaBright: x, cyanBright: x, whiteBright: x, bgBlackBright: x, bgRedBright: x, bgGreenBright: x, bgYellowBright: x, bgBlueBright: x, bgMagentaBright: x, bgCyanBright: x, bgWhiteBright: x };
+      return { isColorSupported: false, reset: x, bold: x, dim: x, italic: x, underline: x, inverse: x, hidden: x, strikethrough: x, black: x, red: x, green: x, yellow: x, blue: x, magenta: x, cyan: x, white: x, gray: x, bgBlack: x, bgRed: x, bgGreen: x, bgYellow: x, bgBlue: x, bgMagenta: x, bgCyan: x, bgWhite: x };
     };
     module.exports = create();
     module.exports.createColors = create;
@@ -1774,13 +1774,6 @@ var require_src = __commonJS({
     }
     var forms = plugin2.withOptions(function(options = { strategy: void 0 }) {
       return function({ addBase, addComponents, theme }) {
-        function resolveChevronColor(color, fallback) {
-          let resolved = theme(color);
-          if (!resolved || resolved.includes("var(")) {
-            return fallback;
-          }
-          return resolved.replace("<alpha-value>", "1");
-        }
         const strategy = options.strategy === void 0 ? ["base", "class"] : [options.strategy];
         const rules = [
           {
@@ -1922,9 +1915,9 @@ var require_src = __commonJS({
             class: [".form-select"],
             styles: {
               "background-image": `url("${svgToDataUri(
-                `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="${resolveChevronColor(
-                  "colors.gray.500",
-                  colors.gray[500]
+                `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="${resolveColor(
+                  theme("colors.gray.500", colors.gray[500]),
+                  "--tw-stroke-opacity"
                 )}" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 8l4 4 4-4"/></svg>`
               )}")`,
               "background-position": `right ${spacing[2]} center`,
@@ -4416,6 +4409,7 @@ var require_styles = __commonJS({
             table: {
               width: "100%",
               tableLayout: "auto",
+              textAlign: "start",
               marginTop: em(32, 16),
               marginBottom: em(32, 16)
             },
@@ -4444,9 +4438,6 @@ var require_styles = __commonJS({
             },
             "tfoot td": {
               verticalAlign: "top"
-            },
-            "th, td": {
-              textAlign: "start"
             },
             "figure > *": {},
             // Required to maintain correct order when merging
@@ -4506,9 +4497,9 @@ var require_lodash3 = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/util/unesc.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/unesc.js
 var require_unesc = __commonJS({
-  "node_modules/postcss-selector-parser/dist/util/unesc.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/unesc.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = unesc;
@@ -4568,9 +4559,9 @@ var require_unesc = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/util/getProp.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/getProp.js
 var require_getProp = __commonJS({
-  "node_modules/postcss-selector-parser/dist/util/getProp.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/getProp.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = getProp;
@@ -4591,9 +4582,9 @@ var require_getProp = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/util/ensureObject.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/ensureObject.js
 var require_ensureObject = __commonJS({
-  "node_modules/postcss-selector-parser/dist/util/ensureObject.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/ensureObject.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = ensureObject;
@@ -4613,9 +4604,9 @@ var require_ensureObject = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/util/stripComments.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/stripComments.js
 var require_stripComments = __commonJS({
-  "node_modules/postcss-selector-parser/dist/util/stripComments.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/stripComments.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = stripComments;
@@ -4639,9 +4630,9 @@ var require_stripComments = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/util/index.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/index.js
 var require_util = __commonJS({
-  "node_modules/postcss-selector-parser/dist/util/index.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/util/index.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports.stripComments = exports.ensureObject = exports.getProp = exports.unesc = void 0;
@@ -4659,9 +4650,9 @@ var require_util = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/node.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/node.js
 var require_node = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/node.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/node.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -4835,9 +4826,9 @@ var require_node = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/types.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/types.js
 var require_types = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/types.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/types.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports.UNIVERSAL = exports.ATTRIBUTE = exports.CLASS = exports.COMBINATOR = exports.COMMENT = exports.ID = exports.NESTING = exports.PSEUDO = exports.ROOT = exports.SELECTOR = exports.STRING = exports.TAG = void 0;
@@ -4868,9 +4859,9 @@ var require_types = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/container.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/container.js
 var require_container = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/container.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/container.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5254,9 +5245,9 @@ var require_container = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/root.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/root.js
 var require_root = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/root.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/root.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5327,9 +5318,9 @@ var require_root = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/selector.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/selector.js
 var require_selector = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/selector.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/selector.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5455,9 +5446,9 @@ var require_cssesc = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/className.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/className.js
 var require_className = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/className.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/className.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5534,9 +5525,9 @@ var require_className = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/comment.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/comment.js
 var require_comment = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/comment.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/comment.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5572,9 +5563,9 @@ var require_comment = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/id.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/id.js
 var require_id = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/id.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/id.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5614,9 +5605,9 @@ var require_id = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/namespace.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/namespace.js
 var require_namespace = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/namespace.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/namespace.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5722,9 +5713,9 @@ var require_namespace = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/tag.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/tag.js
 var require_tag = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/tag.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/tag.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5760,9 +5751,9 @@ var require_tag = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/string.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/string.js
 var require_string = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/string.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/string.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5798,9 +5789,9 @@ var require_string = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/pseudo.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/pseudo.js
 var require_pseudo = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/pseudo.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/pseudo.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -5878,9 +5869,9 @@ var require_browser = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/attribute.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/attribute.js
 var require_attribute = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/attribute.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/attribute.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports.unescapeValue = unescapeValue;
@@ -6243,9 +6234,9 @@ var require_attribute = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/universal.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/universal.js
 var require_universal = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/universal.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/universal.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -6282,9 +6273,9 @@ var require_universal = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/combinator.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/combinator.js
 var require_combinator = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/combinator.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/combinator.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -6320,9 +6311,9 @@ var require_combinator = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/nesting.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/nesting.js
 var require_nesting = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/nesting.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/nesting.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -6359,9 +6350,9 @@ var require_nesting = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/sortAscending.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/sortAscending.js
 var require_sortAscending = __commonJS({
-  "node_modules/postcss-selector-parser/dist/sortAscending.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/sortAscending.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = sortAscending;
@@ -6374,9 +6365,9 @@ var require_sortAscending = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/tokenTypes.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/tokenTypes.js
 var require_tokenTypes = __commonJS({
-  "node_modules/postcss-selector-parser/dist/tokenTypes.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/tokenTypes.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports.combinator = exports.word = exports.comment = exports.str = exports.tab = exports.newline = exports.feed = exports.cr = exports.backslash = exports.bang = exports.slash = exports.doubleQuote = exports.singleQuote = exports.space = exports.greaterThan = exports.pipe = exports.equals = exports.plus = exports.caret = exports.tilde = exports.dollar = exports.closeSquare = exports.openSquare = exports.closeParenthesis = exports.openParenthesis = exports.semicolon = exports.colon = exports.comma = exports.at = exports.asterisk = exports.ampersand = void 0;
@@ -6445,9 +6436,9 @@ var require_tokenTypes = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/tokenize.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/tokenize.js
 var require_tokenize = __commonJS({
-  "node_modules/postcss-selector-parser/dist/tokenize.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/tokenize.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = tokenize;
@@ -6703,9 +6694,9 @@ var require_tokenize = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/parser.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/parser.js
 var require_parser = __commonJS({
-  "node_modules/postcss-selector-parser/dist/parser.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/parser.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -7713,9 +7704,9 @@ var require_parser = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/processor.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/processor.js
 var require_processor = __commonJS({
-  "node_modules/postcss-selector-parser/dist/processor.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/processor.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
@@ -7843,9 +7834,9 @@ var require_processor = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/constructors.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/constructors.js
 var require_constructors = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/constructors.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/constructors.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports.universal = exports.tag = exports.string = exports.selector = exports.root = exports.pseudo = exports.nesting = exports.id = exports.comment = exports.combinator = exports.className = exports.attribute = void 0;
@@ -7915,9 +7906,9 @@ var require_constructors = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/guards.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/guards.js
 var require_guards = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/guards.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/guards.js"(exports) {
     "use strict";
     exports.__esModule = true;
     exports.isNode = isNode;
@@ -7974,9 +7965,9 @@ var require_guards = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/selectors/index.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/index.js
 var require_selectors = __commonJS({
-  "node_modules/postcss-selector-parser/dist/selectors/index.js"(exports) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/selectors/index.js"(exports) {
     "use strict";
     exports.__esModule = true;
     var _types = require_types();
@@ -8000,9 +7991,9 @@ var require_selectors = __commonJS({
   }
 });
 
-// node_modules/postcss-selector-parser/dist/index.js
+// node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/postcss-selector-parser/dist/index.js"(exports, module) {
+  "node_modules/@tailwindcss/typography/node_modules/postcss-selector-parser/dist/index.js"(exports, module) {
     "use strict";
     exports.__esModule = true;
     exports["default"] = void 0;
