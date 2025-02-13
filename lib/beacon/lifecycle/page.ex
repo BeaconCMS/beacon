@@ -43,9 +43,20 @@ defmodule Beacon.Lifecycle.Page do
   @doc """
   Execute all steps for stage `:after_publish_page`.
 
+  It's executed in the same repo transaction, after the `page_event` and `page_snapshot` records are saved into the database.
   """
   @spec after_publish_page(Page.t()) :: Page.t()
   def after_publish_page(page) do
     Lifecycle.execute(__MODULE__, page.site, :after_publish_page, page).output
+  end
+
+  @doc """
+  Execute all steps for stage `:after_unpublish_page`.
+
+  It's executed in the same repo transaction, after the `page_event` record is saved into the database.
+  """
+  @spec after_unpublish_page(Page.t()) :: Page.t()
+  def after_unpublish_page(page) do
+    Lifecycle.execute(__MODULE__, page.site, :after_unpublish_page, page).output
   end
 end

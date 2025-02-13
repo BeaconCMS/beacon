@@ -169,6 +169,7 @@ defmodule Beacon.Config do
           | {:after_create_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:after_update_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:after_publish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:after_unpublish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:upload_asset,
              [
                {identifier :: atom(), fun :: (Ecto.Schema.t(), Beacon.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
@@ -259,7 +260,8 @@ defmodule Beacon.Config do
               render_template: @default_render_template,
               after_create_page: [],
               after_update_page: [],
-              after_publish_page: []
+              after_publish_page: [],
+              after_unpublish_page: []
             ],
             extra_page_fields: [],
             extra_asset_fields: [],
@@ -407,6 +409,7 @@ defmodule Beacon.Config do
           after_publish_page: [
             notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
           ],
+          after_unpublish_page: [],
           upload_asset: [],
         ],
         extra_page_fields: [],
@@ -442,6 +445,7 @@ defmodule Beacon.Config do
       after_create_page: get_in(opts, [:lifecycle, :after_create_page]) || [],
       after_update_page: get_in(opts, [:lifecycle, :after_update_page]) || [],
       after_publish_page: get_in(opts, [:lifecycle, :after_publish_page]) || [],
+      after_unpublish_page: get_in(opts, [:lifecycle, :after_unpublish_page]) || [],
       upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 
