@@ -33,6 +33,8 @@ defmodule Mix.Tasks.Beacon.Gen.Site.Docs do
     * `--host` (optional) - If provided, site will be served on that host.
     * `--port` (optional) - The port to use for http requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
     * `--secure-port` (optional) - The port to use for https requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
+    * `--endpoint` (optional) - The name of the Endpoint Module for your site. If not provided, a default will be generated based on the `site`.
+       For example, `beacon.gen.site --site my_site` will use `MySiteEndpoint`
     * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
        By default, Beacon will generate a new value and update all existing config to match that value.
        If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
@@ -70,6 +72,7 @@ if Code.ensure_loaded?(Igniter) do
           host: :string,
           port: :integer,
           secure_port: :integer,
+          endpoint: :string,
           secret_key_base: :string,
           signing_salt: :string,
           session_key: :string,
@@ -101,6 +104,7 @@ if Code.ensure_loaded?(Igniter) do
 
       port = Keyword.get_lazy(options, :port, fn -> Enum.random(4101..4999) end)
       secure_port = Keyword.get_lazy(options, :secure_port, fn -> Enum.random(8444..8999) end)
+      site_endpoint = Keyword.get_lazy(options, :endpoint, fn -> site_endpoint_module!(igniter, site) end)
 
       otp_app = Igniter.Project.Application.app_name(igniter)
       web_module = Igniter.Libs.Phoenix.web_module(igniter)
@@ -112,13 +116,13 @@ if Code.ensure_loaded?(Igniter) do
       |> add_use_beacon_in_router(router)
       |> add_beacon_pipeline_in_router(router)
       |> mount_site_in_router(router, site, path, host)
-      |> add_site_config_in_config_runtime(site, repo, router)
+      |> add_site_config_in_config_runtime(site, repo, router, site_endpoint)
       |> add_beacon_config_in_app_supervisor(site, repo)
       |> create_proxy_endpoint(argv)
-      |> create_new_endpoint(site, otp_app, web_module)
-      |> configure_new_endpoint(site, host, otp_app, port, secure_port)
+      |> create_site_endpoint(otp_app, web_module, site_endpoint)
+      |> configure_site_endpoint(host, otp_app, port, secure_port, site_endpoint)
       |> update_session_options(otp_app)
-      |> add_new_endpoint_to_application(site, repo)
+      |> add_site_endpoint_to_application(repo, site_endpoint)
       |> Igniter.add_notice("""
       Site #{inspect(site)} generated successfully.
 
@@ -284,9 +288,7 @@ if Code.ensure_loaded?(Igniter) do
       {:scope, scope, [scope_path, updated_opts, rest]}
     end
 
-    defp add_site_config_in_config_runtime(igniter, site, repo, router) do
-      endpoint = new_endpoint_module!(igniter, site)
-
+    defp add_site_config_in_config_runtime(igniter, site, repo, router, site_endpoint) do
       Igniter.Project.Config.configure(
         igniter,
         "runtime.exs",
@@ -294,7 +296,7 @@ if Code.ensure_loaded?(Igniter) do
         [site],
         {:code,
          Sourceror.parse_string!("""
-         [site: :#{site}, repo: #{inspect(repo)}, endpoint: #{inspect(endpoint)}, router: #{inspect(router)}]
+         [site: :#{site}, repo: #{inspect(repo)}, endpoint: #{inspect(site_endpoint)}, router: #{inspect(router)}]
          """)}
       )
     end
@@ -341,12 +343,12 @@ if Code.ensure_loaded?(Igniter) do
 
     defp create_proxy_endpoint(igniter, argv), do: Igniter.compose_task(igniter, "beacon.gen.proxy_endpoint", argv)
 
-    defp create_new_endpoint(igniter, site, otp_app, web_module) do
+    defp create_site_endpoint(igniter, otp_app, web_module, site_endpoint) do
       proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
 
       Igniter.Project.Module.create_module(
         igniter,
-        new_endpoint_module!(igniter, site),
+        site_endpoint,
         """
         use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
 
@@ -392,15 +394,14 @@ if Code.ensure_loaded?(Igniter) do
       )
     end
 
-    defp configure_new_endpoint(igniter, site, host, otp_app, port, secure_port) do
-      new_endpoint = new_endpoint_module!(igniter, site)
+    defp configure_site_endpoint(igniter, host, otp_app, port, secure_port, site_endpoint) do
       error_html = "Beacon.Web.ErrorHTML"
       pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
 
       # TODO: replace the first two steps with `configure/6` once the `:after` option is allowed
       igniter
       |> then(
-        &if(Igniter.Project.Config.configures_key?(&1, "config.exs", otp_app, new_endpoint),
+        &if(Igniter.Project.Config.configures_key?(&1, "config.exs", otp_app, site_endpoint),
           do: &1,
           else:
             Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "config.exs"), fn zipper ->
@@ -408,7 +409,7 @@ if Code.ensure_loaded?(Igniter) do
                zipper
                |> Beacon.Igniter.move_to_variable!(:signing_salt)
                |> Igniter.Project.Config.modify_configuration_code(
-                 [new_endpoint],
+                 [site_endpoint],
                  otp_app,
                  Sourceror.parse_string!("""
                  [
@@ -427,7 +428,7 @@ if Code.ensure_loaded?(Igniter) do
         )
       )
       |> then(
-        &if(Igniter.Project.Config.configures_key?(&1, "dev.exs", otp_app, new_endpoint),
+        &if(Igniter.Project.Config.configures_key?(&1, "dev.exs", otp_app, site_endpoint),
           do: &1,
           else:
             Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "dev.exs"), fn zipper ->
@@ -435,7 +436,7 @@ if Code.ensure_loaded?(Igniter) do
                zipper
                |> Beacon.Igniter.move_to_variable!(:secret_key_base)
                |> Igniter.Project.Config.modify_configuration_code(
-                 [new_endpoint],
+                 [site_endpoint],
                  otp_app,
                  Sourceror.parse_string!("""
                  [
@@ -450,33 +451,33 @@ if Code.ensure_loaded?(Igniter) do
             end)
         )
       )
-      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")},
+      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [site_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")},
         updater: &{:ok, Sourceror.Zipper.replace(&1, host || Sourceror.parse_string!("host"))}
       )
-      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :port], secure_port,
+      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [site_endpoint, :url, :port], secure_port,
         updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("#{secure_port}"))}
       )
-      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [new_endpoint, :url, :scheme], "https",
+      |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [site_endpoint, :url, :scheme], "https",
         updater: &{:ok, Sourceror.Zipper.replace(&1, "https")}
       )
       |> Igniter.Project.Config.configure_runtime_env(
         :prod,
         otp_app,
-        [new_endpoint, :http],
+        [site_endpoint, :http],
         {:code, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]")},
         updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("[ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: #{port}]"))}
       )
       |> Igniter.Project.Config.configure_runtime_env(
         :prod,
         otp_app,
-        [new_endpoint, :secret_key_base],
+        [site_endpoint, :secret_key_base],
         {:code, Sourceror.parse_string!("secret_key_base")},
         updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("secret_key_base"))}
       )
       |> Igniter.Project.Config.configure_runtime_env(
         :prod,
         otp_app,
-        [new_endpoint, :server],
+        [site_endpoint, :server],
         {:code, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")")},
         updater: &{:ok, Sourceror.Zipper.replace(&1, Sourceror.parse_string!("!!System.get_env(\"PHX_SERVER\")"))}
       )
@@ -492,12 +493,12 @@ if Code.ensure_loaded?(Igniter) do
       )
     end
 
-    defp add_new_endpoint_to_application(igniter, site, repo) do
-      Igniter.Project.Application.add_new_child(igniter, new_endpoint_module!(igniter, site), after: [repo, Phoenix.PubSub, Beacon])
+    defp add_site_endpoint_to_application(igniter, repo, site_endpoint) do
+      Igniter.Project.Application.add_new_child(igniter, site_endpoint, after: [repo, Phoenix.PubSub, Beacon])
     end
 
     @doc false
-    def new_endpoint_module!(site) when is_atom(site) do
+    def site_endpoint_module!(site) when is_atom(site) do
       site
       |> to_string()
       |> String.split(~r/[^[:alnum:]]+/)
@@ -506,8 +507,8 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     @doc false
-    def new_endpoint_module!(igniter, site) when is_atom(site) do
-      suffix = new_endpoint_module!(site)
+    def site_endpoint_module!(igniter, site) when is_atom(site) do
+      suffix = site_endpoint_module!(site)
       Igniter.Libs.Phoenix.web_module_name(igniter, suffix)
     end
   end
