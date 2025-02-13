@@ -25,7 +25,7 @@ config :beacon,
   ]
 
 config :beacon, Beacon.BeaconTest.ProxyEndpoint,
-  url: [port: 80],
+  url: [host: "site_proxy.com", port: 80],
   secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
   live_view: [signing_salt: "LKBurgGF"],
   check_origin: false,

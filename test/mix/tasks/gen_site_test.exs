@@ -172,11 +172,11 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
       # update signing salt for host app session_options
       |> assert_has_patch("config/config.exs", """
-         31 + |    signing_salt: signing_salt,
+         35 + |    signing_salt: signing_salt,
       """)
       # update signing salt for existing endpoint
       |> assert_has_patch("config/config.exs", """
-         44 + |  live_view: [signing_salt: signing_salt]
+         48 + |  live_view: [signing_salt: signing_salt]
       """)
     end
 
@@ -194,16 +194,12 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
           7 + |       check_origin: false,
           8 + |       code_reloader: true,
           9 + |       debug_errors: true,
-         10 + |       secret_key_base: secret_key_base,
-         11 + |       watchers: [
-         12 + |         esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-         13 + |         tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
-         14 + |       ]
-         15 + |
+         10 + |       secret_key_base: secret_key_base
+         11 + |
       """)
       # update secret key base for existing endpoint
       |> assert_has_patch("config/dev.exs", """
-         36 + |  secret_key_base: secret_key_base,
+         32 + |  secret_key_base: secret_key_base,
       """)
     end
 

@@ -1,22 +1,29 @@
-if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.Beacon.Gen.Site do
-    use Igniter.Mix.Task
+defmodule Mix.Tasks.Beacon.Gen.Site.Docs do
+  @moduledoc false
 
-    @example "mix beacon.gen.site --site my_site --path / --host my_site.com"
-    @shortdoc "Generates a new Beacon site in the current project."
+  def short_doc do
+    "Generates a new Beacon site in the current project."
+  end
 
-    @test? Beacon.Config.env_test?()
+  def example do
+    "mix beacon.gen.site --site my_site"
+  end
 
-    @moduledoc """
-    #{@shortdoc}
+  def long_doc do
+    """
+    #{short_doc()}
 
     Remember to execute [`mix beacon.install`](https://hexdocs.pm/beacon/Mix.Tasks.Beacon.Install.html)
     first if this is the first site you're generating in your project and you have not installed Beacon yet.
 
-    ## Example
+    ## Examples
 
     ```bash
-    #{@example}
+    #{example()}
+    ```
+
+    ```bash
+    mix beacon.gen.site --site my_site --path / --host my_site.com
     ```
 
     ## Options
@@ -27,21 +34,36 @@ if Code.ensure_loaded?(Igniter) do
     * `--port` (optional) - The port to use for http requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
     * `--secure-port` (optional) - The port to use for https requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
     * `--secret-key-base` (optional) - The value to use for secret_key_base in your app config.
-                                       By default, Beacon will generate a new value and update all existing config to match that value.
-                                       If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
+       By default, Beacon will generate a new value and update all existing config to match that value.
+       If you don't want this behavior, copy the secret_key_base from your app config and provide it here.
     * `--signing-salt` (optional) - The value to use for signing_salt in your app config.
-                                    By default, Beacon will generate a new value and update all existing config to match that value.
-                                    but in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
+       By default, Beacon will generate a new value and update all existing config to match that value.
+       But in order to avoid connection errors for existing clients, it's recommened to copy the `signing_salt` from your app config and provide it here.
     * `--session-key` (optional) - The value to use for key in the session config. Defaults to `"_your_app_name_key"`
     * `--session-same-site` (optional) - Set the cookie session SameSite attributes. Defaults to "Lax"
 
     """
+  end
+end
 
-    @doc false
+if Code.ensure_loaded?(Igniter) do
+  defmodule Mix.Tasks.Beacon.Gen.Site do
+    use Igniter.Mix.Task
+
+    @shortdoc "#{__MODULE__.Docs.short_doc()}"
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    @test? Beacon.Config.env_test?()
+
+    @impl Igniter.Mix.Task
+    def supports_umbrella?, do: true
+
+    @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
         group: :beacon,
-        example: @example,
+        example: __MODULE__.Docs.example(),
         schema: [
           site: :string,
           path: :string,
@@ -58,8 +80,18 @@ if Code.ensure_loaded?(Igniter) do
       }
     end
 
-    @doc false
+    @impl Igniter.Mix.Task
     def igniter(igniter) do
+      if Mix.Project.umbrella?() do
+        Mix.shell().error("""
+        Running 'mix beacon.gen.site' in the root of Umbrella apps is not supported yet.
+
+        Please execute that task inside a child app.
+        """)
+
+        exit({:shutdown, 1})
+      end
+
       options = igniter.args.options
       argv = igniter.args.argv
 
@@ -371,7 +403,7 @@ if Code.ensure_loaded?(Igniter) do
         &if(Igniter.Project.Config.configures_key?(&1, "config.exs", otp_app, new_endpoint),
           do: &1,
           else:
-            Igniter.update_elixir_file(&1, "config/config.exs", fn zipper ->
+            Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "config.exs"), fn zipper ->
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:signing_salt)
@@ -398,7 +430,7 @@ if Code.ensure_loaded?(Igniter) do
         &if(Igniter.Project.Config.configures_key?(&1, "dev.exs", otp_app, new_endpoint),
           do: &1,
           else:
-            Igniter.update_elixir_file(&1, "config/dev.exs", fn zipper ->
+            Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "dev.exs"), fn zipper ->
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:secret_key_base)
@@ -411,11 +443,7 @@ if Code.ensure_loaded?(Igniter) do
                    check_origin: false,
                    code_reloader: true,
                    debug_errors: true,
-                   secret_key_base: secret_key_base,
-                   watchers: [
-                     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-                     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
-                   ]
+                   secret_key_base: secret_key_base
                  ]
                  """)
                )}
@@ -481,6 +509,24 @@ if Code.ensure_loaded?(Igniter) do
     def new_endpoint_module!(igniter, site) when is_atom(site) do
       suffix = new_endpoint_module!(site)
       Igniter.Libs.Phoenix.web_module_name(igniter, suffix)
+    end
+  end
+else
+  defmodule Mix.Tasks.Beacon.Gen.Site do
+    @shortdoc "Install `igniter` in order to run Beacon generators."
+
+    @moduledoc __MODULE__.Docs.long_doc()
+
+    use Mix.Task
+
+    def run(_argv) do
+      Mix.shell().error("""
+      The task 'beacon.gen.site' requires igniter. Please install igniter and try again.
+
+      For more information, see: https://hexdocs.pm/igniter/readme.html#installation
+      """)
+
+      exit({:shutdown, 1})
     end
   end
 end

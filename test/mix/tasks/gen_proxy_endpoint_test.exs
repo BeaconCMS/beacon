@@ -72,25 +72,28 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
     """)
     # add proxy endpoint config
     |> assert_has_patch("config/config.exs", """
-       12 + |config :test, TestWeb.ProxyEndpoint, adapter: Bandit.PhoenixAdapter, live_view: [signing_salt: signing_salt]
-       13 + |
+    10 12   |config :test,
+       13 + |       TestWeb.ProxyEndpoint,
+       14 + |       adapter: Bandit.PhoenixAdapter,
+       15 + |       pubsub_server: Test.PubSub,
+       16 + |       live_view: [signing_salt: signing_salt]
     """)
     # add session options config
     |> assert_has_patch("config/config.exs", """
-    10 14   |config :test,
-    11 15   |  ecto_repos: [Test.Repo],
-    12    - |  generators: [timestamp_type: :utc_datetime]
-       16 + |  generators: [timestamp_type: :utc_datetime],
-       17 + |  session_options: [
-       18 + |    store: :cookie,
-       19 + |    key: "_test_key",
-       20 + |    signing_salt: signing_salt,
-       21 + |    same_site: "Lax"
-       22 + |  ]
+        18 + |config :test,
+     11 19   |  ecto_repos: [Test.Repo],
+     12    - |  generators: [timestamp_type: :utc_datetime]
+        20 + |  generators: [timestamp_type: :utc_datetime],
+        21 + |  session_options: [
+        22 + |    store: :cookie,
+        23 + |    key: "_test_key",
+        24 + |    signing_salt: signing_salt,
+        25 + |    same_site: "Lax"
+        26 + |  ]
     """)
     # update fallback endpoint signing salt
     |> assert_has_patch("config/config.exs", """
-       33 + |  live_view: [signing_salt: signing_salt]
+       37 + |  live_view: [signing_salt: signing_salt]
     """)
   end
 

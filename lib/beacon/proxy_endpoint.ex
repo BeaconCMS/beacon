@@ -28,8 +28,7 @@ defmodule Beacon.ProxyEndpoint do
       plug :proxy
 
       defp robots(%{path_info: ["robots.txt"]} = conn, _opts) do
-        sitemap_index_url =
-          String.Chars.URI.to_string(%URI{scheme: Atom.to_string(conn.scheme), host: conn.host, port: conn.port, path: "/sitemap_index.xml"})
+        sitemap_index_url = String.Chars.URI.to_string(%{Beacon.ProxyEndpoint.public_uri(__MODULE__, conn.host) | path: "/sitemap_index.xml"})
 
         conn
         |> accepts(["txt"])
@@ -125,12 +124,32 @@ defmodule Beacon.ProxyEndpoint do
     end
   end
 
+  @doc false
+  def public_uri(endpoint, host) do
+    url = endpoint.config(:url)
+    https = endpoint.config(:https)
+    http = endpoint.config(:http)
+
+    {scheme, port} =
+      cond do
+        https -> {"https", https[:port] || 443}
+        http -> {"http", http[:port] || 80}
+        true -> {"http", 80}
+      end
+
+    scheme = url[:scheme] || scheme
+    host = host_to_binary(host || "localhost")
+    port = port_to_integer(url[:port] || port)
+
+    %URI{scheme: scheme, host: host, port: port}
+  end
+
   # https://github.com/phoenixframework/phoenix/blob/2614f2a0d95a3b4b745bdf88ccd9f3b7f6d5966a/lib/phoenix/endpoint/supervisor.ex#L386
   @doc """
   Similar to `public_url/1` but returns a `%URI{}` instead.
   """
   @spec public_uri(Beacon.Types.Site.t()) :: URI.t()
-  def public_uri(site) do
+  def public_uri(site) when is_atom(site) do
     site_endpoint = Beacon.Config.fetch!(site).endpoint
     proxy_endpoint = site_endpoint.proxy_endpoint()
     router = Beacon.Config.fetch!(site).router
@@ -166,7 +185,7 @@ defmodule Beacon.ProxyEndpoint do
   Scheme and port are fetched from the Proxy Endpoint to resolve the URL correctly
   """
   @spec public_url(Beacon.Types.Site.t()) :: String.t()
-  def public_url(site) do
+  def public_url(site) when is_atom(site) do
     site
     |> public_uri()
     |> String.Chars.URI.to_string()

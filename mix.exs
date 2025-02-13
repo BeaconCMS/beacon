@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.3.3"
+  @version "0.4.0"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -80,7 +80,7 @@ defmodule Beacon.MixProject do
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
       {:esbuild, "~> 0.5"},
-      {:igniter, "~> 0.5", optional: true},
+      {:igniter, ">= 0.5.24", optional: true},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
