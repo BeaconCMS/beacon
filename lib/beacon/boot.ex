@@ -50,20 +50,23 @@ defmodule Beacon.Boot do
   end
 
   defp warm_pages_async(task_supervisor, config) do
-    pages =
-      case config.page_warming do
-        {:shortest_paths, count} ->
-          Logger.info("Beacon.Boot warming pages - #{count} shortest paths")
-          Beacon.Content.list_published_pages(config.site, sort: {:length, :path}, limit: count)
+    Logger.info("Beacon.Boot page warming disabled")
+    pages = []
 
-        {:specify_paths, paths} ->
-          Logger.info("Beacon.Boot warming pages - specified paths")
-          Beacon.Content.list_published_pages_for_paths(config.site, paths)
-
-        :none ->
-          Logger.info("Beacon.Boot page warming disabled")
-          []
-      end
+    # pages =
+    #   case config.page_warming do
+    #     {:shortest_paths, count} ->
+    #       Logger.info("Beacon.Boot warming pages - #{count} shortest paths")
+    #       Beacon.Content.list_published_pages(config.site, sort: {:length, :path}, limit: count)
+    #
+    #     {:specify_paths, paths} ->
+    #       Logger.info("Beacon.Boot warming pages - specified paths")
+    #       Beacon.Content.list_published_pages_for_paths(config.site, paths)
+    #
+    #     :none ->
+    #       Logger.info("Beacon.Boot page warming disabled")
+    #       []
+    #   end
 
     Enum.map(pages, fn page ->
       Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
