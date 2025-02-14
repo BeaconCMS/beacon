@@ -15,7 +15,7 @@ defmodule Beacon.Migrations.V004 do
     create_if_not_exists table(:beacon_actors_roles, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :actor_id, :binary_id, null: false
-      add :role_id, references(:beacon_roles), null: false
+      add :role_id, references(:beacon_roles, type: :binary_id), null: false
 
       timestamps(type: :utc_datetime_usec)
     end
