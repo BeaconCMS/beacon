@@ -144,6 +144,12 @@ Supervisor.start_link(
                {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after publish page"})
                {:cont, page}
              end
+           ],
+           after_unpublish_page: [
+             maybe_unpublish_page: fn page ->
+               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after unpublish page"})
+               {:cont, page}
+             end
            ]
          ]
        ],
