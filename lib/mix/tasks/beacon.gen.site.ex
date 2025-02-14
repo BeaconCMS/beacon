@@ -386,7 +386,6 @@ if Code.ensure_loaded?(Igniter) do
         igniter,
         new_endpoint_module!(igniter, site),
         contents,
-        # maybe need to wrap contents?
         fn zipper -> {:ok, Igniter.Code.Common.replace_code(zipper, contents)} end
       )
     end
