@@ -63,7 +63,7 @@ if Code.ensure_loaded?(Igniter) do
       site = Keyword.fetch!(options, :site) |> String.to_atom()
 
       app_name = Igniter.Project.Application.app_name(igniter)
-      endpoint = Mix.Tasks.Beacon.Gen.Site.new_endpoint_module!(igniter, site)
+      endpoint = Mix.Tasks.Beacon.Gen.Site.site_endpoint_module!(igniter, site)
 
       igniter
       |> create_tailwind_config()
