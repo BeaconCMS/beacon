@@ -86,7 +86,10 @@ defmodule Beacon.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:bandit, "~> 1.0", only: :dev, optional: true},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.29", only: :docs},
+      {:makeup_elixir, "~> 1.0.1 or ~> 1.1", only: :docs},
+      {:makeup_eex, "~> 2.0", only: :docs},
+      {:makeup_syntect, "~> 0.1", only: :docs},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
       {:bypass, "~> 2.1", only: :test},
       {:phx_new, "~> 1.7", only: :test, runtime: false}
