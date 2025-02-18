@@ -714,7 +714,7 @@ defmodule Beacon.Content do
   in the module documentation.
   """
   @doc type: :pages
-  @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
+  @spec publish_pages([Page.t()], keyword()) :: {:ok, [Page.t()]}
   def publish_pages(pages, opts \\ []) when is_list(pages) do
     publish = fn page ->
       with :ok <- authorize(page.site, :publish_page, opts) do
@@ -764,8 +764,8 @@ defmodule Beacon.Content do
   in the module documentation.
   """
   @doc type: :pages
-  @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def unpublish_page(%Page{} = page) do
+  @spec unpublish_page(Page.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def unpublish_page(%Page{} = page, opts \\ []) do
     with :ok <- authorize(page.site, :unpublish_page, opts) do
       case Beacon.Config.fetch!(page.site).mode do
         :live ->
