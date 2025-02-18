@@ -172,11 +172,11 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
       # update signing salt for host app session_options
       |> assert_has_patch("config/config.exs", """
-         35 + |    signing_salt: signing_salt,
+         39 + |    signing_salt: signing_salt,
       """)
       # update signing salt for existing endpoint
       |> assert_has_patch("config/config.exs", """
-         48 + |  live_view: [signing_salt: signing_salt]
+         52 + |  live_view: [signing_salt: signing_salt]
       """)
     end
 
