@@ -111,11 +111,24 @@ defmodule Beacon.Auth do
   @callback list_actors() :: [actor_tuple()]
 
   @doc """
+  Specifies the identity of the site owner who should always have unconditional access.
+  """
+  @callback owner() :: actor_tuple()
+
+  @doc """
   Check if an action is allowed.
   """
   @spec authorize(Site.t(), atom(), keyword()) :: :ok | {:error, :not_authorized}
   def authorize(site, action, opts) do
-    if Keyword.get(opts, :auth, true) do
+    {owner_id, _label} = get_owner(site)
+
+    owner? =
+      case opts[:actor] do
+        {^owner_id, _label} -> true
+        _otherwise -> false
+      end
+
+    if not owner? and Keyword.get(opts, :auth, true) do
       do_authorize(site, opts[:actor], action)
     else
       :ok
@@ -147,13 +160,21 @@ defmodule Beacon.Auth do
     Config.fetch!(site).auth_module.actor_from_session(session)
   end
 
-  defp get_role(site, actor) do
+  @doc """
+  Uses a site's `:auth_module` from `Beacon.Config` to find the owner.
+  """
+  @spec get_owner(Site.t()) :: actor_tuple()
+  def get_owner(site) do
+    Config.fetch!(site).auth_module.owner()
+  end
+
+  defp get_role(site, {actor_id, _label}) do
     repo(site).one(
       from ar in ActorRole,
         join: r in Role,
         on: ar.role_id == r.id,
         where: ar.site == ^site,
-        where: ar.actor_id == ^actor,
+        where: ar.actor_id == ^actor_id,
         select: r
     )
   end
@@ -187,7 +208,8 @@ defmodule Beacon.Auth do
   """
   @spec create_role(map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
   def create_role(attrs, opts \\ []) do
-    changeset = Role.changeset(%Role{}, attrs)
+    IO.inspect(attrs, label: "attrs")
+    changeset = Role.changeset(%Role{}, attrs) |> IO.inspect(label: "changeset", structs: false)
     site = Changeset.get_field(changeset, :site)
 
     with :ok <- authorize(site, :create_role, opts) do

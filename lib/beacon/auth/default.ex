@@ -4,9 +4,9 @@ defmodule Beacon.Auth.Default do
   """
   @behaviour Beacon.Auth
 
-  # TODO: setup default auth for site owner
-
-  def actor_from_session(_session), do: nil
+  def actor_from_session(_session), do: {:__beacon_default_owner__, "Default Owner"}
 
   def list_actors, do: []
+
+  def owner, do: {:__beacon_default_owner__, "Default Owner"}
 end
