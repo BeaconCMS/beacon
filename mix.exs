@@ -79,7 +79,7 @@ defmodule Beacon.MixProject do
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
-      {:esbuild, "~> 0.5"},
+      esbuild_version(),
       {:igniter, ">= 0.5.24", optional: true},
 
       # Dev, Test, Docs
@@ -102,6 +102,14 @@ defmodule Beacon.MixProject do
       path = System.get_env(env_path) -> {dep, path: path, override: true}
       :default -> {dep, requirement}
     end
+  end
+
+  # TODO: remove this check after we start requiring min OTP 25
+  # https://github.com/phoenixframework/esbuild/commit/83b786bb91438c496f7d917d98ac9c72e3b210c6
+  if System.otp_release() >= "25" do
+    defp esbuild_version, do: {:esbuild, "~> 0.5"}
+  else
+    defp esbuild_version, do: {:esbuild, "~> 0.5 and < 0.9.0"}
   end
 
   defp aliases do
