@@ -189,6 +189,10 @@ if Code.ensure_loaded?(Igniter) do
          [
            adapter: Bandit.PhoenixAdapter,
            pubsub_server: #{inspect(pubsub)},
+           render_errors: [
+             formats: [html: Beacon.Web.ErrorHTML],
+             layout: false
+           ],
            live_view: [signing_salt: signing_salt]
          ]
          """)},
