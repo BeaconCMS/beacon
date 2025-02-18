@@ -42,7 +42,6 @@ endpoint          |    |         page path
 
 See [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) and [Phoenix.Router](https://hexdocs.pm/phoenix/Phoenix.Router.html) for added context.
 
-
 ### URL Matching
 
 A common technique to [host multiple sites](https://hexdocs.pm/beacon/multiple-domains-hosting.html) (hosts) in the same application is matching the `:host` in the scope:

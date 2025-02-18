@@ -95,20 +95,34 @@ defmodule Beacon do
       Enum.reduce(sites, [], fn opts, acc ->
         config = Beacon.Config.new(opts)
 
-        # we only care about starting sites that are valid and reachable
-        cond do
-          Beacon.Config.env_test?() ->
-            [site_child_spec(config) | acc]
+        if Beacon.Config.env_test?() do
+          [site_child_spec(config) | acc]
+        else
+          # we only care about starting sites that are valid and reachable
+          case Beacon.Router.reachable(config) do
+            {:ok, _} ->
+              [site_child_spec(config) | acc]
 
-          Beacon.Router.reachable?(config) ->
-            [site_child_spec(config) | acc]
+            {:error, {endpoint, host}} ->
+              Logger.warning("""
+              site #{config.site} is not reachable on host #{host} and will not be started
 
-          :else ->
-            Logger.warning(
-              "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshooting.html"
-            )
+              Check both the Router and #{inspect(endpoint)} configuratation
 
-            acc
+              See https://hexdocs.pm/beacon/troubleshooting.html for more info.
+              """)
+
+              acc
+
+            :error ->
+              Logger.warning("""
+              site #{config.site} is not reachable or is invalid, it will not be started
+
+              See https://hexdocs.pm/beacon/troubleshooting.html for more info.
+              """)
+
+              acc
+          end
         end
       end)
 
