@@ -208,8 +208,7 @@ defmodule Beacon.Auth do
   """
   @spec create_role(map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
   def create_role(attrs, opts \\ []) do
-    IO.inspect(attrs, label: "attrs")
-    changeset = Role.changeset(%Role{}, attrs) |> IO.inspect(label: "changeset", structs: false)
+    changeset = Role.changeset(%Role{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
     with :ok <- authorize(site, :create_role, opts) do
@@ -252,7 +251,6 @@ defmodule Beacon.Auth do
       :update_page,
       :publish_page,
       :unpublish_page,
-      :update_page,
       :create_stylesheet,
       :update_stylesheet,
       :create_component,
