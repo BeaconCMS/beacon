@@ -385,7 +385,7 @@ defmodule Beacon.MediaLibrary do
   Returns the path of a media `file_name` previously uploaded to the Media Library.
 
   It will append the site prefix, if any, and the private path used by Beacon to serve media files.
-  So this function is preferable instead of using a fixed URL.
+  So this function is preferable instead of using a fixed path.
 
   ## Example
 
@@ -400,6 +400,15 @@ defmodule Beacon.MediaLibrary do
 
   @doc """
   Returns the full URL of a media `file_name` previously uploaded to the Media Library.
+
+  It will append the site prefix, if any, and the private path used by Beacon to serve media files.
+  So this function is preferable instead of using a fixed URL.
+
+  ## Example
+
+      iex> media_path(:my_site, "logo.webp")
+      "https://mysite.com/__beacon_media__/logo.webp"
+
   """
   @spec media_url(Site.t(), String.t()) :: String.t()
   def media_url(site, file_name) when is_atom(site) and is_binary(file_name) do
