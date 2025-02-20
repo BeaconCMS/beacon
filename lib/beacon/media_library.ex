@@ -78,7 +78,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking asset changes.
 
-  ## Examples
+  ## Example
 
       iex> change_asset(asset)
       %Ecto.Changeset{data: %Asset{}}
@@ -94,7 +94,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Returns an `%Ecto.Changeset{}` for updating an Asset's `:usage_tag` and/or `:source_id`.
 
-  ## Examples
+  ## Example
 
       iex> change_asset(asset)
       %Ecto.Changeset{data: %Asset{}}
@@ -211,7 +211,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Gets a single asset by `clauses`.
 
-  ## Examples
+  ## Example
 
       iex> get_asset_by(site, file_name: "logo.webp")
       %Asset{}
@@ -328,7 +328,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Soft deletes a asset.
 
-  ## Examples
+  ## Example
 
       iex> soft_delete(asset)
       {:ok, %Asset{}}
@@ -379,5 +379,39 @@ defmodule Beacon.MediaLibrary do
     :erpc.call(node, File, :stat, [path])
   rescue
     error -> {:error, error}
+  end
+
+  @doc """
+  Returns the path of a media `file_name` previously uploaded to the Media Library.
+
+  It will append the site prefix, if any, and the private path used by Beacon to serve media files.
+  So this function is preferable instead of using a fixed path.
+
+  ## Example
+
+      iex> media_path(:my_site, "logo.webp")
+      "/__beacon_media__/logo.webp"
+
+  """
+  @spec media_path(Site.t(), String.t()) :: String.t()
+  def media_path(site, file_name) when is_atom(site) and is_binary(file_name) do
+    Beacon.apply_mfa(site, Beacon.Loader.fetch_routes_module(site), :beacon_media_path, [file_name])
+  end
+
+  @doc """
+  Returns the full URL of a media `file_name` previously uploaded to the Media Library.
+
+  It will append the site prefix, if any, and the private path used by Beacon to serve media files.
+  So this function is preferable instead of using a fixed URL.
+
+  ## Example
+
+      iex> media_path(:my_site, "logo.webp")
+      "https://mysite.com/__beacon_media__/logo.webp"
+
+  """
+  @spec media_url(Site.t(), String.t()) :: String.t()
+  def media_url(site, file_name) when is_atom(site) and is_binary(file_name) do
+    Beacon.apply_mfa(site, Beacon.Loader.fetch_routes_module(site), :beacon_media_url, [file_name])
   end
 end

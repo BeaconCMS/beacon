@@ -71,11 +71,6 @@ Application.put_env(:beacon, DemoWeb.Endpoint,
   ]
 )
 
-defmodule DemoWeb.ErrorView do
-  use Phoenix.View, root: ""
-  def render(_, _), do: "error"
-end
-
 defmodule DemoWeb.Router do
   use Phoenix.Router
   use Beacon.Router

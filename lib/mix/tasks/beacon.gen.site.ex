@@ -346,51 +346,54 @@ if Code.ensure_loaded?(Igniter) do
     defp create_site_endpoint(igniter, otp_app, web_module, site_endpoint) do
       proxy_endpoint_module_name = Igniter.Libs.Phoenix.web_module_name(igniter, "ProxyEndpoint")
 
-      Igniter.Project.Module.create_module(
+      contents = """
+      use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
+
+      @session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)
+
+      def proxy_endpoint, do: #{inspect(proxy_endpoint_module_name)}
+
+      # socket /live must be in the proxy endpoint
+
+      # Serve at "/" the static files from "priv/static" directory.
+      #
+      # You should set gzip to true if you are running phx.digest
+      # when deploying your static files in production.
+      plug Plug.Static,
+        at: "/",
+        from: #{inspect(otp_app)},
+        gzip: false,
+        # robots.txt is served by Beacon
+        only: ~w(assets fonts images favicon.ico)
+
+      # Code reloading can be explicitly enabled under the
+      # :code_reloader configuration of your endpoint.
+      if code_reloading? do
+        socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+        plug Phoenix.LiveReloader
+        plug Phoenix.CodeReloader
+        plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{inspect(otp_app)}
+      end
+
+      plug Plug.RequestId
+      plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :multipart, :json],
+        pass: ["*/*"],
+        json_decoder: Phoenix.json_library()
+
+      plug Plug.MethodOverride
+      plug Plug.Head
+      plug Plug.Session, @session_options
+      plug #{inspect(web_module)}.Router
+      """
+
+      Igniter.Project.Module.find_and_update_or_create_module(
         igniter,
         site_endpoint,
-        """
-        use Phoenix.Endpoint, otp_app: #{inspect(otp_app)}
-
-        @session_options Application.compile_env!(#{inspect(otp_app)}, :session_options)
-
-        def proxy_endpoint, do: #{inspect(proxy_endpoint_module_name)}
-
-        # socket /live must be in the proxy endpoint
-
-        # Serve at "/" the static files from "priv/static" directory.
-        #
-        # You should set gzip to true if you are running phx.digest
-        # when deploying your static files in production.
-        plug Plug.Static,
-          at: "/",
-          from: #{inspect(otp_app)},
-          gzip: false,
-          # robots.txt is served by Beacon
-          only: ~w(assets fonts images favicon.ico)
-
-        # Code reloading can be explicitly enabled under the
-        # :code_reloader configuration of your endpoint.
-        if code_reloading? do
-          socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-          plug Phoenix.LiveReloader
-          plug Phoenix.CodeReloader
-          plug Phoenix.Ecto.CheckRepoStatus, otp_app: #{inspect(otp_app)}
-        end
-
-        plug Plug.RequestId
-        plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-
-        plug Plug.Parsers,
-          parsers: [:urlencoded, :multipart, :json],
-          pass: ["*/*"],
-          json_decoder: Phoenix.json_library()
-
-        plug Plug.MethodOverride
-        plug Plug.Head
-        plug Plug.Session, @session_options
-        plug #{inspect(web_module)}.Router
-        """
+        contents,
+        fn zipper -> {:ok, Igniter.Code.Common.replace_code(zipper, contents)} end
       )
     end
 

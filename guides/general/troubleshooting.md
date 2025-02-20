@@ -27,18 +27,57 @@ to get it installed or updated. It's important to install a recent Tailwind vers
 Depending on the [deployment topology](https://hexdocs.pm/beacon/deployment-topologies.html) and your router configuration,
 a site prefix can never match and it will never receive requests.
 
-That's is not necessarily an error if you have multiple sites in the same project
-and each scope is filtering requests on the `:host` option.
-But it may indicate:
+That's is not necessarily an error if you have multiple sites in the same project and is using the router scope `:host` option
+to selectively start sites based on the current host.
 
-1. An invalid configuration, as a preceding route matching the prefix
-that was supposed to be handled by this site, or an invalid `:host` value.
+The most common causes for this error are: 
 
-2. Missing `use Beacon.Router` and/or missing `beacon_site` in your
-app's router file.
+1. Mismatch between the Endpoint host/ip config and the route scope `:host` 
 
-Note that if you're using `:host` on the scope and running in `localhost`,
-consider adding `"localhost"` to the list of allowed hosts.
+Suppose your Endpoint configuration is:
+
+```elixir
+config :my_app,
+       MyAppWeb.BlogEndpoint,
+       http: [ip: {127, 0, 0, 1}, port: 4586],
+       ...
+```
+
+And in your Router:
+
+```elixir
+scope "/blog", alias: MyAppWeb, host: ["blog.mysite.com"] do
+  pipe_through [:browser, :beacon]
+  beacon_site "/", site: :blog
+end
+```
+
+Note that `beacon_site` can only match requests coming from `"blog.mysite.com"` but
+your site endpoint is binding to localhost, so it will never match. To fix it just
+add `"localhost"` in the `:host` scope list:
+
+```elixir
+scope "/blog", alias: MyAppWeb, host: ["blog.mysite.com", "localhost"] do
+```
+
+2. Incorrect routes order
+
+The macro `beacon_site` is a catch-all route defined as `/*` so you have to place
+the most specific routes first, eg:
+
+```elixir
+scope "/", alias: MyAppWeb, host: ["blog.mysite.com"] do
+  pipe_through [:browser, :beacon]
+  beacon_site "/blog", site: :blog
+  beacon_site "/", site: :my_site
+end
+```
+
+The opposite would not work, the `:blog` would never match if placed after the `:my_site` site.
+
+3. Missing `use Beacon.Router` and/or missing `beacon_site` in your app's router file.
+
+Misconfiguration may also cause that error.
 
 Also check the [Beacon.Router](https://hexdocs.pm/beacon/Beacon.Router.html) for more information.
 
