@@ -496,17 +496,14 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     @doc false
-    def site_endpoint_module!(site) when is_atom(site) do
-      site
-      |> to_string()
-      |> String.split(~r/[^[:alnum:]]+/)
-      |> Enum.map_join("", &String.capitalize/1)
-      |> Kernel.<>("Endpoint")
-    end
-
-    @doc false
     def site_endpoint_module!(igniter, site) when is_atom(site) do
-      suffix = site_endpoint_module!(site)
+      suffix =
+        site
+        |> to_string()
+        |> String.split(~r/[^[:alnum:]]+/)
+        |> Enum.map_join("", &String.capitalize/1)
+        |> Kernel.<>("Endpoint")
+
       Igniter.Libs.Phoenix.web_module_name(igniter, suffix)
     end
   end
