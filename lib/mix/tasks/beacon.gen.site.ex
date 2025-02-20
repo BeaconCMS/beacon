@@ -104,7 +104,12 @@ if Code.ensure_loaded?(Igniter) do
 
       port = Keyword.get_lazy(options, :port, fn -> Enum.random(4101..4999) end)
       secure_port = Keyword.get_lazy(options, :secure_port, fn -> Enum.random(8444..8999) end)
-      site_endpoint = Keyword.get_lazy(options, :endpoint, fn -> site_endpoint_module!(igniter, site) end)
+
+      site_endpoint =
+        options
+        |> Keyword.get_lazy(:endpoint, fn -> site_endpoint_module!(igniter, site) end)
+        |> List.wrap()
+        |> Module.concat()
 
       otp_app = Igniter.Project.Application.app_name(igniter)
       web_module = Igniter.Libs.Phoenix.web_module(igniter)
