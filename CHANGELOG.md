@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Enhancements
+  - Added new lifecycle stage `:after_unpublish_page` to execute hooks after a page is unpublished
+  - Added `MediaLibrary.url_for_asset/2` to return URL of an asset given the site and the file name
+  - `gen.site` added option `--endpoint` to overwrite the generated site endpoint module name
+
+### Fixes
+  - `gen.site` doesn't fail on pre-existing endpoint module
+  - `gen.site` doesn't remove existing beacon runtime config
+  - `gen.proxy_endpoint` add missing `:render_errors` config for ProxyEndpoint
+  - Do not call compile-time endpoint functions during boot
+  - Pin esbuild version up to 0.8.x on OTP v24 and below (esbuild 0.0 requires OTP v25)
+  - Do not crash `url_for/1`, `url_for/2`, or `urls_for/1` when provider is invalid
+  - Fix rendering mermaid blocks on docs
+
+### Chores
+  - Updated `ex_doc` to generate better docs
+
 ## 0.4.0 (2025-02-12)
 
 ### Enhancements
