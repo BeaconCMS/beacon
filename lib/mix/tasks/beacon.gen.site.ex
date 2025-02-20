@@ -289,16 +289,11 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp add_site_config_in_config_runtime(igniter, site, repo, router, site_endpoint) do
-      Igniter.Project.Config.configure(
-        igniter,
-        "runtime.exs",
-        :beacon,
-        [site],
-        {:code,
-         Sourceror.parse_string!("""
-         [site: :#{site}, repo: #{inspect(repo)}, endpoint: #{inspect(site_endpoint)}, router: #{inspect(router)}]
-         """)}
-      )
+      igniter
+      |> Igniter.Project.Config.configure("runtime.exs", :beacon, [site, :site], {:code, Sourceror.parse_string!(":#{site}")})
+      |> Igniter.Project.Config.configure("runtime.exs", :beacon, [site, :repo], {:code, Sourceror.parse_string!(inspect(repo))})
+      |> Igniter.Project.Config.configure("runtime.exs", :beacon, [site, :endpoint], {:code, Sourceror.parse_string!(inspect(site_endpoint))})
+      |> Igniter.Project.Config.configure("runtime.exs", :beacon, [site, :router], {:code, Sourceror.parse_string!(inspect(router))})
     end
 
     defp add_beacon_config_in_app_supervisor(igniter, site, repo) do
