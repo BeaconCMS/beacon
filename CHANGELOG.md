@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 (2025-02-20)
 
 ### Enhancements
   - Added new lifecycle stage `:after_unpublish_page` to execute hooks after a page is unpublished
