@@ -2,7 +2,16 @@ defmodule Beacon.MediaLibrary.Provider.S3 do
   @moduledoc """
   Store assets in S3 using the `ex_aws` library.
 
-  All files are stored in the same bucket under the same level.
+  All files are stored in the same bucket under the same level,
+  and the bucket name must be present in the `:ex_aws` config:
+
+      config :ex_aws, s3: [bucket: "my_bucket"]
+
+  And then in your site config, register this provider for each mime type you want to use it:
+
+      assets: [
+        {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3]]}
+      ]
 
   """
 
