@@ -68,4 +68,34 @@ defmodule Beacon.MediaLibraryTest do
       assert MediaLibrary.count_assets(default_site(), query: "image_a") == 1
     end
   end
+
+  describe "url_for/1" do
+    setup do
+      metadata = beacon_upload_metadata_fixture(file_name: "image.png")
+      [asset: MediaLibrary.upload(metadata)]
+    end
+
+    test "returns url for the first registered provider", %{asset: asset} do
+      assert MediaLibrary.url_for(asset) == "http://site_a.com/__beacon_media__/image.webp"
+    end
+
+    test "returns nil if asset is invalid" do
+      refute MediaLibrary.url_for(:noop)
+    end
+  end
+
+  describe "url_for/2" do
+    setup do
+      metadata = beacon_upload_metadata_fixture(file_name: "image.png")
+      [asset: MediaLibrary.upload(metadata)]
+    end
+
+    test "returns url for registered providers", %{asset: asset} do
+      assert MediaLibrary.url_for(asset, "repo") == "http://site_a.com/__beacon_media__/image.webp"
+    end
+
+    test "returns nil if provider is not registered", %{asset: asset} do
+      refute MediaLibrary.url_for(asset, "noop")
+    end
+  end
 end

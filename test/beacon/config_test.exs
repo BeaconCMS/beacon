@@ -96,6 +96,7 @@ defmodule Beacon.ConfigTest do
                  after_create_page: [],
                  after_update_page: [],
                  after_publish_page: [],
+                 after_unpublish_page: [],
                  upload_asset: [{:thumbnail, _}]
                ]
              } = Beacon.Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo, lifecycle: [load_template: []])

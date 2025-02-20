@@ -709,18 +709,25 @@ defmodule Beacon.Content do
   @doc """
   Unpublish `page`.
 
-  Note that page will be removed from your site
-  and it will return error 404 for new requests.
+  The page will be removed from your site and it will return error 404 for new requests.
+
+  This operation is serialized.
   """
   @doc type: :pages
   @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def unpublish_page(%Page{} = page) do
-    transact(repo(page), fn ->
-      with {:ok, _event} <- create_page_event(page, "unpublished") do
-        :ok = Beacon.PubSub.page_unpublished(page)
-        {:ok, page}
-      end
-    end)
+    case Beacon.Config.fetch!(page.site).mode do
+      :live ->
+        GenServer.call(name(page.site), {:unpublish_page, page})
+
+      :testing ->
+        page
+        |> insert_unpublished_page()
+        |> tap(fn {:ok, page} -> clear_cache(page.site, page.id) end)
+
+      :manual ->
+        insert_unpublished_page(page)
+    end
   end
 
   @doc false
@@ -4444,6 +4451,18 @@ defmodule Beacon.Content do
   end
 
   @doc false
+  def handle_call({:unpublish_page, page}, _from, config) do
+    case insert_unpublished_page(page) do
+      {:ok, page} ->
+        :ok = Beacon.PubSub.page_unpublished(page)
+        {:reply, {:ok, page}, config}
+
+      error ->
+        {:reply, error, config}
+    end
+  end
+
+  @doc false
   def handle_call({:publish_layout, layout}, _from, config) do
     case do_publish_layout(layout) do
       {:ok, layout} -> {:reply, {:ok, layout}, config}
@@ -4507,6 +4526,15 @@ defmodule Beacon.Content do
            {:ok, event} <- create_page_event(page, "published"),
            {:ok, _snapshot} <- create_page_snapshot(page, event),
            %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  defp insert_unpublished_page(page) do
+    transact(repo(page), fn ->
+      with {:ok, _event} <- create_page_event(page, "unpublished"),
+           %Page{} = page <- Lifecycle.Page.after_unpublish_page(page) do
         {:ok, page}
       end
     end)

@@ -392,6 +392,23 @@ defmodule Beacon.ContentTest do
       assert %{title: "updated after publish page"} = Beacon.Content.get_page(page.site, page.id)
     end
 
+    test "lifecycle after_unpublish_page" do
+      layout = beacon_layout_fixture(site: :lifecycle_test)
+
+      page =
+        Content.create_page!(%{
+          site: "lifecycle_test",
+          path: "/",
+          title: "home",
+          template: "<p>page</p>",
+          layout_id: layout.id
+        })
+
+      Content.unpublish_page(page)
+
+      assert %{title: "updated after unpublish page"} = Beacon.Content.get_page(page.site, page.id)
+    end
+
     test "save raw_schema" do
       layout = beacon_layout_fixture(site: :raw_schema_test)
 

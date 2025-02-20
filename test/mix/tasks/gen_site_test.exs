@@ -172,11 +172,11 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
       # update signing salt for host app session_options
       |> assert_has_patch("config/config.exs", """
-         35 + |    signing_salt: signing_salt,
+         39 + |    signing_salt: signing_salt,
       """)
       # update signing salt for existing endpoint
       |> assert_has_patch("config/config.exs", """
-         48 + |  live_view: [signing_salt: signing_salt]
+         52 + |  live_view: [signing_salt: signing_salt]
       """)
     end
 
@@ -313,6 +313,55 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_creates("lib/test_web/my_site_endpoint.ex", """
       defmodule TestWeb.MySiteEndpoint do
+        use Phoenix.Endpoint, otp_app: :test
+
+        @session_options Application.compile_env!(:test, :session_options)
+
+        def proxy_endpoint, do: TestWeb.ProxyEndpoint
+
+        # socket /live must be in the proxy endpoint
+
+        # Serve at "/" the static files from "priv/static" directory.
+        #
+        # You should set gzip to true if you are running phx.digest
+        # when deploying your static files in production.
+        plug Plug.Static,
+          at: "/",
+          from: :test,
+          gzip: false,
+          # robots.txt is served by Beacon
+          only: ~w(assets fonts images favicon.ico)
+
+        # Code reloading can be explicitly enabled under the
+        # :code_reloader configuration of your endpoint.
+        if code_reloading? do
+          socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+          plug Phoenix.LiveReloader
+          plug Phoenix.CodeReloader
+          plug Phoenix.Ecto.CheckRepoStatus, otp_app: :test
+        end
+
+        plug Plug.RequestId
+        plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+        plug Plug.Parsers,
+          parsers: [:urlencoded, :multipart, :json],
+          pass: ["*/*"],
+          json_decoder: Phoenix.json_library()
+
+        plug Plug.MethodOverride
+        plug Plug.Head
+        plug Plug.Session, @session_options
+        plug TestWeb.Router
+      end
+      """)
+    end
+
+    test "accepts custom site endpoint module name" do
+      phoenix_project()
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--endpoint TestWeb.CustomEndpoint))
+      |> assert_creates("lib/test_web/custom_endpoint.ex", """
+      defmodule TestWeb.CustomEndpoint do
         use Phoenix.Endpoint, otp_app: :test
 
         @session_options Application.compile_env!(:test, :session_options)

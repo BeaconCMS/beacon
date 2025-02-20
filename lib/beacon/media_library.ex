@@ -78,7 +78,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking asset changes.
 
-  ## Examples
+  ## Example
 
       iex> change_asset(asset)
       %Ecto.Changeset{data: %Asset{}}
@@ -94,7 +94,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Returns an `%Ecto.Changeset{}` for updating an Asset's `:usage_tag` and/or `:source_id`.
 
-  ## Examples
+  ## Example
 
       iex> change_asset(asset)
       %Ecto.Changeset{data: %Asset{}}
@@ -108,33 +108,60 @@ defmodule Beacon.MediaLibrary do
   end
 
   @doc """
-  Returns a URL for a given asset.
+  Returns the URL of the first registered provider for a given `asset`
 
-  If multiple URLs exist due to various providers, only the first will be returned.
+  Note that if multiple URLs exist due to various providers, only the first will be returned.
   """
-  @spec url_for(nil) :: nil
-  @spec url_for(Asset.t()) :: String.t()
-  def url_for(nil), do: nil
-
-  def url_for(asset) do
-    {_, url} =
+  @spec url_for(Asset.t()) :: String.t() | nil
+  def url_for(%Asset{} = asset) do
+    asset =
       asset
       |> providers_for()
       |> hd()
       |> get_url_for(asset)
 
-    url
+    case asset do
+      nil -> nil
+      {_, url} -> url
+    end
   end
 
-  @doc """
-  Uses the given `provider` to determine the URL for a given asset.
-  """
-  @spec url_for(nil, atom()) :: nil
-  @spec url_for(Asset.t(), atom()) :: String.t()
-  def url_for(nil, _), do: nil
+  def url_for(_), do: nil
 
-  def url_for(asset, provider_key) do
-    {_, url} =
+  @doc """
+  Returns the URL for the given `asset` registered on provider under `provider_key`.
+
+  ## Example
+
+  Given a site config with a registered provider:
+
+  ```elixir
+  [
+    site: :my_site,
+    assets: [
+      {"image/*", [providers: [MyApp.Provider.CDN], validations: []]}
+    ],
+    ...
+  ]
+  ```
+
+  And that provider registers itself under the `"cnd"` key:
+
+  ```elixir
+  defmodule MyApp.Provider.CDN do
+    def provider_key, do: "cdn"
+  end
+  ```
+
+  Then you can fetch the URL from that provider with:
+
+      iex> url_for(asset, "cdn")
+      "https://assets.mysite.com/logo-361ae598-4150-4ce5-814d-363c2afd1993.webp"
+
+  """
+  @spec url_for(Asset.t(), String.t()) :: String.t() | nil
+  def url_for(%Asset{} = asset, provider_key) do
+    asset =
       asset
       |> providers_for()
       |> Enum.find(fn provider ->
@@ -142,8 +169,13 @@ defmodule Beacon.MediaLibrary do
       end)
       |> get_url_for(asset)
 
-    url
+    case asset do
+      nil -> nil
+      {_, url} -> url
+    end
   end
+
+  def url_for(_, _), do: nil
 
   @doc """
   Returns a list of all URLs to the given Asset.
@@ -151,10 +183,11 @@ defmodule Beacon.MediaLibrary do
   The number of URLs depends on how many providers are configured for the media type.
   """
   @spec urls_for(Asset.t()) :: [String.t()]
-  def urls_for(asset) do
+  def urls_for(%Asset{} = asset) do
     asset
     |> providers_for()
     |> Enum.map(&get_url_for(&1, asset))
+    |> Enum.reject(&is_nil/1)
   end
 
   @doc """
@@ -191,6 +224,8 @@ defmodule Beacon.MediaLibrary do
     |> Keyword.fetch!(:providers)
   end
 
+  defp get_url_for(nil = _provider, _asset), do: nil
+
   defp get_url_for({provider, config}, asset),
     do: {provider.provider_key(), provider.url_for(asset, config)}
 
@@ -211,7 +246,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Gets a single asset by `clauses`.
 
-  ## Examples
+  ## Example
 
       iex> get_asset_by(site, file_name: "logo.webp")
       %Asset{}
@@ -328,7 +363,7 @@ defmodule Beacon.MediaLibrary do
   @doc """
   Soft deletes a asset.
 
-  ## Examples
+  ## Example
 
       iex> soft_delete(asset)
       {:ok, %Asset{}}
@@ -379,5 +414,24 @@ defmodule Beacon.MediaLibrary do
     :erpc.call(node, File, :stat, [path])
   rescue
     error -> {:error, error}
+  end
+
+  @doc """
+  Returns the URL of a media `file_name` previously uploaded to the Media Library.
+
+  This function is a convenience for `get_asset_by/2` and `url_for/1`,
+  see their docs for more info.
+
+  ## Example
+
+      iex> url_for_asset(:my_site, "logo.webp")
+      "https://mysite.com/__beacon_media__/logo.webp"
+
+  """
+  @spec url_for_asset(Site.t(), String.t()) :: String.t()
+  def url_for_asset(site, file_name) when is_atom(site) and is_binary(file_name) do
+    site
+    |> get_asset_by(file_name: file_name)
+    |> url_for()
   end
 end
