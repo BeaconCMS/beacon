@@ -5,14 +5,14 @@ defmodule Beacon.Auth.ActorRole do
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
-          actor_id: any(),
+          actor_id: String.t(),
           role_id: Ecto.UUID.t(),
           role: Beacon.Auth.Role.t(),
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
         }
 
-  schema "actors_roles" do
+  schema "beacon_actors_roles" do
     field :actor_id, :string
 
     belongs_to :role, Beacon.Auth.Role

@@ -180,6 +180,24 @@ defmodule Beacon.Auth do
   end
 
   @doc """
+  Returns all ActorRoles for a list of Actor IDs.
+
+  This can be helpful for fetching Role IDs in bulk with only one query.
+
+  Accepts option `preload: :role` to include the full Role schema instead of just the ID.
+  """
+  @spec get_actor_roles(Site.t(), [String.t()]) :: [ActorRole.t()]
+  def get_actor_roles(site, ids, opts \\ []) do
+    preload = opts[:preload] || []
+
+    repo(site).all(
+      from ar in ActorRole,
+        where: ar.actor_id in ^ids,
+        preload: ^preload
+    )
+  end
+
+  @doc """
   Creates a changeset with the given role and optional map of changes.
   """
   @spec change_role(Role.t(), map()) :: Changeset.t()

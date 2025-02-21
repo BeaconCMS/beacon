@@ -4,9 +4,9 @@ defmodule Beacon.Auth.Default do
   """
   @behaviour Beacon.Auth
 
-  def actor_from_session(_session), do: {:__beacon_default_owner__, "Default Owner"}
+  def actor_from_session(_session), do: {"__beacon_default_owner__", "Default Owner"}
 
   def list_actors, do: []
 
-  def owner, do: {:__beacon_default_owner__, "Default Owner"}
+  def owner, do: {"__beacon_default_owner__", "Default Owner"}
 end
