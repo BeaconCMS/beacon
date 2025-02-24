@@ -27,7 +27,7 @@ defmodule Beacon.Content do
   Many functions in this module require authorization by default. This is done via the `:actor` option:
 
   ```
-  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...}, actor: "some-identifying-id")
+  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...}, actor: {"some-identifying-id", "First Lastname"})
   {:ok, %Page{}}
   ```
 
@@ -35,7 +35,7 @@ defmodule Beacon.Content do
   and prevent the function from running if the role should not have access:
 
   ```
-  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...},, actor: "user-with-read-only-access")
+  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...},, actor: {"user-with-read-only-access", "John Smith"})
   {:error, :not_authorized}
   ```
 
@@ -1199,25 +1199,27 @@ defmodule Beacon.Content do
 
   Returns `{:ok, stylesheet}` if successful, otherwise `{:error, changeset}`.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
       iex> create_stylesheet(%{
-        site: :my_site,
-        name: "override",
-        content: ~S|
-        @media (min-width: 768px) {
-          .md\:text-red-400 {
-            color: red;
+          site: :my_site,
+          name: "override",
+          content: ~S|
+          @media (min-width: 768px) {
+            .md\:text-red-400 {
+              color: red;
+            }
           }
-        }
-        |
-      })
+          |
+        },
+        actor: {"some-user-id", "Some User"}
+      )
       {:ok, %Stylesheet{}}
 
   Note that escape characters must be preserved, so you should use `~S` to avoid issues.
-
-  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
-  in the module documentation.
   """
   @doc type: :stylesheets
   @spec create_stylesheet(map(), keyword()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t() | :not_authorized}
@@ -1240,16 +1242,18 @@ defmodule Beacon.Content do
   ## Example
 
       iex> create_stylesheet!(%{
-        site: :my_site,
-        name: "override",
-        content: ~S|
-        @media (min-width: 768px) {
-          .md\:text-red-400 {
-            color: red;
+          site: :my_site,
+          name: "override",
+          content: ~S|
+          @media (min-width: 768px) {
+            .md\:text-red-400 {
+              color: red;
+            }
           }
-        }
-        |
-      })
+          |
+        },
+        actor: {"some-user-id", "Some User"}
+      )
       %Stylesheet{}
 
   Note that escape characters must be preserved, so you should use `~S` to avoid issues.
@@ -1275,7 +1279,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> update_stylesheet(stylesheet, %{name: new_value}, actor: "my-user-id)
+      iex> update_stylesheet(stylesheet, %{name: new_value}, actor: {"some-user-id", "Some User"})
       {:ok, %Stylesheet{}}
 
   """
@@ -1346,32 +1350,41 @@ defmodule Beacon.Content do
 
   Returns `{:ok, js_hook}` if successful, otherwise `{:error, changeset}`.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
       iex> code = "export const ConsoleLogHook = {mounted() {console.log(\"foo\")}}"
-      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code})
+      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code}, actor: {"some-user-id", "Some User"})
       {:ok, %JSHook{}}
 
   """
   @doc type: :js_hooks
-  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def create_js_hook(attrs) do
+  @spec create_js_hook(map(), keyword()) :: {:ok, JSHook.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_js_hook(attrs, opts \\ []) do
     changeset = JSHook.changeset(%JSHook{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    with :ok <- authorize(site, :create_js_hook, opts) do
+      changeset
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    end
   end
 
   @doc """
   Creates a JS Hook, raising an error if unsuccessful.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :js_hooks
-  @spec create_js_hook!(map()) :: JSHook.t()
-  def create_js_hook!(attrs) do
-    case create_js_hook(attrs) do
+  @spec create_js_hook!(map(), keyword()) :: JSHook.t()
+  def create_js_hook!(attrs, opts \\ []) do
+    case create_js_hook(attrs, opts) do
       {:ok, js_hook} -> js_hook
+      {:error, :not_authorized} -> raise "failed to create JS Hook: not authorized"
       {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
     end
   end
@@ -1433,25 +1446,35 @@ defmodule Beacon.Content do
 
   @doc """
   Updates a JS Hook.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :js_hooks
-  @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def update_js_hook(js_hook, attrs) do
-    js_hook
-    |> JSHook.changeset(attrs)
-    |> repo(js_hook).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  @spec update_js_hook(JSHook.t(), map(), keyword()) :: {:ok, JSHook.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_js_hook(js_hook, attrs, opts \\ []) do
+    with :ok <- authorize(js_hook.site, :update_js_hook, opts) do
+      js_hook
+      |> JSHook.changeset(attrs)
+      |> repo(js_hook).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    end
   end
 
   @doc """
   Deletes a JS Hook.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :js_hooks
-  @spec delete_js_hook(JSHook.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def delete_js_hook(js_hook) do
-    js_hook
-    |> repo(js_hook).delete()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  @spec delete_js_hook(JSHook.t(), keyword()) :: {:ok, JSHook.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_js_hook(js_hook, opts \\ []) do
+    with :ok <- authorize(js_hook.site, :delete_js_hook, opts) do
+      js_hook
+      |> repo(js_hook).delete()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    end
   end
 
   # COMPONENTS

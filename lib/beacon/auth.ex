@@ -319,7 +319,10 @@ defmodule Beacon.Auth do
       :delete_info_handler,
       :create_role,
       :update_role,
-      :delete_role
+      :delete_role,
+      :create_js_hook,
+      :update_js_hook,
+      :delete_js_hook
     ]
   end
 end

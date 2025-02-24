@@ -576,7 +576,7 @@ defmodule Beacon.Test.Fixtures do
       }
       """
     })
-    |> Content.create_js_hook!()
+    |> Content.create_js_hook!(auth: false)
     |> tap(&Loader.load_runtime_js(&1.site))
   end
 end

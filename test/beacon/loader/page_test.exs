@@ -87,7 +87,7 @@ defmodule Beacon.Loader.PageTest do
       page = beacon_published_page_fixture(path: "/1")
       Beacon.Content.create_variant_for_page(page, %{name: "variant_a", weight: 1, template: "<div>variant_a</div>"})
       Beacon.Content.create_variant_for_page(page, %{name: "variant_b", weight: 2, template: "<div>variant_b</div>"})
-      Beacon.Content.publish_page(page)
+      Beacon.Content.publish_page(page, auth: false)
       module = Loader.fetch_page_module(page.site, page.id)
 
       assert [
