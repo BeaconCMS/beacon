@@ -8,5 +8,5 @@ defmodule Beacon.Auth.Default do
 
   def list_actors, do: []
 
-  def owner, do: {"__beacon_default_owner__", "Default Owner"}
+  def owners, do: [{"__beacon_default_owner__", "Default Owner"}]
 end

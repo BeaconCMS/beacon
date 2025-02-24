@@ -111,28 +111,31 @@ defmodule Beacon.Auth do
   @callback list_actors() :: [actor_tuple()]
 
   @doc """
-  Specifies the identity of the site owner who should always have unconditional access.
+  Specifies the identities of site owners who should always have unconditional access.
   """
-  @callback owner() :: actor_tuple()
+  @callback owners() :: [actor_tuple()]
 
   @doc """
   Check if an action is allowed.
   """
   @spec authorize(Site.t(), atom(), keyword()) :: :ok | {:error, :not_authorized}
   def authorize(site, action, opts) do
-    {owner_id, _label} = get_owner(site)
-
-    owner? =
-      case opts[:actor] do
-        {^owner_id, _label} -> true
-        _otherwise -> false
-      end
-
-    if not owner? and Keyword.get(opts, :auth, true) do
+    if Keyword.get(opts, :auth, true) and not owner?(site, opts[:actor]) do
       do_authorize(site, opts[:actor], action)
     else
       :ok
     end
+  end
+
+  defp owner?(site, actor) do
+    site
+    |> get_owners()
+    |> Enum.any?(fn {owner_id, _} ->
+      case actor do
+        {^owner_id, _label} -> true
+        _otherwise -> false
+      end
+    end)
   end
 
   defp do_authorize(site, actor, action) do
@@ -161,11 +164,11 @@ defmodule Beacon.Auth do
   end
 
   @doc """
-  Uses a site's `:auth_module` from `Beacon.Config` to find the owner.
+  Uses a site's `:auth_module` from `Beacon.Config` to find the owners.
   """
-  @spec get_owner(Site.t()) :: actor_tuple()
-  def get_owner(site) do
-    Config.fetch!(site).auth_module.owner()
+  @spec get_owners(Site.t()) :: [actor_tuple()]
+  def get_owners(site) do
+    Config.fetch!(site).auth_module.owners()
   end
 
   defp get_role(site, {actor_id, _label}) do
@@ -173,10 +176,26 @@ defmodule Beacon.Auth do
       from ar in ActorRole,
         join: r in Role,
         on: ar.role_id == r.id,
-        where: ar.site == ^site,
+        where: r.site == ^site,
         where: ar.actor_id == ^actor_id,
         select: r
     )
+  end
+
+  @doc """
+  A blank ActorRole struct.
+  """
+  @spec new_actor_role() :: ActorRole.t()
+  def new_actor_role do
+    %ActorRole{}
+  end
+
+  @doc """
+  Creates a changeset for the given ActorRole.
+  """
+  @spec change_actor_role(ActorRole.t(), map()) :: Changeset.t()
+  def change_actor_role(actor_role, attrs \\ %{}) do
+    ActorRole.changeset(actor_role, attrs)
   end
 
   @doc """
