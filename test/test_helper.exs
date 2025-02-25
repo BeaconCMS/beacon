@@ -41,7 +41,10 @@ Supervisor.start_link(
          mode: :testing,
          endpoint: Beacon.BeaconTest.EndpointB,
          router: Beacon.BeaconTest.Router,
-         repo: Beacon.BeaconTest.Repo
+         repo: Beacon.BeaconTest.Repo,
+         hosts: [
+           local: "local.mysite.com"
+         ]
        ],
        [
          site: :no_routes,

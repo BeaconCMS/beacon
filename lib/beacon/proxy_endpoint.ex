@@ -144,6 +144,35 @@ defmodule Beacon.ProxyEndpoint do
     %URI{scheme: scheme, host: host, port: port}
   end
 
+  @doc """
+  Returns the `:host` configuration for `site` to be used in the app config.
+
+  ## Examples
+
+      iex> url_host(:my_site, "prod")
+      "mysite.com"
+
+      iex> url_host(:my_site, "local")
+      "local.mysite.com"
+
+  The host is fetched from the `:hosts` config in your site config,
+  see `Beacon.Config` for more info.
+
+  Defaults to `"localhost"` if no host is found.
+  """
+  @spec url_host(Beacon.Types.Site.t(), beacon_env :: String.t() | atom()) :: String.t()
+  def url_host(site, beacon_env)
+
+  def url_host(site, beacon_env) when is_atom(site) and is_binary(beacon_env) do
+    beacon_env = String.to_existing_atom(beacon_env)
+    url_host(site, beacon_env)
+  end
+
+  def url_host(site, beacon_env) when is_atom(site) and is_atom(beacon_env) do
+    hosts = Beacon.Config.fetch!(site).hosts
+    Keyword.get(hosts, beacon_env) || "localhost"
+  end
+
   # https://github.com/phoenixframework/phoenix/blob/2614f2a0d95a3b4b745bdf88ccd9f3b7f6d5966a/lib/phoenix/endpoint/supervisor.ex#L386
   @doc """
   Similar to `public_url/1` but returns a `%URI{}` instead.

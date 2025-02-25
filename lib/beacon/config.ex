@@ -63,6 +63,20 @@ defmodule Beacon.Config do
   @type mode :: :live | :testing | :manual
 
   @typedoc """
+  The host per env used to generate the URLs for the site.
+
+  ## Example
+
+      [
+        local: "local.mysite.com",
+        prod: "mysite.com"
+      ]
+
+  When the site is deployed with the env var `BEACON_HOST=prod` it will generate URLs as `"mysite.com"`.
+  """
+  @type hosts :: [{env :: atom(), host :: binary()}]
+
+  @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
   """
   @type css_compiler :: module()
@@ -205,6 +219,7 @@ defmodule Beacon.Config do
           endpoint: endpoint(),
           router: router(),
           repo: repo(),
+          hosts: hosts(),
           mode: mode(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
@@ -240,6 +255,7 @@ defmodule Beacon.Config do
             endpoint: nil,
             router: nil,
             repo: nil,
+            hosts: [],
             mode: :live,
             # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
             # authorization_source: Beacon.Authorization.DefaultPolicy,
@@ -273,6 +289,7 @@ defmodule Beacon.Config do
           | {:endpoint, endpoint()}
           | {:router, router()}
           | {:repo, repo()}
+          | {:hosts, hosts()}
           | {:mode, mode()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
@@ -300,6 +317,8 @@ defmodule Beacon.Config do
     * `:router` - `t:router/0` (required)
 
     * `:repo` - `t:repo/0` (required)
+
+    * `:hosts` - `t:hosts/0` (optional). Defaults to `[]`.
 
     * `:mode` - `t:mode/0` (optional). Defaults to `:live`.
 
@@ -343,6 +362,11 @@ defmodule Beacon.Config do
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
+        hosts: [
+          local: "local.mysite.com",
+          qa: "qa.mysite.com",
+          prod: "mysite.com"
+        ],
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js"),
         tailwind_css: Path.join([Application.app_dir(:my_app, "assets"), "css", "app.css"]),
         template_formats: [
@@ -372,6 +396,11 @@ defmodule Beacon.Config do
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
+        hosts: [
+          local: "local.mysite.com",
+          qa: "qa.mysite.com",
+          prod: "mysite.com"
+        ],
         mode: :live,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
@@ -428,6 +457,8 @@ defmodule Beacon.Config do
     opts[:router] || raise ConfigError, "missing required option :router"
     ensure_repo(opts[:repo])
 
+    hosts = get_opt(opts, :hosts, [])
+
     tailwind_css = get_opt(opts, :tailwind_css, Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css"))
 
     template_formats =
@@ -463,6 +494,7 @@ defmodule Beacon.Config do
     struct!(
       __MODULE__,
       Keyword.merge(opts,
+        hosts: hosts,
         tailwind_config: ensure_tailwind_config(opts[:tailwind_config]),
         tailwind_css: tailwind_css,
         template_formats: template_formats,
