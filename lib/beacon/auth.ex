@@ -22,6 +22,8 @@ defmodule Beacon.Auth do
     * `actor_from_session/1` - a function which receives the user's session data, and returns a tuple
       containing a unique ID and a human-readable label
     * `list_actors/0` - a function to return a list of actors, in the same format as above: `{id, label}`
+    * `owners/0` - a function to return a list of actor tuples which will be given full access to the site,
+      bypassing authorization checks entirely
 
   This allows you to integrate Beacon with any type of authentication system your app might require.
 
@@ -43,6 +45,10 @@ defmodule Beacon.Auth do
     def list_actors do
       Repo.all(from u in MyApp.Accounts.User, select: {u.id, u.email})
     end
+
+    def owners do
+      [{"123-456", "it_admin@example.com"}]
+    end
   end
   ```
 
@@ -52,6 +58,9 @@ defmodule Beacon.Auth do
 
   `list_actors/0` provides the database query for Beacon to find the actors in your app and return
   them in the expected `{id, label}` format.
+
+  `owners/0` designates the actors who can bypass authorization and perform initial setup before any
+  roles have been granted.
 
   This module can then be provided to `Beacon.Config` as an `:auth_module` option:
 
@@ -70,7 +79,7 @@ defmodule Beacon.Auth do
   Several functions in this module (and others) require authorization by default. This is done via the `:actor` option:
 
   ```
-  iex> Beacon.Auth.create_role(%{"name" => "Power User", ...}, actor: "some-identifying-id")
+  iex> Beacon.Auth.create_role(%{"name" => "Power User", ...}, actor: {"some-identifying-id", "First Lastname"})
   {:ok, %Role{}}
   ```
 
@@ -78,7 +87,7 @@ defmodule Beacon.Auth do
   and prevent the function from running if the role should not have access:
 
   ```
-  iex> Beacon.Auth.create_role(%{"name" => "Power User", ...},, actor: "user-with-read-only-access")
+  iex> Beacon.Auth.create_role(%{"name" => "Power User", ...},, actor: {"user-with-read-only-access", "John Smith"})
   {:error, :not_authorized}
   ```
 
@@ -112,6 +121,9 @@ defmodule Beacon.Auth do
 
   @doc """
   Specifies the identities of site owners who should always have unconditional access.
+
+  This is especially useful when initially setting up auth for your site, before any roles have
+  been granted.
   """
   @callback owners() :: [actor_tuple()]
 
