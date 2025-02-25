@@ -3187,7 +3187,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_component(attrs, actor: "some-user-id")
+      iex> create_component(attrs, actor: {"some-user-id", "Some User"})
       {:ok, %Component{}}
 
   """
@@ -3243,7 +3243,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> update_component(component, %{name: "new_component"}, actor: "some-user-id")
+      iex> update_component(component, %{name: "new_component"}, actor: {"some-user-id", "Some User"})
       {:ok, %Component{}}
 
   """
@@ -3530,7 +3530,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> create_slot_attr(site, attrs, [], actor: "some-user-id")
+      iex> create_slot_attr(site, attrs, [], actor: {"some-user-id", "Some User"})
       {:ok, %ComponentSlotAttr{}}
 
   """
@@ -3551,7 +3551,7 @@ defmodule Beacon.Content do
   This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
   in the module documentation.
 
-      iex> update_slot(site, slot_attr, %{name: "new_slot"}, [], actor: "some-user-id")
+      iex> update_slot(site, slot_attr, %{name: "new_slot"}, [], actor: {"some-user-id", "Some User"})
       {:ok, %ComponentSlotAttr{}}
 
   """
@@ -4334,7 +4334,7 @@ defmodule Beacon.Content do
   This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
   in the module documentation.
 
-      iex> update_live_data_path(live_data, "/foo/bar/:baz_id", actor: "some-user-id")
+      iex> update_live_data_path(live_data, "/foo/bar/:baz_id", actor: {"some-user-id", "Some User"})
       {:ok, %LiveData{}}
 
   """
@@ -4355,7 +4355,7 @@ defmodule Beacon.Content do
   This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
   in the module documentation.
 
-      iex> update_live_data_assign(live_data_assign, :my_site, %{code: "true"}, actor: "some-user-id")
+      iex> update_live_data_assign(live_data_assign, :my_site, %{code: "true"}, actor: {"some-user-id", "Some User"})
       {:ok, %LiveDataAssign{}}
 
   """
@@ -4436,7 +4436,7 @@ defmodule Beacon.Content do
   ## Example
 
       iex> attrs = %{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"}
-      iex> create_info_handler(attrs, actor: "some-user-id")
+      iex> create_info_handler(attrs, actor: {"some-user-id", "Some User"})
       {:ok, %InfoHandler{}}
 
   """
@@ -4477,7 +4477,7 @@ defmodule Beacon.Content do
   ## Example
 
       iex> attrs = %{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"}
-      iex> create_info_handler!(attrs, actor: "some-user-id")
+      iex> create_info_handler!(attrs, actor: {"some-user-id", "Some User"})
       %InfoHandler{}
 
   """
@@ -4556,7 +4556,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex> update_info_handler(info_handler, %{msg: "{:new_msg, arg}"}, actor: "some-user-id")
+      iex> update_info_handler(info_handler, %{msg: "{:new_msg, arg}"}, actor: {"some-user-id", "Some User"})
       {:ok, %InfoHandler{}}
 
   """
