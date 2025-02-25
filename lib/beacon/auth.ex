@@ -184,10 +184,14 @@ defmodule Beacon.Auth do
 
   @doc """
   A blank ActorRole struct.
+
+  Optionally provide initial attrs if needed.
+
+  Does not validate, insert the struct, or perform any database operation.
   """
-  @spec new_actor_role() :: ActorRole.t()
-  def new_actor_role do
-    %ActorRole{}
+  @spec new_actor_role(map()) :: ActorRole.t()
+  def new_actor_role(attrs \\ %{}) do
+    struct(ActorRole, attrs)
   end
 
   @doc """
@@ -217,6 +221,27 @@ defmodule Beacon.Auth do
   end
 
   @doc """
+  Grants an actor the given Role, removing any previous Role.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+  """
+  @spec set_role_for_actor(String.t(), Role.t(), keyword()) ::
+          {:ok, ActorRole.t()} | {:error, Changeset.t() | :not_authorized}
+  def set_role_for_actor(actor_id, role, opts \\ []) do
+    site = role.site
+
+    with :ok <- authorize(site, :set_role_for_actor, opts) do
+      new_actor_role()
+      |> change_actor_role(%{actor_id: actor_id, role_id: role.id})
+      |> repo(site).insert(
+        on_conflict: {:replace_all_except, [:id, :inserted_at]},
+        conflict_target: [:actor_id]
+      )
+    end
+  end
+
+  @doc """
   Creates a changeset with the given role and optional map of changes.
   """
   @spec change_role(Role.t(), map()) :: Changeset.t()
@@ -242,6 +267,9 @@ defmodule Beacon.Auth do
 
   @doc """
   Create a new role.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @spec create_role(map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
   def create_role(attrs, opts \\ []) do
@@ -255,6 +283,9 @@ defmodule Beacon.Auth do
 
   @doc """
   Update an existing role.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @spec update_role(Role.t(), map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
   def update_role(role, attrs, opts \\ []) do
@@ -267,6 +298,9 @@ defmodule Beacon.Auth do
 
   @doc """
   Delete an existing role.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @spec delete_role(Role.t(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
   def delete_role(role, opts \\ []) do
@@ -320,6 +354,7 @@ defmodule Beacon.Auth do
       :create_role,
       :update_role,
       :delete_role,
+      :set_role_for_actor,
       :create_js_hook,
       :update_js_hook,
       :delete_js_hook

@@ -19,6 +19,8 @@ defmodule Beacon.Migrations.V004 do
 
       timestamps(type: :utc_datetime_usec)
     end
+
+    create unique_index(:beacon_actors_roles, [:actor_id])
   end
 
   def down do
