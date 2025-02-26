@@ -3,7 +3,7 @@ if Code.ensure_loaded?(Igniter) do
     @moduledoc false
 
     def select_router!(igniter, opts \\ []) do
-      label = Keyword.get(opts, :label)
+      label = Keyword.get(opts, :label) || "Which router should be modified?"
       raise_msg = Keyword.get(opts, :raise_msg, "No router found.")
 
       case Igniter.Libs.Phoenix.select_router(igniter, label) do
