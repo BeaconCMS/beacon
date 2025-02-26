@@ -272,7 +272,9 @@ defmodule Beacon.MixProject do
         Beacon.RuntimeCSS,
         Beacon.RuntimeJS,
         Beacon.RuntimeCSS.TailwindCompiler,
-        Beacon.Web.BeaconAssigns
+        Beacon.Web.BeaconAssigns,
+        Beacon.Web.ErrorHTML,
+        Beacon.Web.Layouts
       ],
       Extensibility: [
         Beacon.Config,
