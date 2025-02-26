@@ -80,4 +80,9 @@ defmodule Beacon.MediaLibrary.Provider.S3 do
 
   @doc false
   def provider_key, do: @provider_key
+
+  @doc false
+  def soft_delete(_asset) do
+    # implement asset removal from S3 bucket
+  end
 end
