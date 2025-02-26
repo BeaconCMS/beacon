@@ -254,6 +254,25 @@ defmodule Beacon.Auth do
   end
 
   @doc """
+  Removes any Role previously granted to an actor on a given Beacon site.
+
+  Returns `:ok` regardless of the result.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+  """
+  @spec remove_role_from_actor(Site.t(), String.t(), keyword()) :: :ok | {:error, :not_authorized}
+  def remove_role_from_actor(site, actor_id, opts \\ []) do
+    with :ok <- authorize(site, :remove_role_from_actor, opts) do
+      if actor_role = repo(site).one(from ar in ActorRole, where: ar.actor_id == ^actor_id) do
+        repo(site).delete!(actor_role)
+      end
+
+      :ok
+    end
+  end
+
+  @doc """
   Creates a changeset with the given role and optional map of changes.
   """
   @spec change_role(Role.t(), map()) :: Changeset.t()
