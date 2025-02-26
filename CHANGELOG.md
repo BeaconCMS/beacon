@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.2 (2025-02-26)
+
+### Fixes
+  - Fix the select router prompt on `gen.site` when multiple routers are found
+
+### Docs
+  - Add `@doc type` for `:event_handlers`
+  - Add `Beacon.Web.ErrorHTML` and `Beacon.Web.Layouts` to web docs
+  - Hide `Beacon.Web.RobotsTxt` and `Beacon.Web.SitemapXML` from docs (private modules)
+
 ## 0.4.1 (2025-02-20)
 
 ### Enhancements
