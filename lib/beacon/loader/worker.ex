@@ -1,11 +1,13 @@
 defmodule Beacon.Loader.Worker do
   @moduledoc false
-
   use GenServer, restart: :transient
-  require Logger
+
+  alias Beacon.Auth
   alias Beacon.Compiler
   alias Beacon.Content
   alias Beacon.Loader
+
+  require Logger
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
@@ -365,6 +367,24 @@ defmodule Beacon.Loader.Worker do
       Logger.error("failed to populate default error pages because the default layout is missing.")
       stop({:error, :missing_default_layout}, config)
     end
+  end
+
+  def handle_call(:populate_default_roles, _from, config) do
+    %{site: site} = config
+
+    for attrs <- Auth.default_roles() do
+      case Auth.get_role_by_name(site, attrs.name) do
+        nil ->
+          attrs
+          |> Map.put(:site, site)
+          |> Auth.create_role!(auth: false)
+
+        %{} ->
+          :skip
+      end
+    end
+
+    stop(:ok, config)
   end
 
   # todo: remove

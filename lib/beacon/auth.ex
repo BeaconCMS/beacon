@@ -262,6 +262,18 @@ defmodule Beacon.Auth do
   end
 
   @doc """
+  Lookup a role by its name.
+  """
+  @spec get_role_by_name(Site.t(), String.t()) :: Role.t() | nil
+  def get_role_by_name(site, name) do
+    repo(site).one(
+      from r in Role,
+        where: r.site == ^to_string(site),
+        where: r.name == ^name
+    )
+  end
+
+  @doc """
   Lists all roles available for a given site.
   """
   @spec list_roles(Site.t()) :: [Role.t()]
@@ -270,20 +282,12 @@ defmodule Beacon.Auth do
   end
 
   @doc """
-
-  """
-  @spec default_role_capabilities() :: [atom()]
-  def default_role_capabilities do
-    []
-  end
-
-  @doc """
   Create a new role.
 
   This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
   in the module documentation.
   """
-  @spec create_role(map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
+  @spec create_role(map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t() | :not_authorized}
   def create_role(attrs, opts \\ []) do
     changeset = Role.changeset(%Role{}, attrs)
     site = Changeset.get_field(changeset, :site)
@@ -294,12 +298,27 @@ defmodule Beacon.Auth do
   end
 
   @doc """
+  Create a new role, raising an error if unsuccessful.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+  """
+  @spec create_role!(map(), keyword()) :: Role.t()
+  def create_role!(attrs, opts \\ []) do
+    case create_role(attrs, opts) do
+      {:ok, role} -> role
+      {:error, :not_authorized} -> raise "failed to create role: not authorized"
+      {:error, changeset} -> raise "failed to create role, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
   Update an existing role.
 
   This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
   in the module documentation.
   """
-  @spec update_role(Role.t(), map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
+  @spec update_role(Role.t(), map(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t() | :not_authorized}
   def update_role(role, attrs, opts \\ []) do
     with :ok <- authorize(role.site, :update_role, opts) do
       role
@@ -314,7 +333,7 @@ defmodule Beacon.Auth do
   This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
   in the module documentation.
   """
-  @spec delete_role(Role.t(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t()}
+  @spec delete_role(Role.t(), keyword()) :: {:ok, Role.t()} | {:error, Changeset.t() | :not_authorized}
   def delete_role(role, opts \\ []) do
     with :ok <- authorize(role.site, :delete_role, opts) do
       repo(role).delete(role)
@@ -370,6 +389,24 @@ defmodule Beacon.Auth do
       :create_js_hook,
       :update_js_hook,
       :delete_js_hook
+    ]
+  end
+
+  @doc """
+  The default capabilities for a new role that is created.
+  """
+  @spec default_role_capabilities() :: [atom()]
+  def default_role_capabilities do
+    [:create_page, :update_page, :publish_page, :unpublish_page]
+  end
+
+  @doc false
+  #  Returns the list of roles that are loaded by default into new sites.
+  @spec default_roles() :: [map()]
+  def default_roles do
+    [
+      %{name: "Administrator", capabilities: Enum.map(list_capabilities(), &to_string/1)},
+      %{name: "Page Editor", capabilities: Enum.map(default_role_capabilities(), &to_string/1)}
     ]
   end
 end
