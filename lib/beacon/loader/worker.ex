@@ -19,11 +19,41 @@ defmodule Beacon.Loader.Worker do
   end
 
   def init(config) do
+    Beacon.ErrorHandler.enable(config.site)
     {:ok, config}
   end
 
   def handle_call(:ping, _from, config) do
     stop(:pong, config)
+  end
+
+  def handle_call({:apply_mfa, module, function, args}, _from, config) do
+    result = apply(module, function, args)
+    {:stop, :shutdown, {:ok, result}, config}
+  rescue
+    error ->
+      {:stop, :shutdown, {:error, error, __STACKTRACE__}, config}
+  end
+
+  def handle_call(:populate_default_media, _from, config) do
+    %{site: site} = config
+    path = Path.join(Application.app_dir(:beacon, "priv"), "beacon.png")
+
+    case Beacon.MediaLibrary.search(site, "beacon.webp") do
+      [] ->
+        Beacon.MediaLibrary.UploadMetadata.new(
+          site,
+          path,
+          name: "beacon.png",
+          extra: %{"alt" => "logo"}
+        )
+        |> Beacon.MediaLibrary.upload()
+
+      _ ->
+        :skip
+    end
+
+    stop(:ok, config)
   end
 
   def handle_call(:populate_default_components, _from, config) do
@@ -334,97 +364,40 @@ defmodule Beacon.Loader.Worker do
     end
   end
 
-  def handle_call(:reload_snippets_module, _from, config) do
-    %{site: site} = config
-    snippets = Content.list_snippet_helpers(site)
-    ast = Loader.Snippets.build_ast(site, snippets)
-    result = compile_module(site, ast, "snippets")
-    stop(result, config)
+  # todo: remove
+  def handle_call(request, _from, config)
+      when request in [
+             :load_snippets_module,
+             :load_routes_module,
+             :load_components_module,
+             :load_live_data_module,
+             :load_error_page_module,
+             :load_stylesheet_module,
+             :load_event_handlers_module,
+             :load_info_handlers_module
+           ] do
+    __MODULE__
+    |> apply(request, [config.site])
+    |> stop(config)
   end
 
-  def handle_call(:reload_routes_module, _from, config) do
-    %{site: site} = config
-    ast = Loader.Routes.build_ast(site)
-    result = compile_module(site, ast, "routes")
-    stop(result, config)
+  def handle_call({:load_layout_module, layout_id}, _from, config) do
+    config.site
+    |> load_layout_module(layout_id)
+    |> stop(config)
   end
 
-  def handle_call(:reload_components_module, _from, config) do
-    %{site: site} = config
-    components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
-    ast = Loader.Components.build_ast(site, components)
-    result = compile_module(site, ast, "components")
-    stop(result, config)
+  def handle_call({:load_page_module, page_id}, _from, config) do
+    config.site
+    |> load_page_module(page_id)
+    |> stop(config)
   end
 
-  def handle_call(:reload_live_data_module, _from, config) do
-    %{site: site} = config
-    live_data = Content.live_data_for_site(site)
-    ast = Loader.LiveData.build_ast(site, live_data)
-    result = compile_module(site, ast, "live_data")
-    stop(result, config)
+  def handle_call(:load_runtime_js, _from, config) do
+    stop(Beacon.RuntimeJS.load!(config.site), config)
   end
 
-  def handle_call(:reload_error_page_module, _from, config) do
-    %{site: site} = config
-    error_pages = Content.list_error_pages(site, preloads: [:layout])
-    ast = Loader.ErrorPage.build_ast(site, error_pages)
-    result = compile_module(site, ast, "error_pages")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_stylesheet_module, _from, config) do
-    %{site: site} = config
-    stylesheets = Content.list_stylesheets(site)
-    ast = Loader.Stylesheet.build_ast(site, stylesheets)
-    result = compile_module(site, ast, "stylesheets")
-    stop(result, config)
-  end
-
-  def handle_call(:reload_event_handlers_module, _from, config) do
-    %{site: site} = config
-    event_handlers = Content.list_event_handlers(site)
-    ast = Loader.EventHandlers.build_ast(site, event_handlers)
-    result = compile_module(site, ast, "event_handlers")
-    stop(result, config)
-  end
-
-  def handle_call({:reload_layout_module, layout_id}, _from, config) do
-    %{site: site} = config
-    layout = Beacon.Content.get_published_layout(site, layout_id)
-
-    case layout do
-      nil ->
-        {:error, :layout_not_published}
-
-      layout ->
-        ast = Loader.Layout.build_ast(site, layout)
-        result = compile_module(site, ast, "layout")
-        stop(result, config)
-    end
-  end
-
-  def handle_call({:reload_page_module, page_id}, _from, config) do
-    %{site: site} = config
-    page = Beacon.Content.get_published_page(site, page_id)
-
-    case page do
-      nil ->
-        stop({:error, :page_not_published}, config)
-
-      page ->
-        ast = Loader.Page.build_ast(site, page)
-        result = compile_module(site, ast, "page")
-        :ok = Beacon.PubSub.page_loaded(page)
-        stop(result, config)
-    end
-  end
-
-  def handle_call(:reload_runtime_js, _from, config) do
-    stop(Beacon.RuntimeJS.load!(), config)
-  end
-
-  def handle_call(:reload_runtime_css, _from, config) do
+  def handle_call(:load_runtime_css, _from, config) do
     stop(Beacon.RuntimeCSS.load!(config.site), config)
   end
 
@@ -438,18 +411,10 @@ defmodule Beacon.Loader.Worker do
       page ->
         page.site
         |> Loader.Page.module_name(page.id)
-        |> Compiler.unload()
+        |> Loader.unload()
 
         stop(:ok, config)
     end
-  end
-
-  def handle_call(:reload_info_handlers_module, _from, config) do
-    %{site: site} = config
-    info_handlers = Content.list_info_handlers(site)
-    ast = Loader.InfoHandlers.build_ast(site, info_handlers)
-    result = compile_module(site, ast, "info_handlers")
-    stop(result, config)
   end
 
   def handle_info(msg, config) do
@@ -457,12 +422,128 @@ defmodule Beacon.Loader.Worker do
     {:noreply, config}
   end
 
-  defp stop(reply, state) do
-    {:stop, :shutdown, reply, state}
+  def load_snippets_module(site) do
+    module = Loader.fetch_snippets_module(site)
+
+    safe_load(module, fn ->
+      snippets = Content.list_snippet_helpers(site)
+      ast = Loader.Snippets.build_ast(site, snippets)
+      {:ok, ^module} = compile_module(ast, "snippets")
+    end)
   end
 
-  defp compile_module(site, ast, file) do
-    case Compiler.compile_module(site, ast, file) do
+  def load_routes_module(site) do
+    module = Loader.fetch_routes_module(site)
+
+    safe_load(module, fn ->
+      ast = Loader.Routes.build_ast(site)
+      {:ok, ^module} = compile_module(ast, "routes")
+    end)
+  end
+
+  def load_components_module(site) do
+    module = Loader.fetch_components_module(site)
+
+    safe_load(module, fn ->
+      components = Content.list_components(site, per_page: :infinity, preloads: [:attrs, slots: [:attrs]])
+      ast = Loader.Components.build_ast(site, components)
+      {:ok, ^module} = compile_module(ast, "components")
+    end)
+  end
+
+  def load_live_data_module(site) do
+    module = Loader.fetch_live_data_module(site)
+
+    safe_load(module, fn ->
+      live_data = Content.live_data_for_site(site)
+      ast = Loader.LiveData.build_ast(site, live_data)
+      {:ok, ^module} = compile_module(ast, "live_data")
+    end)
+  end
+
+  def load_error_page_module(site) do
+    module = Loader.fetch_error_page_module(site)
+
+    safe_load(module, fn ->
+      error_pages = Content.list_error_pages(site, preloads: [:layout])
+      ast = Loader.ErrorPage.build_ast(site, error_pages)
+      {:ok, ^module} = compile_module(ast, "error_pages")
+    end)
+  end
+
+  def load_stylesheet_module(site) do
+    module = Loader.fetch_stylesheet_module(site)
+
+    safe_load(module, fn ->
+      stylesheets = Content.list_stylesheets(site)
+      ast = Loader.Stylesheet.build_ast(site, stylesheets)
+      {:ok, ^module} = compile_module(ast, "stylesheets")
+    end)
+  end
+
+  def load_event_handlers_module(site) do
+    module = Loader.fetch_event_handlers_module(site)
+
+    safe_load(module, fn ->
+      event_handlers = Content.list_event_handlers(site)
+      ast = Loader.EventHandlers.build_ast(site, event_handlers)
+      {:ok, ^module} = compile_module(ast, "event_handlers")
+    end)
+  end
+
+  def load_info_handlers_module(site) do
+    module = Loader.fetch_info_handlers_module(site)
+
+    safe_load(module, fn ->
+      info_handlers = Content.list_info_handlers(site)
+      ast = Loader.InfoHandlers.build_ast(site, info_handlers)
+      {:ok, ^module} = compile_module(ast, "info_handlers")
+    end)
+  end
+
+  def load_layout_module(site, layout_id) do
+    layout = Beacon.Content.get_published_layout(site, layout_id)
+    module = Loader.fetch_layout_module(site, layout_id)
+
+    case layout do
+      nil ->
+        {:error, :layout_not_published}
+
+      layout ->
+        safe_load(module, fn ->
+          ast = Loader.Layout.build_ast(site, layout)
+          {:ok, ^module} = compile_module(ast, "layout")
+        end)
+    end
+  end
+
+  def load_page_module(site, page_id) do
+    page = Beacon.Content.get_published_page(site, page_id)
+    module = Loader.fetch_page_module(site, page_id)
+
+    case page do
+      nil ->
+        {:error, :page_not_published}
+
+      page ->
+        safe_load(module, fn ->
+          ast = Beacon.Loader.Page.build_ast(site, page)
+          {:ok, ^module} = compile_module(ast, "page")
+          :ok = Beacon.PubSub.page_loaded(page)
+        end)
+    end
+  end
+
+  def load_runtime_js(site) do
+    Beacon.RuntimeJS.load!(site)
+  end
+
+  defp stop(reply, state) do
+    {:stop, {:shutdown, :loaded}, reply, state}
+  end
+
+  defp compile_module(ast, file) do
+    case Compiler.compile_module(ast, file) do
       {:ok, module, []} ->
         {:ok, module}
 
@@ -497,6 +578,29 @@ defmodule Beacon.Loader.Worker do
         """)
 
         result
+    end
+  end
+
+  # this is a global lock to ensure that `load_fn` only runs for one worker per module;
+  # duplicate workers will simply wait for the first one
+  defp safe_load(module, load_fn) do
+    case Registry.register(Beacon.Registry, module, module) do
+      {:ok, _pid} ->
+        # we are the first worker, let's do the work
+        load_fn.()
+        Registry.unregister(Beacon.Registry, module)
+        module
+
+      {:error, {:already_registered, pid}} ->
+        # another worker already started, let's wait for it
+        _ref = Process.monitor(pid)
+        time_to_wait = if(Beacon.Config.env_test?(), do: 500, else: 15_000)
+
+        receive do
+          {:DOWN, _ref, :process, _pid, {:shutdown, :loaded}} -> module
+        after
+          time_to_wait -> :error
+        end
     end
   end
 end

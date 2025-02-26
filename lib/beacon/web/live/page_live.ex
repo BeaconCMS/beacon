@@ -19,21 +19,39 @@ defmodule Beacon.Web.PageLive do
     %{"path" => path} = params
     %{"beacon_site" => site} = session
 
-    # TODO: handle back pressure on simualtaneous calls to reload the same page
+    if Beacon.Config.fetch!(site).mode == :live and connected?(socket) do
+      :ok = Beacon.PubSub.subscribe_to_page(site, path)
+    end
+
+    variant_roll =
+      case session["beacon_variant_roll"] do
+        nil ->
+          Logger.warning("""
+          Beacon.Plug is missing from the Router pipeline.
+
+          Page Variants will not be used.
+          """)
+
+          nil
+
+        roll ->
+          roll
+      end
+
     page = RouterServer.lookup_page!(site, path)
-
-    socket = Component.assign(socket, beacon: BeaconAssigns.new(site, page))
-
-    if connected?(socket), do: :ok = Beacon.PubSub.subscribe_to_page(site, path)
+    socket = Component.assign(socket, beacon: BeaconAssigns.new(page, variant_roll: variant_roll))
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
   end
 
   def render(assigns) do
-    %{beacon: %{private: %{page_module: page_module}}} = assigns
+    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
 
-    page_module
-    |> Beacon.apply_mfa(:page, [])
+    # do not allow overwritring site to avoid rendering a leaked page
+    %{site: ^site} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site]])
+
+    site
+    |> Beacon.apply_mfa(page_module, :page, [])
     |> Lifecycle.Template.render_template(assigns, __ENV__)
   end
 
@@ -53,11 +71,12 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_info(msg, socket) do
-    %{page_module: page_module, live_path: live_path, info_handlers_module: info_handlers_module} = socket.assigns.beacon.private
-    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
+    %{beacon: %{site: site, private: %{page_module: page_module, live_path: live_path, info_handlers_module: info_handlers_module}}} = socket.assigns
+    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
 
     result =
       Beacon.apply_mfa(
+        site,
         info_handlers_module,
         :handle_info,
         [msg, socket],
@@ -75,11 +94,14 @@ defmodule Beacon.Web.PageLive do
   end
 
   def handle_event(event_name, event_params, socket) do
-    %{page_module: page_module, live_path: live_path, event_handlers_module: event_handlers_module} = socket.assigns.beacon.private
-    %{site: site, id: page_id} = Beacon.apply_mfa(page_module, :page_assigns, [[:site, :id]])
+    %{beacon: %{site: site, private: %{page_module: page_module, live_path: live_path, event_handlers_module: event_handlers_module}}} =
+      socket.assigns
+
+    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
 
     result =
       Beacon.apply_mfa(
+        site,
         event_handlers_module,
         :handle_event,
         [event_name, event_params, socket],
@@ -96,25 +118,41 @@ defmodule Beacon.Web.PageLive do
     end
   end
 
-  def handle_params(params, _url, socket) do
-    %{beacon: %{site: site}} = socket.assigns
-    %{"path" => path_info} = params
-    page = RouterServer.lookup_page!(site, path_info)
-    live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
-    beacon_assigns = BeaconAssigns.new(site, page, live_data, path_info, params)
+  def handle_params(params, url, socket) do
+    case Beacon.Private.site_from_session(socket.endpoint, socket.router, url, __MODULE__) do
+      nil ->
+        raise Beacon.Web.NotFoundError, """
+        no page found for url #{url}
 
-    socket =
-      socket
-      |> Component.assign(live_data)
-      # TODO: remove deprecated @beacon_live_data
-      |> Component.assign(:beacon_live_data, live_data)
-      # TODO: remove deprecated @beacon_path_params
-      |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
-      # TODO: remove deprecated @beacon_query_params
-      |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
-      |> Component.assign(:beacon, beacon_assigns)
+        Make sure a page was created for that url.
+        """
 
-    {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
+      site ->
+        %{"path" => path_info} = params
+
+        if socket.assigns.beacon.site != site && Beacon.Config.fetch!(site).mode == :live do
+          Beacon.PubSub.unsubscribe_to_page(socket.assigns.beacon.site, path_info)
+          Beacon.PubSub.subscribe_to_page(site, path_info)
+        end
+
+        page = RouterServer.lookup_page!(site, path_info)
+        live_data = Beacon.Web.DataSource.live_data(site, path_info, Map.drop(params, ["path"]))
+        beacon_assigns = BeaconAssigns.new(page, path_info: path_info, query_params: params, variant_roll: socket.assigns.beacon.private.variant_roll)
+
+        socket =
+          socket
+          |> Component.assign(live_data)
+          # TODO: remove deprecated @beacon_live_data
+          |> Component.assign(:beacon_live_data, live_data)
+          # TODO: remove deprecated @beacon_path_params
+          |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
+          # TODO: remove deprecated @beacon_query_params
+          |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
+          |> Component.assign(:beacon, beacon_assigns)
+          |> Component.assign(:page_title, beacon_assigns.page.title)
+
+        {:noreply, push_event(socket, "beacon:page-updated", %{meta_tags: Beacon.Web.DataSource.meta_tags(socket.assigns)})}
+    end
   end
 
   @doc false

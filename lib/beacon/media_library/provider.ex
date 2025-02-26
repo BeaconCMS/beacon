@@ -11,7 +11,7 @@ defmodule Beacon.MediaLibrary.Provider do
   available, and caching is used to reduce overload on the database. But you can switch to `S3`
   using the `Beacon.MediaLibrary.Provider.S3` provider or create your own provider.
 
-  See `Beacon.Config` for more info.
+  See `Beacon.Config` and each provider module doc for more info.
 
   """
 

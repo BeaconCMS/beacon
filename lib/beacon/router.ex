@@ -55,7 +55,7 @@ defmodule Beacon.Router do
       end
 
   There's no difference between the two approaches, but that is important to group and organize your routes and sites,
-  for example a scope might be served through a different pipeline:application
+  for example a scope might be served through a different pipeline:
 
       scope "/marketing", MyAppWeb do
         pipe_through :browser_analytics
@@ -71,7 +71,7 @@ defmodule Beacon.Router do
   which means that any route after the `prefix` may match a published page. For example `/contact` may be a valid
   page published under the mounted `beacon_site "/, site: :marketing` site.
 
-  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:application
+  Essentially it mounts a catch-all route like `/*` so if we had inverted the routes below we would end with:
 
       /*
       /super-campaign
@@ -111,36 +111,48 @@ defmodule Beacon.Router do
       @doc false
       def __beacon_sites__, do: unquote(Macro.escape(sites))
       unquote(prefixes)
+      def __beacon_scoped_prefix_for_site__(_), do: nil
     end
   end
 
   @doc """
   Mounts a site in the `prefix` in your host application router.
 
+  This will automatically serve `sitemap.xml` from the `prefix` path defined for this site,
+  and also `robots.txt` and `sitemap_index.xml` in the top-level host.
+
   ## Options
 
     * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name.
-      Note that the name has to match the one used in your site configuration in `application.ex`.
+      Note that the name has to match the one used in your site configuration.
       See the module doc and `Beacon.Config` for more info.
+    * `:root_layout` - override the default root layout for the site. Defaults to `{Beacon.Web.Layouts, :runtime}`.
+      See `Beacon.Web.Layouts` and `Phoenix.LiveView.Router.live_session/3` for more info.
+      Use with caution.
 
   """
   defmacro beacon_site(prefix, opts) do
     # TODO: raise on duplicated sites defined on the same prefix
-    quote bind_quoted: binding(), location: :keep do
+    quote bind_quoted: binding(), location: :keep, generated: true do
       import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
       import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
       {site, session_name, session_opts} = Beacon.Router.__options__(opts)
 
-      get "/__beacon_assets__/#{site}/:file_name", Beacon.Web.MediaLibraryController, :show
-
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
+          get "/__beacon_media__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: opts[:site]}
+
           # TODO: css_config-:md5 caching
-          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, as: :beacon_asset, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/:file_name", Beacon.Web.MediaLibraryController, :show
+          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
+
+          get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
+
+          # simulate a beacon page inside site prefix so we can check this site is reachable?/2
+          get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
+
           live "/*path", Beacon.Web.PageLive, :path
         end
       end
@@ -202,12 +214,14 @@ defmodule Beacon.Router do
 
   @doc false
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    sanitize_path("/__beacon_assets__/#{site}/#{file_name}")
+    routes = Beacon.Loader.fetch_routes_module(site)
+    routes.beacon_media_path(file_name)
   end
 
   @doc false
   def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
-    Beacon.Config.fetch!(site).endpoint.url() <> beacon_asset_path(site, file_name)
+    routes = Beacon.Loader.fetch_routes_module(site)
+    routes.beacon_media_url(file_name)
   end
 
   @doc false
@@ -239,5 +253,50 @@ defmodule Beacon.Router do
       _, _, acc ->
         acc
     end)
+  end
+
+  def path_params(_page_path, _path_info), do: %{}
+
+  @doc false
+  # Tells if a `beacon_site` is reachable in the current environment.
+  #
+  # It's considered reachable if a dynamic page can be served on the site prefix.
+  def reachable?(%Beacon.Config{} = config, opts \\ []) do
+    case reachable(config, opts) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
+
+  @doc false
+  def reachable(%Beacon.Config{} = config, opts \\ []) do
+    otp_app = Beacon.Private.otp_app!(config)
+    %{site: site, endpoint: endpoint, router: router} = config
+    reachable(site, endpoint, router, otp_app, opts)
+  rescue
+    # missing router or missing beacon macros in the router
+    _ -> :error
+  end
+
+  defp reachable(site, endpoint, router, otp_app, opts) do
+    host = Keyword.get_lazy(opts, :host, fn -> Beacon.Private.endpoint_host(otp_app, endpoint) end)
+
+    prefix =
+      Keyword.get_lazy(opts, :prefix, fn ->
+        router.__beacon_scoped_prefix_for_site__(site)
+      end)
+
+    path = Beacon.Router.sanitize_path(prefix <> "/__beacon_check__")
+
+    case Phoenix.Router.route_info(router, "GET", path, host) do
+      %{site: ^site, plug: Beacon.Web.CheckController} ->
+        {:ok, {endpoint, host}}
+
+      %{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}}}}} ->
+        {:ok, {endpoint, host}}
+
+      _ ->
+        {:error, {endpoint, host}}
+    end
   end
 end

@@ -15,27 +15,83 @@ defmodule Beacon.Loader.Routes do
 
     config.site
     |> module_name()
-    |> render(config.site, config.endpoint, config.router)
+    |> render(config)
   end
 
-  defp render(routes_module, site, endpoint, router) do
+  defp render(routes_module, config) do
+    %{site: site, endpoint: endpoint, router: router} = config
+
     quote do
       defmodule unquote(routes_module) do
         Module.put_attribute(__MODULE__, :site, unquote(site))
         Module.put_attribute(__MODULE__, :endpoint, unquote(endpoint))
         Module.put_attribute(__MODULE__, :router, unquote(router))
 
-        # TODO: secure cross site assets
-        # TODO: asset_path sigil
+        @deprecated "use beacon_media_path/1 instead"
         def beacon_asset_path(file_name) when is_binary(file_name) do
-          sanitize_path("/__beacon_assets__/#{unquote(site)}/#{file_name}")
+          beacon_media_path(file_name)
         end
 
-        # TODO: asset_url sigil
+        @deprecated "use beacon_media_url/1 instead"
         def beacon_asset_url(file_name) when is_binary(file_name) do
-          @endpoint.url() <> beacon_asset_path(file_name)
+          beacon_media_url(file_name)
         end
 
+        # TODO: secure cross site assets
+        # TODO: media_path sigil
+        @doc """
+        Media path relative to host
+        """
+        def beacon_media_path(file_name) when is_binary(file_name) do
+          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
+          sanitize_path("#{prefix}/__beacon_media__/#{file_name}")
+        end
+
+        # TODO: media_url sigil
+        def beacon_media_url(file_name) when is_binary(file_name) do
+          public_site_host() <> beacon_media_path(file_name)
+        end
+
+        def public_site_host do
+          uri = Beacon.ProxyEndpoint.public_uri(@site)
+          String.Chars.URI.to_string(%URI{scheme: uri.scheme, host: uri.host, port: uri.port})
+        end
+
+        @doc """
+        Returns the full public-facing site URL, including the prefix.
+
+        Scheme and port are fetched from the Proxy Endpoint, if available,
+        since that's the entry point for all requests.
+
+        Host is fetched from the site endpoint.
+        """
+        def public_site_url do
+          uri =
+            case Beacon.ProxyEndpoint.public_uri(@site) do
+              # remove path: "/"  to build URL without the / suffix
+              %{path: "/"} = uri -> %{uri | path: nil}
+              uri -> uri
+            end
+
+          String.Chars.URI.to_string(uri)
+        end
+
+        def public_page_url(%{site: site} = page) do
+          site == @site || raise Beacon.RuntimeError, message: "failed to generate public page url "
+          prefix = @router.__beacon_scoped_prefix_for_site__(@site)
+          path = sanitize_path("#{prefix}#{page.path}")
+          String.Chars.URI.to_string(%{Beacon.ProxyEndpoint.public_uri(@site) | path: path})
+        end
+
+        def public_sitemap_url do
+          public_site_url() <> "/sitemap.xml"
+        end
+
+        def public_css_config_url do
+          public_site_url() <> "/__beacon_assets__/css_config"
+        end
+
+        # TODO: remove sanitize_path/1
         defp sanitize_path(path) do
           String.replace(path, "//", "/")
         end

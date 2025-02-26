@@ -16,6 +16,40 @@ config :beacon, Beacon.BeaconTest.Repo,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true
 
+config :beacon,
+  session_options: [
+    store: :cookie,
+    key: "_beacon_test_key",
+    signing_salt: "LKBurgGF",
+    same_site: "Lax"
+  ]
+
+config :beacon, Beacon.BeaconTest.ProxyEndpoint,
+  url: [host: "site_proxy.com", port: 80],
+  secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
+  live_view: [signing_salt: "LKBurgGF"],
+  check_origin: false,
+  render_errors: [formats: [html: Beacon.Web.ErrorHTML]],
+  debug_errors: true
+
+config :beacon, Beacon.BeaconTest.Endpoint,
+  url: [host: "site_a.com", port: 4001],
+  secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
+  live_view: [signing_salt: "LKBurgGF"],
+  render_errors: [formats: [html: Beacon.Web.ErrorHTML]],
+  pubsub_server: Beacon.BeaconTest.PubSub,
+  check_origin: false,
+  debug_errors: true
+
+config :beacon, Beacon.BeaconTest.EndpointB,
+  url: [host: "site_b.com", port: 4002],
+  secret_key_base: "dVxFbSNspBVvkHPN5m6FE6iqNtMnhrmPNw7mO57CJ6beUADllH0ux3nhAI1ic65X",
+  live_view: [signing_salt: "LKBurgGF"],
+  render_errors: [formats: [html: Beacon.Web.ErrorHTML]],
+  pubsub_server: Beacon.BeaconTest.PubSub,
+  check_origin: false,
+  debug_errors: true
+
 # Fake Key Values. We're not putting real creds here.
 config :ex_aws,
   access_key_id: "AKIAIOSFODNN7EXAMPLE",

@@ -1,19 +1,17 @@
 defmodule Beacon.Loader.ErrorPageTest do
   use Beacon.Web.ConnCase, async: false
-  import Beacon.Fixtures
-
-  @site :my_site
+  use Beacon.Test, site: :my_site
 
   defp build_conn(conn) do
     conn
-    |> Plug.Conn.assign(:beacon, Beacon.Web.BeaconAssigns.new(@site))
+    |> Plug.Conn.assign(:beacon, Beacon.Web.BeaconAssigns.new(default_site()))
     |> Plug.Conn.put_private(:phoenix_router, Beacon.BeaconTest.Router)
   end
 
   setup %{conn: conn} do
-    :ok = Beacon.Loader.populate_default_layouts(@site)
-    :ok = Beacon.Loader.populate_default_error_pages(@site)
-    {:ok, error_module} = Beacon.Loader.reload_error_page_module(@site)
+    :ok = Beacon.Loader.populate_default_layouts(default_site())
+    :ok = Beacon.Loader.populate_default_error_pages(default_site())
+    error_module = Beacon.Loader.load_error_page_module(default_site())
 
     [conn: build_conn(conn), error_module: error_module]
   end
@@ -47,9 +45,9 @@ defmodule Beacon.Loader.ErrorPageTest do
   end
 
   test "custom layout" do
-    layout = published_layout_fixture(template: "#custom_layout#<%= @inner_content %>", site: @site)
-    error_page = error_page_fixture(layout: layout, template: "error_501", status: 501, site: @site)
-    {:ok, error_module} = Beacon.Loader.reload_error_page_module(@site)
+    layout = beacon_published_layout_fixture(template: "#custom_layout#<%= @inner_content %>")
+    error_page = beacon_error_page_fixture(layout: layout, template: "error_501", status: 501)
+    error_module = Beacon.Loader.fetch_error_page_module(default_site())
 
     assert error_module.layout(501, %{inner_content: error_page.template}) == {:safe, ["#custom_layout#", "error_501"]}
   end
@@ -99,9 +97,9 @@ defmodule Beacon.Loader.ErrorPageTest do
   end
 
   test "custom error page", %{conn: conn} do
-    layout = published_layout_fixture(template: "#custom_layout#<%= @inner_content %>", site: @site)
-    _error_page = error_page_fixture(layout: layout, template: ~s|<span class="text-red-500">error_501</span>|, status: 501, site: @site)
-    {:ok, error_module} = Beacon.Loader.reload_error_page_module(@site)
+    layout = beacon_published_layout_fixture(template: "#custom_layout#<%= @inner_content %>")
+    _error_page = beacon_error_page_fixture(layout: layout, template: ~s|<span class="text-red-500">error_501</span>|, status: 501)
+    error_module = Beacon.Loader.fetch_error_page_module(default_site())
 
     expected =
       ~S"""

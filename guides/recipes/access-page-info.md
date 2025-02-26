@@ -10,4 +10,4 @@ For example, to access the current page title in a template:
 <h1><%= @beacon.page.title %></h1>
 ```
 
-See the module `Beacon.Web.BeaconAssigns` for more info.
+See the module [Beacon.Web.BeaconAssigns](https://hexdocs.pm/beacon/Beacon.Web.BeaconAssigns.html) for more info.

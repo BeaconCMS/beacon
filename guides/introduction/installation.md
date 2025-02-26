@@ -6,70 +6,58 @@ Install Beacon and Beacon LiveAdmin in a new Phoenix LiveView application to ena
 
 ## Notes
 
-- If you already have a Phoenix LiveView application that meets the minimum requirements for Beacon and Beacon LiveAdmin, you can skip to step 6.
-- Beacon LiveAdmin can be installed in a separated application in a cluster environment but such advanced setup is not covered in this guide.
+- If you already have a Phoenix LiveView application that meets the minimum requirements for Beacon and Beacon LiveAdmin, you can skip to "Install in an existing application".
+- Beacon LiveAdmin can be installed in a separate application in a cluster environment but such advanced setup is not covered in this guide.
 
 ## Steps
 
-1. Install Elixir v1.14 or later
+1. Setup a PostgreSQL database server
+
+Make sure it's [installed and running](https://wiki.postgresql.org/wiki/Detailed_installation_guides).
+
+Currently, only PostgreSQL is supported.
+
+2. Install Elixir v1.14 or later
 
 Check out the official [Elixir install guide](https://elixir-lang.org/install.html) for more info.
 
-2. Update Hex
+3. Either install as a new application or add into an existing application
 
-  ```sh
-  mix local.hex
-  ```
+Firstly update Hex:
 
-If that command fails or Elixir version is outdated, please follow the [Elixir Install guide](https://elixir-lang.org/install.html) to set up your environment correctly.
+```sh
+mix local.hex
+```
 
-3. Install Phoenix v1.7 or later
+Then install or update Phoenix and Igniter Installers
 
-  ```sh
-  mix archive.install hex phx_new
-  ```
+```sh
+mix archive.install hex phx_new
+mix archive.install hex igniter_new
+```
 
-Check out the official [Phoenix install guide](https://hexdocs.pm/phoenix/installation.html) for more info.
+Now choose one of the methods below:
 
-4. Setup a PostgreSQL database
+### Install as a new application
 
-We recommend using PostgreSQL that's officially supported, make sure it's [installed and running](https://wiki.postgresql.org/wiki/Detailed_installation_guides).
+If you're starting a new project, you can follow these steps to generate a new Phoenix application with Beacon and Beacon LiveAdmin installed.
 
-5. Generate a new Phoenix application
+Run the following to generate a new app:
 
-  ```sh
-  mix phx.new --install my_app
-  ```
+```sh
+mix igniter.new my_app --install beacon,beacon_live_admin --with phx.new
+```
 
-Note that Beacon supports Umbrella applications as well.
+Replace `my_app` with the name of your application and follow the prompts.
 
-6. Change the existing `:floki` dependency to make it available in all environments
+### Install in an existing application
 
-  ```diff
-  - {:floki, ">= 0.30.0", only: :test},
-  + {:floki, ">= 0.30.0"},
-  ```
+Run the following to install Beacon and Beacon LiveAdmin in an existing Phoenix application.
 
-7. Add `:beacon` and `:beacon_live_admin` dependencies to `mix.exs`
-
-  ```diff
-  + {:beacon, "~> 0.1.0-rc.2", override: true},
-  + {:beacon_live_admin, ">= 0.0.0"},
-  ```
-
-8. Add `:beacon` and `:beacon_live_admin` into `:import_deps` in file `.formatter.exs`
-
-  ```diff
-  - import_deps: [:ecto, :ecto_sql, :phoenix],
-  + import_deps: [:ecto, :ecto_sql, :phoenix, :beacon, :beacon_live_admin],
-  ```
-
-9. Install deps
-
-  ```sh
-  mix deps.get
-  ```
+```sh
+mix igniter.install beacon,beacon_live_admin
+```
 
 ## Next Steps
 
-Beacon is installed but you have no sites yet. Follow the [Your First Site](your-first-site.md) guide to setup one and get familiar with Beacon.
+Beacon is installed but you have no sites yet. Follow the [Your First Site](your-first-site.md) guide to set up one and get familiar with Beacon.

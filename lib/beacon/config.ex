@@ -47,13 +47,20 @@ defmodule Beacon.Config do
   @type repo :: module()
 
   @typedoc """
-  Disables site booting.
+  Defines the mode which the site will operate.
 
-  Disables inserting default content data and routes, loading modules, and broadcasting events that trigger actions in Beacon lifecycle.
+  Default is `:live` which will load resources during boot, broadcast events on content change,
+  and execute operations asyncly. That's the normal mode for production.
 
-  See `Beacon.boot/1` for more info.
+  The `:testing` mode is suited for testing environments,
+  you should always use it when running tests that involve Beacon resources.
+
+  And the `:manual` mode is similar to `:testing` but it won't boot load any resource,
+  it's useful to seed data.
+
+  You can always change to `:live` mode at runtime by calling `Beacon.boot/1`.
   """
-  @type skip_boot? :: boolean()
+  @type mode :: :live | :testing | :manual
 
   @typedoc """
   A module that implements `Beacon.RuntimeCSS`.
@@ -61,16 +68,30 @@ defmodule Beacon.Config do
   @type css_compiler :: module()
 
   @typedoc """
-  Path to a custom tailwind config.
+  Path to a custom Tailwind config.
 
   ## Example
 
-      # use the config file `priv/tailwind.config.js` in your app named `my_app`
+      # use the config file `priv/tailwind.config.js` from your app named `my_app`
       Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js")
 
   See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
   """
   @type tailwind_config :: Path.t()
+
+  @typedoc """
+  Path to a custom Tailwind CSS
+
+  Note that Tailwind base, components, and utilities must be imported in this file.
+
+  ## Example
+
+      # use the file `assets/css/app.css` from your app named `my_app`
+      Path.join([Application.app_dir(:my_app, "assets"), "css", "app.css"])
+
+  See `Beacon.RuntimeCSS.TailwindCompiler` for more info.
+  """
+  @type tailwind_css :: Path.t()
 
   @typedoc """
   Path of a LiveView socket where Beacon should connect to.
@@ -148,6 +169,7 @@ defmodule Beacon.Config do
           | {:after_create_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:after_update_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:after_publish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
+          | {:after_unpublish_page, [{identifier :: atom(), fun :: (Content.Page.t() -> {:cont, Content.Page.t()} | {:halt, Exception.t()})}]}
           | {:upload_asset,
              [
                {identifier :: atom(), fun :: (Ecto.Schema.t(), Beacon.MediaLibrary.UploadMetadata.t() -> {:cont, any()} | {:halt, Exception.t()})}
@@ -173,14 +195,20 @@ defmodule Beacon.Config do
   """
   @type default_meta_tags :: [%{binary() => binary()}]
 
+  @typedoc """
+  The strategy for pre-loading page modules at boot time.
+  """
+  @type page_warming :: {:shortest_paths, integer()} | {:specify_paths, [String.t()]} | :none
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
           router: router(),
           repo: repo(),
-          skip_boot?: skip_boot?(),
+          mode: mode(),
           css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
+          tailwind_css: tailwind_css(),
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
@@ -189,7 +217,8 @@ defmodule Beacon.Config do
           lifecycle: lifecycle(),
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
-          default_meta_tags: default_meta_tags()
+          default_meta_tags: default_meta_tags(),
+          page_warming: page_warming()
         }
 
   @default_load_template [
@@ -211,11 +240,12 @@ defmodule Beacon.Config do
             endpoint: nil,
             router: nil,
             repo: nil,
-            skip_boot?: false,
+            mode: :live,
             # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
             # authorization_source: Beacon.Authorization.DefaultPolicy,
             css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: nil,
+            tailwind_css: nil,
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,
@@ -230,20 +260,23 @@ defmodule Beacon.Config do
               render_template: @default_render_template,
               after_create_page: [],
               after_update_page: [],
-              after_publish_page: []
+              after_publish_page: [],
+              after_unpublish_page: []
             ],
             extra_page_fields: [],
             extra_asset_fields: [],
-            default_meta_tags: []
+            default_meta_tags: [],
+            page_warming: {:shortest_paths, 10}
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
           | {:endpoint, endpoint()}
           | {:router, router()}
           | {:repo, repo()}
-          | {:skip_boot?, skip_boot?()}
+          | {:mode, mode()}
           | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
+          | {:tailwind_css, tailwind_css()}
           | {:live_socket_path, live_socket_path()}
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
@@ -253,6 +286,7 @@ defmodule Beacon.Config do
           | {:extra_page_fields, extra_page_fields()}
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
+          | {:page_warming, page_warming()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -267,11 +301,13 @@ defmodule Beacon.Config do
 
     * `:repo` - `t:repo/0` (required)
 
-    * `:skip_boot?` - `t:skip_boot?/0` (optional). Defaults to `false`.
+    * `:mode` - `t:mode/0` (optional). Defaults to `:live`.
 
     * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
     * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")`.
+
+    * `:tailwind_css` - `t:tailwind_css/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css")`.
 
     * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 
@@ -298,6 +334,8 @@ defmodule Beacon.Config do
 
     * `:default_meta_tags` - `t:default_meta_tags/0` (optional). Defaults to `%{}`.
 
+    * `:page_warming` - `t:page_warming/0` (optional). Defaults to `{:shortest_paths, 10}`.
+
   ## Example
 
       iex> Beacon.Config.new(
@@ -306,6 +344,7 @@ defmodule Beacon.Config do
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
         tailwind_config: Path.join(Application.app_dir(:my_app, "priv"), "tailwind.config.js"),
+        tailwind_css: Path.join([Application.app_dir(:my_app, "assets"), "css", "app.css"]),
         template_formats: [
           {:custom_format, "My Custom Format"}
         ],
@@ -325,16 +364,18 @@ defmodule Beacon.Config do
           after_publish_page: [
             notify_admin: fn page -> {:cont, MyApp.Admin.send_email(page)} end
           ]
-        ]
+        ],
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
       )
       %Beacon.Config{
         site: :my_site,
         endpoint: MyAppWeb.Endpoint,
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
-        skip_boot?: false,
+        mode: :live,
         css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
+        tailwind_css: "/my_app/assets/css/app.css",
         live_socket_path: "/live",
         safe_code_check: false,
         template_formats: [
@@ -368,11 +409,13 @@ defmodule Beacon.Config do
           after_publish_page: [
             notify_admin: #Function<42.3316493/1 in :erl_eval.expr/6>
           ],
+          after_unpublish_page: [],
           upload_asset: [],
         ],
         extra_page_fields: [],
         extra_asset_fields: [],
-        default_meta_tags: []
+        default_meta_tags: [],
+        page_warming: {:specify_paths, ["/", "/home", "/blog"]}
       }
 
   """
@@ -385,13 +428,15 @@ defmodule Beacon.Config do
     opts[:router] || raise ConfigError, "missing required option :router"
     ensure_repo(opts[:repo])
 
+    tailwind_css = get_opt(opts, :tailwind_css, Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css"))
+
     template_formats =
       Keyword.merge(
         [
           {:heex, "HEEx (HTML)"},
           {:markdown, "Markdown (GitHub Flavored version)"}
         ],
-        Keyword.get(opts, :template_formats, [])
+        get_opt(opts, :template_formats, [])
       )
 
     lifecycle = [
@@ -400,30 +445,39 @@ defmodule Beacon.Config do
       after_create_page: get_in(opts, [:lifecycle, :after_create_page]) || [],
       after_update_page: get_in(opts, [:lifecycle, :after_update_page]) || [],
       after_publish_page: get_in(opts, [:lifecycle, :after_publish_page]) || [],
+      after_unpublish_page: get_in(opts, [:lifecycle, :after_unpublish_page]) || [],
       upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
     ]
 
-    allowed_media_accept_types = Keyword.get(opts, :allowed_media_accept_types, @default_media_types)
+    allowed_media_accept_types = get_opt(opts, :allowed_media_accept_types, @default_media_types)
     validate_allowed_media_accept_types!(allowed_media_accept_types)
 
-    assigned_assets = Keyword.get(opts, :assets, [])
+    assigned_assets = get_opt(opts, :assets, [])
     assets = process_assets_config(allowed_media_accept_types, assigned_assets)
 
-    default_meta_tags = Keyword.get(opts, :default_meta_tags, [])
-    extra_asset_fields = Keyword.get(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
+    default_meta_tags = get_opt(opts, :default_meta_tags, [])
+    extra_asset_fields = get_opt(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
-    opts =
-      opts
-      |> Keyword.put(:tailwind_config, ensure_tailwind_config(opts[:tailwind_config]))
-      |> Keyword.put(:template_formats, template_formats)
-      |> Keyword.put(:lifecycle, lifecycle)
-      |> Keyword.put(:allowed_media_accept_types, allowed_media_accept_types)
-      |> Keyword.put(:assets, assets)
-      |> Keyword.put(:default_meta_tags, default_meta_tags)
-      |> Keyword.put(:extra_asset_fields, extra_asset_fields)
+    page_warming = get_opt(opts, :page_warming, {:shortest_paths, 10})
 
-    struct!(__MODULE__, opts)
+    struct!(
+      __MODULE__,
+      Keyword.merge(opts,
+        tailwind_config: ensure_tailwind_config(opts[:tailwind_config]),
+        tailwind_css: tailwind_css,
+        template_formats: template_formats,
+        lifecycle: lifecycle,
+        allowed_media_accept_types: allowed_media_accept_types,
+        assets: assets,
+        default_meta_tags: default_meta_tags,
+        extra_asset_fields: extra_asset_fields,
+        page_warming: page_warming
+      )
+    )
   end
+
+  # Get `key` from `opts` keyword, otherwise returns `default` even if the key is present but returns `nil`.
+  defp get_opt(opts, key, default), do: Keyword.get(opts, key) || default
 
   @doc """
   Returns the `Beacon.Config` for `site`.
@@ -436,7 +490,7 @@ defmodule Beacon.Config do
 
       _ ->
         raise ConfigError, """
-        site #{inspect(site)} was not found. Make sure it's configured and started,
+        site #{inspect(site)} not found. Make sure it's configured and started,
         see `Beacon.start_link/1` for more info.
         """
     end

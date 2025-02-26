@@ -1,4 +1,4 @@
-defmodule Beacon.Beacon.WebTest do
+defmodule Beacon.BeaconTest.Web do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
@@ -41,11 +41,5 @@ defmodule Beacon.Beacon.WebTest do
 end
 
 defmodule Beacon.BeaconTest.LayoutView do
-  use Beacon.Beacon.WebTest, :view
-end
-
-defmodule Beacon.BeaconTest.ErrorView do
-  use Beacon.Beacon.WebTest, :view
-
-  def render(_template, _assigns), do: "Error"
+  use Beacon.BeaconTest.Web, :view
 end

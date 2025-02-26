@@ -2,30 +2,29 @@ defmodule Beacon do
   @moduledoc """
   Beacon is a Content Management System for [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view).
 
-  * Rendering pages fast.
-  * Reloading content at runtime.
-  * Reduced resources usage and scalability.
-  * Integration with existing Phoenix applications.
+  Key features include:
+
+  * Rendering pages fast
+  * Reloading content at runtime
+  * Improved resource usage and scalability
+  * Integration with existing Phoenix applications
 
   You can build virtually any type of website with Beacon, from a simple blog to a complex business site.
 
-  Following are the main APIs provided by Beacon. You can find out more information on the module documentation of each one of those modules:
+  The following are the main APIs provided by Beacon. You can find more information in the documentation for each of these modules:
 
-  * `Beacon.Config` - configuration of sites.
-  * `Beacon.Router` - mount one or more sites into the router of your Phoenix application.
-  * `Beacon.Lifecycle` - inject custom logic into Beacon lifecycle to change how pages are loaded an rendred, and more.
-  * `Beacon.Content` - manage content as layouts, pages, page variants, snippets, and more.
-  * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content.
+  * `Beacon.Config` - configure your site(s)
+  * `Beacon.Router` - mount site(s) into the router of your Phoenix application
+  * `Beacon.Lifecycle` - inject custom logic into Beacon's lifecycle to change how pages are loaded, rendered, and more
+  * `Beacon.Content` - manage content such as layouts, pages, page variants, snippets, etc.
+  * `Beacon.MediaLibrary` - upload images, videos, and documents that can be used in your content
+  * `Beacon.Test` - utilities for testing
 
   Get started with [your first site](https://hexdocs.pm/beacon/your-first-site.html) and check out the guides for more information.
-
   """
 
   @doc false
   use Supervisor
-
-  alias Beacon.Config
-
   require Logger
 
   @doc """
@@ -42,24 +41,28 @@ defmodule Beacon do
   serving all pages in a single Phoenix application or you can create a new site to isolate a landing page for a marketing
   campaign that may receive too much traffic.
 
+  See `Beacon.Router` and [Deployment Topologies](https://hexdocs.pm/beacon/deployment-topologies.html) for more information.
+
   ## Options
 
   Each site in `:sites` may have its own configuration, see all available options at `Beacon.Config.new/1`.
 
   ## Examples
 
-      # config.exs or runtime.exs
-      config :my_app, Beacon,
-        sites: [
-          [site: :my_site, endpoint: MyAppWeb.Endpoint]
-        ]
+      # runtime.exs
+      config :beacon,
+        my_site: [site: :my_site, repo: MyApp.Repo, endpoint: MyAppWeb.Endpoint, router: MyAppWeb.Router]
 
       # lib/my_app/application.ex
       def start(_type, _args) do
         children = [
           MyApp.Repo,
           {Phoenix.PubSub, name: MyApp.PubSub},
-          {Beacon, Application.fetch_env!(:my_app, Beacon)}, # <- added Beacon here
+          {Beacon, [
+            sites: [
+              Application.fetch_env!(:beacon, :my_site)
+            ]
+          ]},
           MyAppWeb.Endpoint
         ]
 
@@ -72,11 +75,14 @@ defmodule Beacon do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @doc false
   @impl true
   def init(opts) do
-    sites =
-      Keyword.get(opts, :sites) ||
-        Logger.warning("Beacon will be started with no sites configured. See `Beacon.start_link/1` for more info.")
+    sites = Keyword.get(opts, :sites, [])
+
+    if sites == [] do
+      Logger.warning("Beacon will start with no sites configured. See `Beacon.start_link/1` for more info.")
+    end
 
     # TODO: pubsub per site?
     # children = [
@@ -85,38 +91,75 @@ defmodule Beacon do
 
     :pg.start_link(:beacon_cluster)
 
-    children = Enum.map(sites, &site_child_spec/1)
+    children =
+      Enum.reduce(sites, [], fn opts, acc ->
+        config = Beacon.Config.new(opts)
+
+        if Beacon.Config.env_test?() do
+          [site_child_spec(config) | acc]
+        else
+          # we only care about starting sites that are valid and reachable
+          case Beacon.Router.reachable(config) do
+            {:ok, _} ->
+              [site_child_spec(config) | acc]
+
+            {:error, {endpoint, host}} ->
+              Logger.warning("""
+              site #{config.site} is not reachable on host #{host} and will not be started
+
+              Check both the Router and #{inspect(endpoint)} configuratation
+
+              See https://hexdocs.pm/beacon/troubleshooting.html for more info.
+              """)
+
+              acc
+
+            :error ->
+              Logger.warning("""
+              site #{config.site} is not reachable or is invalid, it will not be started
+
+              See https://hexdocs.pm/beacon/troubleshooting.html for more info.
+              """)
+
+              acc
+          end
+        end
+      end)
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-  defp site_child_spec(opts) do
-    config = Config.new(opts)
+  defp site_child_spec(%Beacon.Config{} = config) do
     Supervisor.child_spec({Beacon.SiteSupervisor, config}, id: config.site)
   end
 
   @doc """
-  Boot a site executing the initial data population and resources loading.
+  Boot a site.
 
-  It will populate default content data and routes in the router table,
-  enable PubSub events broadcasting, and load resource modules for layouts, pages, and others.
+  It will restart the Site Supervisor if it's already running, otherwise it will start it in the main Beacon Supervisor.
 
-  This function is called by the site supervisor when a site is started and should not be called directly most of the times,
-  but in some scenarions, you want to start Beacon and all related process like the Repo without actually booting the site,
-  for example to seed initial data and in tests.
+  This function is not necessary to be called in most cases, as Beacon will automatically boot all sites when it starts,
+  but in some cases where a site is started with the `:manual` mode, you may want to call this function to boot the site
+  in the `:live` mode to activate resource loading and PubSub events broadcasting.
 
-  In those scenarios you'd define the config `skip_boot?` to `true` in your site configuration,
-  execute everything you need and then call `Beacon.boot/1` to finally boot the site if necessary.
-
-  Note that calling this function will update the running `site` config `skip_boot?` to `false` automatically after the site gets booted,
-  so all PubSub events necessary for Beacon to work properly are broadcasted as expected.
+  Note that `:live` sites that are not reachable will not be started,
+  see [deployment topologies](https://hexdocs.pm/beacon/deployment-topologies.html) for more info.
   """
-  @spec boot(Beacon.Types.Site.t()) :: :ok
-  def boot(site) do
-    site
-    |> Config.fetch!()
-    |> Beacon.Boot.do_init()
+  @spec boot(Beacon.Config.t()) :: Supervisor.on_start_child() | {:error, :unreachable}
+  def boot(%Beacon.Config{} = config) do
+    if config.mode == :live && !Beacon.Router.reachable?(config) do
+      Logger.error(
+        "site #{config.site} is not reachable on host #{config.endpoint.host()} and will not be started, see https://hexdocs.pm/beacon/troubleshooting.html"
+      )
 
-    :ok
+      {:error, :unreachable}
+    else
+      site = config.site
+      Supervisor.terminate_child(__MODULE__, site)
+      Supervisor.delete_child(__MODULE__, site)
+      spec = site_child_spec(config)
+      Supervisor.start_child(__MODULE__, spec)
+    end
   end
 
   @tailwind_version "3.4.4"
@@ -131,62 +174,12 @@ defmodule Beacon do
   end
 
   @doc false
-  # Provides a safer `apply` for cases where `module` is being recompiled,
-  # and also raises with more context about the called mfa.
-  #
   # This should always be used when calling dynamic modules
-  def apply_mfa(module, function, args, opts \\ []) when is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
-    context = Keyword.get(opts, :context, nil)
-    do_apply_mfa(module, function, args, 0, context)
-  end
-
-  @max_retries 5
-
-  defp do_apply_mfa(module, function, args, failure_count, context) when is_atom(module) and is_atom(function) and is_list(args) do
-    if :erlang.module_loaded(module) do
-      apply(module, function, args)
-    else
-      raise Beacon.RuntimeError, message: apply_mfa_error_message(module, function, args, "module is not loaded", context, nil)
-    end
-  rescue
-    error in UndefinedFunctionError ->
-      case {failure_count, error} do
-        {failure_count, _} when failure_count >= @max_retries ->
-          mfa = Exception.format_mfa(module, function, length(args))
-          Logger.debug("failed to call #{mfa} after #{failure_count} tries")
-          reraise Beacon.RuntimeError, [message: apply_mfa_error_message(module, function, args, "exceeded retries", context, error)], __STACKTRACE__
-
-        {_, %UndefinedFunctionError{module: ^module, function: ^function}} ->
-          mfa = Exception.format_mfa(module, function, length(args))
-          Logger.debug("failed to call #{mfa} for the #{failure_count + 1} time, retrying...")
-          :timer.sleep(100 * (failure_count * 2))
-          do_apply_mfa(module, function, args, failure_count + 1, context)
-
-        {_, error} ->
-          reraise Beacon.RuntimeError,
-                  [message: apply_mfa_error_message(module, function, args, nil, context, error)],
-                  __STACKTRACE__
-      end
-
-    error ->
-      Logger.debug(apply_mfa_error_message(module, function, args, nil, context, error))
-      reraise error, __STACKTRACE__
-  end
-
-  defp apply_mfa_error_message(module, function, args, reason, context, error) do
-    mfa = Exception.format_mfa(module, function, length(args))
-    summary = "failed to call #{mfa} with args: #{inspect(List.flatten(args))}"
-    reason = if reason, do: "reason: #{reason}"
-    context = if context, do: "context: #{inspect(context)}"
-    error = if error, do: Exception.message(error)
-
-    lines = for line <- [summary, reason, context, error], line != nil, do: line
-    Enum.join(lines, "\n\n")
-  end
-
-  @doc false
-  # https://github.com/phoenixframework/phoenix_live_view/blob/8fedc6927fd937fe381553715e723754b3596a97/lib/phoenix_live_view/channel.ex#L435-L437
-  def exported?(m, f, a) do
-    function_exported?(m, f, a) || (Code.ensure_loaded?(m) && function_exported?(m, f, a))
+  # 1. Isolate function calls
+  # 2. Enable Beacon's autoloading mechanism (ErrorHandler)
+  # 3. Provide more meaningful error messages
+  def apply_mfa(site, module, function, args, opts \\ [])
+      when is_atom(site) and is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
+    Beacon.Loader.safe_apply_mfa(site, module, function, args, opts)
   end
 end

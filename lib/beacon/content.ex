@@ -35,8 +35,9 @@ defmodule Beacon.Content do
   alias Beacon.Content.ComponentSlot
   alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
-  alias Beacon.Content.InfoHandler
   alias Beacon.Content.EventHandler
+  alias Beacon.Content.InfoHandler
+  alias Beacon.Content.JSHook
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
@@ -65,6 +66,11 @@ defmodule Beacon.Content do
   @doc false
   def table_name(site) do
     String.to_atom("beacon_content_#{site}")
+  end
+
+  defp clear_cache(site, key) do
+    :ets.delete(table_name(site), key)
+    :ok
   end
 
   @doc false
@@ -175,6 +181,7 @@ defmodule Beacon.Content do
     end
   end
 
+  # TODO: only publish if there were actual changes compared to the last snapshot
   @doc """
   Publishes `layout` and reload resources to render the updated layout and pages.
 
@@ -185,7 +192,18 @@ defmodule Beacon.Content do
   @doc type: :layouts
   @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
   def publish_layout(%Layout{} = layout) do
-    GenServer.call(name(layout.site), {:publish_layout, layout})
+    case Beacon.Config.fetch!(layout.site).mode do
+      :live ->
+        GenServer.call(name(layout.site), {:publish_layout, layout})
+
+      :testing ->
+        layout
+        |> insert_published_layout()
+        |> tap(fn {:ok, layout} -> reset_published_layout(layout.site, layout.id) end)
+
+      :manual ->
+        insert_published_layout(layout)
+    end
   end
 
   @doc """
@@ -618,7 +636,18 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
   def publish_page(%Page{} = page) do
-    GenServer.call(name(page.site), {:publish_page, page})
+    case Beacon.Config.fetch!(page.site).mode do
+      :live ->
+        GenServer.call(name(page.site), {:publish_page, page})
+
+      :testing ->
+        page
+        |> insert_published_page()
+        |> tap(fn {:ok, page} -> reset_published_page(page.site, page.id) end)
+
+      :manual ->
+        insert_published_page(page)
+    end
   end
 
   @doc """
@@ -632,6 +661,7 @@ defmodule Beacon.Content do
     |> publish_page()
   end
 
+  # TODO: only publish if there were actual changes compared to the last snapshot
   @doc """
   Publish multiple `pages`.
 
@@ -679,18 +709,25 @@ defmodule Beacon.Content do
   @doc """
   Unpublish `page`.
 
-  Note that page will be removed from your site
-  and it will return error 404 for new requests.
+  The page will be removed from your site and it will return error 404 for new requests.
+
+  This operation is serialized.
   """
   @doc type: :pages
   @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def unpublish_page(%Page{} = page) do
-    transact(repo(page), fn ->
-      with {:ok, _event} <- create_page_event(page, "unpublished") do
-        :ok = Beacon.PubSub.page_unpublished(page)
-        {:ok, page}
-      end
-    end)
+    case Beacon.Config.fetch!(page.site).mode do
+      :live ->
+        GenServer.call(name(page.site), {:unpublish_page, page})
+
+      :testing ->
+        page
+        |> insert_unpublished_page()
+        |> tap(fn {:ok, page} -> clear_cache(page.site, page.id) end)
+
+      :manual ->
+        insert_unpublished_page(page)
+    end
   end
 
   @doc false
@@ -951,6 +988,20 @@ defmodule Beacon.Content do
     |> Enum.map(&extract_page_snapshot/1)
   end
 
+  @doc """
+  Similar to `list_published_pages/2`, but does not accept any options.  Instead, provide a list
+  of paths, and this function will return any published pages which match one of those paths.
+  """
+  @doc type: :pages
+  @spec list_published_pages_for_paths(Site.t(), [String.t()]) :: [Page.t()]
+  def list_published_pages_for_paths(site, paths) do
+    site
+    |> query_list_published_pages_base()
+    |> then(fn query -> from(q in query, where: q.path in ^paths) end)
+    |> repo(site).all()
+    |> Enum.map(&extract_page_snapshot/1)
+  end
+
   defp query_list_published_pages_base(site) do
     events =
       from event in PageEvent,
@@ -997,6 +1048,7 @@ defmodule Beacon.Content do
 
   defp query_list_published_pages_search(query, _search), do: query
 
+  defp query_list_published_pages_sort(query, {:length, key}), do: from(q in query, order_by: [{:asc, fragment("length(?)", field(q, ^key))}])
   defp query_list_published_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """
@@ -1094,7 +1146,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_stylesheet(%{
+      iex> create_stylesheet(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1128,7 +1180,7 @@ defmodule Beacon.Content do
 
   ## Example
 
-      iex >create_stylesheet!(%{
+      iex> create_stylesheet!(%{
         site: :my_site,
         name: "override",
         content: ~S|
@@ -1202,6 +1254,136 @@ defmodule Beacon.Content do
       from s in Stylesheet,
         where: s.site == ^site
     )
+  end
+
+  # JS HOOKS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking JS Hook changes.
+
+  ## Example
+
+      iex> change_js_hook(js_hook, %{name: "MyCustomHook"})
+      %Ecto.Changeset{data: %JSHook{}}
+
+  """
+  @doc type: :js_hooks
+  @spec change_js_hook(JSHook.t(), map()) :: Changeset.t()
+  def change_js_hook(%JSHook{} = js_hook, attrs \\ %{}) do
+    JSHook.changeset(js_hook, attrs)
+  end
+
+  @doc """
+  Creates a JS Hook.
+
+  Returns `{:ok, js_hook}` if successful, otherwise `{:error, changeset}`.
+
+  ## Example
+
+      iex> code = "export const ConsoleLogHook = {mounted() {console.log(\"foo\")}}"
+      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code})
+      {:ok, %JSHook{}}
+
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def create_js_hook(attrs) do
+    changeset = JSHook.changeset(%JSHook{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).insert()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  Creates a JS Hook, raising an error if unsuccessful.
+  """
+  @doc type: :js_hooks
+  @spec create_js_hook!(map()) :: JSHook.t()
+  def create_js_hook!(attrs) do
+    case create_js_hook(attrs) do
+      {:ok, js_hook} -> js_hook
+      {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Generates an empty Hook template for the given name.
+  """
+  @doc type: :js_hooks
+  @spec default_hook_code(String.t()) :: String.t()
+  def default_hook_code(name) do
+    """
+    export const #{name} = {
+      mounted() {
+
+      },
+      beforeUpdate() {
+
+      },
+      updated() {
+
+      },
+      destroyed() {
+
+      },
+      disconnected() {
+
+      },
+      reconnected() {
+
+      },
+    };
+    """
+  end
+
+  @doc """
+  Gets a single JS hooks by `clauses`.
+
+  ## Example
+
+      iex> get_component_by(site, name: "CloseOnGlobalClick")
+      %JSHook{}
+
+  """
+  @doc type: :js_hooks
+  @spec get_js_hook_by(Site.t(), keyword(), keyword()) :: JSHook.t() | nil
+  def get_js_hook_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
+    clauses = Keyword.put(clauses, :site, site)
+    repo(site).get_by(JSHook, clauses, opts)
+  end
+
+  @doc """
+  Lists all JS Hooks for a site.
+  """
+  @doc type: :js_hooks
+  @spec list_js_hooks(Site.t()) :: [JSHook.t()]
+  def list_js_hooks(site) do
+    repo(site).all(from h in JSHook, where: h.site == ^site)
+  end
+
+  @doc """
+  Updates a JS Hook.
+  """
+  @doc type: :js_hooks
+  @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def update_js_hook(js_hook, attrs) do
+    js_hook
+    |> JSHook.changeset(attrs)
+    |> repo(js_hook).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  end
+
+  @doc """
+  Deletes a JS Hook.
+  """
+  @doc type: :js_hooks
+  @spec delete_js_hook(JSHook.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
+  def delete_js_hook(js_hook) do
+    js_hook
+    |> repo(js_hook).delete()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
   end
 
   # COMPONENTS
@@ -1298,7 +1480,7 @@ defmodule Beacon.Content do
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|<.dynamic_tag name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
+        template: ~S|<.dynamic_tag tag_name={@name} class={@class}><%= render_slot(@inner_block) %></.dynamic_tag>|,
         example: ~S|<.html_tag name="p" class="text-xl">content</.tag>|,
         category: :element
       },
@@ -1677,8 +1859,8 @@ defmodule Beacon.Content do
           %{name: "class", type: "string", opts: [default: nil]},
           %{name: "rest", type: "global"}
         ],
-        template: ~S|<img src={beacon_asset_url(@name)} class={@class} {@rest} />|,
-        example: ~S|<.image site={@beacon.site} name="logo.webp" class="w-24 h-24" alt="logo" />|,
+        template: ~S|<img src={beacon_media_url(@name)} class={@class} {@rest} />|,
+        example: ~S|<.image site={@beacon.site} name="beacon.webp" alt="logo" />|,
         category: :media
       },
       %{
@@ -1750,7 +1932,7 @@ defmodule Beacon.Content do
           %{name: "pages", type: "list", opts: [default: []]}
         ],
         slots: [
-          %{name: "inner_block", opts: [default: nil]}
+          %{name: "inner_block", opts: []}
         ],
         body:
           ~S"""
@@ -2940,7 +3122,14 @@ defmodule Beacon.Content do
         component
 
       {:error, changeset} ->
-        raise "failed to create component: #{inspect(changeset.errors)}"
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
+              opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+            end)
+          end)
+
+        raise "failed to create component: #{inspect(errors)}"
     end
   end
 
@@ -3626,6 +3815,21 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Creates an event handler, raising an error if unsuccessful.
+  """
+  @doc type: :event_handlers
+  @spec create_event_handler!(map()) :: EventHandler.t()
+  def create_event_handler!(attrs \\ %{}) do
+    case create_event_handler(attrs) do
+      {:ok, event_handler} ->
+        event_handler
+
+      {:error, changeset} ->
+        raise "failed to create event_handler: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
   Updates an event handler with the given attrs.
   """
   @doc type: :event_handlers
@@ -4236,53 +4440,33 @@ defmodule Beacon.Content do
 
   @doc false
   def handle_call({:publish_page, page}, _from, config) do
-    %{site: site} = config
+    case insert_published_page(page) do
+      {:ok, page} ->
+        :ok = Beacon.PubSub.page_published(page)
+        {:reply, {:ok, page}, config}
 
-    publish = fn page ->
-      changeset = Page.update_changeset(page, %{})
-
-      transact(repo(site), fn ->
-        with {:ok, _changeset} <- validate_page_template(changeset),
-             {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event),
-             %Page{} = page <- Lifecycle.Page.after_publish_page(page),
-             :ok <- Beacon.RouterServer.add_page(page.site, page.id, page.path),
-             true <- :ets.delete(table_name(site), page.id) do
-          {:ok, page}
-        end
-      end)
+      error ->
+        {:reply, error, config}
     end
+  end
 
-    with {:ok, page} <- publish.(page),
-         :ok <- Beacon.PubSub.page_published(page) do
-      {:reply, {:ok, page}, config}
-    else
-      error -> {:reply, error, config}
+  @doc false
+  def handle_call({:unpublish_page, page}, _from, config) do
+    case insert_unpublished_page(page) do
+      {:ok, page} ->
+        :ok = Beacon.PubSub.page_unpublished(page)
+        {:reply, {:ok, page}, config}
+
+      error ->
+        {:reply, error, config}
     end
   end
 
   @doc false
   def handle_call({:publish_layout, layout}, _from, config) do
-    %{site: site} = config
-
-    publish = fn layout ->
-      changeset = Layout.changeset(layout, %{})
-
-      transact(repo(site), fn ->
-        with {:ok, _changeset} <- validate_layout_template(changeset),
-             {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event),
-             true <- :ets.delete(table_name(site), layout.id) do
-          {:ok, layout}
-        end
-      end)
-    end
-
-    with {:ok, layout} <- publish.(layout),
-         :ok <- Beacon.PubSub.layout_published(layout) do
-      {:reply, {:ok, layout}, config}
-    else
-      error -> {:reply, error, config}
+    case do_publish_layout(layout) do
+      {:ok, layout} -> {:reply, {:ok, layout}, config}
+      {:error, error} -> {:reply, error, config}
     end
   end
 
@@ -4317,6 +4501,84 @@ defmodule Beacon.Content do
   def handle_call(:dump_cached_content, _from, config) do
     content = config.site |> table_name() |> :ets.match(:"$1") |> List.flatten()
     {:reply, content, config}
+  end
+
+  defp insert_published_layout(layout) do
+    %{site: site} = layout
+
+    changeset = Layout.changeset(layout, %{})
+
+    transact(repo(site), fn ->
+      with {:ok, _changeset} <- validate_layout_template(changeset),
+           {:ok, event} <- create_layout_event(layout, "published"),
+           {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
+        {:ok, layout}
+      end
+    end)
+  end
+
+  defp insert_published_page(page) do
+    %{site: site} = page
+    changeset = Page.update_changeset(page, %{})
+
+    transact(repo(site), fn ->
+      with {:ok, _changeset} <- validate_page_template(changeset),
+           {:ok, event} <- create_page_event(page, "published"),
+           {:ok, _snapshot} <- create_page_snapshot(page, event),
+           %Page{} = page <- Lifecycle.Page.after_publish_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  defp insert_unpublished_page(page) do
+    transact(repo(page), fn ->
+      with {:ok, _event} <- create_page_event(page, "unpublished"),
+           %Page{} = page <- Lifecycle.Page.after_unpublish_page(page) do
+        {:ok, page}
+      end
+    end)
+  end
+
+  @doc false
+  def reset_published_layout(site, id) do
+    clear_cache(site, id)
+    :ok
+  end
+
+  @doc false
+  def reset_published_page(site, id) do
+    clear_cache(site, id)
+
+    case get_published_page(site, id) do
+      nil -> :skip
+      page -> :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+    end
+
+    :ok
+  end
+
+  defp do_publish_layout(layout) do
+    %{site: site} = layout
+
+    publish = fn layout ->
+      changeset = Layout.changeset(layout, %{})
+
+      transact(repo(site), fn ->
+        with {:ok, _changeset} <- validate_layout_template(changeset),
+             {:ok, event} <- create_layout_event(layout, "published"),
+             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
+          {:ok, layout}
+        end
+      end)
+    end
+
+    with {:ok, layout} <- publish.(layout),
+         :ok <- Beacon.PubSub.layout_published(layout) do
+      {:ok, layout}
+    else
+      error -> error
+    end
   end
 
   @doc false

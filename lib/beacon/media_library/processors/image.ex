@@ -10,8 +10,9 @@ defmodule Beacon.MediaLibrary.Processors.Image do
     target_file_type = ".webp"
 
     output =
-      metadata.path
-      |> Image.open!(access: :random)
+      metadata
+      |> MediaLibrary.read_binary!()
+      |> Image.from_binary!(access: :random)
       |> Image.write!(:memory, suffix: target_file_type)
 
     name = rename_to_target_file_type(metadata.name, target_file_type)

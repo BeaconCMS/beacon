@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.1.0-dev"
+  @version "0.4.1"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
@@ -45,7 +45,8 @@ defmodule Beacon.MixProject do
         Website: @homepage_url,
         DockYard: "https://dockyard.com"
       },
-      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md)
+      files: ~w(lib priv .formatter.exs mix.exs CHANGELOG.md LICENSE.md),
+      exclude_patterns: ["/priv/plts"]
     ]
   end
 
@@ -53,9 +54,8 @@ defmodule Beacon.MixProject do
     [
       # Overridable
       override_dep(:phoenix, "~> 1.7", "PHOENIX_VERSION", "PHOENIX_PATH"),
-      override_dep(:phoenix_live_view, "~> 0.20", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
-      override_dep(:live_monaco_editor, "~> 0.1", "LIVE_MONACO_EDITOR_VERSION", "LIVE_MONACO_EDITOR_PATH"),
-      override_dep(:mdex, "~> 0.1.17", "MDEX_VERSION", "MDEX_PATH"),
+      override_dep(:phoenix_live_view, "~> 0.20 or ~> 1.0", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
+      override_dep(:mdex, "~> 0.2", "MDEX_VERSION", "MDEX_PATH"),
 
       # Runtime
       {:accent, "~> 1.1"},
@@ -68,8 +68,9 @@ defmodule Beacon.MixProject do
       {:gettext, "~> 0.26"},
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
+      {:vix, "<= 0.30.0 or >= 0.31.1"},
       {:jason, "~> 1.0"},
-      {:oembed, "~> 0.4.1"},
+      {:oembed, "~> 0.4"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
@@ -78,24 +79,37 @@ defmodule Beacon.MixProject do
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
       {:tailwind, "~> 0.2"},
+      esbuild_version(),
+      {:igniter, ">= 0.5.24", optional: true},
 
       # Dev, Test, Docs
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:bandit, "~> 1.0", only: :dev, optional: true},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
-      {:esbuild, "~> 0.5", only: :dev},
+      {:ex_doc, "~> 0.29", only: :dev},
+      {:makeup_elixir, "~> 1.0.1 or ~> 1.1", only: :dev},
+      {:makeup_eex, "~> 2.0", only: :dev},
+      {:makeup_syntect, "~> 0.1", only: :dev},
       {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:bypass, "~> 2.1", only: :test}
+      {:bypass, "~> 2.1", only: :test},
+      {:phx_new, "~> 1.7", only: :test, runtime: false}
     ]
   end
 
   defp override_dep(dep, requirement, env_version, env_path) do
     cond do
-      version = System.get_env(env_version) -> {dep, version}
-      path = System.get_env(env_path) -> {dep, path: path}
+      version = System.get_env(env_version) -> {dep, version, override: true}
+      path = System.get_env(env_path) -> {dep, path: path, override: true}
       :default -> {dep, requirement}
     end
+  end
+
+  # TODO: remove this check after we start requiring min OTP 25
+  # https://github.com/phoenixframework/esbuild/commit/83b786bb91438c496f7d917d98ac9c72e3b210c6
+  if System.otp_release() >= "25" do
+    defp esbuild_version, do: {:esbuild, "~> 0.5"}
+  else
+    defp esbuild_version, do: {:esbuild, "~> 0.5 and < 0.9.0"}
   end
 
   defp aliases do
@@ -120,6 +134,7 @@ defmodule Beacon.MixProject do
   defp docs do
     [
       main: "Beacon",
+      logo: "assets/images/beacon.png",
       source_ref: "v#{@version}",
       source_url: @source_url,
       extra_section: "GUIDES",
@@ -136,11 +151,60 @@ defmodule Beacon.MixProject do
         "Functions: Event Handlers": &(&1[:type] == :event_handlers),
         "Functions: Error Pages": &(&1[:type] == :error_pages),
         "Functions: Live Data": &(&1[:type] == :live_data),
-        "Functions: Info Handlers": &(&1[:type] == :info_handlers)
+        "Functions: Info Handlers": &(&1[:type] == :info_handlers),
+        "Functions: JS Hooks": &(&1[:type] == :js_hooks)
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
+      before_closing_body_tag: &before_closing_body_tag/1
     ]
   end
+
+  defp before_closing_body_tag(:html) do
+    """
+    <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.0.2/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      securityLevel: 'loose',
+      theme: 'base'
+    });
+    </script>
+    <style>
+    code.mermaid text.flowchartTitleText {
+      fill: var(--textBody) !important;
+    }
+    code.mermaid g.cluster > rect {
+      fill: var(--background) !important;
+      stroke: var(--neutralBackground) !important;
+    }
+    code.mermaid g.cluster[id$="__transparent"] > rect {
+      fill-opacity: 0 !important;
+      stroke: none !important;
+    }
+    code.mermaid g.nodes span.nodeLabel > em {
+      font-style: normal;
+      background-color: white;
+      opacity: 0.5;
+      padding: 1px 2px;
+      border-radius: 5px;
+    }
+    code.mermaid g.edgePaths > path {
+      stroke: var(--textBody) !important;
+    }
+    code.mermaid g.edgeLabels span.edgeLabel:not(:empty) {
+      background-color: var(--textBody) !important;
+      padding: 3px 5px !important;
+      border-radius:25%;
+      color: var(--background) !important;
+    }
+    code.mermaid .marker {
+      fill: var(--textBody) !important;
+      stroke: var(--textBody) !important;
+    }
+    </style>
+    """
+  end
+
+  defp before_closing_body_tag(_), do: ""
 
   defp extras do
     ["CHANGELOG.md"] ++ Path.wildcard("guides/*/*.md")
@@ -150,7 +214,8 @@ defmodule Beacon.MixProject do
     [
       Introduction: ~r"guides/introduction/",
       Recipes: ~r"guides/recipes/",
-      Troubleshoot: ~r"troubleshoot.md",
+      General: ~r"guides/general/",
+      Deployment: ~r"guides/deployment/",
       Upgrading: ~r"guides/upgrading/"
     ]
   end
@@ -172,6 +237,7 @@ defmodule Beacon.MixProject do
         Beacon.Content.ErrorPage,
         Beacon.Content.EventHandler,
         Beacon.Content.InfoHandler,
+        Beacon.Content.JSHook,
         Beacon.Content.Layout,
         Beacon.Content.LayoutEvent,
         Beacon.Content.LayoutSnapshot,

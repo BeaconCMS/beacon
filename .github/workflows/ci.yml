@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test:
-    name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LiveView ${{matrix.phoenix-live-view}} | PG ${{matrix.postgres}}"
+    name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}} | PG ${{matrix.postgres}}"
 
     strategy:
       fail-fast: false
@@ -30,9 +30,9 @@ jobs:
 
           # latest
           - otp: "27"
-            elixir: "1.17"
+            elixir: "1.18"
             phoenix: "~> 1.7"
-            phoenix-live-view: "~> 0.20"
+            phoenix-live-view: "~> 1.0"
             postgres: '16.4-alpine'
 
     env:
@@ -80,7 +80,9 @@ jobs:
 
       - run: mix deps.get --only-test
 
-      - run: mix tailwind.install
+      - run: mix tailwind.install --no-assets
+
+      - run: mix esbuild.install
 
       - name: mix test
         env:
@@ -88,7 +90,7 @@ jobs:
         run: mix test
 
   quality:
-    name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LiveView ${{matrix.phoenix-live-view}}"
+    name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}}"
 
     strategy:
       fail-fast: false
@@ -96,9 +98,9 @@ jobs:
         include:
           # latest
           - otp: "27"
-            elixir: "1.17"
+            elixir: "1.18"
             phoenix: "~> 1.7"
-            phoenix-live-view: "~> 0.20"
+            phoenix-live-view: "~> 1.0"
 
     env:
       MIX_ENV: dev
@@ -131,6 +133,10 @@ jobs:
 
       - run: mix compile --warnings-as-errors
 
+      - run: mix deps.unlock --check-unused
+
+      - run: mix credo --strict
+
       - run: mix assets.setup
 
       - run: mix format.all
@@ -140,7 +146,3 @@ jobs:
           commit_message: auto format code
 
       - run: mix format.all.check
-
-      - run: mix deps.unlock --check-unused
-
-      - run: mix credo --strict
