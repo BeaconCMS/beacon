@@ -362,61 +362,62 @@ defmodule Beacon.Auth do
   @doc """
   Lists all possible capabilities a Beacon role can have.
   """
-  @spec list_capabilities() :: [:atom]
+  @spec list_capabilities() :: [String.t()]
   def list_capabilities do
-    [
-      :create_layout,
-      :update_layout,
-      :publish_layout,
-      :create_page,
-      :update_page,
-      :publish_page,
-      :unpublish_page,
-      :create_stylesheet,
-      :update_stylesheet,
-      :create_component,
-      :update_component,
-      :create_slot_for_component,
-      :update_slot_for_component,
-      :delete_slot_from_component,
-      :create_slot_attr,
-      :update_slot_attr,
-      :delete_slot_attr,
-      :create_snippet_helper,
-      :create_error_page,
-      :update_error_page,
-      :delete_error_page,
-      :create_event_handler,
-      :update_event_handler,
-      :delete_event_handler,
-      :create_variant_for_page,
-      :update_variant_for_page,
-      :delete_variant_from_page,
-      :create_live_data,
-      :create_assign_for_live_data,
-      :update_live_data_path,
-      :update_live_data_assign,
-      :delete_live_data,
-      :delete_live_data_assign,
-      :create_info_handler,
-      :update_info_handler,
-      :delete_info_handler,
-      :create_role,
-      :update_role,
-      :delete_role,
-      :set_role_for_actor,
-      :create_js_hook,
-      :update_js_hook,
-      :delete_js_hook
-    ]
+    ~w(
+      create_layout
+      update_layout
+      publish_layout
+      create_page
+      update_page
+      publish_page
+      unpublish_page
+      create_stylesheet
+      update_stylesheet
+      create_component
+      update_component
+      create_slot_for_component
+      update_slot_for_component
+      delete_slot_from_component
+      create_slot_attr
+      update_slot_attr
+      delete_slot_attr
+      create_snippet_helper
+      create_error_page
+      update_error_page
+      delete_error_page
+      create_event_handler
+      update_event_handler
+      delete_event_handler
+      create_variant_for_page
+      update_variant_for_page
+      delete_variant_from_page
+      create_live_data
+      create_assign_for_live_data
+      update_live_data_path
+      update_live_data_assign
+      delete_live_data
+      delete_live_data_assign
+      create_info_handler
+      update_info_handler
+      delete_info_handler
+      create_role
+      update_role
+      delete_role
+      set_role_for_actor
+      remove_role_from_actor
+      create_js_hook
+      update_js_hook
+      delete_js_hook
+    )
   end
 
   @doc """
   The default capabilities for a new role that is created.
   """
-  @spec default_role_capabilities() :: [atom()]
+  @spec default_role_capabilities() :: [String.t()]
   def default_role_capabilities do
-    [:create_page, :update_page, :publish_page, :unpublish_page]
+    ~w(create_page update_page publish_page unpublish_page)
   end
 
   @doc false
