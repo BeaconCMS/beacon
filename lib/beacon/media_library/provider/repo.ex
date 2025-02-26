@@ -42,4 +42,9 @@ defmodule Beacon.MediaLibrary.Provider.Repo do
 
   @doc false
   def provider_key, do: @provider_key
+
+  @doc false
+  def soft_delete(_asset) do
+    # implement asset removal from Repo
+  end
 end
