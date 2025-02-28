@@ -2,6 +2,8 @@ defmodule Mix.Tasks.Beacon.InstallTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
+  @moduletag :igniter
+
   setup do
     [project: phoenix_project()]
   end
