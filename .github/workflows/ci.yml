@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           # minimum required versions
-          - otp: "23"
+          - otp: "24.2"
             elixir: "1.14.0"
             phoenix: "1.7.0"
             phoenix-live-view: "0.20.2"
@@ -40,7 +40,7 @@ jobs:
       PHOENIX_VERSION: ${{matrix.phoenix}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view}}
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     services:
       postgres:
@@ -105,7 +105,7 @@ jobs:
     env:
       MIX_ENV: dev
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
