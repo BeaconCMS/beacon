@@ -40,7 +40,7 @@ jobs:
       PHOENIX_VERSION: ${{matrix.phoenix}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view}}
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     services:
       postgres:
@@ -105,7 +105,7 @@ jobs:
     env:
       MIX_ENV: dev
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
