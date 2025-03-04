@@ -23,14 +23,21 @@ defmodule Mix.Tasks.Beacon.Gen.Site.Docs do
     ```
 
     ```bash
-    mix beacon.gen.site --site my_site --path / --host my_site.com
+    mix beacon.gen.site --site my_site --path / --host mysite.com
+    ```
+
+    To define a custom host to work locally and thhe production host:
+
+    ```bash
+    mix beacon.gen.site --site my_site --path / --host-dev local.mysite.com --host mysite.com
     ```
 
     ## Options
 
     * `--site` (required) - The name of your site. Should not contain special characters nor start with "beacon_"
     * `--path` (optional) - Where your site will be mounted. Follows the same convention as Phoenix route prefixes. Defaults to `"/"`
-    * `--host` (optional) - If provided, site will be served on that host.
+    * `--host` (optional) - If provided, site will be served on that host for production environments.
+    * `--host-dev` (optional) - If provided, site will be served on that host for dev (local) environments.
     * `--port` (optional) - The port to use for http requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
     * `--secure-port` (optional) - The port to use for https requests. Only needed when `--host` is provided.  If no port is given, one will be chosen at random.
     * `--endpoint` (optional) - The name of the Endpoint Module for your site. If not provided, a default will be generated based on the `site`.
@@ -70,6 +77,7 @@ if Code.ensure_loaded?(Igniter) do
           site: :string,
           path: :string,
           host: :string,
+          host_dev: :string,
           port: :integer,
           secure_port: :integer,
           endpoint: :string,
@@ -101,6 +109,7 @@ if Code.ensure_loaded?(Igniter) do
       site = Keyword.fetch!(options, :site) |> validate_site!()
       path = Keyword.fetch!(options, :path) |> validate_path!()
       host = Keyword.get(options, :host) |> validate_host!()
+      host_dev = Keyword.get(options, :host_dev) |> validate_host!()
 
       port = Keyword.get_lazy(options, :port, fn -> Enum.random(4101..4999) end)
       secure_port = Keyword.get_lazy(options, :secure_port, fn -> Enum.random(8444..8999) end)
@@ -120,12 +129,12 @@ if Code.ensure_loaded?(Igniter) do
       |> create_migration(repo)
       |> add_use_beacon_in_router(router)
       |> add_beacon_pipeline_in_router(router)
-      |> mount_site_in_router(router, site, path, host)
+      |> mount_site_in_router(router, site, path, host, host_dev)
       |> add_site_config_in_config_runtime(site, repo, router, site_endpoint)
       |> add_beacon_config_in_app_supervisor(site, repo)
       |> create_proxy_endpoint(argv)
       |> create_site_endpoint(otp_app, web_module, site_endpoint)
-      |> configure_site_endpoint(host, otp_app, port, secure_port, site_endpoint)
+      |> configure_site_endpoint(host, otp_app, port, secure_port, site_endpoint, host_dev)
       |> update_session_options(otp_app)
       |> add_site_endpoint_to_application(repo, site_endpoint)
       |> Igniter.add_notice("""
@@ -172,6 +181,8 @@ if Code.ensure_loaded?(Igniter) do
 
     defp validate_host!(nil = host), do: host
 
+    defp validate_host!("localhost"), do: "localhost"
+
     defp validate_host!(host) do
       case domain_prefix(host) do
         {:ok, _} ->
@@ -179,7 +190,9 @@ if Code.ensure_loaded?(Igniter) do
 
         _ ->
           Mix.raise("""
-          invalid host
+          invalid host, expected a valid domain
+
+          Got: #{inspect(host)}
           """)
       end
     end
@@ -233,7 +246,7 @@ if Code.ensure_loaded?(Igniter) do
       )
     end
 
-    defp mount_site_in_router(igniter, router, site, path, host) do
+    defp mount_site_in_router(igniter, router, site, path, host, host_dev) do
       web_module = Igniter.Libs.Phoenix.web_module(igniter)
 
       with {:ok, {igniter, _source, zipper}} <- Igniter.Project.Module.find_module(igniter, router) do
@@ -251,21 +264,29 @@ if Code.ensure_loaded?(Igniter) do
               beacon_site #{inspect(path)}, site: #{inspect(site)}
               """
 
+            arg2 =
+              if host || host_dev do
+                hosts =
+                  ["localhost", host_dev, host]
+                  |> Enum.reject(&is_nil/1)
+                  |> Enum.uniq()
+
+                [alias: web_module, host: hosts]
+              else
+                [alias: web_module]
+              end
+
             Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content,
               with_pipelines: [:browser, :beacon],
               router: router,
-              arg2:
-                if(host,
-                  do: [alias: web_module, host: ["localhost", host]],
-                  else: [alias: web_module]
-                )
+              arg2: arg2
             )
 
-          is_nil(host) ->
+          is_nil(host) && is_nil(host_dev) ->
             # keep existing scope unchanged
             igniter
 
-          :beacon_site_exists_and_host_provided ->
+          :beacon_site_exists_and_hosts_provided ->
             # update the existing scope to use the provided host option
             Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
               {:ok,
@@ -277,7 +298,7 @@ if Code.ensure_loaded?(Igniter) do
                |> Sourceror.Zipper.up()
                |> Sourceror.Zipper.up()
                |> Sourceror.Zipper.up()
-               |> Sourceror.Zipper.update(&add_host_to_scope(&1, host))}
+               |> Sourceror.Zipper.update(&add_hosts_to_scope(&1, host, host_dev))}
             end)
         end
       else
@@ -285,11 +306,14 @@ if Code.ensure_loaded?(Igniter) do
       end
     end
 
-    defp add_host_to_scope({:scope, scope, [scope_path, scope_opts, rest]}, host) do
+    defp add_hosts_to_scope({:scope, scope, [scope_path, scope_opts, rest]}, host, host_dev) do
+      hosts =
+        ["localhost", host_dev, host]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
       {opts, _} = Code.eval_quoted(scope_opts)
-
-      updated_opts = Keyword.delete(opts, :host) ++ [host: ["localhost", host]]
-
+      updated_opts = Keyword.delete(opts, :host) ++ [host: hosts]
       {:scope, scope, [scope_path, updated_opts, rest]}
     end
 
@@ -397,7 +421,7 @@ if Code.ensure_loaded?(Igniter) do
       )
     end
 
-    defp configure_site_endpoint(igniter, host, otp_app, port, secure_port, site_endpoint) do
+    defp configure_site_endpoint(igniter, host, otp_app, port, secure_port, site_endpoint, host_dev) do
       error_html = "Beacon.Web.ErrorHTML"
       pubsub = Igniter.Project.Module.module_name(igniter, "PubSub")
 
@@ -435,23 +459,48 @@ if Code.ensure_loaded?(Igniter) do
           do: &1,
           else:
             Igniter.update_elixir_file(&1, Beacon.Igniter.config_file_path(igniter, "dev.exs"), fn zipper ->
+              config =
+                if host_dev do
+                  """
+                  [
+                    url: [host: "#{host_dev}"],
+                    http: [ip: {127, 0, 0, 1}, port: #{port}],
+                    check_origin: false,
+                    code_reloader: true,
+                    debug_errors: true,
+                    secret_key_base: secret_key_base
+                  ]
+                  """
+                else
+                  """
+                  [
+                    http: [ip: {127, 0, 0, 1}, port: #{port}],
+                    check_origin: false,
+                    code_reloader: true,
+                    debug_errors: true,
+                    secret_key_base: secret_key_base
+                  ]
+                  """
+                end
+
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:secret_key_base)
                |> Igniter.Project.Config.modify_configuration_code(
                  [site_endpoint],
                  otp_app,
-                 Sourceror.parse_string!("""
-                 [
-                   http: [ip: {127, 0, 0, 1}, port: #{port}],
-                   check_origin: false,
-                   code_reloader: true,
-                   debug_errors: true,
-                   secret_key_base: secret_key_base
-                 ]
-                 """)
+                 Sourceror.parse_string!(config)
                )}
             end)
+        )
+      )
+      |> then(
+        &if(host_dev,
+          do:
+            Igniter.Project.Config.configure(&1, "dev.exs", otp_app, [site_endpoint, :url, :host], host_dev,
+              updater: fn zipper -> {:ok, Sourceror.Zipper.replace(zipper, host)} end
+            ),
+          else: &1
         )
       )
       |> Igniter.Project.Config.configure_runtime_env(:prod, otp_app, [site_endpoint, :url, :host], host || {:code, Sourceror.parse_string!("host")},
