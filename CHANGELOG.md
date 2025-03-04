@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3 (2025-03-04)
+
+### Enhancements
+  - Add argument `--host-dev` in `gen.site` task to define the host for dev (local) environments.
+
 ## 0.4.2 (2025-02-26)
 
 ### Fixes
