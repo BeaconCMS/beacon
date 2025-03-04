@@ -526,7 +526,7 @@ if Code.ensure_loaded?(Igniter) do
         &if(host_dev,
           do:
             Igniter.Project.Config.configure(&1, "dev.exs", otp_app, [site_endpoint, :url, :host], host_dev,
-              updater: fn zipper -> {:ok, Sourceror.Zipper.replace(zipper, host)} end
+              updater: fn zipper -> {:ok, Sourceror.Zipper.replace(zipper, host_dev)} end
             ),
           else: &1
         )
