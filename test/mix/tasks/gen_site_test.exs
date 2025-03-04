@@ -42,18 +42,22 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     |> assert_unchanged()
   end
 
-  test "can upgrade site with --host option" do
+  test "can upgrade site with --host and --host-dev option" do
     phoenix_project()
     |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
     |> apply_igniter!()
-    |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
+    |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com --host-dev local.example.com))
     |> assert_has_patch("lib/test_web/router.ex", """
     23     - |  scope "/", alias: TestWeb do
-        23 + |  scope "/", alias: TestWeb, host: ["localhost", "example.com"] do
+        23 + |  scope "/", alias: TestWeb, host: ["localhost", "local.example.com", "example.com"] do
     """)
     |> assert_has_patch("config/runtime.exs", """
     55     - |  url: [host: host, port: #{@secure_port}, scheme: "https"],
         55 + |  url: [host: "example.com", port: #{@secure_port}, scheme: "https"],
+    """)
+    |> assert_has_patch("config/dev.exs", """
+    10 + |       secret_key_base: secret_key_base,
+    11 + |       url: [host: "local.example.com"]
     """)
   end
 
@@ -144,6 +148,18 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
         27 + |
       """)
     end
+
+    test "--host-dev option", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host-dev local.example.com))
+      |> assert_has_patch("lib/test_web/router.ex", """
+        23 + |  scope "/", alias: TestWeb, host: ["localhost", "local.example.com"] do
+        24 + |    pipe_through [:browser, :beacon]
+        25 + |    beacon_site "/", site: :my_site
+        26 + |  end
+        27 + |
+      """)
+    end
   end
 
   describe "config" do
@@ -200,6 +216,22 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       # update secret key base for existing endpoint
       |> assert_has_patch("config/dev.exs", """
          32 + |  secret_key_base: secret_key_base,
+      """)
+    end
+
+    test "updates dev.exs with --host-dev", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host-dev local.example.com))
+      |> assert_has_patch("config/dev.exs", """
+          4 + |config :test,
+          5 + |       TestWeb.MySiteEndpoint,
+          6 + |       url: [host: "local.example.com"],
+          7 + |       http: [ip: {127, 0, 0, 1}, port: 4041],
+          8 + |       check_origin: false,
+          9 + |       code_reloader: true,
+         10 + |       debug_errors: true,
+         11 + |       secret_key_base: secret_key_base
+         12 + |
       """)
     end
 
