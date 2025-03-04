@@ -1,11 +1,13 @@
 defmodule Beacon.Loader.Worker do
   @moduledoc false
-
   use GenServer, restart: :transient
-  require Logger
+
+  alias Beacon.Auth
   alias Beacon.Compiler
   alias Beacon.Content
   alias Beacon.Loader
+
+  require Logger
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.site))
@@ -64,7 +66,7 @@ defmodule Beacon.Loader.Worker do
         [] ->
           attrs
           |> Map.put(:site, site)
-          |> Content.create_component!()
+          |> Content.create_component!(auth: false)
 
         _ ->
           :skip
@@ -81,8 +83,8 @@ defmodule Beacon.Loader.Worker do
       nil ->
         Content.default_layout()
         |> Map.put(:site, site)
-        |> Content.create_layout!()
-        |> Content.publish_layout()
+        |> Content.create_layout!(auth: false)
+        |> Content.publish_layout(auth: false)
 
       _ ->
         :skip
@@ -102,7 +104,7 @@ defmodule Beacon.Loader.Worker do
             attrs
             |> Map.put(:site, site)
             |> Map.put(:layout_id, default_layout.id)
-            |> Content.create_error_page!()
+            |> Content.create_error_page!(auth: false)
 
           _ ->
             :skip
@@ -126,42 +128,45 @@ defmodule Beacon.Loader.Worker do
     populate = fn ->
       case Content.get_page_by(site, path: "/") do
         nil ->
-          Content.create_stylesheet(%{
-            site: site,
-            name: "beacon-demo",
-            content: ~S"""
-            .beacon-demo-home {
-                background: rgb(50,163,252);
-                background: linear-gradient(145deg, rgba(50,163,252,1) 0%, rgba(99,102,241,1) 26%, rgba(138,55,214,1) 55%, rgba(100,37,181,1) 76%, rgba(31,41,55,1) 100%);
-                background-size: 400% 400%;
-                animation: beacon-demo-home-gradient 30s ease infinite;
-                height: 100vh;
-                font-family: "Plus Jakarta Sans", sans-serif;
-            }
+          Content.create_stylesheet(
+            %{
+              site: site,
+              name: "beacon-demo",
+              content: ~S"""
+              .beacon-demo-home {
+                  background: rgb(50,163,252);
+                  background: linear-gradient(145deg, rgba(50,163,252,1) 0%, rgba(99,102,241,1) 26%, rgba(138,55,214,1) 55%, rgba(100,37,181,1) 76%, rgba(31,41,55,1) 100%);
+                  background-size: 400% 400%;
+                  animation: beacon-demo-home-gradient 30s ease infinite;
+                  height: 100vh;
+                  font-family: "Plus Jakarta Sans", sans-serif;
+              }
 
-            @keyframes beacon-demo-home-gradient {
-                0% {
-                    background-position: 0% 0%;
-                }
-                50% {
-                    background-position: 100% 100%;
-                }
-                100% {
-                    background-position: 0% 0%;
-                }
-            }
-            .beacon-demo-home-title {
-                background: linear-gradient(
-                    to right,
-                    rgb(186, 230, 253),
-                    rgb(221, 214, 254)
-                );
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                text-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
-            }
-            """
-          })
+              @keyframes beacon-demo-home-gradient {
+                  0% {
+                      background-position: 0% 0%;
+                  }
+                  50% {
+                      background-position: 100% 100%;
+                  }
+                  100% {
+                      background-position: 0% 0%;
+                  }
+              }
+              .beacon-demo-home-title {
+                  background: linear-gradient(
+                      to right,
+                      rgb(186, 230, 253),
+                      rgb(221, 214, 254)
+                  );
+                  -webkit-background-clip: text;
+                  -webkit-text-fill-color: transparent;
+                  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+              }
+              """
+            },
+            auth: false
+          )
 
           %{
             site: site,
@@ -347,8 +352,8 @@ defmodule Beacon.Loader.Worker do
             </div>
             """
           }
-          |> Content.create_page!()
-          |> Content.publish_page()
+          |> Content.create_page!(auth: false)
+          |> Content.publish_page(auth: false)
 
         _ ->
           :skip
@@ -362,6 +367,24 @@ defmodule Beacon.Loader.Worker do
       Logger.error("failed to populate default error pages because the default layout is missing.")
       stop({:error, :missing_default_layout}, config)
     end
+  end
+
+  def handle_call(:populate_default_roles, _from, config) do
+    %{site: site} = config
+
+    for attrs <- Auth.default_roles() do
+      case Auth.get_role_by_name(site, attrs.name) do
+        nil ->
+          attrs
+          |> Map.put(:site, site)
+          |> Auth.create_role!(auth: false)
+
+        %{} ->
+          :skip
+      end
+    end
+
+    stop(:ok, config)
   end
 
   # todo: remove
