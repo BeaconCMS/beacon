@@ -116,11 +116,11 @@ defmodule Beacon.ProxyEndpoint do
         end) || check_origin_fallback_endpoint.()
       end
 
-      def check_origin(_), do: false
+      def check_origin(_uri), do: false
 
       defp check_origin(%{scheme: scheme, host: host}, scheme, host) when is_binary(scheme) and is_binary(host), do: true
-      defp check_origin(%{host: host}, nil, host) when is_binary(host), do: true
-      defp check_origin(_, _), do: false
+      defp check_origin(%{host: host}, nil = _scheme, host) when is_binary(host), do: true
+      defp check_origin(_uri, _scheme, _host), do: false
     end
   end
 
