@@ -64,6 +64,14 @@ defmodule Beacon.BeaconTest.Router do
     pipe_through :browser
 
     beacon_site "/other", site: :not_booted
-    beacon_site "/", site: :my_site
+    beacon_site "/", site: :my_site, on_mount: [{Beacon.BeaconTest.OnMount, []}]
+  end
+end
+
+defmodule Beacon.BeaconTest.OnMount do
+  import Phoenix.Component
+
+  def on_mount(_scope, _params, _session, socket) do
+    {:cont, assign(socket, :on_mount_var, "on_mount_test")}
   end
 end

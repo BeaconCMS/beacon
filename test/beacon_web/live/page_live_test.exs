@@ -62,6 +62,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
             <.sample_component project={project} />
           <% end %>
 
+          <h2>on_mount:</h2>
+          on_mount_var=<%= @on_mount_var %>
+
           <h2>Beacon:</h2>
           @beacon.site=<%= @beacon.site %>
           @beacon.path_params=<%= @beacon.path_params["greet"] %>
@@ -149,6 +152,12 @@ defmodule Beacon.Web.Live.PageLiveTest do
     assert html =~ ~r/@beacon.site=my_site/
     assert html =~ ~r/@beacon.path_params=hello/
     assert html =~ ~r/@beacon.query_params=param/
+  end
+
+  test "on_mount", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/home/hello")
+
+    assert html =~ ~r/on_mount_var=on_mount_test/
   end
 
   test "live data", %{conn: conn} do

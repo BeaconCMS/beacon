@@ -28,6 +28,7 @@ defmodule Beacon.Web.API.PageJSON do
 
     assigns =
       route_assigns
+      # live data should overwrite on_mount assigns in case of a name conflict
       |> Map.merge(live_data)
       |> Map.put(:beacon, beacon_assigns)
       # TODO: remove deprecated @beacon_live_data
