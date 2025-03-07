@@ -24,9 +24,12 @@ defmodule Beacon.Web.API.PageJSON do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
     live_data = Beacon.Web.DataSource.live_data(page.site, path_info, %{})
     beacon_assigns = BeaconAssigns.new(page, path_info: path_info)
+    route_assigns = Beacon.Private.route_assigns(page.site, page.path)
 
     assigns =
-      live_data
+      route_assigns
+      # live data should overwrite on_mount assigns in case of a name conflict
+      |> Map.merge(live_data)
       |> Map.put(:beacon, beacon_assigns)
       # TODO: remove deprecated @beacon_live_data
       |> Map.put(:beacon_live_data, live_data)
