@@ -82,11 +82,17 @@ if Code.ensure_loaded?(Igniter) do
       end
     end
 
-    def diff_file(igniter, file) do
+    def source_diff(igniter, file) do
       igniter.rewrite.sources
       |> Map.fetch!(file)
       |> Rewrite.Source.diff()
       |> IO.iodata_to_binary()
+    end
+
+    def source_content(igniter, file) do
+      igniter.rewrite.sources
+      |> Map.fetch!(file)
+      |> Rewrite.Source.get(:content)
     end
 
     def config_file_path(igniter, file_name) do
