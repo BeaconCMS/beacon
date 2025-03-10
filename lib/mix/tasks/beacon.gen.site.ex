@@ -278,14 +278,14 @@ if Code.ensure_loaded?(Igniter) do
       web_module = Igniter.Libs.Phoenix.web_module(igniter)
 
       with {:ok, {igniter, _source, zipper}} <- Igniter.Project.Module.find_module(igniter, router) do
-        beacon_site_exists? =
+        beacon_site_search_result =
           Sourceror.Zipper.find(
             zipper,
             &match?({:beacon_site, _, [{_, _, [^path]}, [{{_, _, [:site]}, {_, _, [^site]}}]]}, &1)
           )
 
         cond do
-          is_nil(beacon_site_exists?) ->
+          is_nil(beacon_site_search_result) ->
             content =
               """
               beacon_site #{inspect(path)}, site: #{inspect(site)}
