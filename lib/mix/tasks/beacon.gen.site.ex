@@ -286,7 +286,6 @@ if Code.ensure_loaded?(Igniter) do
 
         cond do
           is_nil(beacon_site_search_result) ->
-            # add a new scope
             content =
               """
               beacon_site #{inspect(path)}, site: #{inspect(site)}
@@ -305,13 +304,14 @@ if Code.ensure_loaded?(Igniter) do
               end
 
             Igniter.Libs.Phoenix.append_to_scope(igniter, "/", content,
-              with_pipelines: [:browser, :beacon],
               router: router,
-              arg2: arg2
+              arg2: arg2,
+              with_pipelines: [:browser, :beacon],
+              placement: :after
             )
 
           is_nil(host) && is_nil(host_dev) ->
-            # keep existing scope unchanged
+            # keep existing site unchanged, ie: no new options were added/changed
             igniter
 
           :beacon_site_exists_and_hosts_provided ->

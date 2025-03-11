@@ -48,8 +48,8 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
     |> apply_igniter!()
     |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com --host-dev local.example.com))
     |> assert_has_patch("lib/test_web/router.ex", """
-    23     - |  scope "/", alias: TestWeb do
-        23 + |  scope "/", alias: TestWeb, host: ["localhost", "local.example.com", "example.com"] do
+    51    - |  scope "/", alias: TestWeb do
+       51 + |  scope "/", alias: TestWeb, host: ["localhost", "local.example.com", "example.com"] do
     """)
     |> assert_has_patch("config/runtime.exs", """
     55     - |  url: [host: host, port: #{@secure_port}, scheme: "https"],
@@ -108,14 +108,15 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       """)
     end
 
-    test "mount site in router", %{project: project} do
+    test "mount site in router at the bottom of the router", %{project: project} do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
       |> assert_has_patch("lib/test_web/router.ex", """
-      23 + |  scope "/", alias: TestWeb do
-      24 + |    pipe_through [:browser, :beacon]
-      25 + |    beacon_site "/", site: :my_site
-      26 + |  end
+         51 + |  scope "/", alias: TestWeb do
+         52 + |    pipe_through [:browser, :beacon]
+         53 + |    beacon_site "/", site: :my_site
+         54 + |  end
+      44 55   |end
       """)
     end
 
@@ -125,15 +126,14 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       |> apply_igniter!()
       |> Igniter.compose_task("beacon.gen.site", @opts_other_site)
       |> assert_has_patch("lib/test_web/router.ex", """
-      23 23   |  scope "/", alias: TestWeb do
-      24 24   |    pipe_through [:browser, :beacon]
-         25 + |    beacon_site "/other", site: :other
-         26 + |  end
-         27 + |
-         28 + |  scope "/", alias: TestWeb do
-         29 + |    pipe_through [:browser, :beacon]
-      25 30   |    beacon_site "/", site: :my_site
-      26 31   |  end
+      53 53   |    beacon_site "/", site: :my_site
+      54 54   |  end
+         55 + |
+         56 + |  scope "/", alias: TestWeb do
+         57 + |    pipe_through [:browser, :beacon]
+         58 + |    beacon_site "/other", site: :other
+         59 + |  end
+      55 60   |end
       """)
     end
 
@@ -141,11 +141,10 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host example.com))
       |> assert_has_patch("lib/test_web/router.ex", """
-        23 + |  scope "/", alias: TestWeb, host: ["localhost", "example.com"] do
-        24 + |    pipe_through [:browser, :beacon]
-        25 + |    beacon_site "/", site: :my_site
-        26 + |  end
-        27 + |
+      51 + |  scope "/", alias: TestWeb, host: ["localhost", "example.com"] do
+      52 + |    pipe_through [:browser, :beacon]
+      53 + |    beacon_site "/", site: :my_site
+      54 + |  end
       """)
     end
 
@@ -153,11 +152,10 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       project
       |> Igniter.compose_task("beacon.gen.site", @opts_my_site ++ ~w(--host-dev local.example.com))
       |> assert_has_patch("lib/test_web/router.ex", """
-        23 + |  scope "/", alias: TestWeb, host: ["localhost", "local.example.com"] do
-        24 + |    pipe_through [:browser, :beacon]
-        25 + |    beacon_site "/", site: :my_site
-        26 + |  end
-        27 + |
+      51 + |  scope "/", alias: TestWeb, host: ["localhost", "local.example.com"] do
+      52 + |    pipe_through [:browser, :beacon]
+      53 + |    beacon_site "/", site: :my_site
+      54 + |  end
       """)
     end
   end
