@@ -2,6 +2,8 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
   use Beacon.CodeGenCase
   import Igniter.Test
 
+  @moduletag :igniter
+
   @secret_key_base "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIo"
   @signing_salt "O68x1k5B"
   @port 4041

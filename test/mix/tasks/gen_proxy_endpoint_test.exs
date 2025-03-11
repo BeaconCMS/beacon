@@ -3,6 +3,8 @@ defmodule Mix.Tasks.Beacon.GenProxyEndpointTest do
 
   import Igniter.Test
 
+  @moduletag :igniter
+
   @signing_salt "SNUXnTNM"
   @secret_key_base "A0DSgxjGCYZ6fCIrBlg6L+qC/cdoFq5Rmomm53yacVmN95Wcpl57Gv0sTJjKjtIp"
 
