@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           # minimum required versions
-          - otp: "23"
+          - otp: "24.2"
             elixir: "1.14.0"
             phoenix: "1.7.0"
             phoenix-live-view: "0.20.2"
@@ -33,7 +33,7 @@ jobs:
             elixir: "1.18"
             phoenix: "~> 1.7"
             phoenix-live-view: "~> 1.0"
-            postgres: '16.4-alpine'
+            postgres: '17-alpine'
 
     env:
       MIX_ENV: test
@@ -97,7 +97,7 @@ jobs:
       matrix:
         include:
           # minimum required versions
-          - otp: "23"
+          - otp: "24.2"
             elixir: "1.14.0"
             phoenix: "1.7.0"
             phoenix-live-view: "0.20.2"
@@ -108,7 +108,7 @@ jobs:
             elixir: "1.18"
             phoenix: "~> 1.7"
             phoenix-live-view: "~> 1.0"
-            postgres: '16.4-alpine'
+            postgres: '17-alpine'
 
     env:
       MIX_ENV: test
