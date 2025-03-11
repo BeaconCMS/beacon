@@ -83,13 +83,12 @@ defmodule Beacon.Private do
     host = endpoint_host(otp_app, config.endpoint)
     router = config.router
 
-    {%{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}, on_mount: on_mount}}}}, _, _, _} =
-      router.__match_route__(router, "GET", host)
-
-    socket = %Phoenix.LiveView.Socket{private: %{lifecycle: %Phoenix.LiveView.Lifecycle{mount: on_mount}}}
-
-    case Phoenix.LiveView.Lifecycle.mount(%{}, %{}, socket) do
-      {_, %Phoenix.LiveView.Socket{assigns: assigns}} -> Map.drop(assigns, [:__changed__])
+    with {%{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}, on_mount: on_mount}}}}, _, _, _} <-
+           router.__match_route__(router, "GET", host),
+         socket = %Phoenix.LiveView.Socket{private: %{lifecycle: %Phoenix.LiveView.Lifecycle{mount: on_mount}}},
+         {_, %Phoenix.LiveView.Socket{assigns: assigns}} <- Phoenix.LiveView.Lifecycle.mount(%{}, %{}, socket) do
+      Map.drop(assigns, [:__changed__])
+    else
       _ -> %{}
     end
   end
@@ -98,4 +97,6 @@ defmodule Beacon.Private do
     path_info = for segment <- String.split(path_info, "/"), segment != "", do: segment
     route_assigns(site, path_info)
   end
+
+  def route_assigns(_site, _path_info), do: %{}
 end
