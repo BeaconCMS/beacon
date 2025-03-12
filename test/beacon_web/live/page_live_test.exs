@@ -123,7 +123,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       """
     })
 
-    Content.publish_page(page_home)
+    Content.publish_page(page_home, auth: false)
 
     _page_without_meta_tags =
       beacon_published_page_fixture(
@@ -285,8 +285,8 @@ defmodule Beacon.Web.Live.PageLiveTest do
     end
 
     test "update resource links on layout publish", %{conn: conn, layout: layout} do
-      {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
-      {:ok, layout} = Content.publish_layout(layout)
+      {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]}, auth: false)
+      {:ok, layout} = Content.publish_layout(layout, auth: false)
       Beacon.Loader.load_layout_module(layout.site, layout.id)
       {:ok, _view, html} = live(conn, "/home/hello")
       assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
@@ -394,7 +394,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
       assert html =~ "component_test_v1"
 
-      Content.update_component(component, %{template: "component_test_v2"})
+      Content.update_component(component, %{template: "component_test_v2"}, auth: false)
       Beacon.Loader.load_components_module(component.site)
 
       {:ok, _view, html} = live(conn, "/component_test")
