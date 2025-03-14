@@ -17,6 +17,8 @@ defmodule Beacon.Private do
 
   @phoenix_live_view_version to_string(Application.spec(:phoenix_live_view)[:vsn])
 
+  def phoenix_live_view_version, do: @phoenix_live_view_version
+
   @doc """
   On page navigation, the request might actually hit a different site than the one defined by the current session.
 
