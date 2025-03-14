@@ -11,7 +11,7 @@ defmodule Beacon.Migrations.V002 do
       add :code, :text, null: false
       add :site, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec)
     end
 
     flush()
@@ -41,7 +41,7 @@ defmodule Beacon.Migrations.V002 do
       add :msg, :text, null: false
       add :code, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec)
     end
   end
 
@@ -53,7 +53,7 @@ defmodule Beacon.Migrations.V002 do
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec)
     end
 
     # global event handlers can't be converted back into page event handlers
