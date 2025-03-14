@@ -346,7 +346,7 @@ defmodule Beacon.MediaLibrary do
   Search assets by file name.
   """
   @spec search(Site.t(), String.t()) :: [Asset.t()]
-  def search(site, query) do
+  def search(site, query) when is_atom(site) and is_binary(query) do
     query = query |> String.split() |> Enum.join("%")
     query = "%#{query}%"
 
@@ -359,6 +359,8 @@ defmodule Beacon.MediaLibrary do
       )
     )
   end
+
+  def search(_site, _query), do: []
 
   @doc """
   Soft deletes a asset.
