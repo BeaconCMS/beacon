@@ -95,10 +95,9 @@ defmodule DemoWeb.Router do
 end
 
 defmodule DemoWeb.InitAssigns do
-  import Phoenix.LiveView
   import Phoenix.Component
 
-  def on_mount(:default, params, session, socket) do
+  def on_mount(:default, _params, session, socket) do
     env = session["env"]
     {:cont, assign(socket, :env, env)}
   end
