@@ -85,7 +85,18 @@ defmodule Beacon.Private do
     host = endpoint_host(otp_app, config.endpoint)
     router = config.router
 
-    with {%{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: {Beacon.Router, :session, [^site, _]}, on_mount: on_mount}}}}, _, _, _} <-
+    with {
+           %{
+             phoenix_live_view:
+               {Beacon.Web.PageLive, _, _,
+                %{
+                  extra: %{session: {Beacon.Router, :session, [^site, _]}, on_mount: on_mount}
+                }}
+           },
+           _,
+           _,
+           _
+         } <-
            router.__match_route__(router, "GET", host),
          socket = %Phoenix.LiveView.Socket{private: %{lifecycle: %Phoenix.LiveView.Lifecycle{mount: on_mount}}},
          {_, %Phoenix.LiveView.Socket{assigns: assigns}} <- Phoenix.LiveView.Lifecycle.mount(%{}, %{}, socket) do
