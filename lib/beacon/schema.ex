@@ -10,7 +10,7 @@ defmodule Beacon.Schema do
       alias Ecto.Changeset
       @primary_key {:id, :binary_id, autogenerate: true}
       @foreign_key_type :binary_id
-      @timestamps_opts [inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec]
+      @timestamps_opts inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
   end
 
