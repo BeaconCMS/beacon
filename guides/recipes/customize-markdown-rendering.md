@@ -17,7 +17,7 @@ You can do that by changing the `:load_template` lifecycle of `:markdown` in you
       }
     ]
   ]
-  # rest ommited for brevity...
+  # rest omitted for brevity...
 ]
 
 def markdown_with_header_ids(template, _metadata) do

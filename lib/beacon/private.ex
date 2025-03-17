@@ -26,7 +26,7 @@ defmodule Beacon.Private do
   and since LV allows such navigation, we must do it as well but we need fetch the session defined for the requested URL and update the state accordingly,
   otherwise the page will either not be found or worse could render the wrong content.
 
-  Relative paths are not supported because there's no safe way to know if a `/relative` path belongs to site A or B, that's a LV contraint.
+  Relative paths are not supported because there's no safe way to know if a `/relative` path belongs to site A or B, that's a LV constraint.
 
   We use the private function `Phoenix.LiveView.Route.live_link_info/3` in order to keep the same behavior as LV.
   """

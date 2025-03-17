@@ -67,7 +67,7 @@ defmodule Beacon.Router do
 
   ## Route Precedence
 
-  Beacon pages are defined dynamically so it doesn't know which pages are availale when the router is compiled,
+  Beacon pages are defined dynamically so it doesn't know which pages are available when the router is compiled,
   which means that any route after the `prefix` may match a published page. For example `/contact` may be a valid
   page published under the mounted `beacon_site "/, site: :marketing` site.
 
