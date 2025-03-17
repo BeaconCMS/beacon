@@ -116,7 +116,7 @@ defmodule Beacon.Router do
   end
 
   @doc """
-  Mounts a site in the `prefix` in your host application router.
+  Mounts a site at `prefix` in your host application's router.
 
   This will automatically serve `sitemap.xml` from the `prefix` path defined for this site,
   and also `robots.txt` and `sitemap_index.xml` in the top-level host.
@@ -129,20 +129,32 @@ defmodule Beacon.Router do
 
     Live Session options:
     
-    You can also override the following [live_session options](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Router.html#live_session/3):
+    You can also override the following [live_session](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Router.html#live_session/3) options:
 
     * `:session` (optional) - an optional extra session map or MFA tuple to merge into Beacon's `live_session`.
-      Useful to authenticate the session using 3rd-party libs like AshAuthentication.
+      Useful to authenticate the session using 3rd-party libs like AshAuthentication. Defaults to `%{}`.
     * `:root_layout` - override the default root layout for the site. Defaults to `{Beacon.Web.Layouts, :runtime}`.
-      See `Beacon.Web.Layouts` and `Phoenix.LiveView.Router.live_session/3` for more info.
+      See `Beacon.Web.Layouts` for more info.
     * `:on_mount` (optional) - an optional list of `on_mount` hooks to merge into Beacon's `live_session`.
-      This will allow for authenticated routes, among other uses.
+      This will allow for authenticated routes, among other uses. Defaults to `[]`.
 
   ## Examples
 
-  To integrate a Beacon site with Ash Authentication Phoenix:
+  Initialize assigns for all pages in a site:
 
-      beacon_site "/", AshAuthentication.Phoenix.LiveSession.opts(on_mount: [{MyAppWeb.LiveUserAuth, :live_user_required}])
+      beacon_site "/", site: :my_site, on_mount: MyAppWeb.InitAssigns
+
+      defmodule MyAppWeb.InitAssigns do
+        import Phoenix.Component
+
+        def on_mount(:default, _params, session, socket) do
+          {:cont, assign(socket, :logo_url, "https://mycdn.com/logo.webp")}
+        end
+      end
+
+  Integrate a Beacon site with Ash:
+
+      beacon_site "/", [site: :my_site] ++ AshAuthentication.Phoenix.LiveSession.opts(on_mount: [{MyAppWeb.LiveUserAuth, :live_user_required}])
 
   """
   defmacro beacon_site(prefix, opts) do
