@@ -87,8 +87,19 @@ defmodule DemoWeb.Router do
 
   scope "/", DemoWeb do
     pipe_through :browser
-    beacon_site "/dev", site: :dev
+    beacon_site "/dev", site: :dev, session: {__MODULE__, :session, []}, on_mount: DemoWeb.InitAssigns
     beacon_site "/dy", site: :dy
+  end
+
+  def session(_conn), do: %{"env" => "dev"}
+end
+
+defmodule DemoWeb.InitAssigns do
+  import Phoenix.Component
+
+  def on_mount(:default, _params, session, socket) do
+    env = session["env"]
+    {:cont, assign(socket, :env, env)}
   end
 end
 
@@ -299,7 +310,7 @@ dev_seeds = fn ->
 
       <.image site={@beacon.site} name="beacon.webp" class="h-24" alt="logo" />
 
-      <h1 class="text-violet-500">Dev</h1>
+      <h1 class="text-violet-500"><%= @env %></h1>
       <p class="text-sm">Page</p>
 
       <p><.heroicon name="arrow-up-circle" solid class="animate-spin"/></p>

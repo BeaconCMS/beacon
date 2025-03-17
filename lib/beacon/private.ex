@@ -37,7 +37,9 @@ defmodule Beacon.Private do
          view: ^view,
          live_session: %{
            extra: %{
-             session: %{"beacon_site" => site}
+             # we don't execute the MFA here to avoid unnecessary computation and side-effects,
+             # since we only need the static value of `site`
+             session: {Beacon.Router, :session, [site, _]}
            }
          }
        }} ->
@@ -83,7 +85,18 @@ defmodule Beacon.Private do
     host = endpoint_host(otp_app, config.endpoint)
     router = config.router
 
-    with {%{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}, on_mount: on_mount}}}}, _, _, _} <-
+    with {
+           %{
+             phoenix_live_view:
+               {Beacon.Web.PageLive, _, _,
+                %{
+                  extra: %{session: {Beacon.Router, :session, [^site, _]}, on_mount: on_mount}
+                }}
+           },
+           _,
+           _,
+           _
+         } <-
            router.__match_route__(router, "GET", host),
          socket = %Phoenix.LiveView.Socket{private: %{lifecycle: %Phoenix.LiveView.Lifecycle{mount: on_mount}}},
          {_, %Phoenix.LiveView.Socket{assigns: assigns}} <- Phoenix.LiveView.Lifecycle.mount(%{}, %{}, socket) do
@@ -99,4 +112,18 @@ defmodule Beacon.Private do
   end
 
   def route_assigns(_site, _path_info), do: %{}
+
+  # https://github.com/phoenixframework/phoenix_live_view/blob/698950990440551cef8ab2b85fae32a86a4e7779/lib/phoenix_live_view/plug.ex#L21
+  def live_session(session, conn) do
+    case session do
+      {mod, fun, args} when is_atom(mod) and is_atom(fun) and is_list(args) ->
+        apply(mod, fun, [conn | args])
+
+      %{} = session ->
+        session
+
+      nil ->
+        %{}
+    end
+  end
 end
