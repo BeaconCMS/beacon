@@ -126,90 +126,106 @@ defmodule Beacon.Router do
     * `:site` (required) `t:Beacon.Types.Site.t/0` - register your site with a unique name.
       Note that the name has to match the one used in your site configuration.
       See the module doc and `Beacon.Config` for more info.
+
+    Live Session options:
+    
+    You can also override the following [live_session options](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Router.html#live_session/3):
+
+    * `:session` (optional) - an optional extra session map or MFA tuple to merge into Beacon's `live_session`.
+      Useful to authenticate the session using 3rd-party libs like AshAuthentication.
     * `:root_layout` - override the default root layout for the site. Defaults to `{Beacon.Web.Layouts, :runtime}`.
       See `Beacon.Web.Layouts` and `Phoenix.LiveView.Router.live_session/3` for more info.
-      Use with caution.
+    * `:on_mount` (optional) - an optional list of `on_mount` hooks to merge into Beacon's `live_session`.
+      This will allow for authenticated routes, among other uses.
+
+  ## Examples
+
+  To integrate a Beacon site with Ash Authentication Phoenix:
+
+      beacon_site "/", AshAuthentication.Phoenix.LiveSession.opts(on_mount: [{MyAppWeb.LiveUserAuth, :live_user_required}])
 
   """
   defmacro beacon_site(prefix, opts) do
+    {site, opts} = Keyword.pop(opts, :site)
+    site = validate_site!(site)
+
+    opts =
+      if Macro.quoted_literal?(opts) do
+        Macro.prewalk(opts, &expand_alias(&1, __CALLER__))
+      else
+        opts
+      end
+
     # TODO: raise on duplicated sites defined on the same prefix
     quote bind_quoted: binding(), location: :keep, generated: true do
       import Phoenix.Router, only: [scope: 3, get: 3, get: 4]
       import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
 
-      {site, session_name, session_opts} = Beacon.Router.__options__(opts)
+      {session_name, session_opts} = Beacon.Router.__live_session__(site, opts)
 
       scope prefix, alias: false, as: false do
         live_session session_name, session_opts do
-          get "/__beacon_media__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: opts[:site]}
+          get "/__beacon_media__/:file_name", Beacon.Web.MediaLibraryController, :show, assigns: %{site: site}
 
           # TODO: css_config-:md5 caching
-          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: opts[:site]}
-          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: opts[:site]}
+          get "/__beacon_assets__/css_config", Beacon.Web.AssetsController, :css_config, assigns: %{site: site}
+          get "/__beacon_assets__/css-:md5", Beacon.Web.AssetsController, :css, assigns: %{site: site}
+          get "/__beacon_assets__/js-:md5", Beacon.Web.AssetsController, :js, assigns: %{site: site}
 
-          get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: opts[:site]}
+          get "/sitemap.xml", Beacon.Web.SitemapController, :show, as: :beacon_sitemap, assigns: %{site: site}
 
           # simulate a beacon page inside site prefix so we can check this site is reachable?/2
-          get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: opts[:site]}
+          get "/__beacon_check__", Beacon.Web.CheckController, :check, metadata: %{site: site}
 
           live "/*path", Beacon.Web.PageLive, :path
         end
       end
 
-      @beacon_sites {opts[:site], Phoenix.Router.scoped_path(__MODULE__, prefix)}
+      @beacon_sites {site, Phoenix.Router.scoped_path(__MODULE__, prefix)}
     end
+  end
+
+  defp expand_alias({:__aliases__, _, _} = alias, env),
+    do: Macro.expand(alias, %{env | function: {:live_admin, 2}})
+
+  defp expand_alias(other, _env), do: other
+
+  @doc false
+  def validate_site!(site) when is_atom(site) do
+    cond do
+      String.starts_with?(Atom.to_string(site), ["beacon", "__beacon"]) ->
+        raise ArgumentError, ":site can not start with beacon or __beacon, got: #{site}"
+
+      site && is_atom(site) ->
+        site
+
+      :else ->
+        raise ArgumentError, ":site must be an atom, got: #{inspect(site)}"
+    end
+  end
+
+  def validate_site!(site) do
+    raise ArgumentError, ":site must be an atom, got: #{inspect(site)}"
   end
 
   @doc false
-  @spec __options__(keyword()) :: {atom(), atom(), keyword()}
-  def __options__(opts) do
-    {site, _opts} = Keyword.pop(opts, :site)
-
-    site =
-      cond do
-        String.starts_with?(Atom.to_string(site), ["beacon", "__beacon"]) ->
-          raise ArgumentError, ":site can not start with beacon or __beacon, got: #{site}"
-
-        site && is_atom(opts[:site]) ->
-          opts[:site]
-
-        :invalid ->
-          raise ArgumentError, ":site must be an atom, got: #{inspect(opts[:site])}"
-      end
-
-    session_opts = build_session_opts(opts, site)
-
+  def __live_session__(site, opts \\ []) do
     {
-      site,
-      # TODO: sanitize and format session name
       String.to_atom("beacon_#{site}"),
-      session_opts
+      [
+        session: {Beacon.Router, :session, [site, opts[:session] || %{}]},
+        root_layout: opts[:root_layout] || {Beacon.Web.Layouts, :runtime},
+        on_mount: opts[:on_mount] || []
+      ]
     }
   end
 
-  defp build_session_opts(opts, site) do
-    root_layout =
-      case Keyword.pop(opts, :root_layout) do
-        {nil, _opts} ->
-          {Beacon.Web.Layouts, :runtime}
-
-        {root_layout, _opts} ->
-          root_layout
-      end
-
-    default_session_opts = [
-      session: %{"beacon_site" => site},
-      root_layout: root_layout
-    ]
-
-    case Keyword.pop(opts, :on_mount) do
-      {nil, _opts} ->
-        default_session_opts
-
-      {on_mount, _opts} ->
-        Keyword.merge(default_session_opts, on_mount: on_mount)
-    end
+  @doc false
+  def session(conn, site, extra) do
+    Map.merge(
+      Beacon.Private.live_session(extra, conn),
+      %{"beacon_site" => site}
+    )
   end
 
   @doc false

@@ -4,53 +4,50 @@ defmodule Beacon.RouterTest do
 
   alias Beacon.Router
 
-  test "live_session name" do
-    assert {:test, :beacon_test, _} = Router.__options__(site: :test)
-  end
+  describe "live session" do
+    test "session name based on site" do
+      assert {:beacon_test, _} = Router.__live_session__(:test)
+    end
 
-  test "session opts" do
-    assert {
-             :test,
-             _,
-             [{:session, %{"beacon_site" => :test}}, {:root_layout, {Beacon.Web.Layouts, :runtime}}]
-           } = Router.__options__(site: :test)
-  end
+    test "include default :session option" do
+      assert {_, [{:session, {Beacon.Router, :session, [:my_site, %{}]}}, _, _]} = Router.__live_session__(:my_site)
+    end
 
-  describe "options" do
-    test "require site as atom" do
-      assert_raise ArgumentError, fn -> Router.__options__([]) end
-      assert_raise ArgumentError, fn -> Router.__options__(site: "string") end
+    test "include default :root_layout option" do
+      assert {_, [_, {:root_layout, {Beacon.Web.Layouts, :runtime}}, _]} = Router.__live_session__(:my_site)
+    end
+
+    test "include default :on_mount option" do
+      assert {_, [_, _, {:on_mount, []}]} = Router.__live_session__(:my_site)
+    end
+
+    test "include extra :session" do
+      assert {_, [{:session, {Beacon.Router, :session, [:my_site, %{"user" => 1}]}}, _, _]} =
+               Router.__live_session__(:my_site, session: %{"user" => 1})
+
+      assert {_, [{:session, {Beacon.Router, :session, [:my_site, {MyApp, :ensure_auth, [1]}]}}, _, _]} =
+               Router.__live_session__(:my_site, session: {MyApp, :ensure_auth, [1]})
+    end
+
+    test "do not overwrite site in :session" do
+      assert {_, [{:session, {Beacon.Router, :session, [:my_site, %{}]}}, _, _]} =
+               Router.__live_session__(:my_site, session: %{"site" => :other})
+    end
+
+    test "overwrite :root_layout" do
+      assert {_, [_, {:root_layout, {MyAppWeb, :blog_layout}}, _]} = Router.__live_session__(:my_site, root_layout: {MyAppWeb, :blog_layout})
+    end
+
+    test "overwrite :on_mount" do
+      assert {_, [_, _, {:on_mount, MyAppWeb.InitAssigns}]} = Router.__live_session__(:my_site, on_mount: MyAppWeb.InitAssigns)
+
+      assert {_, [_, _, {:on_mount, {MyAppWeb.InitAssigns, :user}}]} = Router.__live_session__(:my_site, on_mount: {MyAppWeb.InitAssigns, :user})
     end
   end
 
-  describe "__options__/1" do
-    test "returns default session options that include session and root_layout keys when passed a site name as an atom" do
-      assert Router.__options__(site: :my_site) ==
-               {:my_site, :beacon_my_site,
-                [
-                  session: %{"beacon_site" => :my_site},
-                  root_layout: {Beacon.Web.Layouts, :runtime}
-                ]}
-    end
-
-    test "returns custom root_layout value when passed a root_layout value in a keyword list" do
-      assert Router.__options__(site: :my_site, root_layout: {Beacon.Web.Layouts, :app}) ==
-               {:my_site, :beacon_my_site,
-                [
-                  session: %{"beacon_site" => :my_site},
-                  root_layout: {Beacon.Web.Layouts, :app}
-                ]}
-    end
-
-    test "returns custom on_mount value when passed an on_mount value in a keyword list" do
-      assert Router.__options__(site: :my_site, on_mount: {:struct, :atom}) ==
-               {:my_site, :beacon_my_site,
-                [
-                  session: %{"beacon_site" => :my_site},
-                  root_layout: {Beacon.Web.Layouts, :runtime},
-                  on_mount: {:struct, :atom}
-                ]}
-    end
+  test "require site as atom" do
+    assert_raise ArgumentError, fn -> Router.validate_site!("site") end
+    assert_raise ArgumentError, fn -> Router.validate_site!(nil) end
   end
 
   test "path_params" do
