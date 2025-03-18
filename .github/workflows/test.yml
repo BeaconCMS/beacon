@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  elixir:
     name: "test: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}} | PG ${{matrix.postgres}}"
 
     strategy:

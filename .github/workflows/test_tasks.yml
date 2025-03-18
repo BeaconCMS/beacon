@@ -15,8 +15,8 @@ permissions:
   contents: write
 
 jobs:
-  test-tasks:
-    name: "test-tasks: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}}"
+  tasks:
+    name: "tasks: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}}"
 
     strategy:
       fail-fast: false
