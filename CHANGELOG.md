@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0-dev
+## 0.5.0 (2025-03-18)
 
 ### Enhancements
   - [Router] Add option `:session` in `beacon_site`
