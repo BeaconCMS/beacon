@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0-dev
+
+### Enhancements
+  - [Router] Add option `:session` in `beacon_site`
+  - [Media Library] Add customizable asset delete callbacks - @ddink
+  - [Visual Editor] Include assigns defined by `on_mount` in the page context
+  - [Tasks] Move `beacon_site` to the end of the router (mount it after other routes)
+  - [Tasks] Rename default Phoenix route when adding a site at root "/" to avoid conflicts
+
+### Fixes
+  - [Migrations] Hardcode `inserted_at` and `updated_at` - @sltong
+  - [Media Library] Don't crash on invalid search query
+  - [Proxy Endpoint] Check when host/port doesn't match
+
+### Chores
+  - [CI] Organize workflows and run Igniter tasks separately
+
+### Docs
+  - Clean up and fix typos
+
 ## 0.4.3 (2025-03-04)
 
 ### Enhancements
