@@ -165,6 +165,7 @@ if Code.ensure_loaded?(Igniter) do
       |> configure_site_endpoint(host, otp_app, port, secure_port, site_endpoint, host_dev)
       |> update_session_options(otp_app)
       |> add_site_endpoint_to_application(repo, site_endpoint)
+      |> maybe_remove_default_phoenix_root_route(router, path)
       |> Igniter.add_notice("""
       Site #{inspect(site)} generated successfully.
 
@@ -344,6 +345,47 @@ if Code.ensure_loaded?(Igniter) do
       updated_opts = Keyword.delete(opts, :host) ++ [host: hosts]
       {:scope, scope, [scope_path, updated_opts, rest]}
     end
+
+    defp maybe_remove_default_phoenix_root_route(igniter, router, "/" = _path) do
+      Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
+        move_to_get_page_controller_home =
+          Igniter.Code.Function.move_to_function_call(zipper, :get, 3, fn zipper ->
+            Igniter.Code.Function.argument_equals?(
+              zipper,
+              0,
+              "/"
+            ) &&
+              Igniter.Code.Function.argument_equals?(
+                zipper,
+                1,
+                PageController
+              ) &&
+              Igniter.Code.Function.argument_equals?(
+                zipper,
+                2,
+                :home
+              )
+          end)
+
+        case move_to_get_page_controller_home do
+          {:ok, zipper} ->
+            {:ok,
+             Igniter.Code.Common.replace_code(
+               zipper,
+               # TODO: comment that route instead of renaming path, depends on a fix in Igniter to handle comments
+               """
+               # removed by beacon.gen.site due to a conflict with beacon_site "/"
+               get "/removed", PageController, :home
+               """
+             )}
+
+          _ ->
+            {:ok, zipper}
+        end
+      end)
+    end
+
+    defp maybe_remove_default_phoenix_root_route(igniter, _router, _path), do: igniter
 
     defp add_site_config_in_config_runtime(igniter, site, repo, router, site_endpoint) do
       igniter

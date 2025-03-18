@@ -160,6 +160,16 @@ defmodule Mix.Tasks.Beacon.GenSiteTest do
       54 + |  end
       """)
     end
+
+    test "remove default phoenix root route", %{project: project} do
+      project
+      |> Igniter.compose_task("beacon.gen.site", @opts_my_site)
+      |> assert_has_patch("lib/test_web/router.ex", """
+      20    - |    get("/", PageController, :home)
+         25 + |    # removed by beacon.gen.site due to a conflict with beacon_site "/"
+         26 + |    get("/removed", PageController, :home)
+      """)
+    end
   end
 
   describe "config" do
