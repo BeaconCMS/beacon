@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## 0.5.0 (2025-03-18)
 
 ### Enhancements
