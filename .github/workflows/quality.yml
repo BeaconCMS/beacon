@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  check:
+  quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}}"
 
     strategy:
