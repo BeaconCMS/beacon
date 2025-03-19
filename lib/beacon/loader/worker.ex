@@ -13,7 +13,7 @@ defmodule Beacon.Loader.Worker do
 
   def name(site) do
     # starts an unique worker every time because we don't care about module dependencies
-    # they are commpiled and loaded individually
+    # they are compiled and loaded individually
     u = System.unique_integer([:positive])
     Beacon.Registry.via({site, __MODULE__, u})
   end

@@ -341,7 +341,7 @@ defmodule Beacon.Content do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
-    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:page` - returns records from a specific page. Defaults to 1.
     * `:query` - search layouts by title. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load.
     * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
@@ -871,7 +871,7 @@ defmodule Beacon.Content do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
-    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:page` - returns records from a specific page. Defaults to 1.
     * `:query` - search pages by path or title.
     * `:preloads` - a list of preloads to load.
     * `:sort` - column in which the result will be ordered by. Defaults to `:path`.
@@ -953,7 +953,7 @@ defmodule Beacon.Content do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
-    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:page` - returns records from a specific page. Defaults to 1.
     * `:search` - search by either one or more fields or dynamic query function.
                   Available fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (do not apply search filter).
     * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
@@ -3243,7 +3243,7 @@ defmodule Beacon.Content do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
-    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:page` - returns records from a specific page. Defaults to 1.
     * `:query` - search components by title. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load.
     * `:sort` - column in which the result will be ordered by. Defaults to `:name`.

@@ -9,7 +9,7 @@ defmodule Beacon.Migrations.V003 do
       add :name, :text, null: false
       add :code, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
   end
 

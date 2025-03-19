@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+## 0.5.0 (2025-03-18)
+
+### Enhancements
+  - [Router] Add option `:session` in `beacon_site`
+  - [Media Library] Add customizable asset delete callbacks - @ddink
+  - [Visual Editor] Include assigns defined by `on_mount` in the page context
+  - [Tasks] Move `beacon_site` to the end of the router (mount it after other routes)
+  - [Tasks] Rename default Phoenix route when adding a site at root "/" to avoid conflicts
+
+### Fixes
+  - [Migrations] Hardcode `inserted_at` and `updated_at` - @sltong
+  - [Media Library] Don't crash on invalid search query
+  - [Proxy Endpoint] Check when host/port doesn't match
+
+### Chores
+  - [CI] Organize workflows and run Igniter tasks separately
+
+### Docs
+  - Clean up and fix typos
+
 ## 0.4.3 (2025-03-04)
 
 ### Enhancements
@@ -136,7 +158,7 @@
   - Only reset cache and route table for published pages
 
 ### Documentation
-  - Fix identation on install guide
+  - Fix indentation on install guide
   - Add upgrade guide from pre-rc to v0.1
 
 ### Chores
@@ -198,7 +220,7 @@
 
 ### Breaking Changes
   - Require minimum Elixir v1.14.0
-  - Require minimun `:mdex` v0.2.0
+  - Require minimum `:mdex` v0.2.0
   - Removed config `:skip_boot?` in favor of `:mode` which can be `:live`, `:testing`, and `:manual` (defaults to `:live`) - the major difference between then is that live loads all modules and broadcasts all messages, testing only does that when it makes sense for tests (for example it does reload modules on fixtures), and manual does pretty much nothing, it's useful to seed data or to test specific scenarios where you need total control over Beacon.Loader
 
 ### Enhancements
@@ -246,7 +268,7 @@
 
 ### Breaking Changes
   - Removed Page Event Handlers in favor of Shared Event Handlers.
-    With Shared Event Handlers, it doesn't make sense to have page event handlers unless overriding becomes a neccessity.
+    With Shared Event Handlers, it doesn't make sense to have page event handlers unless overriding becomes a necessity.
     The data is automatically migrated in a best-effort way, duplicated event handler names (from multiple pages) are
     consolidated into a single shared event handler. See the migration `V002` for more info.
   - Removed "page event handlers" in `Content` API in favor of "event handlers" (removed the prefix `page`),

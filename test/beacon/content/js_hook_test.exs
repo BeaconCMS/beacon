@@ -96,7 +96,7 @@ defmodule Beacon.Content.JSHookTest do
       assert changeset.errors == [code: {"no export found", []}]
     end
 
-    test "error (mutliple exports)" do
+    test "error (multiple exports)" do
       attrs = %{
         site: default_site(),
         name: "FooHook",

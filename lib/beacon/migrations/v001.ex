@@ -17,7 +17,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :deleted_at, :utc_datetime
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists index(:beacon_assets, [:source_id])
@@ -29,7 +29,7 @@ defmodule Beacon.Migrations.V001 do
       add :name, :text, null: false
       add :content, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists table(:beacon_live_data, primary_key: false) do
@@ -37,7 +37,7 @@ defmodule Beacon.Migrations.V001 do
       add :site, :text, null: false
       add :path, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists index(:beacon_live_data, [:site])
@@ -50,7 +50,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :live_data_id, references(:beacon_live_data, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists index(:beacon_live_data_assigns, [:live_data_id])
@@ -61,7 +61,7 @@ defmodule Beacon.Migrations.V001 do
       add :name, :text, null: false
       add :body, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists unique_index(:beacon_snippet_helpers, [:site, :name])
@@ -77,13 +77,13 @@ defmodule Beacon.Migrations.V001 do
       add :example, :text, null: false
       add :category, :string, null: false, default: "element"
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists table(:beacon_component_attrs, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     alter table(:beacon_component_attrs, primary_key: false) do
@@ -100,13 +100,13 @@ defmodule Beacon.Migrations.V001 do
 
       add :component_id, references(:beacon_components, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists table(:beacon_component_slot_attrs, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :slot_id, references(:beacon_component_slots, on_delete: :delete_all, type: :binary_id), null: false
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     alter table(:beacon_component_slot_attrs, primary_key: false) do
@@ -124,7 +124,7 @@ defmodule Beacon.Migrations.V001 do
       add :meta_tags, {:array, :map}, default: []
       add :resource_links, :map, default: %{}, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists table(:beacon_layout_events, primary_key: false) do
@@ -134,7 +134,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :layout_id, references(:beacon_layouts, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(updated_at: false, type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: false, type: :utc_datetime_usec
     end
 
     drop_if_exists constraint(:beacon_layout_events, :beacon_layout_events_check_event, check: "event = 'created' or event = 'published'")
@@ -149,7 +149,7 @@ defmodule Beacon.Migrations.V001 do
       add :layout_id, references(:beacon_layouts, on_delete: :delete_all, type: :binary_id), null: false
       add :event_id, references(:beacon_layout_events, on_delete: :delete_all, type: :binary_id)
 
-      timestamps(updated_at: false, type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: false, type: :utc_datetime_usec
     end
 
     create_if_not_exists table(:beacon_pages, primary_key: false) do
@@ -168,7 +168,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :layout_id, references(:beacon_layouts, type: :binary_id), null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists unique_index(:beacon_pages, [:path, :site])
@@ -180,7 +180,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(updated_at: false, type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: false, type: :utc_datetime_usec
     end
 
     drop_if_exists constraint(:beacon_page_events, :beacon_page_events_check_event,
@@ -204,7 +204,7 @@ defmodule Beacon.Migrations.V001 do
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
       add :event_id, references(:beacon_page_events, on_delete: :delete_all, type: :binary_id)
 
-      timestamps(updated_at: false, type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: false, type: :utc_datetime_usec
     end
 
     create_if_not_exists table(:beacon_page_variants, primary_key: false) do
@@ -215,7 +215,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists index(:beacon_page_variants, [:page_id])
@@ -227,7 +227,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :page_id, references(:beacon_pages, on_delete: :delete_all, type: :binary_id), null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists index(:beacon_page_event_handlers, [:page_id])
@@ -240,7 +240,7 @@ defmodule Beacon.Migrations.V001 do
 
       add :layout_id, references(:beacon_layouts, type: :binary_id)
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps inserted_at: :inserted_at, updated_at: :updated_at, type: :utc_datetime_usec
     end
 
     create_if_not_exists unique_index(:beacon_error_pages, [:status, :site])

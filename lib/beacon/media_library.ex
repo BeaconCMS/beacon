@@ -269,7 +269,7 @@ defmodule Beacon.MediaLibrary do
   ## Options
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
-    * `:page` - returns records from a specfic page. Defaults to 1.
+    * `:page` - returns records from a specific page. Defaults to 1.
     * `:query` - search assets by file name. Defaults to `nil`, doesn't filter query.
     * `:preloads` - a list of preloads to load. Defaults to `[:thumbnail]`.
     * `:sort` - column in which the result will be ordered by. Defaults to `:file_name`.
@@ -346,7 +346,7 @@ defmodule Beacon.MediaLibrary do
   Search assets by file name.
   """
   @spec search(Site.t(), String.t()) :: [Asset.t()]
-  def search(site, query) do
+  def search(site, query) when is_atom(site) and is_binary(query) do
     query = query |> String.split() |> Enum.join("%")
     query = "%#{query}%"
 
@@ -359,6 +359,8 @@ defmodule Beacon.MediaLibrary do
       )
     )
   end
+
+  def search(_site, _query), do: []
 
   @doc """
   Soft deletes a asset.

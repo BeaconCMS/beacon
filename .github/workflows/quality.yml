@@ -1,0 +1,74 @@
+name: Quality
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'guides/**'
+  pull_request:
+    paths-ignore:
+      - 'guides/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  quality:
+    name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # latest
+          - otp: "27"
+            elixir: "1.18"
+            phoenix: "~> 1.7"
+            phoenix-live-view: "~> 1.0"
+
+    env:
+      MIX_ENV: dev
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache mix deps
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix}}-${{ matrix.phoenix-live-view}}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ matrix.phoenix}}-${{ matrix.phoenix-live-view}}-${{ hashFiles('**/mix.lock') }}
+
+      - run: mix deps.get
+
+      - run: mix compile --warnings-as-errors
+
+      - run: mix deps.unlock --check-unused
+
+      - run: mix credo --strict
+
+      - run: mix assets.setup
+
+      - run: mix format.all
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: auto format code
+
+      - run: mix format.all.check 
