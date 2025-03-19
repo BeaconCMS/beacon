@@ -84,7 +84,8 @@ defmodule Beacon.MixProject do
       {:postgrex, "~> 0.16"},
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
-      {:tailwind, "~> 0.2"},
+      # TODO: tailwind v4 needs more testing
+      {:tailwind, "~> 0.2.0"},
       esbuild_version(),
       {:igniter, ">= 0.5.24", optional: true},
 
