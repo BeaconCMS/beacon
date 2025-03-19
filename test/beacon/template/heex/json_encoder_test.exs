@@ -415,35 +415,43 @@ defmodule Beacon.Template.HEEx.JSONEncoderTest do
 
     test "nested in slot" do
       beacon_component_fixture(
-        name: "html_tag",
+        name: "label",
         attrs: [
-          %{name: "name", type: "string", opts: [required: true]}
+          %{name: "for", type: "string", opts: [required: true]}
         ],
         slots: [
           %{name: "inner_block", opts: [required: true]}
         ],
-        template: ~S|<.dynamic_tag name={@name}><%= render_slot(@inner_block) %></.dynamic_tag>|,
-        example: ~S|<.html_tag name="p">content</.tag>|
+        template:
+          ~S"""
+          <label for={@for}><%= render_slot(@inner_block) %></label>
+          """
+          |> String.trim(),
+        example:
+          ~S"""
+          <.label for={"newsletter_email"}>Email</.label>
+          """
+          |> String.trim()
       )
 
       assert_output(
         ~S"""
-        <.html_tag name="div">
-          <.html_tag name="span">
+        <.label for={"label_1"}>
+          <.label for={"label_2"}>
             nested
-          </.html_tag>
-        </.html_tag>
+          </.label>
+        </.label>
         """,
         [
           %{
-            "tag" => ".html_tag",
-            "attrs" => %{"name" => "div"},
-            "rendered_html" => "<div>\n  <span>\n    nested\n  </span>\n</div>",
+            "tag" => ".label",
+            "attrs" => %{"for" => "{\"label_1\"}"},
+            "rendered_html" => "<label for=\"label_1\">\n  <label for=\"label_2\">\n    nested\n  </label>\n</label>",
             "content" => [
               %{
-                "tag" => ".html_tag",
-                "attrs" => %{"name" => "span"},
-                "rendered_html" => "<span>\n  nested\n</span>",
+                "tag" => ".label",
+                "attrs" => %{"for" => "{\"label_2\"}"},
+                "rendered_html" => "<label for=\"label_2\">\n  nested\n</label>",
                 "content" => [" nested "]
               }
             ]
