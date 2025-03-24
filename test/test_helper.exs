@@ -16,6 +16,7 @@ Supervisor.start_link(
          endpoint: Beacon.BeaconTest.Endpoint,
          router: Beacon.BeaconTest.Router,
          repo: Beacon.BeaconTest.Repo,
+         auth_module: Beacon.BeaconTest.AuthModule,
          tailwind_config: Path.join([File.cwd!(), "test", "support", "tailwind.config.templates.js"]),
          tailwind_css: Path.join([File.cwd!(), "test", "support", "tailwind.custom.css"]),
          live_socket_path: "/custom_live",
@@ -141,13 +142,13 @@ Supervisor.start_link(
            ],
            after_publish_page: [
              maybe_publish_page: fn page ->
-               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after publish page"})
+               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after publish page"}, auth: false)
                {:cont, page}
              end
            ],
            after_unpublish_page: [
              maybe_unpublish_page: fn page ->
-               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after unpublish page"})
+               {:ok, page} = Beacon.Content.update_page(page, %{title: "updated after unpublish page"}, auth: false)
                {:cont, page}
              end
            ]

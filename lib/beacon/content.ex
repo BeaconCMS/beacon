@@ -22,12 +22,37 @@ defmodule Beacon.Content do
     * Layouts - applies to all pages used by the template.
     * Page - only applies to the specific page.
 
+  ## Authorization Options
+
+  Many functions in this module require authorization by default. This is done via the `:actor` option:
+
+  ```
+  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...}, actor: {"some-identifying-id", "First Lastname"})
+  {:ok, %Page{}}
+  ```
+
+  Beacon will use your site's `t:Beacon.Config.auth_module/0` to determine the role for the given actor,
+  and prevent the function from running if the role should not have access:
+
+  ```
+  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...},, actor: {"user-with-read-only-access", "John Smith"})
+  {:error, :not_authorized}
+  ```
+
+  To disable authorization for internal calls, pass the `auth: false` option:
+
+  ```
+  iex> Beacon.Content.create_page(%{"title" => "My New Page", ...}, auth: false)
+  {:ok, %Page{}}
+  ```
+
   """
 
   @doc false
   use GenServer
 
   import Ecto.Query
+  import Beacon.Auth, only: [authorize: 3]
   import Beacon.Utils, only: [repo: 1, transact: 2]
 
   alias Beacon.Content.Component
@@ -128,35 +153,37 @@ defmodule Beacon.Content do
   @doc """
   Creates a layout.
 
-  ## Example
-
-      iex> create_layout(%{title: "Home"})
-      {:ok, %Layout{}}
-
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :layouts
-  @spec create_layout(map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
-  def create_layout(attrs) do
+  @spec create_layout(map(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_layout(attrs, opts \\ []) do
     changeset = Layout.changeset(%Layout{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    transact(repo(site), fn ->
-      with {:ok, changeset} <- validate_layout_template(changeset),
-           {:ok, layout} <- repo(site).insert(changeset),
-           {:ok, _event} <- create_layout_event(layout, "created") do
-        {:ok, layout}
-      end
-    end)
+    with :ok <- authorize(site, :create_layout, opts) do
+      transact(repo(site), fn ->
+        with {:ok, changeset} <- validate_layout_template(changeset),
+             {:ok, layout} <- repo(site).insert(changeset),
+             {:ok, _event} <- create_layout_event(layout, "created") do
+          {:ok, layout}
+        end
+      end)
+    end
   end
 
   @doc """
-  Creates a layout.
+  Creates a layout, raising an error if unsuccessful.
+
+  See `create_layout/2` for options.
   """
   @doc type: :layouts
-  @spec create_layout!(map()) :: Layout.t()
-  def create_layout!(attrs) do
-    case create_layout(attrs) do
+  @spec create_layout!(map(), keyword()) :: Layout.t()
+  def create_layout!(attrs, opts \\ []) do
+    case create_layout(attrs, opts) do
       {:ok, layout} -> layout
+      {:error, :not_authorized} -> raise "failed to create layout: not authorized"
       {:error, changeset} -> raise "failed to create layout, got: #{inspect(changeset.errors)}"
     end
   end
@@ -164,19 +191,17 @@ defmodule Beacon.Content do
   @doc """
   Updates a layout.
 
-  ## Example
-
-      iex> update_layout(layout, %{title: "New Home"})
-      {:ok, %Layout{}}
-
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :layouts
-  @spec update_layout(Layout.t(), map()) :: {:ok, Layout.t()} | {:error, Changeset.t()}
-  def update_layout(%Layout{} = layout, attrs) do
+  @spec update_layout(Layout.t(), map(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_layout(%Layout{} = layout, attrs, opts \\ []) do
     changeset = Layout.changeset(layout, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    with {:ok, changeset} <- validate_layout_template(changeset) do
+    with :ok <- authorize(site, :update_layout, opts),
+         {:ok, changeset} <- validate_layout_template(changeset) do
       repo(site).update(changeset)
     end
   end
@@ -188,33 +213,41 @@ defmodule Beacon.Content do
   Event + snapshot
 
   This operation is serialized.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :layouts
-  @spec publish_layout(Layout.t()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
-  def publish_layout(%Layout{} = layout) do
-    case Beacon.Config.fetch!(layout.site).mode do
-      :live ->
-        GenServer.call(name(layout.site), {:publish_layout, layout})
+  @spec publish_layout(Layout.t() | keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
+  def publish_layout(%Layout{} = layout, opts \\ []) do
+    with :ok <- authorize(layout.site, :publish_layout, opts) do
+      case Beacon.Config.fetch!(layout.site).mode do
+        :live ->
+          GenServer.call(name(layout.site), {:publish_layout, layout})
 
-      :testing ->
-        layout
-        |> insert_published_layout()
-        |> tap(fn {:ok, layout} -> reset_published_layout(layout.site, layout.id) end)
+        :testing ->
+          layout
+          |> insert_published_layout()
+          |> tap(fn {:ok, layout} -> reset_published_layout(layout.site, layout.id) end)
 
-      :manual ->
-        insert_published_layout(layout)
+        :manual ->
+          insert_published_layout(layout)
+      end
     end
   end
 
   @doc """
   Same as `publish_layout/2` but accepts a `site` and `layout_id` with which to lookup the layout.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :layouts
-  @spec publish_layout(Site.t(), UUID.t()) :: {:ok, Layout.t()} | any()
-  def publish_layout(site, layout_id) when is_atom(site) and is_binary(layout_id) do
+  @spec publish_layout_id(Site.t(), UUID.t(), keyword()) :: {:ok, Layout.t()} | {:error, Changeset.t() | term()}
+  def publish_layout_id(site, layout_id, opts \\ []) when is_atom(site) and is_binary(layout_id) do
     site
     |> get_layout(layout_id)
-    |> publish_layout()
+    |> publish_layout(opts)
   end
 
   defp validate_layout_template(changeset) do
@@ -529,11 +562,6 @@ defmodule Beacon.Content do
   @doc """
   Creates a new page that's not published.
 
-  ## Example
-
-      iex> create_page(%{"title" => "My New Page"})
-      {:ok, %Page{}}
-
   `attrs` may contain the following keys:
 
     * `path` - String.t()
@@ -550,10 +578,13 @@ defmodule Beacon.Content do
 
   It will insert a `created` event into the page timeline,
   and no snapshot is created.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec create_page(map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def create_page(attrs) when is_map(attrs) do
+  @spec create_page(map(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_page(attrs, opts \\ []) when is_map(attrs) do
     attrs =
       Map.new(attrs, fn
         {key, val} when is_binary(key) -> {key, val}
@@ -563,14 +594,16 @@ defmodule Beacon.Content do
     {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
     changeset = Page.create_changeset(%Page{}, maybe_put_default_meta_tags(site, attrs))
 
-    transact(repo(site), fn ->
-      with {:ok, changeset} <- validate_page_template(changeset),
-           {:ok, page} <- repo(site).insert(changeset),
-           {:ok, _event} <- create_page_event(page, "created"),
-           %Page{} = page <- Lifecycle.Page.after_create_page(page) do
-        {:ok, page}
-      end
-    end)
+    with :ok <- authorize(site, :create_page, opts) do
+      transact(repo(site), fn ->
+        with {:ok, changeset} <- validate_page_template(changeset),
+             {:ok, page} <- repo(site).insert(changeset),
+             {:ok, _event} <- create_page_event(page, "created"),
+             %Page{} = page <- Lifecycle.Page.after_create_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   defp maybe_put_default_meta_tags(site, attrs) do
@@ -579,15 +612,17 @@ defmodule Beacon.Content do
   end
 
   @doc """
-  Creates a page.
+  Creates a page, raising an error if unsuccessful.
 
-  Raises an error if unsuccessful.
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec create_page!(map()) :: Page.t()
-  def create_page!(attrs) do
-    case create_page(attrs) do
+  @spec create_page!(map(), keyword()) :: Page.t()
+  def create_page!(attrs, opts \\ []) do
+    case create_page(attrs, opts) do
       {:ok, page} -> page
+      {:error, :not_authorized} -> raise "failed to create page: not authorized"
       {:error, changeset} -> raise "failed to create page, got: #{inspect(changeset.errors)}"
     end
   end
@@ -595,15 +630,12 @@ defmodule Beacon.Content do
   @doc """
   Updates a page.
 
-  ## Example
-
-      iex> update_page(page, %{title: "New Home"})
-      {:ok, %Page{}}
-
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def update_page(%Page{} = page, attrs) do
+  @spec update_page(Page.t(), map(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_page(%Page{} = page, attrs, opts \\ []) do
     {ast, attrs} = Map.pop(attrs, "ast")
 
     attrs =
@@ -615,13 +647,15 @@ defmodule Beacon.Content do
 
     changeset = Page.update_changeset(page, attrs)
 
-    transact(repo(page), fn ->
-      with {:ok, changeset} <- validate_page_template(changeset),
-           {:ok, page} <- repo(page.site).update(changeset),
-           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-        {:ok, page}
-      end
-    end)
+    with :ok <- authorize(page.site, :update_page, opts) do
+      transact(repo(page), fn ->
+        with {:ok, changeset} <- validate_page_template(changeset),
+             {:ok, page} <- repo(page.site).update(changeset),
+             %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   @doc """
@@ -632,52 +666,65 @@ defmodule Beacon.Content do
   can keep editing the page as needed without impacting the published page.
 
   This operation is serialized.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec publish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
-  def publish_page(%Page{} = page) do
-    case Beacon.Config.fetch!(page.site).mode do
-      :live ->
-        GenServer.call(name(page.site), {:publish_page, page})
+  @spec publish_page(Page.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | term()}
+  def publish_page(%Page{} = page, opts \\ []) do
+    with :ok <- authorize(page.site, :publish_page, opts) do
+      case Beacon.Config.fetch!(page.site).mode do
+        :live ->
+          GenServer.call(name(page.site), {:publish_page, page})
 
-      :testing ->
-        page
-        |> insert_published_page()
-        |> tap(fn {:ok, page} -> reset_published_page(page.site, page.id) end)
+        :testing ->
+          page
+          |> insert_published_page()
+          |> tap(fn {:ok, page} -> reset_published_page(page.site, page.id) end)
 
-      :manual ->
-        insert_published_page(page)
+        :manual ->
+          insert_published_page(page)
+      end
     end
   end
 
   @doc """
-  Same as `publish_page/1` but accepts a `site` and `page_id` with which to lookup the page.
+  Same as `publish_page/2` but accepts a `site` and `page_id` with which to lookup the page.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec publish_page(Site.t(), UUID.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def publish_page(site, page_id) when is_atom(site) and is_binary(page_id) do
+  @spec publish_page_id(Site.t(), UUID.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def publish_page_id(site, page_id, opts \\ []) when is_atom(site) and is_binary(page_id) do
     site
     |> get_page(page_id)
-    |> publish_page()
+    |> publish_page(opts)
   end
 
   # TODO: only publish if there were actual changes compared to the last snapshot
   @doc """
   Publish multiple `pages`.
 
-  Similar to `publish_page/1` but defers loading dependent resources
+  Similar to `publish_page/2` but defers loading dependent resources
   as late as possible making the process faster.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
-  def publish_pages(pages) when is_list(pages) do
+  @spec publish_pages([Page.t()], keyword()) :: {:ok, [Page.t()]}
+  def publish_pages(pages, opts \\ []) when is_list(pages) do
     publish = fn page ->
-      transact(repo(page), fn ->
-        with {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event) do
-          {:ok, page}
-        end
-      end)
+      with :ok <- authorize(page.site, :publish_page, opts) do
+        transact(repo(page), fn ->
+          with {:ok, event} <- create_page_event(page, "published"),
+               {:ok, _snapshot} <- create_page_snapshot(page, event) do
+            {:ok, page}
+          end
+        end)
+      end
     end
 
     pages =
@@ -712,21 +759,26 @@ defmodule Beacon.Content do
   The page will be removed from your site and it will return error 404 for new requests.
 
   This operation is serialized.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec unpublish_page(Page.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def unpublish_page(%Page{} = page) do
-    case Beacon.Config.fetch!(page.site).mode do
-      :live ->
-        GenServer.call(name(page.site), {:unpublish_page, page})
+  @spec unpublish_page(Page.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t()}
+  def unpublish_page(%Page{} = page, opts \\ []) do
+    with :ok <- authorize(page.site, :unpublish_page, opts) do
+      case Beacon.Config.fetch!(page.site).mode do
+        :live ->
+          GenServer.call(name(page.site), {:unpublish_page, page})
 
-      :testing ->
-        page
-        |> insert_unpublished_page()
-        |> tap(fn {:ok, page} -> clear_cache(page.site, page.id) end)
+        :testing ->
+          page
+          |> insert_unpublished_page()
+          |> tap(fn {:ok, page} -> clear_cache(page.site, page.id) end)
 
-      :manual ->
-        insert_unpublished_page(page)
+        :manual ->
+          insert_unpublished_page(page)
+      end
     end
   end
 
@@ -1111,15 +1163,18 @@ defmodule Beacon.Content do
   Given a map of fields, stores this map as `:extra` fields in a `Page`.
 
   Any existing `:extra` data for that Page will be overwritten!
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :pages
-  @spec put_page_extra(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def put_page_extra(%Page{} = page, attrs) when is_map(attrs) do
-    attrs = %{"extra" => attrs}
-
-    page
-    |> Changeset.cast(attrs, [:extra])
-    |> repo(page).update()
+  @spec put_page_extra(Page.t(), map(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def put_page_extra(%Page{} = page, attrs, opts \\ []) when is_map(attrs) do
+    with :ok <- authorize(page.site, :update_page, opts) do
+      page
+      |> Changeset.cast(%{"extra" => attrs}, [:extra])
+      |> repo(page).update()
+    end
   end
 
   @doc """
@@ -1144,33 +1199,39 @@ defmodule Beacon.Content do
 
   Returns `{:ok, stylesheet}` if successful, otherwise `{:error, changeset}`.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
       iex> create_stylesheet(%{
-        site: :my_site,
-        name: "override",
-        content: ~S|
-        @media (min-width: 768px) {
-          .md\:text-red-400 {
-            color: red;
+          site: :my_site,
+          name: "override",
+          content: ~S|
+          @media (min-width: 768px) {
+            .md\:text-red-400 {
+              color: red;
+            }
           }
-        }
-        |
-      })
+          |
+        },
+        actor: {"some-user-id", "Some User"}
+      )
       {:ok, %Stylesheet{}}
 
   Note that escape characters must be preserved, so you should use `~S` to avoid issues.
-
   """
   @doc type: :stylesheets
-  @spec create_stylesheet(map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
-  def create_stylesheet(attrs \\ %{}) do
+  @spec create_stylesheet(map(), keyword()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_stylesheet(attrs, opts \\ []) do
     changeset = Stylesheet.changeset(%Stylesheet{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
+    with :ok <- authorize(site, :create_stylesheet, opts) do
+      changeset
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
+    end
   end
 
   @doc """
@@ -1181,25 +1242,31 @@ defmodule Beacon.Content do
   ## Example
 
       iex> create_stylesheet!(%{
-        site: :my_site,
-        name: "override",
-        content: ~S|
-        @media (min-width: 768px) {
-          .md\:text-red-400 {
-            color: red;
+          site: :my_site,
+          name: "override",
+          content: ~S|
+          @media (min-width: 768px) {
+            .md\:text-red-400 {
+              color: red;
+            }
           }
-        }
-        |
-      })
+          |
+        },
+        actor: {"some-user-id", "Some User"}
+      )
       %Stylesheet{}
 
   Note that escape characters must be preserved, so you should use `~S` to avoid issues.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :stylesheets
-  @spec create_stylesheet!(map()) :: Stylesheet.t()
-  def create_stylesheet!(attrs \\ %{}) do
-    case create_stylesheet(attrs) do
+  @spec create_stylesheet!(map(), keyword()) :: Stylesheet.t()
+  def create_stylesheet!(attrs, opts \\ []) do
+    case create_stylesheet(attrs, opts) do
       {:ok, stylesheet} -> stylesheet
+      {:error, :not_authorized} -> raise "failed to create stylesheet: not authorized"
       {:error, changeset} -> raise "failed to create stylesheet, got: #{inspect(changeset.errors)}"
     end
   end
@@ -1207,19 +1274,24 @@ defmodule Beacon.Content do
   @doc """
   Updates a stylesheet.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
-      iex> update_stylesheet(stylesheet, %{name: new_value})
+      iex> update_stylesheet(stylesheet, %{name: new_value}, actor: {"some-user-id", "Some User"})
       {:ok, %Stylesheet{}}
 
   """
   @doc type: :stylesheets
-  @spec update_stylesheet(Stylesheet.t(), map()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t()}
-  def update_stylesheet(%Stylesheet{} = stylesheet, attrs) do
-    stylesheet
-    |> Stylesheet.changeset(attrs)
-    |> repo(stylesheet).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
+  @spec update_stylesheet(Stylesheet.t(), map(), keyword()) :: {:ok, Stylesheet.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_stylesheet(%Stylesheet{} = stylesheet, attrs, opts \\ []) do
+    with :ok <- authorize(stylesheet.site, :update_stylesheet, opts) do
+      stylesheet
+      |> Stylesheet.changeset(attrs)
+      |> repo(stylesheet).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :stylesheet))
+    end
   end
 
   @doc """
@@ -1278,32 +1350,41 @@ defmodule Beacon.Content do
 
   Returns `{:ok, js_hook}` if successful, otherwise `{:error, changeset}`.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
       iex> code = "export const ConsoleLogHook = {mounted() {console.log(\"foo\")}}"
-      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code})
+      iex> create_js_hook(%{site: :my_site, name: "ConsoleLogHook", code: code}, actor: {"some-user-id", "Some User"})
       {:ok, %JSHook{}}
 
   """
   @doc type: :js_hooks
-  @spec create_js_hook(map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def create_js_hook(attrs) do
+  @spec create_js_hook(map(), keyword()) :: {:ok, JSHook.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_js_hook(attrs, opts \\ []) do
     changeset = JSHook.changeset(%JSHook{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    with :ok <- authorize(site, :create_js_hook, opts) do
+      changeset
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    end
   end
 
   @doc """
   Creates a JS Hook, raising an error if unsuccessful.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :js_hooks
-  @spec create_js_hook!(map()) :: JSHook.t()
-  def create_js_hook!(attrs) do
-    case create_js_hook(attrs) do
+  @spec create_js_hook!(map(), keyword()) :: JSHook.t()
+  def create_js_hook!(attrs, opts \\ []) do
+    case create_js_hook(attrs, opts) do
       {:ok, js_hook} -> js_hook
+      {:error, :not_authorized} -> raise "failed to create JS Hook: not authorized"
       {:error, changeset} -> raise "failed to create JS Hook, got: #{inspect(changeset.errors)}"
     end
   end
@@ -1365,25 +1446,35 @@ defmodule Beacon.Content do
 
   @doc """
   Updates a JS Hook.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :js_hooks
-  @spec update_js_hook(JSHook.t(), map()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def update_js_hook(js_hook, attrs) do
-    js_hook
-    |> JSHook.changeset(attrs)
-    |> repo(js_hook).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  @spec update_js_hook(JSHook.t(), map(), keyword()) :: {:ok, JSHook.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_js_hook(js_hook, attrs, opts \\ []) do
+    with :ok <- authorize(js_hook.site, :update_js_hook, opts) do
+      js_hook
+      |> JSHook.changeset(attrs)
+      |> repo(js_hook).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    end
   end
 
   @doc """
   Deletes a JS Hook.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :js_hooks
-  @spec delete_js_hook(JSHook.t()) :: {:ok, JSHook.t()} | {:error, Changeset.t()}
-  def delete_js_hook(js_hook) do
-    js_hook
-    |> repo(js_hook).delete()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+  @spec delete_js_hook(JSHook.t(), keyword()) :: {:ok, JSHook.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_js_hook(js_hook, opts \\ []) do
+    with :ok <- authorize(js_hook.site, :delete_js_hook, opts) do
+      js_hook
+      |> repo(js_hook).delete()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :js_hook))
+    end
   end
 
   # COMPONENTS
@@ -3095,35 +3186,46 @@ defmodule Beacon.Content do
 
   Returns `{:ok, component}` if successful, otherwise `{:error, changeset}`.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
-      iex> create_component(attrs)
+      iex> create_component(attrs, actor: {"some-user-id", "Some User"})
       {:ok, %Component{}}
 
   """
-  @spec create_component(map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
+  @spec create_component(map(), keyword()) :: {:ok, Component.t()} | {:error, Changeset.t() | :not_authorized}
   @doc type: :components
-  def create_component(attrs \\ %{}) do
+  def create_component(attrs, opts \\ []) do
     changeset = Component.changeset(%Component{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> validate_component_template()
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :component))
+    with :ok <- authorize(site, :create_component, opts) do
+      changeset
+      |> validate_component_template()
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :component))
+    end
   end
 
   @doc """
   Creates a component, raising an error if unsuccessful.
 
   Returns the new component if successful, otherwise raises a `RuntimeError`.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :components
-  @spec create_component!(map()) :: Component.t()
-  def create_component!(attrs \\ %{}) do
-    case create_component(attrs) do
+  @spec create_component!(map(), keyword()) :: Component.t()
+  def create_component!(attrs, opts \\ []) do
+    case create_component(attrs, opts) do
       {:ok, component} ->
         component
+
+      {:error, :not_authorized} ->
+        raise "failed to create component: not authorized"
 
       {:error, changeset} ->
         errors =
@@ -3140,18 +3242,25 @@ defmodule Beacon.Content do
   @doc """
   Updates a component.
 
-      iex> update_component(component, %{name: "new_component"})
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
+  ## Example
+
+      iex> update_component(component, %{name: "new_component"}, actor: {"some-user-id", "Some User"})
       {:ok, %Component{}}
 
   """
   @doc type: :components
-  @spec update_component(Component.t(), map()) :: {:ok, Component.t()} | {:error, Changeset.t()}
-  def update_component(%Component{} = component, attrs) do
-    component
-    |> Component.changeset(attrs)
-    |> validate_component_template()
-    |> repo(component).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :component))
+  @spec update_component(Component.t(), map(), keyword()) :: {:ok, Component.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_component(%Component{} = component, attrs, opts \\ []) do
+    with :ok <- authorize(component.site, :update_component, opts) do
+      component
+      |> Component.changeset(attrs)
+      |> validate_component_template()
+      |> repo(component).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :component))
+    end
   end
 
   defp validate_component_template(changeset) do
@@ -3325,17 +3434,17 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new component slot and returns the component with updated `:slots` association.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :components
-  @spec create_slot_for_component(Component.t(), %{name: binary()}) ::
-          {:ok, Component.t()} | {:error, Changeset.t()}
-  def create_slot_for_component(component, attrs) do
-    changeset =
-      component
-      |> Ecto.build_assoc(:slots)
-      |> ComponentSlot.changeset(attrs)
-
-    with {:ok, %ComponentSlot{}} <- repo(component).insert(changeset),
+  @spec create_slot_for_component(Component.t(), %{name: binary()}, keyword()) ::
+          {:ok, Component.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_slot_for_component(component, attrs, opts \\ []) do
+    with :ok <- authorize(component.site, :create_slot_for_component, opts),
+         changeset = component |> Ecto.build_assoc(:slots) |> ComponentSlot.changeset(attrs),
+         {:ok, %ComponentSlot{}} <- repo(component).insert(changeset),
          %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
       {:ok, component}
     end
@@ -3343,13 +3452,17 @@ defmodule Beacon.Content do
 
   @doc """
   Updates a component slot and returns the component with updated `:slots` association.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :components
-  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map(), list(String.t())) :: {:ok, Component.t()} | {:error, Changeset.t()}
-  def update_slot_for_component(component, slot, attrs, component_slots_names) do
-    changeset = ComponentSlot.changeset(slot, attrs, component_slots_names)
-
-    with {:ok, %ComponentSlot{}} <- repo(component).update(changeset),
+  @spec update_slot_for_component(Component.t(), ComponentSlot.t(), map(), list(String.t()), keyword()) ::
+          {:ok, Component.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_slot_for_component(component, slot, attrs, component_slots_names, opts \\ []) do
+    with :ok <- authorize(component.site, :update_slot_for_component, opts),
+         changeset = ComponentSlot.changeset(slot, attrs, component_slots_names),
+         {:ok, %ComponentSlot{}} <- repo(component).update(changeset),
          %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
       {:ok, component}
     end
@@ -3357,11 +3470,16 @@ defmodule Beacon.Content do
 
   @doc """
   Deletes a component slot and returns the component with updated slots association.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :components
-  @spec delete_slot_from_component(Component.t(), ComponentSlot.t()) :: {:ok, Component.t()} | {:error, Changeset.t()}
-  def delete_slot_from_component(component, slot) do
-    with {:ok, %ComponentSlot{}} <- repo(component).delete(slot),
+  @spec delete_slot_from_component(Component.t(), ComponentSlot.t(), keyword()) ::
+          {:ok, Component.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_slot_from_component(component, slot, opts \\ []) do
+    with :ok <- authorize(component.site, :delete_slot_from_component, opts),
+         {:ok, %ComponentSlot{}} <- repo(component).delete(slot),
          %Component{} = component <- repo(component).preload(component, [slots: [:attrs]], force: true) do
       {:ok, component}
     end
@@ -3411,42 +3529,60 @@ defmodule Beacon.Content do
   @doc """
   Creates a slot attr.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
-      iex> create_slot_attr(site, attrs)
+      iex> create_slot_attr(site, attrs, [], actor: {"some-user-id", "Some User"})
       {:ok, %ComponentSlotAttr{}}
 
   """
-  @spec create_slot_attr(Site.t(), map(), list(String.t())) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
+  @spec create_slot_attr(Site.t(), map(), list(String.t()), keyword()) ::
+          {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t() | :not_authorized}
   @doc type: :components
-  def create_slot_attr(site, attrs, slot_attr_names) do
-    %ComponentSlotAttr{}
-    |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
-    |> repo(site).insert()
+  def create_slot_attr(site, attrs, slot_attr_names, opts \\ []) do
+    with :ok <- authorize(site, :create_slot_attr, opts) do
+      %ComponentSlotAttr{}
+      |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
+      |> repo(site).insert()
+    end
   end
 
   @doc """
   Updates a slot attr.
 
-      iex> update_slot(slot_attr, %{name: "new_slot"})
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
+      iex> update_slot(site, slot_attr, %{name: "new_slot"}, [], actor: {"some-user-id", "Some User"})
       {:ok, %ComponentSlotAttr{}}
 
   """
   @doc type: :components
-  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map(), list(String.t())) :: {:ok, ComponentAttr.t()} | {:error, Changeset.t()}
-  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs, slot_attr_names) do
-    slot_attr
-    |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
-    |> repo(site).update()
+  @spec update_slot_attr(Site.t(), ComponentSlotAttr.t(), map(), list(String.t()), keyword()) ::
+          {:ok, ComponentAttr.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_slot_attr(site, %ComponentSlotAttr{} = slot_attr, attrs, slot_attr_names, opts \\ []) do
+    with :ok <- authorize(site, :update_slot_attr, opts) do
+      slot_attr
+      |> ComponentSlotAttr.changeset(attrs, slot_attr_names)
+      |> repo(site).update()
+    end
   end
 
   @doc """
   Deletes a slot attr.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :components
-  @spec delete_slot_attr(Site.t(), ComponentSlotAttr.t()) :: {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t()}
-  def delete_slot_attr(site, slot_attr) do
-    repo(site).delete(slot_attr)
+  @spec delete_slot_attr(Site.t(), ComponentSlotAttr.t(), keyword()) ::
+          {:ok, ComponentSlotAttr.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_slot_attr(site, slot_attr, opts \\ []) do
+    with :ok <- authorize(site, :delete_slot_attr, opts) do
+      repo(site).delete(slot_attr)
+    end
   end
 
   # SNIPPETS
@@ -3455,10 +3591,13 @@ defmodule Beacon.Content do
   Creates a snippet helper.
 
   Returns `{:ok, helper}` if successful, otherwise `{:error, changeset}`
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :snippets
-  @spec create_snippet_helper(map()) :: {:ok, Snippets.Helper.t()} | {:error, Changeset.t()}
-  def create_snippet_helper(attrs) do
+  @spec create_snippet_helper(map(), keyword()) :: {:ok, Snippets.Helper.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_snippet_helper(attrs, opts \\ []) do
     changeset =
       %Snippets.Helper{}
       |> Changeset.cast(attrs, [:site, :name, :body])
@@ -3467,10 +3606,12 @@ defmodule Beacon.Content do
 
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> validate_snippet_helper()
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
+    with :ok <- authorize(site, :create_snippet_helper, opts) do
+      changeset
+      |> validate_snippet_helper()
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :snippet_helper))
+    end
   end
 
   defp validate_snippet_helper(changeset) do
@@ -3486,13 +3627,17 @@ defmodule Beacon.Content do
   Creates a snippet helper, raising an error if unsuccessful.
 
   Returns the new helper if successful, otherwise raises a `RuntimeError`.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :snippets
-  @spec create_snippet_helper!(map()) :: Snippets.Helper.t()
-  def create_snippet_helper!(attrs) do
-    case create_snippet_helper(attrs) do
+  @spec create_snippet_helper!(map(), keyword()) :: Snippets.Helper.t()
+  def create_snippet_helper!(attrs, opts \\ []) do
+    case create_snippet_helper(attrs, opts) do
       {:ok, helper} -> helper
-      {:error, changeset} -> raise "failed to create snippet helper, got: #{inspect(changeset.errors)} "
+      {:error, :not_authorized} -> raise "failed to create snippet helper: not authorized"
+      {:error, changeset} -> raise "failed to create snippet helper, got: #{inspect(changeset.errors)}"
     end
   end
 
@@ -3702,29 +3847,38 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new error page.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :error_pages
-  @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
-          {:ok, ErrorPage.t()} | {:error, Changeset.t()}
-  def create_error_page(attrs) do
+  @spec create_error_page(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}, keyword()) ::
+          {:ok, ErrorPage.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_error_page(attrs, opts \\ []) do
     changeset = ErrorPage.changeset(%ErrorPage{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> validate_error_page()
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
+    with :ok <- authorize(site, :create_error_page, opts) do
+      changeset
+      |> validate_error_page()
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
+    end
   end
 
   @doc """
   Creates a new error page, raising if the operation fails.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :error_pages
-  @spec create_error_page!(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}) ::
+  @spec create_error_page!(%{site: Site.t(), status: ErrorPage.error_status(), template: binary(), layout_id: Ecto.UUID.t()}, keyword()) ::
           ErrorPage.t()
-  def create_error_page!(attrs) do
-    case create_error_page(attrs) do
+  def create_error_page!(attrs, opts \\ []) do
+    case create_error_page(attrs, opts) do
       {:ok, error_page} -> error_page
+      {:error, :not_authorized} -> raise "failed to create error page: not authorized"
       {:error, changeset} -> raise "failed to create error page, got: #{inspect(changeset.errors)}"
     end
   end
@@ -3745,24 +3899,34 @@ defmodule Beacon.Content do
 
   @doc """
   Updates an error page.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :error_pages
-  @spec update_error_page(ErrorPage.t(), map()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
-  def update_error_page(error_page, attrs) do
-    error_page
-    |> ErrorPage.changeset(attrs)
-    |> validate_error_page()
-    |> repo(error_page).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
+  @spec update_error_page(ErrorPage.t(), map(), keyword()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_error_page(error_page, attrs, opts \\ []) do
+    with :ok <- authorize(error_page.site, :update_error_page, opts) do
+      error_page
+      |> ErrorPage.changeset(attrs)
+      |> validate_error_page()
+      |> repo(error_page).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :error_page))
+    end
   end
 
   @doc """
   Deletes an error page.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :error_pages
-  @spec delete_error_page(ErrorPage.t()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t()}
-  def delete_error_page(error_page) do
-    repo(error_page).delete(error_page)
+  @spec delete_error_page(ErrorPage.t(), keyword()) :: {:ok, ErrorPage.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_error_page(error_page, opts \\ []) do
+    with :ok <- authorize(error_page.site, :delete_error_page, opts) do
+      repo(error_page).delete(error_page)
+    end
   end
 
   defp validate_error_page(changeset) do
@@ -3802,11 +3966,14 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new event handler.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :event_handlers
-  @spec create_event_handler(%{name: binary(), code: binary(), site: Site.t()}) ::
-          {:ok, EventHandler.t()} | {:error, Changeset.t()}
-  def create_event_handler(attrs) do
+  @spec create_event_handler(%{name: binary(), code: binary(), site: Site.t()}, keyword()) ::
+          {:ok, EventHandler.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_event_handler(attrs, opts \\ []) do
     changeset =
       %EventHandler{}
       |> EventHandler.changeset(attrs)
@@ -3814,37 +3981,45 @@ defmodule Beacon.Content do
 
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+    with :ok <- authorize(site, :create_event_handler, opts) do
+      changeset
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+    end
   end
 
   @doc """
   Creates an event handler, raising an error if unsuccessful.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :event_handlers
-  @spec create_event_handler!(map()) :: EventHandler.t()
-  def create_event_handler!(attrs \\ %{}) do
-    case create_event_handler(attrs) do
-      {:ok, event_handler} ->
-        event_handler
-
-      {:error, changeset} ->
-        raise "failed to create event_handler: #{inspect(changeset.errors)}"
+  @spec create_event_handler!(map(), keyword()) :: EventHandler.t()
+  def create_event_handler!(attrs, opts \\ []) do
+    case create_event_handler(attrs, opts) do
+      {:ok, event_handler} -> event_handler
+      {:error, :not_authorized} -> raise "failed to create event_handler: not authorized"
+      {:error, changeset} -> raise "failed to create event_handler: #{inspect(changeset.errors)}"
     end
   end
 
   @doc """
   Updates an event handler with the given attrs.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :event_handlers
-  @spec update_event_handler(EventHandler.t(), map()) :: {:ok, EventHandler.t()} | {:error, Changeset.t()}
-  def update_event_handler(event_handler, attrs) do
-    event_handler
-    |> EventHandler.changeset(attrs)
-    |> validate_event_handler()
-    |> repo(event_handler).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+  @spec update_event_handler(EventHandler.t(), map(), keyword()) :: {:ok, EventHandler.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_event_handler(event_handler, attrs, opts \\ []) do
+    with :ok <- authorize(event_handler.site, :update_event_handler, opts) do
+      event_handler
+      |> EventHandler.changeset(attrs)
+      |> validate_event_handler()
+      |> repo(event_handler).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+    end
   end
 
   defp validate_event_handler(changeset) do
@@ -3857,13 +4032,18 @@ defmodule Beacon.Content do
 
   @doc """
   Deletes an event handler.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :event_handlers
-  @spec delete_event_handler(EventHandler.t()) :: {:ok, EventHandler.t()} | {:error, Changeset.t()}
-  def delete_event_handler(event_handler) do
-    event_handler
-    |> repo(event_handler).delete()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+  @spec delete_event_handler(EventHandler.t(), keyword()) :: {:ok, EventHandler.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_event_handler(event_handler, opts \\ []) do
+    with :ok <- authorize(event_handler.site, :delete_event_handler, opts) do
+      event_handler
+      |> repo(event_handler).delete()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :event_handler))
+    end
   end
 
   # PAGE VARIANTS
@@ -3885,44 +4065,54 @@ defmodule Beacon.Content do
 
   @doc """
   Creates a new page variant and returns the page with updated `:variants` association.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :page_variants
-  @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}) ::
-          {:ok, Page.t()} | {:error, Changeset.t()}
-  def create_variant_for_page(page, attrs) do
-    changeset =
-      page
-      |> Ecto.build_assoc(:variants)
-      |> PageVariant.changeset(attrs)
-      |> validate_variant(page)
+  @spec create_variant_for_page(Page.t(), %{name: binary(), template: binary(), weight: integer()}, keyword()) ::
+          {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_variant_for_page(page, attrs, opts \\ []) do
+    with :ok <- authorize(page.site, :create_variant_for_page, opts) do
+      changeset =
+        page
+        |> Ecto.build_assoc(:variants)
+        |> PageVariant.changeset(attrs)
+        |> validate_variant(page)
 
-    transact(repo(page), fn ->
-      with {:ok, %PageVariant{}} <- repo(page).insert(changeset),
-           %Page{} = page <- repo(page).preload(page, :variants, force: true),
-           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-        {:ok, page}
-      end
-    end)
+      transact(repo(page), fn ->
+        with {:ok, %PageVariant{}} <- repo(page).insert(changeset),
+             %Page{} = page <- repo(page).preload(page, :variants, force: true),
+             %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   @doc """
   Updates a page variant and returns the page with updated `:variants` association.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :page_variants
-  @spec update_variant_for_page(Page.t(), PageVariant.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def update_variant_for_page(page, variant, attrs) do
-    changeset =
-      variant
-      |> PageVariant.changeset(attrs)
-      |> validate_variant(page)
+  @spec update_variant_for_page(Page.t(), PageVariant.t(), map(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_variant_for_page(page, variant, attrs, opts \\ []) do
+    with :ok <- authorize(page.site, :update_variant_for_page, opts) do
+      changeset =
+        variant
+        |> PageVariant.changeset(attrs)
+        |> validate_variant(page)
 
-    transact(repo(page), fn ->
-      with {:ok, %PageVariant{}} <- repo(page).update(changeset),
-           %Page{} = page <- repo(page).preload(page, :variants, force: true),
-           %Page{} = page <- Lifecycle.Page.after_update_page(page) do
-        {:ok, page}
-      end
-    end)
+      transact(repo(page), fn ->
+        with {:ok, %PageVariant{}} <- repo(page).update(changeset),
+             %Page{} = page <- repo(page).preload(page, :variants, force: true),
+             %Page{} = page <- Lifecycle.Page.after_update_page(page) do
+          {:ok, page}
+        end
+      end)
+    end
   end
 
   defp validate_variant(changeset, page) do
@@ -3955,11 +4145,15 @@ defmodule Beacon.Content do
 
   @doc """
   Deletes a page variant and returns the page with updated `:variants` association.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :page_variants
-  @spec delete_variant_from_page(Page.t(), PageVariant.t()) :: {:ok, Page.t()} | {:error, Changeset.t()}
-  def delete_variant_from_page(page, variant) do
-    with {:ok, %PageVariant{}} <- repo(page).delete(variant),
+  @spec delete_variant_from_page(Page.t(), PageVariant.t(), keyword()) :: {:ok, Page.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_variant_from_page(page, variant, opts \\ []) do
+    with :ok <- authorize(page.site, :delete_variant_from_page, opts),
+         {:ok, %PageVariant{}} <- repo(page).delete(variant),
          %Page{} = page <- repo(page).preload(page, :variants, force: true),
          %Page{} = page <- Lifecycle.Page.after_update_page(page) do
       {:ok, page}
@@ -4009,53 +4203,67 @@ defmodule Beacon.Content do
   Creates a new LiveData for scoping live data to pages.
 
   Returns `{:ok, live_data}` if successful, otherwise `{:error, changeset}`
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :live_data
-  @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def create_live_data(attrs) do
+  @spec create_live_data(map(), keyword()) :: {:ok, LiveData.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_live_data(attrs, opts \\ []) do
     changeset = LiveData.changeset(%LiveData{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
+    with :ok <- authorize(site, :create_live_data, opts) do
+      changeset
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
+    end
   end
 
   @doc """
   Creates a new LiveData for scoping live data to pages, raising an error if unsuccessful.
 
   Returns the new LiveData if successful, otherwise raises a `RuntimeError`.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :live_data
-  @spec create_live_data!(map()) :: LiveData.t()
-  def create_live_data!(attrs) do
-    case create_live_data(attrs) do
+  @spec create_live_data!(map(), keyword()) :: LiveData.t()
+  def create_live_data!(attrs, opts \\ []) do
+    case create_live_data(attrs, opts) do
       {:ok, live_data} -> live_data
+      {:error, :not_authorized} -> raise "failed to create live data: not authorized"
       {:error, changeset} -> raise "failed to create live data, got: #{inspect(changeset.errors)}"
     end
   end
 
   @doc """
   Creates a new LiveDataAssign.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :live_data
-  @spec create_assign_for_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def create_assign_for_live_data(live_data, attrs) do
-    changeset =
-      live_data
-      |> Ecto.build_assoc(:assigns)
-      |> Map.put(:live_data, live_data)
-      |> LiveDataAssign.changeset(attrs)
-      |> validate_live_data_code()
+  @spec create_assign_for_live_data(LiveData.t(), map(), keyword()) :: {:ok, LiveData.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_assign_for_live_data(live_data, attrs, opts \\ []) do
+    with :ok <- authorize(live_data.site, :create_assign_for_live_data, opts) do
+      changeset =
+        live_data
+        |> Ecto.build_assoc(:assigns)
+        |> Map.put(:live_data, live_data)
+        |> LiveDataAssign.changeset(attrs)
+        |> validate_live_data_code()
 
-    case repo(live_data).insert(changeset) do
-      {:ok, %LiveDataAssign{}} ->
-        live_data = repo(live_data).preload(live_data, :assigns, force: true)
-        maybe_broadcast_updated_content_event({:ok, live_data}, :live_data)
-        {:ok, live_data}
+      case repo(live_data).insert(changeset) do
+        {:ok, %LiveDataAssign{}} ->
+          live_data = repo(live_data).preload(live_data, :assigns, force: true)
+          maybe_broadcast_updated_content_event({:ok, live_data}, :live_data)
+          {:ok, live_data}
 
-      {:error, changeset} ->
-        {:error, changeset}
+        {:error, changeset} ->
+          {:error, changeset}
+      end
     end
   end
 
@@ -4128,38 +4336,49 @@ defmodule Beacon.Content do
   @doc """
   Updates LiveDataPath.
 
-      iex> update_live_data_path(live_data, "/foo/bar/:baz_id")
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
+      iex> update_live_data_path(live_data, "/foo/bar/:baz_id", actor: {"some-user-id", "Some User"})
       {:ok, %LiveData{}}
 
   """
   @doc type: :live_data
-  @spec update_live_data_path(LiveData.t(), String.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def update_live_data_path(%LiveData{} = live_data, path) do
-    live_data
-    |> LiveData.path_changeset(%{path: path})
-    |> repo(live_data).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
+  @spec update_live_data_path(LiveData.t(), String.t(), keyword()) :: {:ok, LiveData.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_live_data_path(%LiveData{} = live_data, path, opts \\ []) do
+    with :ok <- authorize(live_data.site, :update_live_data_path, opts) do
+      live_data
+      |> LiveData.path_changeset(%{path: path})
+      |> repo(live_data).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
+    end
   end
 
   @doc """
   Updates LiveDataAssign.
 
-      iex> update_live_data_assign(live_data_assign, :my_site, %{code: "true"})
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
+      iex> update_live_data_assign(live_data_assign, :my_site, %{code: "true"}, actor: {"some-user-id", "Some User"})
       {:ok, %LiveDataAssign{}}
 
   """
   @doc type: :live_data
-  @spec update_live_data_assign(LiveDataAssign.t(), Site.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
-  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, site, attrs) do
-    live_data_assign
-    |> repo(site).preload(:live_data)
-    |> LiveDataAssign.changeset(attrs)
-    |> validate_live_data_code()
-    |> repo(site).update()
-    |> tap(fn
-      {:ok, live_data_assign} -> maybe_broadcast_updated_content_event({:ok, live_data_assign.live_data}, :live_data)
-      _error -> :skip
-    end)
+  @spec update_live_data_assign(LiveDataAssign.t(), Site.t(), map(), keyword()) ::
+          {:ok, LiveDataAssign.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, site, attrs, opts \\ []) do
+    with :ok <- authorize(site, :update_live_data_assign, opts) do
+      live_data_assign
+      |> repo(site).preload(:live_data)
+      |> LiveDataAssign.changeset(attrs)
+      |> validate_live_data_code()
+      |> repo(site).update()
+      |> tap(fn
+        {:ok, live_data_assign} -> maybe_broadcast_updated_content_event({:ok, live_data_assign.live_data}, :live_data)
+        _error -> :skip
+      end)
+    end
   end
 
   defp validate_live_data_code(changeset) do
@@ -4187,41 +4406,57 @@ defmodule Beacon.Content do
 
   @doc """
   Deletes LiveData.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :live_data
-  @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def delete_live_data(live_data) do
-    repo(live_data).delete(live_data)
+  @spec delete_live_data(LiveData.t(), keyword()) :: {:ok, LiveData.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_live_data(live_data, opts \\ []) do
+    with :ok <- authorize(live_data.site, :delete_live_data, opts) do
+      repo(live_data).delete(live_data)
+    end
   end
 
   @doc """
   Deletes LiveDataAssign.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :live_data
-  @spec delete_live_data_assign(LiveDataAssign.t(), Site.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
-  def delete_live_data_assign(live_data_assign, site) do
-    repo(site).delete(live_data_assign)
+  @spec delete_live_data_assign(LiveDataAssign.t(), Site.t(), keyword()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_live_data_assign(live_data_assign, site, opts \\ []) do
+    with :ok <- authorize(site, :delete_live_data_assign, opts) do
+      repo(site).delete(live_data_assign)
+    end
   end
 
   @doc """
   Creates a new info handler for creating shared handle_info callbacks.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
-      iex> create_info_handler(%{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"})
+      iex> attrs = %{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"}
+      iex> create_info_handler(attrs, actor: {"some-user-id", "Some User"})
       {:ok, %InfoHandler{}}
 
   """
   @doc type: :info_handlers
-  @spec create_info_handler(map()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
-  def create_info_handler(attrs) do
+  @spec create_info_handler(map(), keyword()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t() | :not_authorized}
+  def create_info_handler(attrs, opts \\ []) do
     changeset = InfoHandler.changeset(%InfoHandler{}, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> validate_info_handler()
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+    with :ok <- authorize(site, :create_info_handler, opts) do
+      changeset
+      |> validate_info_handler()
+      |> repo(site).insert()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+    end
   end
 
   @spec validate_info_handler(Changeset.t(), [String.t()]) :: Changeset.t()
@@ -4241,16 +4476,22 @@ defmodule Beacon.Content do
 
   Returns the new info handler if successful, otherwise raises a `RuntimeError`.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
-      iex> create_info_handler!(%{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"})
+      iex> attrs = %{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"}
+      iex> create_info_handler!(attrs, actor: {"some-user-id", "Some User"})
       %InfoHandler{}
+
   """
   @doc type: :info_handlers
-  @spec create_info_handler!(map()) :: InfoHandler.t()
-  def create_info_handler!(attrs \\ %{}) do
-    case create_info_handler(attrs) do
+  @spec create_info_handler!(map(), keyword()) :: InfoHandler.t()
+  def create_info_handler!(attrs, opts \\ []) do
+    case create_info_handler(attrs, opts) do
       {:ok, info_handler} -> info_handler
+      {:error, :not_authorized} -> raise "failed to create info handler: not authorized"
       {:error, changeset} -> raise "failed to create info handler, got: #{inspect(changeset.errors)}"
     end
   end
@@ -4315,33 +4556,43 @@ defmodule Beacon.Content do
   @doc """
   Updates a info handler.
 
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
+
   ## Example
 
-      iex> update_info_handler(info_handler, %{msg: "{:new_msg, arg}"})
+      iex> update_info_handler(info_handler, %{msg: "{:new_msg, arg}"}, actor: {"some-user-id", "Some User"})
       {:ok, %InfoHandler{}}
 
   """
   @doc type: :info_handlers
-  @spec update_info_handler(InfoHandler.t(), map()) :: {:ok, InfoHandler.t()}
-  def update_info_handler(%InfoHandler{} = info_handler, attrs) do
+  @spec update_info_handler(InfoHandler.t(), map(), keyword()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t() | :not_authorized}
+  def update_info_handler(%InfoHandler{} = info_handler, attrs, opts \\ []) do
     changeset = InfoHandler.changeset(info_handler, attrs)
     site = Changeset.get_field(changeset, :site)
 
-    changeset
-    |> validate_info_handler(["Phoenix.Component"])
-    |> repo(site).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+    with :ok <- authorize(site, :update_info_handler, opts) do
+      changeset
+      |> validate_info_handler(["Phoenix.Component"])
+      |> repo(site).update()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+    end
   end
 
   @doc """
   Deletes info handler.
+
+  This function requires authorization.  See ["Authorization Options"](#module-authorization-options)
+  in the module documentation.
   """
   @doc type: :info_handlers
-  @spec delete_info_handler(InfoHandler.t()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
-  def delete_info_handler(info_handler) do
-    info_handler
-    |> repo(info_handler).delete()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+  @spec delete_info_handler(InfoHandler.t(), keyword()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t() | :not_authorized}
+  def delete_info_handler(info_handler, opts \\ []) do
+    with :ok <- authorize(info_handler.site, :delete_info_handler, opts) do
+      info_handler
+      |> repo(info_handler).delete()
+      |> tap(&maybe_broadcast_updated_content_event(&1, :info_handler))
+    end
   end
 
   ## Utils

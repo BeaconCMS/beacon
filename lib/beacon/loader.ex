@@ -127,6 +127,10 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), :populate_default_home_page, @timeout)
   end
 
+  def populate_default_roles(site) do
+    GenServer.call(worker(site), :populate_default_roles, @timeout)
+  end
+
   def load_runtime_js(site) do
     call_worker(site, :load_runtime_js, {:load_runtime_js, [site]}, timeout: :timer.minutes(2))
   end
