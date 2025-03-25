@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Enhancements
+  - [Install] Cleaner design for the home page
+
+### Fixes
+  - [Install] Fix responsive aspects of the default home page
+
 ## 0.5.0 (2025-03-18)
 
 ### Enhancements
