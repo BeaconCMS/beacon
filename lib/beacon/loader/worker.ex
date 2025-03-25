@@ -126,220 +126,159 @@ defmodule Beacon.Loader.Worker do
     populate = fn ->
       case Content.get_page_by(site, path: "/") do
         nil ->
-          Content.create_stylesheet(%{
-            site: site,
-            name: "beacon-demo",
-            content: ~S"""
-            .beacon-demo-home {
-                background: rgb(50,163,252);
-                background: linear-gradient(145deg, rgba(50,163,252,1) 0%, rgba(99,102,241,1) 26%, rgba(138,55,214,1) 55%, rgba(100,37,181,1) 76%, rgba(31,41,55,1) 100%);
-                background-size: 400% 400%;
-                animation: beacon-demo-home-gradient 30s ease infinite;
-                height: 100vh;
-                font-family: "Plus Jakarta Sans", sans-serif;
-            }
-
-            @keyframes beacon-demo-home-gradient {
-                0% {
-                    background-position: 0% 0%;
-                }
-                50% {
-                    background-position: 100% 100%;
-                }
-                100% {
-                    background-position: 0% 0%;
-                }
-            }
-            .beacon-demo-home-title {
-                background: linear-gradient(
-                    to right,
-                    rgb(186, 230, 253),
-                    rgb(221, 214, 254)
-                );
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                text-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
-            }
-            """
-          })
-
           %{
             site: site,
             layout_id: default_layout.id,
             path: "/",
             title: "My Home Page",
             template: ~S"""
-            <div class="beacon-demo-home">
-              <div class="text-white min-h-fit flex items-center justify-center">
-                <div class="max-w-screen-lg w-full px-6 py-12">
+            <div class="bg-white min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex flex-col">
+              <div class="text-gray-900 flex-1 flex items-center justify-center">
+                <div class="max-w-screen-lg w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                   <div class="text-center">
-                    <h1 class="beacon-demo-home-title font-bold text-7xl mb-2">
-                      Beacon
-                    </h1>
-                    <p class="mb-12 text-3xl">
+                    <h1 class="font-bold text-5xl sm:text-6xl lg:text-7xl mb-4 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700">Beacon</h1>
+                    <p class="mb-8 sm:mb-12 text-2xl sm:text-3xl font-light text-gray-600">
                       Performance without compromising productivity
                     </p>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
-                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
-                      <h2 class="pb-2 text-base font-bold">
-                        SEO-friendly
-                      </h2>
-                      <p>
-                        Out-of-the-box fast page rendering and high
-                        scores, even with dynamic data.
-                      </p>
-                    </div>
-                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
-                      <h2 class="pb-2 text-base font-bold">Practical</h2>
-                      <p>
-                        Updating your site is a click away, without slow
-                        deployments.
-                      </p>
-                    </div>
-                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
-                      <h2 class="pb-2 text-base font-bold">Scalable</h2>
-                      <p>
-                        Start serving thousands of requests and upgrade
-                        to a cluster to go far beyond.
-                      </p>
-                    </div>
-                    <div class="p-4 bg-indigo-50 text-black border border-indigo-100 rounded-lg shadow-xl shadow-indigo-600/50 hover:border-sky-100 hover:shadow-sky-200/30 duration-1000">
-                      <h2 class="pb-2 text-base font-bold">
-                        Open-Source
-                      </h2>
-                      <p>
-                        Verify, contribute, and adapt to your needs. A
-                        project for the community.
-                      </p>
+                    <div class="flex flex-wrap justify-center gap-4 mb-12">
+                      <a
+                        href="https://hexdocs.pm/beacon"
+                        class="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                        </svg>
+                        Beacon Docs
+                      </a>
+                      <a
+                        href="https://hexdocs.pm/beacon_live_admin"
+                        class="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a6.759 6.759 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        LiveAdmin Docs
+                      </a>
                     </div>
                   </div>
 
-                  <div class="mt-16 leading-loose">
-                    <h2 class="text-4xl font-bold mb-2">Features</h2>
-                    <p class="mb-8">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-sm">
+                    <div class="p-4 sm:p-6 bg-white text-gray-900 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                      <h2 class="pb-2 text-base font-bold text-gray-900">SEO-friendly</h2>
+                      <p class="text-gray-600">
+                        Out-of-the-box fast page rendering and high scores, even with dynamic data.
+                      </p>
+                    </div>
+                    <div class="p-4 sm:p-6 bg-white text-gray-900 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                      <h2 class="pb-2 text-base font-bold text-gray-900">Practical</h2>
+                      <p class="text-gray-600">Updating your site is a click away, without slow deployments.</p>
+                    </div>
+                    <div class="p-4 sm:p-6 bg-white text-gray-900 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                      <h2 class="pb-2 text-base font-bold text-gray-900">Scalable</h2>
+                      <p class="text-gray-600">
+                        Start serving thousands of requests and upgrade to a cluster to go far beyond.
+                      </p>
+                    </div>
+                    <div class="p-4 sm:p-6 bg-white text-gray-900 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                      <h2 class="pb-2 text-base font-bold text-gray-900">Open-Source</h2>
+                      <p class="text-gray-600">
+                        Verify, contribute, and adapt to your needs. A project for the community.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-12 sm:mt-16 leading-relaxed">
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-4 text-gray-900">Features</h2>
+                    <p class="mb-6 sm:mb-8 text-gray-600">
                       Check out the
                       <a
                         href="https://github.com/BeaconCMS/beacon_demo"
-                        class="text-sky-200 no-underline py-1 px-2 mx-1 border border-sky-600 shadow-lg shadow-sky-400/40 rounded-full hover:border-fuchsia-100 hover:shadow-fuchsia-300/40 duration-1000"
+                        class="text-gray-900 hover:text-gray-700 transition-colors duration-300 border-b border-gray-300 hover:border-gray-600"
                       >
                         demo application
                       </a>
-                      to learn about the features listed below. Run it,
-                      change it, and deploy your site.
+                      to learn about the features listed below. Run it, change it, and deploy your site.
                     </p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          Visual Page Builder
-                        </h2>
-                        <p>
-                          Drag and drop HTML elements and Components
-                          into your page template, and change
-                          attributes and classes. Works with HTML and
-                          HEEx templates.
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">Visual Page Builder</h2>
+                        <p class="text-gray-600">
+                          Drag and drop HTML elements and Components into your page template, and change attributes and classes. Works with HTML and HEEx templates.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          Components
-                        </h2>
-                        <p>
-                          Reuse Phoenix Components to speed up the
-                          development of pages. Common components are
-                          already integrated and you can create more.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">Components</h2>
+                        <p class="text-gray-600">
+                          Reuse Phoenix Components to speed up the development of pages. Common components are already integrated and you can create more.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          Media Library
-                        </h2>
-                        <p>
-                          Upload images, videos, documents, and
-                          virtually any kind of media. Process the
-                          files, store them in a cloud provider, and
-                          render them in your pages.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">Media Library</h2>
+                        <p class="text-gray-600">
+                          Upload images, videos, documents, and virtually any kind of media. Process the files, store them in a cloud provider, and render them in your pages.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          Live Data
-                        </h2>
-                        <p>
-                          Execute Elixir code to load data from your
-                          app, third-party APIs, or any other source.
-                          Updates are made available at runtime
-                          without the need for deployments.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">Live Data</h2>
+                        <p class="text-gray-600">
+                          Execute Elixir code to load data from your app, third-party APIs, or any other source. Updates are made available at runtime without the need for deployments.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          A/B Variants
-                        </h2>
-                        <p>
-                          Create N versions of a page, and tell a
-                          story in different perspectives and styles
-                          to measure conversion. Each version has a
-                          weight to be served more or less.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">A/B Variants</h2>
+                        <p class="text-gray-600">
+                          Create N versions of a page, and tell a story in different perspectives and styles to measure conversion. Each version has a weight to be served more or less.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          Error Pages
-                        </h2>
-                        <p>
-                          Sometimes error happens but you can create
-                          personalized and informative error pages to
-                          guide your visitors back to finding the
-                          right page and increase engagement.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">Error Pages</h2>
+                        <p class="text-gray-600">
+                          Sometimes error happens but you can create personalized and informative error pages to guide your visitors back to finding the right page and increase engagement.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          Built-in TailwindCSS
-                        </h2>
-                        <p>
-                          Start prototyping your site right away with
-                          tailwind utility classes on the code editor
-                          or the visual page builder. The compiler
-                          generates compact assets to keep your site
-                          fast.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">Built-in TailwindCSS</h2>
+                        <p class="text-gray-600">
+                          Start prototyping your site right away with tailwind utility classes on the code editor or the visual page builder. The compiler generates compact assets to keep your site fast.
                         </p>
                       </div>
 
-                      <div class="py-2 pr-4">
-                        <h2 class="mb-2 font-bold text-2xl">
-                          And more...
-                        </h2>
-                        <p>
-                          Much more is available: meta tags,
-                          Schema.org support, authorization,
-                          authentication, custom page fields, custom
-                          admin pages, and more. Beacon is constantly
-                          evolving.
+                      <div class="py-3 sm:py-4 pr-4">
+                        <h2 class="mb-2 font-bold text-xl sm:text-2xl text-gray-900">And more...</h2>
+                        <p class="text-gray-600">
+                          Much more is available: meta tags, Schema.org support, authorization, authentication, custom page fields, custom admin pages, and more. Beacon is constantly evolving.
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <footer class="text-center mt-6 w-full flex flex-col items-center text-sm font-bold text-sky-300 tracking-wide">
-                <div class="flex justify-center items-center">
-                  <a href="https://beaconcms.org" class="inline-block p-4 m-3 no-underline hover:underline hover:decoration-dashed underline-offset-4">
+              <footer class="text-center py-4 sm:py-6 w-full flex flex-col items-center text-sm font-bold text-gray-600 tracking-wide border-t border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
+                  <a
+                    href="https://beaconcms.org"
+                    class="inline-flex items-center gap-2 p-2 sm:p-3 no-underline hover:text-gray-900 hover:underline hover:decoration-dashed underline-offset-4"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" />
+                    </svg>
                     BeaconCMS.org
                   </a>
                   <a
                     href="https://github.com/BeaconCMS/beacon"
-                    class="inline-block p-4 m-3 no-underline hover:underline hover:decoration-dashed underline-offset-4"
+                    class="inline-flex items-center gap-2 p-2 sm:p-3 no-underline hover:text-gray-900 hover:underline hover:decoration-dashed underline-offset-4"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+                    </svg>
                     GitHub Repo
                   </a>
                 </div>
