@@ -49,6 +49,7 @@ jobs:
           POSTGRES_DB: beacon_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -84,7 +85,8 @@ jobs:
 
       - run: mix esbuild.install
 
-      - name: mix test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
-        run: mix test
+      - run: mix ecto.create
+
+      - run: mix ecto.migrate
+
+      - run: mix test
