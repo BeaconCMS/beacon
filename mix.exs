@@ -128,6 +128,7 @@ defmodule Beacon.MixProject do
         "format --check-formatted",
         "cmd npm run format-check --prefix ./assets"
       ],
+      "test.ci": ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": [
         "tailwind.install --if-missing --no-assets",
         "esbuild.install --if-missing",

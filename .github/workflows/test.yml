@@ -39,7 +39,6 @@ jobs:
       MIX_ENV: test
       PHOENIX_VERSION: ${{matrix.phoenix}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view}}
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/beacon_test
 
     runs-on: ubuntu-22.04
 
@@ -81,12 +80,13 @@ jobs:
 
       - run: mix deps.get --only-test
 
+      - run: mix compile
+
       - run: mix tailwind.install --no-assets
 
       - run: mix esbuild.install
 
-      - run: mix ecto.create
-
-      - run: mix ecto.migrate
-
-      - run: mix test
+      - name: mix test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
+        run: mix test.ci
