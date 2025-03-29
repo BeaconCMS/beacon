@@ -80,6 +80,8 @@ jobs:
 
       - run: mix deps.get --only-test
 
+      - run: mix compile
+
       - run: mix tailwind.install --no-assets
 
       - run: mix esbuild.install
@@ -87,4 +89,4 @@ jobs:
       - name: mix test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
-        run: mix test
+        run: mix test.ci

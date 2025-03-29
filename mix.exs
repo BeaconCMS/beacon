@@ -26,7 +26,7 @@ defmodule Beacon.MixProject do
   end
 
   def cli do
-    [preferred_envs: ["test.all": :test]]
+    [preferred_envs: ["test.ci": :test]]
   end
 
   def application do
@@ -128,8 +128,7 @@ defmodule Beacon.MixProject do
         "format --check-formatted",
         "cmd npm run format-check --prefix ./assets"
       ],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "test.all": ["ecto.create --quiet", "ecto.migrate --quiet", "test --include igniter"],
+      "test.ci": ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": [
         "tailwind.install --if-missing --no-assets",
         "esbuild.install --if-missing",
