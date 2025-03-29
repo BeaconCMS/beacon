@@ -26,7 +26,7 @@ defmodule Beacon.MixProject do
   end
 
   def cli do
-    [preferred_envs: ["test.all": :test]]
+    [preferred_envs: ["test.ci": :test]]
   end
 
   def application do
