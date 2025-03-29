@@ -39,6 +39,7 @@ jobs:
       MIX_ENV: test
       PHOENIX_VERSION: ${{matrix.phoenix}}
       PHOENIX_LIVE_VIEW_VERSION: ${{matrix.phoenix-live-view}}
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/beacon_test
 
     runs-on: ubuntu-22.04
 
@@ -49,7 +50,6 @@ jobs:
           POSTGRES_DB: beacon_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/beacon_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
