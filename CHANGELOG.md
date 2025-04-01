@@ -7,6 +7,13 @@
 
 ### Fixes
   - [Install] Fix responsive aspects of the default home page
+  - [Deps] Replace `:oembed` with `:req_embed` to avoid compilation issues
+  - [Components] Update dynamic_tag to use attr `:tag_name` on recent LiveView
+  - Fix MDEx options in the Markdown template compiler
+
+### Chores
+  - Use fully-qualified module names in runtime layout
+  - [Tests] Don't depend on DB on Igniter/Tasks tests
 
 ## 0.5.0 (2025-03-18)
 
