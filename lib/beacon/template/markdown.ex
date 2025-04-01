@@ -23,7 +23,6 @@ defmodule Beacon.Template.Markdown do
       MDEx.to_html!(template,
         extension: [
           strikethrough: true,
-          tagfilter: false,
           table: true,
           autolink: true,
           tasklist: true,
@@ -34,12 +33,12 @@ defmodule Beacon.Template.Markdown do
           shortcodes: true,
           underline: true
         ],
-        parse: [smart: true],
-        render: [
-          hardbreaks: false,
-          unsafe_: true,
+        parse: [
           relaxed_tasklist_matching: true,
           relaxed_autolinks: true
+        ],
+        render: [
+          unsafe_: true
         ],
         features: [
           syntax_highlight_theme: syntax_highlight_theme
