@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.1 (2025-04-01)
 
 ### Enhancements
   - [Install] Cleaner design for the home page
