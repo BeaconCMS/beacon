@@ -1,7 +1,7 @@
 defmodule Beacon.MixProject do
   use Mix.Project
 
-  @version "0.5.1"
+  @version "0.5.2-dev"
   @source_url "https://github.com/BeaconCMS/beacon"
   @homepage_url "https://beaconcms.org"
 
