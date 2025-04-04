@@ -47,3 +47,6 @@ beacon-*.tar
 
 # Local iex config
 .iex.exs
+
+# Local tool-versions
+.tool-versions
