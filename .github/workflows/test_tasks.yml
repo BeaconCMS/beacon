@@ -24,9 +24,9 @@ jobs:
         include:
           # minimum required versions
           - otp: "24.2"
-            elixir: "1.14.0"
+            elixir: "1.14.1"
             phoenix: "1.7.0"
-            phoenix-live-view: "0.20.2"
+            phoenix-live-view: "1.0.1"
 
           # latest
           - otp: "27"

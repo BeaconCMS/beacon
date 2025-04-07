@@ -23,7 +23,6 @@ defmodule Beacon.Content.Page do
   use Beacon.Schema
 
   alias Beacon.Content
-  alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Content.Page.Helper
 
   @version 3
@@ -99,14 +98,6 @@ defmodule Beacon.Content.Page do
   @doc false
   def update_changeset(page, attrs \\ %{}) do
     {extra_attrs, attrs} = Map.pop(attrs, "extra")
-    {ast, attrs} = Map.pop(attrs, "ast")
-
-    attrs =
-      if is_nil(ast) do
-        attrs
-      else
-        Map.put(attrs, :template, HEExDecoder.decode(ast))
-      end
 
     page
     |> cast(attrs, [

@@ -15,10 +15,6 @@ defmodule Beacon.Private do
     _ -> reraise Beacon.RuntimeError, [message: "failed to discover :otp_app, make sure Repo is started before Beacon"], __STACKTRACE__
   end
 
-  @phoenix_live_view_version to_string(Application.spec(:phoenix_live_view)[:vsn])
-
-  def phoenix_live_view_version, do: @phoenix_live_view_version
-
   @doc """
   On page navigation, the request might actually hit a different site than the one defined by the current session.
 
@@ -52,14 +48,8 @@ defmodule Beacon.Private do
     end
   end
 
-  if Version.compare(@phoenix_live_view_version, "1.0.0") == :gt do
-    defp live_link_info(endpoint, router, url) do
-      Phoenix.LiveView.Route.live_link_info_without_checks(endpoint, router, url)
-    end
-  else
-    defp live_link_info(endpoint, router, url) do
-      Phoenix.LiveView.Route.live_link_info(endpoint, router, url)
-    end
+  defp live_link_info(endpoint, router, url) do
+    Phoenix.LiveView.Route.live_link_info_without_checks(endpoint, router, url)
   end
 
   def endpoint_config(otp_app, endpoint) do
