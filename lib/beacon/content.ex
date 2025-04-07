@@ -954,9 +954,8 @@ defmodule Beacon.Content do
 
     * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records. Defaults to 20.
     * `:page` - returns records from a specific page. Defaults to 1.
-    * `:search` - search by either one or more fields or dynamic query function.
-                  Available fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (do not apply search filter).
-    * `:sort` - column in which the result will be ordered by. Defaults to `:title`.
+    * `:search` - search by either one or more fields or dynamic query function. Available fields: `path`, `title`, `format`, `extra`. Defaults to `nil` (do not apply search filter).
+    * `:sort` - column or keyword in which the result will be ordered by. Defaults to `:title`.
 
   ## Examples
 
@@ -967,6 +966,9 @@ defmodule Beacon.Content do
       [%Page{}]
 
       iex> list_published_pages(:my_site, search: fn -> dynamic([q], fragment("extra->>'tags' ilike 'year-20%'")) end)
+      [%Page{}]
+
+      iex> list_published_pages(:my_site, sort: [desc: :path])
       [%Page{}]
 
   """
@@ -1049,6 +1051,7 @@ defmodule Beacon.Content do
   defp query_list_published_pages_search(query, _search), do: query
 
   defp query_list_published_pages_sort(query, {:length, key}), do: from(q in query, order_by: [{:asc, fragment("length(?)", field(q, ^key))}])
+  defp query_list_published_pages_sort(query, sort) when is_list(sort), do: from(q in query, order_by: ^sort)
   defp query_list_published_pages_sort(query, sort), do: from(q in query, order_by: [asc: ^sort])
 
   @doc """
