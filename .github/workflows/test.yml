@@ -82,7 +82,7 @@ jobs:
 
       - run: mix compile
 
-      - run: mix assets.build
+      - run: mix assets.setup
 
       - name: mix test
         env:

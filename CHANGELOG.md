@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Breaking Changes
+  - Require minimum LiveView v1.0.0
+
 ## 0.5.1 (2025-04-01)
 
 ### Enhancements
