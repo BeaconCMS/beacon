@@ -304,6 +304,19 @@ defmodule Beacon.ContentTest do
              ] = Content.list_published_pages(:my_site, sort: {:length, :path})
     end
 
+    test "list_published_pages sort param as a keyword" do
+      page_a = beacon_page_fixture(path: "/a", title: "page_a")
+      {:ok, _page_a} = Content.publish_page(page_a)
+
+      page_b = beacon_page_fixture(path: "/b", title: "page_b")
+      {:ok, _page_b} = Content.publish_page(page_b)
+
+      # default sorting by title is working
+      assert [%Page{title: "page_a"} | _] = Content.list_published_pages(:my_site)
+
+      assert [%Page{title: "page_b"} | _] = Content.list_published_pages(:my_site, sort: [desc: :path])
+    end
+
     test "list_published_pages_for_paths/2" do
       beacon_published_page_fixture(path: "/foo")
       beacon_published_page_fixture(path: "/bar")
