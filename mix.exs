@@ -58,7 +58,7 @@ defmodule Beacon.MixProject do
     [
       # Overridable
       override_dep(:phoenix, "~> 1.7", "PHOENIX_VERSION", "PHOENIX_PATH"),
-      override_dep(:phoenix_live_view, "~> 1.0", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
+      override_dep(:phoenix_live_view, ">= 1.0.1", "PHOENIX_LIVE_VIEW_VERSION", "PHOENIX_LIVE_VIEW_PATH"),
       override_dep(:mdex, "~> 0.2", "MDEX_VERSION", "MDEX_PATH"),
 
       # Runtime
