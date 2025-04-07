@@ -51,7 +51,6 @@ defmodule Beacon.Content do
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
-  alias Beacon.Template.HEEx.HEExDecoder
   alias Beacon.Types.Site
   alias Ecto.Changeset
   alias Ecto.UUID
@@ -604,15 +603,6 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec update_page(Page.t(), map()) :: {:ok, Page.t()} | {:error, Changeset.t()}
   def update_page(%Page{} = page, attrs) do
-    {ast, attrs} = Map.pop(attrs, "ast")
-
-    attrs =
-      if is_nil(ast) do
-        attrs
-      else
-        Map.put(attrs, :template, HEExDecoder.decode(ast))
-      end
-
     changeset = Page.update_changeset(page, attrs)
 
     transact(repo(page), fn ->
