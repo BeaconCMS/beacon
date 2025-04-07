@@ -49,7 +49,13 @@ defmodule Beacon.Template do
   defp choose_template([{weight, template} | _], n, _) when weight >= n, do: template
   defp choose_template([{weight, _} | variants], n, primary), do: choose_template(variants, n - weight, primary)
 
-  def assigns(page) do
+  @doc """
+  Returns all assigns for a page.
+
+  Include LiveData associated with that page and the `@beacon` assigns from `Beacon.Web.BeaconAssigns`.
+  """
+  @spec assigns(Beacon.Page.t()) :: map()
+  def assigns(%Beacon.Content.Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
     live_data = Beacon.Web.DataSource.live_data(page.site, path_info, %{})
     beacon_assigns = Beacon.Web.BeaconAssigns.new(page, path_info: path_info)
