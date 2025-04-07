@@ -99,7 +99,7 @@ defmodule Beacon.Content.Page do
   def update_changeset(page, attrs \\ %{}) do
     {extra_attrs, attrs} = Map.pop(attrs, "extra")
 
-   page
+    page
     |> cast(attrs, [
       :template,
       :layout_id,
