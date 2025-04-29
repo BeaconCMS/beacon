@@ -30,6 +30,11 @@ defmodule Beacon.Web.ErrorHTML do
     Phoenix.Controller.status_message_from_template(template)
   end
 
+  defp fetch_session_site(%{params: %{"site" => site}})
+    when is_binary(site) and byte_size(site) > 0 do
+    String.to_atom(site)
+  end
+
   defp fetch_session_site(%{
     private: %{
       phoenix_live_view: {_, _, %{extra: %{session: site_session}}}
