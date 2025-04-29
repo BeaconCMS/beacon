@@ -30,7 +30,9 @@ defmodule Beacon.Web.ErrorHTML do
     Phoenix.Controller.status_message_from_template(template)
   end
 
-  # To be able to render error templates beacon_live_admin when a site exists in the params
+  # To be able to render error templates beacon_live_admin
+  # Only works when editing existin sites. Going to admin will fallback
+  # to phoenix error
   defp fetch_session_site(%{params: %{"site" => site}})
     when is_binary(site) and byte_size(site) > 0 do
     String.to_atom(site)
