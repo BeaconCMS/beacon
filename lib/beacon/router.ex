@@ -323,6 +323,9 @@ defmodule Beacon.Router do
       %{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: %{"beacon_site" => ^site}}}}} ->
         {:ok, {endpoint, host}}
 
+      %{phoenix_live_view: {Beacon.Web.PageLive, _, _, %{extra: %{session: {Beacon.Router, :session, [^site, _sess]}}}}} ->
+        {:ok, {endpoint, host}}
+
       _ ->
         {:error, {endpoint, host}}
     end

@@ -38,11 +38,19 @@ defmodule Beacon.Plug do
   defp put_roll(conn) do
     path_list = conn.path_params["path"]
 
-    with %{private: %{phoenix_live_view: {_, _, %{extra: %{session: %{"beacon_site" => site}}}}}} <- conn,
+    with %{private: %{phoenix_live_view: {_, _, %{extra: %{session: site_session}}}}} <- conn,
+         site <- fetch_session_site(site_session),
          {_, _} <- Beacon.RouterServer.lookup_path(site, path_list, 1) do
       Plug.Conn.put_session(conn, "beacon_variant_roll", Enum.random(1..100))
     else
       _ -> conn
+    end
+  end
+
+  defp fetch_session_site(site_session) do
+    case site_session do
+      {Beacon.Router, :session, [site, _]} -> site
+      %{"beacon_site" => site} -> site
     end
   end
 end
