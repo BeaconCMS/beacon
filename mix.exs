@@ -83,7 +83,7 @@ defmodule Beacon.MixProject do
       {:phoenix_pubsub, "~> 2.1"},
       {:postgrex, "~> 0.16"},
       {:safe_code, "~> 0.2"},
-      {:solid, "~> 0.14"},
+      {:solid, "~> 1.0"},
       # TODO: tailwind v4 needs more testing
       {:tailwind, "~> 0.2"},
       esbuild_version(),
