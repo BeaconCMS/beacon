@@ -69,7 +69,7 @@ defmodule Beacon.MixProject do
       {:ex_aws, "~> 2.4.0"},
       {:ex_aws_s3, "~> 2.4.0"},
       {:floki, ">= 0.30.0"},
-      {:gettext, "~> 0.26"},
+      {:gettext, "~> 1.0"},
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
       {:vix, "<= 0.30.0 or >= 0.31.1"},
@@ -83,7 +83,7 @@ defmodule Beacon.MixProject do
       {:phoenix_pubsub, "~> 2.1"},
       {:postgrex, "~> 0.16"},
       {:safe_code, "~> 0.2"},
-      {:solid, "~> 0.14"},
+      {:solid, "~> 1.2"},
       # TODO: tailwind v4 needs more testing
       {:tailwind, "~> 0.2"},
       esbuild_version(),
