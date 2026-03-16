@@ -43,6 +43,8 @@ defmodule Beacon.Boot do
     # TODO: revisit this timeout after we upgrade to Tailwind v4
     Task.await_many(tasks, :timer.minutes(5))
 
+    :persistent_term.put({Beacon, site, :boot_ready}, true)
+
     # TODO: add telemetry to measure booting time
     Logger.info("Beacon.Boot finished booting site #{site}")
 
@@ -65,9 +67,28 @@ defmodule Beacon.Boot do
           []
       end
 
-    Enum.map(pages, fn page ->
-      Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_page_module(config.site, page.id) end)
-    end)
+    max_concurrency = config.warming_concurrency
+
+    if pages == [] do
+      []
+    else
+      [
+        Task.Supervisor.async(task_supervisor, fn ->
+          pages
+          |> Enum.chunk_every(max_concurrency)
+          |> Enum.each(fn chunk ->
+            chunk
+            |> Enum.map(fn page ->
+              Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
+
+              Task.Supervisor.async(task_supervisor, fn ->
+                Beacon.Loader.load_page_module(config.site, page.id)
+              end)
+            end)
+            |> Task.await_many(:timer.minutes(2))
+          end)
+        end)
+      ]
+    end
   end
 end

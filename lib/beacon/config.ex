@@ -200,6 +200,14 @@ defmodule Beacon.Config do
   """
   @type page_warming :: {:shortest_paths, integer()} | {:specify_paths, [String.t()]} | :none
 
+  @typedoc """
+  Maximum number of pages to compile concurrently during boot warming.
+
+  Controls peak memory usage during startup. Lower values reduce memory
+  pressure but increase boot time. Default is `4`.
+  """
+  @type warming_concurrency :: pos_integer()
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -218,7 +226,8 @@ defmodule Beacon.Config do
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags(),
-          page_warming: page_warming()
+          page_warming: page_warming(),
+          warming_concurrency: warming_concurrency()
         }
 
   @default_load_template [
@@ -266,7 +275,8 @@ defmodule Beacon.Config do
             extra_page_fields: [],
             extra_asset_fields: [],
             default_meta_tags: [],
-            page_warming: {:shortest_paths, 10}
+            page_warming: {:shortest_paths, 10},
+            warming_concurrency: 4
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -287,6 +297,7 @@ defmodule Beacon.Config do
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
           | {:page_warming, page_warming()}
+          | {:warming_concurrency, warming_concurrency()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -335,6 +346,9 @@ defmodule Beacon.Config do
     * `:default_meta_tags` - `t:default_meta_tags/0` (optional). Defaults to `%{}`.
 
     * `:page_warming` - `t:page_warming/0` (optional). Defaults to `{:shortest_paths, 10}`.
+
+    * `:warming_concurrency` - `t:warming_concurrency/0` (optional). Defaults to `4`.
+      Maximum number of pages to compile concurrently during boot warming.
 
   ## Example
 
@@ -459,6 +473,7 @@ defmodule Beacon.Config do
     extra_asset_fields = get_opt(opts, :extra_asset_fields, [{"image/*", [Beacon.MediaLibrary.AssetFields.AltText]}])
 
     page_warming = get_opt(opts, :page_warming, {:shortest_paths, 10})
+    warming_concurrency = get_opt(opts, :warming_concurrency, 4)
 
     struct!(
       __MODULE__,
@@ -471,7 +486,8 @@ defmodule Beacon.Config do
         assets: assets,
         default_meta_tags: default_meta_tags,
         extra_asset_fields: extra_asset_fields,
-        page_warming: page_warming
+        page_warming: page_warming,
+        warming_concurrency: warming_concurrency
       )
     )
   end

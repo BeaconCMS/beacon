@@ -76,7 +76,7 @@ defmodule Beacon.RouterServer do
   end
 
   def lookup_path(site, path_info, limit \\ 10) when is_atom(site) and is_list(path_info) and is_integer(limit) do
-    GenServer.call(name(site), {:lookup_path, path_info, limit})
+    do_lookup_path(table_name(site), path_info, limit)
   end
 
   def dump_pages(site) when is_atom(site) do
@@ -110,12 +110,6 @@ defmodule Beacon.RouterServer do
   def handle_call(:del_pages, _from, config) do
     :ets.delete_all_objects(table_name(config.site))
     {:reply, :ok, config}
-  end
-
-  def handle_call({:lookup_path, path_info, limit}, _from, config) do
-    lookup_table = table_name(config.site)
-    route = do_lookup_path(lookup_table, path_info, limit)
-    {:reply, route, config}
   end
 
   def handle_call(:dump_pages, _from, config) do

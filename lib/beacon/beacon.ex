@@ -173,6 +173,23 @@ defmodule Beacon do
     end
   end
 
+  @doc """
+  Returns `true` if the site has finished booting and is ready to serve requests.
+
+  Useful for health check endpoints to verify Beacon readiness before
+  routing traffic to the application.
+
+  ## Example
+
+      Beacon.ready?(:my_site)
+      #=> true
+
+  """
+  @spec ready?(Beacon.Types.Site.t()) :: boolean()
+  def ready?(site) when is_atom(site) do
+    :persistent_term.get({Beacon, site, :boot_ready}, false)
+  end
+
   @doc false
   # This should always be used when calling dynamic modules
   # 1. Isolate function calls
