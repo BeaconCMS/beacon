@@ -112,10 +112,18 @@ defmodule Beacon.Web.Layouts do
   end
 
   defp compiled_page_meta_tags(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
-    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
-    %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
-    meta_tags
+    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
+    live_data = Map.take(assigns, live_data_keys)
+
+    case live_data do
+      %{beacon_meta_tags: meta_tags} when is_list(meta_tags) ->
+        meta_tags
+
+      _ ->
+        %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
+        %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
+        meta_tags
+    end
   end
 
   defp layout_meta_tags(%{layout_assigns: %{meta_tags: meta_tags}} = assigns) do
@@ -139,9 +147,19 @@ defmodule Beacon.Web.Layouts do
   Renders the Schema.org data defined in the current page.
   """
   def render_schema(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
-    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
-    %{raw_schema: raw_schema} = compiled_page_assigns(site, page_id)
+    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
+    live_data = Map.take(assigns, live_data_keys)
+
+    raw_schema =
+      case live_data do
+        %{beacon_raw_schema: raw_schema} when is_list(raw_schema) ->
+          raw_schema
+
+        _ ->
+          %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
+          %{raw_schema: raw_schema} = compiled_page_assigns(site, page_id)
+          raw_schema
+      end
 
     is_empty = fn raw_schema ->
       raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []

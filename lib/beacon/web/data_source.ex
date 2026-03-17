@@ -12,28 +12,34 @@ defmodule Beacon.Web.DataSource do
   def live_data(_site, _path_info, _query_params), do: %{}
 
   def page_title(%Beacon.Content.Page{} = page, live_data) do
-    %{path: path, title: title} = page_assigns = page_assigns(page)
+    case live_data do
+      %{beacon_page_title: override_title} when is_binary(override_title) ->
+        override_title
 
-    with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
-      page_title
-    else
-      {:error, error} ->
-        Logger.error("""
-        failed to interpolate page title variables
+      _ ->
+        %{path: path, title: title} = page_assigns = page_assigns(page)
 
-        will return the original unmodified page title
+        with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
+          page_title
+        else
+          {:error, error} ->
+            Logger.error("""
+            failed to interpolate page title variables
 
-        site: #{page.site}
-        title: #{title}
-        page path: #{path}
+            will return the original unmodified page title
 
-        Got:
+            site: #{page.site}
+            title: #{title}
+            page path: #{path}
 
-          #{inspect(error)}
+            Got:
 
-        """)
+              #{inspect(error)}
 
-        title
+            """)
+
+            title
+        end
     end
   end
 
