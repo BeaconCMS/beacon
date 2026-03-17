@@ -93,12 +93,25 @@ defmodule Beacon.Web.Layouts do
 
   @doc false
   def meta_tags(assigns) do
-    page_meta_tags = page_meta_tags(assigns) || []
+    %{beacon: %{private: %{live_data_keys: live_data_keys}}} = assigns
+    live_data = Map.take(assigns, live_data_keys)
     layout_meta_tags = layout_meta_tags(assigns) || []
 
-    (page_meta_tags ++ layout_meta_tags)
-    |> Enum.reject(&(&1["name"] == "csrf-token"))
-    |> Kernel.++(Beacon.Content.default_site_meta_tags())
+    case live_data do
+      %{beacon_meta_tags: override_tags} when is_list(override_tags) ->
+        # When beacon_meta_tags is provided by LiveData, it replaces both
+        # page-level meta tags and site defaults. This is used by dynamic pages
+        # where page metadata comes from runtime data, not compiled page modules.
+        (override_tags ++ layout_meta_tags)
+        |> Enum.reject(&(&1["name"] == "csrf-token"))
+
+      _ ->
+        page_meta_tags = page_meta_tags(assigns) || []
+
+        (page_meta_tags ++ layout_meta_tags)
+        |> Enum.reject(&(&1["name"] == "csrf-token"))
+        |> Kernel.++(Beacon.Content.default_site_meta_tags())
+    end
   end
 
   defp page_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
@@ -112,18 +125,10 @@ defmodule Beacon.Web.Layouts do
   end
 
   defp compiled_page_meta_tags(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
-    live_data = Map.take(assigns, live_data_keys)
-
-    case live_data do
-      %{beacon_meta_tags: meta_tags} when is_list(meta_tags) ->
-        meta_tags
-
-      _ ->
-        %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
-        %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
-        meta_tags
-    end
+    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
+    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
+    %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
+    meta_tags
   end
 
   defp layout_meta_tags(%{layout_assigns: %{meta_tags: meta_tags}} = assigns) do
