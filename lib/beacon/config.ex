@@ -399,7 +399,7 @@ defmodule Beacon.Config do
         ],
         media_types: ["image/jpeg", "image/gif", "image/png", "image/webp"],
         assets:[
-          {"image/*", [providers: [Beacon.MediaLibrary.Provider.Repo], validations: [&SomeModule.some_function/2]]},
+          {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3], validations: [&SomeModule.some_function/2]]},
         ],
         lifecycle: [
           load_template: [
@@ -670,7 +670,7 @@ defmodule Beacon.Config do
     if get_media_type_config(configs, media_type) do
       configs
     else
-      configs ++ [{media_type, [{:providers, [Beacon.MediaLibrary.Provider.Repo]}]}]
+      configs ++ [{media_type, [{:providers, []}]}]
     end
   end
 

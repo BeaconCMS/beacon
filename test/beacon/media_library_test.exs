@@ -34,15 +34,6 @@ defmodule Beacon.MediaLibraryTest do
       assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata)
       assert "http://beacon-media-library.localhost/s3_site/image.webp" = MediaLibrary.url_for(asset)
     end
-
-    test "upload asset, converts to webp by default, repo store" do
-      Process.flag(:error_handler, Beacon.ErrorHandler)
-      Process.put(:__beacon_site__, :my_site)
-
-      metadata = beacon_upload_metadata_fixture(file_name: "image.png")
-      assert %Asset{file_name: "image.webp", media_type: "image/webp"} = asset = MediaLibrary.upload(metadata)
-      assert "http://site_a.com/__beacon_media__/image.webp" = MediaLibrary.url_for(asset)
-    end
   end
 
   describe "list_assets" do
@@ -70,13 +61,13 @@ defmodule Beacon.MediaLibraryTest do
   end
 
   describe "url_for/1" do
-    setup do
-      metadata = beacon_upload_metadata_fixture(file_name: "image.png")
-      [asset: MediaLibrary.upload(metadata)]
-    end
+    setup [:start_bypass]
 
-    test "returns url for the first registered provider", %{asset: asset} do
-      assert MediaLibrary.url_for(asset) == "http://site_a.com/__beacon_media__/image.webp"
+    test "returns url for the first registered provider", %{bypass: bypass} do
+      setup_multipart_upload_provider(bypass, self(), "s3_site/image.webp")
+      metadata = beacon_upload_metadata_fixture(file_name: "image.png", site: :s3_site)
+      asset = MediaLibrary.upload(metadata)
+      assert MediaLibrary.url_for(asset) == "http://beacon-media-library.localhost/s3_site/image.webp"
     end
 
     test "returns nil if asset is invalid" do
@@ -85,16 +76,19 @@ defmodule Beacon.MediaLibraryTest do
   end
 
   describe "url_for/2" do
-    setup do
-      metadata = beacon_upload_metadata_fixture(file_name: "image.png")
-      [asset: MediaLibrary.upload(metadata)]
+    setup [:start_bypass]
+
+    test "returns url for registered providers", %{bypass: bypass} do
+      setup_multipart_upload_provider(bypass, self(), "s3_site/image.webp")
+      metadata = beacon_upload_metadata_fixture(file_name: "image.png", site: :s3_site)
+      asset = MediaLibrary.upload(metadata)
+      assert MediaLibrary.url_for(asset, "s3") == "http://beacon-media-library.localhost/s3_site/image.webp"
     end
 
-    test "returns url for registered providers", %{asset: asset} do
-      assert MediaLibrary.url_for(asset, "repo") == "http://site_a.com/__beacon_media__/image.webp"
-    end
-
-    test "returns nil if provider is not registered", %{asset: asset} do
+    test "returns nil if provider is not registered", %{bypass: bypass} do
+      setup_multipart_upload_provider(bypass, self(), "s3_site/image.webp")
+      metadata = beacon_upload_metadata_fixture(file_name: "image.png", site: :s3_site)
+      asset = MediaLibrary.upload(metadata)
       refute MediaLibrary.url_for(asset, "noop")
     end
   end

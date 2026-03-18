@@ -70,7 +70,7 @@ setup_env = fn ->
            router: Beacon.BeaconTest.Router,
            repo: Beacon.BeaconTest.Repo,
            assets: [
-             {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3, Beacon.MediaLibrary.Provider.Repo], validations: []]}
+             {"image/*", [providers: [Beacon.MediaLibrary.Provider.S3], validations: []]}
            ],
            lifecycle: [upload_asset: []]
          ],

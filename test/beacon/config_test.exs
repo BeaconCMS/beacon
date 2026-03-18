@@ -110,31 +110,31 @@ defmodule Beacon.ConfigTest do
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
+                  {:providers, []}
                 ]},
                {"image/gif",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
+                  {:providers, []}
                 ]},
                {"image/png",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
+                  {:providers, []}
                 ]},
                {"image/webp",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
+                  {:providers, []}
                 ]},
                {"application/pdf",
                 [
                   {:processor, _},
                   {:validations, []},
-                  {:providers, [Beacon.MediaLibrary.Provider.Repo]}
+                  {:providers, []}
                 ]}
              ] = Beacon.Config.new(site: :site, endpoint: :endpoint, router: :router, repo: @repo).assets
     end
@@ -148,7 +148,7 @@ defmodule Beacon.ConfigTest do
       assert [
                {:processor, _},
                {:validations, []},
-               {:providers, [Beacon.MediaLibrary.Provider.Repo]}
+               {:providers, []}
              ] = Beacon.Config.config_for_media_type(config, media_type)
     end
   end

@@ -88,7 +88,7 @@ defmodule Beacon.MediaLibrary do
   def change_asset(%Asset{} = asset, attrs \\ %{}) do
     asset
     |> cast(attrs, [:site, :file_name, :media_type, :file_body])
-    |> validate_required([:site, :file_name, :media_type, :file_body])
+    |> validate_required([:site, :file_name, :media_type])
   end
 
   @doc """
