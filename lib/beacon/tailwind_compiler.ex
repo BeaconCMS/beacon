@@ -256,7 +256,15 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
     input_css_path
   end
 
-  defp remove_special_chars(name), do: String.replace(name, ~r/[^[:alnum:]_]+/, "_")
+  # The Tailwind CLI binary cannot handle UTF-8 filenames, so we hash
+  # any paths containing non-ASCII characters (Arabic, Chinese, etc.)
+  defp remove_special_chars(name) do
+    if String.match?(name, ~r/[^\x00-\x7F]/) do
+      "_hash_#{:erlang.phash2(name)}"
+    else
+      String.replace(name, ~r/[^a-zA-Z0-9_]+/, "_")
+    end
+  end
 
   # include paths for the following scenarios:
   # - regular app
