@@ -90,8 +90,8 @@ defmodule Beacon.RouterServer do
 
     :ok = PubSub.subscribe_to_pages(site)
 
-    for page <- Content.list_published_pages(site, per_page: :infinity) do
-      do_add_page(page.site, page.id, page.path)
+    for {page_id, path} <- Content.list_published_page_paths(site) do
+      do_add_page(site, page_id, path)
     end
 
     {:noreply, config}

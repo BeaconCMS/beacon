@@ -981,6 +981,22 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns `{page_id, path}` tuples for all published pages on a site.
+
+  This is a lightweight projection query that avoids deserializing page snapshot
+  binaries. Used by `Beacon.RouterServer` at boot time when only page identifiers
+  and paths are needed.
+  """
+  @doc type: :pages
+  @spec list_published_page_paths(Site.t()) :: [{UUID.t(), String.t()}]
+  def list_published_page_paths(site) do
+    site
+    |> query_list_published_pages_base()
+    |> select([snapshot], {snapshot.page_id, snapshot.path})
+    |> repo(site).all()
+  end
+
+  @doc """
   Similar to `list_published_pages/2`, but does not accept any options.  Instead, provide a list
   of paths, and this function will return any published pages which match one of those paths.
   """
@@ -4447,26 +4463,22 @@ defmodule Beacon.Content do
 
   @doc false
   def handle_call({:fetch_cached_content, id, fun}, _from, config) do
-    %{site: site} = config
-    match = {id, :_}
-    guards = []
-    body = [:"$_"]
-
-    cache = fn id, fun ->
-      case fun.() do
-        nil ->
-          nil
-
-        content ->
-          :ets.insert(table_name(site), {id, content})
-          content
-      end
-    end
+    %{site: site, cache_ttl: cache_ttl, max_cache_entries: max_cache_entries} = config
+    table = table_name(site)
+    now = System.monotonic_time(:second)
 
     content =
-      case :ets.select(table_name(site), [{match, guards, body}]) do
-        [{_id, content}] -> content
-        _ -> cache.(id, fun)
+      case :ets.lookup(table, id) do
+        [{_id, content, inserted_at}] ->
+          if cache_ttl > 0 and now - inserted_at > cache_ttl do
+            :ets.delete(table, id)
+            cache_and_insert(table, id, fun, now, max_cache_entries)
+          else
+            content
+          end
+
+        _ ->
+          cache_and_insert(table, id, fun, now, max_cache_entries)
       end
 
     {:reply, content, config}
@@ -4477,6 +4489,35 @@ defmodule Beacon.Content do
     content = config.site |> table_name() |> :ets.match(:"$1") |> List.flatten()
     {:reply, content, config}
   end
+
+  defp cache_and_insert(table, id, fun, now, max_cache_entries) when is_function(fun, 0) do
+    case fun.() do
+      nil ->
+        nil
+
+      content ->
+        maybe_evict(table, max_cache_entries)
+        :ets.insert(table, {id, content, now})
+        content
+    end
+  end
+
+  defp maybe_evict(table, max_cache_entries) when max_cache_entries > 0 do
+    size = :ets.info(table, :size)
+
+    if size >= max_cache_entries do
+      # Evict ~10% of oldest entries to avoid evicting on every insert
+      evict_count = max(div(max_cache_entries, 10), 1)
+
+      table
+      |> :ets.tab2list()
+      |> Enum.sort_by(fn {_id, _content, inserted_at} -> inserted_at end)
+      |> Enum.take(evict_count)
+      |> Enum.each(fn {id, _content, _inserted_at} -> :ets.delete(table, id) end)
+    end
+  end
+
+  defp maybe_evict(_table, _max_cache_entries), do: :ok
 
   defp insert_published_layout(layout) do
     %{site: site} = layout

@@ -142,12 +142,6 @@ defmodule Beacon.Web.PageLive do
         socket =
           socket
           |> Component.assign(live_data)
-          # TODO: remove deprecated @beacon_live_data
-          |> Component.assign(:beacon_live_data, live_data)
-          # TODO: remove deprecated @beacon_path_params
-          |> Component.assign(:beacon_path_params, beacon_assigns.path_params)
-          # TODO: remove deprecated @beacon_query_params
-          |> Component.assign(:beacon_query_params, beacon_assigns.query_params)
           |> Component.assign(:beacon, beacon_assigns)
           |> Component.assign(:page_title, beacon_assigns.page.title)
 

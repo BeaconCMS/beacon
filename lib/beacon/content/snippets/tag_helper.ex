@@ -23,7 +23,7 @@ defmodule Beacon.Content.Snippets.TagHelper do
   @impl true
   def render([name: [value: helper_name]], %{counter_vars: %{"page" => %{"site" => site}}} = context, _options) do
     site = Beacon.Types.Atom.safe_to_atom(site)
-    helper_name = String.to_atom(helper_name)
+    helper_name = String.to_existing_atom(helper_name)
 
     text =
       site

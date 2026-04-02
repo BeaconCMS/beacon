@@ -18,11 +18,15 @@ defmodule Beacon.Loader do
     Beacon.Registry.via({site, __MODULE__})
   end
 
+  @css_debounce_ms 1_000
+
   def init(config) do
+    state = %{config: config, css_timer: nil}
+
     if Beacon.Config.env_test?() do
-      {:ok, config}
+      {:ok, state}
     else
-      {:ok, config, {:continue, :async_init}}
+      {:ok, state, {:continue, :async_init}}
     end
   end
 
@@ -271,44 +275,40 @@ defmodule Beacon.Loader do
 
   # Server
 
-  def handle_continue(:async_init, config) do
+  def handle_continue(:async_init, %{config: config} = state) do
     %{site: site} = config
 
     PubSub.subscribe_to_layouts(site)
     PubSub.subscribe_to_pages(site)
     PubSub.subscribe_to_content(site)
 
-    {:noreply, config}
+    {:noreply, state}
   end
 
   # Published resources are just unloaded so `Beacon.ErrorHandler`
   # takes care of loading them on the next request.
 
-  def handle_info({:layout_published, %{site: site, id: id}}, config) do
+  def handle_info({:layout_published, %{site: site, id: id}}, state) do
     Beacon.Content.reset_published_layout(site, id)
 
     site
     |> Loader.Layout.module_name(id)
     |> unload()
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:page_published, %{site: site, id: id}}, config) do
+  def handle_info({:page_published, %{site: site, id: id}}, state) do
     Beacon.Content.reset_published_page(site, id)
 
     site
     |> Loader.Page.module_name(id)
     |> unload()
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:pages_published, site, pages}, config) do
+  def handle_info({:pages_published, site, pages}, state) do
     for %{id: id} <- pages do
       Beacon.Content.reset_published_page(site, id)
 
@@ -317,48 +317,40 @@ defmodule Beacon.Loader do
       |> unload()
     end
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:page_unpublished, %{site: site, id: id, path: path}}, config) do
+  def handle_info({:page_unpublished, %{site: site, id: id, path: path}}, state) do
     RouterServer.del_page(site, path)
     unload_page_module(site, id)
-    {:noreply, config}
+    {:noreply, state}
   end
 
-  def handle_info({:content_updated, :stylesheet, %{site: site}}, config) do
+  def handle_info({:content_updated, :stylesheet, %{site: site}}, state) do
     site
     |> Loader.Stylesheet.module_name()
     |> unload()
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:content_updated, :snippet_helper, %{site: site}}, config) do
+  def handle_info({:content_updated, :snippet_helper, %{site: site}}, state) do
     site
     |> Loader.Snippets.module_name()
     |> unload()
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:content_updated, :error_page, %{site: site}}, config) do
+  def handle_info({:content_updated, :error_page, %{site: site}}, state) do
     site
     |> Loader.ErrorPage.module_name()
     |> unload()
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:content_updated, :component, %{site: site}}, config) do
+  def handle_info({:content_updated, :component, %{site: site}}, %{config: config} = state) do
     site
     |> Loader.Components.module_name()
     |> unload()
@@ -367,45 +359,52 @@ defmodule Beacon.Loader do
     # to intercept component module calls
     if config.mode != :manual, do: load_components_module(site)
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:content_updated, :live_data, %{site: site}}, config) do
+  def handle_info({:content_updated, :live_data, %{site: site}}, state) do
     site
     |> Loader.LiveData.module_name()
     |> unload()
 
-    load_runtime_css(site)
-
-    {:noreply, config}
+    {:noreply, state}
   end
 
-  def handle_info({:content_updated, :info_handler, %{site: site}}, config) do
+  def handle_info({:content_updated, :info_handler, %{site: site}}, state) do
     site
     |> Loader.InfoHandlers.module_name()
     |> unload()
 
-    {:noreply, config}
+    {:noreply, state}
   end
 
-  def handle_info({:content_updated, :event_handler, %{site: site}}, config) do
+  def handle_info({:content_updated, :event_handler, %{site: site}}, state) do
     site
     |> Loader.EventHandlers.module_name()
     |> unload()
 
-    {:noreply, config}
+    {:noreply, state}
   end
 
-  def handle_info({:content_updated, :js_hook, %{site: site}}, config) do
+  def handle_info({:content_updated, :js_hook, %{site: site}}, state) do
     load_runtime_js(site)
 
-    {:noreply, config}
+    {:noreply, state}
   end
 
-  def handle_info(msg, config) do
+  def handle_info({:recompile_css, site}, state) do
+    load_runtime_css(site)
+    {:noreply, %{state | css_timer: nil}}
+  end
+
+  def handle_info(msg, state) do
     Logger.warning("Beacon.Loader can not handle the message: #{inspect(msg)}")
-    {:noreply, config}
+    {:noreply, state}
+  end
+
+  defp schedule_css_recompilation(%{css_timer: timer} = state, site) do
+    if timer, do: Process.cancel_timer(timer)
+    new_timer = Process.send_after(self(), {:recompile_css, site}, @css_debounce_ms)
+    %{state | css_timer: new_timer}
   end
 end

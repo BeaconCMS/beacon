@@ -208,6 +208,21 @@ defmodule Beacon.Config do
   """
   @type warming_concurrency :: pos_integer()
 
+  @typedoc """
+  Time-to-live in seconds for cached content entries (pages and layouts).
+
+  Set to `0` to disable TTL (entries never expire). Default is `60`.
+  """
+  @type cache_ttl :: non_neg_integer()
+
+  @typedoc """
+  Maximum number of entries in the content cache.
+
+  When the limit is reached, the oldest entries are evicted.
+  Set to `0` to disable the limit. Default is `10_000`.
+  """
+  @type max_cache_entries :: non_neg_integer()
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -227,7 +242,9 @@ defmodule Beacon.Config do
           extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags(),
           page_warming: page_warming(),
-          warming_concurrency: warming_concurrency()
+          warming_concurrency: warming_concurrency(),
+          cache_ttl: cache_ttl(),
+          max_cache_entries: max_cache_entries()
         }
 
   @default_load_template [
@@ -276,7 +293,9 @@ defmodule Beacon.Config do
             extra_asset_fields: [],
             default_meta_tags: [],
             page_warming: {:shortest_paths, 10},
-            warming_concurrency: 4
+            warming_concurrency: 4,
+            cache_ttl: 60,
+            max_cache_entries: 10_000
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -298,6 +317,8 @@ defmodule Beacon.Config do
           | {:default_meta_tags, default_meta_tags()}
           | {:page_warming, page_warming()}
           | {:warming_concurrency, warming_concurrency()}
+          | {:cache_ttl, cache_ttl()}
+          | {:max_cache_entries, max_cache_entries()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
@@ -349,6 +370,14 @@ defmodule Beacon.Config do
 
     * `:warming_concurrency` - `t:warming_concurrency/0` (optional). Defaults to `4`.
       Maximum number of pages to compile concurrently during boot warming.
+
+    * `:cache_ttl` - `t:cache_ttl/0` (optional). Defaults to `60`.
+      Time-to-live in seconds for cached content entries (pages and layouts).
+      Set to `0` to disable expiration.
+
+    * `:max_cache_entries` - `t:max_cache_entries/0` (optional). Defaults to `10_000`.
+      Maximum number of entries in the content cache. When exceeded, oldest entries are evicted.
+      Set to `0` to disable the limit.
 
   ## Example
 
@@ -474,6 +503,8 @@ defmodule Beacon.Config do
 
     page_warming = get_opt(opts, :page_warming, {:shortest_paths, 10})
     warming_concurrency = get_opt(opts, :warming_concurrency, 4)
+    cache_ttl = get_opt(opts, :cache_ttl, 60)
+    max_cache_entries = get_opt(opts, :max_cache_entries, 10_000)
 
     struct!(
       __MODULE__,
@@ -487,7 +518,9 @@ defmodule Beacon.Config do
         default_meta_tags: default_meta_tags,
         extra_asset_fields: extra_asset_fields,
         page_warming: page_warming,
-        warming_concurrency: warming_concurrency
+        warming_concurrency: warming_concurrency,
+        cache_ttl: cache_ttl,
+        max_cache_entries: max_cache_entries
       )
     )
   end

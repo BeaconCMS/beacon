@@ -113,9 +113,15 @@ defmodule Beacon.RuntimeJS do
   defp random_dir, do: :crypto.strong_rand_bytes(12) |> Base.encode16()
 
   def fetch(site, version \\ :brotli)
-  def fetch(site, :brotli), do: do_fetch(site, {:_, :_, :"$1", :_})
-  def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :_, :"$1"})
-  def fetch(site, :deflate), do: do_fetch(site, {:_, :"$1", :_, :_})
+  def fetch(site, :brotli), do: do_fetch(site, {:_, :"$1", :_})
+  def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :"$1"})
+
+  def fetch(site, :deflate) do
+    case :ets.match(:beacon_assets, {{site, :js}, {:_, :_, :"$1"}}) do
+      [[gzipped]] when is_binary(gzipped) -> :zlib.gunzip(gzipped)
+      _ -> "// JS not found"
+    end
+  end
 
   defp do_fetch(site, guard) do
     case :ets.match(:beacon_assets, {{site, :js}, guard}) do
@@ -138,7 +144,7 @@ defmodule Beacon.RuntimeJS do
     gzip = :zlib.gzip(js)
 
     try do
-      true = :ets.insert(:beacon_assets, {{site, :js}, {hash, js, brotli, gzip}})
+      true = :ets.insert(:beacon_assets, {{site, :js}, {hash, brotli, gzip}})
     rescue
       _ -> reraise Beacon.LoaderError, [message: "failed to compress js"], __STACKTRACE__
     end
@@ -147,7 +153,7 @@ defmodule Beacon.RuntimeJS do
   end
 
   def current_hash(site) do
-    case :ets.match(:beacon_assets, {{site, :js}, {:"$1", :_, :_, :_}}) do
+    case :ets.match(:beacon_assets, {{site, :js}, {:"$1", :_, :_}}) do
       [[hash]] -> hash
       _ -> nil
     end

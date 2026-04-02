@@ -44,9 +44,15 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def fetch(site, version \\ :brotli)
-  def fetch(site, :brotli), do: do_fetch(site, {:_, :_, :"$1", :_})
-  def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :_, :"$1"})
-  def fetch(site, :deflate), do: do_fetch(site, {:_, :"$1", :_, :_})
+  def fetch(site, :brotli), do: do_fetch(site, {:_, :"$1", :_})
+  def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :"$1"})
+
+  def fetch(site, :deflate) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
+      [[gzipped]] when is_binary(gzipped) -> :zlib.gunzip(gzipped)
+      _ -> "/* CSS not found for site #{inspect(site)} */"
+    end
+  end
 
   defp do_fetch(site, guard) do
     case :ets.match(:beacon_assets, {{site, :css}, guard}) do
@@ -74,7 +80,7 @@ defmodule Beacon.RuntimeCSS do
     gzip = :zlib.gzip(css)
 
     try do
-      true = :ets.insert(:beacon_assets, {{site, :css}, {hash, css, brotli, gzip}})
+      true = :ets.insert(:beacon_assets, {{site, :css}, {hash, brotli, gzip}})
     rescue
       _ -> reraise Beacon.LoaderError, [message: "failed to compress css"], __STACKTRACE__
     end
@@ -84,7 +90,7 @@ defmodule Beacon.RuntimeCSS do
 
   @doc false
   def current_hash(site) do
-    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_, :_}}) do
+    case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
       [[hash]] ->
         hash
 

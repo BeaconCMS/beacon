@@ -57,12 +57,16 @@ defmodule Beacon.Loader.LiveData do
         )
       end
 
+    # Pre-compute atom keys at compile time so String.to_atom runs once per publish,
+    # not on every request at runtime
+    keyed_assigns = Enum.map(assigns, fn assign -> {String.to_atom(assign.key), assign} end)
+
     quote do
       def live_data(unquote(path_list), unquote(params_var)) do
-        Enum.reduce(unquote(Macro.escape(assigns)), %{}, fn assign, acc ->
+        Enum.reduce(unquote(Macro.escape(keyed_assigns)), %{}, fn {key, assign}, acc ->
           Map.put(
             acc,
-            String.to_atom(assign.key),
+            key,
             case assign.format do
               :text ->
                 assign.value
