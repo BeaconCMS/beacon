@@ -72,23 +72,20 @@ defmodule Beacon.Boot do
     if pages == [] do
       []
     else
-      [
-        Task.Supervisor.async(task_supervisor, fn ->
-          pages
-          |> Enum.chunk_every(max_concurrency)
-          |> Enum.each(fn chunk ->
-            chunk
-            |> Enum.map(fn page ->
-              Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
-
-              Task.Supervisor.async(task_supervisor, fn ->
-                Beacon.Loader.load_page_module(config.site, page.id)
-              end)
-            end)
-            |> Task.await_many(:timer.minutes(2))
-          end)
-        end)
-      ]
+      [Task.Supervisor.async(task_supervisor, fn -> warm_pages_in_batches(task_supervisor, config.site, pages, max_concurrency) end)]
     end
+  end
+
+  defp warm_pages_in_batches(task_supervisor, site, pages, max_concurrency) do
+    pages
+    |> Enum.chunk_every(max_concurrency)
+    |> Enum.each(fn chunk ->
+      chunk
+      |> Enum.map(fn page ->
+        Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
+        Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_page_module(site, page.id) end)
+      end)
+      |> Task.await_many(:timer.minutes(2))
+    end)
   end
 end
