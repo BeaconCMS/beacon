@@ -23,7 +23,20 @@ defmodule Beacon.Web.PageLive do
       :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
 
-    variant_roll = session["beacon_variant_roll"]
+    variant_roll =
+      case session["beacon_variant_roll"] do
+        nil ->
+          Logger.warning("""
+          Beacon.Plug is missing from the Router pipeline.
+
+          Page Variants will not be used.
+          """)
+
+          nil
+
+        roll ->
+          roll
+      end
 
     page = RouterServer.lookup_page!(site, path)
     socket = Component.assign(socket, beacon: BeaconAssigns.new(page, variant_roll: variant_roll))
