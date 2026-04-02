@@ -505,7 +505,7 @@ if Code.ensure_loaded?(Igniter) do
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:signing_salt)
-               |> Igniter.Project.Config.modify_config_code(
+               |> Igniter.Project.Config.modify_configuration_code(
                  [site_endpoint],
                  otp_app,
                  Sourceror.parse_string!("""
@@ -556,7 +556,7 @@ if Code.ensure_loaded?(Igniter) do
               {:ok,
                zipper
                |> Beacon.Igniter.move_to_variable!(:secret_key_base)
-               |> Igniter.Project.Config.modify_config_code(
+               |> Igniter.Project.Config.modify_configuration_code(
                  [site_endpoint],
                  otp_app,
                  Sourceror.parse_string!(config)
