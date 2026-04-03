@@ -95,7 +95,7 @@ defmodule Beacon.LoaderTest do
     test "loads module containing all snippet helpers", %{site: site} do
       beacon_snippet_helper_fixture()
       module = Loader.fetch_snippets_module(site)
-      assert module.upcase_title(%{"page" => %{"title" => "Beacon"}}) == "BEACON"
+      assert module.render("upcase_title", %{"page" => %{"title" => "Beacon"}}) == "BEACON"
     end
   end
 

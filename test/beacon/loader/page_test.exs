@@ -24,11 +24,11 @@ defmodule Beacon.Loader.PageTest do
 
       module_1 = Loader.fetch_page_module(page_1.site, page_1.id)
       assert {:dynamic_helper, 2} in module_1.__info__(:functions)
-      assert {:page_1_upcase, 1} in module_1.__info__(:functions)
+      assert {:helper, 2} in module_1.__info__(:functions)
 
       module_2 = Loader.fetch_page_module(page_2.site, page_2.id)
       assert {:dynamic_helper, 2} in module_2.__info__(:functions)
-      assert {:page_2_upcase, 1} in module_2.__info__(:functions)
+      assert {:helper, 2} in module_2.__info__(:functions)
     end
   end
 
