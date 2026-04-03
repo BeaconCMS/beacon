@@ -40,93 +40,20 @@ defmodule Mix.Tasks.Beacon.Install.Docs do
   end
 end
 
-if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.Beacon.Install do
-    use Igniter.Mix.Task
+defmodule Mix.Tasks.Beacon.Install do
+  @shortdoc "#{__MODULE__.Docs.short_doc()}"
 
-    @shortdoc "#{__MODULE__.Docs.short_doc()}"
+  @moduledoc __MODULE__.Docs.long_doc()
 
-    @moduledoc __MODULE__.Docs.long_doc()
+  use Mix.Task
 
-    @impl Igniter.Mix.Task
-    def supports_umbrella?, do: true
+  def run(_argv) do
+    Mix.shell().error("""
+    The task 'beacon.install' is not available.
 
-    @impl Igniter.Mix.Task
-    def info(_argv, _composing_task) do
-      %Igniter.Mix.Task.Info{
-        group: :beacon,
-        example: __MODULE__.Docs.example(),
-        composes: ["beacon.gen.site"],
-        schema: [site: :string, path: :string],
-        defaults: [path: "/"]
-      }
-    end
+    Please follow the installation guide at: https://hexdocs.pm/beacon
+    """)
 
-    @impl Igniter.Mix.Task
-    def igniter(igniter) do
-      if Mix.Project.umbrella?() do
-        Mix.shell().error("""
-        Running 'mix beacon.install' in the root of Umbrella apps is not supported yet.
-
-        Please execute that task inside a child app.
-        """)
-
-        exit({:shutdown, 1})
-      end
-
-      argv = igniter.args.argv
-      options = igniter.args.options
-
-      {igniter, router} = Beacon.Igniter.select_router!(igniter)
-
-      igniter
-      |> add_beacon_plugin_formatter()
-      |> replace_error_html(router)
-      |> maybe_gen_site(options, argv)
-    end
-
-    defp add_beacon_plugin_formatter(igniter) do
-      Igniter.Project.Formatter.import_dep(igniter, :beacon)
-    end
-
-    defp replace_error_html(igniter, router) do
-      app_name = Igniter.Project.Application.app_name(igniter)
-
-      {igniter, endpoint} = Beacon.Igniter.select_endpoint!(igniter, router)
-
-      Igniter.Project.Config.configure(
-        igniter,
-        "config.exs",
-        app_name,
-        [endpoint, :render_errors, :formats, :html],
-        {:code, Sourceror.parse_string!("Beacon.Web.ErrorHTML")}
-      )
-    end
-
-    defp maybe_gen_site(igniter, options, argv) do
-      if options[:site] do
-        Igniter.compose_task(igniter, "beacon.gen.site", argv)
-      else
-        igniter
-      end
-    end
-  end
-else
-  defmodule Mix.Tasks.Beacon.Install do
-    @shortdoc "Install `igniter` in order to run Beacon generators."
-
-    @moduledoc __MODULE__.Docs.long_doc()
-
-    use Mix.Task
-
-    def run(_argv) do
-      Mix.shell().error("""
-      The task 'beacon.install' requires igniter. Please install igniter and try again.
-
-      For more information, see: https://hexdocs.pm/igniter/readme.html#installation
-      """)
-
-      exit({:shutdown, 1})
-    end
+    exit({:shutdown, 1})
   end
 end

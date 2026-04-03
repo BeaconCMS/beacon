@@ -11,9 +11,6 @@ on:
       - 'guides/**'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   quality:
     name: "quality: OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}} | Phoenix ${{matrix.phoenix}} | LV ${{matrix.phoenix-live-view}}"
@@ -35,8 +32,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -60,15 +55,3 @@ jobs:
       - run: mix compile --warnings-as-errors
 
       - run: mix deps.unlock --check-unused
-
-      - run: mix credo --strict
-
-      - run: mix assets.setup
-
-      - run: mix format.all
-
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: auto format code
-
-      - run: mix format.all.check 

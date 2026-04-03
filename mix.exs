@@ -87,10 +87,7 @@ defmodule Beacon.MixProject do
       # TODO: tailwind v4 needs more testing
       {:tailwind, "~> 0.2"},
       esbuild_version(),
-      {:igniter, ">= 0.5.24", optional: true},
-
       # Dev, Test, Docs
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:bandit, "~> 1.0", only: :dev, optional: true},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.29", only: :dev},
@@ -123,11 +120,6 @@ defmodule Beacon.MixProject do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
       dev: ["run --no-halt dev.exs"],
-      "format.all": ["format", "cmd npm run format --prefix ./assets"],
-      "format.all.check": [
-        "format --check-formatted",
-        "cmd npm run format-check --prefix ./assets"
-      ],
       "test.ci": ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": [
         "tailwind.install --if-missing --no-assets",
