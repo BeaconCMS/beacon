@@ -136,7 +136,7 @@ defmodule Beacon.Loader.Page do
       args = Code.string_to_quoted!(helper.args)
 
       quote do
-        def unquote(String.to_atom(helper.name))(unquote(args)) do
+        def helper(unquote(helper.name), unquote(args)) do
           unquote(Code.string_to_quoted!(helper.code))
         end
       end
@@ -201,7 +201,7 @@ defmodule Beacon.Loader.Page do
   defp dynamic_helper(site) do
     quote do
       def dynamic_helper(helper_name, args) do
-        Beacon.apply_mfa(unquote(site), __MODULE__, String.to_existing_atom(helper_name), [args])
+        Beacon.apply_mfa(unquote(site), __MODULE__, :helper, [helper_name, args])
       end
     end
   end

@@ -23,16 +23,10 @@ defmodule Beacon.Content.Snippets.TagHelper do
   @impl true
   def render([name: [value: helper_name]], %{counter_vars: %{"page" => %{"site" => site}}} = context, _options) do
     site = Beacon.Types.Atom.safe_to_atom(site)
-    # String.to_atom is used here because the snippets module (which creates
-    # the corresponding atoms during compilation) may not be loaded yet —
-    # it's loaded lazily via ErrorHandler during apply_mfa below.
-    # A future improvement is to switch to string-based dispatch in the
-    # snippets module (def render("name", assigns)) to eliminate this.
-    helper_name = String.to_atom(helper_name)
 
     text =
       site
-      |> Beacon.apply_mfa(Beacon.Loader.fetch_snippets_module(site), helper_name, [context.counter_vars])
+      |> Beacon.apply_mfa(Beacon.Loader.fetch_snippets_module(site), :render, [helper_name, context.counter_vars])
       |> to_string()
 
     {[text: text], context}

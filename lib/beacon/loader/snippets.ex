@@ -21,7 +21,7 @@ defmodule Beacon.Loader.Snippets do
 
   defp helper(helper) do
     quote do
-      def unquote(String.to_atom(helper.name))(var!(assigns)) do
+      def render(unquote(helper.name), var!(assigns)) do
         unquote(Code.string_to_quoted!(helper.body))
       end
     end
