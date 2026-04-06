@@ -84,6 +84,9 @@ defmodule Beacon.RuntimeRenderer do
     handler_names = Enum.map(handlers, & &1.name)
     :ets.insert(@table, {{site, page_id, :handler_index}, handler_names})
 
+    # 8. Extract CSS classes from IR and merge into site-wide safelist
+
+
     :ok
   end
 
@@ -100,6 +103,7 @@ defmodule Beacon.RuntimeRenderer do
     {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
     ir = extract_ir(ast, env)
     :ets.insert(@table, {{site, :layout, layout_id}, :erlang.term_to_binary(ir)})
+
     :ok
   end
 
@@ -114,12 +118,14 @@ defmodule Beacon.RuntimeRenderer do
         {:ok, render_ir(ir, full_assigns)}
 
       [] ->
+        ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :layouts)
+
         Beacon.Cache.fetch(@table, {site, :layout_load, layout_id}, fn ->
           case Beacon.Content.get_published_layout(site, layout_id) do
             nil -> :not_found
             layout -> publish_layout(site, to_string(layout.id), layout.template)
           end
-        end)
+        end, ttl)
 
         case :ets.lookup(@table, {site, :layout, layout_id}) do
           [{_, serialized_ir}] ->
@@ -146,6 +152,7 @@ defmodule Beacon.RuntimeRenderer do
     {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
     ir = extract_ir(ast, env)
     :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ir: ir, body: body})})
+
     :ok
   end
 
@@ -180,12 +187,14 @@ defmodule Beacon.RuntimeRenderer do
         render_ir_with_bindings(ir, full_assigns, body_bindings)
 
       [] ->
+        ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :components)
+
         Beacon.Cache.fetch(@table, {site, :component_load, name}, fn ->
           case Beacon.Content.get_component_by(site, name: name) do
             nil -> :not_found
             component -> publish_component(site, component.name, component.template, component.body || "")
           end
-        end)
+        end, ttl)
 
         # Re-check after load
         case :ets.lookup(@table, {site, :component, name}) do
@@ -319,7 +328,18 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp load_page_by_path(site, path) do
-    # Stampede-safe: only one process loads a given path
+    config = Beacon.Config.fetch!(site)
+
+    # If the page was previously loaded, use its per-page TTL from the manifest.
+    # On first load, fall back to the site-wide :pages TTL.
+    ttl =
+      with [{_, page_id}] <- :ets.lookup(@table, {site, :route, path}),
+           {:ok, manifest} <- fetch_manifest(site, page_id) do
+        Beacon.Config.effective_ttl(config, :pages, manifest.extra)
+      else
+        _ -> Beacon.Config.effective_ttl(config, :pages)
+      end
+
     Beacon.Cache.fetch(@table, {site, :page_load, path}, fn ->
       case Beacon.Content.list_published_pages_for_paths(site, [path]) do
         [page] ->
@@ -329,7 +349,7 @@ defmodule Beacon.RuntimeRenderer do
         _ ->
           :error
       end
-    end)
+    end, ttl)
   end
 
   def lookup_page!(site, path) do
@@ -637,6 +657,8 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp ensure_site_handlers_loaded(site, type) do
+    ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :handlers)
+
     Beacon.Cache.fetch(@table, {site, :handlers_load, type}, fn ->
       handlers =
         case type do
@@ -650,7 +672,7 @@ defmodule Beacon.RuntimeRenderer do
       end
 
       :loaded
-    end)
+    end, ttl)
   end
 
   def unpublish_page(site, page_id) do

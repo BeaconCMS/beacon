@@ -76,8 +76,10 @@ defmodule Beacon.RuntimeCSS do
   end
 
   defp ensure_compiled(site) do
+    ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :css)
+
     Beacon.Cache.fetch(:beacon_assets, {site, :css_compile}, fn ->
       load!(site)
-    end)
+    end, ttl)
   end
 end

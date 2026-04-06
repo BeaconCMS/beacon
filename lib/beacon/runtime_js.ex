@@ -160,9 +160,11 @@ defmodule Beacon.RuntimeJS do
   end
 
   defp ensure_compiled(site) do
+    ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :js)
+
     Beacon.Cache.fetch(:beacon_assets, {site, :js_compile}, fn ->
       load!(site)
-    end)
+    end, ttl)
   end
 
   def get_export(hook, opts \\ []) do

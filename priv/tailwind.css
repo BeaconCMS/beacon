@@ -1,7 +1,4 @@
-/* tailwind */
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+/* Beacon default styles — @import "tailwindcss" is added by the compiler */
 
 /* phoenix */
 .alert {

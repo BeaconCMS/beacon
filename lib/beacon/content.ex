@@ -4628,4 +4628,5 @@ defmodule Beacon.Content do
     Logger.warning("Beacon.Content can not handle the message: #{inspect(msg)}")
     {:noreply, config}
   end
+
 end

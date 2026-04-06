@@ -213,7 +213,17 @@ defmodule Beacon.Config do
 
   Set to `0` to disable TTL (entries never expire). Default is `60`.
   """
-  @type cache_ttl :: non_neg_integer()
+  @type cache_ttl :: non_neg_integer() | :infinity
+
+  @typedoc """
+  Per-resource-type TTL overrides.
+
+  Keys are resource type atoms: `:pages`, `:layouts`, `:components`, `:css`, `:js`, `:handlers`.
+  Values are seconds (integer) or `:infinity`.
+
+  Overrides the site-wide `cache_ttl` for the given resource type.
+  """
+  @type cache_ttls :: %{optional(atom()) => non_neg_integer() | :infinity}
 
   @typedoc """
   Maximum number of entries in the content cache.
@@ -244,6 +254,7 @@ defmodule Beacon.Config do
           page_warming: page_warming(),
           warming_concurrency: warming_concurrency(),
           cache_ttl: cache_ttl(),
+          cache_ttls: cache_ttls(),
           max_cache_entries: max_cache_entries()
         }
 
@@ -295,6 +306,7 @@ defmodule Beacon.Config do
             page_warming: {:shortest_paths, 10},
             warming_concurrency: 4,
             cache_ttl: 60,
+            cache_ttls: %{},
             max_cache_entries: 10_000
 
   @type option ::
@@ -318,6 +330,7 @@ defmodule Beacon.Config do
           | {:page_warming, page_warming()}
           | {:warming_concurrency, warming_concurrency()}
           | {:cache_ttl, cache_ttl()}
+          | {:cache_ttls, cache_ttls()}
           | {:max_cache_entries, max_cache_entries()}
 
   @doc """
@@ -372,8 +385,11 @@ defmodule Beacon.Config do
       Maximum number of pages to compile concurrently during boot warming.
 
     * `:cache_ttl` - `t:cache_ttl/0` (optional). Defaults to `60`.
-      Time-to-live in seconds for cached content entries (pages and layouts).
-      Set to `0` to disable expiration.
+      Site-wide default TTL in seconds for cached content. Set to `:infinity` to never expire.
+
+    * `:cache_ttls` - `t:cache_ttls/0` (optional). Defaults to `%{}`.
+      Per-resource-type TTL overrides. Keys: `:pages`, `:layouts`, `:components`, `:css`, `:js`, `:handlers`.
+      Values: seconds (integer) or `:infinity`. Overrides `cache_ttl` for the given type.
 
     * `:max_cache_entries` - `t:max_cache_entries/0` (optional). Defaults to `10_000`.
       Maximum number of entries in the content cache. When exceeded, oldest entries are evicted.
@@ -504,6 +520,7 @@ defmodule Beacon.Config do
     page_warming = get_opt(opts, :page_warming, {:shortest_paths, 10})
     warming_concurrency = get_opt(opts, :warming_concurrency, 4)
     cache_ttl = get_opt(opts, :cache_ttl, 60)
+    cache_ttls = get_opt(opts, :cache_ttls, %{})
     max_cache_entries = get_opt(opts, :max_cache_entries, 10_000)
 
     struct!(
@@ -520,6 +537,7 @@ defmodule Beacon.Config do
         page_warming: page_warming,
         warming_concurrency: warming_concurrency,
         cache_ttl: cache_ttl,
+        cache_ttls: cache_ttls,
         max_cache_entries: max_cache_entries
       )
     )
@@ -527,6 +545,45 @@ defmodule Beacon.Config do
 
   # Get `key` from `opts` keyword, otherwise returns `default` even if the key is present but returns `nil`.
   defp get_opt(opts, key, default), do: Keyword.get(opts, key) || default
+
+  @doc """
+  Returns the effective TTL for a given resource type.
+
+  Resolution order:
+  1. Per-page TTL from `page_extra["cache_ttl"]` (pass as 3rd arg, pages only)
+  2. Per-resource-type from `config.cache_ttls[resource_type]`
+  3. Site-wide default `config.cache_ttl`
+
+  ## Examples
+
+      iex> config = %Beacon.Config{cache_ttl: 60, cache_ttls: %{css: 86_400}}
+      iex> Beacon.Config.effective_ttl(config, :css)
+      86_400
+      iex> Beacon.Config.effective_ttl(config, :pages)
+      60
+      iex> Beacon.Config.effective_ttl(config, :pages, %{"cache_ttl" => 3600})
+      3600
+      iex> Beacon.Config.effective_ttl(config, :pages, %{"cache_ttl" => "infinity"})
+      :infinity
+  """
+  def effective_ttl(config, resource_type, page_extra \\ nil)
+
+  def effective_ttl(%__MODULE__{} = config, resource_type, %{"cache_ttl" => page_ttl}) when not is_nil(page_ttl) do
+    parse_ttl(page_ttl) || type_or_default(config, resource_type)
+  end
+
+  def effective_ttl(%__MODULE__{} = config, resource_type, _page_extra) do
+    type_or_default(config, resource_type)
+  end
+
+  defp type_or_default(%__MODULE__{cache_ttls: ttls, cache_ttl: default}, type) do
+    Map.get(ttls, type, default)
+  end
+
+  defp parse_ttl(:infinity), do: :infinity
+  defp parse_ttl("infinity"), do: :infinity
+  defp parse_ttl(n) when is_integer(n) and n >= 0, do: n
+  defp parse_ttl(_), do: nil
 
   @doc """
   Returns the `Beacon.Config` for `site`.
