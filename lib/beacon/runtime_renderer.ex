@@ -1405,7 +1405,7 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # Phoenix function component call — call the actual component function
-  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns, pairs}}, a, b) when is_atom(mod) and is_atom(fun) do
+  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns, pairs}}, a, b) when is_atom(mod) and is_atom(fun) and not is_nil(mod) and not is_nil(fun) do
     component_assigns =
       Enum.reduce(pairs, %{}, fn
         {:__changed__, _}, acc ->
