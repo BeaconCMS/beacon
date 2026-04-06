@@ -1111,7 +1111,7 @@ defmodule Beacon.RuntimeRenderer do
     if function_exported?(Phoenix.Component, fun_name, arity) do
       {:component_fun, Phoenix.Component, fun_name}
     else
-      {:component_fun, nil, nil}
+      {:component_fun, nil, fun_name}
     end
   end
 
