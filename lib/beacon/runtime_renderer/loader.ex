@@ -199,7 +199,8 @@ defmodule Beacon.RuntimeRenderer.Loader do
         %{
           key: String.to_atom(assign.key),
           value: assign.value,
-          format: assign.format
+          format: assign.format,
+          path_pattern: ld.path
         }
       end)
     end)

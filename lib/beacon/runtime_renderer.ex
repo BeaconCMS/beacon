@@ -487,9 +487,10 @@ defmodule Beacon.RuntimeRenderer do
           %{key: key, value: value, format: :text}, acc ->
             Map.put(acc, key, value)
 
-          %{key: key, value: code, format: :elixir}, acc ->
+          %{key: key, value: code, format: :elixir} = def_entry, acc ->
             ast = Code.string_to_quoted!(code)
-            bindings = %{path_info: path_info, params: query_params}
+            path_vars = extract_path_variables(def_entry[:path_pattern], path_info)
+            bindings = Map.merge(path_vars, %{path_info: path_info, params: query_params})
             result = eval_ast(ast, bindings)
             Map.put(acc, key, result)
 
@@ -500,6 +501,22 @@ defmodule Beacon.RuntimeRenderer do
       _ ->
         %{}
     end
+  end
+
+  # Extract path variables from a pattern like "/blog/:year/:month/:day/:post_slug"
+  # and actual path segments like ["blog", "2025", "05", "15", "my-post"]
+  # Returns %{year: "2025", month: "05", day: "15", post_slug: "my-post"}
+  defp extract_path_variables(nil, _path_info), do: %{}
+
+  defp extract_path_variables(pattern, path_info) do
+    pattern_segments = String.split(String.trim_leading(pattern, "/"), "/", trim: true)
+
+    Enum.zip(pattern_segments, path_info)
+    |> Enum.reduce(%{}, fn
+      {":" <> param, value}, acc -> Map.put(acc, String.to_atom(param), value)
+      {"*" <> param, value}, acc -> Map.put(acc, String.to_atom(param), value)
+      _, acc -> acc
+    end)
   end
 
   # Extract path params from a pattern like "/posts/:id" and actual path segments
