@@ -114,7 +114,10 @@ defmodule Beacon.RuntimeRenderer do
     case :ets.lookup(@table, {site, :layout, layout_id}) do
       [{_, serialized_ir}] ->
         ir = :erlang.binary_to_term(serialized_ir)
-        full_assigns = Map.put_new(assigns, :__changed__, %{})
+        # Delete __changed__ so all dynamic expressions evaluate on first render.
+        # The layout references page-level assigns (like :post) that aren't in __changed__,
+        # which would cause them to be skipped by change tracking.
+        full_assigns = Map.delete(assigns, :__changed__)
         {:ok, render_ir(ir, full_assigns)}
 
       [] ->
@@ -130,7 +133,7 @@ defmodule Beacon.RuntimeRenderer do
         case :ets.lookup(@table, {site, :layout, layout_id}) do
           [{_, serialized_ir}] ->
             ir = :erlang.binary_to_term(serialized_ir)
-            full_assigns = Map.put_new(assigns, :__changed__, %{})
+            full_assigns = Map.delete(assigns, :__changed__)
             {:ok, render_ir(ir, full_assigns)}
 
           [] ->
@@ -491,6 +494,10 @@ defmodule Beacon.RuntimeRenderer do
             ast = Code.string_to_quoted!(code)
             path_vars = extract_path_variables(def_entry[:path_pattern], path_info)
             bindings = Map.merge(path_vars, %{path_info: path_info, params: query_params})
+
+            require Logger
+            Logger.debug("[RuntimeRenderer] evaluate_live_data key=#{key} path_pattern=#{inspect(def_entry[:path_pattern])} path_vars=#{inspect(path_vars)}")
+
             result = eval_ast(ast, bindings)
             Map.put(acc, key, result)
 
@@ -540,7 +547,7 @@ defmodule Beacon.RuntimeRenderer do
       [{_, serialized_ir}] ->
         ir = :erlang.binary_to_term(serialized_ir)
         stored_assigns = fetch_assigns(site, page_id)
-        full_assigns = Map.merge(stored_assigns, assigns) |> Map.put_new(:__changed__, %{})
+        full_assigns = Map.merge(stored_assigns, assigns) |> Map.delete(:__changed__)
         {:ok, render_ir(ir, full_assigns)}
 
       [] ->
