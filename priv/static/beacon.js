@@ -18,10 +18,16 @@ var Beacon = (() => {
   var socketPath = document.querySelector("html").getAttribute("phx-socket") || "/live";
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
   var _a, _b;
-  var liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {
-    params: { _csrf_token: csrfToken },
-    hooks: (_b = (_a = window.BeaconHooks) == null ? void 0 : _a.default) != null ? _b : {}
-  });
-  liveSocket.connect();
-  window.liveSocket = liveSocket;
+  var beaconHooks = (_b = (_a = window.BeaconHooks) == null ? void 0 : _a.default) != null ? _b : {};
+  var liveSocket = window.liveSocket;
+  if (liveSocket) {
+    Object.assign(liveSocket.hooks || (liveSocket.hooks = {}), beaconHooks);
+  } else {
+    liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {
+      params: { _csrf_token: csrfToken },
+      hooks: beaconHooks
+    });
+    liveSocket.connect();
+    window.liveSocket = liveSocket;
+  }
 })();

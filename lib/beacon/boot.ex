@@ -20,72 +20,10 @@ defmodule Beacon.Boot do
     :ignore
   end
 
-  def init(%{site: site, mode: :live} = config) when is_atom(site) do
-    Logger.info("Beacon.Boot booting site #{site}")
-    task_supervisor = Beacon.Registry.via({site, TaskSupervisor})
-
-    # temporary disable module loading so we can populate data more efficiently
-    %{mode: :manual} = Beacon.Config.update_value(site, :mode, :manual)
-    Beacon.Loader.populate_default_media(site)
-    Beacon.Loader.populate_default_components(site)
-    Beacon.Loader.populate_default_layouts(site)
-    Beacon.Loader.populate_default_error_pages(site)
-    Beacon.Loader.populate_default_home_page(site)
-
-    %{mode: :live} = Beacon.Config.update_value(site, :mode, :live)
-
-    tasks = [
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_js(site) end),
-      Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_runtime_css(site) end)
-      | warm_pages_async(task_supervisor, config)
-    ]
-
-    # TODO: revisit this timeout after we upgrade to Tailwind v4
-    Task.await_many(tasks, :timer.minutes(5))
-
+  def init(%{site: site, mode: :live} = _config) when is_atom(site) do
+    Beacon.RuntimeRenderer.init()
     :persistent_term.put({Beacon, site, :boot_ready}, true)
-
-    # TODO: add telemetry to measure booting time
-    Logger.info("Beacon.Boot finished booting site #{site}")
-
+    Logger.info("Beacon.Boot site #{site} ready (lazy loading)")
     :ignore
-  end
-
-  defp warm_pages_async(task_supervisor, config) do
-    pages =
-      case config.page_warming do
-        {:shortest_paths, count} ->
-          Logger.info("Beacon.Boot warming pages - #{count} shortest paths")
-          Beacon.Content.list_published_pages(config.site, sort: {:length, :path}, limit: count)
-
-        {:specify_paths, paths} ->
-          Logger.info("Beacon.Boot warming pages - specified paths")
-          Beacon.Content.list_published_pages_for_paths(config.site, paths)
-
-        :none ->
-          Logger.info("Beacon.Boot page warming disabled")
-          []
-      end
-
-    max_concurrency = config.warming_concurrency
-
-    if pages == [] do
-      []
-    else
-      [Task.Supervisor.async(task_supervisor, fn -> warm_pages_in_batches(task_supervisor, config.site, pages, max_concurrency) end)]
-    end
-  end
-
-  defp warm_pages_in_batches(task_supervisor, site, pages, max_concurrency) do
-    pages
-    |> Enum.chunk_every(max_concurrency)
-    |> Enum.each(fn chunk ->
-      chunk
-      |> Enum.map(fn page ->
-        Logger.info("Beacon.Boot warming page #{page.id} #{page.path}")
-        Task.Supervisor.async(task_supervisor, fn -> Beacon.Loader.load_page_module(site, page.id) end)
-      end)
-      |> Task.await_many(:timer.minutes(2))
-    end)
   end
 end

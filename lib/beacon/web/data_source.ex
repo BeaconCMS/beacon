@@ -43,11 +43,9 @@ defmodule Beacon.Web.DataSource do
     end
   end
 
-  # TODO: revisit this logic to evaluate meta_tags for unpublished pages
-  def meta_tags(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
-    %{site: ^site} = page_assigns = Beacon.apply_mfa(site, page_module, :page_assigns, [])
-
+  def meta_tags(%{beacon: %{site: site, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns) do
+    manifest = Beacon.RuntimeRenderer.fetch_manifest!(site, page_id)
+    page_assigns = %{site: site, id: page_id, path: manifest.path, title: manifest.title, description: manifest.description, meta_tags: manifest.meta_tags}
     live_data = Map.take(assigns, live_data_keys)
 
     assigns
@@ -68,28 +66,13 @@ defmodule Beacon.Web.DataSource do
     end
   end
 
-  # return the page assigns from unpublished page assigns,
-  # either saved in the database or page in-memory (for new pages)
-  # this fallback is here mostly to support  beacon_live_admin visual editor,
-  # which makes use of the `@beacon` assign when creating or editing pages
-  defp page_assigns(%Beacon.Content.Page{id: nil} = page) do
-    unpublished_page_assigns(page)
-  end
-
   defp page_assigns(%Beacon.Content.Page{} = page) do
-    Beacon.apply_mfa(page.site, Beacon.Loader.fetch_page_module(page.site, page.id), :page_assigns, [])
-  rescue
-    _ -> unpublished_page_assigns(page)
-  end
-
-  defp unpublished_page_assigns(page) do
     %{
       id: page.id,
       site: page.site,
       layout_id: page.layout_id,
       title: page.title,
       meta_tags: page.meta_tags,
-      raw_schema: Beacon.Loader.Page.interpolate_raw_schema(page),
       path: page.path,
       description: page.description,
       order: page.order,

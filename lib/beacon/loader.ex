@@ -111,26 +111,6 @@ defmodule Beacon.Loader do
     GenServer.call(worker(site), :ping, @timeout)
   end
 
-  def populate_default_media(site) do
-    GenServer.call(worker(site), :populate_default_media, @timeout)
-  end
-
-  def populate_default_components(site) do
-    GenServer.call(worker(site), :populate_default_components, @timeout)
-  end
-
-  def populate_default_layouts(site) do
-    GenServer.call(worker(site), :populate_default_layouts, @timeout)
-  end
-
-  def populate_default_error_pages(site) do
-    GenServer.call(worker(site), :populate_default_error_pages, @timeout)
-  end
-
-  def populate_default_home_page(site) do
-    GenServer.call(worker(site), :populate_default_home_page, @timeout)
-  end
-
   def load_runtime_js(site) do
     call_worker(site, :load_runtime_js, {:load_runtime_js, [site]}, timeout: :timer.minutes(2))
   end

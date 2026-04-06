@@ -119,6 +119,14 @@ defmodule Beacon.RuntimeJSTest do
                """
                  return __toCommonJS(hooks_exports);
                """
+
+      assert js =~ "var beaconHooks ="
+      assert js =~ "var liveSocket = window.liveSocket;"
+      assert js =~ "Object.assign(liveSocket.hooks || (liveSocket.hooks = {}), beaconHooks);"
+      assert js =~ "if (liveSocket) {"
+      assert js =~ "liveSocket = new LiveView.LiveSocket(socketPath, Phoenix.Socket, {"
+      assert js =~ "hooks: beaconHooks"
+      assert js =~ "window.liveSocket = liveSocket;"
     end
   end
 end

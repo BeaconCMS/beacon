@@ -1,0 +1,2134 @@
+defmodule Beacon.RuntimeRenderer do
+  @moduledoc """
+  Proof of concept: Runtime page rendering without ANY runtime code compilation.
+
+  At publish time, HEEx templates are compiled through Phoenix's standard pipeline,
+  then the resulting AST is transformed into a serializable intermediate representation
+  (IR). The IR captures the static HTML parts, fingerprint, and dynamic expression
+  descriptors as plain data.
+
+  At request time, a single precompiled evaluator walks the IR and constructs
+  `%Phoenix.LiveView.Rendered{}` structs. The closures in the `dynamic` field
+  reference THIS module (compiled once at app build time) — not any per-page module.
+
+  Zero `Code.eval_quoted`. Zero `Code.eval_string`. Zero runtime module creation.
+  """
+
+  @table :beacon_runtime_poc
+
+  # ---------------------------------------------------------------------------
+  # Setup
+  # ---------------------------------------------------------------------------
+
+  def init do
+    # Table is created by Beacon.Application.start to ensure it outlives Boot.
+    # This is a no-op safety check for test environments.
+    if :ets.whereis(@table) == :undefined do
+      :ets.new(@table, [:set, :named_table, :public, read_concurrency: true])
+    end
+
+    :ok
+  end
+
+  # ---------------------------------------------------------------------------
+  # Publish time — compile template to IR, store everything in ETS
+  # ---------------------------------------------------------------------------
+
+  def publish_page(site, page_id, attrs) when is_atom(site) and is_binary(page_id) do
+    template = Map.fetch!(attrs, :template)
+    path = Map.get(attrs, :path, "/")
+
+    # 1. Compile HEEx to AST via standard Phoenix pipeline
+    env = Beacon.Web.PageLive.make_env(site)
+    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
+
+    # 2. Transform AST into serializable IR (no closures, no module refs)
+    ir = extract_ir(ast, env)
+    :ets.insert(@table, {{site, page_id, :ir}, :erlang.term_to_binary(ir)})
+
+    # 3. Store the page manifest — everything needed to mount and render
+    manifest = %{
+      id: page_id,
+      site: site,
+      path: path,
+      title: Map.get(attrs, :title, ""),
+      description: Map.get(attrs, :description, ""),
+      format: Map.get(attrs, :format, :heex),
+      layout_id: Map.get(attrs, :layout_id),
+      extra: Map.get(attrs, :extra, %{}),
+      meta_tags: Map.get(attrs, :meta_tags, []),
+      raw_schema: Map.get(attrs, :raw_schema, [])
+    }
+
+    :ets.insert(@table, {{site, page_id, :manifest}, manifest})
+
+    # 4. Register route: path → page_id (for mount-time lookup)
+    :ets.insert(@table, {{site, :route, path}, page_id})
+
+    # 5. Store custom page assigns (live_data, user-defined)
+    static_assigns = Map.get(attrs, :assigns, %{})
+    :ets.insert(@table, {{site, page_id, :assigns}, static_assigns})
+
+    # 6. Store live_data definitions (evaluated at handle_params time)
+    live_data_defs = Map.get(attrs, :live_data, [])
+    :ets.insert(@table, {{site, page_id, :live_data}, live_data_defs})
+
+    # 7. Store event handlers — parse to AST at publish time, not runtime
+    handlers = Map.get(attrs, :event_handlers, [])
+
+    for %{name: name, code: code} <- handlers do
+      handler_ast = Code.string_to_quoted!(code)
+      :ets.insert(@table, {{site, page_id, :handler, name}, :erlang.term_to_binary(handler_ast)})
+    end
+
+    handler_names = Enum.map(handlers, & &1.name)
+    :ets.insert(@table, {{site, page_id, :handler_index}, handler_names})
+
+    :ok
+  end
+
+  # ---------------------------------------------------------------------------
+  # Layout publishing and rendering
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Publishes a layout into the ETS store. Called during site boot.
+  """
+  def publish_layout(site, layout_id, template) when is_atom(site) and is_binary(layout_id) do
+    path = "layout_#{layout_id}"
+    env = Beacon.Web.PageLive.make_env(site)
+    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
+    ir = extract_ir(ast, env)
+    :ets.insert(@table, {{site, :layout, layout_id}, :erlang.term_to_binary(ir)})
+    :ok
+  end
+
+  @doc """
+  Renders a layout by layout_id. Returns `{:ok, rendered}` or `{:error, :not_found}`.
+  """
+  def render_layout(site, layout_id, assigns) do
+    case :ets.lookup(@table, {site, :layout, layout_id}) do
+      [{_, serialized_ir}] ->
+        ir = :erlang.binary_to_term(serialized_ir)
+        full_assigns = Map.put_new(assigns, :__changed__, %{})
+        {:ok, render_ir(ir, full_assigns)}
+
+      [] ->
+        Beacon.Cache.fetch(@table, {site, :layout_load, layout_id}, fn ->
+          case Beacon.Content.get_published_layout(site, layout_id) do
+            nil -> :not_found
+            layout -> publish_layout(site, to_string(layout.id), layout.template)
+          end
+        end)
+
+        case :ets.lookup(@table, {site, :layout, layout_id}) do
+          [{_, serialized_ir}] ->
+            ir = :erlang.binary_to_term(serialized_ir)
+            full_assigns = Map.put_new(assigns, :__changed__, %{})
+            {:ok, render_ir(ir, full_assigns)}
+
+          [] ->
+            {:error, :not_found}
+        end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Component publishing and rendering
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Publishes a component into the ETS store. Called during site boot.
+  """
+  def publish_component(site, name, template, body \\ "") when is_atom(site) and is_binary(name) do
+    path = "component_#{name}"
+    env = Beacon.Web.PageLive.make_env(site)
+    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
+    ir = extract_ir(ast, env)
+    :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ir: ir, body: body})})
+    :ok
+  end
+
+  @doc """
+  Renders a component by name with the given assigns.
+  Returns the rendered output or an empty string if not found.
+  """
+  def render_component(site, name, assigns) when is_atom(site) and is_binary(name) do
+    do_render_component(site, name, assigns)
+  rescue
+    error ->
+      require Logger
+      Logger.error("[RuntimeRenderer] Component #{name} crashed: #{Exception.message(error)}\n#{Exception.format_stacktrace(__STACKTRACE__)}")
+      ""
+  end
+
+  defp do_render_component(site, name, assigns) do
+    case :ets.lookup(@table, {site, :component, name}) do
+      [{_, serialized}] ->
+        %{ir: ir, body: body} = :erlang.binary_to_term(serialized)
+
+        # Execute the component body to produce local bindings
+        body_bindings = execute_component_body(body, assigns)
+
+        full_assigns =
+          assigns
+          |> Map.merge(body_bindings)
+          |> Map.put_new(:__changed__, %{})
+          |> Map.put_new(:inner_block, [])
+          |> Map.put_new(:beacon, %{site: site})
+
+        render_ir_with_bindings(ir, full_assigns, body_bindings)
+
+      [] ->
+        Beacon.Cache.fetch(@table, {site, :component_load, name}, fn ->
+          case Beacon.Content.get_component_by(site, name: name) do
+            nil -> :not_found
+            component -> publish_component(site, component.name, component.template, component.body || "")
+          end
+        end)
+
+        # Re-check after load
+        case :ets.lookup(@table, {site, :component, name}) do
+          [{_, serialized}] ->
+            %{ir: ir, body: body} = :erlang.binary_to_term(serialized)
+            body_bindings = execute_component_body(body, assigns)
+
+            full_assigns =
+              assigns
+              |> Map.merge(body_bindings)
+              |> Map.put_new(:__changed__, %{})
+              |> Map.put_new(:inner_block, [])
+              |> Map.put_new(:beacon, %{site: site})
+
+            render_ir_with_bindings(ir, full_assigns, body_bindings)
+
+          [] ->
+            require Logger
+            Logger.warning("[RuntimeRenderer] Component #{name} not found for site #{site}")
+            ""
+        end
+    end
+  end
+
+  @doc false
+  def render_ir_with_bindings(ir, assigns, bindings) do
+    %Phoenix.LiveView.Rendered{
+      static: ir.static,
+      dynamic: &evaluate_dynamics_with_bindings(ir.dynamics, assigns, bindings, &1),
+      fingerprint: ir.fingerprint,
+      root: Map.get(ir, :root, false),
+      caller: :not_available
+    }
+  end
+
+  defp evaluate_dynamics_with_bindings(dynamics, assigns, bindings, track_changes?) do
+    changed = if track_changes?, do: Map.get(assigns, :__changed__), else: nil
+
+    {results, _bindings} =
+      Enum.reduce(dynamics, {[], bindings}, fn %{deps: deps, expr: expr}, {acc, b} ->
+        case expr do
+          {:bind, name, value_expr} ->
+            value = eval_ir(value_expr, assigns, b)
+            {acc, Map.put(b, name, value)}
+
+          _ ->
+            if changed != nil and deps != [] and not Enum.any?(deps, &Map.has_key?(changed, &1)) do
+              {[nil | acc], b}
+            else
+              result = eval_ir(expr, assigns, b)
+              {[safe_dynamic(result) | acc], b}
+            end
+        end
+      end)
+
+    Enum.reverse(results)
+  end
+
+  defp execute_component_body(nil, _assigns), do: %{}
+  defp execute_component_body("", _assigns), do: %{}
+
+  defp execute_component_body(body, assigns) when is_binary(body) do
+    try do
+      ast = Code.string_to_quoted!(body)
+      {_result, bindings} = eval_body_ast(ast, assigns)
+      bindings
+    rescue
+      _ -> %{}
+    end
+  end
+
+  # Evaluate body AST and collect variable bindings
+  defp eval_body_ast({:__block__, _, exprs}, assigns) do
+    Enum.reduce(exprs, {nil, %{}}, fn expr, {_result, bindings} ->
+      {val, new_bindings} = eval_body_ast(expr, Map.merge(assigns, bindings))
+      {val, Map.merge(bindings, new_bindings)}
+    end)
+  end
+
+  defp eval_body_ast({:=, _, [{name, _, nil}, value_ast]}, assigns) when is_atom(name) do
+    value = eval_ast(value_ast, assigns)
+    {value, %{name => value}}
+  end
+
+  defp eval_body_ast(other, assigns) do
+    {eval_ast(other, assigns), %{}}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Route lookup — resolve path to page_id (replaces RouterServer)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Looks up a page_id by site and path. Used at mount time.
+  Returns `{:ok, page_id}` or `:error`.
+  """
+  def lookup_page(site, path) when is_atom(site) and is_binary(path) do
+    # Fast path: exact match in ETS
+    case :ets.lookup(@table, {site, :route, path}) do
+      [{_, page_id}] ->
+        {:ok, page_id}
+
+      [] ->
+        # Check dynamic segments against already-cached routes
+        case match_dynamic_route(site, path) do
+          {:ok, _} = found -> found
+          :error -> load_page_by_path(site, path)
+        end
+    end
+  end
+
+  defp match_dynamic_route(site, path) do
+    request_segments = String.split(path, "/", trim: true)
+    all_routes = :ets.match(@table, {{site, :route, :"$1"}, :"$2"})
+
+    Enum.find_value(all_routes, :error, fn [route_path, page_id] ->
+      route_segments = String.split(route_path, "/", trim: true)
+
+      if length(route_segments) == length(request_segments) do
+        matches? =
+          Enum.zip(route_segments, request_segments)
+          |> Enum.all?(fn
+            {":" <> _, _} -> true
+            {"*" <> _, _} -> true
+            {a, b} -> a == b
+          end)
+
+        if matches?, do: {:ok, page_id}, else: nil
+      end
+    end)
+  end
+
+  defp load_page_by_path(site, path) do
+    # Stampede-safe: only one process loads a given path
+    Beacon.Cache.fetch(@table, {site, :page_load, path}, fn ->
+      case Beacon.Content.list_published_pages_for_paths(site, [path]) do
+        [page] ->
+          Beacon.RuntimeRenderer.Loader.load_page(site, page)
+          {:ok, page.id}
+
+        _ ->
+          :error
+      end
+    end)
+  end
+
+  def lookup_page!(site, path) do
+    case lookup_page(site, path) do
+      {:ok, page_id} ->
+        page_id
+
+      :error ->
+        # Debug: list all stored routes for this site
+        all_routes = :ets.match(@table, {{site, :route, :"$1"}, :"$2"})
+        sample = all_routes |> Enum.take(10) |> Enum.map(fn [p, _id] -> p end)
+        require Logger
+        Logger.error("[RuntimeRenderer] Route lookup failed for path=#{inspect(path)}, site=#{site}. Sample routes: #{inspect(sample)}")
+        raise "no page found for site #{site} path #{path}"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Page manifest — all metadata needed to mount (replaces page_module.page())
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Fetches the page manifest. Contains all metadata the LiveView needs at
+  mount time: id, site, path, title, layout_id, meta_tags, etc.
+
+  No compiled module is touched.
+  """
+  def fetch_manifest(site, page_id) do
+    case :ets.lookup(@table, {site, page_id, :manifest}) do
+      [{_, manifest}] -> {:ok, manifest}
+      [] -> :error
+    end
+  end
+
+  def fetch_manifest!(site, page_id) do
+    case fetch_manifest(site, page_id) do
+      {:ok, manifest} -> manifest
+      :error -> raise "no manifest for site #{site} page #{page_id}"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Mount — produces initial socket assigns (replaces PageLive.mount logic)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Produces the assigns map for a LiveView mount given a site and path.
+
+  This replaces the current flow of:
+    RouterServer.lookup_page! → page_module.page() → BeaconAssigns.new(page)
+
+  Returns `{:ok, assigns_map}` where assigns_map contains:
+  - `:beacon` — the beacon assigns struct equivalent (as a plain map)
+  - `:page_title` — the page title
+
+  No compiled modules are loaded or referenced.
+  """
+  def mount_assigns(site, path, opts \\ []) when is_atom(site) and is_binary(path) do
+    page_id = lookup_page!(site, path)
+    manifest = fetch_manifest!(site, page_id)
+    variant_roll = Keyword.get(opts, :variant_roll)
+
+    beacon = %{
+      site: site,
+      path_params: %{},
+      query_params: %{},
+      page: %{path: manifest.path, title: manifest.title},
+      private: %{
+        page_id: page_id,
+        layout_id: manifest.layout_id,
+        live_data_keys: [],
+        live_path: [],
+        variant_roll: variant_roll
+      }
+    }
+
+    {:ok, %{beacon: beacon, page_title: manifest.title}}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Handle params — produces updated assigns on navigation
+  # (replaces PageLive.handle_params logic)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Produces updated assigns for handle_params given a site, path, and params.
+
+  This replaces the current flow of:
+    RouterServer.lookup_page! → DataSource.live_data() → BeaconAssigns.new()
+
+  Evaluates live_data definitions from ETS and merges everything into assigns.
+  """
+  def handle_params_assigns(site, path, params \\ %{}) when is_atom(site) and is_binary(path) do
+    page_id = lookup_page!(site, path)
+    manifest = fetch_manifest!(site, page_id)
+    path_info = String.split(String.trim_leading(path, "/"), "/", trim: true)
+    query_params = Map.drop(params, ["path"])
+
+    # Evaluate live_data from stored definitions
+    live_data = evaluate_live_data(site, page_id, path_info, query_params)
+
+    beacon = %{
+      site: site,
+      path_params: extract_path_params(manifest.path, path_info),
+      query_params: query_params,
+      live_data: live_data,
+      page: %{path: manifest.path, title: manifest.title},
+      private: %{
+        page_id: page_id,
+        layout_id: manifest.layout_id,
+        live_data_keys: Map.keys(live_data),
+        live_path: path_info,
+        variant_roll: nil
+      }
+    }
+
+    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: manifest.title})}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Live data evaluation (replaces compiled LiveData module)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Evaluates stored live_data definitions for a page.
+  Each definition is a `%{key: atom, value: term, format: :text | :elixir}`.
+
+  `:text` values are returned as-is.
+  `:elixir` values are evaluated by the AST interpreter with path/query params in scope.
+  """
+  def evaluate_live_data(site, page_id, path_info, query_params) do
+    case :ets.lookup(@table, {site, page_id, :live_data}) do
+      [{_, defs}] when is_list(defs) ->
+        Enum.reduce(defs, %{}, fn
+          %{key: key, value: value, format: :text}, acc ->
+            Map.put(acc, key, value)
+
+          %{key: key, value: code, format: :elixir}, acc ->
+            ast = Code.string_to_quoted!(code)
+            bindings = %{path_info: path_info, params: query_params}
+            result = eval_ast(ast, bindings)
+            Map.put(acc, key, result)
+
+          %{key: key, value: value}, acc ->
+            Map.put(acc, key, value)
+        end)
+
+      _ ->
+        %{}
+    end
+  end
+
+  # Extract path params from a pattern like "/posts/:id" and actual path segments
+  defp extract_path_params(pattern, path_info) do
+    pattern_segments = String.split(String.trim_leading(pattern, "/"), "/", trim: true)
+
+    Enum.zip(pattern_segments, path_info)
+    |> Enum.reduce(%{}, fn
+      {":" <> param, value}, acc -> Map.put(acc, param, value)
+      {"*" <> param, value}, acc -> Map.put(acc, param, value)
+      _, acc -> acc
+    end)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Request time — render from IR (no code eval)
+  # ---------------------------------------------------------------------------
+
+  def render_page(site, page_id, assigns \\ %{}) when is_atom(site) do
+    case :ets.lookup(@table, {site, page_id, :ir}) do
+      [{_, serialized_ir}] ->
+        ir = :erlang.binary_to_term(serialized_ir)
+        stored_assigns = fetch_assigns(site, page_id)
+        full_assigns = Map.merge(stored_assigns, assigns) |> Map.put_new(:__changed__, %{})
+        {:ok, render_ir(ir, full_assigns)}
+
+      [] ->
+        {:error, :not_found}
+    end
+  end
+
+  def render_to_string(site, page_id, assigns \\ %{}) do
+    case render_page(site, page_id, assigns) do
+      {:ok, rendered} ->
+        {:ok, rendered |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()}
+
+      error ->
+        error
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Event handler dispatch (AST interpreter — no Code.eval)
+  # ---------------------------------------------------------------------------
+
+  def handle_event(site, page_id, event_name, event_params, socket) do
+    case :ets.lookup(@table, {site, page_id, :handler, event_name}) do
+      [{_, serialized_ast}] ->
+        ast = :erlang.binary_to_term(serialized_ast)
+        bindings = %{socket: socket, event_params: event_params}
+        eval_ast(ast, bindings)
+
+      [] ->
+        {:error, {:no_handler, event_name}}
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # State retrieval
+  # ---------------------------------------------------------------------------
+
+  def fetch_assigns(site, page_id) do
+    case :ets.lookup(@table, {site, page_id, :assigns}) do
+      [{_, assigns}] -> assigns
+      [] -> %{}
+    end
+  end
+
+  def list_handlers(site, page_id) do
+    case :ets.lookup(@table, {site, page_id, :handler_index}) do
+      [{_, names}] -> names
+      [] -> []
+    end
+  end
+
+  @doc """
+  Stores a site-level handler (event or info) in ETS.
+  These are global to the site, not scoped to a specific page.
+  Any page on the site can dispatch them.
+  """
+  def store_site_handler(site, type, name, code) when type in [:event, :info] do
+    handler_ast = Code.string_to_quoted!(code)
+    :ets.insert(@table, {{site, :site_handler, type, name}, :erlang.term_to_binary(handler_ast)})
+
+    # Maintain an index
+    index_key = {site, :site_handler_index, type}
+
+    existing =
+      case :ets.lookup(@table, index_key) do
+        [{_, names}] -> names
+        [] -> []
+      end
+
+    unless name in existing do
+      :ets.insert(@table, {index_key, [name | existing]})
+    end
+
+    :ok
+  end
+
+  @doc """
+  Dispatches a site-level event handler. Falls back to page-level if not found at site level.
+  """
+  def handle_site_event(site, event_name, event_params, socket) do
+    case :ets.lookup(@table, {site, :site_handler, :event, event_name}) do
+      [{_, serialized_ast}] ->
+        ast = :erlang.binary_to_term(serialized_ast)
+        bindings = %{socket: socket, event_params: event_params}
+        eval_ast(ast, bindings)
+
+      [] ->
+        # Lazy load event handlers for this site
+        ensure_site_handlers_loaded(site, :event)
+
+        case :ets.lookup(@table, {site, :site_handler, :event, event_name}) do
+          [{_, serialized_ast}] ->
+            ast = :erlang.binary_to_term(serialized_ast)
+            bindings = %{socket: socket, event_params: event_params}
+            eval_ast(ast, bindings)
+
+          [] ->
+            {:error, {:no_handler, event_name}}
+        end
+    end
+  end
+
+  def handle_site_info(site, msg, socket) do
+    # Try all info handlers for the site
+    case :ets.match(@table, {{site, :site_handler, :info, :"$1"}, :"$2"}) do
+      [] ->
+        # Lazy load info handlers then retry once
+        ensure_site_handlers_loaded(site, :info)
+
+        case :ets.match(@table, {{site, :site_handler, :info, :"$1"}, :"$2"}) do
+          [] -> {:error, {:no_handler, msg}}
+          handlers -> dispatch_info_handlers(handlers, msg, socket)
+        end
+
+      handlers ->
+        dispatch_info_handlers(handlers, msg, socket)
+    end
+  end
+
+  defp dispatch_info_handlers(handlers, msg, socket) do
+    Enum.find_value(handlers, {:error, {:no_handler, msg}}, fn [_name, serialized_ast] ->
+      ast = :erlang.binary_to_term(serialized_ast)
+      bindings = %{socket: socket, msg: msg}
+
+      try do
+        eval_ast(ast, bindings)
+      rescue
+        _ -> nil
+      end
+    end)
+  end
+
+  defp ensure_site_handlers_loaded(site, type) do
+    Beacon.Cache.fetch(@table, {site, :handlers_load, type}, fn ->
+      handlers =
+        case type do
+          :event -> Beacon.Content.list_event_handlers(site)
+          :info -> Beacon.Content.list_info_handlers(site)
+        end
+
+      for handler <- handlers do
+        name = if type == :event, do: handler.name, else: handler.msg
+        store_site_handler(site, type, name, handler.code)
+      end
+
+      :loaded
+    end)
+  end
+
+  def unpublish_page(site, page_id) do
+    # Remove route mapping
+    case fetch_manifest(site, page_id) do
+      {:ok, manifest} -> :ets.delete(@table, {site, :route, manifest.path})
+      _ -> :ok
+    end
+
+    :ets.delete(@table, {site, page_id, :ir})
+    :ets.delete(@table, {site, page_id, :manifest})
+    :ets.delete(@table, {site, page_id, :assigns})
+    :ets.delete(@table, {site, page_id, :live_data})
+
+    for name <- list_handlers(site, page_id) do
+      :ets.delete(@table, {site, page_id, :handler, name})
+    end
+
+    :ets.delete(@table, {site, page_id, :handler_index})
+    :ok
+  end
+
+  # ===========================================================================
+  # IR Extraction — transforms HEEx AST into serializable data
+  # ===========================================================================
+
+  # Local calls that the IR evaluator handles directly — don't resolve via imports
+  @beacon_local_calls ~w(my_component render_slot dynamic_helper beacon_asset_path beacon_asset_url sigil_p to_string __aliases__)a
+
+  @doc false
+  def extract_ir(ast, env \\ nil) do
+    # Only the top-level call manages the process dictionary.
+    # Nested calls (e.g. from inner_block extraction) must not clear it.
+    is_owner = env != nil
+
+    if is_owner do
+      import_map = build_import_map(env)
+      Process.put(:beacon_ir_imports, import_map)
+    end
+
+    try do
+      {static, fingerprint, root, dynamics_ast} = extract_rendered_parts(ast)
+      dynamics = extract_dynamics(dynamics_ast)
+      %{static: static, dynamics: dynamics, fingerprint: fingerprint, root: root}
+    after
+      if is_owner, do: Process.delete(:beacon_ir_imports)
+    end
+  end
+
+  defp build_import_map(%Macro.Env{functions: functions}) do
+    Enum.flat_map(functions, fn {module, funs} ->
+      Enum.map(funs, fn {fun, arity} -> {{fun, arity}, module} end)
+    end)
+    |> Map.new()
+  end
+
+  defp build_import_map(_), do: %{}
+
+  # Walk the AST tree to find the dynamic fn and Rendered struct construction.
+  # The HEEx AST nesting varies by Phoenix/Elixir version and template complexity.
+  defp extract_rendered_parts(ast) do
+    fn_ast = find_dynamic_fn(ast)
+    {static, fingerprint, root} = find_rendered_fields(ast)
+    {static, fingerprint, root, fn_ast}
+  end
+
+  # Recursively search for {:=, [], [{:dynamic, ...}, fn_def]}
+  defp find_dynamic_fn({:=, [], [{:dynamic, [], _}, fn_ast]}), do: fn_ast
+
+  defp find_dynamic_fn({:__block__, [], children}) when is_list(children) do
+    Enum.find_value(children, fn child -> find_dynamic_fn(child) end)
+  end
+
+  defp find_dynamic_fn(_), do: nil
+
+  # Recursively search for %Phoenix.LiveView.Rendered{...} struct construction
+  defp find_rendered_fields({:%, [], [_aliases, {:%{}, [], fields}]}) do
+    static = Keyword.fetch!(fields, :static)
+    fingerprint = Keyword.fetch!(fields, :fingerprint)
+    root = Keyword.get(fields, :root, false)
+    {static, fingerprint, root}
+  end
+
+  defp find_rendered_fields({:__block__, [], children}) when is_list(children) do
+    Enum.find_value(children, fn child -> find_rendered_fields(child) end)
+  end
+
+  defp find_rendered_fields(_), do: nil
+
+  # Extract individual dynamic expressions from the fn body.
+  # The fn body structure:
+  #   fn track_changes? ->
+  #     changed = case assigns ...   (change tracking setup)
+  #     __block__                    (variable assignments)
+  #       v0 = case ...
+  #       v1 = case ...
+  #     [v0, v1, ...]               (return list)
+  #   end
+  defp extract_dynamics({:fn, [], [{:->, [], [[_track_changes], body]}]}) do
+    {:__block__, [], [_changed_setup | rest]} = body
+
+    {all_assigns, return_vars} =
+      case rest do
+        # No dynamic expressions (static template): empty block + empty list
+        [{:__block__, [], []}, []] -> {[], []}
+        # Multiple dynamic expressions: __block__ wrapping assignments + return list
+        [{:__block__, [], assigns}, return_list] when is_list(assigns) -> {assigns, return_list}
+        # Single dynamic expression: one assignment + return list
+        [{:=, _, _} = single_assign, return_list] -> {[single_assign], return_list}
+        # Fallback
+        _ -> {[], []}
+      end
+
+    # Identify which variable names appear in the return list (these are the output dynamics)
+    output_var_names = MapSet.new(Enum.map(return_vars, fn {name, _, _} -> name end))
+
+    # Separate local bindings from output dynamics
+    {local_bindings, output_assigns} =
+      Enum.split_with(all_assigns, fn
+        {:=, _, [{name, _, ctx}, _]} when is_atom(name) and is_atom(ctx) ->
+          # User-defined variable (context is nil for user vars, Engine for generated)
+          ctx != Phoenix.LiveView.Engine and not MapSet.member?(output_var_names, name)
+
+        _ ->
+          false
+      end)
+
+    # Convert local bindings to IR bind nodes
+    binding_irs =
+      Enum.map(local_bindings, fn {:=, _, [{name, _, _}, value_ast]} ->
+        %{deps: [], expr: {:bind, name, transform_expr(value_ast)}}
+      end)
+
+    # Extract output dynamics normally
+    output_irs = Enum.map(output_assigns, &extract_one_dynamic/1)
+
+    binding_irs ++ output_irs
+  end
+
+  defp extract_one_dynamic({:=, _meta, [{_var, _, _}, case_expr]}) do
+    extract_case_expr(case_expr)
+  end
+
+  # Standard pattern: case Engine.changed_assign?(changed, :key) do true -> expr; false -> nil end
+  defp extract_case_expr({:case, _meta, [changed_check, [do: clauses]]}) do
+    deps = extract_deps(changed_check)
+    expr = extract_true_branch(clauses)
+    %{deps: deps, expr: transform_expr(expr)}
+  end
+
+  # Comprehensions don't use the simple changed_assign? pattern — handle them
+  defp extract_case_expr(other) do
+    %{deps: [], expr: transform_expr(other)}
+  end
+
+  defp extract_deps({{:., [], [Phoenix.LiveView.Engine, :changed_assign?]}, [], [_changed, key]}) do
+    [key]
+  end
+
+  defp extract_deps(_), do: []
+
+  # Standard assign pattern: true -> expr; false -> nil
+  defp extract_true_branch([{:->, _, [[true], expr]} | _]), do: expr
+  # Component pattern: %{} -> nil; _ -> expr (empty map = no change, wildcard = evaluate)
+  defp extract_true_branch([{:->, _, [[{:%{}, _, []}], nil]}, {:->, _, [[{:_, _, _}], expr]}]), do: expr
+  defp extract_true_branch(_), do: {:literal, nil}
+
+  # ===========================================================================
+  # Expression transformation — HEEx AST nodes → IR expression descriptors
+  # ===========================================================================
+
+  # live_to_iodata(expr) — unwrap and transform inner expression
+  defp transform_expr({{:., _, [Phoenix.LiveView.Engine, :live_to_iodata]}, _, [inner]}) do
+    {:iodata, transform_expr(inner)}
+  end
+
+  # assigns.key
+  defp transform_expr({{:., _, [{:assigns, [], _}, key]}, _, []}) when is_atom(key) do
+    {:assign, key}
+  end
+
+  # Nested dot access: expr.key
+  defp transform_expr({{:., _, [inner, key]}, _, []}) when is_atom(key) do
+    {:dot, transform_expr(inner), key}
+  end
+
+  # Unary operators
+  defp transform_expr({:!, _, [expr]}), do: {:op, :!, [transform_expr(expr)]}
+  defp transform_expr({:not, _, [expr]}), do: {:op, :not, [transform_expr(expr)]}
+
+  # if/else — branches may contain nested %Rendered{} structs
+  defp transform_expr({:if, _, [cond_expr, [do: then_expr, else: else_expr]]}) do
+    then_ir = transform_branch(then_expr)
+    else_ir = transform_branch(else_expr)
+    {:if, transform_expr(cond_expr), then_ir, else_ir}
+  end
+
+  defp transform_expr({:if, _, [cond_expr, [do: then_expr]]}) do
+    {:if, transform_expr(cond_expr), transform_branch(then_expr), {:literal, nil}}
+  end
+
+  # String interpolation: {:<<>>, _, parts}
+  defp transform_expr({:<<>>, _, parts}) do
+    {:interpolation, Enum.map(parts, &transform_interpolation_part/1)}
+  end
+
+  # Tuple construction: {a, b}
+  defp transform_expr({:{}, _, elements}) do
+    {:tuple, Enum.map(elements, &transform_expr/1)}
+  end
+
+  # Two-element tuple (special AST form)
+  # {:safe, string} — pre-escaped HTML attribute name (e.g., "phx-click", "src")
+  defp transform_expr({:safe, value}) when is_binary(value) do
+    {:safe_literal, value}
+  end
+
+  # {:safe, ast} — runtime encoding call wrapped in safe marker
+  # (e.g., class_attribute_encode, binary_encode)
+  defp transform_expr({:safe, expr}) do
+    {:safe_expr, transform_expr(expr)}
+  end
+
+  # Atom-keyed tuple — component attribute (e.g., {:class, "foo"}, {:post, expr})
+  defp transform_expr({key, value}) when is_atom(key) do
+    {:tuple, [{:literal, key}, transform_expr(value)]}
+  end
+
+  defp transform_expr({left, right}) when not is_list(right) and not is_atom(left) do
+    {:tuple, [transform_expr(left), transform_expr(right)]}
+  end
+
+  # Map access: map[key]
+  defp transform_expr({{:., _, [Access, :get]}, _, [map_expr, key_expr]}) do
+    {:access, transform_expr(map_expr), transform_expr(key_expr)}
+  end
+
+  # Variable reference (for comprehension bodies)
+  defp transform_expr({name, _, nil}) when is_atom(name) do
+    {:var, name}
+  end
+
+  defp transform_expr({name, _, ctx}) when is_atom(name) and is_atom(ctx) do
+    {:var, name}
+  end
+
+  # Comprehension block — produces %Comprehension{} struct
+  defp transform_expr({:__block__, _meta, block_parts}) when is_list(block_parts) do
+    # Look for Comprehension.__annotate__ call
+    case find_comprehension(block_parts) do
+      {:ok, comp_ir} -> comp_ir
+      :not_found -> {:block, Enum.map(block_parts, &transform_expr/1)}
+    end
+  end
+
+  # Phoenix.LiveView.TagEngine.component(&fun/1, assigns, caller) — function component calls
+  # Extract the function reference and assigns, store as {:component_call, ...}
+  defp transform_expr({{:., _, [{:__aliases__, _, [:Phoenix, :LiveView, :TagEngine]}, :component]}, _meta, args}) do
+    case args do
+      [fun_capture, assigns_map, _caller] ->
+        fun_ir = extract_component_fun(fun_capture)
+        assigns_ir = extract_component_assigns(assigns_map)
+        {:component_call, fun_ir, assigns_ir}
+
+      _ ->
+        {:literal, ""}
+    end
+  end
+
+  # Phoenix.LiveView.Engine.to_component_static — used in component change tracking
+  defp transform_expr({{:., _, [Phoenix.LiveView.Engine, :to_component_static]}, _, _args}) do
+    {:literal, %{}}
+  end
+
+  # Phoenix.LiveView.TagEngine.inner_block — slot content for components
+  defp transform_expr({{:., _, [{:__aliases__, _, [:Phoenix, :LiveView, :TagEngine]}, :inner_block]}, _, inner_args}) do
+    # inner_block(:inner_block, [do: [{->, [_], body}]])
+    case inner_args do
+      [:inner_block, [do: [{:->, _meta, [slot_args, body]}]]] ->
+        # Capture the :let variable name (e.g., :let={f} → :f)
+        let_var =
+          case slot_args do
+            [{name, _, _}] when is_atom(name) and name != :_ -> name
+            _ -> nil
+          end
+
+        {:inner_block_ir, extract_ir(body), let_var}
+
+      _ ->
+        {:literal, ""}
+    end
+  end
+
+  # Phoenix.LiveView.Comprehension.__annotate__(struct, enum)
+  defp transform_expr({{:., [], [{:__aliases__, _, [:Phoenix, :LiveView, :Comprehension]}, :__annotate__]}, [], [comp_struct, _enum]}) do
+    transform_comprehension(comp_struct, nil)
+  end
+
+  # Phoenix.LiveView.Comprehension.__mark_consumable__(enum)
+  defp transform_expr({{:., [], [{:__aliases__, _, [:Phoenix, :LiveView, :Comprehension]}, :__mark_consumable__]}, [], [enum_expr]}) do
+    transform_expr(enum_expr)
+  end
+
+  # List literal
+  defp transform_expr(list) when is_list(list) do
+    {:list, Enum.map(list, &transform_expr/1)}
+  end
+
+  # Literal values
+  defp transform_expr(value) when is_binary(value), do: {:literal, value}
+  defp transform_expr(value) when is_integer(value), do: {:literal, value}
+  defp transform_expr(value) when is_float(value), do: {:literal, value}
+  defp transform_expr(value) when is_boolean(value), do: {:literal, value}
+  defp transform_expr(nil), do: {:literal, nil}
+  defp transform_expr(value) when is_atom(value), do: {:literal, value}
+
+  # Map literal with keyword-style atoms: {:%{}, [], [key: value, ...]}
+  defp transform_expr({:%{}, _, pairs}) when is_list(pairs) do
+    {:map_literal,
+     Enum.map(pairs, fn
+       {key, value} when is_atom(key) -> {key, transform_expr(value)}
+       {key, value} -> {transform_expr(key), transform_expr(value)}
+     end)}
+  end
+
+  # Function capture: &fun/arity
+  defp transform_expr({:&, _, _}), do: {:literal, nil}
+
+  # Catch-all for assignment expressions (e.g. {:=, [], [pattern, value]})
+  defp transform_expr({:=, _, [_pattern, value]}) do
+    transform_expr(value)
+  end
+
+  # Catch-all for case (used inside comprehension change tracking)
+  defp transform_expr({:case, _, [_check, [do: clauses]]}) do
+    # Take the true branch if available
+    case clauses do
+      [{:->, [], [[true], expr]} | _] -> transform_expr(expr)
+      [{:->, [], [_, expr]} | _] -> transform_expr(expr)
+      _ -> {:literal, nil}
+    end
+  end
+
+  # for comprehension expression
+  defp transform_expr({:for, _, [{:<-, _, [binding, enum_expr]} | opts]}) do
+    var_name = extract_var_name(binding)
+    body = Keyword.get(opts, :do, nil)
+    {:for_expr, var_name, transform_expr(enum_expr), transform_expr(body)}
+  end
+
+  # Function call on module: Module.fun(args)
+  defp transform_expr({{:., _, [module, fun]}, _, args}) when is_atom(module) and is_atom(fun) do
+    {:call, module, fun, Enum.map(args, &transform_expr/1)}
+  end
+
+  # Binary operators — MUST come before the local_call catch-all below,
+  # otherwise {:<>, meta, [l, r]} matches {fun, _, args} first and becomes
+  # {:local_call, :<>, ...} which crashes with apply(Kernel, :<>, ...) since
+  # <>, &&, || are Kernel macros, not runtime functions.
+  @binary_ops [:+, :-, :*, :/, :==, :!=, :<, :>, :<=, :>=, :&&, :||, :<>, :rem]
+  defp transform_expr({op, _, [left, right]}) when op in @binary_ops do
+    {:op, op, [transform_expr(left), transform_expr(right)]}
+  end
+
+  # Local calls: resolve imported functions to module-qualified calls,
+  # except for Beacon-specific local calls handled by dedicated eval_ir clauses.
+  defp transform_expr({fun, _, args}) when is_atom(fun) and is_list(args) do
+    transformed_args = Enum.map(args, &transform_expr/1)
+
+    if fun in @beacon_local_calls do
+      {:local_call, fun, transformed_args}
+    else
+      import_map = Process.get(:beacon_ir_imports, %{})
+
+      case Map.get(import_map, {fun, length(args)}) do
+        nil -> {:local_call, fun, transformed_args}
+        module -> {:call, module, fun, transformed_args}
+      end
+    end
+  end
+
+  # Module-qualified calls via __aliases__ (e.g., Foo.Bar.baz(args))
+  defp transform_expr({{:., _, [{:__aliases__, _, mod_parts}, fun]}, _, args}) when is_atom(fun) and is_list(args) do
+    module = Module.concat(mod_parts)
+    {:call, module, fun, Enum.map(args, &transform_expr/1)}
+  end
+
+  # Catch-all: log the unhandled AST for debugging, return empty literal
+  defp transform_expr(other) do
+    require Logger
+    Logger.warning("[RuntimeRenderer] Unhandled transform_expr AST: #{inspect(other, limit: 200)}")
+    {:literal, ""}
+  end
+
+  # Check if a branch contains a nested %Rendered{} struct (common in if/else/case)
+  defp transform_branch({:__block__, [], parts}) do
+    case find_rendered_fields_in_list(parts) do
+      nil ->
+        {:block, Enum.map(parts, &transform_expr/1)}
+
+      {static, fingerprint, root} ->
+        fn_ast =
+          Enum.find_value(parts, fn
+            {:=, [], [{:dynamic, [], _}, fn_def]} -> fn_def
+            _ -> nil
+          end)
+
+        dynamics = if fn_ast, do: extract_dynamics(fn_ast), else: []
+        {:nested_rendered, %{static: static, dynamics: dynamics, fingerprint: fingerprint, root: root}}
+    end
+  end
+
+  defp transform_branch(expr), do: transform_expr(expr)
+
+  defp find_rendered_fields_in_list(parts) when is_list(parts) do
+    Enum.find_value(parts, fn
+      {:%, [], [_aliases, {:%{}, [], fields}]} ->
+        if Keyword.has_key?(fields, :static) and Keyword.has_key?(fields, :fingerprint) do
+          static = Keyword.fetch!(fields, :static)
+          fingerprint = Keyword.fetch!(fields, :fingerprint)
+          root = Keyword.get(fields, :root, false)
+          {static, fingerprint, root}
+        end
+
+      _ ->
+        nil
+    end)
+  end
+
+  # Extract function capture from component call: &link/1 → {Phoenix.Component, :link}
+  defp extract_component_fun({:&, _, [{:/, _, [{fun_name, _, _ctx}, _arity]}]}) when is_atom(fun_name) do
+    {:component_fun, Phoenix.Component, fun_name}
+  end
+
+  defp extract_component_fun({:&, _, [{:/, _, [{{:., _, [{:__aliases__, _, mod_parts}, fun_name]}, _, _}, _arity]}]}) do
+    {:component_fun, Module.concat(mod_parts), fun_name}
+  end
+
+  defp extract_component_fun(_), do: {:component_fun, nil, nil}
+
+  # Extract component assigns map, transforming inner_block slots
+  defp extract_component_assigns({:%{}, _, pairs}) do
+    transformed =
+      Enum.map(pairs, fn
+        {:__changed__, _} ->
+          {:__changed__, {:literal, %{}}}
+
+        {:inner_block, slots} when is_list(slots) ->
+          slot_irs =
+            Enum.map(slots, fn
+              {:%{}, _, slot_pairs} ->
+                Enum.into(slot_pairs, %{}, fn
+                  {:__slot__, name} -> {:__slot__, name}
+                  {:inner_block, block_ast} -> {:inner_block, transform_expr(block_ast)}
+                  {k, v} -> {k, transform_expr(v)}
+                end)
+
+              other ->
+                other
+            end)
+
+          {:inner_block, {:literal, slot_irs}}
+
+        {key, value} ->
+          {key, transform_expr(value)}
+      end)
+
+    {:component_assigns, transformed}
+  end
+
+  defp extract_component_assigns(other), do: transform_expr(other)
+
+  defp transform_interpolation_part({:"::", _, [expr, {:binary, _, _}]}) do
+    transform_expr(expr)
+  end
+
+  defp transform_interpolation_part(binary) when is_binary(binary) do
+    {:literal, binary}
+  end
+
+  defp find_comprehension(parts) do
+    # First, find the enum source from __mark_consumable__(assigns.xxx)
+    enum_source =
+      Enum.find_value(parts, nil, fn
+        {:=, [], [{:for, _, _}, {{:., [], [{:__aliases__, _, [:Phoenix, :LiveView, :Comprehension]}, :__mark_consumable__]}, [], [enum_expr]}]} ->
+          transform_expr(enum_expr)
+
+        _ ->
+          nil
+      end)
+
+    Enum.find_value(parts, :not_found, fn
+      {{:., [], [{:__aliases__, _, [:Phoenix, :LiveView, :Comprehension]}, :__annotate__]}, [], [comp, _]} ->
+        {:ok, transform_comprehension(comp, enum_source)}
+
+      _ ->
+        nil
+    end)
+  end
+
+  defp transform_comprehension({:%, [], [_aliases, {:%{}, [], fields}]}, enum_source) do
+    static = Keyword.fetch!(fields, :static)
+    fingerprint = Keyword.fetch!(fields, :fingerprint)
+    dynamics_expr = Keyword.fetch!(fields, :dynamics)
+
+    # The dynamics is a `for` comprehension. Extract var name and body,
+    # but replace the enum with the actual source (from __mark_consumable__).
+    dynamics_ir = transform_for_dynamics(dynamics_expr, enum_source)
+
+    {:comprehension, %{static: static, fingerprint: fingerprint, dynamics: dynamics_ir}}
+  end
+
+  defp transform_for_dynamics({:for, _, [{:<-, _, [binding, _for_var]}, [do: body]]}, enum_source) do
+    var_name = extract_var_name(binding)
+    {:for_expr, var_name, enum_source || {:literal, []}, transform_for_body(body)}
+  end
+
+  defp transform_for_dynamics(other, _enum_source), do: transform_expr(other)
+
+  # The for body is typically: __block__ [v0 = live_to_iodata(item), [v0]]
+  # We need to extract the actual expressions and return them as a list.
+  # Some for bodies also contain local variable assignments from <% var = expr %>.
+  defp transform_for_body({:__block__, [], parts}) do
+    # The last element is the return list of variable refs (e.g., [v0, v1])
+    return_list = List.last(parts)
+
+    output_var_names =
+      case return_list do
+        vars when is_list(vars) ->
+          MapSet.new(Enum.map(vars, fn {name, _, _} -> name end))
+
+        _ ->
+          MapSet.new()
+      end
+
+    # All assignments in the block
+    all_assigns =
+      Enum.filter(parts, fn
+        {:=, [], [{_var, [], _}, _expr]} -> true
+        _ -> false
+      end)
+
+    # Separate local bindings from output assignments
+    {local_bindings, output_assigns} =
+      Enum.split_with(all_assigns, fn {:=, [], [{name, [], ctx}, _expr]} ->
+        ctx != Phoenix.LiveView.Engine and not MapSet.member?(output_var_names, name)
+      end)
+
+    # Build IR: local bindings as {:bind, ...}, then output expressions as a list
+    binding_irs =
+      Enum.map(local_bindings, fn {:=, [], [{name, _, _}, value_ast]} ->
+        {:bind, name, transform_expr(value_ast)}
+      end)
+
+    output_irs = Enum.map(output_assigns, fn {:=, [], [_var, expr]} -> transform_expr(expr) end)
+
+    case binding_irs do
+      [] -> {:list, output_irs}
+      _ -> {:for_body_with_bindings, binding_irs, {:list, output_irs}}
+    end
+  end
+
+  defp transform_for_body(other), do: transform_expr(other)
+
+  defp extract_var_name({name, _, _}) when is_atom(name), do: name
+  defp extract_var_name(name) when is_atom(name), do: name
+
+  # 2-element tuple destructuring: {a, b}
+  defp extract_var_name({a, b}) when is_tuple(a) and is_tuple(b) do
+    {:destructure, :tuple, [extract_var_name(a), extract_var_name(b)]}
+  end
+
+  # N-element tuple destructuring: {a, b, c, ...}
+  defp extract_var_name({:{}, _, elements}) when is_list(elements) do
+    {:destructure, :tuple, Enum.map(elements, &extract_var_name/1)}
+  end
+
+  # Fallback
+  defp extract_var_name(_), do: :_item
+
+  # Coerce nil dynamic results to empty string to prevent LiveView diff errors
+  defp safe_dynamic(nil), do: ""
+  defp safe_dynamic({:safe, data}), do: data
+  defp safe_dynamic(value), do: value
+
+  # Safely convert a value to a map for component assigns
+  defp safe_to_map(%{} = map), do: map
+
+  defp safe_to_map(list) when is_list(list) do
+    if Enum.all?(list, &is_tuple/1) and Enum.all?(list, fn t -> tuple_size(t) == 2 end) do
+      Map.new(list)
+    else
+      %{}
+    end
+  end
+
+  defp safe_to_map(_), do: %{}
+
+  # Bind a for-loop variable, handling destructuring patterns
+  defp destructure_binding(bindings, {:destructure, :tuple, names}, item) when is_tuple(item) do
+    values = Tuple.to_list(item)
+
+    names
+    |> Enum.zip(values)
+    |> Enum.reduce(bindings, fn {name, value}, acc ->
+      Map.put(acc, name, value)
+    end)
+  end
+
+  defp destructure_binding(bindings, name, item) when is_atom(name) do
+    Map.put(bindings, name, item)
+  end
+
+  # ===========================================================================
+  # IR Renderer — constructs %Rendered{} from IR + assigns (no code eval)
+  # ===========================================================================
+
+  def render_ir(ir, assigns) do
+    %Phoenix.LiveView.Rendered{
+      static: ir.static,
+      dynamic: &evaluate_dynamics(ir.dynamics, assigns, &1),
+      fingerprint: ir.fingerprint,
+      root: Map.get(ir, :root, false),
+      caller: :not_available
+    }
+  end
+
+  defp evaluate_dynamics(dynamics, assigns, track_changes?) do
+    changed = if track_changes?, do: Map.get(assigns, :__changed__), else: nil
+
+    {results, _bindings} =
+      Enum.reduce(dynamics, {[], %{}}, fn %{deps: deps, expr: expr}, {acc, bindings} ->
+        case expr do
+          {:bind, name, value_expr} ->
+            value = eval_ir(value_expr, assigns, bindings)
+            {acc, Map.put(bindings, name, value)}
+
+          _ ->
+            if changed != nil and deps != [] and not Enum.any?(deps, &Map.has_key?(changed, &1)) do
+              {[nil | acc], bindings}
+            else
+              result = eval_ir(expr, assigns, bindings)
+              {[safe_dynamic(result) | acc], bindings}
+            end
+        end
+      end)
+
+    Enum.reverse(results)
+  end
+
+  # Evaluate an IR expression with assigns and local bindings (for comprehension vars)
+  defp eval_ir({:iodata, inner}, assigns, bindings) do
+    case eval_ir(inner, assigns, bindings) do
+      nil -> ""
+      value -> Phoenix.LiveView.Engine.live_to_iodata(value)
+    end
+  end
+
+  defp eval_ir({:assign, key}, assigns, _bindings), do: Map.get(assigns, key)
+
+  # {:safe, ...} — pre-escaped HTML content, reconstruct the tuple for Phoenix.HTML
+  defp eval_ir({:safe_literal, value}, _assigns, _bindings), do: {:safe, value}
+  defp eval_ir({:safe_expr, expr}, assigns, bindings), do: {:safe, eval_ir(expr, assigns, bindings)}
+
+  defp eval_ir({:dot, inner, key}, assigns, bindings) do
+    value = eval_ir(inner, assigns, bindings)
+
+    cond do
+      is_nil(value) ->
+        nil
+
+      is_atom(value) ->
+        Code.ensure_loaded(value)
+
+        if function_exported?(value, key, 0) do
+          apply(value, key, [])
+        else
+          nil
+        end
+
+      is_map(value) ->
+        Map.get(value, key)
+
+      true ->
+        nil
+    end
+  end
+
+  defp eval_ir({:literal, value}, _assigns, _bindings), do: value
+
+  # The bare `assigns` variable in HEEx refers to the entire assigns map
+  defp eval_ir({:var, :assigns}, assigns, _bindings), do: assigns
+
+  defp eval_ir({:var, name}, assigns, bindings) do
+    Map.get(bindings, name, Map.get(assigns, name))
+  end
+
+  defp eval_ir({:op, :+, [l, r]}, a, b), do: eval_ir(l, a, b) + eval_ir(r, a, b)
+  defp eval_ir({:op, :-, [l, r]}, a, b), do: eval_ir(l, a, b) - eval_ir(r, a, b)
+  defp eval_ir({:op, :*, [l, r]}, a, b), do: eval_ir(l, a, b) * eval_ir(r, a, b)
+  defp eval_ir({:op, :/, [l, r]}, a, b), do: eval_ir(l, a, b) / eval_ir(r, a, b)
+  defp eval_ir({:op, :==, [l, r]}, a, b), do: eval_ir(l, a, b) == eval_ir(r, a, b)
+  defp eval_ir({:op, :!=, [l, r]}, a, b), do: eval_ir(l, a, b) != eval_ir(r, a, b)
+  defp eval_ir({:op, :<, [l, r]}, a, b), do: eval_ir(l, a, b) < eval_ir(r, a, b)
+  defp eval_ir({:op, :>, [l, r]}, a, b), do: eval_ir(l, a, b) > eval_ir(r, a, b)
+  defp eval_ir({:op, :<=, [l, r]}, a, b), do: eval_ir(l, a, b) <= eval_ir(r, a, b)
+  defp eval_ir({:op, :>=, [l, r]}, a, b), do: eval_ir(l, a, b) >= eval_ir(r, a, b)
+  defp eval_ir({:op, :&&, [l, r]}, a, b), do: eval_ir(l, a, b) && eval_ir(r, a, b)
+  defp eval_ir({:op, :||, [l, r]}, a, b), do: eval_ir(l, a, b) || eval_ir(r, a, b)
+  defp eval_ir({:op, :<>, [l, r]}, a, b), do: (eval_ir(l, a, b) || "") <> (eval_ir(r, a, b) || "")
+  defp eval_ir({:op, :rem, [l, r]}, a, b), do: rem(eval_ir(l, a, b), eval_ir(r, a, b))
+  defp eval_ir({:op, :!, [expr]}, a, b), do: !eval_ir(expr, a, b)
+  defp eval_ir({:op, :not, [expr]}, a, b), do: not eval_ir(expr, a, b)
+
+  defp eval_ir({:if, cond_ir, then_ir, else_ir}, a, b) do
+    if eval_ir(cond_ir, a, b), do: eval_ir(then_ir, a, b), else: eval_ir(else_ir, a, b)
+  end
+
+  # Nested Rendered struct (produced by if/else branches in HEEx)
+  defp eval_ir({:nested_rendered, ir}, assigns, _bindings) do
+    render_ir(ir, assigns)
+  end
+
+  # Phoenix function component call — call the actual component function
+  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns, pairs}}, a, b) when is_atom(mod) and is_atom(fun) do
+    component_assigns =
+      Enum.reduce(pairs, %{}, fn
+        {:__changed__, _}, acc ->
+          Map.put(acc, :__changed__, %{})
+
+        {:inner_block, {:literal, slot_irs}}, acc ->
+          rendered_slots =
+            Enum.map(slot_irs, fn
+              %{__slot__: name, inner_block: block_ir} ->
+                # Phoenix render_slot calls: entry.inner_block.(changed, argument)
+                # First param is change tracking, second is the slot argument (e.g. form struct)
+                inner_fn = fn _changed, slot_arg ->
+                  case block_ir do
+                    {:inner_block_ir, ir, let_var} when is_atom(let_var) and not is_nil(let_var) ->
+                      inner_assigns =
+                        Map.merge(a, b)
+                        |> Map.put(let_var, slot_arg)
+                        |> Map.delete(:__changed__)
+
+                      render_ir(ir, inner_assigns)
+
+                    {:inner_block_ir, ir, _} ->
+                      render_ir(ir, Map.merge(a, b))
+
+                    {:inner_block_ir, ir} ->
+                      render_ir(ir, Map.merge(a, b))
+
+                    _ ->
+                      ""
+                  end
+                end
+
+                %{__slot__: name, inner_block: inner_fn}
+
+              slot ->
+                slot
+            end)
+
+          Map.put(acc, :inner_block, rendered_slots)
+
+        {key, value_ir}, acc ->
+          Map.put(acc, key, eval_ir(value_ir, a, b))
+      end)
+      |> Map.put_new(:__changed__, %{})
+
+    apply(mod, fun, [component_assigns])
+  end
+
+  defp eval_ir({:component_call, _, _}, _a, _b), do: ""
+
+  # For body with local bindings — evaluate bindings first, then output
+  defp eval_ir({:for_body_with_bindings, bind_irs, body_ir}, a, b) do
+    bindings =
+      Enum.reduce(bind_irs, b, fn {:bind, name, value_expr}, acc ->
+        Map.put(acc, name, eval_ir(value_expr, a, acc))
+      end)
+
+    eval_ir(body_ir, a, bindings)
+  end
+
+  defp eval_ir({:interpolation, parts}, a, b) do
+    parts |> Enum.map(&eval_interpolation_part(&1, a, b)) |> IO.iodata_to_binary()
+  end
+
+  defp eval_ir({:tuple, elements}, a, b) do
+    List.to_tuple(Enum.map(elements, &eval_ir(&1, a, b)))
+  end
+
+  defp eval_ir({:list, elements}, a, b) do
+    Enum.map(elements, &eval_ir(&1, a, b))
+  end
+
+  defp eval_ir({:map_literal, pairs}, a, b) do
+    Map.new(pairs, fn
+      {key, value_ir} when is_atom(key) -> {key, eval_ir(value_ir, a, b)}
+      {key_ir, value_ir} -> {eval_ir(key_ir, a, b), eval_ir(value_ir, a, b)}
+    end)
+  end
+
+  defp eval_ir({:access, map_ir, key_ir}, a, b) do
+    Access.get(eval_ir(map_ir, a, b), eval_ir(key_ir, a, b))
+  end
+
+  defp eval_ir({:block, parts}, a, b) do
+    Enum.reduce(parts, nil, fn part, _acc -> eval_ir(part, a, b) end)
+  end
+
+  # Comprehension: produces %Phoenix.LiveView.Comprehension{}
+  defp eval_ir({:comprehension, %{static: static, fingerprint: fp, dynamics: dyn_expr}}, a, b) do
+    dynamics = eval_comprehension_dynamics(dyn_expr, a, b)
+
+    %Phoenix.LiveView.Comprehension{
+      static: static,
+      dynamics: dynamics,
+      fingerprint: fp,
+      stream: nil
+    }
+  end
+
+  defp eval_ir({:for_expr, var_name, enum_ir, body_ir}, a, b) do
+    enum = eval_ir(enum_ir, a, b)
+
+    if is_nil(enum) or enum == "" do
+      []
+    else
+      Enum.map(enum, fn item ->
+        inner_bindings = destructure_binding(b, var_name, item)
+        eval_ir(body_ir, a, inner_bindings)
+      end)
+    end
+  end
+
+  # Safe function calls (whitelisted modules)
+  @safe_modules [String, Integer, Float, Enum, Map, List, Kernel, Phoenix.HTML, Phoenix.LiveView.HTMLEngine]
+  defp eval_ir({:call, Enum, fun, args}, a, b) do
+    evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
+    # Enum functions expect an enumerable as first arg — treat nil as empty list
+    case evaluated_args do
+      [nil | rest] -> apply(Enum, fun, [[] | rest])
+      _ -> apply(Enum, fun, evaluated_args)
+    end
+  end
+
+  # Kernel.to_string is a macro (not a runtime function), so apply/3 would crash.
+  # Intercept and route through safe_to_string instead.
+  defp eval_ir({:call, Kernel, :to_string, [arg]}, a, b) do
+    safe_to_string(eval_ir(arg, a, b))
+  end
+
+  # String.Chars.to_string is the runtime expansion of the to_string macro
+  defp eval_ir({:call, String.Chars, :to_string, [arg]}, a, b) do
+    safe_to_string(eval_ir(arg, a, b))
+  end
+
+  # Kernel macros that can't be called via apply
+  defp eval_ir({:call, Kernel, :<>, [left, right]}, a, b) do
+    l = eval_ir(left, a, b)
+    r = eval_ir(right, a, b)
+    (l || "") <> (r || "")
+  end
+
+  # Map functions with nil first arg — return safe defaults
+  defp eval_ir({:call, Map, fun, [map_ir | rest]}, a, b) do
+    map = eval_ir(map_ir, a, b)
+
+    if is_nil(map) do
+      case {fun, length(rest)} do
+        {:get, 1} -> nil
+        {:get, 2} -> eval_ir(Enum.at(rest, 1), a, b)
+        {:has_key?, _} -> false
+        {:keys, _} -> []
+        {:values, _} -> []
+        _ -> nil
+      end
+    else
+      evaluated_rest = Enum.map(rest, &eval_ir(&1, a, b))
+      apply(Map, fun, [map | evaluated_rest])
+    end
+  end
+
+  defp eval_ir({:call, mod, fun, args}, a, b) when mod in @safe_modules do
+    evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
+    arity = length(evaluated_args)
+
+    if function_exported?(mod, fun, arity) do
+      apply(mod, fun, evaluated_args)
+    else
+      # Macro or non-existent function — use Kernel macro equivalents
+      eval_kernel_macro(fun, evaluated_args)
+    end
+  end
+
+  # Non-safe module calls — try as Beacon component, then allow arbitrary calls
+  defp eval_ir({:call, mod, fun, args}, a, b) do
+    site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+    component_name = Atom.to_string(fun)
+
+    if site do
+      case :ets.lookup(@table, {site, :component, component_name}) do
+        [{_, _}] ->
+          component_assigns =
+            case args do
+              [assigns_ir] ->
+                raw = eval_ir(assigns_ir, a, b)
+                safe_to_map(raw)
+
+              [] ->
+                %{}
+
+              _ ->
+                %{}
+            end
+
+          render_component(site, component_name, component_assigns)
+
+        [] ->
+          evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
+          apply(mod, fun, evaluated_args)
+      end
+    else
+      evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
+      apply(mod, fun, evaluated_args)
+    end
+  end
+
+  defp eval_ir({:local_call, :to_string, [arg]}, a, b) do
+    safe_to_string(eval_ir(arg, a, b))
+  end
+
+  # Module alias resolution — __aliases__ resolves to a module atom
+  defp eval_ir({:local_call, :__aliases__, args}, _a, _b) do
+    parts =
+      Enum.map(args, fn
+        {:literal, v} -> v
+        v when is_atom(v) -> v
+        _ -> nil
+      end)
+
+    Module.concat(parts)
+  end
+
+  # Beacon component calls — render from ETS
+  defp eval_ir({:local_call, :my_component, args}, a, b) do
+    [name_ir | rest] = args
+    name = eval_ir(name_ir, a, b)
+
+    component_assigns =
+      case rest do
+        [assigns_ir] ->
+          raw = eval_ir(assigns_ir, a, b)
+          safe_to_map(raw)
+
+        [] ->
+          %{}
+      end
+
+    site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+
+    if site do
+      render_component(site, safe_to_string(name), component_assigns)
+    else
+      ""
+    end
+  end
+
+  # render_slot — used by components to render slot content
+  defp eval_ir({:local_call, :render_slot, [slot_ir]}, a, b) do
+    slot = eval_ir(slot_ir, a, b)
+
+    case slot do
+      nil -> ""
+      [] -> ""
+      content when is_binary(content) -> content
+      %Phoenix.LiveView.Rendered{} = rendered -> rendered
+      _ -> ""
+    end
+  end
+
+  # Beacon helper calls — render as empty for now
+  defp eval_ir({:local_call, :dynamic_helper, _args}, _a, _b), do: ""
+
+  # Beacon route helpers — return empty paths for now
+  defp eval_ir({:local_call, :beacon_asset_path, _args}, _a, _b), do: ""
+  defp eval_ir({:local_call, :beacon_asset_url, _args}, _a, _b), do: ""
+
+  # sigil_p (Phoenix.VerifiedRoutes) — return empty for now
+  defp eval_ir({:local_call, :sigil_p, _args}, _a, _b), do: ""
+
+  defp eval_ir({:local_call, fun, args}, a, b) do
+    # Try as a Beacon component first (handles <.header>, <.footer>, etc.)
+    site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+    component_name = Atom.to_string(fun)
+
+    if site do
+      case :ets.lookup(@table, {site, :component, component_name}) do
+        [{_, _}] ->
+          component_assigns =
+            case args do
+              [assigns_ir] ->
+                raw = eval_ir(assigns_ir, a, b)
+                safe_to_map(raw)
+
+              [] ->
+                %{}
+
+              _ ->
+                %{}
+            end
+
+          render_component(site, component_name, component_assigns)
+
+        [] ->
+          apply_kernel_call(fun, args, a, b)
+      end
+    else
+      apply_kernel_call(fun, args, a, b)
+    end
+  end
+
+  # Safely call a Kernel function, handling macros that can't be apply'd
+  defp apply_kernel_call(fun, args, a, b) do
+    evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
+    arity = length(evaluated_args)
+
+    if function_exported?(Kernel, fun, arity) do
+      apply(Kernel, fun, evaluated_args)
+    else
+      # Kernel macro — provide runtime equivalents
+      eval_kernel_macro(fun, evaluated_args)
+    end
+  end
+
+  defp eval_kernel_macro(:is_nil, [val]), do: val == nil
+  defp eval_kernel_macro(:is_atom, [val]), do: is_atom(val)
+  defp eval_kernel_macro(:is_binary, [val]), do: is_binary(val)
+  defp eval_kernel_macro(:is_integer, [val]), do: is_integer(val)
+  defp eval_kernel_macro(:is_float, [val]), do: is_float(val)
+  defp eval_kernel_macro(:is_number, [val]), do: is_number(val)
+  defp eval_kernel_macro(:is_boolean, [val]), do: is_boolean(val)
+  defp eval_kernel_macro(:is_list, [val]), do: is_list(val)
+  defp eval_kernel_macro(:is_map, [val]), do: is_map(val)
+  defp eval_kernel_macro(:is_tuple, [val]), do: is_tuple(val)
+  defp eval_kernel_macro(:to_string, [val]), do: safe_to_string(val)
+  defp eval_kernel_macro(:to_charlist, [val]), do: List.Chars.to_charlist(val)
+  defp eval_kernel_macro(:<>, [l, r]), do: (l || "") <> (r || "")
+  defp eval_kernel_macro(:and, [l, r]), do: l && r
+  defp eval_kernel_macro(:or, [l, r]), do: l || r
+  defp eval_kernel_macro(:in, [elem, list]), do: elem in list
+  defp eval_kernel_macro(:unless, [cond, [do: body]]), do: if(!cond, do: body)
+  defp eval_kernel_macro(:.., [a, b]), do: a..b
+  defp eval_kernel_macro(fun, args) do
+    require Logger
+    Logger.warning("[RuntimeRenderer] Unhandled kernel macro: #{fun}/#{length(args)}")
+    nil
+  end
+
+  defp eval_comprehension_dynamics({:for_expr, var_name, enum_ir, body_ir}, a, b) do
+    enum = eval_ir(enum_ir, a, b)
+
+    if is_nil(enum) or enum == "" do
+      []
+    else
+      Enum.map(enum, fn item ->
+        inner_bindings = destructure_binding(b, var_name, item)
+        result = eval_ir(body_ir, a, inner_bindings)
+
+        case result do
+          list when is_list(list) -> Enum.map(list, &safe_dynamic/1)
+          single -> [safe_dynamic(single)]
+        end
+      end)
+    end
+  end
+
+  defp eval_comprehension_dynamics(other, a, b) do
+    result = eval_ir(other, a, b)
+
+    case result do
+      list when is_list(list) -> Enum.map(list, &safe_dynamic/1)
+      single -> [safe_dynamic(single)]
+    end
+  end
+
+  defp eval_interpolation_part({:literal, value}, _a, _b), do: value
+
+  defp eval_interpolation_part(expr, a, b) do
+    result = eval_ir(expr, a, b)
+
+    cond do
+      is_nil(result) -> ""
+      is_binary(result) -> result
+      is_atom(result) -> Atom.to_string(result)
+      is_integer(result) -> Integer.to_string(result)
+      is_float(result) -> Float.to_string(result)
+      true -> String.Chars.to_string(result)
+    end
+  end
+
+  defp safe_to_string(nil), do: ""
+  defp safe_to_string(value) when is_binary(value), do: value
+  defp safe_to_string(value) when is_atom(value), do: Atom.to_string(value)
+  defp safe_to_string(value) when is_integer(value), do: Integer.to_string(value)
+  defp safe_to_string(value) when is_float(value), do: Float.to_string(value)
+  defp safe_to_string(value), do: String.Chars.to_string(value)
+
+  # ===========================================================================
+  # Event handler AST interpreter
+  # ===========================================================================
+  # Evaluates parsed Elixir AST for event handlers without Code.eval.
+  # Supports the common patterns used in Beacon event handlers.
+
+  defp eval_ast({:__block__, _, exprs}, bindings) do
+    exprs
+    |> Enum.reduce({nil, bindings}, fn expr, {_result, acc_bindings} ->
+      eval_ast_with_bindings(expr, acc_bindings)
+    end)
+    |> elem(0)
+  end
+
+  # Tuple: {:noreply, socket}
+  defp eval_ast({:{}, _, elements}, bindings) do
+    List.to_tuple(Enum.map(elements, &eval_ast(&1, bindings)))
+  end
+
+  # Two-element tuple special form
+  defp eval_ast({left, right}, bindings) when not is_list(right) do
+    {eval_ast(left, bindings), eval_ast(right, bindings)}
+  end
+
+  # Variable reference
+  defp eval_ast({name, _, nil}, bindings) when is_atom(name) do
+    Map.get(bindings, name)
+  end
+
+  defp eval_ast({name, _, ctx}, bindings) when is_atom(name) and is_atom(ctx) do
+    Map.get(bindings, name)
+  end
+
+  # Function call: assign(socket, key, value)
+  defp eval_ast({:assign, _, [socket_ast, key_ast, value_ast]}, bindings) do
+    socket = eval_ast(socket_ast, bindings)
+    key = eval_ast(key_ast, bindings)
+    value = eval_ast(value_ast, bindings)
+    Phoenix.Component.assign(socket, key, value)
+  end
+
+  # Function call: assign(socket, keyword_or_map)
+  defp eval_ast({:assign, _, [socket_ast, assigns_ast]}, bindings) do
+    socket = eval_ast(socket_ast, bindings)
+    assigns = eval_ast(assigns_ast, bindings)
+    Phoenix.Component.assign(socket, assigns)
+  end
+
+  # Module-qualified function call: Module.func(args)
+  defp eval_ast({{:., _, [{:__aliases__, _, mod_parts}, fun]}, _, args}, bindings) when is_atom(fun) do
+    module = Module.concat(mod_parts)
+    evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
+    apply(module, fun, evaluated_args)
+  end
+
+  # Map access: map["key"]
+  defp eval_ast({{:., _, [Access, :get]}, _, [map_ast, key_ast]}, bindings) do
+    map = eval_ast(map_ast, bindings)
+    key = eval_ast(key_ast, bindings)
+    Access.get(map, key)
+  end
+
+  # Dot access: struct.field
+  defp eval_ast({{:., _, [inner, key]}, _, []}, bindings) when is_atom(key) do
+    get_in(eval_ast(inner, bindings), [Access.key(key)])
+  end
+
+  # Kernel.to_string / string interpolation
+  defp eval_ast({:<<>>, _, parts}, bindings) do
+    parts
+    |> Enum.map(fn
+      {:"::", _, [expr, {:binary, _, _}]} ->
+        safe_to_string(eval_ast(expr, bindings))
+
+      binary when is_binary(binary) ->
+        binary
+    end)
+    |> IO.iodata_to_binary()
+  end
+
+  # Map/keyword access: map[:key]
+  defp eval_ast({{:., _, [{name, _, _}, key]}, _, []}, bindings) when is_atom(name) and is_atom(key) do
+    get_in(bindings, [name, Access.key(key)])
+  end
+
+  # Operators
+  defp eval_ast({:+, _, [l, r]}, b), do: eval_ast(l, b) + eval_ast(r, b)
+  defp eval_ast({:-, _, [l, r]}, b), do: eval_ast(l, b) - eval_ast(r, b)
+  defp eval_ast({:*, _, [l, r]}, b), do: eval_ast(l, b) * eval_ast(r, b)
+  defp eval_ast({:/, _, [l, r]}, b), do: eval_ast(l, b) / eval_ast(r, b)
+  defp eval_ast({:==, _, [l, r]}, b), do: eval_ast(l, b) == eval_ast(r, b)
+  defp eval_ast({:!=, _, [l, r]}, b), do: eval_ast(l, b) != eval_ast(r, b)
+  defp eval_ast({:<, _, [l, r]}, b), do: eval_ast(l, b) < eval_ast(r, b)
+  defp eval_ast({:>, _, [l, r]}, b), do: eval_ast(l, b) > eval_ast(r, b)
+  defp eval_ast({:<=, _, [l, r]}, b), do: eval_ast(l, b) <= eval_ast(r, b)
+  defp eval_ast({:>=, _, [l, r]}, b), do: eval_ast(l, b) >= eval_ast(r, b)
+  defp eval_ast({:||, _, [l, r]}, b), do: eval_ast(l, b) || eval_ast(r, b)
+  defp eval_ast({:&&, _, [l, r]}, b), do: eval_ast(l, b) && eval_ast(r, b)
+  defp eval_ast({:and, _, [l, r]}, b), do: eval_ast(l, b) && eval_ast(r, b)
+  defp eval_ast({:or, _, [l, r]}, b), do: eval_ast(l, b) || eval_ast(r, b)
+  defp eval_ast({:not, _, [expr]}, b), do: !eval_ast(expr, b)
+
+  # Conditionals
+  defp eval_ast({:if, _, [condition, clauses]}, bindings) do
+    if eval_ast(condition, bindings) do
+      eval_ast(Keyword.fetch!(clauses, :do), bindings)
+    else
+      eval_ast(Keyword.get(clauses, :else), bindings)
+    end
+  end
+
+  # Anonymous function capture placeholders (&1, &2, ...)
+  defp eval_ast({:&, _, [index]}, bindings) when is_integer(index) do
+    Map.get(bindings, {:capture, index})
+  end
+
+  # Function capture: &Map.put(&1, key, value)
+  defp eval_ast({:&, _, [expr]}, bindings) do
+    arity = capture_arity(expr)
+
+    build_runtime_function(arity, fn args ->
+      capture_bindings =
+        Enum.with_index(args, 1)
+        |> Enum.reduce(bindings, fn {value, index}, acc ->
+          Map.put(acc, {:capture, index}, value)
+        end)
+
+      eval_ast(expr, capture_bindings)
+    end)
+  end
+
+  # Anonymous functions: fn value -> ... end
+  defp eval_ast({:fn, _, clauses}, bindings) do
+    arity = fn_arity!(clauses)
+
+    build_runtime_function(arity, fn args ->
+      eval_fn_clauses(clauses, args, bindings)
+    end)
+  end
+
+  # Literals
+  defp eval_ast(value, _) when is_binary(value), do: value
+  defp eval_ast(value, _) when is_integer(value), do: value
+  defp eval_ast(value, _) when is_float(value), do: value
+  defp eval_ast(value, _) when is_boolean(value), do: value
+  defp eval_ast(nil, _), do: nil
+  defp eval_ast(value, _) when is_atom(value), do: value
+
+  # Map literal: %{key => value}
+  defp eval_ast({:%{}, _, pairs}, bindings) do
+    Map.new(pairs, fn {k, v} -> {eval_ast(k, bindings), eval_ast(v, bindings)} end)
+  end
+
+  # Pipe operator
+  defp eval_ast({:|>, _, [left, right]}, bindings) do
+    left_val = eval_ast(left, bindings)
+
+    case right do
+      {{:., _, [{:__aliases__, _, mod_parts}, fun]}, _, args} ->
+        module = Module.concat(mod_parts)
+        evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
+        apply(module, fun, [left_val | evaluated_args])
+
+      {fun, _, args} when is_atom(fun) and is_list(args) ->
+        evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
+        apply(Kernel, fun, [left_val | evaluated_args])
+
+      _ ->
+        raise "unsupported pipe target: #{inspect(right)}"
+    end
+  end
+
+  # case expression
+  defp eval_ast({:case, _, [expr, [do: clauses]]}, bindings) do
+    value = eval_ast(expr, bindings)
+
+    Enum.find_value(clauses, fn {:->, _, [[pattern], body]} ->
+      case match_pattern(pattern, value, bindings) do
+        {:ok, new_bindings} -> eval_ast(body, new_bindings)
+        :no_match -> nil
+      end
+    end)
+  end
+
+  # Assignment
+  defp eval_ast({:=, _, [pattern, value_ast]}, bindings) do
+    value = eval_ast(value_ast, bindings)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, _new_bindings} -> value
+      :no_match -> raise MatchError, term: value
+    end
+  end
+
+  # Bare function call (local)
+  defp eval_ast({fun, _, args}, bindings) when is_atom(fun) and is_list(args) do
+    evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
+    arity = length(evaluated_args)
+
+    if function_exported?(Kernel, fun, arity) do
+      apply(Kernel, fun, evaluated_args)
+    else
+      eval_kernel_macro(fun, evaluated_args)
+    end
+  end
+
+  # Keyword/map literal
+  defp eval_ast(list, bindings) when is_list(list) do
+    Enum.map(list, fn
+      {key, value} -> {eval_ast(key, bindings), eval_ast(value, bindings)}
+      value -> eval_ast(value, bindings)
+    end)
+  end
+
+  defp eval_ast_with_bindings({:=, _, [pattern, value_ast]}, bindings) do
+    value = eval_ast(value_ast, bindings)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, new_bindings} -> {value, new_bindings}
+      :no_match -> raise MatchError, term: value
+    end
+  end
+
+  defp eval_ast_with_bindings(expr, bindings), do: {eval_ast(expr, bindings), bindings}
+
+  defp build_runtime_function(0, evaluator), do: fn -> evaluator.([]) end
+  defp build_runtime_function(1, evaluator), do: fn arg1 -> evaluator.([arg1]) end
+  defp build_runtime_function(2, evaluator), do: fn arg1, arg2 -> evaluator.([arg1, arg2]) end
+  defp build_runtime_function(3, evaluator), do: fn arg1, arg2, arg3 -> evaluator.([arg1, arg2, arg3]) end
+  defp build_runtime_function(arity, _evaluator), do: raise(ArgumentError, "unsupported anonymous function arity: #{arity}")
+
+  defp capture_arity(ast) do
+    ast
+    |> Macro.prewalk(0, fn
+      {:&, _, [index]} = node, acc when is_integer(index) -> {node, max(acc, index)}
+      node, acc -> {node, acc}
+    end)
+    |> elem(1)
+  end
+
+  defp fn_arity!([{:->, _, [patterns, _body]} | _rest]), do: length(patterns)
+  defp fn_arity!(_), do: raise(ArgumentError, "anonymous functions must define at least one clause")
+
+  defp eval_fn_clauses(clauses, args, bindings) do
+    Enum.find_value(clauses, fn
+      {:->, _, [patterns, body]} when length(patterns) == length(args) ->
+        case bind_patterns(patterns, args, bindings) do
+          {:ok, clause_bindings} -> {:matched, eval_ast(body, clause_bindings)}
+          :no_match -> nil
+        end
+
+      _ ->
+        nil
+    end)
+    |> case do
+      {:matched, value} -> value
+      nil -> raise FunctionClauseError, "no anonymous function clause matched #{inspect(args)}"
+    end
+  end
+
+  defp bind_patterns(patterns, args, bindings) do
+    Enum.zip(patterns, args)
+    |> Enum.reduce_while({:ok, bindings}, fn {pattern, value}, {:ok, acc} ->
+      case match_pattern(pattern, value, acc) do
+        {:ok, new_acc} -> {:cont, {:ok, new_acc}}
+        :no_match -> {:halt, :no_match}
+      end
+    end)
+  end
+
+  # Pattern matching for case clauses
+  defp match_pattern({:_, _, _}, _value, bindings), do: {:ok, bindings}
+
+  defp match_pattern({name, _, nil}, value, bindings) when is_atom(name) do
+    {:ok, Map.put(bindings, name, value)}
+  end
+
+  defp match_pattern({name, _, ctx}, value, bindings) when is_atom(name) and is_atom(ctx) do
+    {:ok, Map.put(bindings, name, value)}
+  end
+
+  defp match_pattern(literal, value, bindings) when is_binary(literal) do
+    if literal == value, do: {:ok, bindings}, else: :no_match
+  end
+
+  defp match_pattern(literal, value, bindings) when is_atom(literal) do
+    if literal == value, do: {:ok, bindings}, else: :no_match
+  end
+
+  defp match_pattern(literal, value, bindings) when is_integer(literal) do
+    if literal == value, do: {:ok, bindings}, else: :no_match
+  end
+
+  # Keyword pattern like [ok: pattern]
+  defp match_pattern([{key, inner_pattern}], value, bindings) when is_atom(key) do
+    case value do
+      {^key, inner_value} -> match_pattern(inner_pattern, inner_value, bindings)
+      _ -> :no_match
+    end
+  end
+
+  # Tuple pattern like {left, right}
+  defp match_pattern({left_pattern, right_pattern}, value, bindings) when is_tuple(value) and tuple_size(value) == 2 do
+    match_pattern_sequence([left_pattern, right_pattern], Tuple.to_list(value), bindings)
+  end
+
+  # Tuple pattern AST like {a, b, c}
+  defp match_pattern({:{}, _, patterns}, value, bindings) when is_tuple(value) do
+    if tuple_size(value) == length(patterns) do
+      match_pattern_sequence(patterns, Tuple.to_list(value), bindings)
+    else
+      :no_match
+    end
+  end
+
+  # List pattern like [head | tail] or [a, b | tail]
+  defp match_pattern(patterns, value, bindings) when is_list(patterns) and is_list(value) do
+    match_list_pattern(patterns, value, bindings)
+  end
+
+  # Map/struct pattern like %{name: name}
+  defp match_pattern({:%{}, _, pairs}, value, bindings) when is_map(value) do
+    Enum.reduce_while(pairs, {:ok, bindings}, fn {k, v_pattern}, {:ok, acc} ->
+      key = if is_atom(k), do: k, else: eval_ast(k, acc)
+
+      case Map.fetch(value, key) do
+        {:ok, v} ->
+          case match_pattern(v_pattern, v, acc) do
+            {:ok, new_acc} -> {:cont, {:ok, new_acc}}
+            :no_match -> {:halt, :no_match}
+          end
+
+        :error ->
+          {:halt, :no_match}
+      end
+    end)
+  end
+
+  defp match_pattern(_, _, _), do: :no_match
+
+  defp match_pattern_sequence(patterns, values, bindings) when length(patterns) == length(values) do
+    Enum.zip(patterns, values)
+    |> Enum.reduce_while({:ok, bindings}, fn {pattern, value}, {:ok, acc} ->
+      case match_pattern(pattern, value, acc) do
+        {:ok, new_acc} -> {:cont, {:ok, new_acc}}
+        :no_match -> {:halt, :no_match}
+      end
+    end)
+  end
+
+  defp match_pattern_sequence(_patterns, _values, _bindings), do: :no_match
+
+  defp match_list_pattern([], [], bindings), do: {:ok, bindings}
+  defp match_list_pattern([], _values, _bindings), do: :no_match
+  defp match_list_pattern(_patterns, [], _bindings), do: :no_match
+
+  defp match_list_pattern([{:|, _, [head_pattern, tail_pattern]}], [head_value | tail_values], bindings) do
+    with {:ok, head_bindings} <- match_pattern(head_pattern, head_value, bindings),
+         {:ok, tail_bindings} <- match_pattern(tail_pattern, tail_values, head_bindings) do
+      {:ok, tail_bindings}
+    else
+      :no_match -> :no_match
+    end
+  end
+
+  defp match_list_pattern([head_pattern | tail_patterns], [head_value | tail_values], bindings) do
+    with {:ok, head_bindings} <- match_pattern(head_pattern, head_value, bindings) do
+      match_list_pattern(tail_patterns, tail_values, head_bindings)
+    end
+  end
+end

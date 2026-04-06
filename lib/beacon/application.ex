@@ -19,6 +19,7 @@ defmodule Beacon.Application do
 
     # TODO: scope by site
     :ets.new(:beacon_assets, [:set, :named_table, :public, read_concurrency: true])
+    :ets.new(:beacon_runtime_poc, [:set, :named_table, :public, read_concurrency: true])
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Beacon.Supervisor)
   end

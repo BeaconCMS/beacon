@@ -47,10 +47,17 @@ defmodule Beacon.Web.Layouts do
 
   @doc false
   def render_dynamic_layout(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
-    %{site: ^site, layout_id: layout_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :layout_id]])
-    layout_module = Beacon.Loader.fetch_layout_module(site, layout_id)
-    Beacon.apply_mfa(site, layout_module, :render, [assigns])
+    %{beacon: %{site: site, private: %{layout_id: layout_id}}} = assigns
+
+    case Beacon.RuntimeRenderer.render_layout(site, layout_id, assigns) do
+      {:ok, rendered} ->
+        rendered
+
+      {:error, :not_found} ->
+        require Logger
+        Logger.error("[Beacon] Layout #{layout_id} not found in ETS for site #{site}")
+        assigns.inner_content
+    end
   end
 
   @doc """
@@ -59,14 +66,6 @@ defmodule Beacon.Web.Layouts do
   def live_socket_path(assigns) do
     %{beacon: %{site: site}} = assigns
     Beacon.Config.fetch!(site).live_socket_path
-  end
-
-  defp compiled_page_assigns(site, page_id) do
-    Beacon.apply_mfa(site, Beacon.Loader.fetch_page_module(site, page_id), :page_assigns, [])
-  end
-
-  defp compiled_layout_assigns(site, layout_id) do
-    Beacon.apply_mfa(site, Beacon.Loader.fetch_layout_module(site, layout_id), :layout_assigns, [])
   end
 
   @doc """
@@ -99,9 +98,6 @@ defmodule Beacon.Web.Layouts do
 
     case live_data do
       %{beacon_meta_tags: override_tags} when is_list(override_tags) ->
-        # When beacon_meta_tags is provided by LiveData, it replaces both
-        # page-level meta tags and site defaults. This is used by dynamic pages
-        # where page metadata comes from runtime data, not compiled page modules.
         (override_tags ++ layout_meta_tags)
         |> Enum.reject(&(&1["name"] == "csrf-token"))
 
@@ -114,61 +110,21 @@ defmodule Beacon.Web.Layouts do
     end
   end
 
-  defp page_meta_tags(%{page_assigns: %{meta_tags: meta_tags}} = assigns) do
-    assigns
-    |> compiled_page_meta_tags()
-    |> Map.merge(meta_tags)
+  defp page_meta_tags(%{beacon: %{site: site, private: %{page_id: page_id}}}) do
+    manifest = Beacon.RuntimeRenderer.fetch_manifest!(site, page_id)
+    manifest.meta_tags || []
   end
 
-  defp page_meta_tags(assigns) do
-    compiled_page_meta_tags(assigns)
-  end
-
-  defp compiled_page_meta_tags(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
-    %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
-    %{meta_tags: meta_tags} = compiled_page_assigns(site, page_id)
-    meta_tags
-  end
-
-  defp layout_meta_tags(%{layout_assigns: %{meta_tags: meta_tags}} = assigns) do
-    assigns
-    |> compiled_layout_meta_tags()
-    |> Map.merge(meta_tags)
-  end
-
-  defp layout_meta_tags(assigns) do
-    compiled_layout_meta_tags(assigns)
-  end
-
-  defp compiled_layout_meta_tags(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
-    %{site: ^site, layout_id: layout_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :layout_id]])
-    %{meta_tags: meta_tags} = compiled_layout_assigns(site, layout_id)
-    meta_tags
-  end
+  defp layout_meta_tags(_assigns), do: []
 
   @doc """
   Renders the Schema.org data defined in the current page.
   """
-  def render_schema(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module, live_data_keys: live_data_keys}}} = assigns
-    live_data = Map.take(assigns, live_data_keys)
+  def render_schema(%{beacon: %{site: site, private: %{page_id: page_id}}} = assigns) do
+    manifest = Beacon.RuntimeRenderer.fetch_manifest!(site, page_id)
+    raw_schema = manifest.raw_schema || []
 
-    raw_schema =
-      case live_data do
-        %{beacon_raw_schema: raw_schema} when is_list(raw_schema) ->
-          raw_schema
-
-        _ ->
-          %{site: ^site, id: page_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :id]])
-          %{raw_schema: raw_schema} = compiled_page_assigns(site, page_id)
-          raw_schema
-      end
-
-    is_empty = fn raw_schema ->
-      raw_schema |> Enum.map(&Map.values/1) |> List.flatten() == []
-    end
+    is_empty = fn rs -> rs |> Enum.map(&Map.values/1) |> List.flatten() == [] end
 
     if is_empty.(raw_schema) do
       []
@@ -187,30 +143,12 @@ defmodule Beacon.Web.Layouts do
   Renders all resource `<link>` tags defined in the current layout.
   """
   def render_resource_links(assigns) do
-    resource_links = layout_resource_links(assigns) || []
-    assigns = assign(assigns, :resource_links, resource_links)
+    assigns = assign(assigns, :resource_links, [])
 
     ~H"""
     <%= for attr <- @resource_links do %>
       <link {attr} />
     <% end %>
     """
-  end
-
-  defp layout_resource_links(%{layout_assigns: %{resource_links: resource_links}} = assigns) do
-    assigns
-    |> compiled_layout_resource_links()
-    |> Map.merge(resource_links)
-  end
-
-  defp layout_resource_links(assigns) do
-    compiled_layout_resource_links(assigns)
-  end
-
-  defp compiled_layout_resource_links(assigns) do
-    %{beacon: %{site: site, private: %{page_module: page_module}}} = assigns
-    %{site: ^site, layout_id: layout_id} = Beacon.apply_mfa(site, page_module, :page_assigns, [[:site, :layout_id]])
-    %{resource_links: resource_links} = compiled_layout_assigns(site, layout_id)
-    resource_links
   end
 end

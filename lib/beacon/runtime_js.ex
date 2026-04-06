@@ -117,16 +117,20 @@ defmodule Beacon.RuntimeJS do
   def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :"$1"})
 
   def fetch(site, :deflate) do
+    ensure_compiled(site)
+
     case :ets.match(:beacon_assets, {{site, :js}, {:_, :_, :"$1"}}) do
       [[gzipped]] when is_binary(gzipped) -> :zlib.gunzip(gzipped)
-      _ -> "// JS not found"
+      _ -> "// JS compilation failed"
     end
   end
 
   defp do_fetch(site, guard) do
+    ensure_compiled(site)
+
     case :ets.match(:beacon_assets, {{site, :js}, guard}) do
       [[js]] -> js
-      _ -> "// JS not found"
+      _ -> "// JS compilation failed"
     end
   end
 
@@ -142,21 +146,23 @@ defmodule Beacon.RuntimeJS do
       end
 
     gzip = :zlib.gzip(js)
-
-    try do
-      true = :ets.insert(:beacon_assets, {{site, :js}, {hash, brotli, gzip}})
-    rescue
-      _ -> reraise Beacon.LoaderError, [message: "failed to compress js"], __STACKTRACE__
-    end
-
+    true = :ets.insert(:beacon_assets, {{site, :js}, {hash, brotli, gzip}})
     :ok
   end
 
   def current_hash(site) do
+    ensure_compiled(site)
+
     case :ets.match(:beacon_assets, {{site, :js}, {:"$1", :_, :_}}) do
       [[hash]] -> hash
       _ -> nil
     end
+  end
+
+  defp ensure_compiled(site) do
+    Beacon.Cache.fetch(:beacon_assets, {site, :js_compile}, fn ->
+      load!(site)
+    end)
   end
 
   def get_export(hook, opts \\ []) do
@@ -230,4 +236,5 @@ defmodule Beacon.RuntimeJS do
     Enum.each(files, &File.rm/1)
     File.rmdir(dir)
   end
+
 end

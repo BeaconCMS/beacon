@@ -4,7 +4,6 @@ defmodule Beacon.RouterServer do
 
   use GenServer
   require Logger
-  alias Beacon.Content
   alias Beacon.PubSub
 
   def name(site) do
@@ -87,13 +86,7 @@ defmodule Beacon.RouterServer do
 
   def handle_continue(:async_init, config) do
     %{site: site} = config
-
     :ok = PubSub.subscribe_to_pages(site)
-
-    for {page_id, path} <- Content.list_published_page_paths(site) do
-      do_add_page(site, page_id, path)
-    end
-
     {:noreply, config}
   end
 

@@ -997,6 +997,29 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Returns all published pages for a site directly from snapshots without
+  per-row reload or variant preloading.
+
+  This is a bulk-optimized version for the RuntimeRenderer boot path where
+  only the snapshot-embedded page data is needed (no variants).
+  Runs a single DB query instead of 2N queries.
+  """
+  @doc type: :pages
+  @spec list_published_pages_snapshot_data(Site.t()) :: [Page.t()]
+  def list_published_pages_snapshot_data(site) do
+    site
+    |> query_list_published_pages_base()
+    |> repo(site).all()
+    |> Enum.map(fn snapshot ->
+      case snapshot do
+        %{page: %Page{} = page} -> maybe_add_leading_slash(page)
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
   Similar to `list_published_pages/2`, but does not accept any options.  Instead, provide a list
   of paths, and this function will return any published pages which match one of those paths.
   """
@@ -4559,6 +4582,7 @@ defmodule Beacon.Content do
   @doc false
   def reset_published_layout(site, id) do
     clear_cache(site, id)
+    Beacon.RuntimeRenderer.publish_layout(site, to_string(id), get_layout(site, id).template)
     :ok
   end
 
@@ -4568,7 +4592,9 @@ defmodule Beacon.Content do
 
     case get_published_page(site, id) do
       nil -> :skip
-      page -> :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+      page ->
+        :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
+        Beacon.RuntimeRenderer.Loader.load_page(site, page)
     end
 
     :ok

@@ -1,40 +1,18 @@
 defmodule Beacon.RuntimeCSS do
   @moduledoc """
-  Compiles the CSS for a site using the compiler defined in `t:Beacon.Config.css_compiler/0`
-
-  Beacon supports Tailwind by default implemented by `Beacon.RuntimeCSS.TailwindCompiler`,
-  you can use that module as template to implement any ther CSS engine as needed.
+  Runtime CSS for a site. Compiled on first request via `Beacon.Cache`,
+  stampede-safe — exactly one process compiles while others wait.
   """
 
   require Logger
   alias Beacon.Types.Site
 
-  @doc """
-  Returns the CSS compiler config.
-
-  For Tailwind that would be the content of the tailwind config file,
-  or return an empty string `""` if the provided engine doesn't have a config file.
-  """
   @callback config(site :: Site.t()) :: String.t()
-
-  @doc """
-  Executes the compilation to generate the CSS for the site using the provided `:css_compiler` in `Beacon.Config`.
-  """
   @callback compile(site :: Site.t()) :: {:ok, String.t()} | {:error, any()}
 
   @doc false
-  # TODO: compress and fetch from ETS
   def config(site) when is_atom(site) do
     Beacon.Config.fetch!(site).css_compiler.config(site)
-  end
-
-  @doc """
-  Returns the URL to fetch the CSS config used to generate the site stylesheet.
-  """
-  @spec css_config_url(Site.t()) :: String.t()
-  def css_config_url(site) do
-    routes_module = Beacon.Loader.fetch_routes_module(site)
-    Beacon.apply_mfa(site, routes_module, :public_css_config_url, [])
   end
 
   @doc false
@@ -48,16 +26,20 @@ defmodule Beacon.RuntimeCSS do
   def fetch(site, :gzip), do: do_fetch(site, {:_, :_, :"$1"})
 
   def fetch(site, :deflate) do
+    ensure_compiled(site)
+
     case :ets.match(:beacon_assets, {{site, :css}, {:_, :_, :"$1"}}) do
       [[gzipped]] when is_binary(gzipped) -> :zlib.gunzip(gzipped)
-      _ -> "/* CSS not found for site #{inspect(site)} */"
+      _ -> "/* CSS compilation failed */"
     end
   end
 
   defp do_fetch(site, guard) do
+    ensure_compiled(site)
+
     case :ets.match(:beacon_assets, {{site, :css}, guard}) do
       [[css]] -> css
-      _ -> "/* CSS not found for site #{inspect(site)} */"
+      _ -> "/* CSS compilation failed */"
     end
   end
 
@@ -79,31 +61,23 @@ defmodule Beacon.RuntimeCSS do
 
     gzip = :zlib.gzip(css)
 
-    try do
-      true = :ets.insert(:beacon_assets, {{site, :css}, {hash, brotli, gzip}})
-    rescue
-      _ -> reraise Beacon.LoaderError, [message: "failed to compress css"], __STACKTRACE__
-    end
-
+    true = :ets.insert(:beacon_assets, {{site, :css}, {hash, brotli, gzip}})
     :ok
   end
 
   @doc false
   def current_hash(site) do
+    ensure_compiled(site)
+
     case :ets.match(:beacon_assets, {{site, :css}, {:"$1", :_, :_}}) do
-      [[hash]] ->
-        hash
-
-      found ->
-        Logger.warning("""
-        failed to fetch current css hash
-
-        Got:
-
-          #{inspect(found)}
-        """)
-
-        nil
+      [[hash]] -> hash
+      _ -> nil
     end
+  end
+
+  defp ensure_compiled(site) do
+    Beacon.Cache.fetch(:beacon_assets, {site, :css_compile}, fn ->
+      load!(site)
+    end)
   end
 end

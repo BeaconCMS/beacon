@@ -58,34 +58,6 @@ defmodule Beacon.LoaderTest do
     end
   end
 
-  describe "populate default components" do
-    test "seeds initial data", %{site: site} do
-      assert Repo.all(Content.Component) == []
-      assert Loader.populate_default_components(site) == :ok
-      assert Repo.all(Content.Component) |> length() > 0
-    end
-  end
-
-  describe "populate default layouts" do
-    test "seeds initial data", %{site: site} do
-      assert Repo.all(Content.Layout) == []
-      assert Loader.populate_default_layouts(site) == :ok
-      assert Repo.all(Content.Layout) |> length() > 0
-    end
-  end
-
-  describe "populate default error pages" do
-    setup %{site: site} do
-      Loader.populate_default_layouts(site)
-    end
-
-    test "seeds initial data", %{site: site} do
-      assert Repo.all(Content.ErrorPage) == []
-      assert Loader.populate_default_error_pages(site) == :ok
-      assert Repo.all(Content.ErrorPage) |> length() > 0
-    end
-  end
-
   describe "snippets" do
     test "loads module even without snippets helpers available", %{site: site} do
       module = Loader.load_snippets_module(site)
