@@ -522,7 +522,9 @@ defmodule Beacon.Content do
       |> change_page(page_attrs)
       |> Map.put(:action, :validate)
 
-    PageField.apply_changesets(changeset, site, extra_attrs)
+    changeset
+    |> PageField.apply_changesets(site, extra_attrs)
+    |> Page.apply_cache_ttl(extra_attrs)
   end
 
   @doc """

@@ -89,7 +89,9 @@ defmodule Beacon.Content.Page do
       |> foreign_key_constraint(:layout_id)
       |> remove_empty_meta_attributes(:meta_tags)
 
-    Content.PageField.apply_changesets(changeset, get_field(changeset, :site), extra_attrs)
+    changeset
+    |> Content.PageField.apply_changesets(get_field(changeset, :site), extra_attrs)
+    |> apply_cache_ttl(extra_attrs)
   end
 
   # TODO: The inclusion of the fields [:title, :description, :meta_tags] here requires some more consideration, but we
@@ -120,7 +122,41 @@ defmodule Beacon.Content.Page do
     |> remove_all_newlines([:description])
     |> remove_empty_meta_attributes(:meta_tags)
     |> Content.PageField.apply_changesets(page.site, extra_attrs)
+    |> apply_cache_ttl(extra_attrs)
   end
+
+  @doc false
+  def apply_cache_ttl(changeset, %{"cache_ttl" => raw}) do
+    extra = get_field(changeset, :extra) || %{}
+
+    case parse_cache_ttl_input(raw) do
+      :remove ->
+        put_change(changeset, :extra, Map.delete(extra, "cache_ttl"))
+
+      {:ok, value} ->
+        put_change(changeset, :extra, Map.put(extra, "cache_ttl", value))
+
+      :ignore ->
+        changeset
+    end
+  end
+
+  def apply_cache_ttl(changeset, _), do: changeset
+
+  defp parse_cache_ttl_input(nil), do: :ignore
+  defp parse_cache_ttl_input(""), do: :remove
+  defp parse_cache_ttl_input("infinity"), do: {:ok, "infinity"}
+
+  defp parse_cache_ttl_input(val) when is_binary(val) do
+    case Integer.parse(val) do
+      {n, _} when n >= 0 -> {:ok, n}
+      _ -> :ignore
+    end
+  end
+
+  defp parse_cache_ttl_input(n) when is_integer(n) and n >= 0, do: {:ok, n}
+  defp parse_cache_ttl_input(:infinity), do: {:ok, "infinity"}
+  defp parse_cache_ttl_input(_), do: :ignore
 
   defp helpers_changeset(schema, params) do
     schema
