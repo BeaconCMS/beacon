@@ -1119,7 +1119,11 @@ defmodule Beacon.RuntimeRenderer do
     {:component_fun, Module.concat(mod_parts), fun_name}
   end
 
-  defp extract_component_fun(_), do: {:component_fun, nil, nil}
+  defp extract_component_fun(other) do
+    require Logger
+    Logger.warning("[RuntimeRenderer] Unhandled component capture AST: #{inspect(other, limit: 200)}")
+    {:component_fun, nil, nil}
+  end
 
   # Extract component assigns map, transforming inner_block slots
   defp extract_component_assigns({:%{}, _, pairs}) do
@@ -1832,6 +1836,23 @@ defmodule Beacon.RuntimeRenderer do
   # Two-element tuple special form
   defp eval_ast({left, right}, bindings) when not is_list(right) do
     {eval_ast(left, bindings), eval_ast(right, bindings)}
+  end
+
+  # Module alias resolution: {:__aliases__, _, [:Foo, :Bar]} → Foo.Bar
+  defp eval_ast({:__aliases__, _, mod_parts}, _bindings) do
+    Module.concat(mod_parts)
+  end
+
+  # raise/1 and raise/2
+  defp eval_ast({:raise, _, [expr]}, bindings) do
+    error = eval_ast(expr, bindings)
+    raise error
+  end
+
+  defp eval_ast({:raise, _, [module_ast, opts_ast]}, bindings) do
+    module = eval_ast(module_ast, bindings)
+    opts = eval_ast(opts_ast, bindings)
+    raise module, opts
   end
 
   # Variable reference
