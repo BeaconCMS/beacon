@@ -1103,8 +1103,16 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # Extract function capture from component call: &link/1 → {Phoenix.Component, :link}
-  defp extract_component_fun({:&, _, [{:/, _, [{fun_name, _, _ctx}, _arity]}]}) when is_atom(fun_name) do
-    {:component_fun, Phoenix.Component, fun_name}
+  defp extract_component_fun({:&, _, [{:/, _, [{fun_name, _, _ctx}, arity]}]}) when is_atom(fun_name) do
+    # Bare function capture like &header/1 from <.header>.
+    # Only resolve to Phoenix.Component if the function actually exists there.
+    # Otherwise it's likely a Beacon CMS component — return nil so eval_ir
+    # falls through to the component lookup path.
+    if function_exported?(Phoenix.Component, fun_name, arity) do
+      {:component_fun, Phoenix.Component, fun_name}
+    else
+      {:component_fun, nil, nil}
+    end
   end
 
   defp extract_component_fun({:&, _, [{:/, _, [{{:., _, [{:__aliases__, _, mod_parts}, fun_name]}, _, _}, _arity]}]}) do
@@ -1444,6 +1452,25 @@ defmodule Beacon.RuntimeRenderer do
       |> Map.put_new(:__changed__, %{})
 
     apply(mod, fun, [component_assigns])
+  end
+
+  # Unresolved component call (nil module) — try as a Beacon CMS component
+  defp eval_ir({:component_call, {:component_fun, nil, fun_name}, {:component_assigns, pairs}}, a, b) when is_atom(fun_name) do
+    site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+    component_name = Atom.to_string(fun_name)
+
+    if site do
+      component_assigns =
+        Enum.reduce(pairs, %{}, fn
+          {:__changed__, _}, acc -> Map.put(acc, :__changed__, %{})
+          {:inner_block, _}, acc -> acc
+          {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
+        end)
+
+      render_component(site, component_name, component_assigns)
+    else
+      ""
+    end
   end
 
   defp eval_ir({:component_call, _, _}, _a, _b), do: ""
