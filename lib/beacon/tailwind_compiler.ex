@@ -38,8 +38,7 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   @spec compile(Beacon.Types.Site.t()) :: {:ok, String.t()} | {:error, any()}
   def compile(site) when is_atom(site) do
     templates = collect_all_templates(site)
-    input_css = build_input_css(site, templates)
-    output = run_cli_stdin(input_css, site)
+    output = run_cli(site, templates)
     {:ok, output}
   end
 
@@ -93,19 +92,12 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   # Input CSS — built in memory, piped to stdin
   # ---------------------------------------------------------------------------
 
-  defp build_input_css(site, templates) do
+  defp build_input_css(site, _templates, templates_fifo) do
     config = Beacon.Config.fetch!(site)
-
-    # CSS string escaping: backslashes first, then double quotes
-    escaped =
-      templates
-      |> String.replace("\\", "\\\\")
-      |> String.replace("\"", "\\\"")
-      |> String.replace("\n", " ")
 
     [
       "@import \"tailwindcss\" source(none);\n",
-      "@source inline(\"", escaped, "\");\n",
+      "@source \"#{templates_fifo}\";\n",
       maybe_config_directive(config),
       maybe_user_css(config),
       collect_stylesheets(site)
@@ -143,36 +135,44 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   # Tailwind CLI — stdin/stdout, zero disk I/O
   # ---------------------------------------------------------------------------
 
-  defp run_cli_stdin(input_css, _site) do
+  defp run_cli(site, templates) do
     check_version!()
 
     minify? = not (Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev])
     bin = Tailwind.bin_path()
+    uid = :erlang.unique_integer([:positive])
+
+    # Two named pipes: templates stay untouched, CSS directives reference the templates FIFO.
+    # FIFOs are kernel memory buffers — zero bytes hit disk.
+    templates_fifo = Path.join(System.tmp_dir!(), "beacon_tpl_#{uid}")
+    input_fifo = Path.join(System.tmp_dir!(), "beacon_css_#{uid}")
+    {_, 0} = System.cmd("mkfifo", [templates_fifo])
+    {_, 0} = System.cmd("mkfifo", [input_fifo])
+
+    input_css = build_input_css(site, templates, templates_fifo)
+    args = if minify?, do: ~w(--input #{input_fifo} --minify), else: ~w(--input #{input_fifo})
 
     Logger.debug("""
     running Beacon Tailwind Compiler (v4)
 
       bin_path: #{inspect(bin)}
       input_size: #{byte_size(input_css)} bytes
+      templates_size: #{byte_size(templates)} bytes
 
     """)
 
-    # Use a named pipe (FIFO) so no data is written to disk.
-    # A FIFO is a kernel-memory buffer with a filesystem name —
-    # the CSS bytes flow through RAM, never touch storage.
-    fifo = Path.join(System.tmp_dir!(), "beacon_fifo_#{:erlang.unique_integer([:positive])}")
-    {_, 0} = System.cmd("mkfifo", [fifo])
-
-    args = if minify?, do: ~w(--input #{fifo} --minify), else: ~w(--input #{fifo})
-
-    # Writer blocks until the reader (Tailwind) opens the FIFO
-    writer = Task.async(fn -> File.write!(fifo, input_css) end)
+    # Writers block until Tailwind opens each FIFO.
+    # Tailwind reads input CSS first, sees @source pointing at templates FIFO,
+    # then opens and reads the templates.
+    input_writer = Task.async(fn -> File.write!(input_fifo, input_css) end)
+    templates_writer = Task.async(fn -> File.write!(templates_fifo, templates) end)
 
     try do
       {output, exit_code} =
         System.cmd(bin, args, cd: File.cwd!(), stderr_to_stdout: true)
 
-      Task.await(writer, :timer.minutes(5))
+      Task.await(input_writer, :timer.minutes(5))
+      Task.await(templates_writer, :timer.minutes(5))
 
       if exit_code == 0 do
         output
@@ -187,7 +187,8 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
         """
       end
     after
-      File.rm(fifo)
+      File.rm(input_fifo)
+      File.rm(templates_fifo)
     end
   end
 
