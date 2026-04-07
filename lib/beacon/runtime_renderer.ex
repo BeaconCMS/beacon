@@ -2124,11 +2124,22 @@ defmodule Beacon.RuntimeRenderer do
     Phoenix.Component.assign(socket, assigns)
   end
 
-  # Module-qualified function call: Module.func(args)
+  # Module-qualified function call: Module.func(args) — via __aliases__
   defp eval_ast({{:., _, [{:__aliases__, _, mod_parts}, fun]}, _, args}, bindings) when is_atom(fun) do
     module = Module.concat(mod_parts)
     evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
     apply(module, fun, evaluated_args)
+  end
+
+  # Module-qualified function call: Module.func(args) — direct atom module (e.g., Kernel.to_string)
+  defp eval_ast({{:., _, [module, fun]}, _, args}, bindings) when is_atom(module) and is_atom(fun) do
+    evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
+
+    if function_exported?(module, fun, length(evaluated_args)) do
+      apply(module, fun, evaluated_args)
+    else
+      eval_kernel_macro(fun, evaluated_args)
+    end
   end
 
   # Map access: map["key"]

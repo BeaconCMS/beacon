@@ -155,7 +155,7 @@ defmodule Beacon.RuntimeRenderer.Loader do
     handlers = Content.list_info_handlers(site)
 
     for handler <- handlers do
-      RuntimeRenderer.store_site_handler(site, :info, handler.name, handler.code)
+      RuntimeRenderer.store_site_handler(site, :info, handler.msg, handler.code)
     end
 
     require Logger
