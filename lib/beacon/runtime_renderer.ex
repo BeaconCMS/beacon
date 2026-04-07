@@ -84,8 +84,22 @@ defmodule Beacon.RuntimeRenderer do
     handler_names = Enum.map(handlers, & &1.name)
     :ets.insert(@table, {{site, page_id, :handler_index}, handler_names})
 
-    # 8. Extract CSS classes from IR and merge into site-wide safelist
+    # 8. Extract CSS candidates and track for conditional recompilation
+    candidates = Beacon.CSS.CandidateExtractor.extract(template)
+    :ets.insert(@table, {{site, page_id, :css_candidates}, candidates})
 
+    known =
+      case :ets.lookup(@table, {site, :css_candidates}) do
+        [{_, existing}] -> existing
+        [] -> MapSet.new()
+      end
+
+    new_classes = MapSet.difference(candidates, known)
+
+    if MapSet.size(new_classes) > 0 do
+      updated = MapSet.union(known, new_classes)
+      :ets.insert(@table, {{site, :css_candidates}, updated})
+    end
 
     :ok
   end

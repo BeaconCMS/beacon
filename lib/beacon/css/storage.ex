@@ -88,7 +88,6 @@ defmodule Beacon.CSS.Storage do
   end
 
   defp recompile(site) do
-    # Falls back to existing TailwindCompiler. Will be replaced with Zig NIF later.
     Beacon.RuntimeCSS.load!(site)
 
     case fetch_from_ets(site) do

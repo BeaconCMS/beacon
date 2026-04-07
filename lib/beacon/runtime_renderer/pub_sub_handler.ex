@@ -135,9 +135,17 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   # ------------------------------------------------------------------
 
   def handle_info({:recompile_css, site}, state) do
-    # Invalidate the CSS compile cache so the next fetch triggers a fresh compile
+    # Invalidate ETS cache and recompile via Zig NIF
+    :ets.delete(:beacon_assets, {site, :css})
     :ets.delete(:beacon_assets, {site, :css_compile})
-    Beacon.RuntimeCSS.load!(site)
+
+    try do
+      Beacon.RuntimeCSS.load!(site)
+    rescue
+      error ->
+        Logger.warning("[Beacon.CSS] CSS recompilation failed for #{site}: #{Exception.message(error)}")
+    end
+
     {:noreply, %{state | css_timer: nil}}
   end
 
