@@ -37,9 +37,9 @@ defmodule Beacon.RouterServer do
   # Client
 
   def lookup_page(site, path_info) when is_atom(site) and is_list(path_info) do
-    with {_path, page_id} <- lookup_path(site, path_info) do
-      page_module = Beacon.Loader.fetch_page_module(site, page_id)
-      Beacon.apply_mfa(site, page_module, :page, [])
+    with {_path, page_id} <- lookup_path(site, path_info),
+         {:ok, manifest} <- Beacon.RuntimeRenderer.fetch_manifest(site, page_id) do
+      manifest
     else
       _ -> nil
     end

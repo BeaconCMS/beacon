@@ -11,8 +11,6 @@ defmodule Beacon.Web.BeaconAssignsTest do
     # we aren't passing through PageLive in these tests so we have to manually
     # enable the ErrorHandler and set the site in the Process dictionary
     # (which would normally happen in the LiveView mount)
-    Process.put(:__beacon_site__, site)
-    Process.flag(:error_handler, Beacon.ErrorHandler)
 
     [site: site]
   end

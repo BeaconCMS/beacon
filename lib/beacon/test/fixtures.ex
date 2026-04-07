@@ -65,9 +65,6 @@ defmodule Beacon.Test.Fixtures do
 
   """
 
-  # FIXME: remove Beacon.Loader dependency in favor of the new optimized :error_handler loader,
-  #        so it does not trigger a reload for _every_ fixture call, which makes the tests suite slower.
-
   alias Beacon.Content
   alias Beacon.Content.ErrorPage
   alias Beacon.MediaLibrary

@@ -46,7 +46,12 @@ defmodule Beacon.Template do
   def assigns(%Beacon.Content.Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
     live_data = Beacon.Web.DataSource.live_data(page.site, path_info, %{})
-    beacon_assigns = Beacon.Web.BeaconAssigns.new(page, path_info: path_info)
+    beacon_assigns = %Beacon.Web.BeaconAssigns{
+      site: page.site,
+      path_params: Beacon.Router.path_params(page.path, path_info),
+      query_params: %{},
+      page: %{path: page.path, title: page.title}
+    }
     route_assigns = Beacon.Private.route_assigns(page.site, page.path)
 
     route_assigns

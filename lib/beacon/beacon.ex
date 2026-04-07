@@ -192,11 +192,9 @@ defmodule Beacon do
 
   @doc false
   # This should always be used when calling dynamic modules
-  # 1. Isolate function calls
-  # 2. Enable Beacon's autoloading mechanism (ErrorHandler)
-  # 3. Provide more meaningful error messages
-  def apply_mfa(site, module, function, args, opts \\ [])
-      when is_atom(site) and is_atom(module) and is_atom(function) and is_list(args) and is_list(opts) do
-    Beacon.Loader.safe_apply_mfa(site, module, function, args, opts)
+  @doc false
+  def apply_mfa(_site, module, function, args, _opts \\ [])
+      when is_atom(module) and is_atom(function) and is_list(args) do
+    apply(module, function, args)
   end
 end

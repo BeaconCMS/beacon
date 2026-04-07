@@ -6,7 +6,15 @@ defmodule Beacon.Web.DataSource do
   def live_data(site, path_info, query_params \\ %{})
 
   def live_data(site, path_info, query_params) when is_atom(site) and is_list(path_info) and is_map(query_params) do
-    Beacon.apply_mfa(site, Beacon.Loader.fetch_live_data_module(site), :live_data, [path_info, query_params])
+    path = "/" <> Enum.join(path_info, "/")
+
+    case Beacon.RuntimeRenderer.lookup_page(site, path) do
+      {:ok, page_id} ->
+        Beacon.RuntimeRenderer.evaluate_live_data(site, page_id, path_info, Map.drop(query_params, ["path"]))
+
+      :error ->
+        %{}
+    end
   end
 
   def live_data(_site, _path_info, _query_params), do: %{}

@@ -50,3 +50,14 @@ beacon-*.tar
 
 # Local tool-versions
 .tool-versions
+
+# AI tooling
+.claude/
+.cog/
+.mcp.json
+.opencode/
+opencode.json
+AGENTS.md
+archresearch.md
+idea.md
+research.md
