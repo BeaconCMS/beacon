@@ -1,0 +1,11 @@
+.{
+    .name = .beacon_css,
+    .version = "0.1.0",
+    .fingerprint = 0x4d329a1024737512,
+    .minimum_zig_version = "0.15.2",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
