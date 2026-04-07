@@ -183,7 +183,7 @@ defmodule Beacon.RuntimeRenderer do
         full_assigns =
           assigns
           |> Map.merge(body_bindings)
-          |> Map.put_new(:__changed__, %{})
+          |> Map.delete(:__changed__)
           |> Map.put_new(:inner_block, [])
           |> Map.put_new(:beacon, %{site: site})
 
@@ -208,7 +208,7 @@ defmodule Beacon.RuntimeRenderer do
             full_assigns =
               assigns
               |> Map.merge(body_bindings)
-              |> Map.put_new(:__changed__, %{})
+              |> Map.delete(:__changed__)
               |> Map.put_new(:inner_block, [])
               |> Map.put_new(:beacon, %{site: site})
 
@@ -494,9 +494,6 @@ defmodule Beacon.RuntimeRenderer do
             ast = Code.string_to_quoted!(code)
             path_vars = extract_path_variables(def_entry[:path_pattern], path_info)
             bindings = Map.merge(path_vars, %{path_info: path_info, params: query_params})
-
-            require Logger
-            Logger.debug("[RuntimeRenderer] evaluate_live_data key=#{key} path_pattern=#{inspect(def_entry[:path_pattern])} path_vars=#{inspect(path_vars)}")
 
             result = eval_ast(ast, bindings)
             Map.put(acc, key, result)
@@ -1154,7 +1151,7 @@ defmodule Beacon.RuntimeRenderer do
     transformed =
       Enum.map(pairs, fn
         {:__changed__, _} ->
-          {:__changed__, {:literal, %{}}}
+          {:__changed__, {:literal, nil}}
 
         {:inner_block, slots} when is_list(slots) ->
           slot_irs =
@@ -1437,7 +1434,7 @@ defmodule Beacon.RuntimeRenderer do
     component_assigns =
       Enum.reduce(pairs, %{}, fn
         {:__changed__, _}, acc ->
-          Map.put(acc, :__changed__, %{})
+          Map.put(acc, :__changed__, nil)
 
         {:inner_block, {:literal, slot_irs}}, acc ->
           rendered_slots =
@@ -1477,7 +1474,7 @@ defmodule Beacon.RuntimeRenderer do
         {key, value_ir}, acc ->
           Map.put(acc, key, eval_ir(value_ir, a, b))
       end)
-      |> Map.put_new(:__changed__, %{})
+      |> Map.put_new(:__changed__, nil)
 
     apply(mod, fun, [component_assigns])
   end
@@ -1490,7 +1487,7 @@ defmodule Beacon.RuntimeRenderer do
     if site do
       component_assigns =
         Enum.reduce(pairs, %{}, fn
-          {:__changed__, _}, acc -> Map.put(acc, :__changed__, %{})
+          {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
           {:inner_block, _}, acc -> acc
           {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
         end)
@@ -1783,6 +1780,40 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_kernel_macro(:in, [elem, list]), do: elem in list
   defp eval_kernel_macro(:unless, [cond, [do: body]]), do: if(!cond, do: body)
   defp eval_kernel_macro(:.., [a, b]), do: a..b
+  defp eval_kernel_macro(:.., [a, b, step]), do: a..b//step
+  defp eval_kernel_macro(:sigil_r, [pattern, modifiers]) do
+    Regex.compile!(pattern, List.to_string(modifiers))
+  end
+  defp eval_kernel_macro(:sigil_w, [string, modifiers]) do
+    case modifiers do
+      ~c"a" -> String.split(string) |> Enum.map(&String.to_atom/1)
+      _ -> String.split(string)
+    end
+  end
+  defp eval_kernel_macro(:sigil_s, [string, _modifiers]), do: string
+  defp eval_kernel_macro(:sigil_S, [string, _modifiers]), do: string
+  defp eval_kernel_macro(:hd, [list]), do: hd(list)
+  defp eval_kernel_macro(:tl, [list]), do: tl(list)
+  defp eval_kernel_macro(:length, [list]), do: length(list)
+  defp eval_kernel_macro(:abs, [val]), do: abs(val)
+  defp eval_kernel_macro(:min, [a, b]), do: min(a, b)
+  defp eval_kernel_macro(:max, [a, b]), do: max(a, b)
+  defp eval_kernel_macro(:div, [a, b]), do: div(a, b)
+  defp eval_kernel_macro(:rem, [a, b]), do: rem(a, b)
+  defp eval_kernel_macro(:round, [val]), do: round(val)
+  defp eval_kernel_macro(:floor, [val]), do: floor(val)
+  defp eval_kernel_macro(:ceil, [val]), do: ceil(val)
+  defp eval_kernel_macro(:elem, [tuple, index]), do: elem(tuple, index)
+  defp eval_kernel_macro(:put_elem, [tuple, index, val]), do: put_elem(tuple, index, val)
+  defp eval_kernel_macro(:tuple_size, [tuple]), do: tuple_size(tuple)
+  defp eval_kernel_macro(:byte_size, [binary]), do: byte_size(binary)
+  defp eval_kernel_macro(:is_struct, [val]), do: is_struct(val)
+  defp eval_kernel_macro(:is_struct, [val, mod]), do: is_struct(val, mod)
+  defp eval_kernel_macro(:is_function, [val]), do: is_function(val)
+  defp eval_kernel_macro(:is_function, [val, arity]), do: is_function(val, arity)
+  defp eval_kernel_macro(:inspect, [val]), do: inspect(val)
+  defp eval_kernel_macro(:inspect, [val, opts]), do: inspect(val, opts)
+  defp eval_kernel_macro(:throw, [val]), do: throw(val)
   defp eval_kernel_macro(fun, args) do
     require Logger
     Logger.warning("[RuntimeRenderer] Unhandled kernel macro: #{fun}/#{length(args)}")
@@ -1956,6 +1987,9 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_ast({:and, _, [l, r]}, b), do: eval_ast(l, b) && eval_ast(r, b)
   defp eval_ast({:or, _, [l, r]}, b), do: eval_ast(l, b) || eval_ast(r, b)
   defp eval_ast({:not, _, [expr]}, b), do: !eval_ast(expr, b)
+  defp eval_ast({:!, _, [expr]}, b), do: !eval_ast(expr, b)
+  defp eval_ast({:-, _, [expr]}, b), do: -eval_ast(expr, b)
+  defp eval_ast({:=~, _, [l, r]}, b), do: eval_ast(l, b) =~ eval_ast(r, b)
 
   # Conditionals
   defp eval_ast({:if, _, [condition, clauses]}, bindings) do
@@ -2003,6 +2037,13 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_ast(nil, _), do: nil
   defp eval_ast(value, _) when is_atom(value), do: value
 
+  # Map update: %{map | key: value}
+  defp eval_ast({:%{}, _, [{:|, _, [map_ast, pairs]}]}, bindings) do
+    map = eval_ast(map_ast, bindings)
+    updates = Map.new(pairs, fn {k, v} -> {eval_ast(k, bindings), eval_ast(v, bindings)} end)
+    Map.merge(map, updates)
+  end
+
   # Map literal: %{key => value}
   defp eval_ast({:%{}, _, pairs}, bindings) do
     Map.new(pairs, fn {k, v} -> {eval_ast(k, bindings), eval_ast(v, bindings)} end)
@@ -2027,14 +2068,111 @@ defmodule Beacon.RuntimeRenderer do
     end
   end
 
-  # case expression
+  # cond expression
+  defp eval_ast({:cond, _, [[do: clauses]]}, bindings) do
+    Enum.find_value(clauses, fn {:->, _, [[condition], body]} ->
+      if eval_ast(condition, bindings), do: eval_ast(body, bindings)
+    end)
+  end
+
+  # unless expression
+  defp eval_ast({:unless, _, [condition, clauses]}, bindings) do
+    unless eval_ast(condition, bindings) do
+      eval_ast(Keyword.fetch!(clauses, :do), bindings)
+    else
+      eval_ast(Keyword.get(clauses, :else), bindings)
+    end
+  end
+
+  # with expression
+  defp eval_ast({:with, _, clauses_and_body}, bindings) do
+    {body_opts, match_clauses} = List.pop_at(clauses_and_body, -1)
+    do_body = Keyword.fetch!(body_opts, :do)
+    else_clauses = Keyword.get(body_opts, :else)
+
+    result =
+      Enum.reduce_while(match_clauses, {:ok, bindings}, fn
+        {:<-, _, [pattern, expr]}, {:ok, acc_bindings} ->
+          value = eval_ast(expr, acc_bindings)
+
+          case match_pattern(pattern, value, acc_bindings) do
+            {:ok, new_bindings} -> {:cont, {:ok, new_bindings}}
+            :no_match -> {:halt, {:error, value}}
+          end
+      end)
+
+    case result do
+      {:ok, final_bindings} ->
+        eval_ast(do_body, final_bindings)
+
+      {:error, unmatched} when is_list(else_clauses) ->
+        Enum.find_value(else_clauses, fn {:->, _, [[pattern], body]} ->
+          case match_pattern(pattern, unmatched, bindings) do
+            {:ok, new_bindings} -> eval_ast(body, new_bindings)
+            :no_match -> nil
+          end
+        end)
+
+      {:error, _} ->
+        nil
+    end
+  end
+
+  # try/rescue
+  defp eval_ast({:try, _, [[do: do_body] ++ rest]}, bindings) do
+    rescue_clauses = Keyword.get(rest, :rescue, [])
+    after_body = Keyword.get(rest, :after)
+
+    try do
+      eval_ast(do_body, bindings)
+    rescue
+      error ->
+        matched =
+          Enum.find_value(rescue_clauses, fn {:->, _, [[pattern], body]} ->
+            case match_pattern(pattern, error, bindings) do
+              {:ok, new_bindings} -> eval_ast(body, new_bindings)
+              :no_match -> nil
+            end
+          end)
+
+        matched || reraise error, __STACKTRACE__
+    after
+      if after_body, do: eval_ast(after_body, bindings)
+    end
+  end
+
+  # for comprehension
+  defp eval_ast({:for, _, args}, bindings) do
+    {opts, generators} = List.pop_at(args, -1)
+    do_body = Keyword.fetch!(opts, :do)
+
+    eval_for_generators(generators, bindings, fn final_bindings ->
+      eval_ast(do_body, final_bindings)
+    end)
+  end
+
+  # Struct creation: %Module{field: value}
+  defp eval_ast({:%, _, [module_ast, {:%{}, _, pairs}]}, bindings) do
+    module = eval_ast(module_ast, bindings)
+    fields = Map.new(pairs, fn {k, v} -> {eval_ast(k, bindings), eval_ast(v, bindings)} end)
+    struct(module, fields)
+  end
+
+  # case expression (with optional guard support)
   defp eval_ast({:case, _, [expr, [do: clauses]]}, bindings) do
     value = eval_ast(expr, bindings)
 
-    Enum.find_value(clauses, fn {:->, _, [[pattern], body]} ->
+    Enum.find_value(clauses, fn {:->, _, [[pattern_or_guard], body]} ->
+      {pattern, guard} = extract_guard(pattern_or_guard)
+
       case match_pattern(pattern, value, bindings) do
-        {:ok, new_bindings} -> eval_ast(body, new_bindings)
-        :no_match -> nil
+        {:ok, new_bindings} ->
+          if guard == nil or eval_ast(guard, new_bindings) do
+            eval_ast(body, new_bindings)
+          end
+
+        :no_match ->
+          nil
       end
     end)
   end
@@ -2100,10 +2238,19 @@ defmodule Beacon.RuntimeRenderer do
 
   defp eval_fn_clauses(clauses, args, bindings) do
     Enum.find_value(clauses, fn
-      {:->, _, [patterns, body]} when length(patterns) == length(args) ->
-        case bind_patterns(patterns, args, bindings) do
-          {:ok, clause_bindings} -> {:matched, eval_ast(body, clause_bindings)}
-          :no_match -> nil
+      {:->, _, [patterns, body]} ->
+        {bare_patterns, guard} = extract_fn_guard(patterns)
+
+        if length(bare_patterns) == length(args) do
+          case bind_patterns(bare_patterns, args, bindings) do
+            {:ok, clause_bindings} ->
+              if guard == nil or eval_ast(guard, clause_bindings) do
+                {:matched, eval_ast(body, clause_bindings)}
+              end
+
+            :no_match ->
+              nil
+          end
         end
 
       _ ->
@@ -2193,6 +2340,34 @@ defmodule Beacon.RuntimeRenderer do
     end)
   end
 
+  # Pin operator: ^variable — match against existing binding value
+  defp match_pattern({:^, _, [{name, _, _}]}, value, bindings) when is_atom(name) do
+    case Map.fetch(bindings, name) do
+      {:ok, ^value} -> {:ok, bindings}
+      _ -> :no_match
+    end
+  end
+
+  # Bind pattern: left_pattern = right_pattern (e.g., %Post{} = post)
+  defp match_pattern({:=, _, [left, right]}, value, bindings) do
+    case match_pattern(left, value, bindings) do
+      {:ok, bindings2} -> match_pattern(right, value, bindings2)
+      :no_match -> :no_match
+    end
+  end
+
+  # Struct pattern: %Module{key: pattern, ...}
+  defp match_pattern({:%, _, [module_ast, {:%{}, _, pairs}]}, value, bindings) when is_map(value) do
+    module = eval_ast(module_ast, bindings)
+
+    if is_struct(value, module) do
+      # Delegate to map pattern matching for the fields
+      match_pattern({:%{}, [], pairs}, value, bindings)
+    else
+      :no_match
+    end
+  end
+
   defp match_pattern(_, _, _), do: :no_match
 
   defp match_pattern_sequence(patterns, values, bindings) when length(patterns) == length(values) do
@@ -2223,6 +2398,43 @@ defmodule Beacon.RuntimeRenderer do
   defp match_list_pattern([head_pattern | tail_patterns], [head_value | tail_values], bindings) do
     with {:ok, head_bindings} <- match_pattern(head_pattern, head_value, bindings) do
       match_list_pattern(tail_patterns, tail_values, head_bindings)
+    end
+  end
+
+  # Extract guard from case pattern: {:when, _, [pattern, guard]}
+  defp extract_guard({:when, _, [pattern, guard]}), do: {pattern, guard}
+  defp extract_guard(pattern), do: {pattern, nil}
+
+  # Extract guard from fn clause patterns: [pattern, {:when, _, guard}] or [{:when, _, [pattern, guard]}]
+  defp extract_fn_guard([{:when, _, clauses}]) do
+    {patterns, [guard]} = Enum.split(clauses, -1)
+    {patterns, guard}
+  end
+
+  defp extract_fn_guard(patterns), do: {patterns, nil}
+
+  # Evaluate for comprehension generators recursively
+  defp eval_for_generators([], bindings, body_fn) do
+    [body_fn.(bindings)]
+  end
+
+  defp eval_for_generators([{:<-, _, [pattern, enum_ast]} | rest], bindings, body_fn) do
+    enum = eval_ast(enum_ast, bindings)
+
+    Enum.flat_map(enum, fn item ->
+      case match_pattern(pattern, item, bindings) do
+        {:ok, new_bindings} -> eval_for_generators(rest, new_bindings, body_fn)
+        :no_match -> []
+      end
+    end)
+  end
+
+  # Filter clause in for comprehension
+  defp eval_for_generators([filter_ast | rest], bindings, body_fn) do
+    if eval_ast(filter_ast, bindings) do
+      eval_for_generators(rest, bindings, body_fn)
+    else
+      []
     end
   end
 end
