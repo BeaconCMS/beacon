@@ -142,11 +142,18 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   defp run_cli_stdin(input_css, _site) do
     check_version!()
 
+    # Write input CSS to a temp file — the only disk write.
+    # Templates are already inlined via @source inline("...") so the file
+    # is just the CSS directives, not the full template content.
+    # Tailwind CLI output goes to stdout (--output defaults to "-" in v4).
+    input_path = Path.join(System.tmp_dir!(), "beacon_input_#{:erlang.unique_integer([:positive])}.css")
+    File.write!(input_path, input_css)
+
     args =
       if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
-        ~w(--input -)
+        ~w(--input #{input_path})
       else
-        ~w(--input - --minify)
+        ~w(--input #{input_path} --minify)
       end
 
     Logger.debug("""
@@ -158,41 +165,24 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
 
     """)
 
-    port = Port.open({:spawn_executable, Tailwind.bin_path()}, [
-      :binary,
-      :exit_status,
-      :stderr_to_stdout,
-      args: args,
-      cd: File.cwd!()
-    ])
+    try do
+      {output, exit_code} =
+        System.cmd(Tailwind.bin_path(), args, cd: File.cwd!(), stderr_to_stdout: true)
 
-    Port.command(port, input_css)
-    Port.command(port, "")
-    Port.close(port)
-
-    collect_port_output(port, [])
-  end
-
-  defp collect_port_output(port, acc) do
-    receive do
-      {^port, {:data, data}} ->
-        collect_port_output(port, [acc, data])
-
-      {^port, {:exit_status, 0}} ->
-        IO.iodata_to_binary(acc)
-
-      {^port, {:exit_status, code}} ->
+      if exit_code == 0 do
+        output
+      else
         raise """
-        error running tailwind compiler, got exit code: #{code}
+        error running tailwind compiler, got exit code: #{exit_code}
 
         Tailwind bin path: #{inspect(Tailwind.bin_path())}
         Tailwind bin version: #{inspect(Tailwind.bin_version())}
 
-        Output: #{IO.iodata_to_binary(acc)}
+        Output: #{output}
         """
+      end
     after
-      :timer.minutes(5) ->
-        raise "Tailwind CLI timed out after 5 minutes"
+      File.rm(input_path)
     end
   end
 
