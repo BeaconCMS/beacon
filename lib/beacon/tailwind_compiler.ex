@@ -96,8 +96,12 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   defp build_input_css(site, templates) do
     config = Beacon.Config.fetch!(site)
 
-    # Escape quotes in templates for inline source
-    escaped = String.replace(templates, "\"", "'")
+    # CSS string escaping: backslashes first, then double quotes
+    escaped =
+      templates
+      |> String.replace("\\", "\\\\")
+      |> String.replace("\"", "\\\"")
+      |> String.replace("\n", " ")
 
     [
       "@import \"tailwindcss\" source(none);\n",
