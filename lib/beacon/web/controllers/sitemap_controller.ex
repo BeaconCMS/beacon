@@ -14,13 +14,11 @@ defmodule Beacon.Web.SitemapController do
   end
 
   defp get_pages(site) do
-    routes_module = Beacon.Loader.fetch_routes_module(site)
-
     site
     |> Beacon.Content.list_published_pages()
     |> Enum.map(fn page ->
       %{
-        loc: Beacon.apply_mfa(site, routes_module, :public_page_url, [page]),
+        loc: Beacon.RuntimeRenderer.public_page_url(site, page),
         lastmod: DateTime.to_iso8601(page.updated_at)
       }
     end)

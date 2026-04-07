@@ -24,6 +24,8 @@ defmodule Beacon.RuntimeRenderer.Loader do
     load_pages(site)
     load_event_handlers(site)
     load_info_handlers(site)
+    load_error_pages(site)
+    load_snippet_helpers(site)
 
     :ok
   end
@@ -181,6 +183,104 @@ defmodule Beacon.RuntimeRenderer.Loader do
   """
   def reload_event_handlers(site) do
     load_event_handlers(site)
+  end
+
+  @doc """
+  Loads all error pages for a site into the RuntimeRenderer.
+  """
+  def load_error_pages(site) do
+    error_pages = Content.list_error_pages(site, per_page: :infinity)
+
+    results =
+      Enum.map(error_pages, fn error_page ->
+        try do
+          RuntimeRenderer.publish_error_page(site, error_page.status, error_page.template)
+          :ok
+        rescue
+          error ->
+            require Logger
+            Logger.warning("[Beacon.RuntimeRenderer] Skipped error page #{error_page.status}: #{Exception.message(error)}")
+            :error
+        end
+      end)
+
+    loaded = Enum.count(results, &(&1 == :ok))
+    skipped = Enum.count(results, &(&1 == :error))
+
+    require Logger
+    Logger.info("[Beacon.RuntimeRenderer] Loaded #{loaded} error pages, skipped #{skipped} for site #{site}")
+  end
+
+  @doc """
+  Loads all snippet helpers for a site into the RuntimeRenderer.
+  """
+  def load_snippet_helpers(site) do
+    helpers = Content.list_snippet_helpers(site)
+
+    for helper <- helpers do
+      RuntimeRenderer.publish_snippet_helper(site, helper.name, helper.body)
+    end
+
+    require Logger
+    Logger.info("[Beacon.RuntimeRenderer] Loaded #{length(helpers)} snippet helpers for site #{site}")
+  end
+
+  @doc """
+  Reloads a single layout after it's been published.
+  Fetches the layout from the database and publishes it to ETS.
+  """
+  def reload_layout(site, layout_id) do
+    layout_id = to_string(layout_id)
+
+    case Content.get_published_layout(site, layout_id) do
+      nil ->
+        require Logger
+        Logger.warning("[Beacon.RuntimeRenderer] Layout #{layout_id} not found for site #{site}")
+        :error
+
+      layout ->
+        RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template)
+    end
+  end
+
+  @doc """
+  Reloads a single component after it's been updated.
+  Fetches the component from the database and publishes it to ETS.
+  """
+  def reload_component(site, component_name) do
+    case Content.get_component_by(site, name: component_name) do
+      nil ->
+        require Logger
+        Logger.warning("[Beacon.RuntimeRenderer] Component #{component_name} not found for site #{site}")
+        :error
+
+      component ->
+        RuntimeRenderer.publish_component(site, component.name, component.template, component.body || "")
+    end
+  end
+
+  @doc """
+  Reloads all snippet helpers for a site.
+  Called when snippet helpers are updated.
+  """
+  def reload_snippets(site) do
+    load_snippet_helpers(site)
+  end
+
+  @doc """
+  Reloads all error pages for a site.
+  Called when error pages are updated.
+  """
+  def reload_error_pages(site) do
+    load_error_pages(site)
+  end
+
+  @doc """
+  Reloads all info handlers for a site.
+  Called when info handlers are updated.
+  """
+  def reload_info_handlers(site) do
+    load_info_handlers(site)
   end
 
   # Load live_data definitions for a specific path.

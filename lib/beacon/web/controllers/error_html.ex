@@ -10,9 +10,16 @@ defmodule Beacon.Web.ErrorHTML do
   def render(<<status_code::binary-size(3), _rest::binary>> = template, %{conn: conn}) do
     case conn.private do
       %{phoenix_live_view: {_, _, %{extra: %{session: %{"beacon_site" => site}}}}} ->
-        error_module = Beacon.Loader.fetch_error_page_module(site)
-        conn = Plug.Conn.assign(conn, :beacon, Beacon.Web.BeaconAssigns.new(site))
-        Beacon.apply_mfa(site, error_module, :render, [conn, String.to_integer(status_code)])
+        status = String.to_integer(status_code)
+        assigns = %{conn: conn, beacon: %{site: site}}
+
+        case Beacon.RuntimeRenderer.render_error_page(site, status, assigns) do
+          {:ok, rendered} ->
+            rendered |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
+
+          {:error, :not_found} ->
+            Phoenix.Controller.status_message_from_template(template)
+        end
 
       _ ->
         Phoenix.Controller.status_message_from_template(template)

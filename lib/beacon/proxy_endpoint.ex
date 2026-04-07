@@ -58,8 +58,7 @@ defmodule Beacon.ProxyEndpoint do
       defp get_sitemap_urls(sites) do
         sites
         |> Enum.map(fn site ->
-          routes_module = Beacon.Loader.fetch_routes_module(site)
-          Beacon.apply_mfa(site, routes_module, :public_sitemap_url, [])
+          Beacon.RuntimeRenderer.public_sitemap_url(site)
         end)
         |> Enum.reject(&is_nil/1)
         |> Enum.sort()

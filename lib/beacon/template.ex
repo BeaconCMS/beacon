@@ -7,8 +7,6 @@ defmodule Beacon.Template do
 
   Template engines that do not support dynamic content can make use of the `:static` field to store its contents.
   """
-  alias Beacon.Web.BeaconAssigns
-
   require Logger
 
   @typedoc """
@@ -21,23 +19,13 @@ defmodule Beacon.Template do
   # Used for backwards-compatibility with Atom feeds
   @doc false
   def render_path(site, path_info, query_params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(query_params) do
-    case Beacon.RouterServer.lookup_page(site, path_info) do
-      nil ->
-        :error
+    path = "/" <> Enum.join(path_info, "/")
 
-      page ->
-        page_module = Beacon.Loader.fetch_page_module(page.site, page.id)
-        live_data = Beacon.Web.DataSource.live_data(site, path_info, query_params)
-        beacon_assigns = BeaconAssigns.new(page, path_info: path_info, query_params: query_params)
-        assigns = Map.put(live_data, :beacon, beacon_assigns)
-        env = Beacon.Web.PageLive.make_env(site)
-
-        template =
-          site
-          |> Beacon.apply_mfa(page_module, :page, [])
-          |> Beacon.Lifecycle.Template.render_template(assigns, env)
-
-        {:ok, template}
+    with {:ok, page_id} <- Beacon.RuntimeRenderer.lookup_page(site, path) do
+      {:ok, params_assigns} = Beacon.RuntimeRenderer.handle_params_assigns(site, path, Map.drop(query_params, ["path"]))
+      Beacon.RuntimeRenderer.render_to_string(site, page_id, params_assigns)
+    else
+      :error -> :error
     end
   end
 

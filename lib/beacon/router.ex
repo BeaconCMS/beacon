@@ -242,14 +242,12 @@ defmodule Beacon.Router do
 
   @doc false
   def beacon_asset_path(site, file_name) when is_atom(site) and is_binary(file_name) do
-    routes = Beacon.Loader.fetch_routes_module(site)
-    routes.beacon_media_path(file_name)
+    Beacon.RuntimeRenderer.beacon_media_path(site, file_name)
   end
 
   @doc false
   def beacon_asset_url(site, file_name) when is_atom(site) and is_binary(file_name) do
-    routes = Beacon.Loader.fetch_routes_module(site)
-    routes.beacon_media_url(file_name)
+    Beacon.RuntimeRenderer.beacon_media_url(site, file_name)
   end
 
   @doc false

@@ -25,9 +25,10 @@ defmodule Beacon.Content.Snippets.TagHelper do
     site = Beacon.Types.Atom.safe_to_atom(site)
 
     text =
-      site
-      |> Beacon.apply_mfa(Beacon.Loader.fetch_snippets_module(site), :render, [helper_name, context.counter_vars])
-      |> to_string()
+      case Beacon.RuntimeRenderer.render_snippet_helper(site, helper_name, context.counter_vars) do
+        {:ok, result} -> to_string(result)
+        {:error, _} -> ""
+      end
 
     {[text: text], context}
   end

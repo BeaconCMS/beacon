@@ -143,6 +143,64 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # ---------------------------------------------------------------------------
+  # Error page publishing and rendering
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Publishes an error page into the ETS store. Called during site boot.
+  Compiles the HEEx template to IR and stores it keyed by status code.
+  """
+  def publish_error_page(site, status_code, template) when is_atom(site) and is_integer(status_code) do
+    path = "error_page_#{status_code}"
+    env = Beacon.Web.PageLive.make_env(site)
+    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
+    ir = extract_ir(ast, env)
+    :ets.insert(@table, {{site, :error_page, status_code}, :erlang.term_to_binary(ir)})
+
+    :ok
+  end
+
+  @doc """
+  Renders an error page by status code. Returns `{:ok, rendered}` or `{:error, :not_found}`.
+  Uses a lazy-load fallback pattern matching render_layout.
+  """
+  def render_error_page(site, status_code, assigns) do
+    case :ets.lookup(@table, {site, :error_page, status_code}) do
+      [{_, serialized_ir}] ->
+        ir = :erlang.binary_to_term(serialized_ir)
+        full_assigns = Map.delete(assigns, :__changed__)
+        {:ok, render_ir(ir, full_assigns)}
+
+      [] ->
+        ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :error_pages)
+
+        Beacon.Cache.fetch(@table, {site, :error_page_load, status_code}, fn ->
+          case Beacon.Content.list_error_pages(site, per_page: :infinity) do
+            error_pages when is_list(error_pages) ->
+              Enum.find(error_pages, &(&1.status == status_code))
+              |> case do
+                nil -> :not_found
+                error_page -> publish_error_page(site, error_page.status, error_page.template)
+              end
+
+            _ ->
+              :not_found
+          end
+        end, ttl)
+
+        case :ets.lookup(@table, {site, :error_page, status_code}) do
+          [{_, serialized_ir}] ->
+            ir = :erlang.binary_to_term(serialized_ir)
+            full_assigns = Map.delete(assigns, :__changed__)
+            {:ok, render_ir(ir, full_assigns)}
+
+          [] ->
+            {:error, :not_found}
+        end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Component publishing and rendering
   # ---------------------------------------------------------------------------
 
@@ -287,6 +345,70 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # ---------------------------------------------------------------------------
+  # Snippet helpers — evaluate snippet helper bodies (replaces compiled Snippets module)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Stores a snippet helper's body in ETS, keyed by site and helper name.
+  Called during site boot to pre-load all snippet helpers.
+  """
+  def publish_snippet_helper(site, helper_name, body) when is_atom(site) and is_binary(helper_name) do
+    :ets.insert(@table, {{site, :snippet_helper, helper_name}, body})
+    :ok
+  end
+
+  @doc """
+  Renders a snippet helper by name. Evaluates the helper's body code with
+  the given assigns using the AST interpreter.
+
+  The snippet helper body is Elixir code that receives `assigns` as a map
+  (e.g., `assigns["page"]`). Returns the result as a string.
+
+  Returns `{:ok, result}` or `{:error, :not_found}`.
+  """
+  def render_snippet_helper(site, helper_name, assigns) when is_atom(site) do
+    case :ets.lookup(@table, {site, :snippet_helper, helper_name}) do
+      [{_, body}] ->
+        result = eval_snippet_helper_body(body, assigns)
+        {:ok, result}
+
+      [] ->
+        # Lazy-load snippet helpers for this site
+        ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :snippets)
+
+        Beacon.Cache.fetch(@table, {site, :snippet_helpers_load}, fn ->
+          helpers = Beacon.Content.list_snippet_helpers(site)
+
+          for helper <- helpers do
+            publish_snippet_helper(site, helper.name, helper.body)
+          end
+
+          :loaded
+        end, ttl)
+
+        case :ets.lookup(@table, {site, :snippet_helper, helper_name}) do
+          [{_, body}] ->
+            result = eval_snippet_helper_body(body, assigns)
+            {:ok, result}
+
+          [] ->
+            {:error, :not_found}
+        end
+    end
+  end
+
+  defp eval_snippet_helper_body(body, assigns) when is_binary(body) do
+    ast = Code.string_to_quoted!(body)
+    bindings = %{assigns: assigns}
+    eval_ast(ast, bindings)
+  rescue
+    error ->
+      require Logger
+      Logger.warning("[RuntimeRenderer] Snippet helper evaluation failed: #{Exception.message(error)}")
+      ""
+  end
+
+  # ---------------------------------------------------------------------------
   # Route lookup — resolve path to page_id (replaces RouterServer)
   # ---------------------------------------------------------------------------
 
@@ -369,6 +491,74 @@ defmodule Beacon.RuntimeRenderer do
         raise "no page found for site #{site} path #{path}"
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Route listing — scan ETS for all routes
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Lists all routes for a site. Scans ETS for all `{site, :route, path}` entries
+  and returns a list of `%{path: path, page_id: page_id}`.
+  """
+  def list_routes(site) when is_atom(site) do
+    :ets.match(@table, {{site, :route, :"$1"}, :"$2"})
+    |> Enum.map(fn [path, page_id] -> %{path: path, page_id: page_id} end)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Route helpers — URL generation without compiled modules
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Returns the full public URL for a page.
+  """
+  def public_page_url(site, page) do
+    config = Beacon.Config.fetch!(site)
+    prefix = config.router.__beacon_scoped_prefix_for_site__(site)
+    path = sanitize_path("#{prefix}#{page.path}")
+    uri = Beacon.ProxyEndpoint.public_uri(site)
+    String.Chars.URI.to_string(%{uri | path: path})
+  end
+
+  @doc """
+  Returns the public site URL (scheme + host + port + prefix, no trailing slash).
+  """
+  def public_site_url(site) do
+    uri =
+      case Beacon.ProxyEndpoint.public_uri(site) do
+        %{path: "/"} = uri -> %{uri | path: nil}
+        uri -> uri
+      end
+
+    String.Chars.URI.to_string(uri)
+  end
+
+  @doc """
+  Returns the public sitemap URL for a site.
+  """
+  def public_sitemap_url(site) do
+    public_site_url(site) <> "/sitemap.xml"
+  end
+
+  @doc """
+  Returns the media asset path for a file.
+  """
+  def beacon_media_path(site, file_name) do
+    config = Beacon.Config.fetch!(site)
+    prefix = config.router.__beacon_scoped_prefix_for_site__(site)
+    sanitize_path("#{prefix}/__beacon_media__/#{file_name}")
+  end
+
+  @doc """
+  Returns the full media asset URL for a file.
+  """
+  def beacon_media_url(site, file_name) do
+    uri = Beacon.ProxyEndpoint.public_uri(site)
+    host = String.Chars.URI.to_string(%URI{scheme: uri.scheme, host: uri.host, port: uri.port})
+    host <> beacon_media_path(site, file_name)
+  end
+
+  defp sanitize_path(path), do: String.replace(path, "//", "/")
 
   # ---------------------------------------------------------------------------
   # Page manifest — all metadata needed to mount (replaces page_module.page())

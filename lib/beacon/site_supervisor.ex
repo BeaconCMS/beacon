@@ -14,9 +14,7 @@ defmodule Beacon.SiteSupervisor do
       {Task.Supervisor, name: Beacon.Registry.via({config.site, TaskSupervisor})},
       {Beacon.Content, config},
       {Beacon.RouterServer, config},
-      {DynamicSupervisor,
-       name: Beacon.Registry.via({config.site, Beacon.LoaderSupervisor}), strategy: :one_for_one, max_restarts: 10, max_seconds: 30},
-      {Beacon.Loader, config},
+      {Beacon.RuntimeRenderer.PubSubHandler, config},
       {Beacon.Boot, config}
     ]
 
