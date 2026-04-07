@@ -84,7 +84,7 @@ defmodule Beacon.MixProject do
       {:postgrex, "~> 0.16"},
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
-      {:tailwind_compiler, github: "beaconcms/tailwind_compiler"},
+      {:tailwind_compiler, path: "../tailwind_compiler"},
       esbuild_version(),
       # Dev, Test, Docs
       {:bandit, "~> 1.0", only: :dev, optional: true},
@@ -121,7 +121,6 @@ defmodule Beacon.MixProject do
       dev: ["run --no-halt dev.exs"],
       "test.ci": ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": [
-        "tailwind.install --if-missing --no-assets",
         "esbuild.install --if-missing",
         "cmd npm install --prefix assets"
       ],

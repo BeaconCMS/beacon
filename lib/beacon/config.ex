@@ -63,11 +63,6 @@ defmodule Beacon.Config do
   @type mode :: :live | :testing | :manual
 
   @typedoc """
-  A module that implements `Beacon.RuntimeCSS`.
-  """
-  @type css_compiler :: module()
-
-  @typedoc """
   Path to a custom Tailwind config.
 
   ## Example
@@ -239,7 +234,6 @@ defmodule Beacon.Config do
           router: router(),
           repo: repo(),
           mode: mode(),
-          css_compiler: css_compiler(),
           tailwind_config: tailwind_config(),
           tailwind_css: tailwind_css(),
           live_socket_path: live_socket_path(),
@@ -280,7 +274,6 @@ defmodule Beacon.Config do
             mode: :live,
             # TODO: rename to `authorization_policy`, see https://github.com/BeaconCMS/beacon/pull/563
             # authorization_source: Beacon.Authorization.DefaultPolicy,
-            css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
             tailwind_config: nil,
             tailwind_css: nil,
             live_socket_path: "/live",
@@ -315,7 +308,6 @@ defmodule Beacon.Config do
           | {:router, router()}
           | {:repo, repo()}
           | {:mode, mode()}
-          | {:css_compiler, css_compiler()}
           | {:tailwind_config, tailwind_config()}
           | {:tailwind_css, tailwind_css()}
           | {:live_socket_path, live_socket_path()}
@@ -347,8 +339,6 @@ defmodule Beacon.Config do
     * `:repo` - `t:repo/0` (required)
 
     * `:mode` - `t:mode/0` (optional). Defaults to `:live`.
-
-    * `css_compiler` - `t:css_compiler/0` (optional). Defaults to `Beacon.RuntimeCSS.TailwindCompiler`.
 
     * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")`.
 
@@ -432,7 +422,6 @@ defmodule Beacon.Config do
         router: MyAppWeb.Router,
         repo: MyApp.Repo,
         mode: :live,
-        css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
         tailwind_config: "/my_app/priv/tailwind.config.js",
         tailwind_css: "/my_app/assets/css/app.css",
         live_socket_path: "/live",

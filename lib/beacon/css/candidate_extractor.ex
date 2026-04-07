@@ -6,13 +6,6 @@ defmodule Beacon.CSS.CandidateExtractor do
   False positives add unused CSS (harmless). False negatives miss styles (broken).
   """
 
-  # Tailwind candidate grammar:
-  # - Starts with: a-z, 0-9, !, -, [, @
-  # - Contains: a-z, 0-9, :, /, -, [, ], ., _, !, #, %, (, )
-  # - Variants use : as separator (hover:, sm:, dark:)
-  # - Modifiers use / (bg-red-500/50)
-  # - Arbitrary values use [] (w-[calc(100%-2rem)])
-
   @doc """
   Extracts Tailwind CSS class candidates from a template string.
 
@@ -30,11 +23,25 @@ defmodule Beacon.CSS.CandidateExtractor do
 
   defp valid_candidate?(token) do
     byte_size(token) > 1 and
-      String.match?(token, ~r/^[!@a-z0-9\-\[]/i) and
+      # Must start with a letter, !, -, [, or @
+      # Never starts with a digit (filters SVG path data, coordinates)
+      String.match?(token, ~r/^[!@a-z\-\[]/i) and
+      # Must contain a letter somewhere (filters pure numeric tokens)
+      String.match?(token, ~r/[a-z]/i) and
+      # Only valid Tailwind characters
       String.match?(token, ~r/^[a-z0-9!@\-\[\].:\/_#%()]*$/i) and
+      # Exclude common non-class patterns
       not String.starts_with?(token, "//") and
       not String.starts_with?(token, "http") and
       not String.starts_with?(token, "{{") and
-      not String.contains?(token, "==")
+      not String.contains?(token, "==") and
+      # Exclude SVG path commands (M, C, A, L, Z followed by numbers)
+      not svg_path_data?(token)
+  end
+
+  # SVG path data looks like "M358.986", "C12.2-3.4", "A5.9847"
+  # These are a single uppercase letter followed by digits/dots/dashes
+  defp svg_path_data?(token) do
+    String.match?(token, ~r/^[MmCcSsQqTtAaLlHhVvZz]\d/)
   end
 end
