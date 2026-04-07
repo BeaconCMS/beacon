@@ -10,8 +10,13 @@ defmodule Beacon.RuntimeCSS do
   @doc false
   def compile_from_candidates(site, candidates) when is_atom(site) and is_list(candidates) do
     theme_json = load_theme_json(site)
+    custom_css = collect_custom_css(site)
 
-    case TailwindCompiler.compile(candidates, theme: theme_json, preflight: true) do
+    case TailwindCompiler.compile(candidates,
+           theme: theme_json,
+           preflight: true,
+           custom_css: custom_css
+         ) do
       {:ok, css} -> {:ok, css}
       {:error, reason} -> {:error, reason}
     end
@@ -81,15 +86,19 @@ defmodule Beacon.RuntimeCSS do
     MapSet.union(page_candidates, site_candidates)
   end
 
-  defp load_theme_json(site) do
-    config = Beacon.Config.fetch!(site)
+  defp load_theme_json(_site) do
+    # The tailwind_config setting points to a JS file, not JSON.
+    # The Zig NIF expects JSON theme overrides. For now, use defaults.
+    # TODO: parse tailwind config at boot time and extract theme values into JSON
+    nil
+  end
 
-    cond do
-      config.tailwind_config && File.exists?(config.tailwind_config) ->
-        File.read!(config.tailwind_config)
+  defp collect_custom_css(site) do
+    stylesheets =
+      site
+      |> Beacon.Content.list_stylesheets()
+      |> Enum.map_join("\n", fn s -> s.content end)
 
-      true ->
-        nil
-    end
+    if stylesheets == "", do: nil, else: stylesheets
   end
 end
