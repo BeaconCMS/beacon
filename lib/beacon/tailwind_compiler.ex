@@ -142,32 +142,33 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
   defp run_cli_stdin(input_css, _site) do
     check_version!()
 
-    # Write input CSS to a temp file — the only disk write.
-    # Templates are already inlined via @source inline("...") so the file
-    # is just the CSS directives, not the full template content.
-    # Tailwind CLI output goes to stdout (--output defaults to "-" in v4).
-    input_path = Path.join(System.tmp_dir!(), "beacon_input_#{:erlang.unique_integer([:positive])}.css")
-    File.write!(input_path, input_css)
-
-    args =
-      if Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev] do
-        ~w(--input #{input_path})
-      else
-        ~w(--input #{input_path} --minify)
-      end
+    minify? = not (Code.ensure_loaded?(Mix.Project) and Mix.env() in [:test, :dev])
+    bin = Tailwind.bin_path()
 
     Logger.debug("""
     running Beacon Tailwind Compiler (v4)
 
-      bin_path: #{inspect(Tailwind.bin_path())}
-      args: #{inspect(args)}
+      bin_path: #{inspect(bin)}
       input_size: #{byte_size(input_css)} bytes
 
     """)
 
+    # Use a named pipe (FIFO) so no data is written to disk.
+    # A FIFO is a kernel-memory buffer with a filesystem name —
+    # the CSS bytes flow through RAM, never touch storage.
+    fifo = Path.join(System.tmp_dir!(), "beacon_fifo_#{:erlang.unique_integer([:positive])}")
+    {_, 0} = System.cmd("mkfifo", [fifo])
+
+    args = if minify?, do: ~w(--input #{fifo} --minify), else: ~w(--input #{fifo})
+
+    # Writer blocks until the reader (Tailwind) opens the FIFO
+    writer = Task.async(fn -> File.write!(fifo, input_css) end)
+
     try do
       {output, exit_code} =
-        System.cmd(Tailwind.bin_path(), args, cd: File.cwd!(), stderr_to_stdout: true)
+        System.cmd(bin, args, cd: File.cwd!(), stderr_to_stdout: true)
+
+      Task.await(writer, :timer.minutes(5))
 
       if exit_code == 0 do
         output
@@ -175,14 +176,14 @@ defmodule Beacon.RuntimeCSS.TailwindCompiler do
         raise """
         error running tailwind compiler, got exit code: #{exit_code}
 
-        Tailwind bin path: #{inspect(Tailwind.bin_path())}
+        Tailwind bin path: #{inspect(bin)}
         Tailwind bin version: #{inspect(Tailwind.bin_version())}
 
         Output: #{output}
         """
       end
     after
-      File.rm(input_path)
+      File.rm(fifo)
     end
   end
 
