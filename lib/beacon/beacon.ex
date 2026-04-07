@@ -191,8 +191,6 @@ defmodule Beacon do
   end
 
   @doc false
-  # This should always be used when calling dynamic modules
-  @doc false
   def apply_mfa(_site, module, function, args, _opts \\ [])
       when is_atom(module) and is_atom(function) and is_list(args) do
     apply(module, function, args)
