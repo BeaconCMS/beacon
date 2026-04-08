@@ -44,6 +44,28 @@ defmodule Beacon.CSS.ThemeParser do
       |> maybe_put("gridTemplateRows", extract_section(js, "gridTemplateRows"))
       |> maybe_put("aspectRatio", extract_section(js, "aspectRatio"))
 
+    # Post-process fontSize: split array values into size + line-height
+    # v4 expects --text-3xl: 2rem and --text-3xl--line-height: 2.5rem
+    theme =
+      case Map.get(theme, "fontSize") do
+        nil ->
+          theme
+
+        font_sizes when is_map(font_sizes) ->
+          {split_sizes, _} =
+            Enum.reduce(font_sizes, {%{}, %{}}, fn {key, value}, {sizes, _} ->
+              case String.split(value, ",", parts: 2) do
+                [size, line_height] ->
+                  {sizes |> Map.put(key, String.trim(size)) |> Map.put("#{key}--line-height", String.trim(line_height)), %{}}
+
+                [_single] ->
+                  {Map.put(sizes, key, value), %{}}
+              end
+            end)
+
+          Map.put(theme, "fontSize", split_sizes)
+      end
+
     if map_size(theme) > 0 do
       Jason.encode!(theme)
     end
