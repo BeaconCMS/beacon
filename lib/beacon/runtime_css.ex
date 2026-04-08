@@ -137,6 +137,13 @@ defmodule Beacon.RuntimeCSS do
         MapSet.union(acc, CandidateExtractor.extract(component.template))
       end)
 
+    # Error page candidates
+    error_page_candidates =
+      Beacon.Content.list_error_pages(site, per_page: :infinity)
+      |> Enum.reduce(MapSet.new(), fn error_page, acc ->
+        MapSet.union(acc, CandidateExtractor.extract(error_page.template))
+      end)
+
     # Host app safelist from compiled module
     safelist_candidates =
       case Beacon.Config.fetch!(site) do
@@ -154,6 +161,7 @@ defmodule Beacon.RuntimeCSS do
     page_candidates
     |> MapSet.union(layout_candidates)
     |> MapSet.union(component_candidates)
+    |> MapSet.union(error_page_candidates)
     |> MapSet.union(safelist_candidates)
   end
 
