@@ -276,6 +276,8 @@ defmodule Beacon.Config do
             # authorization_source: Beacon.Authorization.DefaultPolicy,
             tailwind_config: nil,
             tailwind_css: nil,
+            css_safelist: [],
+            css_safelist_module: nil,
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,

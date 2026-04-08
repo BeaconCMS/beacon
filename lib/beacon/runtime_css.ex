@@ -95,9 +95,24 @@ defmodule Beacon.RuntimeCSS do
         MapSet.union(acc, CandidateExtractor.extract(component.template))
       end)
 
+    # Host app safelist from compiled module
+    safelist_candidates =
+      case Beacon.Config.fetch!(site) do
+        %{css_safelist_module: module} when not is_nil(module) ->
+          if Code.ensure_loaded?(module) and function_exported?(module, :list, 0) do
+            module.list() |> MapSet.new()
+          else
+            MapSet.new()
+          end
+
+        _ ->
+          MapSet.new()
+      end
+
     page_candidates
     |> MapSet.union(layout_candidates)
     |> MapSet.union(component_candidates)
+    |> MapSet.union(safelist_candidates)
   end
 
   defp load_theme_json(site) do
