@@ -1685,20 +1685,25 @@ defmodule Beacon.RuntimeRenderer do
 
   # Unresolved component call (nil module) — try as a Beacon CMS component
   defp eval_ir({:component_call, {:component_fun, nil, fun_name}, {:component_assigns, pairs}}, a, b) when is_atom(fun_name) do
-    site = Map.get(a, :beacon, %{}) |> Map.get(:site)
-    component_name = Atom.to_string(fun_name)
-
-    if site do
-      component_assigns =
-        Enum.reduce(pairs, %{}, fn
-          {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
-          {:inner_block, _}, acc -> acc
-          {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
-        end)
-
-      render_component(site, component_name, component_assigns)
+    # Try as a Phoenix built-in component first (e.g., <.link>, <.form>, <.inputs_for>)
+    if function_exported?(Phoenix.Component, fun_name, 1) do
+      eval_ir({:component_call, {:component_fun, Phoenix.Component, fun_name}, {:component_assigns, pairs}}, a, b)
     else
-      ""
+      site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+      component_name = Atom.to_string(fun_name)
+
+      if site do
+        component_assigns =
+          Enum.reduce(pairs, %{}, fn
+            {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
+            {:inner_block, _}, acc -> acc
+            {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
+          end)
+
+        render_component(site, component_name, component_assigns)
+      else
+        ""
+      end
     end
   end
 
