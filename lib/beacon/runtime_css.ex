@@ -71,36 +71,33 @@ defmodule Beacon.RuntimeCSS do
   defp collect_all_candidates(site) do
     alias Beacon.CSS.CandidateExtractor
 
-    # Page candidates from ETS (extracted at publish_page time)
+    # Scan ALL published page templates from DB — not just pages loaded in ETS.
+    # With lazy loading, only requested pages are in ETS. CSS needs candidates
+    # from every page on the site.
     page_candidates =
-      :ets.match(:beacon_runtime_poc, {{site, :_, :css_candidates}, :"$1"})
-      |> Enum.reduce(MapSet.new(), fn [candidates], acc -> MapSet.union(acc, candidates) end)
+      Beacon.Content.list_published_pages_snapshot_data(site)
+      |> Enum.reduce(MapSet.new(), fn page, acc ->
+        template = Beacon.Lifecycle.Template.load_template(page)
+        MapSet.union(acc, CandidateExtractor.extract(template))
+      end)
 
-    # Layout candidates — extract from published layout templates
+    # Layout candidates
     layout_candidates =
       Beacon.Content.list_published_layouts(site)
       |> Enum.reduce(MapSet.new(), fn layout, acc ->
         MapSet.union(acc, CandidateExtractor.extract(layout.template))
       end)
 
-    # Component candidates — extract from all component templates
+    # Component candidates
     component_candidates =
       Beacon.Content.list_components(site, per_page: :infinity)
       |> Enum.reduce(MapSet.new(), fn component, acc ->
         MapSet.union(acc, CandidateExtractor.extract(component.template))
       end)
 
-    # Site-wide set from ETS
-    site_candidates =
-      case :ets.lookup(:beacon_runtime_poc, {site, :css_candidates}) do
-        [{_, candidates}] -> candidates
-        [] -> MapSet.new()
-      end
-
     page_candidates
     |> MapSet.union(layout_candidates)
     |> MapSet.union(component_candidates)
-    |> MapSet.union(site_candidates)
   end
 
   defp load_theme_json(site) do
