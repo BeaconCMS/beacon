@@ -86,11 +86,12 @@ defmodule Beacon.RuntimeCSS do
     MapSet.union(page_candidates, site_candidates)
   end
 
-  defp load_theme_json(_site) do
-    # The tailwind_config setting points to a JS file, not JSON.
-    # The Zig NIF expects JSON theme overrides. For now, use defaults.
-    # TODO: parse tailwind config at boot time and extract theme values into JSON
-    nil
+  defp load_theme_json(site) do
+    config = Beacon.Config.fetch!(site)
+
+    if config.tailwind_config && File.exists?(config.tailwind_config) do
+      Beacon.CSS.ThemeParser.parse_file(config.tailwind_config)
+    end
   end
 
   defp collect_custom_css(site) do
