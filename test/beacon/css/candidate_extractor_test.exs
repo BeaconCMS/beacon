@@ -189,6 +189,24 @@ defmodule Beacon.CSS.CandidateExtractorTest do
       assert "leading-[1.2]" in candidates
     end
 
+    test "extracts 2xl: responsive variant classes" do
+      template = ~s(<div class="2xl:pt-20 2xl:text-lg">)
+
+      candidates = CandidateExtractor.extract(template)
+
+      assert "2xl:pt-20" in candidates
+      assert "2xl:text-lg" in candidates
+    end
+
+    test "extracts data attribute selector classes" do
+      template = ~s(<div class="data-[state=open]:bg-blue-500 data-[side=top]:animate-slideDown">)
+
+      candidates = CandidateExtractor.extract(template)
+
+      assert "data-[state=open]:bg-blue-500" in candidates
+      assert "data-[side=top]:animate-slideDown" in candidates
+    end
+
     test "extracts from multiline templates" do
       template = """
       <div

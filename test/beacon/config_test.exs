@@ -22,7 +22,6 @@ defmodule Beacon.ConfigTest do
   describe "registry" do
     test "returns the site config" do
       assert %Beacon.Config{
-               css_compiler: Beacon.RuntimeCSS.TailwindCompiler,
                live_socket_path: "/custom_live",
                safe_code_check: false,
                site: :my_site,
