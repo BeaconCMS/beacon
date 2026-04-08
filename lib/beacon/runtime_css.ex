@@ -65,7 +65,7 @@ defmodule Beacon.RuntimeCSS do
   def config(_site), do: ""
 
   defp ensure_compiled(site) do
-    if safelist_recompiled?(site) do
+    if safelist_recompiled?(site) or nif_recompiled?(site) do
       :ets.delete(:beacon_assets, {site, :css})
       :ets.delete(:beacon_assets, {site, :css_compile})
       load!(site)
@@ -99,6 +99,35 @@ defmodule Beacon.RuntimeCSS do
         # No previous mtime stored — first run, store it
         with module when not is_nil(module) <- module,
              path when is_list(path) <- :code.which(module),
+             {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)) do
+          :ets.insert(:beacon_assets, {key, mtime})
+        end
+
+        false
+
+      _ ->
+        false
+    end
+  end
+
+  defp nif_recompiled?(site) do
+    key = {site, :css_nif_mtime}
+
+    with path when is_list(path) <- :code.which(TailwindCompiler.NIF),
+         {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)),
+         [{_, ^mtime}] <- :ets.lookup(:beacon_assets, key) do
+      false
+    else
+      [{_, _prev}] ->
+        with path when is_list(path) <- :code.which(TailwindCompiler.NIF),
+             {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)) do
+          :ets.insert(:beacon_assets, {key, mtime})
+        end
+
+        true
+
+      [] ->
+        with path when is_list(path) <- :code.which(TailwindCompiler.NIF),
              {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)) do
           :ets.insert(:beacon_assets, {key, mtime})
         end
