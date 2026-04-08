@@ -1,5 +1,11 @@
 var Beacon = (() => {
   // js/beacon.js
+  window.addEventListener("phx:beacon:css-ready", (e) => {
+    let link = document.getElementById("beacon-runtime-stylesheet");
+    if (link) {
+      link.href = e.detail.href;
+    }
+  });
   window.addEventListener("phx:beacon:page-updated", (e) => {
     if (e.detail.hasOwnProperty("runtime_css_path")) {
       document.getElementById("beacon-runtime-stylesheet").href = e.detail.runtime_css_path;

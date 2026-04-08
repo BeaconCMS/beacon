@@ -35,16 +35,63 @@ defmodule Beacon.Web.PageLive do
           roll
       end
 
+    # Check if CSS is ready before blocking on page rendering
+    warming = not Beacon.RuntimeCSS.css_ready?(site)
+
+    if warming do
+      Beacon.RuntimeCSS.compile_async(site)
+
+      if connected?(socket) do
+        Beacon.PubSub.subscribe_to_css(site)
+      end
+    end
+
     path_str = "/" <> Enum.join(path, "/")
     {:ok, assigns} = Beacon.RuntimeRenderer.mount_assigns(site, path_str, variant_roll: variant_roll)
-    socket = Component.assign(socket, assigns)
+
+    socket =
+      socket
+      |> Component.assign(assigns)
+      |> Component.assign(:beacon_warming, warming)
+
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
+  end
+
+  def render(%{beacon_warming: true} = assigns) do
+    %{beacon: %{site: site}} = assigns
+    warming_html = Beacon.Web.Warming.render(site)
+
+    assigns = Map.put(assigns, :warming_html, warming_html)
+
+    ~H"""
+    <%= {:safe, @warming_html} %>
+    """
   end
 
   def render(assigns) do
     %{beacon: %{site: site, private: %{page_id: page_id}}} = assigns
     {:ok, rendered} = Beacon.RuntimeRenderer.render_page(site, page_id, assigns)
     rendered
+  end
+
+  def handle_info({:css_compiled, site}, socket) do
+    %{beacon: %{site: socket_site}} = socket.assigns
+
+    if site == socket_site do
+      hash = Beacon.RuntimeCSS.current_hash(site)
+      router = socket.router
+      prefix = router.__beacon_scoped_prefix_for_site__(site)
+      css_path = Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/css-#{hash}")
+
+      socket =
+        socket
+        |> Component.assign(:beacon_warming, false)
+        |> push_event("beacon:css-ready", %{href: css_path})
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_info({:page_loaded, _}, socket) do

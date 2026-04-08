@@ -9,6 +9,17 @@ defmodule Beacon.Web.AssetsController do
 
   def init(asset) when asset in [:css_config, :css, :js], do: asset
 
+  # Serve an empty stylesheet immediately while CSS is compiling
+  def call(%{params: %{"md5" => "warming"}} = conn, :css) do
+    conn = put_private(conn, :plug_skip_csrf_protection, true)
+
+    conn
+    |> put_resp_header("content-type", "text/css")
+    |> put_resp_header("cache-control", "no-cache, no-store, must-revalidate")
+    |> send_resp(200, "/* beacon: compiling */")
+    |> halt()
+  end
+
   def call(%{assigns: %{site: site}, params: %{"md5" => hash}} = conn, asset) when asset in [:css, :js] when is_binary(hash) do
     accept_encoding =
       case get_req_header(conn, "accept-encoding") do

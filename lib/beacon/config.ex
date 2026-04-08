@@ -278,6 +278,7 @@ defmodule Beacon.Config do
             tailwind_css: nil,
             css_safelist: [],
             css_safelist_module: nil,
+            css_warming_template: nil,
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,

@@ -95,6 +95,20 @@ defmodule Beacon.PubSub do
 
   defp page(page), do: %{site: page.site, id: page.id, path: page.path}
 
+  # CSS
+
+  defp topic_css(site), do: "beacon:#{site}:css"
+
+  def subscribe_to_css(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_css(site))
+  end
+
+  def css_compiled(site) do
+    site
+    |> topic_css()
+    |> broadcast({:css_compiled, site}, site)
+  end
+
   # Utils
 
   defp broadcast(topic, message, site) when is_binary(topic) do

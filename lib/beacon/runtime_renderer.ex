@@ -1084,6 +1084,12 @@ defmodule Beacon.RuntimeRenderer do
     {:dot, transform_expr(inner), key}
   end
 
+  # Calling a function stored in a variable/assign: expr.(args)
+  # e.g., @route.(@current_page - 1), fun.(arg)
+  defp transform_expr({{:., _, [callee]}, _, args}) when is_list(args) do
+    {:fun_call, transform_expr(callee), Enum.map(args, &transform_expr/1)}
+  end
+
   # Unary operators
   defp transform_expr({:!, _, [expr]}), do: {:op, :!, [transform_expr(expr)]}
   defp transform_expr({:not, _, [expr]}), do: {:op, :not, [transform_expr(expr)]}
@@ -1221,6 +1227,17 @@ defmodule Beacon.RuntimeRenderer do
        {key, value} when is_atom(key) -> {key, transform_expr(value)}
        {key, value} -> {transform_expr(key), transform_expr(value)}
      end)}
+  end
+
+  # Anonymous function: fn args -> body end
+  defp transform_expr({:fn, _, clauses}) when is_list(clauses) do
+    transformed_clauses =
+      Enum.map(clauses, fn {:->, _, [params, body]} ->
+        param_names = Enum.map(params, &extract_var_name/1)
+        {:clause, param_names, transform_expr(body)}
+      end)
+
+    {:anon_fn, transformed_clauses}
   end
 
   # Function capture: &fun/arity
@@ -1599,6 +1616,47 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp eval_ir({:literal, value}, _assigns, _bindings), do: value
+
+  # Calling a function stored in a variable/assign: fun.(args)
+  defp eval_ir({:fun_call, callee_ir, arg_irs}, assigns, bindings) do
+    fun = eval_ir(callee_ir, assigns, bindings)
+    args = Enum.map(arg_irs, &eval_ir(&1, assigns, bindings))
+
+    if is_function(fun, length(args)) do
+      apply(fun, args)
+    else
+      nil
+    end
+  end
+
+  # Anonymous function: fn args -> body end
+  defp eval_ir({:anon_fn, clauses}, assigns, bindings) do
+    fn_clauses = clauses
+
+    # Build a function that pattern-matches the first clause
+    # (simplified: supports single-clause fns which covers the common case)
+    case fn_clauses do
+      [{:clause, param_names, body_ir}] ->
+        case length(param_names) do
+          0 -> fn -> eval_ir(body_ir, assigns, bindings) end
+          1 -> fn arg1 -> eval_ir(body_ir, assigns, Map.put(bindings, hd(param_names), arg1)) end
+          2 -> fn arg1, arg2 ->
+            b = bindings |> Map.put(Enum.at(param_names, 0), arg1) |> Map.put(Enum.at(param_names, 1), arg2)
+            eval_ir(body_ir, assigns, b)
+          end
+          _ -> fn -> eval_ir(body_ir, assigns, bindings) end
+        end
+
+      _ ->
+        # Multi-clause: use first clause as fallback
+        [{:clause, param_names, body_ir} | _] = fn_clauses
+        case length(param_names) do
+          0 -> fn -> eval_ir(body_ir, assigns, bindings) end
+          1 -> fn arg1 -> eval_ir(body_ir, assigns, Map.put(bindings, hd(param_names), arg1)) end
+          _ -> fn -> eval_ir(body_ir, assigns, bindings) end
+        end
+    end
+  end
 
   # The bare `assigns` variable in HEEx refers to the entire assigns map
   defp eval_ir({:var, :assigns}, assigns, _bindings), do: assigns
