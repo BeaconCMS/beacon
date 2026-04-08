@@ -65,7 +65,49 @@ defmodule Beacon.RuntimeCSS do
   def config(_site), do: ""
 
   defp ensure_compiled(site) do
+    if safelist_recompiled?(site) do
+      :ets.delete(:beacon_assets, {site, :css})
+      :ets.delete(:beacon_assets, {site, :css_compile})
+      load!(site)
+    end
+
     Beacon.CSS.Storage.fetch(site)
+  end
+
+  defp safelist_recompiled?(site) do
+    module = Beacon.Config.fetch!(site) |> Map.get(:css_safelist_module)
+    key = {site, :css_safelist_mtime}
+
+    with module when not is_nil(module) <- module,
+         true <- Code.ensure_loaded?(module),
+         path when is_list(path) <- :code.which(module),
+         {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)),
+         [{_, ^mtime}] <- :ets.lookup(:beacon_assets, key) do
+      false
+    else
+      [{_, _prev}] ->
+        # mtime didn't match — module was recompiled
+        with module when not is_nil(module) <- module,
+             path when is_list(path) <- :code.which(module),
+             {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)) do
+          :ets.insert(:beacon_assets, {key, mtime})
+        end
+
+        true
+
+      [] ->
+        # No previous mtime stored — first run, store it
+        with module when not is_nil(module) <- module,
+             path when is_list(path) <- :code.which(module),
+             {:ok, %{mtime: mtime}} <- File.stat(List.to_string(path)) do
+          :ets.insert(:beacon_assets, {key, mtime})
+        end
+
+        false
+
+      _ ->
+        false
+    end
   end
 
   defp collect_all_candidates(site) do
