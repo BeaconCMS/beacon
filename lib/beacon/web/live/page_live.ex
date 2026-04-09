@@ -78,14 +78,11 @@ defmodule Beacon.Web.PageLive do
     %{beacon: %{site: socket_site}} = socket.assigns
 
     if site == socket_site do
-      # Navigate to the same page to force a clean mount.
-      # A simple re-render would switch from the warming template to the real
-      # page template, but LiveView's diff system then re-evaluates comprehension
-      # dynamics without the loop-variable bindings (e.g. `employee` in a for
-      # loop), causing nil references. A redirect goes through a full mount
-      # where everything is evaluated correctly.
+      # Redirect (not push_navigate) to force a full HTTP request.
+      # push_navigate keeps the existing root layout, so the <link href="css-warming">
+      # tag would persist. A redirect re-renders the root layout with the real CSS hash.
       path = socket.assigns.beacon.private.live_path
-      {:noreply, push_navigate(socket, to: "/" <> Enum.join(path, "/"))}
+      {:noreply, redirect(socket, to: "/" <> Enum.join(path, "/"))}
     else
       {:noreply, socket}
     end
