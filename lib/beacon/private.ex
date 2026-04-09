@@ -52,18 +52,9 @@ defmodule Beacon.Private do
     Phoenix.LiveView.Route.live_link_info_without_checks(endpoint, router, url)
   end
 
-  def endpoint_config(otp_app, endpoint) do
-    Phoenix.Endpoint.Supervisor.config(otp_app, endpoint)
+  def endpoint_host(_otp_app, endpoint) do
+    endpoint.host()
   end
-
-  def endpoint_host(otp_app, endpoint) do
-    url_config = endpoint_config(otp_app, endpoint)[:url]
-    host_to_binary(url_config[:host] || "localhost")
-  end
-
-  # https://github.com/phoenixframework/phoenix/blob/4ebefb9d1f710c576f08c517f5852498dd9b935c/lib/phoenix/endpoint/supervisor.ex#L301-L302
-  defp host_to_binary({:system, env_var}), do: host_to_binary(System.get_env(env_var))
-  defp host_to_binary(host), do: host
 
   def router(%{private: %{phoenix_router: router}}), do: router
 

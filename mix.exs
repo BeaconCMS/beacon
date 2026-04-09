@@ -69,7 +69,7 @@ defmodule Beacon.MixProject do
       {:ex_aws, "~> 2.4.0"},
       {:ex_aws_s3, "~> 2.4.0"},
       {:floki, ">= 0.30.0"},
-      {:gettext, "~> 0.26"},
+      {:gettext, "~> 0.26 or ~> 1.0"},
       {:hackney, "~> 1.16"},
       {:image, "~> 0.40"},
       {:vix, "<= 0.30.0 or >= 0.31.1"},
