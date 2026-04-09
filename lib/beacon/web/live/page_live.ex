@@ -78,17 +78,14 @@ defmodule Beacon.Web.PageLive do
     %{beacon: %{site: socket_site}} = socket.assigns
 
     if site == socket_site do
-      hash = Beacon.RuntimeCSS.current_hash(site)
-      router = socket.router
-      prefix = router.__beacon_scoped_prefix_for_site__(site)
-      css_path = Beacon.Router.sanitize_path("#{prefix}/__beacon_assets__/css-#{hash}")
-
-      socket =
-        socket
-        |> Component.assign(:beacon_warming, false)
-        |> push_event("beacon:css-ready", %{href: css_path})
-
-      {:noreply, socket}
+      # Navigate to the same page to force a clean mount.
+      # A simple re-render would switch from the warming template to the real
+      # page template, but LiveView's diff system then re-evaluates comprehension
+      # dynamics without the loop-variable bindings (e.g. `employee` in a for
+      # loop), causing nil references. A redirect goes through a full mount
+      # where everything is evaluated correctly.
+      path = socket.assigns.beacon.private.live_path
+      {:noreply, push_navigate(socket, to: "/" <> Enum.join(path, "/"))}
     else
       {:noreply, socket}
     end

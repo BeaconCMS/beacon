@@ -1,4 +1,6 @@
 defmodule Beacon.RuntimeRenderer do
+  require Logger
+
   @moduledoc """
   Proof of concept: Runtime page rendering without ANY runtime code compilation.
 
@@ -618,6 +620,18 @@ defmodule Beacon.RuntimeRenderer do
     page_id = lookup_page!(site, path)
     manifest = fetch_manifest!(site, page_id)
     variant_roll = Keyword.get(opts, :variant_roll)
+    path_info = String.split(String.trim_leading(path, "/"), "/", trim: true)
+
+    # Evaluate live data at mount time so assigns are available for the initial render
+    # (render is called before handle_params in LiveView)
+    live_data = evaluate_live_data(site, page_id, path_info, %{})
+
+    if Map.has_key?(live_data, :employees) do
+      employees = live_data.employees
+      Logger.debug("[RuntimeRenderer] mount_assigns live_data has :employees — is_list=#{is_list(employees)}, count=#{if is_list(employees), do: length(employees), else: "N/A"}, nils=#{if is_list(employees), do: Enum.count(employees, &is_nil/1), else: "N/A"}")
+    else
+      Logger.debug("[RuntimeRenderer] mount_assigns live_data keys: #{inspect(Map.keys(live_data))}")
+    end
 
     beacon = %{
       site: site,
@@ -627,13 +641,13 @@ defmodule Beacon.RuntimeRenderer do
       private: %{
         page_id: page_id,
         layout_id: manifest.layout_id,
-        live_data_keys: [],
-        live_path: [],
+        live_data_keys: Map.keys(live_data),
+        live_path: path_info,
         variant_roll: variant_roll
       }
     }
 
-    {:ok, %{beacon: beacon, page_title: manifest.title}}
+    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: manifest.title})}
   end
 
   # ---------------------------------------------------------------------------
@@ -1687,8 +1701,10 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # Nested Rendered struct (produced by if/else branches in HEEx)
-  defp eval_ir({:nested_rendered, ir}, assigns, _bindings) do
-    render_ir(ir, assigns)
+  # Must pass bindings through so comprehension loop variables (e.g. `employee`)
+  # are available when LiveView's diff system evaluates the Rendered's dynamics.
+  defp eval_ir({:nested_rendered, ir}, assigns, bindings) do
+    render_ir_with_bindings(ir, assigns, bindings)
   end
 
   # Phoenix function component call — call the actual component function
@@ -2093,6 +2109,15 @@ defmodule Beacon.RuntimeRenderer do
     if is_nil(enum) or enum == "" do
       []
     else
+      if is_list(enum) do
+        nils = Enum.count(enum, &is_nil/1)
+        if nils > 0 do
+          Logger.error("[RuntimeRenderer] for #{inspect(var_name)}: enum has #{length(enum)} items, #{nils} nils. enum_ir=#{inspect(enum_ir, limit: 3)}")
+        end
+      else
+        Logger.error("[RuntimeRenderer] for #{inspect(var_name)}: enum is #{inspect(enum, limit: 3, printable_limit: 100)}, not a list. enum_ir=#{inspect(enum_ir, limit: 3)}")
+      end
+
       Enum.map(enum, fn item ->
         inner_bindings = destructure_binding(b, var_name, item)
         result = eval_ir(body_ir, a, inner_bindings)
