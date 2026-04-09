@@ -93,10 +93,10 @@ defmodule Beacon.RouterServerTest do
     RouterServer.del_pages(site)
 
     server = site |> Beacon.RouterServer.name() |> GenServer.whereis()
-    send(server, {:page_loaded, page})
+    send(server, {:page_loaded, %{site: page.site, id: page.id, path: page.path}})
     # Ensure the handle_info has been processed before reading ETS directly
     RouterServer.dump_pages(site)
 
-    assert %Beacon.Content.Page{id: ^page_id} = Beacon.RouterServer.lookup_page!(site, ["test", "router", "add"])
+    assert %{id: ^page_id} = Beacon.RouterServer.lookup_page!(site, ["test", "router", "add"])
   end
 end

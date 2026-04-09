@@ -744,11 +744,12 @@ defmodule Beacon.Content do
       "page_id" => page.id,
       "path" => page.path,
       "title" => page.title,
+      "template" => page.template,
       "format" => page.format,
       "extra" => page.extra
     }
 
-    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :format, :extra]
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra]
 
     %PageSnapshot{}
     |> Changeset.cast(attrs, fields)
@@ -1018,6 +1019,23 @@ defmodule Beacon.Content do
         _ -> nil
       end
     end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  Returns template strings for all published pages on a site.
+
+  A lightweight projection that selects only the denormalized `template` text
+  column from page snapshots, avoiding deserialization of the full page binary.
+  Used by CSS candidate extraction.
+  """
+  @doc type: :pages
+  @spec list_published_page_templates(Site.t()) :: [String.t()]
+  def list_published_page_templates(site) do
+    site
+    |> query_list_published_pages_base()
+    |> select([snapshot], snapshot.template)
+    |> repo(site).all()
     |> Enum.reject(&is_nil/1)
   end
 
@@ -4584,7 +4602,13 @@ defmodule Beacon.Content do
   @doc false
   def reset_published_layout(site, id) do
     clear_cache(site, id)
-    Beacon.RuntimeRenderer.publish_layout(site, to_string(id), get_layout(site, id).template)
+    layout = get_layout(site, id)
+
+    Beacon.RuntimeRenderer.publish_layout(site, to_string(id), layout.template,
+      meta_tags: layout.meta_tags || [],
+      resource_links: layout.resource_links || []
+    )
+
     :ok
   end
 

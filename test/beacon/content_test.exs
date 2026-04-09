@@ -472,6 +472,33 @@ defmodule Beacon.ContentTest do
     end
   end
 
+  describe "list_published_page_templates/1" do
+    test "returns template strings for published pages" do
+      beacon_published_page_fixture(template: ~s(<div class="flex">hello</div>))
+      templates = Content.list_published_page_templates(default_site())
+      assert is_list(templates)
+      assert ~s(<div class="flex">hello</div>) in templates
+    end
+
+    test "returns only strings, not full page structs" do
+      beacon_published_page_fixture()
+      [template | _] = Content.list_published_page_templates(default_site())
+      assert is_binary(template)
+    end
+
+    test "returns empty list when no published pages exist" do
+      assert [] = Content.list_published_page_templates(default_site())
+    end
+  end
+
+  describe "page snapshot template denormalization" do
+    test "snapshot stores template as a denormalized column" do
+      page = beacon_published_page_fixture(template: "<p>test template</p>")
+      snapshot = Repo.one(from s in PageSnapshot, where: s.page_id == ^page.id, order_by: [desc: s.inserted_at], limit: 1)
+      assert snapshot.template == "<p>test template</p>"
+    end
+  end
+
   describe "stylesheets" do
     test "create broadcasts updated content event" do
       :ok = Beacon.PubSub.subscribe_to_content(:booted)

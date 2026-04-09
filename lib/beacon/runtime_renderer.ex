@@ -86,7 +86,16 @@ defmodule Beacon.RuntimeRenderer do
     handler_names = Enum.map(handlers, & &1.name)
     :ets.insert(@table, {{site, page_id, :handler_index}, handler_names})
 
-    # 8. Extract CSS candidates and track for conditional recompilation
+    # 8. Store page helpers (dynamic_helper calls)
+    helpers = Map.get(attrs, :helpers, [])
+
+    for helper <- helpers do
+      helper_ast = Code.string_to_quoted!(helper.code)
+      args_ast = Code.string_to_quoted!(helper.args)
+      :ets.insert(@table, {{site, page_id, :helper, helper.name}, :erlang.term_to_binary(%{code: helper_ast, args: args_ast})})
+    end
+
+    # 9. Extract CSS candidates and track for conditional recompilation
     candidates = Beacon.CSS.CandidateExtractor.extract(template)
     :ets.insert(@table, {{site, page_id, :css_candidates}, candidates})
 
@@ -113,14 +122,33 @@ defmodule Beacon.RuntimeRenderer do
   @doc """
   Publishes a layout into the ETS store. Called during site boot.
   """
-  def publish_layout(site, layout_id, template) when is_atom(site) and is_binary(layout_id) do
+  def publish_layout(site, layout_id, template, opts \\ []) when is_atom(site) and is_binary(layout_id) do
     path = "layout_#{layout_id}"
     env = Beacon.Web.PageLive.make_env(site)
     {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
     ir = extract_ir(ast, env)
     :ets.insert(@table, {{site, :layout, layout_id}, :erlang.term_to_binary(ir)})
 
+    # Store layout metadata (meta_tags, resource_links) separately
+    manifest = %{
+      id: layout_id,
+      meta_tags: Keyword.get(opts, :meta_tags, []),
+      resource_links: Keyword.get(opts, :resource_links, [])
+    }
+
+    :ets.insert(@table, {{site, :layout, layout_id, :manifest}, manifest})
+
     :ok
+  end
+
+  @doc """
+  Fetches layout metadata (meta_tags, resource_links) from ETS.
+  """
+  def fetch_layout_manifest(site, layout_id) do
+    case :ets.lookup(@table, {site, :layout, layout_id, :manifest}) do
+      [{_, manifest}] -> {:ok, manifest}
+      [] -> :error
+    end
   end
 
   @doc """
@@ -141,8 +169,14 @@ defmodule Beacon.RuntimeRenderer do
 
         Beacon.Cache.fetch(@table, {site, :layout_load, layout_id}, fn ->
           case Beacon.Content.get_published_layout(site, layout_id) do
-            nil -> :not_found
-            layout -> publish_layout(site, to_string(layout.id), layout.template)
+            nil ->
+              :not_found
+
+            layout ->
+              publish_layout(site, to_string(layout.id), layout.template,
+                meta_tags: layout.meta_tags || [],
+                resource_links: layout.resource_links || []
+              )
           end
         end, ttl)
 
@@ -223,12 +257,25 @@ defmodule Beacon.RuntimeRenderer do
   @doc """
   Publishes a component into the ETS store. Called during site boot.
   """
-  def publish_component(site, name, template, body \\ "") when is_atom(site) and is_binary(name) do
+  def publish_component(site, name, template, body \\ "", opts \\ []) when is_atom(site) and is_binary(name) do
     path = "component_#{name}"
     env = Beacon.Web.PageLive.make_env(site)
     {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
     ir = extract_ir(ast, env)
-    :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ir: ir, body: body})})
+
+    # Extract default attr values from component attrs
+    attrs = Keyword.get(opts, :attrs, [])
+    defaults =
+      Enum.reduce(attrs, %{}, fn
+        %{name: attr_name, opts: attr_opts}, acc ->
+          case Keyword.get(attr_opts || [], :default) do
+            nil -> acc
+            default -> Map.put(acc, String.to_atom(attr_name), default)
+          end
+        _, acc -> acc
+      end)
+
+    :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ir: ir, body: body, defaults: defaults})})
 
     :ok
   end
@@ -249,7 +296,12 @@ defmodule Beacon.RuntimeRenderer do
   defp do_render_component(site, name, assigns) do
     case :ets.lookup(@table, {site, :component, name}) do
       [{_, serialized}] ->
-        %{ir: ir, body: body} = :erlang.binary_to_term(serialized)
+        data = :erlang.binary_to_term(serialized)
+        %{ir: ir, body: body} = data
+        defaults = Map.get(data, :defaults, %{})
+
+        # Apply default attr values for missing assigns
+        assigns = Map.merge(defaults, assigns)
 
         # Execute the component body to produce local bindings
         body_bindings = execute_component_body(body, assigns)
@@ -267,16 +319,24 @@ defmodule Beacon.RuntimeRenderer do
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :components)
 
         Beacon.Cache.fetch(@table, {site, :component_load, name}, fn ->
-          case Beacon.Content.get_component_by(site, name: name) do
-            nil -> :not_found
-            component -> publish_component(site, component.name, component.template, component.body || "")
+          case Beacon.Content.get_component_by(site, [name: name], preloads: [:attrs]) do
+            nil ->
+              :not_found
+
+            component ->
+              component_attrs = (component.attrs || [])
+              attrs_list = Enum.map(component_attrs, fn a -> %{name: a.name, opts: a.opts || []} end)
+              publish_component(site, component.name, component.template, component.body || "", attrs: attrs_list)
           end
         end, ttl)
 
         # Re-check after load
         case :ets.lookup(@table, {site, :component, name}) do
           [{_, serialized}] ->
-            %{ir: ir, body: body} = :erlang.binary_to_term(serialized)
+            data = :erlang.binary_to_term(serialized)
+            %{ir: ir, body: body} = data
+            defaults = Map.get(data, :defaults, %{})
+            assigns = Map.merge(defaults, assigns)
             body_bindings = execute_component_body(body, assigns)
 
             full_assigns =
@@ -334,13 +394,27 @@ defmodule Beacon.RuntimeRenderer do
   defp execute_component_body("", _assigns), do: %{}
 
   defp execute_component_body(body, assigns) when is_binary(body) do
-    try do
-      ast = Code.string_to_quoted!(body)
-      {_result, bindings} = eval_body_ast(ast, assigns)
-      bindings
-    rescue
-      _ -> %{}
+    ast = Code.string_to_quoted!(body)
+    # Body code uses `assigns` as a variable — bind it to the component's assigns
+    bindings_with_assigns = Map.put(assigns, :assigns, assigns)
+    {_result, bindings} = eval_body_ast(ast, bindings_with_assigns)
+
+    # If the body reassigned `assigns`, use the new assigns map as the bindings
+    # so that the template sees the updated values.
+    # Common pattern: `assigns = Map.put(assigns, :key, value)`
+    case Map.get(bindings, :assigns) do
+      %{} = new_assigns ->
+        other_bindings = Map.drop(bindings, [:assigns])
+        Map.merge(new_assigns, other_bindings)
+
+      _ ->
+        bindings
     end
+  rescue
+    error ->
+      require Logger
+      Logger.error("[RuntimeRenderer] Component body execution failed: #{Exception.message(error)}\n#{Exception.format_stacktrace(__STACKTRACE__)}")
+      %{}
   end
 
   # Evaluate body AST and collect variable bindings
@@ -647,7 +721,8 @@ defmodule Beacon.RuntimeRenderer do
       }
     }
 
-    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: manifest.title})}
+    page_title = interpolate_title(manifest.title, manifest, live_data)
+    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: page_title})}
   end
 
   # ---------------------------------------------------------------------------
@@ -687,7 +762,20 @@ defmodule Beacon.RuntimeRenderer do
       }
     }
 
-    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: manifest.title})}
+    page_title = interpolate_title(manifest.title, manifest, live_data)
+    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: page_title})}
+  end
+
+  # Interpolate snippets in page title (e.g., "{{ page.path }}", "{{ live_data.test }}")
+  defp interpolate_title(title, manifest, live_data) do
+    page_assigns = %{site: manifest.site, id: manifest.id, path: manifest.path, title: title, description: manifest.description}
+
+    case Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
+      {:ok, rendered} -> rendered
+      {:error, _} -> title
+    end
+  rescue
+    _ -> title
   end
 
   # ---------------------------------------------------------------------------
@@ -702,26 +790,82 @@ defmodule Beacon.RuntimeRenderer do
   `:elixir` values are evaluated by the AST interpreter with path/query params in scope.
   """
   def evaluate_live_data(site, page_id, path_info, query_params) do
-    case :ets.lookup(@table, {site, page_id, :live_data}) do
-      [{_, defs}] when is_list(defs) ->
-        Enum.reduce(defs, %{}, fn
-          %{key: key, value: value, format: :text}, acc ->
-            Map.put(acc, key, value)
+    defs =
+      case :ets.lookup(@table, {site, page_id, :live_data}) do
+        [{_, defs}] when is_list(defs) and defs != [] ->
+          defs
 
-          %{key: key, value: code, format: :elixir} = def_entry, acc ->
-            ast = Code.string_to_quoted!(code)
-            path_vars = extract_path_variables(def_entry[:path_pattern], path_info)
-            bindings = Map.merge(path_vars, %{path_info: path_info, params: query_params})
+        _ ->
+          # Lazy-load: fetch live_data from database and store in ETS
+          lazy_load_live_data(site, page_id)
+      end
 
-            result = eval_ast(ast, bindings)
-            Map.put(acc, key, result)
+    evaluate_live_data_defs(defs, path_info, query_params)
+  end
 
-          %{key: key, value: value}, acc ->
-            Map.put(acc, key, value)
-        end)
+  defp evaluate_live_data_defs(defs, path_info, query_params) when is_list(defs) do
+    Enum.reduce(defs, %{}, fn
+      %{key: key, value: value, format: :text}, acc ->
+        Map.put(acc, key, value)
 
-      _ ->
-        %{}
+      %{key: key, value: code, format: :elixir} = def_entry, acc ->
+        ast = Code.string_to_quoted!(code)
+        path_vars = extract_path_variables(def_entry[:path_pattern], path_info)
+        bindings = Map.merge(path_vars, %{path_info: path_info, params: query_params})
+
+        result = eval_ast(ast, bindings)
+        Map.put(acc, key, result)
+
+      %{key: key, value: value}, acc ->
+        Map.put(acc, key, value)
+    end)
+  end
+
+  defp evaluate_live_data_defs(_, _path_info, _query_params), do: %{}
+
+  defp lazy_load_live_data(site, page_id) do
+    # Look up the page manifest to get the path pattern
+    case fetch_manifest(site, page_id) do
+      {:ok, manifest} ->
+        all_live_data = Beacon.Content.live_data_for_site(site, per_page: :infinity)
+
+        defs =
+          all_live_data
+          |> Enum.filter(fn ld -> path_matches_pattern?(ld.path, manifest.path) end)
+          |> Enum.flat_map(fn ld ->
+            Enum.map(ld.assigns, fn assign ->
+              %{
+                key: String.to_atom(assign.key),
+                value: assign.value,
+                format: assign.format,
+                path_pattern: ld.path
+              }
+            end)
+          end)
+
+        :ets.insert(@table, {{site, page_id, :live_data}, defs})
+        defs
+
+      :error ->
+        []
+    end
+  end
+
+  defp path_matches_pattern?(live_data_path, page_path) do
+    ld_segments = String.split(String.trim_leading(live_data_path, "/"), "/", trim: true)
+    page_segments = String.split(String.trim_leading(page_path, "/"), "/", trim: true)
+
+    if length(ld_segments) != length(page_segments) do
+      false
+    else
+      Enum.zip(ld_segments, page_segments)
+      |> Enum.all?(fn
+        {":" <> _, _} -> true
+        {"*" <> _, _} -> true
+        {_, ":" <> _} -> true
+        {_, "*" <> _} -> true
+        {a, b} -> a == b
+      end)
     end
   end
 
@@ -883,16 +1027,35 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp dispatch_info_handlers(handlers, msg, socket) do
-    Enum.find_value(handlers, {:error, {:no_handler, msg}}, fn [_name, serialized_ast] ->
-      ast = :erlang.binary_to_term(serialized_ast)
-      bindings = %{socket: socket, msg: msg}
+    Enum.find_value(handlers, {:error, {:no_handler, msg}}, fn [name, serialized_ast] ->
+      # Parse the handler's msg pattern and try to match it against the incoming message
+      case match_info_pattern(name, msg) do
+        {:ok, pattern_bindings} ->
+          ast = :erlang.binary_to_term(serialized_ast)
+          bindings = Map.merge(pattern_bindings, %{socket: socket, msg: msg})
 
-      try do
-        eval_ast(ast, bindings)
-      rescue
-        _ -> nil
+          try do
+            eval_ast(ast, bindings)
+          rescue
+            _ -> nil
+          end
+
+        :no_match ->
+          nil
       end
     end)
+  end
+
+  # Match an info handler's msg pattern string against an actual message.
+  # The pattern is a string like "{:incorrect_format, email}" that gets parsed
+  # as an Elixir pattern and matched against the runtime message value.
+  defp match_info_pattern(pattern_string, msg) when is_binary(pattern_string) do
+    try do
+      pattern_ast = Code.string_to_quoted!(pattern_string)
+      match_pattern(pattern_ast, msg, %{})
+    rescue
+      _ -> :no_match
+    end
   end
 
   defp ensure_site_handlers_loaded(site, type) do
@@ -1411,6 +1574,51 @@ defmodule Beacon.RuntimeRenderer do
     {:component_assigns, transformed}
   end
 
+  # Handle to_component_dynamic — produced when @rest spreads are used in component calls.
+  # The args are: [base_map, rest_map, defaults_map, rest_keys_list, assigns, changed]
+  # We extract the base_map's pairs (which contain inner_block) and mark the rest for runtime merge.
+  defp extract_component_assigns({{:., _, [Phoenix.LiveView.Engine, :to_component_dynamic]}, _, args}) do
+    case args do
+      [{:%{}, _, base_pairs} | rest_args] ->
+        # Extract the base pairs just like the normal map case
+        transformed_base =
+          Enum.map(base_pairs, fn
+            {:__changed__, _} ->
+              {:__changed__, {:literal, nil}}
+
+            {:inner_block, slots} when is_list(slots) ->
+              slot_irs =
+                Enum.map(slots, fn
+                  {:%{}, _, slot_pairs} ->
+                    Enum.into(slot_pairs, %{}, fn
+                      {:__slot__, name} -> {:__slot__, name}
+                      {:inner_block, block_ast} -> {:inner_block, transform_expr(block_ast)}
+                      {k, v} -> {k, transform_expr(v)}
+                    end)
+
+                  other ->
+                    other
+                end)
+
+              {:inner_block, {:literal, slot_irs}}
+
+            {key, value} ->
+              {key, transform_expr(value)}
+          end)
+
+        # The rest map is the second argument — transform it for runtime merge
+        rest_ir = case rest_args do
+          [rest_map_ast | _] -> transform_expr(rest_map_ast)
+          _ -> {:literal, %{}}
+        end
+
+        {:component_assigns_dynamic, transformed_base, rest_ir}
+
+      _ ->
+        transform_expr({{:., [], [Phoenix.LiveView.Engine, :to_component_dynamic]}, [], args})
+    end
+  end
+
   defp extract_component_assigns(other), do: transform_expr(other)
 
   defp transform_interpolation_part({:"::", _, [expr, {:binary, _, _}]}) do
@@ -1538,6 +1746,40 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp safe_to_map(_), do: %{}
+
+  # Build inner_block slot entries for CMS components from IR slot descriptors
+  defp build_cms_inner_block(slot_irs, a, b) when is_list(slot_irs) do
+    Enum.map(slot_irs, fn
+      %{__slot__: name, inner_block: block_ir} ->
+        inner_fn = fn _changed, slot_arg ->
+          case block_ir do
+            {:inner_block_ir, ir, let_var} when is_atom(let_var) and not is_nil(let_var) ->
+              inner_assigns =
+                Map.merge(a, b)
+                |> Map.put(let_var, slot_arg)
+                |> Map.delete(:__changed__)
+
+              render_ir(ir, inner_assigns)
+
+            {:inner_block_ir, ir, _} ->
+              render_ir(ir, Map.merge(a, b))
+
+            {:inner_block_ir, ir} ->
+              render_ir(ir, Map.merge(a, b))
+
+            _ ->
+              ""
+          end
+        end
+
+        %{__slot__: name, inner_block: inner_fn}
+
+      slot ->
+        slot
+    end)
+  end
+
+  defp build_cms_inner_block(_, _a, _b), do: []
 
   # Bind a for-loop variable, handling destructuring patterns
   defp destructure_binding(bindings, {:destructure, :tuple, names}, item) when is_tuple(item) do
@@ -1770,9 +2012,65 @@ defmodule Beacon.RuntimeRenderer do
         component_assigns =
           Enum.reduce(pairs, %{}, fn
             {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
-            {:inner_block, _}, acc -> acc
+            {:inner_block, {:literal, slot_irs}}, acc ->
+              rendered_slots = build_cms_inner_block(slot_irs, a, b)
+              Map.put(acc, :inner_block, rendered_slots)
             {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
           end)
+
+        render_component(site, component_name, component_assigns)
+      else
+        ""
+      end
+    end
+  end
+
+  # Phoenix component call with dynamic assigns (@rest spread)
+  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns_dynamic, base_pairs, rest_ir}}, a, b) when is_atom(mod) and is_atom(fun) and not is_nil(mod) and not is_nil(fun) do
+    # Build base assigns from static pairs (handling inner_block slots)
+    component_assigns =
+      Enum.reduce(base_pairs, %{}, fn
+        {:__changed__, _}, acc ->
+          Map.put(acc, :__changed__, nil)
+
+        {:inner_block, {:literal, slot_irs}}, acc ->
+          rendered_slots = build_cms_inner_block(slot_irs, a, b)
+          Map.put(acc, :inner_block, rendered_slots)
+
+        {key, value_ir}, acc ->
+          Map.put(acc, key, eval_ir(value_ir, a, b))
+      end)
+      |> Map.put_new(:__changed__, nil)
+
+    # Merge rest assigns
+    rest = eval_ir(rest_ir, a, b)
+    rest_map = if is_map(rest), do: rest, else: if(is_list(rest), do: Map.new(rest), else: %{})
+    component_assigns = Map.merge(rest_map, component_assigns)
+
+    apply(mod, fun, [component_assigns])
+  end
+
+  # Unresolved component with dynamic assigns — try as CMS component
+  defp eval_ir({:component_call, {:component_fun, nil, fun_name}, {:component_assigns_dynamic, base_pairs, rest_ir}}, a, b) when is_atom(fun_name) do
+    if function_exported?(Phoenix.Component, fun_name, 1) do
+      eval_ir({:component_call, {:component_fun, Phoenix.Component, fun_name}, {:component_assigns_dynamic, base_pairs, rest_ir}}, a, b)
+    else
+      site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+      component_name = Atom.to_string(fun_name)
+
+      if site do
+        component_assigns =
+          Enum.reduce(base_pairs, %{}, fn
+            {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
+            {:inner_block, {:literal, slot_irs}}, acc ->
+              rendered_slots = build_cms_inner_block(slot_irs, a, b)
+              Map.put(acc, :inner_block, rendered_slots)
+            {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
+          end)
+
+        rest = eval_ir(rest_ir, a, b)
+        rest_map = if is_map(rest), do: rest, else: if(is_list(rest), do: Map.new(rest), else: %{})
+        component_assigns = Map.merge(rest_map, component_assigns)
 
         render_component(site, component_name, component_assigns)
       else
@@ -1979,20 +2277,78 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # render_slot — used by components to render slot content
-  defp eval_ir({:local_call, :render_slot, [slot_ir]}, a, b) do
+  # Handles: render_slot(@inner_block) and render_slot(@inner_block, arg)
+  defp eval_ir({:local_call, :render_slot, args}, a, b) do
+    [slot_ir | rest] = args
     slot = eval_ir(slot_ir, a, b)
+    slot_arg = if rest != [], do: eval_ir(hd(rest), a, b), else: nil
 
     case slot do
       nil -> ""
       [] -> ""
       content when is_binary(content) -> content
       %Phoenix.LiveView.Rendered{} = rendered -> rendered
+      entries when is_list(entries) ->
+        # Standard Phoenix slot rendering: each entry has an :inner_block function
+        results =
+          Enum.map(entries, fn
+            %{inner_block: inner_fn} when is_function(inner_fn, 2) ->
+              inner_fn.(nil, slot_arg)
+            %{inner_block: inner_fn} when is_function(inner_fn, 1) ->
+              inner_fn.(slot_arg)
+            other ->
+              other
+          end)
+
+        # For a single slot entry, return the result directly
+        # (avoids wrapping Rendered structs in a list which Phoenix.HTML.Safe can't handle)
+        case results do
+          [single] -> single
+          multiple ->
+            # Multiple slots: concatenate their string representations
+            multiple
+            |> Enum.map(fn
+              %Phoenix.LiveView.Rendered{} = r -> r |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
+              bin when is_binary(bin) -> bin
+              other -> safe_to_string(other)
+            end)
+            |> IO.iodata_to_binary()
+        end
       _ -> ""
     end
   end
 
-  # Beacon helper calls — render as empty for now
-  defp eval_ir({:local_call, :dynamic_helper, _args}, _a, _b), do: ""
+  # Beacon helper calls — look up and execute page helpers from ETS
+  defp eval_ir({:local_call, :dynamic_helper, args}, a, b) do
+    [name_ir | rest] = args
+    name = eval_ir(name_ir, a, b)
+    helper_args = if rest != [], do: eval_ir(hd(rest), a, b), else: %{}
+
+    site = Map.get(a, :beacon, %{}) |> Map.get(:site)
+    page_id = get_in(a, [:beacon, :private, :page_id])
+
+    if site && page_id do
+      case :ets.lookup(@table, {site, page_id, :helper, name}) do
+        [{_, serialized}] ->
+          %{code: code_ast, args: args_pattern_ast} = :erlang.binary_to_term(serialized)
+
+          # Match the args pattern against the provided helper_args
+          case match_pattern(args_pattern_ast, helper_args, %{}) do
+            {:ok, bindings} ->
+              result = eval_ast(code_ast, bindings)
+              safe_to_string(result)
+
+            :no_match ->
+              ""
+          end
+
+        [] ->
+          ""
+      end
+    else
+      ""
+    end
+  end
 
   # Beacon route helpers — return empty paths for now
   defp eval_ir({:local_call, :beacon_asset_path, _args}, _a, _b), do: ""
@@ -2364,7 +2720,24 @@ defmodule Beacon.RuntimeRenderer do
 
       {fun, _, args} when is_atom(fun) and is_list(args) ->
         evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
-        apply(Kernel, fun, [left_val | evaluated_args])
+        arity = length(evaluated_args) + 1
+
+        cond do
+          fun == :assign and arity in [2, 3] ->
+            apply(Phoenix.Component, :assign, [left_val | evaluated_args])
+          fun == :put_flash and arity == 3 ->
+            apply(Phoenix.LiveView, :put_flash, [left_val | evaluated_args])
+          fun == :push_event and arity == 3 ->
+            apply(Phoenix.LiveView, :push_event, [left_val | evaluated_args])
+          fun == :redirect and arity == 2 ->
+            apply(Phoenix.LiveView, :redirect, [left_val | evaluated_args])
+          fun == :push_navigate and arity == 2 ->
+            apply(Phoenix.LiveView, :push_navigate, [left_val | evaluated_args])
+          function_exported?(Kernel, fun, arity) ->
+            apply(Kernel, fun, [left_val | evaluated_args])
+          true ->
+            raise "unsupported pipe target: #{fun}/#{arity}"
+        end
 
       _ ->
         raise "unsupported pipe target: #{inspect(right)}"

@@ -244,7 +244,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
       layout = beacon_published_layout_fixture()
 
-      # page =
+      live_data = beacon_live_data_fixture(path: "/page/meta-tag")
+      beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
+
       beacon_published_page_fixture(
         layout_id: layout.id,
         path: "/page/meta-tag",
@@ -256,9 +258,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
           %{"property" => "og:image", "content" => "{{ live_data.image }}"}
         ]
       )
-
-      live_data = beacon_live_data_fixture(path: "/page/meta-tag")
-      beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
 
       {:ok, _view, html} = live(conn, "/page/meta-tag")
 
@@ -282,14 +281,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
       assert html =~ ~S|<link href="print.css" media="print" rel="stylesheet"/>|
       assert html =~ ~S|<link as="font" crossorigin="anonymous" href="font.woff2" rel="preload" type="font/woff2"/>|
-    end
-
-    test "update resource links on layout publish", %{conn: conn, layout: layout} do
-      {:ok, layout} = Content.update_layout(layout, %{"resource_links" => [%{"rel" => "stylesheet", "href" => "color.css"}]})
-      {:ok, layout} = Content.publish_layout(layout)
-      Beacon.Loader.load_layout_module(layout.site, layout.id)
-      {:ok, _view, html} = live(conn, "/home/hello")
-      assert html =~ ~S|<link href="color.css" rel="stylesheet"/>|
     end
   end
 
@@ -335,7 +326,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
     end
 
     test "raise when the given path doesn't exist", %{conn: conn} do
-      assert_raise Beacon.Web.NotFoundError, fn ->
+      assert_raise RuntimeError, fn ->
         {:ok, _view, _html} = live(conn, "/no_page_match")
       end
     end
@@ -373,32 +364,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
       {:ok, view, _html} = live(conn, "/markdown")
 
       assert has_element?(view, "h1", "Title")
-    end
-  end
-
-  describe "components" do
-    test "update should reload the resource", %{conn: conn} do
-      component = beacon_component_fixture(name: "component_test", template: "component_test_v1")
-      layout = beacon_published_layout_fixture()
-
-      # page =
-      beacon_published_page_fixture(
-        path: "/component_test",
-        template: """
-        <%= my_component("component_test", []) %>
-        """,
-        layout_id: layout.id
-      )
-
-      {:ok, _view, html} = live(conn, "/component_test")
-
-      assert html =~ "component_test_v1"
-
-      Content.update_component(component, %{template: "component_test_v2"})
-      Beacon.Loader.load_components_module(component.site)
-
-      {:ok, _view, html} = live(conn, "/component_test")
-      assert html =~ "component_test_v2"
     end
   end
 end

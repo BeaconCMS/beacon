@@ -26,6 +26,7 @@ defmodule Beacon.Content.PageSnapshot do
     field :page_id, Ecto.UUID
     field :path, :string
     field :title, :string
+    field :template, :string
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
     belongs_to :event, Beacon.Content.PageEvent

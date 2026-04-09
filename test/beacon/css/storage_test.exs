@@ -67,6 +67,16 @@ defmodule Beacon.CSS.StorageTest do
     end
   end
 
+  describe "fetch/1 - cold miss" do
+    test "returns {nil, nil, nil} on complete cache miss without blocking" do
+      assert {nil, nil, nil} = Storage.fetch(:cold_miss_site)
+    end
+
+    test "does not raise on miss for unconfigured site" do
+      assert {nil, nil, nil} = Storage.fetch(:nonexistent_site)
+    end
+  end
+
   describe "fetch/1 - ETS hot tier" do
     test "returns stored CSS from ETS" do
       css = "body { margin: 0; }"

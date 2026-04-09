@@ -75,6 +75,16 @@ defmodule Beacon.RuntimeRenderer.Loader do
     # Use pre-loaded live_data when available (bulk boot), otherwise fetch
     live_data_defs = load_live_data_defs(site, page.path, all_live_data)
 
+    # Extract helpers from page (may need preloading)
+    helpers =
+      case Map.get(page, :helpers) do
+        nil -> []
+        helpers when is_list(helpers) ->
+          Enum.map(helpers, fn h ->
+            %{name: h.name, args: h.args, code: h.code}
+          end)
+      end
+
     RuntimeRenderer.publish_page(site, page_id, %{
       template: template,
       path: page.path,
@@ -87,7 +97,8 @@ defmodule Beacon.RuntimeRenderer.Loader do
       raw_schema: page.raw_schema || [],
       assigns: %{},
       live_data: live_data_defs,
-      event_handlers: []
+      event_handlers: [],
+      helpers: helpers
     })
   end
 
@@ -100,7 +111,9 @@ defmodule Beacon.RuntimeRenderer.Loader do
     results =
       Enum.map(components, fn component ->
         try do
-          RuntimeRenderer.publish_component(site, component.name, component.template, component.body || "")
+          component_attrs = component.attrs || []
+          attrs_list = Enum.map(component_attrs, fn a -> %{name: a.name, opts: a.opts || []} end)
+          RuntimeRenderer.publish_component(site, component.name, component.template, component.body || "", attrs: attrs_list)
           :ok
         rescue
           error ->
@@ -124,7 +137,10 @@ defmodule Beacon.RuntimeRenderer.Loader do
     layouts = Content.list_published_layouts(site) |> Enum.reject(&is_nil/1)
 
     for layout <- layouts do
-      RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template)
+      RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template,
+        meta_tags: layout.meta_tags || [],
+        resource_links: layout.resource_links || []
+      )
     end
 
     require Logger
@@ -239,7 +255,10 @@ defmodule Beacon.RuntimeRenderer.Loader do
         :error
 
       layout ->
-        RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template)
+        RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template,
+          meta_tags: layout.meta_tags || [],
+          resource_links: layout.resource_links || []
+        )
     end
   end
 
@@ -255,7 +274,9 @@ defmodule Beacon.RuntimeRenderer.Loader do
         :error
 
       component ->
-        RuntimeRenderer.publish_component(site, component.name, component.template, component.body || "")
+        component_attrs = (component.attrs || [])
+        attrs_list = Enum.map(component_attrs, fn a -> %{name: a.name, opts: a.opts || []} end)
+        RuntimeRenderer.publish_component(site, component.name, component.template, component.body || "", attrs: attrs_list)
     end
   end
 

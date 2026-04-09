@@ -74,7 +74,7 @@ defmodule Beacon.CSS.Storage do
     if s3_available?() do
       fetch_from_s3(site)
     else
-      recompile(site)
+      {nil, nil, nil}
     end
   end
 
@@ -92,12 +92,12 @@ defmodule Beacon.CSS.Storage do
             {hash, brotli, gzip}
 
           {:error, reason} ->
-            Logger.warning("[Beacon.CSS] S3 fetch failed for #{site}: #{inspect(reason)}, recompiling")
-            recompile(site)
+            Logger.warning("[Beacon.CSS] S3 fetch failed for #{site}: #{inspect(reason)}")
+            {nil, nil, nil}
         end
 
       nil ->
-        recompile(site)
+        {nil, nil, nil}
     end
   end
 
@@ -130,19 +130,6 @@ defmodule Beacon.CSS.Storage do
     case ExAws.S3.get_object(css_bucket(), s3_key) |> ExAws.request() do
       {:ok, %{body: body}} -> {:ok, body}
       error -> {:error, error}
-    end
-  end
-
-  # ---------------------------------------------------------------------------
-  # Tier 3: Recompile
-  # ---------------------------------------------------------------------------
-
-  defp recompile(site) do
-    Beacon.RuntimeCSS.load!(site)
-
-    case fetch_from_ets(site) do
-      {:ok, result} -> result
-      :miss -> raise Beacon.LoaderError, "CSS recompilation failed for site #{inspect(site)}"
     end
   end
 

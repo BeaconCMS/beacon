@@ -75,8 +75,15 @@ defmodule Beacon.Web.Layouts do
   This function will resolve such snippets.
   """
   def render_page_title(assigns) do
-    %{beacon: %{page: %{title: title}}} = assigns
-    title
+    %{beacon: %{site: site, page: %{title: title, path: path}, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns
+    live_data = Map.take(assigns, live_data_keys)
+
+    page_assigns = %{site: site, id: page_id, path: path, title: title}
+
+    case Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
+      {:ok, rendered_title} -> rendered_title
+      {:error, _} -> title
+    end
   end
 
   @doc """
@@ -115,6 +122,13 @@ defmodule Beacon.Web.Layouts do
     manifest.meta_tags || []
   end
 
+  defp layout_meta_tags(%{beacon: %{site: site, private: %{layout_id: layout_id}}}) do
+    case Beacon.RuntimeRenderer.fetch_layout_manifest(site, layout_id) do
+      {:ok, manifest} -> manifest.meta_tags || []
+      :error -> []
+    end
+  end
+
   defp layout_meta_tags(_assigns), do: []
 
   @doc """
@@ -143,7 +157,19 @@ defmodule Beacon.Web.Layouts do
   Renders all resource `<link>` tags defined in the current layout.
   """
   def render_resource_links(assigns) do
-    assigns = assign(assigns, :resource_links, [])
+    resource_links =
+      case assigns do
+        %{beacon: %{site: site, private: %{layout_id: layout_id}}} ->
+          case Beacon.RuntimeRenderer.fetch_layout_manifest(site, layout_id) do
+            {:ok, manifest} -> manifest.resource_links || []
+            :error -> []
+          end
+
+        _ ->
+          []
+      end
+
+    assigns = assign(assigns, :resource_links, resource_links)
 
     ~H"""
     <%= for attr <- @resource_links do %>

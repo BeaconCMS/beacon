@@ -6,10 +6,6 @@ defmodule Beacon.Web.DataSourceTest do
   setup do
     site = default_site()
 
-    # we aren't passing through PageLive in these tests so we have to manually
-    # enable the ErrorHandler and set the site in the Process dictionary
-    # (which would normally happen in the LiveView mount)
-
     [site: site]
   end
 
@@ -17,12 +13,14 @@ defmodule Beacon.Web.DataSourceTest do
     test "with existing data", %{site: site} do
       live_data = beacon_live_data_fixture()
       beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "name", value: "beacon")
+      beacon_published_page_fixture(path: "/foo/bar")
       assert DataSource.live_data(site, ["foo", "bar"], %{}) == %{name: "beacon"}
     end
 
     test "query params defaults to empty map", %{site: site} do
       live_data = beacon_live_data_fixture()
       beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "name", value: "beacon")
+      beacon_published_page_fixture(path: "/foo/bar")
       assert DataSource.live_data(site, ["foo", "bar"]) == %{name: "beacon"}
     end
   end

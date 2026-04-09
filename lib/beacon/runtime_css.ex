@@ -139,9 +139,10 @@ defmodule Beacon.RuntimeCSS do
 
   defp ensure_compiled(site) do
     if safelist_recompiled?(site) or nif_recompiled?(site) do
-      :ets.delete(:beacon_assets, {site, :css})
-      :ets.delete(:beacon_assets, {site, :css_compile})
-      load!(site)
+      # Trigger async recompilation. Don't delete the old ETS entry —
+      # serve stale CSS until the new compilation finishes and atomically
+      # replaces it via Storage.store.
+      compile_async(site)
     end
 
     Beacon.CSS.Storage.fetch(site)
@@ -210,19 +211,32 @@ defmodule Beacon.RuntimeCSS do
     end
   end
 
+  @batch_size 200
+
   defp collect_all_candidates(site) do
     alias Beacon.CSS.CandidateExtractor
 
     m0 = mem_mb()
     t0 = System.monotonic_time(:millisecond)
 
-    pages = Beacon.Content.list_published_pages_snapshot_data(site)
+    # Lightweight query: selects only the denormalized template text column,
+    # avoiding deserialization of the full page binary struct.
+    templates = Beacon.Content.list_published_page_templates(site)
     m1 = mem_mb()
     t1 = System.monotonic_time(:millisecond)
 
+    # Process in batches with GC between batches to bound peak memory.
     page_candidates =
-      Enum.reduce(pages, MapSet.new(), fn page, acc ->
-        MapSet.union(acc, CandidateExtractor.extract(page.template))
+      templates
+      |> Stream.chunk_every(@batch_size)
+      |> Enum.reduce(MapSet.new(), fn batch, acc ->
+        batch_result =
+          Enum.reduce(batch, MapSet.new(), fn template, inner ->
+            MapSet.union(inner, CandidateExtractor.extract(template))
+          end)
+
+        :erlang.garbage_collect()
+        MapSet.union(acc, batch_result)
       end)
 
     m2 = mem_mb()
@@ -264,7 +278,7 @@ defmodule Beacon.RuntimeCSS do
 
     Logger.info("""
     [Beacon.CSS] Candidate extraction for #{site}
-      load snapshots: #{length(pages)} pages, #{t1 - t0}ms, #{m0}MB → #{m1}MB (+#{m1 - m0}MB)
+      load templates: #{length(templates)} pages, #{t1 - t0}ms, #{m0}MB → #{m1}MB (+#{m1 - m0}MB)
       extract pages:  #{MapSet.size(page_candidates)} classes, #{t2 - t1}ms, → #{m2}MB (+#{m2 - m1}MB)
       layouts+components+errors+safelist: #{t3 - t2}ms, → #{m3}MB (+#{m3 - m2}MB)
     """)
