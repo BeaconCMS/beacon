@@ -52,22 +52,19 @@ defmodule Beacon.DataStore.TtlChecker do
         ttl_seconds = div(source.ttl, 1000)
 
         if now - inserted_at >= ttl_seconds do
-          # Entry expired — delete this specific entry and re-fetch
+          # Entry expired — delete and notify.
+          # We don't re-fetch here because parameterized sources need the
+          # original request params which aren't stored in the cache key.
+          # Connected LiveViews will re-fetch with correct params on the
+          # next render triggered by the invalidation broadcast.
           ets_key = {site, :data_store, :cache, source_name, cache_key}
           :ets.delete(table, ets_key)
 
-          # Re-fetch under the site's Task.Supervisor to limit concurrency
           Task.Supervisor.start_child(task_supervisor, fn ->
             try do
-              # Re-fetch this specific cache key by calling fetch, which will
-              # execute the fetcher and repopulate the cache entry
-              DataStore.fetch(site, source_name, %{})
-
-              # Broadcast invalidation for this specific source so connected
-              # LiveViews re-render with the fresh data
               DataStore.broadcast_invalidation(site, source_name)
             rescue
-              e -> Logger.error("[DataStore.TtlChecker] Failed to refresh #{source_name}/#{inspect(cache_key)}: #{Exception.message(e)}")
+              e -> Logger.error("[DataStore.TtlChecker] Failed to broadcast invalidation for #{source_name}: #{Exception.message(e)}")
             end
           end)
         end
