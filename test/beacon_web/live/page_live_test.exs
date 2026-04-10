@@ -346,9 +346,9 @@ defmodule Beacon.Web.Live.PageLiveTest do
     end
 
     test "with snippet helper from live data assigns", %{conn: conn, layout: layout} do
-      beacon_published_page_fixture(layout_id: layout.id, title: "page {{ live_data.test }}", path: "/my/page/:var")
       live_data = beacon_live_data_fixture(path: "/my/page/:var")
       beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
+      beacon_published_page_fixture(layout_id: layout.id, title: "page {{ live_data.test }}", path: "/my/page/:var")
 
       {:ok, view, _html} = live(conn, "/my/page/foobar")
 

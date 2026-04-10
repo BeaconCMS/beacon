@@ -983,7 +983,11 @@ defmodule Beacon.RuntimeRenderer do
   def evaluate_live_data(site, page_id, path_info, query_params) do
     defs =
       case :ets.lookup(@table, {site, page_id, :live_data}) do
-        [{_, defs}] when is_list(defs) and defs != [] ->
+        [{_, :no_live_data}] ->
+          # Loaded previously but page has no live data definitions
+          []
+
+        [{_, defs}] when is_list(defs) ->
           defs
 
         _ ->
@@ -1036,7 +1040,12 @@ defmodule Beacon.RuntimeRenderer do
             end)
           end)
 
-        :ets.insert(@table, {{site, page_id, :live_data}, defs})
+        if defs == [] do
+          :ets.insert(@table, {{site, page_id, :live_data}, :no_live_data})
+        else
+          :ets.insert(@table, {{site, page_id, :live_data}, defs})
+        end
+
         defs
 
       :error ->
