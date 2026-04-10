@@ -2465,15 +2465,6 @@ defmodule Beacon.RuntimeRenderer do
     if is_nil(enum) or enum == "" do
       []
     else
-      if is_list(enum) do
-        nils = Enum.count(enum, &is_nil/1)
-        if nils > 0 do
-          Logger.error("[RuntimeRenderer] for #{inspect(var_name)}: enum has #{length(enum)} items, #{nils} nils. enum_ir=#{inspect(enum_ir, limit: 3)}")
-        end
-      else
-        Logger.error("[RuntimeRenderer] for #{inspect(var_name)}: enum is #{inspect(enum, limit: 3, printable_limit: 100)}, not a list. enum_ir=#{inspect(enum_ir, limit: 3)}")
-      end
-
       Enum.map(enum, fn item ->
         inner_bindings = destructure_binding(b, var_name, item)
         result = eval_ir(body_ir, a, inner_bindings)
