@@ -114,6 +114,23 @@ defmodule Beacon.RuntimeRenderer do
       :ets.insert(@table, {{site, :css_candidates}, updated})
     end
 
+    # 10. Register page dependencies for cascade invalidation
+    component_names = Beacon.PageRenderCache.extract_component_names(ir)
+
+    data_source_names =
+      manifest.extra
+      |> Map.get("data_sources", [])
+      |> Enum.map(fn spec -> spec["source"] || spec[:source] end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(&safe_to_existing_atom/1)
+      |> MapSet.new()
+
+    Beacon.PageRenderCache.register_page_deps(site, page_id, %{
+      layout_id: manifest.layout_id,
+      components: component_names,
+      data_sources: data_source_names
+    })
+
     :ok
   end
 
@@ -860,7 +877,8 @@ defmodule Beacon.RuntimeRenderer do
         live_data_keys: Map.keys(all_data),
         data_source_names: data_source_names,
         live_path: path_info,
-        variant_roll: variant_roll
+        variant_roll: variant_roll,
+        page_type: Map.get(manifest.extra, "type", "default")
       }
     }
 
@@ -927,7 +945,8 @@ defmodule Beacon.RuntimeRenderer do
         live_data_keys: Map.keys(all_data),
         data_source_names: data_source_names,
         live_path: path_info,
-        variant_roll: nil
+        variant_roll: nil,
+        page_type: Map.get(manifest.extra, "type", "default")
       }
     }
 

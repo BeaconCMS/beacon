@@ -116,6 +116,8 @@ defmodule Beacon.DataStore do
   def invalidate(site, source_name) do
     :ets.match_delete(@table, {{site, :data_store, :cache, source_name, :_}, :_})
     broadcast_invalidation(site, source_name)
+    # Cascade to page render cache — invalidate all pages using this data source
+    Beacon.PageRenderCache.invalidate_by_data_source(site, source_name)
     :ok
   end
 
@@ -132,6 +134,8 @@ defmodule Beacon.DataStore do
     end
 
     broadcast_invalidation(site, source_name, params)
+    # Cascade to page render cache — invalidate all pages using this data source
+    Beacon.PageRenderCache.invalidate_by_data_source(site, source_name)
     :ok
   end
 

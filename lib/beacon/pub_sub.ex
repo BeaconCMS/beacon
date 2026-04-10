@@ -95,6 +95,23 @@ defmodule Beacon.PubSub do
 
   defp page(page), do: %{site: page.site, id: page.id, path: page.path}
 
+  # Page Render Cache
+
+  defp topic_page_render(site, path), do: "beacon:#{site}:page_render:#{path}"
+
+  def page_render_updated(site, page_id, path) do
+    topic = topic_page_render(site, path)
+    broadcast(topic, {:page_render_updated, %{site: site, page_id: page_id, path: path}}, site)
+  end
+
+  def subscribe_to_page_render(site, path) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_page_render(site, path))
+  end
+
+  def unsubscribe_from_page_render(site, path) do
+    Phoenix.PubSub.unsubscribe(@pubsub, topic_page_render(site, path))
+  end
+
   # CSS
 
   defp topic_css(site), do: "beacon:#{site}:css"

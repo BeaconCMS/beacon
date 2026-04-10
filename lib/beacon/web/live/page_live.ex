@@ -56,10 +56,17 @@ defmodule Beacon.Web.PageLive do
       end
     end
 
+    # Subscribe to page render cache updates
+    if config.mode == :live and connected?(socket) do
+      path_str = "/" <> Enum.join(path, "/")
+      Beacon.PubSub.subscribe_to_page_render(site, path_str)
+    end
+
     socket =
       socket
       |> Component.assign(assigns)
       |> Component.assign(:beacon_warming, warming)
+      |> Component.assign(:beacon_update_available, false)
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
   end
@@ -78,7 +85,49 @@ defmodule Beacon.Web.PageLive do
   def render(assigns) do
     %{beacon: %{site: site, private: %{page_id: page_id}}} = assigns
     {:ok, rendered} = Beacon.RuntimeRenderer.render_page(site, page_id, assigns)
-    rendered
+
+    update_available = Map.get(assigns, :beacon_update_available, false)
+
+    if update_available do
+      config = Beacon.Config.fetch!(site)
+      notification_mod = config.update_notification_component || Beacon.Web.Components.UpdateNotification
+
+      assigns =
+        assigns
+        |> Map.put(:beacon_page_content, rendered)
+        |> Map.put(:beacon_notification_mod, notification_mod)
+
+      ~H"""
+      <%= @beacon_page_content %>
+      <@beacon_notification_mod.render />
+      """
+    else
+      rendered
+    end
+  end
+
+  def handle_info({:page_render_updated, %{site: msg_site, page_id: _page_id}}, socket) do
+    %{beacon: %{site: site}} = socket.assigns
+
+    if msg_site != site do
+      {:noreply, socket}
+    else
+      config = Beacon.Config.fetch!(site)
+      page_type = get_in(socket.assigns, [:beacon, :private, :page_type]) || "default"
+
+      mode = Map.get(config.live_update_overrides, page_type, config.live_update)
+
+      case mode do
+        :manual ->
+          {:noreply, socket}
+
+        :notify ->
+          {:noreply, Component.assign(socket, :beacon_update_available, true)}
+
+        :automatic ->
+          do_live_update(socket)
+      end
+    end
   end
 
   def handle_info({:css_compiled, site}, socket) do
@@ -161,6 +210,15 @@ defmodule Beacon.Web.PageLive do
     end
   end
 
+  def handle_event("beacon:apply-update", _params, socket) do
+    {:noreply, updated_socket} = do_live_update(socket)
+    {:noreply, Component.assign(updated_socket, :beacon_update_available, false)}
+  end
+
+  def handle_event("beacon:dismiss-update", _params, socket) do
+    {:noreply, Component.assign(socket, :beacon_update_available, false)}
+  end
+
   def handle_event(event_name, event_params, socket) do
     %{beacon: %{site: site}} = socket.assigns
 
@@ -206,13 +264,43 @@ defmodule Beacon.Web.PageLive do
           for source <- new_sources -- old_sources, do: Beacon.DataStore.subscribe(site, source)
         end
 
+        # Update page render cache subscriptions when navigating between pages
+        if connected?(socket) do
+          old_path = "/" <> Enum.join(socket.assigns.beacon.private.live_path, "/")
+          new_path = "/" <> Enum.join(path_info, "/")
+
+          if old_path != new_path do
+            Beacon.PubSub.unsubscribe_from_page_render(site, old_path)
+            Beacon.PubSub.subscribe_to_page_render(site, new_path)
+          end
+        end
+
         socket =
           socket
           |> Component.assign(params_assigns)
           |> Component.assign(:page_title, params_assigns.beacon.page.title)
+          |> Component.assign(:beacon_update_available, false)
 
         {:noreply, socket}
     end
+  end
+
+  defp do_live_update(socket) do
+    %{beacon: %{site: site, private: %{live_path: path_info}}} = socket.assigns
+    path_str = "/" <> Enum.join(path_info, "/")
+
+    # Get current query params from socket
+    query_params = socket.assigns.beacon.query_params || %{}
+    params = Map.put(query_params, "path", path_info)
+
+    {:ok, assigns} = Beacon.RuntimeRenderer.handle_params_assigns(site, path_str, params)
+
+    socket =
+      socket
+      |> Component.assign(assigns)
+      |> Component.assign(:beacon_update_available, false)
+
+    {:noreply, socket}
   end
 
   @doc false

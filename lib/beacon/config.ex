@@ -228,6 +228,15 @@ defmodule Beacon.Config do
   """
   @type max_cache_entries :: non_neg_integer()
 
+  @typedoc """
+  Controls how connected LiveViews respond to page render cache invalidation.
+
+    - `:automatic` — the LiveView silently re-renders with fresh data (default)
+    - `:notify` — a notification banner appears; the user clicks to refresh
+    - `:manual` — the LiveView ignores the update entirely
+  """
+  @type live_update :: :manual | :notify | :automatic
+
   @type t :: %__MODULE__{
           site: Beacon.Types.Site.t(),
           endpoint: endpoint(),
@@ -250,7 +259,10 @@ defmodule Beacon.Config do
           cache_ttl: cache_ttl(),
           cache_ttls: cache_ttls(),
           max_cache_entries: max_cache_entries(),
-          circuit_breaker_ttl: non_neg_integer()
+          circuit_breaker_ttl: non_neg_integer(),
+          live_update: live_update(),
+          live_update_overrides: %{optional(String.t()) => live_update()},
+          update_notification_component: module() | nil
         }
 
   @default_load_template [
@@ -306,7 +318,10 @@ defmodule Beacon.Config do
             cache_ttl: 60,
             cache_ttls: %{},
             max_cache_entries: 10_000,
-            circuit_breaker_ttl: 60
+            circuit_breaker_ttl: 60,
+            live_update: :automatic,
+            live_update_overrides: %{},
+            update_notification_component: nil
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -331,6 +346,9 @@ defmodule Beacon.Config do
           | {:cache_ttls, cache_ttls()}
           | {:max_cache_entries, max_cache_entries()}
           | {:circuit_breaker_ttl, non_neg_integer()}
+          | {:live_update, live_update()}
+          | {:live_update_overrides, %{optional(String.t()) => live_update()}}
+          | {:update_notification_component, module() | nil}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
