@@ -562,9 +562,42 @@ defmodule Beacon.RuntimeRenderer do
           {:ok, page.id}
 
         _ ->
-          :error
+          # No exact match — try matching against dynamic route patterns in the DB
+          match_dynamic_route_from_db(site, path)
       end
     end, ttl)
+  end
+
+  defp match_dynamic_route_from_db(site, path) do
+    request_segments = String.split(path, "/", trim: true)
+
+    # Query only paths (lightweight) to find a dynamic route pattern that matches
+    Beacon.Content.list_published_page_paths(site)
+    |> Enum.find_value(:error, fn {_page_id, route_path} ->
+      route_segments = String.split(route_path, "/", trim: true)
+
+      if length(route_segments) == length(request_segments) do
+        matches? =
+          Enum.zip(route_segments, request_segments)
+          |> Enum.all?(fn
+            {":" <> _, _} -> true
+            {"*" <> _, _} -> true
+            {a, b} -> a == b
+          end)
+
+        if matches? do
+          # Found a matching dynamic route — load the page by its pattern path
+          case Beacon.Content.list_published_pages_for_paths(site, [route_path]) do
+            [page] ->
+              Beacon.RuntimeRenderer.Loader.load_page(site, page)
+              {:ok, page.id}
+
+            _ ->
+              nil
+          end
+        end
+      end
+    end)
   end
 
   def lookup_page!(site, path) do
