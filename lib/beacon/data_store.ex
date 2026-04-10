@@ -163,11 +163,13 @@ defmodule Beacon.DataStore do
     "beacon:#{site}:data_store:#{source_name}"
   end
 
-  defp broadcast_invalidation(site, source_name) do
+  @doc false
+  def broadcast_invalidation(site, source_name) do
     Phoenix.PubSub.broadcast(@pubsub, topic(site, source_name), {:beacon_data_store_invalidated, source_name})
   end
 
-  defp broadcast_invalidation(site, source_name, params) do
+  @doc false
+  def broadcast_invalidation(site, source_name, params) do
     Phoenix.PubSub.broadcast(@pubsub, topic(site, source_name), {:beacon_data_store_invalidated, source_name, params})
   end
 

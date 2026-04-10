@@ -932,6 +932,7 @@ defmodule Beacon.RuntimeRenderer do
 
         case Beacon.DataStore.get_source(site, source_name) do
           nil ->
+            Logger.warning("[Beacon.DataStore] data source #{inspect(source_name)} is referenced in page manifest but not registered for site #{inspect(site)}")
             acc
 
           _source ->
