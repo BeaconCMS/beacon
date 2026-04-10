@@ -562,14 +562,20 @@ defmodule Beacon.RuntimeRenderer do
       end
 
     Beacon.Cache.fetch(@table, {site, :page_load, path}, fn ->
-      case Beacon.Content.list_published_pages_for_paths(site, [path]) do
-        [page] ->
-          Beacon.RuntimeRenderer.Loader.load_page(site, page)
-          {:ok, page.id}
+      wait_for_load_slot(site)
 
-        _ ->
-          # No exact match — try matching against dynamic route patterns in the DB
-          match_dynamic_route_from_db(site, path)
+      try do
+        case Beacon.Content.list_published_pages_for_paths(site, [path]) do
+          [page] ->
+            Beacon.RuntimeRenderer.Loader.load_page(site, page)
+            {:ok, page.id}
+
+          _ ->
+            # No exact match — try matching against dynamic route patterns in the DB
+            match_dynamic_route_from_db(site, path)
+        end
+      after
+        release_load_slot(site)
       end
     end, ttl)
   end
@@ -614,6 +620,8 @@ defmodule Beacon.RuntimeRenderer do
   Registers a route (path → page_id) in ETS without loading the page IR.
   Used at boot to populate the route index for dynamic route matching.
   """
+  @max_concurrent_page_loads 4
+
   @doc false
   def ensure_page_loaded(site, page_id) do
     # Check if the page IR is already in ETS
@@ -628,18 +636,49 @@ defmodule Beacon.RuntimeRenderer do
             :ok
 
           :error ->
-            # No manifest either — need to load the full page from DB
-            config = Beacon.Config.fetch!(site)
-            ttl = Beacon.Config.effective_ttl(config, :pages)
-
-            Beacon.Cache.fetch(@table, {site, :page_load, page_id}, fn ->
-              case Beacon.Content.get_published_page(site, page_id) do
-                nil -> :error
-                page -> Beacon.RuntimeRenderer.Loader.load_page(site, page); :ok
-              end
-            end, ttl)
+            # No manifest either — need to load the full page from DB.
+            # Throttle concurrent loads to prevent thundering herd when
+            # a bot crawls many pages simultaneously on a cold cache.
+            throttled_page_load(site, page_id)
         end
     end
+  end
+
+  defp throttled_page_load(site, page_id) do
+    config = Beacon.Config.fetch!(site)
+    ttl = Beacon.Config.effective_ttl(config, :pages)
+
+    Beacon.Cache.fetch(@table, {site, :page_load, page_id}, fn ->
+      wait_for_load_slot(site)
+
+      try do
+        case Beacon.Content.get_published_page(site, page_id) do
+          nil -> :error
+          page -> Beacon.RuntimeRenderer.Loader.load_page(site, page); :ok
+        end
+      after
+        release_load_slot(site)
+      end
+    end, ttl)
+  end
+
+  defp wait_for_load_slot(site) do
+    key = {site, :page_load_count}
+
+    case :ets.update_counter(@table, key, {2, 1}, {key, 0}) do
+      count when count <= @max_concurrent_page_loads ->
+        :ok
+
+      _ ->
+        # Over limit — back off and retry
+        :ets.update_counter(@table, key, {2, -1})
+        Process.sleep(50 + :rand.uniform(100))
+        wait_for_load_slot(site)
+    end
+  end
+
+  defp release_load_slot(site) do
+    :ets.update_counter(@table, {site, :page_load_count}, {2, -1})
   end
 
   def register_route(site, page_id, path) do
@@ -910,11 +949,13 @@ defmodule Beacon.RuntimeRenderer do
     # Look up the page manifest to get the path pattern
     case fetch_manifest(site, page_id) do
       {:ok, manifest} ->
-        all_live_data = Beacon.Content.live_data_for_site(site, per_page: :infinity)
+        # Query only the live data matching this page's path pattern,
+        # not the entire site's live data. For static paths this is a
+        # single-row query; for dynamic paths we fetch candidate patterns.
+        matching_live_data = fetch_matching_live_data(site, manifest.path)
 
         defs =
-          all_live_data
-          |> Enum.filter(fn ld -> path_matches_pattern?(ld.path, manifest.path) end)
+          matching_live_data
           |> Enum.flat_map(fn ld ->
             Enum.map(ld.assigns, fn assign ->
               %{
@@ -931,6 +972,20 @@ defmodule Beacon.RuntimeRenderer do
 
       :error ->
         []
+    end
+  end
+
+  defp fetch_matching_live_data(site, page_path) do
+    # Try exact path match first (cheapest query)
+    case Beacon.Content.get_live_data_by(site, path: page_path) do
+      %{} = ld -> [ld]
+      nil ->
+        # No exact match — the page may use a different path pattern than
+        # the live data (e.g., page path "/blog/:slug" vs live data path "/blog/:slug").
+        # Query all live data paths and filter by pattern matching.
+        # This is bounded by the number of live data definitions per site (typically < 30).
+        Beacon.Content.live_data_for_site(site, per_page: :infinity)
+        |> Enum.filter(fn ld -> path_matches_pattern?(ld.path, page_path) end)
     end
   end
 
