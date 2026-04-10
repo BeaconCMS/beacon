@@ -29,6 +29,8 @@ defmodule Beacon.RuntimeRenderer do
       :ets.new(@table, [:set, :named_table, :public, read_concurrency: true])
     end
 
+    Beacon.CircuitBreaker.init()
+
     :ok
   end
 
@@ -813,6 +815,22 @@ defmodule Beacon.RuntimeRenderer do
   No compiled modules are loaded or referenced.
   """
   def mount_assigns(site, path, opts \\ []) when is_atom(site) and is_binary(path) do
+    case Beacon.CircuitBreaker.check(site, path) do
+      {:tripped, _remaining} -> raise Beacon.Web.ServerError, "page is temporarily unavailable"
+      :ok -> :ok
+    end
+
+    try do
+      do_mount_assigns(site, path, opts)
+    rescue
+      error ->
+        ttl = Beacon.Config.fetch!(site).circuit_breaker_ttl
+        if ttl > 0, do: Beacon.CircuitBreaker.trip(site, path, ttl)
+        reraise error, __STACKTRACE__
+    end
+  end
+
+  defp do_mount_assigns(site, path, opts) do
     page_id = lookup_page!(site, path)
     manifest = fetch_manifest!(site, page_id)
     variant_roll = Keyword.get(opts, :variant_roll)
@@ -861,6 +879,22 @@ defmodule Beacon.RuntimeRenderer do
   Evaluates live_data definitions from ETS and merges everything into assigns.
   """
   def handle_params_assigns(site, path, params \\ %{}) when is_atom(site) and is_binary(path) do
+    case Beacon.CircuitBreaker.check(site, path) do
+      {:tripped, _remaining} -> raise Beacon.Web.ServerError, "page is temporarily unavailable"
+      :ok -> :ok
+    end
+
+    try do
+      do_handle_params_assigns(site, path, params)
+    rescue
+      error ->
+        ttl = Beacon.Config.fetch!(site).circuit_breaker_ttl
+        if ttl > 0, do: Beacon.CircuitBreaker.trip(site, path, ttl)
+        reraise error, __STACKTRACE__
+    end
+  end
+
+  defp do_handle_params_assigns(site, path, params) do
     page_id = lookup_page!(site, path)
     manifest = fetch_manifest!(site, page_id)
     path_info = String.split(String.trim_leading(path, "/"), "/", trim: true)

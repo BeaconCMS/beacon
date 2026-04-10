@@ -249,7 +249,8 @@ defmodule Beacon.Config do
           warming_concurrency: warming_concurrency(),
           cache_ttl: cache_ttl(),
           cache_ttls: cache_ttls(),
-          max_cache_entries: max_cache_entries()
+          max_cache_entries: max_cache_entries(),
+          circuit_breaker_ttl: non_neg_integer()
         }
 
   @default_load_template [
@@ -304,7 +305,8 @@ defmodule Beacon.Config do
             warming_concurrency: 4,
             cache_ttl: 60,
             cache_ttls: %{},
-            max_cache_entries: 10_000
+            max_cache_entries: 10_000,
+            circuit_breaker_ttl: 60
 
   @type option ::
           {:site, Beacon.Types.Site.t()}
@@ -328,6 +330,7 @@ defmodule Beacon.Config do
           | {:cache_ttl, cache_ttl()}
           | {:cache_ttls, cache_ttls()}
           | {:max_cache_entries, max_cache_entries()}
+          | {:circuit_breaker_ttl, non_neg_integer()}
 
   @doc """
   Build a new `%Beacon.Config{}` instance to hold the entire configuration for each site.
