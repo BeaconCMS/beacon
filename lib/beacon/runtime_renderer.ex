@@ -616,10 +616,18 @@ defmodule Beacon.RuntimeRenderer do
   Clears cached live_data definitions for all pages on a site.
   Pages will lazy-load fresh definitions from the DB on next request.
   """
+  def clear_live_data_cache(site) do
+    :ets.match_delete(@table, {{site, :"$1", :live_data}, :_})
+  end
+
   @doc """
   Registers a route (path → page_id) in ETS without loading the page IR.
   Used at boot to populate the route index for dynamic route matching.
   """
+  def register_route(site, page_id, path) do
+    :ets.insert(@table, {{site, :route, path}, page_id})
+  end
+
   @max_concurrent_page_loads 4
 
   @doc false
@@ -679,14 +687,6 @@ defmodule Beacon.RuntimeRenderer do
 
   defp release_load_slot(site) do
     :ets.update_counter(@table, {site, :page_load_count}, {2, -1})
-  end
-
-  def register_route(site, page_id, path) do
-    :ets.insert(@table, {{site, :route, path}, page_id})
-  end
-
-  def clear_live_data_cache(site) do
-    :ets.match_delete(@table, {{site, :"$1", :live_data}, :_})
   end
 
   def lookup_page!(site, path) do
