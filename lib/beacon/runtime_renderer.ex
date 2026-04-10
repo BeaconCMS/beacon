@@ -820,8 +820,7 @@ defmodule Beacon.RuntimeRenderer do
     path_params = extract_path_params(manifest.path, path_info)
 
     # Fetch DataStore sources BEFORE live_data so live_data code can reference them
-    data_store_assigns = fetch_data_store_assigns(site, manifest, path_params, %{})
-    data_source_names = Map.keys(data_store_assigns)
+    {data_store_assigns, data_source_names} = fetch_data_store_assigns(site, manifest, path_params, %{})
 
     # Evaluate live data at mount time so assigns are available for the initial render
     live_data = evaluate_live_data(site, page_id, path_info, %{})
@@ -869,8 +868,7 @@ defmodule Beacon.RuntimeRenderer do
     path_params = extract_path_params(manifest.path, path_info)
 
     # Fetch DataStore sources BEFORE live_data
-    data_store_assigns = fetch_data_store_assigns(site, manifest, path_params, query_params)
-    data_source_names = Map.keys(data_store_assigns)
+    {data_store_assigns, data_source_names} = fetch_data_store_assigns(site, manifest, path_params, query_params)
 
     # Evaluate live_data from stored definitions
     live_data = evaluate_live_data(site, page_id, path_info, query_params)
@@ -922,26 +920,39 @@ defmodule Beacon.RuntimeRenderer do
     specs = Map.get(manifest.extra, "data_sources", [])
 
     if specs == [] do
-      %{}
+      {%{}, []}
     else
-      Enum.reduce(specs, %{}, fn spec, acc ->
-        source_name =
-          (spec["source"] || spec[:source])
-          |> to_string()
-          |> safe_to_existing_atom()
+      {assigns, source_names} =
+        Enum.reduce(specs, {%{}, []}, fn spec, {acc, names} ->
+          source_name =
+            (spec["source"] || spec[:source])
+            |> to_string()
+            |> safe_to_existing_atom()
 
-        case Beacon.DataStore.get_source(site, source_name) do
-          nil ->
-            Logger.warning("[Beacon.DataStore] data source #{inspect(source_name)} is referenced in page manifest but not registered for site #{inspect(site)}")
-            acc
+          case Beacon.DataStore.get_source(site, source_name) do
+            nil ->
+              Logger.warning("[Beacon.DataStore] data source #{inspect(source_name)} is referenced in page manifest but not registered for site #{inspect(site)}")
+              {acc, names}
 
-          _source ->
-            raw_params = spec["params"] || spec[:params] || %{}
-            resolved = resolve_data_store_params(raw_params, path_params, query_params)
-            value = Beacon.DataStore.fetch(site, source_name, resolved)
-            Map.put(acc, source_name, value)
-        end
-      end)
+            _source ->
+              raw_params = spec["params"] || spec[:params] || %{}
+              resolved = resolve_data_store_params(raw_params, path_params, query_params)
+              value = Beacon.DataStore.fetch(site, source_name, resolved)
+              spread? = spec["spread"] == true || spec[:spread] == true
+
+              updated_acc =
+                if spread? and is_map(value) do
+                  atomized = Map.new(value, fn {k, v} -> {safe_to_existing_atom(to_string(k)), v} end)
+                  Map.merge(acc, atomized)
+                else
+                  Map.put(acc, source_name, value)
+                end
+
+              {updated_acc, [source_name | names]}
+          end
+        end)
+
+      {assigns, Enum.reverse(source_names)}
     end
   end
 
@@ -949,6 +960,9 @@ defmodule Beacon.RuntimeRenderer do
     Map.new(param_spec, fn
       {key, %{"path_param" => name}} -> {safe_to_existing_atom(key), Map.get(path_params, name) || Map.get(path_params, safe_to_existing_atom(name))}
       {key, %{"query_param" => name}} -> {safe_to_existing_atom(key), Map.get(query_params, name)}
+      {key, %{"concat_path_params" => names}} when is_list(names) ->
+        value = Enum.map_join(names, "/", fn n -> Map.get(path_params, n) || Map.get(path_params, safe_to_existing_atom(n)) || "" end)
+        {safe_to_existing_atom(key), value}
       {key, {:path_param, name}} -> {safe_to_existing_atom(key), Map.get(path_params, name) || Map.get(path_params, safe_to_existing_atom(name))}
       {key, {:query_param, name}} -> {safe_to_existing_atom(key), Map.get(query_params, name)}
       {key, value} -> {safe_to_existing_atom(key), value}

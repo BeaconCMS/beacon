@@ -484,6 +484,156 @@ defmodule Beacon.RuntimeRendererTest do
     end
   end
 
+  describe "DataStore spread support" do
+    test "spread: true merges map result keys into top-level assigns" do
+      # Register a DataStore source that returns a map
+      sources = [
+        Beacon.DataStore.Source.new!(
+          name: :blog_listing,
+          fetch: fn _params ->
+            %{
+              latest: %{title: "Latest Post"},
+              past_posts: [%{title: "Old Post"}],
+              pagination: %{current_page: 1, total_pages: 3}
+            }
+          end,
+          ttl: 60_000
+        )
+      ]
+
+      Beacon.DataStore.register(@site, sources)
+
+      RuntimeRenderer.publish_page(@site, "spread_1", %{
+        template: ~S|<div><%= @latest.title %></div>|,
+        path: "/spread-test",
+        title: "Spread Test",
+        extra: %{
+          "data_sources" => [
+            %{"source" => "blog_listing", "params" => %{}, "spread" => true}
+          ]
+        }
+      })
+
+      assert {:ok, assigns} = RuntimeRenderer.mount_assigns(@site, "/spread-test")
+
+      # The map keys should be spread into top-level assigns
+      assert assigns.latest == %{title: "Latest Post"}
+      assert assigns.past_posts == [%{title: "Old Post"}]
+      assert assigns.pagination == %{current_page: 1, total_pages: 3}
+
+      # The source name should NOT be in assigns (it was spread)
+      refute Map.has_key?(assigns, :blog_listing)
+
+      # But the source name should still be in data_source_names for PubSub subscriptions
+      assert :blog_listing in assigns.beacon.private.data_source_names
+    end
+
+    test "spread: false (default) nests result under source name" do
+      sources = [
+        Beacon.DataStore.Source.new!(
+          name: :nested_data,
+          fetch: fn _params -> %{a: 1, b: 2} end,
+          ttl: 60_000
+        )
+      ]
+
+      Beacon.DataStore.register(@site, sources)
+
+      RuntimeRenderer.publish_page(@site, "spread_2", %{
+        template: "<div>test</div>",
+        path: "/no-spread-test",
+        title: "No Spread",
+        extra: %{
+          "data_sources" => [
+            %{"source" => "nested_data", "params" => %{}}
+          ]
+        }
+      })
+
+      assert {:ok, assigns} = RuntimeRenderer.mount_assigns(@site, "/no-spread-test")
+      assert assigns.nested_data == %{a: 1, b: 2}
+      refute Map.has_key?(assigns, :a)
+      refute Map.has_key?(assigns, :b)
+    end
+
+    test "spread works with concat_path_params to join multiple path segments" do
+      sources = [
+        Beacon.DataStore.Source.new!(
+          name: :post_detail,
+          fetch: fn params -> %{post_path: params[:path], found: true} end,
+          ttl: 60_000,
+          params: [:path]
+        )
+      ]
+
+      Beacon.DataStore.register(@site, sources)
+
+      RuntimeRenderer.publish_page(@site, "spread_concat", %{
+        template: "<div>test</div>",
+        path: "/blog/:year/:month/:day/:slug",
+        title: "Post",
+        extra: %{
+          "data_sources" => [
+            %{
+              "source" => "post_detail",
+              "params" => %{"path" => %{"concat_path_params" => ["year", "month", "day", "slug"]}},
+              "spread" => true
+            }
+          ]
+        }
+      })
+
+      assert {:ok, assigns} =
+               RuntimeRenderer.handle_params_assigns(@site, "/blog/2024/01/15/my-post")
+
+      assert assigns.post_path == "2024/01/15/my-post"
+      assert assigns.found == true
+    end
+
+    test "spread works with handle_params_assigns and query params" do
+      sources = [
+        Beacon.DataStore.Source.new!(
+          name: :category_listing,
+          fetch: fn params ->
+            category = params[:category] || "all"
+
+            %{
+              filter: category,
+              posts: [%{title: "Post in #{category}"}],
+              pagination: %{current_page: 1}
+            }
+          end,
+          ttl: 60_000,
+          params: [:category]
+        )
+      ]
+
+      Beacon.DataStore.register(@site, sources)
+
+      RuntimeRenderer.publish_page(@site, "spread_3", %{
+        template: "<div>test</div>",
+        path: "/spread-params/:category",
+        title: "Category",
+        extra: %{
+          "data_sources" => [
+            %{
+              "source" => "category_listing",
+              "params" => %{"category" => %{"path_param" => "category"}},
+              "spread" => true
+            }
+          ]
+        }
+      })
+
+      assert {:ok, assigns} =
+               RuntimeRenderer.handle_params_assigns(@site, "/spread-params/elixir")
+
+      assert assigns.filter == "elixir"
+      assert assigns.posts == [%{title: "Post in elixir"}]
+      assert assigns.pagination == %{current_page: 1}
+    end
+  end
+
   describe "full lifecycle" do
     test "mount → handle_params → render → handle_event" do
       RuntimeRenderer.publish_page(@site, "full_1", %{
