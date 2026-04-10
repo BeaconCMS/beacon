@@ -817,34 +817,35 @@ defmodule Beacon.RuntimeRenderer do
     manifest = fetch_manifest!(site, page_id)
     variant_roll = Keyword.get(opts, :variant_roll)
     path_info = String.split(String.trim_leading(path, "/"), "/", trim: true)
+    path_params = extract_path_params(manifest.path, path_info)
+
+    # Fetch DataStore sources BEFORE live_data so live_data code can reference them
+    data_store_assigns = fetch_data_store_assigns(site, manifest, path_params, %{})
+    data_source_names = Map.keys(data_store_assigns)
 
     # Evaluate live data at mount time so assigns are available for the initial render
-    # (render is called before handle_params in LiveView)
     live_data = evaluate_live_data(site, page_id, path_info, %{})
 
-    if Map.has_key?(live_data, :employees) do
-      employees = live_data.employees
-      Logger.debug("[RuntimeRenderer] mount_assigns live_data has :employees — is_list=#{is_list(employees)}, count=#{if is_list(employees), do: length(employees), else: "N/A"}, nils=#{if is_list(employees), do: Enum.count(employees, &is_nil/1), else: "N/A"}")
-    else
-      Logger.debug("[RuntimeRenderer] mount_assigns live_data keys: #{inspect(Map.keys(live_data))}")
-    end
+    # Merge: DataStore results + live_data (live_data can override DataStore)
+    all_data = Map.merge(data_store_assigns, live_data)
 
     beacon = %{
       site: site,
-      path_params: %{},
+      path_params: path_params,
       query_params: %{},
       page: %{path: manifest.path, title: manifest.title},
       private: %{
         page_id: page_id,
         layout_id: manifest.layout_id,
-        live_data_keys: Map.keys(live_data),
+        live_data_keys: Map.keys(all_data),
+        data_source_names: data_source_names,
         live_path: path_info,
         variant_roll: variant_roll
       }
     }
 
-    page_title = interpolate_title(manifest.title, manifest, live_data)
-    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: page_title})}
+    page_title = interpolate_title(manifest.title, manifest, all_data)
+    {:ok, Map.merge(all_data, %{beacon: beacon, page_title: page_title})}
   end
 
   # ---------------------------------------------------------------------------
@@ -865,28 +866,95 @@ defmodule Beacon.RuntimeRenderer do
     manifest = fetch_manifest!(site, page_id)
     path_info = String.split(String.trim_leading(path, "/"), "/", trim: true)
     query_params = Map.drop(params, ["path"])
+    path_params = extract_path_params(manifest.path, path_info)
+
+    # Fetch DataStore sources BEFORE live_data
+    data_store_assigns = fetch_data_store_assigns(site, manifest, path_params, query_params)
+    data_source_names = Map.keys(data_store_assigns)
 
     # Evaluate live_data from stored definitions
     live_data = evaluate_live_data(site, page_id, path_info, query_params)
 
+    all_data = Map.merge(data_store_assigns, live_data)
+
     beacon = %{
       site: site,
-      path_params: extract_path_params(manifest.path, path_info),
+      path_params: path_params,
       query_params: query_params,
-      live_data: live_data,
+      live_data: all_data,
       page: %{path: manifest.path, title: manifest.title},
       private: %{
         page_id: page_id,
         layout_id: manifest.layout_id,
-        live_data_keys: Map.keys(live_data),
+        live_data_keys: Map.keys(all_data),
+        data_source_names: data_source_names,
         live_path: path_info,
         variant_roll: nil
       }
     }
 
-    page_title = interpolate_title(manifest.title, manifest, live_data)
-    {:ok, Map.merge(live_data, %{beacon: beacon, page_title: page_title})}
+    page_title = interpolate_title(manifest.title, manifest, all_data)
+    {:ok, Map.merge(all_data, %{beacon: beacon, page_title: page_title})}
   end
+
+  # ---------------------------------------------------------------------------
+  # DataStore integration
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Returns the list of data source names used by a page, read from the manifest's extra field.
+  """
+  def page_data_source_names(site, page_id) do
+    case fetch_manifest(site, page_id) do
+      {:ok, manifest} ->
+        manifest.extra
+        |> Map.get("data_sources", [])
+        |> Enum.map(fn spec -> spec["source"] || spec[:source] end)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.map(&safe_to_existing_atom/1)
+
+      :error ->
+        []
+    end
+  end
+
+  defp fetch_data_store_assigns(site, manifest, path_params, query_params) do
+    specs = Map.get(manifest.extra, "data_sources", [])
+
+    if specs == [] do
+      %{}
+    else
+      Enum.reduce(specs, %{}, fn spec, acc ->
+        source_name =
+          (spec["source"] || spec[:source])
+          |> to_string()
+          |> safe_to_existing_atom()
+
+        case Beacon.DataStore.get_source(site, source_name) do
+          nil ->
+            acc
+
+          _source ->
+            raw_params = spec["params"] || spec[:params] || %{}
+            resolved = resolve_data_store_params(raw_params, path_params, query_params)
+            value = Beacon.DataStore.fetch(site, source_name, resolved)
+            Map.put(acc, source_name, value)
+        end
+      end)
+    end
+  end
+
+  def resolve_data_store_params(param_spec, path_params, query_params) when is_map(param_spec) do
+    Map.new(param_spec, fn
+      {key, %{"path_param" => name}} -> {safe_to_existing_atom(key), Map.get(path_params, name) || Map.get(path_params, safe_to_existing_atom(name))}
+      {key, %{"query_param" => name}} -> {safe_to_existing_atom(key), Map.get(query_params, name)}
+      {key, {:path_param, name}} -> {safe_to_existing_atom(key), Map.get(path_params, name) || Map.get(path_params, safe_to_existing_atom(name))}
+      {key, {:query_param, name}} -> {safe_to_existing_atom(key), Map.get(query_params, name)}
+      {key, value} -> {safe_to_existing_atom(key), value}
+    end)
+  end
+
+  def resolve_data_store_params(_, _, _), do: %{}
 
   # Interpolate snippets in page title (e.g., "{{ page.path }}", "{{ live_data.test }}")
   defp interpolate_title(title, manifest, live_data) do
