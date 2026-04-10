@@ -336,7 +336,7 @@ defmodule Beacon.RuntimeRenderer.Loader do
 
     snapshot_extra =
       try do
-        Content.repo(site).one(
+        Beacon.Utils.repo(site).one(
           from(s in "beacon_page_snapshots",
             where: s.path == ^page.path and s.site == ^to_string(site),
             order_by: [desc: s.inserted_at],
