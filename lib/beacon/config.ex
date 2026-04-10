@@ -279,6 +279,7 @@ defmodule Beacon.Config do
             css_safelist: [],
             css_safelist_module: nil,
             css_warming_template: nil,
+            data_sources: [],
             live_socket_path: "/live",
             # TODO: change safe_code_check to true when it's ready to parse complex codes
             safe_code_check: false,
@@ -515,6 +516,11 @@ defmodule Beacon.Config do
     cache_ttls = get_opt(opts, :cache_ttls, %{})
     max_cache_entries = get_opt(opts, :max_cache_entries, 10_000)
 
+    data_sources =
+      opts
+      |> Keyword.get(:data_sources, [])
+      |> Enum.map(&Beacon.DataStore.Source.new!/1)
+
     struct!(
       __MODULE__,
       Keyword.merge(opts,
@@ -530,7 +536,8 @@ defmodule Beacon.Config do
         warming_concurrency: warming_concurrency,
         cache_ttl: cache_ttl,
         cache_ttls: cache_ttls,
-        max_cache_entries: max_cache_entries
+        max_cache_entries: max_cache_entries,
+        data_sources: data_sources
       )
     )
   end
