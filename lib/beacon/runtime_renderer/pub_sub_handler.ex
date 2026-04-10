@@ -58,6 +58,7 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   @impl true
   def handle_info({:layout_published, %{site: site, id: id}}, state) do
     RuntimeRenderer.Loader.reload_layout(site, id)
+    Beacon.PageRenderCache.invalidate_by_layout(site, to_string(id))
     {:noreply, schedule_css_recompilation(state, site)}
   end
 
@@ -67,12 +68,14 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
 
   def handle_info({:page_published, %{site: site, id: id}}, state) do
     RuntimeRenderer.Loader.reload_page(site, id)
+    Beacon.PageRenderCache.invalidate_page(site, to_string(id))
     {:noreply, schedule_css_recompilation(state, site)}
   end
 
   def handle_info({:pages_published, site, pages}, state) do
     for %{id: id} <- pages do
       RuntimeRenderer.Loader.reload_page(site, id)
+      Beacon.PageRenderCache.invalidate_page(site, to_string(id))
     end
 
     {:noreply, schedule_css_recompilation(state, site)}
@@ -102,14 +105,18 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
 
   def handle_info({:content_updated, :component, %{site: site}}, state) do
     RuntimeRenderer.Loader.load_components(site)
+    # Component invalidation is handled directly by Content.update_component
+    # which calls PageRenderCache.invalidate_by_component with the specific name.
+    # Here we only need to reload the component IR into ETS.
     {:noreply, schedule_css_recompilation(state, site)}
   end
 
   def handle_info({:content_updated, :live_data, %{site: site}}, state) do
-    # Live data is evaluated fresh at handle_params time, so we only need to
-    # clear the cached live_data definitions from ETS. Pages will pick up
-    # the new definitions on next request via lazy_load_live_data.
     RuntimeRenderer.clear_live_data_cache(site)
+    # Notify all connected LiveViews that live data changed.
+    # We invalidate all loaded pages since live_data paths use pattern
+    # matching and we can't efficiently determine which pages are affected.
+    invalidate_all_loaded_pages(site)
     {:noreply, state}
   end
 
@@ -161,6 +168,16 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   # ------------------------------------------------------------------
   # Helpers
   # ------------------------------------------------------------------
+
+  defp invalidate_all_loaded_pages(site) do
+    table = :beacon_runtime_poc
+
+    # Scan ETS for all manifests belonging to this site
+    :ets.match(table, {{site, :"$1", :manifest}, :"$2"})
+    |> Enum.each(fn [page_id, _manifest] ->
+      Beacon.PageRenderCache.invalidate_page(site, page_id)
+    end)
+  end
 
   defp schedule_css_recompilation(%{css_timer: timer} = state, site) do
     if timer, do: Process.cancel_timer(timer)
