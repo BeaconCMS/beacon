@@ -824,8 +824,11 @@ defmodule Beacon.RuntimeRenderer do
       do_mount_assigns(site, path, opts)
     rescue
       error ->
-        ttl = Beacon.Config.fetch!(site).circuit_breaker_ttl
-        if ttl > 0, do: Beacon.CircuitBreaker.trip(site, path, ttl)
+        unless client_error?(error) do
+          ttl = Beacon.Config.fetch!(site).circuit_breaker_ttl
+          if ttl > 0, do: Beacon.CircuitBreaker.trip(site, path, ttl)
+        end
+
         reraise error, __STACKTRACE__
     end
   end
@@ -888,8 +891,11 @@ defmodule Beacon.RuntimeRenderer do
       do_handle_params_assigns(site, path, params)
     rescue
       error ->
-        ttl = Beacon.Config.fetch!(site).circuit_breaker_ttl
-        if ttl > 0, do: Beacon.CircuitBreaker.trip(site, path, ttl)
+        unless client_error?(error) do
+          ttl = Beacon.Config.fetch!(site).circuit_breaker_ttl
+          if ttl > 0, do: Beacon.CircuitBreaker.trip(site, path, ttl)
+        end
+
         reraise error, __STACKTRACE__
     end
   end
@@ -2776,6 +2782,11 @@ defmodule Beacon.RuntimeRenderer do
   # only when the atom does not yet exist. This is safe for admin-defined keys
   # (live data keys, path params) that are bounded per-site and not derived
   # from end-user input.
+  # Returns true for errors with a 4xx plug_status (client errors like 404).
+  # These should not trip the circuit breaker since they're expected behavior.
+  defp client_error?(%{plug_status: status}) when is_integer(status) and status >= 400 and status < 500, do: true
+  defp client_error?(_), do: false
+
   defp safe_to_existing_atom(string) when is_binary(string) do
     String.to_existing_atom(string)
   rescue
