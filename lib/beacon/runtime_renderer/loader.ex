@@ -88,6 +88,11 @@ defmodule Beacon.RuntimeRenderer.Loader do
   def load_page(site, %{} = page, all_live_data \\ nil) do
     page_id = page.id
 
+    # Merge snapshot-level extra (which may have data_sources from migrations)
+    # with the page-level extra (from the deserialized binary).
+    # Snapshot extra is the source of truth for fields added after publication.
+    page = merge_snapshot_extra(site, page)
+
     # Run lifecycle hooks to transform the template (e.g., markdown → HTML)
     # This is the same step the current Loader.Page does before HEEx compilation.
     template = Beacon.Lifecycle.Template.load_template(page)
@@ -322,6 +327,35 @@ defmodule Beacon.RuntimeRenderer.Loader do
   """
   def reload_info_handlers(site) do
     load_info_handlers(site)
+  end
+
+  # Merge the snapshot-level extra column into the page struct's extra.
+  # The snapshot extra may contain data_sources added by post-publication migrations.
+  defp merge_snapshot_extra(site, page) do
+    import Ecto.Query
+
+    snapshot_extra =
+      try do
+        Content.repo(site).one(
+          from(s in "beacon_page_snapshots",
+            where: s.page_id == ^page.id and s.site == ^to_string(site),
+            order_by: [desc: s.inserted_at],
+            limit: 1,
+            select: s.extra
+          )
+        )
+      rescue
+        _ -> nil
+      end
+
+    case snapshot_extra do
+      %{"data_sources" => ds} when is_list(ds) and ds != [] ->
+        updated_extra = Map.put(page.extra || %{}, "data_sources", ds)
+        %{page | extra: updated_extra}
+
+      _ ->
+        page
+    end
   end
 
   # Load live_data definitions for a specific path.
