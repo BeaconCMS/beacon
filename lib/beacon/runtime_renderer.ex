@@ -513,10 +513,16 @@ defmodule Beacon.RuntimeRenderer do
         {:ok, page_id}
 
       [] ->
-        # Check dynamic segments against already-cached routes
+        # Check dynamic segments against cached routes (populated at boot)
         case match_dynamic_route(site, path) do
-          {:ok, _} = found -> found
-          :error -> load_page_by_path(site, path)
+          {:ok, page_id} ->
+            # Route found but page IR may not be loaded yet (lazy loading).
+            # Ensure the page is loaded before returning.
+            ensure_page_loaded(site, page_id)
+            {:ok, page_id}
+
+          :error ->
+            load_page_by_path(site, path)
         end
     end
   end
@@ -604,6 +610,42 @@ defmodule Beacon.RuntimeRenderer do
   Clears cached live_data definitions for all pages on a site.
   Pages will lazy-load fresh definitions from the DB on next request.
   """
+  @doc """
+  Registers a route (path → page_id) in ETS without loading the page IR.
+  Used at boot to populate the route index for dynamic route matching.
+  """
+  @doc false
+  def ensure_page_loaded(site, page_id) do
+    # Check if the page IR is already in ETS
+    case :ets.lookup(@table, {site, page_id, :ir}) do
+      [{_, _}] ->
+        :ok
+
+      [] ->
+        # Page route is known but IR not loaded yet — load from DB
+        case fetch_manifest(site, page_id) do
+          {:ok, _} ->
+            :ok
+
+          :error ->
+            # No manifest either — need to load the full page from DB
+            config = Beacon.Config.fetch!(site)
+            ttl = Beacon.Config.effective_ttl(config, :pages)
+
+            Beacon.Cache.fetch(@table, {site, :page_load, page_id}, fn ->
+              case Beacon.Content.get_published_page(site, page_id) do
+                nil -> :error
+                page -> Beacon.RuntimeRenderer.Loader.load_page(site, page); :ok
+              end
+            end, ttl)
+        end
+    end
+  end
+
+  def register_route(site, page_id, path) do
+    :ets.insert(@table, {{site, :route, path}, page_id})
+  end
+
   def clear_live_data_cache(site) do
     :ets.match_delete(@table, {{site, :"$1", :live_data}, :_})
   end

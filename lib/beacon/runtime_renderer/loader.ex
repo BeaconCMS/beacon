@@ -26,11 +26,28 @@ defmodule Beacon.RuntimeRenderer.Loader do
     load_error_pages(site)
     load_snippet_helpers(site)
 
-    # Pages are NOT loaded at boot. They load lazily on first request
-    # via RuntimeRenderer.lookup_page → load_page_by_path. This avoids
-    # deserializing all 1370+ page snapshot binaries (~65MB) at startup.
+    # Pages load lazily on first request — we don't deserialize page binaries
+    # at boot. But we DO load the route index (path → page_id) so dynamic
+    # route matching works from ETS without querying the DB on every request.
+    load_route_index(site)
 
     :ok
+  end
+
+  @doc """
+  Loads the route index (path → page_id) for all published pages into ETS.
+  This is lightweight — only path strings and UUIDs, no page binary deserialization.
+  Enables dynamic route matching (e.g., /blog/authors/:slug) from ETS at request time.
+  """
+  def load_route_index(site) do
+    paths = Content.list_published_page_paths(site)
+
+    for {page_id, path} <- paths do
+      RuntimeRenderer.register_route(site, page_id, path)
+    end
+
+    require Logger
+    Logger.info("[Beacon.RuntimeRenderer] Loaded #{length(paths)} routes for site #{site}")
   end
 
   @doc """
