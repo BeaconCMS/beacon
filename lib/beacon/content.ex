@@ -1037,18 +1037,6 @@ defmodule Beacon.Content do
     |> select([snapshot], snapshot.template)
     |> repo(site).all()
     |> Enum.reject(&is_nil/1)
-  rescue
-    # Fallback for databases that haven't run the v006 migration yet
-    e in Postgrex.Error ->
-      case e do
-        %{postgres: %{code: :undefined_column}} ->
-          list_published_pages_snapshot_data(site)
-          |> Enum.map(& &1.template)
-          |> Enum.reject(&is_nil/1)
-
-        _ ->
-          reraise e, __STACKTRACE__
-      end
   end
 
   @doc """
