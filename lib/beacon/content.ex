@@ -1025,8 +1025,8 @@ defmodule Beacon.Content do
   @doc """
   Returns template strings for all published pages on a site.
 
-  A lightweight projection that selects only the denormalized `template` text
-  column from page snapshots, avoiding deserialization of the full page binary.
+  Uses the denormalized `template` text column when available (v006 migration),
+  falling back to full page binary deserialization for unmigrated databases.
   Used by CSS candidate extraction.
   """
   @doc type: :pages
@@ -1037,6 +1037,18 @@ defmodule Beacon.Content do
     |> select([snapshot], snapshot.template)
     |> repo(site).all()
     |> Enum.reject(&is_nil/1)
+  rescue
+    # Fallback for databases that haven't run the v006 migration yet
+    e in Postgrex.Error ->
+      case e do
+        %{postgres: %{code: :undefined_column}} ->
+          list_published_pages_snapshot_data(site)
+          |> Enum.map(& &1.template)
+          |> Enum.reject(&is_nil/1)
+
+        _ ->
+          reraise e, __STACKTRACE__
+      end
   end
 
   @doc """
