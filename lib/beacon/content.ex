@@ -1560,7 +1560,7 @@ defmodule Beacon.Content do
           icon =
             assigns.name
             |> String.replace("-", "_")
-            |> String.to_atom()
+            |> String.to_existing_atom()
 
           component = Function.capture(Beacon.Heroicons, icon, 1)
 

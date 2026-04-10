@@ -270,7 +270,7 @@ defmodule Beacon.RuntimeRenderer do
         %{name: attr_name, opts: attr_opts}, acc ->
           case Keyword.get(attr_opts || [], :default) do
             nil -> acc
-            default -> Map.put(acc, String.to_atom(attr_name), default)
+            default -> Map.put(acc, String.to_existing_atom(attr_name), default)
           end
         _, acc -> acc
       end)
@@ -835,7 +835,7 @@ defmodule Beacon.RuntimeRenderer do
           |> Enum.flat_map(fn ld ->
             Enum.map(ld.assigns, fn assign ->
               %{
-                key: String.to_atom(assign.key),
+                key: safe_to_existing_atom(assign.key),
                 value: assign.value,
                 format: assign.format,
                 path_pattern: ld.path
@@ -879,8 +879,8 @@ defmodule Beacon.RuntimeRenderer do
 
     Enum.zip(pattern_segments, path_info)
     |> Enum.reduce(%{}, fn
-      {":" <> param, value}, acc -> Map.put(acc, String.to_atom(param), value)
-      {"*" <> param, value}, acc -> Map.put(acc, String.to_atom(param), value)
+      {":" <> param, value}, acc -> Map.put(acc, safe_to_existing_atom(param), value)
+      {"*" <> param, value}, acc -> Map.put(acc, safe_to_existing_atom(param), value)
       _, acc -> acc
     end)
   end
@@ -2425,7 +2425,7 @@ defmodule Beacon.RuntimeRenderer do
   end
   defp eval_kernel_macro(:sigil_w, [string, modifiers]) do
     case modifiers do
-      ~c"a" -> String.split(string) |> Enum.map(&String.to_atom/1)
+      ~c"a" -> String.split(string) |> Enum.map(&String.to_existing_atom/1)
       _ -> String.split(string)
     end
   end
@@ -2516,6 +2516,16 @@ defmodule Beacon.RuntimeRenderer do
   defp safe_to_string(value) when is_integer(value), do: Integer.to_string(value)
   defp safe_to_string(value) when is_float(value), do: Float.to_string(value)
   defp safe_to_string(value), do: String.Chars.to_string(value)
+
+  # Converts a string to an existing atom, falling back to String.to_atom/1
+  # only when the atom does not yet exist. This is safe for admin-defined keys
+  # (live data keys, path params) that are bounded per-site and not derived
+  # from end-user input.
+  defp safe_to_existing_atom(string) when is_binary(string) do
+    String.to_existing_atom(string)
+  rescue
+    ArgumentError -> String.to_atom(string)
+  end
 
   # ===========================================================================
   # Event handler AST interpreter

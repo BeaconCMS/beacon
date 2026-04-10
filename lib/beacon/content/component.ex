@@ -87,12 +87,16 @@ defmodule Beacon.Content.Component do
     struct_name = get_field(changeset, :struct_name)
 
     if struct_name do
-      module = Module.concat([struct_name])
+      try do
+        module = Module.concat([String.to_existing_atom(struct_name)])
 
-      with {:module, ^module} <- Code.ensure_loaded(module) do
-        changeset
-      else
-        _ -> add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
+        with {:module, ^module} <- Code.ensure_loaded(module) do
+          changeset
+        else
+          _ -> add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
+        end
+      rescue
+        ArgumentError -> add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
       end
     else
       changeset
@@ -185,11 +189,15 @@ defmodule Beacon.Content.Component do
     if is_nil(struct_name) or is_nil(default_opts) do
       changeset
     else
-      struct = Module.concat([struct_name])
+      try do
+        struct_module = Module.concat([String.to_existing_atom(struct_name)])
 
-      case struct(struct) == default_opts do
-        true -> changeset
-        _ -> add_error(changeset, :opts_default, "expected the default value to be a #{struct_name} struct")
+        case struct(struct_module) == default_opts do
+          true -> changeset
+          _ -> add_error(changeset, :opts_default, "expected the default value to be a #{struct_name} struct")
+        end
+      rescue
+        ArgumentError -> add_error(changeset, :opts_default, "expected the default value to be a #{struct_name} struct")
       end
     end
   end
