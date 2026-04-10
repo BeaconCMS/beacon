@@ -106,10 +106,10 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   end
 
   def handle_info({:content_updated, :live_data, %{site: site}}, state) do
-    # Live data changes don't affect CSS; just reload pages to pick up new assigns.
-    # A full page reload isn't strictly needed since live_data is evaluated at
-    # handle_params time, but we reload to update the cached definitions.
-    RuntimeRenderer.Loader.load_pages(site)
+    # Live data is evaluated fresh at handle_params time, so we only need to
+    # clear the cached live_data definitions from ETS. Pages will pick up
+    # the new definitions on next request via lazy_load_live_data.
+    RuntimeRenderer.clear_live_data_cache(site)
     {:noreply, state}
   end
 

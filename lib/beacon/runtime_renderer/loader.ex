@@ -21,11 +21,14 @@ defmodule Beacon.RuntimeRenderer.Loader do
 
     load_components(site)
     load_layouts(site)
-    load_pages(site)
     load_event_handlers(site)
     load_info_handlers(site)
     load_error_pages(site)
     load_snippet_helpers(site)
+
+    # Pages are NOT loaded at boot. They load lazily on first request
+    # via RuntimeRenderer.lookup_page → load_page_by_path. This avoids
+    # deserializing all 1370+ page snapshot binaries (~65MB) at startup.
 
     :ok
   end

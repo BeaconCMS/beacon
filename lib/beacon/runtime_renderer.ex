@@ -600,6 +600,14 @@ defmodule Beacon.RuntimeRenderer do
     end)
   end
 
+  @doc """
+  Clears cached live_data definitions for all pages on a site.
+  Pages will lazy-load fresh definitions from the DB on next request.
+  """
+  def clear_live_data_cache(site) do
+    :ets.match_delete(@table, {{site, :"$1", :live_data}, :_})
+  end
+
   def lookup_page!(site, path) do
     case lookup_page(site, path) do
       {:ok, page_id} ->
