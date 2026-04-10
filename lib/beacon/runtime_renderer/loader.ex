@@ -338,7 +338,7 @@ defmodule Beacon.RuntimeRenderer.Loader do
       try do
         Content.repo(site).one(
           from(s in "beacon_page_snapshots",
-            where: s.page_id == ^page.id and s.site == ^to_string(site),
+            where: s.path == ^page.path and s.site == ^to_string(site),
             order_by: [desc: s.inserted_at],
             limit: 1,
             select: s.extra
