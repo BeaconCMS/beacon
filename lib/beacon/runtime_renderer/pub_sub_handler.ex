@@ -156,6 +156,11 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
     {:noreply, state}
   end
 
+  def handle_info({:content_updated, :site_setting, %{site: site}}, state) do
+    Beacon.RuntimeRenderer.clear_site_setting_cache(site)
+    {:noreply, state}
+  end
+
   # ------------------------------------------------------------------
   # CSS debounce timer
   # ------------------------------------------------------------------

@@ -117,6 +117,18 @@ defmodule Beacon.PubSub do
     Phoenix.PubSub.unsubscribe(@pubsub, topic_page_render(site, path))
   end
 
+  # Site Settings
+
+  def subscribe_to_site_settings(site) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_content(site))
+  end
+
+  def site_setting_updated(site, key) do
+    site
+    |> topic_content()
+    |> broadcast({:content_updated, :site_setting, %{site: site, key: key}}, site)
+  end
+
   # CSS
 
   defp topic_css(site), do: "beacon:#{site}:css"

@@ -48,6 +48,7 @@ defmodule Beacon.Content do
   alias Beacon.Content.PageField
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
+  alias Beacon.Content.SiteSetting
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
   alias Beacon.Lifecycle
@@ -4670,6 +4671,151 @@ defmodule Beacon.Content do
     else
       error -> error
     end
+  end
+
+  # SITE SETTINGS
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking site setting changes.
+
+  ## Example
+
+      iex> change_site_setting(setting, %{value: "new value"})
+      %Ecto.Changeset{data: %SiteSetting{}}
+
+  """
+  @doc type: :site_settings
+  @spec change_site_setting(SiteSetting.t(), map()) :: Changeset.t()
+  def change_site_setting(%SiteSetting{} = setting, attrs \\ %{}) do
+    SiteSetting.changeset(setting, attrs)
+  end
+
+  @doc """
+  Creates a site setting.
+
+  ## Example
+
+      iex> create_site_setting(%{site: :my_site, key: "notification_template", value: "<div>Updated</div>"})
+      {:ok, %SiteSetting{}}
+
+  """
+  @doc type: :site_settings
+  @spec create_site_setting(map()) :: {:ok, SiteSetting.t()} | {:error, Changeset.t()}
+  def create_site_setting(attrs) do
+    changeset = SiteSetting.changeset(%SiteSetting{}, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    repo(site).insert(changeset)
+  end
+
+  @doc """
+  Creates a site setting, raising an error if unsuccessful.
+  """
+  @doc type: :site_settings
+  @spec create_site_setting!(map()) :: SiteSetting.t()
+  def create_site_setting!(attrs) do
+    case create_site_setting(attrs) do
+      {:ok, setting} -> setting
+      {:error, changeset} -> raise "failed to create site setting, got: #{inspect(changeset.errors)}"
+    end
+  end
+
+  @doc """
+  Updates a site setting.
+
+  ## Example
+
+      iex> update_site_setting(setting, %{value: "new value"})
+      {:ok, %SiteSetting{}}
+
+  """
+  @doc type: :site_settings
+  @spec update_site_setting(SiteSetting.t(), map()) :: {:ok, SiteSetting.t()} | {:error, Changeset.t()}
+  def update_site_setting(%SiteSetting{} = setting, attrs) do
+    changeset = SiteSetting.changeset(setting, attrs)
+    site = Changeset.get_field(changeset, :site)
+
+    changeset
+    |> repo(site).update()
+    |> tap(&maybe_broadcast_updated_content_event(&1, :site_setting))
+  end
+
+  @doc """
+  Gets a single site setting by `key` for the given `site`.
+
+  ## Example
+
+      iex> get_site_setting(:my_site, "notification_template")
+      %SiteSetting{}
+
+  """
+  @doc type: :site_settings
+  @spec get_site_setting(Site.t(), String.t()) :: SiteSetting.t() | nil
+  def get_site_setting(site, key) when is_atom(site) and is_binary(key) do
+    repo(site).one(
+      from s in SiteSetting,
+        where: s.site == ^site and s.key == ^key
+    )
+  end
+
+  @doc """
+  Gets the value for a site setting by `key`, falling back to the known default if the setting does not exist.
+
+  Returns `nil` if the key is not found and has no known default.
+
+  ## Example
+
+      iex> get_site_setting_value(:my_site, "notification_template")
+      "<div>...</div>"
+
+  """
+  @doc type: :site_settings
+  @spec get_site_setting_value(Site.t(), String.t()) :: String.t() | nil
+  def get_site_setting_value(site, key) when is_atom(site) and is_binary(key) do
+    case get_site_setting(site, key) do
+      %SiteSetting{value: value} ->
+        value
+
+      nil ->
+        case SiteSetting.known_keys() do
+          %{^key => %{default: default}} -> default
+          _ -> nil
+        end
+    end
+  end
+
+  @doc """
+  Lists all site settings for the given `site`.
+
+  ## Example
+
+      iex> list_site_settings(:my_site)
+      [%SiteSetting{}, ...]
+
+  """
+  @doc type: :site_settings
+  @spec list_site_settings(Site.t()) :: [SiteSetting.t()]
+  def list_site_settings(site) when is_atom(site) do
+    repo(site).all(
+      from s in SiteSetting,
+        where: s.site == ^site,
+        order_by: [asc: s.key]
+    )
+  end
+
+  @doc """
+  Deletes a site setting.
+
+  ## Example
+
+      iex> delete_site_setting(setting)
+      {:ok, %SiteSetting{}}
+
+  """
+  @doc type: :site_settings
+  @spec delete_site_setting(SiteSetting.t()) :: {:ok, SiteSetting.t()} | {:error, Changeset.t()}
+  def delete_site_setting(%SiteSetting{} = setting) do
+    repo(setting.site).delete(setting)
   end
 
   @doc false

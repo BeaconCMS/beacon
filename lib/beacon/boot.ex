@@ -33,8 +33,34 @@ defmodule Beacon.Boot do
       Beacon.DataStore.register(site, config.data_sources)
     end
 
+    seed_default_site_settings(site)
+
     :persistent_term.put({Beacon, site, :boot_ready}, true)
     Logger.info("Beacon.Boot site #{site} ready (lazy loading)")
     :ignore
+  end
+
+  defp seed_default_site_settings(site) do
+    alias Beacon.Content
+    alias Beacon.Content.SiteSetting
+
+    for {key, %{default: default, format: format, description: description}} <- SiteSetting.known_keys() do
+      case Content.get_site_setting(site, key) do
+        nil ->
+          Content.create_site_setting(%{
+            site: site,
+            key: key,
+            value: default,
+            format: format,
+            description: description
+          })
+
+        _existing ->
+          :ok
+      end
+    end
+  rescue
+    error ->
+      Logger.warning("Beacon.Boot failed to seed default site settings for #{site}: #{Exception.message(error)}")
   end
 end

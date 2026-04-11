@@ -518,6 +518,69 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # ---------------------------------------------------------------------------
+  # Site settings — compile and render site-level HEEx templates
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Publishes a site setting template into ETS. Compiles the HEEx template
+  to IR and stores it keyed by site and setting key.
+  """
+  def publish_site_setting(site, key, template) when is_atom(site) and is_binary(key) and is_binary(template) do
+    path = "site_setting_#{key}"
+    env = Beacon.Web.PageLive.make_env(site)
+    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
+    ir = extract_ir(ast, env)
+    :ets.insert(@table, {{site, :site_setting, key}, :erlang.term_to_binary(ir)})
+    :ok
+  end
+
+  @doc """
+  Renders a site setting template by key. Returns `{:ok, rendered}` or `{:error, :not_found}`.
+
+  Falls back to the database if not cached in ETS.
+  """
+  def render_site_setting(site, key, assigns) when is_atom(site) and is_binary(key) do
+    case :ets.lookup(@table, {site, :site_setting, key}) do
+      [{_, serialized_ir}] ->
+        ir = :erlang.binary_to_term(serialized_ir)
+        full_assigns = Map.delete(assigns, :__changed__)
+        {:ok, render_ir(ir, full_assigns)}
+
+      [] ->
+        # Lazy-load from DB
+        case Beacon.Content.get_site_setting(site, key) do
+          %{value: template, format: :heex} ->
+            publish_site_setting(site, key, template)
+
+            case :ets.lookup(@table, {site, :site_setting, key}) do
+              [{_, serialized_ir}] ->
+                ir = :erlang.binary_to_term(serialized_ir)
+                full_assigns = Map.delete(assigns, :__changed__)
+                {:ok, render_ir(ir, full_assigns)}
+
+              [] ->
+                {:error, :not_found}
+            end
+
+          %{value: value} ->
+            {:ok, value}
+
+          nil ->
+            {:error, :not_found}
+        end
+    end
+  end
+
+  @doc """
+  Clears all cached site setting IR entries for a site.
+  Called when a site setting is updated via PubSub.
+  """
+  def clear_site_setting_cache(site) when is_atom(site) do
+    :ets.match_delete(@table, {{site, :site_setting, :_}, :_})
+    :ok
+  end
+
+  # ---------------------------------------------------------------------------
   # Route lookup — resolve path to page_id (replaces RouterServer)
   # ---------------------------------------------------------------------------
 
