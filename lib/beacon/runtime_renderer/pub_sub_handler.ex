@@ -67,8 +67,15 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   # ------------------------------------------------------------------
 
   def handle_info({:page_published, %{site: site, id: id}}, state) do
+    Logger.info("[PubSubHandler] Page published: #{id}")
     RuntimeRenderer.Loader.reload_page(site, id)
-    Beacon.PageRenderCache.invalidate_page(site, to_string(id))
+
+    # Invalidate DataStore cache entries for this page's data sources
+    # so the next render fetches fresh data from the DB.
+    page_id = to_string(id)
+    invalidate_page_data_sources(site, page_id)
+
+    Beacon.PageRenderCache.invalidate_page(site, page_id)
     {:noreply, schedule_css_recompilation(state, site)}
   end
 
@@ -168,6 +175,29 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   # ------------------------------------------------------------------
   # Helpers
   # ------------------------------------------------------------------
+
+  defp invalidate_page_data_sources(site, page_id) do
+    table = :beacon_runtime_poc
+
+    case :ets.lookup(table, {site, page_id, :manifest}) do
+      [{_, manifest}] ->
+        specs = Map.get(manifest.extra, "data_sources", [])
+
+        for spec <- specs do
+          source_name =
+            (spec["source"] || spec[:source])
+            |> to_string()
+            |> String.to_existing_atom()
+
+          Beacon.DataStore.invalidate(site, source_name)
+        end
+
+      [] ->
+        :ok
+    end
+  rescue
+    _ -> :ok
+  end
 
   defp invalidate_all_loaded_pages(site) do
     table = :beacon_runtime_poc

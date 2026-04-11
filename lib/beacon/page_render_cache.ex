@@ -231,10 +231,11 @@ defmodule Beacon.PageRenderCache do
   def invalidate_page(site, page_id) do
     case lookup_page_path(site, page_id) do
       {:ok, path} ->
+        Logger.info("[PageRenderCache] Broadcasting page_render_updated for #{path} (page_id: #{page_id})")
         Beacon.PubSub.page_render_updated(site, page_id, path)
 
       :error ->
-        Logger.debug("[PageRenderCache] No path found for page #{page_id} on site #{site}")
+        Logger.warning("[PageRenderCache] No path found for page #{page_id} on site #{site}")
     end
 
     :ok
