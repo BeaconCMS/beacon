@@ -101,11 +101,16 @@ defmodule Beacon.PubSub do
 
   def page_render_updated(site, page_id, path) do
     topic = topic_page_render(site, path)
+    require Logger
+    Logger.info("[PubSub] Broadcasting page_render_updated on topic: #{topic}")
     broadcast(topic, {:page_render_updated, %{site: site, page_id: page_id, path: path}}, site)
   end
 
   def subscribe_to_page_render(site, path) do
-    Phoenix.PubSub.subscribe(@pubsub, topic_page_render(site, path))
+    topic = topic_page_render(site, path)
+    require Logger
+    Logger.info("[PubSub] Subscribing #{inspect(self())} to #{topic}")
+    Phoenix.PubSub.subscribe(@pubsub, topic)
   end
 
   def unsubscribe_from_page_render(site, path) do

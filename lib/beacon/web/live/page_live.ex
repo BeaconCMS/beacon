@@ -108,6 +108,7 @@ defmodule Beacon.Web.PageLive do
 
   def handle_info({:page_render_updated, %{site: msg_site, page_id: _page_id}}, socket) do
     %{beacon: %{site: site}} = socket.assigns
+    Logger.info("[PageLive] Received page_render_updated for site #{msg_site}, my site: #{site}")
 
     if msg_site != site do
       {:noreply, socket}
