@@ -208,6 +208,10 @@ defmodule Beacon.RuntimeRenderer.Loader do
   Called from PubSub handler.
   """
   def reload_page(site, page_id) do
+    # Clear the Content-level cache so we fetch the NEWLY published
+    # snapshot, not the stale cached version.
+    Content.clear_page_cache(site, page_id)
+
     case Content.get_published_page(site, page_id) do
       nil ->
         # Page was unpublished
@@ -272,6 +276,7 @@ defmodule Beacon.RuntimeRenderer.Loader do
   """
   def reload_layout(site, layout_id) do
     layout_id = to_string(layout_id)
+    Content.clear_page_cache(site, layout_id)
 
     case Content.get_published_layout(site, layout_id) do
       nil ->

@@ -67,6 +67,11 @@ defmodule Beacon.Content do
     String.to_atom("beacon_content_#{site}")
   end
 
+  @doc false
+  def clear_page_cache(site, page_id) do
+    clear_cache(site, page_id)
+  end
+
   defp clear_cache(site, key) do
     :ets.delete(table_name(site), key)
     :ok
