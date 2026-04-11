@@ -87,6 +87,7 @@ defmodule Beacon.Web.PageLive do
     {:ok, rendered} = Beacon.RuntimeRenderer.render_page(site, page_id, assigns)
 
     update_available = Map.get(assigns, :beacon_update_available, false)
+    if update_available, do: Logger.info("[PageLive] Rendering with update notification")
 
     if update_available do
       config = Beacon.Config.fetch!(site)
