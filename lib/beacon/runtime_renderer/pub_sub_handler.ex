@@ -68,15 +68,27 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
 
   def handle_info({:page_published, %{site: site, id: id}}, state) do
     Logger.info("[PubSubHandler] Page published: #{id}")
+
+    # Capture CSS candidates BEFORE reload to detect new classes
+    old_candidates = get_page_css_candidates(site, to_string(id))
+
     RuntimeRenderer.Loader.reload_page(site, id)
 
     # Invalidate DataStore cache entries for this page's data sources
-    # so the next render fetches fresh data from the DB.
     page_id = to_string(id)
     invalidate_page_data_sources(site, page_id)
 
+    # Check if CSS recompilation is needed (new Tailwind classes)
+    new_candidates = get_page_css_candidates(site, page_id)
+    needs_css_recompile = old_candidates != new_candidates
+
     Beacon.PageRenderCache.invalidate_page(site, page_id)
-    {:noreply, schedule_css_recompilation(state, site)}
+
+    if needs_css_recompile do
+      {:noreply, schedule_css_recompilation(state, site)}
+    else
+      {:noreply, state}
+    end
   end
 
   def handle_info({:pages_published, site, pages}, state) do
@@ -175,6 +187,15 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
   # ------------------------------------------------------------------
   # Helpers
   # ------------------------------------------------------------------
+
+  defp get_page_css_candidates(site, page_id) do
+    table = :beacon_runtime_poc
+
+    case :ets.lookup(table, {site, page_id, :css_candidates}) do
+      [{_, candidates}] -> candidates
+      [] -> nil
+    end
+  end
 
   defp invalidate_page_data_sources(site, page_id) do
     table = :beacon_runtime_poc
