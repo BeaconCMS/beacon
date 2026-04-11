@@ -47,6 +47,7 @@ defmodule Beacon.Content.Component do
     |> validate_required([:site, :name, :template, :example, :category])
     |> validate_format(:name, ~r/^[a-z0-9_!]+$/, message: "can only contain lowercase letters, numbers, and underscores")
     |> validate_exclusion(:name, reserved_names)
+    |> unique_constraint([:site, :name])
     |> validate_unique_attr_name(attrs)
     |> cast_assoc(:attrs, with: &ComponentAttr.changeset/2)
     |> cast_assoc(:slots, with: &ComponentSlot.changeset/2)

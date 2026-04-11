@@ -52,7 +52,7 @@ defmodule Beacon.Migration do
   """
 
   @initial_version 1
-  @current_version 6
+  @current_version 7
 
   @doc """
   Upgrades Beacon database schemas.
