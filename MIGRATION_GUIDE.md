@@ -231,43 +231,36 @@ end
 - Older layout snapshots that use `:body` instead of `:template` are handled.
 - Layout templates are converted to `assigns[:key]` for all known live data keys to preserve nil-on-missing safety.
 
-### Tailwind CSS upgraded to v4
+### Tailwind CSS compiler replaced
 
-Beacon now requires **Tailwind CSS v4** via the `{:tailwind, "~> 0.4"}` hex package. The Tailwind compiler uses v4's CSS-first configuration with `@source` directives instead of generating a JavaScript config with `safelist` or writing template files to disk.
+The `{:tailwind, "~> 0.4"}` hex package (which wraps the Tailwind CLI binary) has been **completely removed**. Beacon now uses `{:tailwind_compiler, ...}`, a Zig NIF that compiles CSS entirely in-memory on a dirty CPU scheduler. There are no external processes, no temp files, and no disk I/O.
 
 #### Host app changes required
 
-1. **Update the tailwind dependency** in your `mix.exs`:
+1. **Remove the old tailwind dependency** from your `mix.exs`:
 
-    ```elixir
-    {:tailwind, "~> 0.4"}
+    ```diff
+    - {:tailwind, "~> 0.4"}
     ```
 
-2. **Update the tailwind version** in `config/config.exs`:
+2. **Remove tailwind configuration** from `config/config.exs` and `config/test.exs`:
 
-    ```elixir
-    config :tailwind, version: "4.1.12"
+    ```diff
+    - config :tailwind, version: "4.1.12"
     ```
 
-3. **Install the new binary:**
+3. **Remove tailwind.install** from your `assets.setup` Mix alias (if present).
 
-    ```
-    mix tailwind.install
-    ```
+4. **Remove `css_compiler:` option** from your `Beacon.Config.new/1` call if you had one — this config field no longer exists.
 
-4. **Update your CSS input file** — replace v3 directives with v4 import:
+5. The `tailwind_compiler` dependency is pulled in transitively by Beacon. No explicit dependency needed in your `mix.exs`.
 
-    ```css
-    /* Old (v3) */
-    @tailwind base;
-    @tailwind components;
-    @tailwind utilities;
+#### What changed
 
-    /* New (v4) */
-    @import "tailwindcss";
-    ```
-
-5. **If you have a `tailwind.config.js`** — it still works, but is loaded via `@config` in CSS rather than auto-detected. Beacon handles this automatically. Note that `safelist` is no longer supported in JS config — Beacon uses `@source` directives instead.
+- CSS compiles in <5ms via Zig NIF instead of 2-8 seconds via the Tailwind CLI
+- No `node_modules`, no npm, no external binary
+- CSS candidate classes are extracted from templates by `Beacon.CSS.CandidateExtractor` (pure Elixir regex)
+- First visitor sees a CSS warming page (animated loading screen) instead of waiting for compilation. The page auto-redirects when CSS is ready.
 
 #### Breaking changes in Tailwind v4
 
@@ -277,46 +270,206 @@ See the [official upgrade guide](https://tailwindcss.com/docs/upgrade-guide) for
 - Some utility names renamed: `shadow-sm` → `shadow-xs`, `rounded-sm` → `rounded-xs`
 - `!important` modifier moved from prefix to suffix: `!flex` → `flex!`
 
+### Database migration required
+
+Two new migration versions must be applied:
+
+- **V005**: Creates `beacon_css_manifests` table for CSS three-tier storage (ETS → S3 → recompile)
+- **V006**: Adds `template` text column to `beacon_page_snapshots` and backfills it. This denormalized column enables fast CSS candidate extraction without deserializing full page binary blobs.
+
+Create a migration in your host app:
+
+```elixir
+defmodule MyApp.Repo.Migrations.BeaconV006 do
+  use Ecto.Migration
+  def up, do: Beacon.Migration.up()
+  def down, do: Beacon.Migration.down()
+end
+```
+
+Run `mix ecto.migrate` **before** deploying the new code.
+
+### Beacon.Loader removed
+
+The entire `Beacon.Loader` system has been deleted (17 files, ~3,100 lines). Dynamic BEAM module compilation at runtime is gone. All rendering now goes through `Beacon.RuntimeRenderer`, which interprets page IR (intermediate representation) directly.
+
+**If your code references any of these modules, it will break at compile time:**
+
+- `Beacon.Loader` / `Beacon.Loader.Worker`
+- `Beacon.Loader.Page` / `Beacon.Loader.Layout` / `Beacon.Loader.Components`
+- `Beacon.Loader.LiveData` / `Beacon.Loader.Routes`
+- `Beacon.Loader.ErrorPage` / `Beacon.Loader.EventHandlers` / `Beacon.Loader.InfoHandlers`
+- `Beacon.Loader.Stylesheet` / `Beacon.Loader.Snippets`
+- `Beacon.Compiler` / `Beacon.ErrorHandler`
+
+No direct replacement is needed — Beacon handles everything internally via `RuntimeRenderer`. If you were calling `Beacon.Loader` to force a page reload, use the Content API (`Beacon.Content.publish_page/1`) instead, which triggers PubSub events that the RuntimeRenderer picks up automatically.
+
+### Supervision tree changes
+
+The per-site supervision tree has changed:
+
+| Removed | Replacement |
+|---------|-------------|
+| `Beacon.Loader` (GenServer) | `Beacon.RuntimeRenderer.PubSubHandler` |
+| `Beacon.Loader.Worker` (DynamicSupervisor) | Removed (no dynamic workers needed) |
+
+New processes added:
+
+| Process | Purpose |
+|---------|---------|
+| `Beacon.DataStore.PubSubHandler` | Translates host-app PubSub events to DataStore source invalidations |
+| `Beacon.DataStore.TtlChecker` | Periodic check for expired DataStore cache entries |
+
+### Page loading is now lazy
+
+Pages no longer load eagerly at boot. Only a lightweight route index (path → page_id mapping) is loaded. Individual pages load lazily on first request and are cached in ETS. This dramatically reduces boot memory for sites with many pages.
+
+**Impact:** The first request to each page will be slightly slower (loads from DB + compiles IR). Subsequent requests serve from ETS cache. No action required — this is automatic.
+
+### Circuit breaker
+
+A new circuit breaker prevents cascading 500 errors. When a page raises during mount or render, the circuit trips for that path. Subsequent requests return an immediate 500 without executing any page logic, for a configurable TTL.
+
+- **Default:** Enabled, 60-second TTL
+- **Disable:** `circuit_breaker_ttl: 0` in your `Beacon.Config`
+- **Behavior:** Only 5xx errors trip the breaker. 4xx errors (like 404) are passed through normally.
+
+No action required unless you want to change the default TTL.
+
+### DataStore (opt-in)
+
+`Beacon.DataStore` is a new structured data fetching layer with ETS caching and automatic LiveView invalidation. It replaces the pattern of fetching external data in `live_data` assigns.
+
+This is fully opt-in — if you don't configure `data_sources:`, nothing changes.
+
+#### Configuring data sources
+
+```elixir
+Beacon.Config.new(
+  site: :my_site,
+  data_sources: [
+    [name: :blog_posts, fetch: {MyApp.DataSources, :list_posts, []}, ttl: :timer.minutes(5)],
+    [name: :featured, fetch: {MyApp.DataSources, :featured, [:limit]}, ttl: :timer.hours(1), params: [:limit]]
+  ]
+)
+```
+
+Each source defines:
+- `:name` — atom identifier
+- `:fetch` — `{module, function, arg_keys}` MFA tuple. The function receives a single map argument with the resolved params.
+- `:ttl` — cache time-to-live in milliseconds
+- `:params` — optional list of param keys the source accepts
+
+#### Wiring pages to data sources
+
+Add `data_sources` to a page's `extra` field (via admin or migration):
+
+```json
+[
+  {"source": "blog_posts", "params": {}, "spread": true},
+  {"source": "featured", "params": {"limit": 3}}
+]
+```
+
+- **`spread: true`**: merges the result map's keys directly into top-level assigns (e.g., `@posts`, `@pagination`) instead of nesting under `@blog_posts`
+- **Param resolvers**: static values, `{"path_param": "slug"}` for URL path segments, `{"query_param": "page"}` for query strings, `{"concat_path_params": ["year", "month", "day", "slug"]}` for multi-segment paths
+
+#### Important: update both pages AND snapshots
+
+When wiring data sources via migration, you must update BOTH `beacon_pages.extra` AND `beacon_page_snapshots.extra`:
+
+```sql
+-- Update pages
+UPDATE beacon_pages
+SET extra = jsonb_set(COALESCE(extra, '{}'::jsonb), '{data_sources}', '[...]'::jsonb)
+WHERE site = 'my_site' AND path = '/my-page';
+
+-- Update snapshots (RuntimeRenderer reads from here)
+UPDATE beacon_page_snapshots
+SET extra = jsonb_set(COALESCE(extra, '{}'::jsonb), '{data_sources}', '[...]'::jsonb)
+WHERE site = 'my_site' AND path = '/my-page';
+```
+
+If you only update `beacon_pages`, the data sources will be invisible to the renderer until the page is republished.
+
+### Live update modes (opt-in)
+
+When a page's dependencies change (template, layout, component, data source), connected LiveViews can be notified in three modes:
+
+| Mode | Behavior |
+|------|----------|
+| `:automatic` | Immediate re-render pushed to all connected clients (default) |
+| `:notify` | Toast notification with "Refresh" button; user opts in |
+| `:manual` | No notification; visitor sees update on next page load |
+
+```elixir
+Beacon.Config.new(
+  site: :my_site,
+  live_update: :automatic,
+  live_update_overrides: %{
+    "blog_post" => :manual
+  },
+  update_notification_component: MyApp.CustomToast  # optional
+)
+```
+
+No action required — defaults to `:automatic`.
+
+### CSS safelist for host app templates (opt-in)
+
+Beacon scans CMS content (pages, layouts, components) for Tailwind classes, but cannot scan your host app's templates. If your host app uses Tailwind classes that also appear in Beacon-rendered pages, generate a safelist:
+
+```bash
+mix beacon.gen.safelist --module MyAppWeb.BeaconSafelist --paths "lib/*_web/**/*.ex,lib/*_web/**/*.heex"
+```
+
+Then add to your config:
+
+```elixir
+Beacon.Config.new(
+  site: :my_site,
+  css_safelist_module: MyAppWeb.BeaconSafelist
+)
+```
+
 ### New configuration options
 
 #### Cache TTLs
 
-Two levels of cache TTL configuration have been added to `Beacon.Config`:
-
 - `:cache_ttl` — Site-wide default TTL in seconds. Default: `60`. Set to `:infinity` to never expire.
-- `:cache_ttls` — Per-resource-type TTL overrides. Keys: `:pages`, `:layouts`, `:components`, `:css`, `:js`, `:handlers`. Values: seconds or `:infinity`.
+- `:cache_ttls` — Per-resource-type TTL overrides. Keys: `:pages`, `:layouts`, `:components`, `:css`, `:js`, `:handlers`.
+- `:max_cache_entries` — Maximum entries in content cache. Default: `10_000`.
 
-Per-page TTL can be set via the `extra` field:
+Per-page TTL via the `extra` field:
 
 ```elixir
-Beacon.Content.create_page(site, %{
-  ...,
-  extra: %{"cache_ttl" => 86_400}     # 24 hours
-})
-
 Beacon.Content.update_page(page, %{
-  extra: %{"cache_ttl" => "infinity"}  # never expires
+  extra: %{"cache_ttl" => 86_400}     # 24 hours
 })
 ```
 
-No migration is required. Example configuration:
+#### Full config example
 
 ```elixir
 Beacon.Config.new(
   site: :my_site,
   cache_ttl: 60,
   cache_ttls: %{
-    css: 86_400,        # 24 hours
+    css: 86_400,
     js: 86_400,
     layouts: :infinity,
     components: :infinity,
     pages: 60
-  }
+  },
+  circuit_breaker_ttl: 60,
+  live_update: :automatic,
+  data_sources: []
 )
 ```
 
 ### Dependencies removed
 
+- **`{:tailwind, "~> 0.4"}`** — replaced by `tailwind_compiler` (Zig NIF). Remove from `mix.exs` and all config.
 - **Igniter** — removed entirely. Mix tasks simplified to direct file operations.
 - **Credo** — removed from CI checks.
 - **Provider.Repo** — media binaries are no longer stored in PostgreSQL. Run `Beacon.Migration.up(version: 4)` to make the `file_body` column nullable.
