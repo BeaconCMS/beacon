@@ -298,6 +298,7 @@ defmodule Beacon.Client.LiveViewCompiler do
   defp to_display_string(value) when is_float(value), do: Float.to_string(value)
   defp to_display_string(true), do: "true"
   defp to_display_string(false), do: "false"
+  defp to_display_string(value) when is_atom(value), do: Atom.to_string(value)
   defp to_display_string(value), do: inspect(value)
 
   @self_closing_tags ~w(area base br col embed hr img input link meta param source track wbr)

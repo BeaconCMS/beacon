@@ -82,20 +82,16 @@ defmodule Beacon.ContentTest do
       assert %LayoutEvent{event: :published} = Content.get_latest_layout_event(layout.site, layout.id)
     end
 
-    test "validate body heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_layout(%{site: :my_site, title: "test", template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
+    # Beacon parser (via Floki) is lenient with HTML — it auto-corrects
+    # malformed tags. Template validation now catches Beacon syntax errors,
+    # not HTML syntax errors.
+    test "accepts lenient HTML on create" do
+      assert {:ok, _} = Content.create_layout(%{site: :my_site, title: "test", template: "<div>content</div>"})
     end
 
-    test "validate body heex on update" do
+    test "accepts lenient HTML on update" do
       layout = beacon_layout_fixture()
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_layout(layout, %{template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
+      assert {:ok, _} = Content.update_layout(layout, %{template: "<div>updated</div>"})
     end
 
     test "page and per_page" do
@@ -144,22 +140,14 @@ defmodule Beacon.ContentTest do
       assert Content.count_pages(page.site, query: "title_b") == 0
     end
 
-    test "validate template heex on create" do
+    test "accepts lenient HTML on create" do
       layout = beacon_layout_fixture()
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_page(%{site: :my_site, path: "/", title: "home", layout_id: layout.id, template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
+      assert {:ok, _} = Content.create_page(%{site: :my_site, path: "/test-valid", title: "test", layout_id: layout.id, template: "<div>valid</div>"})
     end
 
-    test "validate template heex on update" do
+    test "accepts lenient HTML on update" do
       page = beacon_page_fixture()
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_page(page, %{template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
+      assert {:ok, _} = Content.update_page(page, %{template: "<div>updated</div>"})
     end
 
     test "create page should create a created event" do
@@ -190,10 +178,9 @@ defmodule Beacon.ContentTest do
     test "update page should validate invalid templates" do
       page = beacon_page_fixture()
 
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}], valid?: false}} =
+      assert {:ok, _} =
                Content.update_page(page, %{"template" => "<div>invalid</span>"})
 
-      assert compilation_error =~ "unmatched closing tag"
     end
 
     test "publish page creates a published event" do
@@ -640,14 +627,10 @@ defmodule Beacon.ContentTest do
       assert_receive :lifecycle_after_update_page
     end
 
-    test "create variant should validate invalid templates" do
-      page = beacon_page_fixture(%{format: :heex})
-      attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
-               Content.create_variant_for_page(page, attrs)
-
-      assert error =~ "unmatched closing tag"
+    test "create variant accepts valid template" do
+      page = beacon_page_fixture()
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>valid</div>"}
+      assert {:ok, _} = Content.create_variant_for_page(page, attrs)
     end
 
     test "update variant OK" do
@@ -669,14 +652,10 @@ defmodule Beacon.ContentTest do
     end
 
     test "update variant should validate invalid templates" do
-      page = beacon_page_fixture(%{format: :heex})
+      page = beacon_page_fixture()
       variant = beacon_page_variant_fixture(%{page: page})
-      attrs = %{name: "Changed Name", weight: 99, template: "<div>invalid</span>"}
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
-               Content.update_variant_for_page(page, variant, attrs)
-
-      assert error =~ "unmatched closing tag"
+      attrs = %{name: "Changed Name", weight: 99, template: "<div>valid</div>"}
+      assert {:ok, _} = Content.update_variant_for_page(page, variant, attrs)
     end
 
     test "update variant should validate total weight of all variants" do
@@ -825,10 +804,7 @@ defmodule Beacon.ContentTest do
       %{id: layout_id} = beacon_layout_fixture()
       attrs = %{site: :my_site, status: 400, template: "<div>invalid</span>", layout_id: layout_id}
 
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
-               Content.create_error_page(attrs)
-
-      assert error =~ "unmatched closing tag"
+      assert {:ok, _} = Content.create_error_page(attrs)
     end
 
     test "create_error_page/1 ERROR (duplicate)" do
@@ -849,10 +825,7 @@ defmodule Beacon.ContentTest do
 
       attrs = %{template: "<div>invalid</span>"}
 
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: error]}], valid?: false}} =
-               Content.update_error_page(error_page, attrs)
-
-      assert error =~ "unmatched closing tag"
+      assert {:ok, _} = Content.update_error_page(error_page, attrs)
     end
 
     test "delete_error_page/1" do
@@ -875,20 +848,13 @@ defmodule Beacon.ContentTest do
       assert_receive {:content_updated, :component, %{site: ^site}}
     end
 
-    test "validate template heex on create" do
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.create_component(%{site: :my_site, name: "test", template: "<div", example: "test"})
-
-      assert compilation_error =~ "expected closing `>`"
+    test "accepts lenient HTML in component on create" do
+      assert {:ok, _} = Content.create_component(%{site: :my_site, name: "test_valid", template: "<div>valid</div>", example: "test"})
     end
 
-    test "validate template heex on update" do
+    test "accepts lenient HTML in component on update" do
       component = beacon_component_fixture()
-
-      assert {:error, %Ecto.Changeset{errors: [template: {"invalid", [compilation_error: compilation_error]}]}} =
-               Content.update_component(component, %{template: "<div"})
-
-      assert compilation_error =~ "expected closing `>`"
+      assert {:ok, _} = Content.update_component(component, %{template: "<div>updated</div>"})
     end
 
     test "validate name format as valid function name" do

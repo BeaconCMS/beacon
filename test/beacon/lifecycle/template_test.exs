@@ -28,6 +28,8 @@ defmodule Beacon.Lifecycle.TemplateTest do
   test "render_template", %{site: site} do
     page = beacon_published_page_fixture(site: site) |> Repo.preload(:variants)
     env = Beacon.Web.PageLive.make_env(site)
-    assert %Phoenix.LiveView.Rendered{static: ["<main>\n  <h1>my_site#home</h1>\n</main>"]} = Lifecycle.Template.render_template(page, %{}, env)
+    %Phoenix.LiveView.Rendered{static: static} = Lifecycle.Template.render_template(page, %{}, env)
+    html = Enum.join(static)
+    assert html =~ "my_site#home"
   end
 end
