@@ -74,9 +74,7 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
 
     RuntimeRenderer.Loader.reload_page(site, id)
 
-    # Invalidate DataStore cache entries for this page's data sources
     page_id = to_string(id)
-    invalidate_page_data_sources(site, page_id)
 
     # Check if CSS recompilation is needed (new Tailwind classes)
     new_candidates = get_page_css_candidates(site, page_id)
@@ -130,14 +128,6 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
     {:noreply, schedule_css_recompilation(state, site)}
   end
 
-  def handle_info({:content_updated, :live_data, %{site: site}}, state) do
-    RuntimeRenderer.clear_live_data_cache(site)
-    # Notify all connected LiveViews that live data changed.
-    # We invalidate all loaded pages since live_data paths use pattern
-    # matching and we can't efficiently determine which pages are affected.
-    invalidate_all_loaded_pages(site)
-    {:noreply, state}
-  end
 
   def handle_info({:content_updated, :info_handler, %{site: site}}, state) do
     RuntimeRenderer.Loader.reload_info_handlers(site)
@@ -200,39 +190,6 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
       [{_, candidates}] -> candidates
       [] -> nil
     end
-  end
-
-  defp invalidate_page_data_sources(site, page_id) do
-    table = :beacon_runtime_poc
-
-    case :ets.lookup(table, {site, page_id, :manifest}) do
-      [{_, manifest}] ->
-        specs = Map.get(manifest.extra, "data_sources", [])
-
-        for spec <- specs do
-          source_name =
-            (spec["source"] || spec[:source])
-            |> to_string()
-            |> String.to_existing_atom()
-
-          Beacon.DataStore.invalidate(site, source_name)
-        end
-
-      [] ->
-        :ok
-    end
-  rescue
-    _ -> :ok
-  end
-
-  defp invalidate_all_loaded_pages(site) do
-    table = :beacon_runtime_poc
-
-    # Scan ETS for all manifests belonging to this site
-    :ets.match(table, {{site, :"$1", :manifest}, :"$2"})
-    |> Enum.each(fn [page_id, _manifest] ->
-      Beacon.PageRenderCache.invalidate_page(site, page_id)
-    end)
   end
 
   defp schedule_css_recompilation(%{css_timer: timer} = state, site) do

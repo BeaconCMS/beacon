@@ -58,13 +58,10 @@ defmodule Beacon.RuntimeRenderer.Loader do
     # This avoids the N+1 reload+preload in list_published_pages.
     pages = Content.list_published_pages_snapshot_data(site)
 
-    # Pre-load all live_data once instead of per-page
-    all_live_data = Content.live_data_for_site(site, per_page: :infinity)
-
     results =
       Enum.map(pages, fn page ->
         try do
-          load_page(site, page, all_live_data)
+          load_page(site, page)
           :ok
         rescue
           error ->
@@ -83,12 +80,12 @@ defmodule Beacon.RuntimeRenderer.Loader do
 
   @doc """
   Loads a single published page into the RuntimeRenderer.
-  Called at boot (with pre-loaded live_data) and when a page is published (fetches live_data).
+  Called at boot and when a page is published.
   """
-  def load_page(site, %{} = page, all_live_data \\ nil) do
+  def load_page(site, %{} = page) do
     page_id = page.id
 
-    # Merge snapshot-level extra (which may have data_sources from migrations)
+    # Merge snapshot-level extra into page extra
     # with the page-level extra (from the deserialized binary).
     # Snapshot extra is the source of truth for fields added after publication.
     page = merge_snapshot_extra(site, page)
@@ -96,9 +93,6 @@ defmodule Beacon.RuntimeRenderer.Loader do
     # Run lifecycle hooks to transform the template (e.g., markdown → HTML)
     # This is the same step the current Loader.Page does before HEEx compilation.
     template = Beacon.Lifecycle.Template.load_template(page)
-
-    # Use pre-loaded live_data when available (bulk boot), otherwise fetch
-    live_data_defs = load_live_data_defs(site, page.path, all_live_data)
 
     # Extract helpers from page (may need preloading)
     helpers =
@@ -121,7 +115,6 @@ defmodule Beacon.RuntimeRenderer.Loader do
       meta_tags: page.meta_tags || [],
       raw_schema: page.raw_schema || [],
       assigns: %{},
-      live_data: live_data_defs,
       event_handlers: [],
       helpers: helpers
     })
@@ -181,8 +174,14 @@ defmodule Beacon.RuntimeRenderer.Loader do
     handlers = Content.list_event_handlers(site)
 
     for handler <- handlers do
-      # Store handlers against a site-level sentinel so any page can dispatch them
-      RuntimeRenderer.store_site_handler(site, :event, handler.name, handler.code)
+      case handler.format do
+        :actions when is_map(handler.actions) ->
+          RuntimeRenderer.store_site_handler_actions(site, :event, handler.name, handler.actions)
+
+        _ ->
+          # Default to :elixir format (backward compatible)
+          RuntimeRenderer.store_site_handler(site, :event, handler.name, handler.code)
+      end
     end
 
     require Logger
@@ -335,7 +334,7 @@ defmodule Beacon.RuntimeRenderer.Loader do
   end
 
   # Merge the snapshot-level extra column into the page struct's extra.
-  # The snapshot extra may contain data_sources added by post-publication migrations.
+  # Snapshot extra may contain fields added after publication.
   defp merge_snapshot_extra(site, page) do
     import Ecto.Query
 
@@ -354,8 +353,8 @@ defmodule Beacon.RuntimeRenderer.Loader do
       end
 
     case snapshot_extra do
-      %{"data_sources" => ds} when is_list(ds) and ds != [] ->
-        updated_extra = Map.put(page.extra || %{}, "data_sources", ds)
+      extra when is_map(extra) and extra != %{} ->
+        updated_extra = Map.merge(page.extra || %{}, extra)
         %{page | extra: updated_extra}
 
       _ ->
@@ -363,42 +362,4 @@ defmodule Beacon.RuntimeRenderer.Loader do
     end
   end
 
-  # Load live_data definitions for a specific path.
-  # When all_live_data is pre-loaded (bulk boot), uses it directly.
-  # When nil, fetches from DB (single-page reload).
-  defp load_live_data_defs(site, page_path, all_live_data) do
-    all_live_data = all_live_data || Content.live_data_for_site(site, per_page: :infinity)
-
-    matching =
-      Enum.filter(all_live_data, fn ld ->
-        path_matches?(ld.path, page_path)
-      end)
-
-    Enum.flat_map(matching, fn ld ->
-      Enum.map(ld.assigns, fn assign ->
-        %{
-          key: String.to_atom(assign.key),
-          value: assign.value,
-          format: assign.format,
-          path_pattern: ld.path
-        }
-      end)
-    end)
-  end
-
-  defp path_matches?(live_data_path, page_path) do
-    ld_segments = String.split(String.trim_leading(live_data_path, "/"), "/", trim: true)
-    page_segments = String.split(String.trim_leading(page_path, "/"), "/", trim: true)
-
-    if length(ld_segments) != length(page_segments) do
-      false
-    else
-      Enum.zip(ld_segments, page_segments)
-      |> Enum.all?(fn
-        {":" <> _, _} -> true
-        {"*" <> _, _} -> true
-        {a, b} -> a == b
-      end)
-    end
-  end
 end

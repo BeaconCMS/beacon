@@ -24,6 +24,8 @@ defmodule Beacon.Content.EventHandler do
           id: UUID.t(),
           name: binary(),
           code: binary(),
+          format: atom(),
+          actions: map() | nil,
           site: Site.t(),
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
@@ -32,6 +34,8 @@ defmodule Beacon.Content.EventHandler do
   schema "beacon_event_handlers" do
     field :name, :string
     field :code, :string
+    field :format, Ecto.Enum, values: [:elixir, :actions], default: :elixir
+    field :actions, :map
     field :site, Site
 
     timestamps()
@@ -39,10 +43,25 @@ defmodule Beacon.Content.EventHandler do
 
   @doc false
   def changeset(%__MODULE__{} = event_handler, attrs) do
-    fields = ~w(name code site)a
+    required = ~w(name site)a
+    optional = ~w(code format actions)a
 
     event_handler
-    |> cast(attrs, fields)
-    |> validate_required(fields)
+    |> cast(attrs, required ++ optional)
+    |> validate_required(required)
+    |> validate_format_fields()
+  end
+
+  defp validate_format_fields(changeset) do
+    case get_field(changeset, :format) do
+      :elixir ->
+        validate_required(changeset, [:code])
+
+      :actions ->
+        validate_required(changeset, [:actions])
+
+      _ ->
+        changeset
+    end
   end
 end

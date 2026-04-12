@@ -12,7 +12,6 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
-  alias Beacon.Content.LiveData
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageSnapshot
@@ -584,24 +583,24 @@ defmodule Beacon.ContentTest do
     test "assigns" do
       assert Content.render_snippet(
                "page title is {{ page.title }}",
-               %{page: %{title: "test"}, live_data: %{}}
+               %{page: %{title: "test"}, data: %{}}
              ) == {:ok, "page title is test"}
 
       assert Content.render_snippet(
                "author.id is {{ page.extra.author.id }}",
-               %{page: %{extra: %{"author" => %{"id" => 1}}}, live_data: %{}}
+               %{page: %{extra: %{"author" => %{"id" => 1}}}, data: %{}}
              ) == {:ok, "author.id is 1"}
     end
 
-    test "with live data" do
+    test "with data assigns" do
       assert Content.render_snippet(
-               "page title is {{ live_data.foo }}",
-               %{page: %{}, live_data: %{foo: "foobar"}}
+               "page title is {{ data.foo }}",
+               %{page: %{}, data: %{foo: "foobar"}}
              ) == {:ok, "page title is foobar"}
 
       assert Content.render_snippet(
-               "foo, bar, baz... {{ live_data.foo.bar.baz }}",
-               %{page: %{}, live_data: %{foo: %{bar: %{baz: "bong"}}}}
+               "foo, bar, baz... {{ data.foo.bar.baz }}",
+               %{page: %{}, data: %{foo: %{bar: %{baz: "bong"}}}}
              ) == {:ok, "foo, bar, baz... bong"}
     end
 
@@ -618,7 +617,7 @@ defmodule Beacon.ContentTest do
 
       assert Content.render_snippet(
                "author name is {% helper 'author_name' %}",
-               %{page: %{site: "my_site", extra: %{"author_id" => 1}}, live_data: %{}}
+               %{page: %{site: "my_site", extra: %{"author_id" => 1}}, data: %{}}
              ) == {:ok, "author name is test_1"}
     end
   end
@@ -976,173 +975,6 @@ defmodule Beacon.ContentTest do
     end
   end
 
-  describe "live data" do
-    test "create broadcasts updated content event" do
-      :ok = Beacon.PubSub.subscribe_to_content(:booted)
-      %{site: site} = beacon_live_data_fixture(site: "booted")
-      assert_receive {:content_updated, :live_data, %{site: ^site}}
-    end
-
-    test "create_live_data/1" do
-      attrs = %{site: :my_site, path: "/foo/:bar"}
-
-      assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
-      assert %{site: :my_site, path: "/foo/:bar"} = live_data
-    end
-
-    test "create_live_data/1 for root path" do
-      attrs = %{site: :my_site, path: "/"}
-
-      assert {:ok, %LiveData{} = live_data} = Content.create_live_data(attrs)
-      assert %{site: :my_site, path: "/"} = live_data
-    end
-
-    test "create_assign_for_live_data/2" do
-      live_data = beacon_live_data_fixture()
-      attrs = %{key: "product_id", format: :elixir, value: "123"}
-
-      assert {:ok, %LiveData{assigns: [assign]}} = Content.create_assign_for_live_data(live_data, attrs)
-      assert %{key: "product_id", format: :elixir, value: "123"} = assign
-    end
-
-    test "blocks assigning reserved keys" do
-      live_data = beacon_live_data_fixture()
-      invalid_keys = [:beacon, :uploads, :streams, :socket, :myself, :flash]
-
-      for invalid_key <- invalid_keys do
-        attrs = %{key: to_string(invalid_key), format: :text, value: "foo"}
-        assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
-        assert {:key, {"is reserved", _}} = error
-      end
-    end
-
-    test "validate assign elixir code on create" do
-      live_data = beacon_live_data_fixture()
-
-      attrs = %{key: "foo", value: "[1)", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
-      {:value, {_, [compilation_error: compilation_error]}} = error
-      assert compilation_error =~ "unexpected token: )"
-
-      attrs = %{key: "foo", value: "if true, do false", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.create_assign_for_live_data(live_data, attrs)
-      {:value, {_, [compilation_error: compilation_error]}} = error
-      assert compilation_error =~ "unexpected reserved word: do"
-
-      code = ~S|
-      id = String.to_integer(params["id"])
-      if id < 100, do: "less" <> "than", else: "100"
-      |
-
-      attrs = %{key: "foo", value: code, format: :elixir}
-      assert {:ok, _} = Content.create_assign_for_live_data(live_data, attrs)
-    end
-
-    test "get_live_data/2" do
-      live_data = beacon_live_data_fixture() |> Repo.preload(:assigns)
-
-      assert Content.get_live_data_by(live_data.site, path: live_data.path) == live_data
-    end
-
-    test "live_data_for_site/1" do
-      live_data_1 = beacon_live_data_fixture(site: :my_site, path: "/foo")
-      live_data_2 = beacon_live_data_fixture(site: :my_site, path: "/bar")
-      live_data_3 = beacon_live_data_fixture(site: :not_booted, path: "/baz")
-
-      results = Content.live_data_for_site(:my_site)
-
-      assert Enum.any?(results, &(&1.id == live_data_1.id))
-      assert Enum.any?(results, &(&1.id == live_data_2.id))
-      refute Enum.any?(results, &(&1.id == live_data_3.id))
-    end
-
-    test "live_data_for_site/2" do
-      %{id: live_data_id} = beacon_live_data_fixture(site: :my_site)
-
-      assert [%LiveData{id: ^live_data_id}] = Content.live_data_for_site(:my_site)
-    end
-
-    test "live_data_for_site/2 :query option" do
-      %{id: foo_id} = beacon_live_data_fixture(site: :my_site, path: "/foo")
-      %{id: bar_id} = beacon_live_data_fixture(site: :my_site, path: "/bar")
-
-      assert [%LiveData{id: ^foo_id}] = Content.live_data_for_site(:my_site, query: "fo")
-      assert [%LiveData{id: ^bar_id}] = Content.live_data_for_site(:my_site, query: "ba")
-    end
-
-    test "live_data_for_site/2 :per_page option" do
-      %{id: foo_id} = beacon_live_data_fixture(site: :my_site, path: "/foo")
-      %{id: bar_id} = beacon_live_data_fixture(site: :my_site, path: "/bar")
-      %{id: baz_id} = beacon_live_data_fixture(site: :my_site, path: "/baz")
-      %{id: bong_id} = beacon_live_data_fixture(site: :my_site, path: "/bong")
-
-      assert [%{id: ^bar_id}] = Content.live_data_for_site(:my_site, per_page: 1)
-      assert [%{id: ^bar_id}, %{id: ^baz_id}] = Content.live_data_for_site(:my_site, per_page: 2)
-      assert [%{id: ^bar_id}, %{id: ^baz_id}, %{id: ^bong_id}] = Content.live_data_for_site(:my_site, per_page: 3)
-      assert [%{id: ^bar_id}, %{id: ^baz_id}, %{id: ^bong_id}, %{id: ^foo_id}] = Content.live_data_for_site(:my_site, per_page: 4)
-    end
-
-    test "update_live_data_path/2" do
-      live_data = beacon_live_data_fixture(site: :my_site, path: "/foo")
-
-      assert {:ok, result} = Content.update_live_data_path(live_data, "/foo/:bar_id")
-      assert result.id == live_data.id
-      assert result.path == "/foo/:bar_id"
-    end
-
-    test "update_live_data_assign/2" do
-      live_data = beacon_live_data_fixture()
-      live_data_assign = beacon_live_data_assign_fixture(live_data: live_data)
-
-      attrs = %{key: "wins", value: "1337", format: :elixir}
-      assert {:ok, updated_assign} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
-
-      assert updated_assign.id == live_data_assign.id
-      assert updated_assign.key == "wins"
-      assert updated_assign.value == "1337"
-      assert updated_assign.format == :elixir
-    end
-
-    test "validate assign elixir code on update" do
-      live_data = beacon_live_data_fixture()
-      live_data_assign = beacon_live_data_assign_fixture(live_data: live_data)
-
-      attrs = %{value: "[1)", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
-      {:value, {_, [compilation_error: compilation_error]}} = error
-      assert compilation_error =~ "unexpected token: )"
-
-      attrs = %{value: "if true, do false", format: :elixir}
-      assert {:error, %{errors: [error]}} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
-      {:value, {_, [compilation_error: compilation_error]}} = error
-      assert compilation_error =~ "unexpected reserved word: do"
-
-      code = ~S|
-      id = String.to_integer(params["id"])
-      if id < 100, do: "less" <> "than", else: "100"
-      |
-
-      attrs = %{value: code, format: :elixir}
-      assert {:ok, _} = Content.update_live_data_assign(live_data_assign, live_data.site, attrs)
-    end
-
-    test "delete_live_data/1" do
-      live_data = beacon_live_data_fixture()
-
-      assert [%{}] = Content.live_data_for_site(live_data.site)
-      assert {:ok, _} = Content.delete_live_data(live_data)
-      assert [] = Content.live_data_for_site(live_data.site)
-    end
-
-    test "delete_live_data_assign/1" do
-      live_data = beacon_live_data_fixture()
-      live_data_assign = beacon_live_data_assign_fixture(live_data: live_data)
-      Repo.preload(live_data, :assigns)
-
-      assert {:ok, _} = Content.delete_live_data_assign(live_data_assign, live_data.site)
-      assert %{assigns: []} = Repo.preload(live_data, :assigns)
-    end
-  end
 
   describe "info_handlers" do
     setup do

@@ -15,8 +15,6 @@ defmodule Beacon.SiteSupervisor do
       {Beacon.Content, config},
       {Beacon.RouterServer, config},
       {Beacon.RuntimeRenderer.PubSubHandler, config},
-      {Beacon.DataStore.PubSubHandler, config},
-      {Beacon.DataStore.TtlChecker, config},
       {Beacon.Boot, config}
     ]
 

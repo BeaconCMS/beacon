@@ -91,7 +91,15 @@ defmodule Beacon do
 
     :pg.start_link(:beacon_cluster)
 
-    children =
+    # Start the encryption vault if configured
+    vault_children =
+      if Application.get_env(:beacon, Beacon.Vault) do
+        [Beacon.Vault]
+      else
+        []
+      end
+
+    site_children =
       Enum.reduce(sites, [], fn opts, acc ->
         config = Beacon.Config.new(opts)
 
@@ -126,7 +134,7 @@ defmodule Beacon do
         end
       end)
 
-    Supervisor.init(children, strategy: :one_for_one)
+    Supervisor.init(vault_children ++ site_children, strategy: :one_for_one)
   end
 
   defp site_child_spec(%Beacon.Config{} = config) do

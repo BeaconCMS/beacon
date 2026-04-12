@@ -63,6 +63,7 @@ defmodule Beacon.MixProject do
 
       # Runtime
       {:accent, "~> 1.1"},
+      {:cloak_ecto, "~> 1.3"},
       {:ecto_sql, "~> 3.6"},
       {:ex_brotli, "~> 0.3"},
       # FIXME: multipart copy in ex_aws_s3 2.5.0
@@ -76,6 +77,7 @@ defmodule Beacon.MixProject do
       {:jason, "~> 1.0"},
       # TODO: remove in v0.6 or when we enable components upgrade
       {:oembed, "~> 0.4"},
+      {:req, "~> 0.5"},
       {:req_embed, "~> 0.2"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},

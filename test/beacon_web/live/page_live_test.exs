@@ -8,20 +8,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
   alias Beacon.Content
 
   setup do
-    live_data = beacon_live_data_fixture(path: "/home/:greet")
-
-    beacon_live_data_assign_fixture(
-      live_data: live_data,
-      format: :elixir,
-      key: "projects",
-      value: ~S"""
-      [
-        %{id: 1, name: "Beacon"},
-        %{id: 2, name: "BeaconLiveAdmin"},
-        %{id: 3, name: "MDEx"}
-      ]
-      """
-    )
 
     Beacon.Content.blueprint_components()
     |> Enum.find(&(&1.name == "page_link"))
@@ -57,11 +43,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
         path: "/home/:greet",
         template: """
         <main>
-          <h2>Projects</h2>
-          <%= for project <- @projects do %>
-            <.sample_component project={project} />
-          <% end %>
-
           <h2>on_mount:</h2>
           on_mount_var=<%= @on_mount_var %>
 
@@ -160,14 +141,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
     assert html =~ ~r/on_mount_var=on_mount_test/
   end
 
-  test "live data", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/home/hello")
-
-    assert has_element?(view, "#project-1", "Beacon")
-    assert has_element?(view, "#project-2", "BeaconLiveAdmin")
-    assert has_element?(view, "#project-3", "MDEx")
-  end
-
   describe "navigation" do
     test "patch to another page", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/home/hello")
@@ -244,9 +217,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
 
       layout = beacon_published_layout_fixture()
 
-      live_data = beacon_live_data_fixture(path: "/page/meta-tag")
-      beacon_live_data_assign_fixture(live_data: live_data, format: :text, key: "image", value: "http://img.example.com")
-
       beacon_published_page_fixture(
         layout_id: layout.id,
         path: "/page/meta-tag",
@@ -254,8 +224,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
         description: "my test page",
         meta_tags: [
           %{"property" => "og:description", "content" => "{% helper 'og_description' %}"},
-          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"},
-          %{"property" => "og:image", "content" => "{{ live_data.image }}"}
+          %{"property" => "og:url", "content" => "http://example.com{{ page.path }}"}
         ]
       )
 
@@ -265,7 +234,6 @@ defmodule Beacon.Web.Live.PageLiveTest do
         ~S"""
         <meta content="MY TEST PAGE" property="og:description"/>
         <meta content="http://example.com/page/meta-tag" property="og:url"/>
-        <meta content="http://img.example.com" property="og:image"/>
         """
         |> String.replace("\n", "")
         |> String.replace("  ", "")
@@ -289,14 +257,8 @@ defmodule Beacon.Web.Live.PageLiveTest do
       {:ok, _view, html} = live(conn, "/home/hello")
 
       assert html =~ "<header>Page header</header>"
-      assert html =~ ~s"<main><h2>Projects</h2>"
+      assert html =~ "<main>"
       assert html =~ "<footer>Page footer</footer>"
-    end
-
-    test "component", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/home/hello")
-
-      assert html =~ ~s(<span id="project-1">)
     end
 
     test "event", %{conn: conn} do
@@ -345,20 +307,10 @@ defmodule Beacon.Web.Live.PageLiveTest do
       assert page_title(view) =~ "/my/:page"
     end
 
-    test "with snippet helper from live data assigns", %{conn: conn, layout: layout} do
-      live_data = beacon_live_data_fixture(path: "/my/page/:var")
-      beacon_live_data_assign_fixture(live_data: live_data, format: :elixir, key: "test", value: "var")
-      beacon_published_page_fixture(layout_id: layout.id, title: "page {{ live_data.test }}", path: "/my/page/:var")
-
-      {:ok, view, _html} = live(conn, "/my/page/foobar")
-
-      assert page_title(view) =~ "page foobar"
-    end
   end
 
   describe "markdown" do
     test "page template", %{conn: conn, layout: layout} do
-      beacon_live_data_fixture(path: "/markdown")
       beacon_published_page_fixture(layout_id: layout.id, format: "markdown", template: "# Title", path: "/markdown")
 
       {:ok, view, _html} = live(conn, "/markdown")

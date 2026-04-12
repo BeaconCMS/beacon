@@ -143,6 +143,24 @@ defmodule Beacon.PubSub do
     |> broadcast({:css_compiled, site}, site)
   end
 
+  # GraphQL
+
+  defp topic_graphql(site, endpoint_name), do: "beacon:#{site}:graphql:#{endpoint_name}"
+
+  def subscribe_to_graphql(site, endpoint_name) do
+    Phoenix.PubSub.subscribe(@pubsub, topic_graphql(site, endpoint_name))
+  end
+
+  def unsubscribe_from_graphql(site, endpoint_name) do
+    Phoenix.PubSub.unsubscribe(@pubsub, topic_graphql(site, endpoint_name))
+  end
+
+  def graphql_cache_invalidated(site, endpoint_name) do
+    site
+    |> topic_graphql(endpoint_name)
+    |> broadcast({:graphql_cache_invalidated, endpoint_name}, site)
+  end
+
   # Utils
 
   defp broadcast(topic, message, site) when is_binary(topic) do

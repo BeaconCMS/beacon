@@ -14,6 +14,11 @@ config :beacon, Beacon.BeaconTest.Repo,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true
 
+config :beacon, Beacon.Vault,
+  ciphers: [
+    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!("fInEp/HOb64urC4UcPVHNZb8+qYx8QQ0REAloYqKxWs=")}
+  ]
+
 config :beacon,
   session_options: [
     store: :cookie,

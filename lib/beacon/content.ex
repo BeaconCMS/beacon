@@ -36,16 +36,16 @@ defmodule Beacon.Content do
   alias Beacon.Content.ComponentSlotAttr
   alias Beacon.Content.ErrorPage
   alias Beacon.Content.EventHandler
+  alias Beacon.Content.GraphQLEndpoint
   alias Beacon.Content.InfoHandler
   alias Beacon.Content.JSHook
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
-  alias Beacon.Content.LiveData
-  alias Beacon.Content.LiveDataAssign
   alias Beacon.Content.Page
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageField
+  alias Beacon.Content.PageQuery
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
   alias Beacon.Content.SiteSetting
@@ -1515,18 +1515,6 @@ defmodule Beacon.Content do
         example: "<h6>h6</h6>",
         category: :html_tag
       },
-      # %{
-      #   name: "live_data",
-      #   description: "Fetches and render Live Data assign",
-      #   thumbnail: "https://placehold.co/400x75?text=live_data",
-      #   attrs: [
-      #     %{name: "assign", type: "any", opts: [required: true]},
-      #     %{name: "default", type: "any", opts: [required: false, default: nil]}
-      #   ],
-      #   template: "<%= @assign || @default %>",
-      #   example: ~S|<.live_data assign={assigns[:username]} default="default" />|,
-      #   category: :data
-      # },
       %{
         name: "page_link",
         description: "Renders a link to another Beacon page",
@@ -3601,31 +3589,18 @@ defmodule Beacon.Content do
   Allowed assigns:
 
     * :page (map)
-    * :live_data (map)
+    * :data (map) — page data from GraphQL endpoints
 
   """
   @doc type: :snippets
-  @spec render_snippet(String.t(), %{
-          page: %{
-            site: Beacon.Types.Site.t(),
-            path: String.t(),
-            title: String.t(),
-            description: String.t(),
-            meta_tags: [map()],
-            raw_schema: Beacon.Types.JsonArrayMap.t(),
-            order: integer(),
-            format: atom(),
-            extra: map()
-          },
-          live_data: map()
-        }) :: {:ok, String.t()} | {:error, Beacon.SnippetError.t()}
+  @spec render_snippet(String.t(), map()) :: {:ok, String.t()} | {:error, Beacon.SnippetError.t()}
   def render_snippet(template, assigns) when is_binary(template) and is_map(assigns) do
     page = Map.get(assigns, :page) || raise "expected assigns.page missing"
-    live_data = Map.get(assigns, :live_data) || raise "expected assigns.live_data missing"
+    page_data = Map.get(assigns, :data, %{})
 
     assigns = %{
       "page" => deep_stringify(page),
-      "live_data" => deep_stringify(live_data)
+      "data" => deep_stringify(page_data)
     }
 
     with {:ok, template} <- Solid.parse(template, parser: Snippets.Parser),
@@ -4014,251 +3989,8 @@ defmodule Beacon.Content do
     end
   end
 
-  # LIVE DATA
-
-  @doc """
-  Returns a list of all existing LiveDataAssign formats.
-  """
-  @doc type: :live_data
-  @spec live_data_assign_formats() :: [atom()]
-  def live_data_assign_formats, do: LiveDataAssign.formats()
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking LiveData `:path` changes.
-
-  ## Example
-
-      iex> change_live_data(live_data, %{path: "/foo/:bar_id"})
-      %Ecto.Changeset{data: %LiveData{}}
-
-  """
-  @doc type: :live_data
-  @spec change_live_data_path(LiveData.t(), map()) :: Changeset.t()
-  def change_live_data_path(%LiveData{} = live_data, attrs \\ %{}) do
-    LiveData.path_changeset(live_data, attrs)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking LiveDataAssign changes.
-
-  ## Example
-
-      iex> change_live_data_assign(live_data_assign, %{format: :elixir, value: "Enum.random(1..100)"})
-      %Ecto.Changeset{data: %LiveDataAssign{}}
-
-  """
-  @doc type: :live_data
-  @spec change_live_data_assign(LiveDataAssign.t(), map()) :: Changeset.t()
-  def change_live_data_assign(%LiveDataAssign{} = live_data_assign, attrs \\ %{}) do
-    LiveDataAssign.changeset(live_data_assign, attrs)
-  end
-
-  @doc """
-  Creates a new LiveData for scoping live data to pages.
-
-  Returns `{:ok, live_data}` if successful, otherwise `{:error, changeset}`
-  """
-  @doc type: :live_data
-  @spec create_live_data(map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def create_live_data(attrs) do
-    changeset = LiveData.changeset(%LiveData{}, attrs)
-    site = Changeset.get_field(changeset, :site)
-
-    changeset
-    |> repo(site).insert()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
-  end
-
-  @doc """
-  Creates a new LiveData for scoping live data to pages, raising an error if unsuccessful.
-
-  Returns the new LiveData if successful, otherwise raises a `RuntimeError`.
-  """
-  @doc type: :live_data
-  @spec create_live_data!(map()) :: LiveData.t()
-  def create_live_data!(attrs) do
-    case create_live_data(attrs) do
-      {:ok, live_data} -> live_data
-      {:error, changeset} -> raise "failed to create live data, got: #{inspect(changeset.errors)}"
-    end
-  end
-
-  @doc """
-  Creates a new LiveDataAssign.
-  """
-  @doc type: :live_data
-  @spec create_assign_for_live_data(LiveData.t(), map()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def create_assign_for_live_data(live_data, attrs) do
-    changeset =
-      live_data
-      |> Ecto.build_assoc(:assigns)
-      |> Map.put(:live_data, live_data)
-      |> LiveDataAssign.changeset(attrs)
-      |> validate_live_data_code()
-
-    case repo(live_data).insert(changeset) do
-      {:ok, %LiveDataAssign{}} ->
-        live_data = repo(live_data).preload(live_data, :assigns, force: true)
-        maybe_broadcast_updated_content_event({:ok, live_data}, :live_data)
-        {:ok, live_data}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
-  end
-
-  @doc """
-  Gets a single live data by `clauses`.
-
-  ## Example
-
-      iex> get_live_data_by(site, id: "cba9ee2e-d40e-48af-9704-1237e4c23bde")
-      %LiveData{}
-
-      iex> get_live_data_by(site, path: "/blog")
-      %LiveData{}
-
-  """
-  @doc type: :live_data
-  @spec get_live_data_by(Site.t(), keyword(), keyword()) :: LiveData.t() | nil
-  def get_live_data_by(site, clauses, opts \\ []) when is_atom(site) and is_list(clauses) do
-    clauses = Keyword.put(clauses, :site, site)
-    repo(site).get_by(LiveData, clauses, opts) |> repo(site).preload(:assigns)
-  end
-
-  @doc """
-  Query LiveData for a given site.
-
-  ## Options
-
-    * `:per_page` - limit how many records are returned, or pass `:infinity` to return all records.
-    * `:query` - search records by path.
-    * `:select` - returns only the given field(s)
-    * `:preload` - include given association(s) (defaults to `:assigns`)
-
-  """
-  @doc type: :live_data
-  @spec live_data_for_site(Site.t(), Keyword.t()) :: [String.t()]
-  def live_data_for_site(site, opts \\ []) do
-    per_page = Keyword.get(opts, :per_page, :infinity)
-    search = Keyword.get(opts, :query)
-    select = Keyword.get(opts, :select)
-    preload = Keyword.get(opts, :preload, :assigns)
-
-    site
-    |> query_live_data_for_site_base()
-    |> query_live_data_for_site_limit(per_page)
-    |> query_live_data_for_site_search(search)
-    |> query_live_data_for_site_select(select)
-    |> query_live_data_for_site_preload(preload)
-    |> repo(site).all()
-  end
-
-  defp query_live_data_for_site_base(site) do
-    from ld in LiveData,
-      where: ld.site == ^site,
-      order_by: [asc: ld.path]
-  end
-
-  defp query_live_data_for_site_limit(query, limit) when is_integer(limit), do: from(q in query, limit: ^limit)
-  defp query_live_data_for_site_limit(query, :infinity = _limit), do: query
-  defp query_live_data_for_site_limit(query, _per_page), do: from(q in query, limit: 20)
-
-  defp query_live_data_for_site_search(query, search) when is_binary(search), do: from(q in query, where: ilike(q.path, ^"%#{search}%"))
-  defp query_live_data_for_site_search(query, _search), do: query
-
-  defp query_live_data_for_site_select(query, nil = _select), do: query
-  defp query_live_data_for_site_select(query, select), do: from(q in query, select: ^select)
-
-  defp query_live_data_for_site_preload(query, nil), do: query
-  defp query_live_data_for_site_preload(query, preload) when is_atom(preload) or is_list(preload), do: from(q in query, preload: ^preload)
-
-  @doc """
-  Updates LiveDataPath.
-
-      iex> update_live_data_path(live_data, "/foo/bar/:baz_id")
-      {:ok, %LiveData{}}
-
-  """
-  @doc type: :live_data
-  @spec update_live_data_path(LiveData.t(), String.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def update_live_data_path(%LiveData{} = live_data, path) do
-    live_data
-    |> LiveData.path_changeset(%{path: path})
-    |> repo(live_data).update()
-    |> tap(&maybe_broadcast_updated_content_event(&1, :live_data))
-  end
-
-  @doc """
-  Updates LiveDataAssign.
-
-      iex> update_live_data_assign(live_data_assign, :my_site, %{code: "true"})
-      {:ok, %LiveDataAssign{}}
-
-  """
-  @doc type: :live_data
-  @spec update_live_data_assign(LiveDataAssign.t(), Site.t(), map()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
-  def update_live_data_assign(%LiveDataAssign{} = live_data_assign, site, attrs) do
-    live_data_assign
-    |> repo(site).preload(:live_data)
-    |> LiveDataAssign.changeset(attrs)
-    |> validate_live_data_code()
-    |> repo(site).update()
-    |> tap(fn
-      {:ok, live_data_assign} -> maybe_broadcast_updated_content_event({:ok, live_data_assign.live_data}, :live_data)
-      _error -> :skip
-    end)
-  end
-
-  defp validate_live_data_code(changeset) do
-    site = Changeset.get_field(changeset, :site)
-    value = Changeset.get_field(changeset, :value)
-    format = Changeset.get_field(changeset, :format)
-    metadata = %Beacon.Template.LoadMetadata{site: site, path: "nopath"}
-
-    variable_names =
-      changeset
-      |> Changeset.get_field(:live_data)
-      |> Map.fetch!(:path)
-      |> vars_from_path()
-      |> List.insert_at(0, "params")
-
-    do_validate_template(changeset, :value, format, value, metadata, variable_names)
-  end
-
-  defp vars_from_path(path) do
-    path
-    |> String.split("/")
-    |> Enum.filter(&String.starts_with?(&1, ":"))
-    |> Enum.map(&String.slice(&1, 1..-1//1))
-  end
-
-  @doc """
-  Deletes LiveData.
-  """
-  @doc type: :live_data
-  @spec delete_live_data(LiveData.t()) :: {:ok, LiveData.t()} | {:error, Changeset.t()}
-  def delete_live_data(live_data) do
-    repo(live_data).delete(live_data)
-  end
-
-  @doc """
-  Deletes LiveDataAssign.
-  """
-  @doc type: :live_data
-  @spec delete_live_data_assign(LiveDataAssign.t(), Site.t()) :: {:ok, LiveDataAssign.t()} | {:error, Changeset.t()}
-  def delete_live_data_assign(live_data_assign, site) do
-    repo(site).delete(live_data_assign)
-  end
-
   @doc """
   Creates a new info handler for creating shared handle_info callbacks.
-
-  ## Example
-
-      iex> create_info_handler(%{site: "my_site", msg: "{:new_msg, arg}", code: "{:noreply, socket}"})
-      {:ok, %InfoHandler{}}
-
   """
   @doc type: :info_handlers
   @spec create_info_handler(map()) :: {:ok, InfoHandler.t()} | {:error, Changeset.t()}
@@ -4816,6 +4548,135 @@ defmodule Beacon.Content do
   @spec delete_site_setting(SiteSetting.t()) :: {:ok, SiteSetting.t()} | {:error, Changeset.t()}
   def delete_site_setting(%SiteSetting{} = setting) do
     repo(setting.site).delete(setting)
+  end
+
+  # GraphQL Endpoints
+
+  @doc """
+  Returns all GraphQL endpoints for the given site.
+  """
+  @doc type: :graphql_endpoints
+  @spec list_graphql_endpoints(Site.t()) :: [GraphQLEndpoint.t()]
+  def list_graphql_endpoints(site) do
+    repo(site).all(
+      from e in GraphQLEndpoint,
+        where: e.site == ^site,
+        order_by: [asc: e.name]
+    )
+  end
+
+  @doc """
+  Gets a single GraphQL endpoint by id.
+  """
+  @doc type: :graphql_endpoints
+  @spec get_graphql_endpoint(Site.t(), Ecto.UUID.t()) :: GraphQLEndpoint.t() | nil
+  def get_graphql_endpoint(site, id) do
+    repo(site).get(GraphQLEndpoint, id)
+  end
+
+  @doc """
+  Gets a single GraphQL endpoint matching the given clauses.
+  """
+  @doc type: :graphql_endpoints
+  @spec get_graphql_endpoint_by(Site.t(), keyword() | map()) :: GraphQLEndpoint.t() | nil
+  def get_graphql_endpoint_by(site, clauses) do
+    clauses = Keyword.put_new(clauses, :site, site)
+    repo(site).get_by(GraphQLEndpoint, clauses)
+  end
+
+  @doc """
+  Creates a new GraphQL endpoint.
+  """
+  @doc type: :graphql_endpoints
+  @spec create_graphql_endpoint(map()) :: {:ok, GraphQLEndpoint.t()} | {:error, Changeset.t()}
+  def create_graphql_endpoint(attrs) do
+    %GraphQLEndpoint{}
+    |> GraphQLEndpoint.changeset(attrs)
+    |> repo(attrs.site || attrs["site"]).insert()
+  end
+
+  @doc """
+  Updates an existing GraphQL endpoint.
+  """
+  @doc type: :graphql_endpoints
+  @spec update_graphql_endpoint(GraphQLEndpoint.t(), map()) :: {:ok, GraphQLEndpoint.t()} | {:error, Changeset.t()}
+  def update_graphql_endpoint(%GraphQLEndpoint{} = endpoint, attrs) do
+    endpoint
+    |> GraphQLEndpoint.changeset(attrs)
+    |> repo(endpoint.site).update()
+  end
+
+  @doc """
+  Deletes a GraphQL endpoint.
+  """
+  @doc type: :graphql_endpoints
+  @spec delete_graphql_endpoint(GraphQLEndpoint.t()) :: {:ok, GraphQLEndpoint.t()} | {:error, Changeset.t()}
+  def delete_graphql_endpoint(%GraphQLEndpoint{} = endpoint) do
+    repo(endpoint.site).delete(endpoint)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking GraphQL endpoint changes.
+  """
+  @doc type: :graphql_endpoints
+  @spec change_graphql_endpoint(GraphQLEndpoint.t(), map()) :: Changeset.t()
+  def change_graphql_endpoint(%GraphQLEndpoint{} = endpoint, attrs \\ %{}) do
+    GraphQLEndpoint.changeset(endpoint, attrs)
+  end
+
+  # Page Queries
+
+  @doc """
+  Returns all page queries for the given page.
+  """
+  @doc type: :page_queries
+  @spec list_page_queries(Site.t(), Ecto.UUID.t()) :: [PageQuery.t()]
+  def list_page_queries(site, page_id) do
+    repo(site).all(
+      from pq in PageQuery,
+        where: pq.page_id == ^page_id,
+        order_by: [asc: pq.sort_order, asc: pq.inserted_at]
+    )
+  end
+
+  @doc """
+  Creates a new page query.
+  """
+  @doc type: :page_queries
+  @spec create_page_query(Site.t(), map()) :: {:ok, PageQuery.t()} | {:error, Changeset.t()}
+  def create_page_query(site, attrs) do
+    %PageQuery{}
+    |> PageQuery.changeset(attrs)
+    |> repo(site).insert()
+  end
+
+  @doc """
+  Updates an existing page query.
+  """
+  @doc type: :page_queries
+  @spec update_page_query(Site.t(), PageQuery.t(), map()) :: {:ok, PageQuery.t()} | {:error, Changeset.t()}
+  def update_page_query(site, %PageQuery{} = page_query, attrs) do
+    page_query
+    |> PageQuery.changeset(attrs)
+    |> repo(site).update()
+  end
+
+  @doc """
+  Deletes a page query.
+  """
+  @doc type: :page_queries
+  @spec delete_page_query(Site.t(), PageQuery.t()) :: {:ok, PageQuery.t()} | {:error, Changeset.t()}
+  def delete_page_query(site, %PageQuery{} = page_query) do
+    repo(site).delete(page_query)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking page query changes.
+  """
+  @doc type: :page_queries
+  @spec change_page_query(PageQuery.t(), map()) :: Changeset.t()
+  def change_page_query(%PageQuery{} = page_query, attrs \\ %{}) do
+    PageQuery.changeset(page_query, attrs)
   end
 
   @doc false

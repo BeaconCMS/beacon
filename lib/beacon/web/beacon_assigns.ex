@@ -37,7 +37,6 @@ defmodule Beacon.Web.BeaconAssigns do
             query_params: nil,
             page: %{path: nil, title: nil},
             private: %{
-              live_data_keys: [],
               live_path: [],
               variant_roll: nil
             }

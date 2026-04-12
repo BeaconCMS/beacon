@@ -15,23 +15,13 @@ defmodule Beacon.Boot do
     Beacon.Registry.via({site, __MODULE__})
   end
 
-  def init(%{site: site, mode: mode} = config) when is_atom(site) and mode in [:manual, :testing] do
+  def init(%{site: site, mode: mode} = _config) when is_atom(site) and mode in [:manual, :testing] do
     Logger.debug("Beacon.Boot is disabled for site #{site} on #{mode} mode")
-
-    if config.data_sources != [] do
-      Beacon.DataStore.register(site, config.data_sources)
-    end
-
     :ignore
   end
 
-  def init(%{site: site, mode: :live} = config) when is_atom(site) do
+  def init(%{site: site, mode: :live} = _config) when is_atom(site) do
     Beacon.RuntimeRenderer.init()
-
-    # Register data sources from config into ETS
-    if config.data_sources != [] do
-      Beacon.DataStore.register(site, config.data_sources)
-    end
 
     seed_default_site_settings(site)
 

@@ -40,12 +40,11 @@ defmodule Beacon.Template do
   @doc """
   Returns all assigns for a page.
 
-  Include LiveData associated with that page and the `@beacon` assigns from `Beacon.Web.BeaconAssigns`.
+  Include the `@beacon` assigns from `Beacon.Web.BeaconAssigns`.
   """
   @spec assigns(Beacon.Page.t()) :: map()
   def assigns(%Beacon.Content.Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
-    live_data = Beacon.Web.DataSource.live_data(page.site, path_info, %{})
     beacon_assigns = %Beacon.Web.BeaconAssigns{
       site: page.site,
       path_params: Beacon.Router.path_params(page.path, path_info),
@@ -55,8 +54,6 @@ defmodule Beacon.Template do
     route_assigns = Beacon.Private.route_assigns(page.site, page.path)
 
     route_assigns
-    # live data should overwrite on_mount assigns in case of a name conflict
-    |> Map.merge(live_data)
     |> Map.put(:beacon, beacon_assigns)
     |> Map.put_new(:__changed__, %{})
   end

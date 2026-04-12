@@ -357,37 +357,6 @@ defmodule Beacon.RuntimeRendererTest do
   end
 
   describe "handle_params_assigns" do
-    test "produces assigns with live_data evaluated" do
-      RuntimeRenderer.publish_page(@site, "params_1", %{
-        template: ~S|<h1><%= @greeting %></h1>|,
-        path: "/greet",
-        title: "Greet",
-        live_data: [
-          %{key: :greeting, value: "Hello from live_data!", format: :text}
-        ]
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.handle_params_assigns(@site, "/greet")
-      assert assigns.greeting == "Hello from live_data!"
-      assert assigns.beacon.private.live_data_keys == [:greeting]
-      assert assigns.beacon.page.title == "Greet"
-    end
-
-    test "live_data with text format returns literal value" do
-      RuntimeRenderer.publish_page(@site, "params_2", %{
-        template: "<div>test</div>",
-        path: "/text-data",
-        live_data: [
-          %{key: :name, value: "Beacon", format: :text},
-          %{key: :version, value: "2.0", format: :text}
-        ]
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.handle_params_assigns(@site, "/text-data")
-      assert assigns.name == "Beacon"
-      assert assigns.version == "2.0"
-    end
-
     test "passes query_params through" do
       RuntimeRenderer.publish_page(@site, "params_3", %{
         template: "<div>test</div>",
@@ -409,241 +378,15 @@ defmodule Beacon.RuntimeRendererTest do
       # and path_info would be ["posts", "my-post"]. Here we test the extraction logic.
     end
 
-    test "live_data preserves variable bindings across sequential expressions" do
-      RuntimeRenderer.publish_page(@site, "params_5", %{
-        template: "<div>test</div>",
-        path: "/blog",
-        live_data: [
-          %{
-            key: :query_opts,
-            format: :elixir,
-            value: """
-            page = params[\"page\"] || \"1\"
-            page_size = if page == \"1\", do: \"19\", else: \"18\"
-            filter = params[\"filter\"] || \"all\"
-            query_opts = %{
-              \"filter\" => %{\"drafts\" => \"false\"}
-            }
-            filter_key = if filter == \"all\", do: \"tag_exclude\", else: \"tag_include_all\"
-            filter_val = if filter == \"all\", do: \"press-release\", else: filter
-
-            query_opts
-            |> Map.update!(\"filter\", &Map.put(&1, filter_key, filter_val))
-            |> Map.put(\"page\", %{\"number\" => page, \"size\" => page_size})
-            """
-          }
-        ]
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.handle_params_assigns(@site, "/blog")
-
-      assert assigns.query_opts == %{
-               "filter" => %{"drafts" => "false", "tag_exclude" => "press-release"},
-               "page" => %{"number" => "1", "size" => "19"}
-             }
-    end
-
-    test "live_data supports anonymous functions in module calls" do
-      RuntimeRenderer.publish_page(@site, "params_6", %{
-        template: "<div>test</div>",
-        path: "/authors",
-        live_data: [
-          %{
-            key: :values,
-            format: :elixir,
-            value: """
-            Enum.map([1, 2, 3], fn value -> value + 1 end)
-            """
-          }
-        ]
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.handle_params_assigns(@site, "/authors")
-      assert assigns.values == [2, 3, 4]
-    end
-
-    test "live_data supports tuple and cons-list destructuring" do
-      RuntimeRenderer.publish_page(@site, "params_7", %{
-        template: "<div>test</div>",
-        path: "/category",
-        live_data: [
-          %{
-            key: :parts,
-            format: :elixir,
-            value: """
-            {[first | rest], meta} = {[%{id: 1}, %{id: 2}, %{id: 3}], %{count: 3}}
-
-            %{first_id: first.id, rest_count: length(rest), count: meta.count}
-            """
-          }
-        ]
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.handle_params_assigns(@site, "/category")
-      assert assigns.parts == %{first_id: 1, rest_count: 2, count: 3}
-    end
   end
 
-  describe "DataStore spread support" do
-    test "spread: true merges map result keys into top-level assigns" do
-      # Register a DataStore source that returns a map
-      sources = [
-        Beacon.DataStore.Source.new!(
-          name: :blog_listing,
-          fetch: fn _params ->
-            %{
-              latest: %{title: "Latest Post"},
-              past_posts: [%{title: "Old Post"}],
-              pagination: %{current_page: 1, total_pages: 3}
-            }
-          end,
-          ttl: 60_000
-        )
-      ]
-
-      Beacon.DataStore.register(@site, sources)
-
-      RuntimeRenderer.publish_page(@site, "spread_1", %{
-        template: ~S|<div><%= @latest.title %></div>|,
-        path: "/spread-test",
-        title: "Spread Test",
-        extra: %{
-          "data_sources" => [
-            %{"source" => "blog_listing", "params" => %{}, "spread" => true}
-          ]
-        }
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.mount_assigns(@site, "/spread-test")
-
-      # The map keys should be spread into top-level assigns
-      assert assigns.latest == %{title: "Latest Post"}
-      assert assigns.past_posts == [%{title: "Old Post"}]
-      assert assigns.pagination == %{current_page: 1, total_pages: 3}
-
-      # The source name should NOT be in assigns (it was spread)
-      refute Map.has_key?(assigns, :blog_listing)
-
-      # But the source name should still be in data_source_names for PubSub subscriptions
-      assert :blog_listing in assigns.beacon.private.data_source_names
-    end
-
-    test "spread: false (default) nests result under source name" do
-      sources = [
-        Beacon.DataStore.Source.new!(
-          name: :nested_data,
-          fetch: fn _params -> %{a: 1, b: 2} end,
-          ttl: 60_000
-        )
-      ]
-
-      Beacon.DataStore.register(@site, sources)
-
-      RuntimeRenderer.publish_page(@site, "spread_2", %{
-        template: "<div>test</div>",
-        path: "/no-spread-test",
-        title: "No Spread",
-        extra: %{
-          "data_sources" => [
-            %{"source" => "nested_data", "params" => %{}}
-          ]
-        }
-      })
-
-      assert {:ok, assigns} = RuntimeRenderer.mount_assigns(@site, "/no-spread-test")
-      assert assigns.nested_data == %{a: 1, b: 2}
-      refute Map.has_key?(assigns, :a)
-      refute Map.has_key?(assigns, :b)
-    end
-
-    test "spread works with concat_path_params to join multiple path segments" do
-      sources = [
-        Beacon.DataStore.Source.new!(
-          name: :post_detail,
-          fetch: fn params -> %{post_path: params[:path], found: true} end,
-          ttl: 60_000,
-          params: [:path]
-        )
-      ]
-
-      Beacon.DataStore.register(@site, sources)
-
-      RuntimeRenderer.publish_page(@site, "spread_concat", %{
-        template: "<div>test</div>",
-        path: "/blog/:year/:month/:day/:slug",
-        title: "Post",
-        extra: %{
-          "data_sources" => [
-            %{
-              "source" => "post_detail",
-              "params" => %{"path" => %{"concat_path_params" => ["year", "month", "day", "slug"]}},
-              "spread" => true
-            }
-          ]
-        }
-      })
-
-      assert {:ok, assigns} =
-               RuntimeRenderer.handle_params_assigns(@site, "/blog/2024/01/15/my-post")
-
-      assert assigns.post_path == "2024/01/15/my-post"
-      assert assigns.found == true
-    end
-
-    test "spread works with handle_params_assigns and query params" do
-      sources = [
-        Beacon.DataStore.Source.new!(
-          name: :category_listing,
-          fetch: fn params ->
-            category = params[:category] || "all"
-
-            %{
-              filter: category,
-              posts: [%{title: "Post in #{category}"}],
-              pagination: %{current_page: 1}
-            }
-          end,
-          ttl: 60_000,
-          params: [:category]
-        )
-      ]
-
-      Beacon.DataStore.register(@site, sources)
-
-      RuntimeRenderer.publish_page(@site, "spread_3", %{
-        template: "<div>test</div>",
-        path: "/spread-params/:category",
-        title: "Category",
-        extra: %{
-          "data_sources" => [
-            %{
-              "source" => "category_listing",
-              "params" => %{"category" => %{"path_param" => "category"}},
-              "spread" => true
-            }
-          ]
-        }
-      })
-
-      assert {:ok, assigns} =
-               RuntimeRenderer.handle_params_assigns(@site, "/spread-params/elixir")
-
-      assert assigns.filter == "elixir"
-      assert assigns.posts == [%{title: "Post in elixir"}]
-      assert assigns.pagination == %{current_page: 1}
-    end
-  end
 
   describe "full lifecycle" do
     test "mount → handle_params → render → handle_event" do
       RuntimeRenderer.publish_page(@site, "full_1", %{
-        template: ~S|<div><%= @greeting %> <%= @name %></div>|,
+        template: "<div><%= assigns[:name] || \"World\" %></div>",
         path: "/full-test",
         title: "Full Test",
-        live_data: [
-          %{key: :greeting, value: "Hello", format: :text},
-          %{key: :name, value: "World", format: :text}
-        ],
         event_handlers: [
           %{name: "update_name", code: ~S|{:noreply, assign(socket, :name, event_params["name"])}|}
         ]
@@ -653,14 +396,11 @@ defmodule Beacon.RuntimeRendererTest do
       {:ok, mount_assigns} = RuntimeRenderer.mount_assigns(@site, "/full-test")
       assert mount_assigns.beacon.private.page_id == "full_1"
 
-      # 2. Handle params — evaluate live_data, build full assigns
+      # 2. Handle params — build assigns
       {:ok, params_assigns} = RuntimeRenderer.handle_params_assigns(@site, "/full-test")
-      assert params_assigns.greeting == "Hello"
-      assert params_assigns.name == "World"
 
       # 3. Render — produce HTML from template IR + assigns
       {:ok, html} = RuntimeRenderer.render_to_string(@site, "full_1", params_assigns)
-      assert html =~ "Hello"
       assert html =~ "World"
 
       # 4. Handle event — dispatch through AST interpreter
@@ -672,7 +412,6 @@ defmodule Beacon.RuntimeRendererTest do
       # 5. Re-render with updated assigns
       new_assigns = Map.merge(params_assigns, updated_socket.assigns) |> Map.put(:__changed__, %{})
       {:ok, html2} = RuntimeRenderer.render_to_string(@site, "full_1", new_assigns)
-      assert html2 =~ "Hello"
       assert html2 =~ "Beacon"
     end
   end

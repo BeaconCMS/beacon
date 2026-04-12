@@ -69,15 +69,11 @@ defmodule Beacon.RuntimeRenderer do
     # 4. Register route: path → page_id (for mount-time lookup)
     :ets.insert(@table, {{site, :route, path}, page_id})
 
-    # 5. Store custom page assigns (live_data, user-defined)
+    # 5. Store custom page assigns
     static_assigns = Map.get(attrs, :assigns, %{})
     :ets.insert(@table, {{site, page_id, :assigns}, static_assigns})
 
-    # 6. Store live_data definitions (evaluated at handle_params time)
-    live_data_defs = Map.get(attrs, :live_data, [])
-    :ets.insert(@table, {{site, page_id, :live_data}, live_data_defs})
-
-    # 7. Store event handlers — parse to AST at publish time, not runtime
+    # 6. Store event handlers — parse to AST at publish time, not runtime
     handlers = Map.get(attrs, :event_handlers, [])
 
     for %{name: name, code: code} <- handlers do
@@ -117,18 +113,9 @@ defmodule Beacon.RuntimeRenderer do
     # 10. Register page dependencies for cascade invalidation
     component_names = Beacon.PageRenderCache.extract_component_names(ir)
 
-    data_source_names =
-      manifest.extra
-      |> Map.get("data_sources", [])
-      |> Enum.map(fn spec -> spec["source"] || spec[:source] end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(&safe_to_existing_atom/1)
-      |> MapSet.new()
-
     Beacon.PageRenderCache.register_page_deps(site, page_id, %{
       layout_id: manifest.layout_id,
-      components: component_names,
-      data_sources: data_source_names
+      components: component_names
     })
 
     :ok
@@ -695,13 +682,6 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   @doc """
-  Clears cached live_data definitions for all pages on a site.
-  Pages will lazy-load fresh definitions from the DB on next request.
-  """
-  def clear_live_data_cache(site) do
-    :ets.match_delete(@table, {{site, :"$1", :live_data}, :_})
-  end
-
   @doc """
   Registers a route (path → page_id) in ETS without loading the page IR.
   Used at boot to populate the route index for dynamic route matching.
@@ -920,14 +900,8 @@ defmodule Beacon.RuntimeRenderer do
     path_info = String.split(String.trim_leading(path, "/"), "/", trim: true)
     path_params = extract_path_params(manifest.path, path_info)
 
-    # Fetch DataStore sources BEFORE live_data so live_data code can reference them
-    {data_store_assigns, data_source_names} = fetch_data_store_assigns(site, manifest, path_params, %{})
-
-    # Evaluate live data at mount time so assigns are available for the initial render
-    live_data = evaluate_live_data(site, page_id, path_info, %{})
-
-    # Merge: DataStore results + live_data (live_data can override DataStore)
-    all_data = Map.merge(data_store_assigns, live_data)
+    # Fetch GraphQL page queries
+    {graphql_assigns, graphql_endpoint_names} = fetch_graphql_assigns(site, page_id, path_params, %{})
 
     beacon = %{
       site: site,
@@ -937,16 +911,15 @@ defmodule Beacon.RuntimeRenderer do
       private: %{
         page_id: page_id,
         layout_id: manifest.layout_id,
-        live_data_keys: Map.keys(all_data),
-        data_source_names: data_source_names,
+        graphql_endpoint_names: graphql_endpoint_names,
         live_path: path_info,
         variant_roll: variant_roll,
         page_type: Map.get(manifest.extra, "type", "default")
       }
     }
 
-    page_title = interpolate_title(manifest.title, manifest, all_data)
-    {:ok, Map.merge(all_data, %{beacon: beacon, page_title: page_title})}
+    page_title = interpolate_title(manifest.title, manifest, graphql_assigns)
+    {:ok, Map.merge(graphql_assigns, %{beacon: beacon, page_title: page_title})}
   end
 
   # ---------------------------------------------------------------------------
@@ -958,9 +931,9 @@ defmodule Beacon.RuntimeRenderer do
   Produces updated assigns for handle_params given a site, path, and params.
 
   This replaces the current flow of:
-    RouterServer.lookup_page! → DataSource.live_data() → BeaconAssigns.new()
+    RouterServer.lookup_page! → GraphQL queries → BeaconAssigns.new()
 
-  Evaluates live_data definitions from ETS and merges everything into assigns.
+  Evaluates GraphQL queries and merges results into assigns.
   """
   def handle_params_assigns(site, path, params \\ %{}) when is_atom(site) and is_binary(path) do
     case Beacon.CircuitBreaker.check(site, path) do
@@ -988,253 +961,84 @@ defmodule Beacon.RuntimeRenderer do
     query_params = Map.drop(params, ["path"])
     path_params = extract_path_params(manifest.path, path_info)
 
-    # Fetch DataStore sources BEFORE live_data
-    {data_store_assigns, data_source_names} = fetch_data_store_assigns(site, manifest, path_params, query_params)
-
-    # Evaluate live_data from stored definitions
-    live_data = evaluate_live_data(site, page_id, path_info, query_params)
-
-    all_data = Map.merge(data_store_assigns, live_data)
+    # Fetch GraphQL page queries
+    {graphql_assigns, graphql_endpoint_names} = fetch_graphql_assigns(site, page_id, path_params, query_params)
 
     beacon = %{
       site: site,
       path_params: path_params,
       query_params: query_params,
-      live_data: all_data,
       page: %{path: manifest.path, title: manifest.title},
       private: %{
         page_id: page_id,
         layout_id: manifest.layout_id,
-        live_data_keys: Map.keys(all_data),
-        data_source_names: data_source_names,
+        graphql_endpoint_names: graphql_endpoint_names,
         live_path: path_info,
         variant_roll: nil,
         page_type: Map.get(manifest.extra, "type", "default")
       }
     }
 
-    page_title = interpolate_title(manifest.title, manifest, all_data)
-    {:ok, Map.merge(all_data, %{beacon: beacon, page_title: page_title})}
+    page_title = interpolate_title(manifest.title, manifest, graphql_assigns)
+    {:ok, Map.merge(graphql_assigns, %{beacon: beacon, page_title: page_title})}
   end
 
   # ---------------------------------------------------------------------------
-  # DataStore integration
+  # GraphQL integration
   # ---------------------------------------------------------------------------
 
-  @doc """
-  Returns the list of data source names used by a page, read from the manifest's extra field.
-  """
-  def page_data_source_names(site, page_id) do
-    case fetch_manifest(site, page_id) do
-      {:ok, manifest} ->
-        manifest.extra
-        |> Map.get("data_sources", [])
-        |> Enum.map(fn spec -> spec["source"] || spec[:source] end)
-        |> Enum.reject(&is_nil/1)
-        |> Enum.map(&safe_to_existing_atom/1)
+  defp fetch_graphql_assigns(site, page_id, path_params, query_params) do
+    page_queries = load_page_queries(site, page_id)
+
+    if page_queries == [] do
+      {%{}, []}
+    else
+      {assigns, endpoint_names} =
+        Beacon.GraphQL.QueryExecutor.execute_page_queries(site, page_queries, path_params, query_params)
+
+      # Convert string keys to atoms for template assigns
+      atomized =
+        Map.new(assigns, fn {k, v} ->
+          key = if is_binary(k), do: safe_to_existing_atom(k), else: k
+          {key, v}
+        end)
+
+      {atomized, endpoint_names}
+    end
+  end
+
+  defp load_page_queries(site, page_id) do
+    # Page queries use binary_id (UUID) foreign keys. If page_id is not a valid UUID
+    # (e.g., in tests using custom string IDs), there can't be any page queries.
+    case Ecto.UUID.cast(page_id) do
+      {:ok, _} ->
+        cache_key = {site, page_id, :page_queries}
+
+        case :ets.lookup(@table, cache_key) do
+          [{^cache_key, queries}] ->
+            queries
+
+          [] ->
+            queries = Beacon.Content.list_page_queries(site, page_id)
+            :ets.insert(@table, {cache_key, queries})
+            queries
+        end
 
       :error ->
         []
     end
   end
 
-  defp fetch_data_store_assigns(site, manifest, path_params, query_params) do
-    specs = Map.get(manifest.extra, "data_sources", [])
-
-    if specs == [] do
-      {%{}, []}
-    else
-      {assigns, source_names} =
-        Enum.reduce(specs, {%{}, []}, fn spec, {acc, names} ->
-          source_name =
-            (spec["source"] || spec[:source])
-            |> to_string()
-            |> safe_to_existing_atom()
-
-          case Beacon.DataStore.get_source(site, source_name) do
-            nil ->
-              Logger.warning("[Beacon.DataStore] data source #{inspect(source_name)} is referenced in page manifest but not registered for site #{inspect(site)}")
-              {acc, names}
-
-            _source ->
-              raw_params = spec["params"] || spec[:params] || %{}
-              resolved = resolve_data_store_params(raw_params, path_params, query_params)
-              value = Beacon.DataStore.fetch(site, source_name, resolved)
-              spread? = spec["spread"] == true || spec[:spread] == true
-
-              updated_acc =
-                if spread? and is_map(value) do
-                  atomized = Map.new(value, fn {k, v} -> {safe_to_existing_atom(to_string(k)), v} end)
-                  Map.merge(acc, atomized)
-                else
-                  Map.put(acc, source_name, value)
-                end
-
-              {updated_acc, [source_name | names]}
-          end
-        end)
-
-      {assigns, Enum.reverse(source_names)}
-    end
-  end
-
-  def resolve_data_store_params(param_spec, path_params, query_params) when is_map(param_spec) do
-    Map.new(param_spec, fn
-      {key, %{"path_param" => name}} -> {safe_to_existing_atom(key), Map.get(path_params, name) || Map.get(path_params, safe_to_existing_atom(name))}
-      {key, %{"query_param" => name}} -> {safe_to_existing_atom(key), Map.get(query_params, name)}
-      {key, %{"concat_path_params" => names}} when is_list(names) ->
-        value = Enum.map_join(names, "/", fn n -> Map.get(path_params, n) || Map.get(path_params, safe_to_existing_atom(n)) || "" end)
-        {safe_to_existing_atom(key), value}
-      {key, {:path_param, name}} -> {safe_to_existing_atom(key), Map.get(path_params, name) || Map.get(path_params, safe_to_existing_atom(name))}
-      {key, {:query_param, name}} -> {safe_to_existing_atom(key), Map.get(query_params, name)}
-      {key, value} -> {safe_to_existing_atom(key), value}
-    end)
-  end
-
-  def resolve_data_store_params(_, _, _), do: %{}
-
-  # Interpolate snippets in page title (e.g., "{{ page.path }}", "{{ live_data.test }}")
-  defp interpolate_title(title, manifest, live_data) do
+  # Interpolate snippets in page title (e.g., "{{ page.path }}")
+  defp interpolate_title(title, manifest, assigns) do
     page_assigns = %{site: manifest.site, id: manifest.id, path: manifest.path, title: title, description: manifest.description}
 
-    case Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
+    case Beacon.Content.render_snippet(title, %{page: page_assigns, data: assigns}) do
       {:ok, rendered} -> rendered
       {:error, _} -> title
     end
   rescue
     _ -> title
-  end
-
-  # ---------------------------------------------------------------------------
-  # Live data evaluation (replaces compiled LiveData module)
-  # ---------------------------------------------------------------------------
-
-  @doc """
-  Evaluates stored live_data definitions for a page.
-  Each definition is a `%{key: atom, value: term, format: :text | :elixir}`.
-
-  `:text` values are returned as-is.
-  `:elixir` values are evaluated by the AST interpreter with path/query params in scope.
-  """
-  def evaluate_live_data(site, page_id, path_info, query_params) do
-    defs =
-      case :ets.lookup(@table, {site, page_id, :live_data}) do
-        [{_, :no_live_data}] ->
-          # Loaded previously but page has no live data definitions
-          []
-
-        [{_, defs}] when is_list(defs) ->
-          defs
-
-        _ ->
-          # Lazy-load: fetch live_data from database and store in ETS
-          lazy_load_live_data(site, page_id)
-      end
-
-    evaluate_live_data_defs(defs, path_info, query_params)
-  end
-
-  defp evaluate_live_data_defs(defs, path_info, query_params) when is_list(defs) do
-    Enum.reduce(defs, %{}, fn
-      %{key: key, value: value, format: :text}, acc ->
-        Map.put(acc, key, value)
-
-      %{key: key, value: code, format: :elixir} = def_entry, acc ->
-        ast = Code.string_to_quoted!(code)
-        path_vars = extract_path_variables(def_entry[:path_pattern], path_info)
-        bindings = Map.merge(path_vars, %{path_info: path_info, params: query_params})
-
-        result = eval_ast(ast, bindings)
-        Map.put(acc, key, result)
-
-      %{key: key, value: value}, acc ->
-        Map.put(acc, key, value)
-    end)
-  end
-
-  defp evaluate_live_data_defs(_, _path_info, _query_params), do: %{}
-
-  defp lazy_load_live_data(site, page_id) do
-    # Look up the page manifest to get the path pattern
-    case fetch_manifest(site, page_id) do
-      {:ok, manifest} ->
-        # Query only the live data matching this page's path pattern,
-        # not the entire site's live data. For static paths this is a
-        # single-row query; for dynamic paths we fetch candidate patterns.
-        matching_live_data = fetch_matching_live_data(site, manifest.path)
-
-        defs =
-          matching_live_data
-          |> Enum.flat_map(fn ld ->
-            Enum.map(ld.assigns, fn assign ->
-              %{
-                key: safe_to_existing_atom(assign.key),
-                value: assign.value,
-                format: assign.format,
-                path_pattern: ld.path
-              }
-            end)
-          end)
-
-        if defs == [] do
-          :ets.insert(@table, {{site, page_id, :live_data}, :no_live_data})
-        else
-          :ets.insert(@table, {{site, page_id, :live_data}, defs})
-        end
-
-        defs
-
-      :error ->
-        []
-    end
-  end
-
-  defp fetch_matching_live_data(site, page_path) do
-    # Try exact path match first (cheapest query)
-    case Beacon.Content.get_live_data_by(site, path: page_path) do
-      %{} = ld -> [ld]
-      nil ->
-        # No exact match — the page may use a different path pattern than
-        # the live data (e.g., page path "/blog/:slug" vs live data path "/blog/:slug").
-        # Query all live data paths and filter by pattern matching.
-        # This is bounded by the number of live data definitions per site (typically < 30).
-        Beacon.Content.live_data_for_site(site, per_page: :infinity)
-        |> Enum.filter(fn ld -> path_matches_pattern?(ld.path, page_path) end)
-    end
-  end
-
-  defp path_matches_pattern?(live_data_path, page_path) do
-    ld_segments = String.split(String.trim_leading(live_data_path, "/"), "/", trim: true)
-    page_segments = String.split(String.trim_leading(page_path, "/"), "/", trim: true)
-
-    if length(ld_segments) != length(page_segments) do
-      false
-    else
-      Enum.zip(ld_segments, page_segments)
-      |> Enum.all?(fn
-        {":" <> _, _} -> true
-        {"*" <> _, _} -> true
-        {_, ":" <> _} -> true
-        {_, "*" <> _} -> true
-        {a, b} -> a == b
-      end)
-    end
-  end
-
-  # Extract path variables from a pattern like "/blog/:year/:month/:day/:post_slug"
-  # and actual path segments like ["blog", "2025", "05", "15", "my-post"]
-  # Returns %{year: "2025", month: "05", day: "15", post_slug: "my-post"}
-  defp extract_path_variables(nil, _path_info), do: %{}
-
-  defp extract_path_variables(pattern, path_info) do
-    pattern_segments = String.split(String.trim_leading(pattern, "/"), "/", trim: true)
-
-    Enum.zip(pattern_segments, path_info)
-    |> Enum.reduce(%{}, fn
-      {":" <> param, value}, acc -> Map.put(acc, safe_to_existing_atom(param), value)
-      {"*" <> param, value}, acc -> Map.put(acc, safe_to_existing_atom(param), value)
-      _, acc -> acc
-    end)
   end
 
   # Extract path params from a pattern like "/posts/:id" and actual path segments
@@ -1315,11 +1119,32 @@ defmodule Beacon.RuntimeRenderer do
   These are global to the site, not scoped to a specific page.
   Any page on the site can dispatch them.
   """
-  def store_site_handler(site, type, name, code) when type in [:event, :info] do
+  def store_site_handler(site, type, name, code) when type in [:event, :info] and is_binary(code) do
     handler_ast = Code.string_to_quoted!(code)
-    :ets.insert(@table, {{site, :site_handler, type, name}, :erlang.term_to_binary(handler_ast)})
+    :ets.insert(@table, {{site, :site_handler, type, name}, {:elixir, :erlang.term_to_binary(handler_ast)}})
 
     # Maintain an index
+    index_key = {site, :site_handler_index, type}
+
+    existing =
+      case :ets.lookup(@table, index_key) do
+        [{_, names}] -> names
+        [] -> []
+      end
+
+    unless name in existing do
+      :ets.insert(@table, {index_key, [name | existing]})
+    end
+
+    :ok
+  end
+
+  @doc """
+  Stores an actions-format handler (JSON action document) in ETS.
+  """
+  def store_site_handler_actions(site, type, name, actions) when type in [:event, :info] and is_map(actions) do
+    :ets.insert(@table, {{site, :site_handler, type, name}, {:actions, actions}})
+
     index_key = {site, :site_handler_index, type}
 
     existing =
@@ -1340,25 +1165,38 @@ defmodule Beacon.RuntimeRenderer do
   """
   def handle_site_event(site, event_name, event_params, socket) do
     case :ets.lookup(@table, {site, :site_handler, :event, event_name}) do
-      [{_, serialized_ast}] ->
-        ast = :erlang.binary_to_term(serialized_ast)
-        bindings = %{socket: socket, event_params: event_params}
-        eval_ast(ast, bindings)
+      [{_, tagged_handler}] ->
+        dispatch_tagged_handler(tagged_handler, event_params, socket)
 
       [] ->
         # Lazy load event handlers for this site
         ensure_site_handlers_loaded(site, :event)
 
         case :ets.lookup(@table, {site, :site_handler, :event, event_name}) do
-          [{_, serialized_ast}] ->
-            ast = :erlang.binary_to_term(serialized_ast)
-            bindings = %{socket: socket, event_params: event_params}
-            eval_ast(ast, bindings)
+          [{_, tagged_handler}] ->
+            dispatch_tagged_handler(tagged_handler, event_params, socket)
 
           [] ->
             {:error, {:no_handler, event_name}}
         end
     end
+  end
+
+  def dispatch_tagged_handler({:elixir, serialized_ast}, event_params, socket) do
+    ast = :erlang.binary_to_term(serialized_ast)
+    bindings = %{socket: socket, event_params: event_params}
+    eval_ast(ast, bindings)
+  end
+
+  def dispatch_tagged_handler({:actions, action_document}, event_params, socket) do
+    Beacon.Actions.Interpreter.execute(action_document, event_params, socket)
+  end
+
+  # Legacy: untagged binary AST (from before the format field was added)
+  def dispatch_tagged_handler(serialized_ast, event_params, socket) when is_binary(serialized_ast) do
+    ast = :erlang.binary_to_term(serialized_ast)
+    bindings = %{socket: socket, event_params: event_params}
+    eval_ast(ast, bindings)
   end
 
   def handle_site_info(site, msg, socket) do
@@ -1379,15 +1217,27 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp dispatch_info_handlers(handlers, msg, socket) do
-    Enum.find_value(handlers, {:error, {:no_handler, msg}}, fn [name, serialized_ast] ->
+    Enum.find_value(handlers, {:error, {:no_handler, msg}}, fn [name, tagged_handler] ->
       # Parse the handler's msg pattern and try to match it against the incoming message
       case match_info_pattern(name, msg) do
         {:ok, pattern_bindings} ->
-          ast = :erlang.binary_to_term(serialized_ast)
-          bindings = Map.merge(pattern_bindings, %{socket: socket, msg: msg})
-
           try do
-            eval_ast(ast, bindings)
+            case tagged_handler do
+              {:elixir, serialized_ast} ->
+                ast = :erlang.binary_to_term(serialized_ast)
+                bindings = Map.merge(pattern_bindings, %{socket: socket, msg: msg})
+                eval_ast(ast, bindings)
+
+              {:actions, action_document} ->
+                event_params = Map.merge(pattern_bindings, %{"msg" => msg})
+                Beacon.Actions.Interpreter.execute(action_document, event_params, socket)
+
+              serialized_ast when is_binary(serialized_ast) ->
+                # Legacy untagged format
+                ast = :erlang.binary_to_term(serialized_ast)
+                bindings = Map.merge(pattern_bindings, %{socket: socket, msg: msg})
+                eval_ast(ast, bindings)
+            end
           rescue
             _ -> nil
           end
@@ -1439,7 +1289,7 @@ defmodule Beacon.RuntimeRenderer do
     :ets.delete(@table, {site, page_id, :ir})
     :ets.delete(@table, {site, page_id, :manifest})
     :ets.delete(@table, {site, page_id, :assigns})
-    :ets.delete(@table, {site, page_id, :live_data})
+    :ets.delete(@table, {site, page_id, :page_queries})
 
     for name <- list_handlers(site, page_id) do
       :ets.delete(@table, {site, page_id, :handler, name})

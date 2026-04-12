@@ -75,12 +75,11 @@ defmodule Beacon.Web.Layouts do
   This function will resolve such snippets.
   """
   def render_page_title(assigns) do
-    %{beacon: %{site: site, page: %{title: title, path: path}, private: %{page_id: page_id, live_data_keys: live_data_keys}}} = assigns
-    live_data = Map.take(assigns, live_data_keys)
+    %{beacon: %{site: site, page: %{title: title, path: path}, private: %{page_id: page_id}}} = assigns
 
     page_assigns = %{site: site, id: page_id, path: path, title: title}
 
-    case Beacon.Content.render_snippet(title, %{page: page_assigns, live_data: live_data}) do
+    case Beacon.Content.render_snippet(title, %{page: page_assigns, data: assigns}) do
       {:ok, rendered_title} -> rendered_title
       {:error, _} -> title
     end
@@ -99,11 +98,9 @@ defmodule Beacon.Web.Layouts do
 
   @doc false
   def meta_tags(assigns) do
-    %{beacon: %{private: %{live_data_keys: live_data_keys}}} = assigns
-    live_data = Map.take(assigns, live_data_keys)
     layout_meta_tags = layout_meta_tags(assigns) || []
 
-    case live_data do
+    case assigns do
       %{beacon_meta_tags: override_tags} when is_list(override_tags) ->
         (override_tags ++ layout_meta_tags)
         |> Enum.reject(&(&1["name"] == "csrf-token"))

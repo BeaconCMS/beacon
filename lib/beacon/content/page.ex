@@ -44,6 +44,7 @@ defmodule Beacon.Content.Page do
     belongs_to :layout, Content.Layout
 
     has_many :variants, Content.PageVariant
+    has_many :page_queries, Content.PageQuery
 
     embeds_many :helpers, Helper
 

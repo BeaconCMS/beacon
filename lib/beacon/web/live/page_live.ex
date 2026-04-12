@@ -49,10 +49,10 @@ defmodule Beacon.Web.PageLive do
     path_str = "/" <> Enum.join(path, "/")
     {:ok, assigns} = Beacon.RuntimeRenderer.mount_assigns(site, path_str, variant_roll: variant_roll)
 
-    # Subscribe to DataStore invalidation topics for this page's data sources
+    # Subscribe to GraphQL cache invalidation topics
     if config.mode == :live and connected?(socket) do
-      for source_name <- Map.get(assigns.beacon.private, :data_source_names, []) do
-        Beacon.DataStore.subscribe(site, source_name)
+      for endpoint_name <- Map.get(assigns.beacon.private, :graphql_endpoint_names, []) do
+        Beacon.PubSub.subscribe_to_graphql(site, endpoint_name)
       end
     end
 
@@ -189,38 +189,30 @@ defmodule Beacon.Web.PageLive do
     end
   end
 
-  def handle_info({:beacon_data_store_invalidated, source_name}, socket) do
+  def handle_info({:graphql_cache_invalidated, endpoint_name}, socket) do
     %{beacon: %{site: site, private: %{page_id: page_id}}} = socket.assigns
+    path_params = socket.assigns.beacon.path_params
+    query_params = socket.assigns.beacon.query_params
 
-    # Re-fetch the invalidated data source with current params
-    case Beacon.RuntimeRenderer.fetch_manifest(site, page_id) do
-      {:ok, manifest} ->
-        path_params = socket.assigns.beacon.path_params
-        query_params = socket.assigns.beacon.query_params
-        specs = Map.get(manifest.extra, "data_sources", [])
+    # Re-fetch only the queries for the invalidated endpoint
+    page_queries =
+      Beacon.Content.list_page_queries(site, page_id)
+      |> Enum.filter(&(&1.endpoint_name == endpoint_name))
 
-        spec = Enum.find(specs, fn s ->
-          name = s["source"] || s[:source]
-          to_string(name) == to_string(source_name)
+    if page_queries != [] do
+      {new_assigns, _} =
+        Beacon.GraphQL.QueryExecutor.execute_page_queries(site, page_queries, path_params, query_params)
+
+      updated_socket =
+        Enum.reduce(new_assigns, socket, fn {key, value}, acc ->
+          assign_key = if is_binary(key), do: String.to_existing_atom(key), else: key
+          Component.assign(acc, assign_key, value)
         end)
 
-        if spec do
-          raw_params = spec["params"] || spec[:params] || %{}
-          resolved = Beacon.RuntimeRenderer.resolve_data_store_params(raw_params, path_params, query_params)
-          value = Beacon.DataStore.fetch(site, source_name, resolved)
-          {:noreply, Component.assign(socket, source_name, value)}
-        else
-          {:noreply, socket}
-        end
-
-      :error ->
-        {:noreply, socket}
+      {:noreply, updated_socket}
+    else
+      {:noreply, socket}
     end
-  end
-
-  def handle_info({:beacon_data_store_invalidated, source_name, _params}, socket) do
-    # Re-fetch with current params regardless of which specific params were invalidated
-    handle_info({:beacon_data_store_invalidated, source_name}, socket)
   end
 
   def handle_info({:page_loaded, _}, socket) do
@@ -300,13 +292,13 @@ defmodule Beacon.Web.PageLive do
 
         {:ok, params_assigns} = Beacon.RuntimeRenderer.handle_params_assigns(site, path_str, params)
 
-        # Update DataStore subscriptions if navigating to a different page
-        old_sources = Map.get(socket.assigns.beacon.private, :data_source_names, [])
-        new_sources = Map.get(params_assigns.beacon.private, :data_source_names, [])
+        # Update GraphQL subscriptions if navigating to a different page
+        old_endpoints = Map.get(socket.assigns.beacon.private, :graphql_endpoint_names, [])
+        new_endpoints = Map.get(params_assigns.beacon.private, :graphql_endpoint_names, [])
 
         if connected?(socket) do
-          for source <- old_sources -- new_sources, do: Beacon.DataStore.unsubscribe(site, source)
-          for source <- new_sources -- old_sources, do: Beacon.DataStore.subscribe(site, source)
+          for ep <- old_endpoints -- new_endpoints, do: Beacon.PubSub.unsubscribe_from_graphql(site, ep)
+          for ep <- new_endpoints -- old_endpoints, do: Beacon.PubSub.subscribe_to_graphql(site, ep)
         end
 
         # Update page render cache subscriptions when navigating between pages

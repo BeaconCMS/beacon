@@ -104,8 +104,6 @@ defmodule Beacon.Test.Fixtures do
               :beacon_page_variant_fixture,
               :beacon_event_handler_fixture,
               :beacon_error_page_fixture,
-              :beacon_live_data_fixture,
-              :beacon_live_data_assign_fixture,
               :beacon_info_handler_fixture,
               :beacon_js_hook_fixture
             ] do
@@ -457,57 +455,6 @@ defmodule Beacon.Test.Fixtures do
     })
     |> Content.create_error_page!()
     |> tap(&Beacon.RuntimeRenderer.Loader.reload_error_pages(&1.site))
-  end
-
-  @doc """
-  Creates a `Beacon.Content.LiveData`.
-
-  ## Example
-
-      iex> beacon_live_data_fixture(path: "/contact")
-      %Beacon.Content.LiveData{}
-
-  """
-  @spec beacon_live_data_fixture(map() | Keyword.t()) :: Beacon.Content.LiveData.t()
-  def beacon_live_data_fixture(attrs) do
-    attrs
-    |> Enum.into(%{
-      site: "my_site",
-      path: "/foo/bar"
-    })
-    |> Content.create_live_data!()
-    |> tap(fn _ -> :ok end)
-  end
-
-  @doc """
-  Creates a `Beacon.Content.LiveDataAssign`.
-
-  ## Example
-
-      iex> beacon_live_data_assign_fixture(live_data: live_data, key: "user", value: "%{id: 1, name: \"John\"}")
-      %Beacon.Content.LiveDataAssign{}
-
-  """
-  @spec beacon_live_data_assign_fixture(map() | Keyword.t()) :: Beacon.Content.LiveDataAssign.t()
-  def beacon_live_data_assign_fixture(attrs) do
-    %{site: site} = live_data = get_lazy(attrs, :live_data, fn -> beacon_live_data_fixture(%{}) end)
-
-    attrs =
-      Enum.into(attrs, %{
-        key: "bar",
-        value: "Hello world!",
-        format: :text
-      })
-
-    live_data =
-      live_data
-      |> Ecto.build_assoc(:assigns)
-      |> Content.LiveDataAssign.changeset(attrs)
-      |> repo(site).insert!()
-
-    :ok
-
-    live_data
   end
 
   @doc """
