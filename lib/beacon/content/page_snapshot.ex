@@ -29,6 +29,7 @@ defmodule Beacon.Content.PageSnapshot do
     field :template, :string
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
+    field :ast, :map
     belongs_to :event, Beacon.Content.PageEvent
     timestamps updated_at: false
   end

@@ -32,6 +32,7 @@ defmodule Beacon.Content.Layout do
     field :template, :string, default: "<%= @inner_content %>"
     field :meta_tags, {:array, :map}, default: []
     field :resource_links, {:array, :map}, default: []
+    field :ast, :map
 
     timestamps()
   end

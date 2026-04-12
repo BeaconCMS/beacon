@@ -802,6 +802,18 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Gets the platform-agnostic AST for a page, or nil if not stored.
+  """
+  @doc type: :pages
+  @spec get_page_ast(Site.t(), Ecto.UUID.t()) :: map() | nil
+  def get_page_ast(site, page_id) do
+    case repo(site).get(Page, page_id) do
+      %Page{ast: ast} when not is_nil(ast) -> ast
+      _ -> nil
+    end
+  end
+
+  @doc """
   Gets a single page by `clauses`.
 
   ## Example

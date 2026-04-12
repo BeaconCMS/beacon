@@ -33,6 +33,7 @@ defmodule Beacon.Content.LayoutSnapshot do
     field :schema_version, :integer
     field :layout_id, Ecto.UUID
     field :layout, Beacon.Types.Binary
+    field :ast, :map
     belongs_to :event, Beacon.Content.LayoutEvent
     timestamps updated_at: false
   end

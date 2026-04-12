@@ -40,6 +40,7 @@ defmodule Beacon.Content.Page do
     field :order, :integer, default: 1
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
+    field :ast, :map
 
     belongs_to :layout, Content.Layout
 
@@ -75,7 +76,8 @@ defmodule Beacon.Content.Page do
         :order,
         :layout_id,
         :format,
-        :extra
+        :extra,
+        :ast
       ])
       |> cast_embed(:helpers, with: &helpers_changeset/2)
       |> unique_constraint([:path, :site])
