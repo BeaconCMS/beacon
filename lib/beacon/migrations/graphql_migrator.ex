@@ -10,7 +10,6 @@ defmodule Beacon.Migrations.GraphQLMigrator do
       Beacon.Migrations.GraphQLMigrator.dry_run(:my_site)
   """
 
-  import Ecto.Query
   require Logger
 
   @doc """
@@ -22,42 +21,38 @@ defmodule Beacon.Migrations.GraphQLMigrator do
     config = Beacon.Config.fetch!(site)
     repo = config.repo
 
-    # Find pages with data_sources in their extra field
+    %{rows: page_rows} = repo.query!(
+      "SELECT id, path, extra FROM beacon_pages WHERE site = $1",
+      [to_string(site)]
+    )
+
     pages_with_data_sources =
-      repo.all(
-        Ecto.Query.from(p in "beacon_pages",
-          where: p.site == ^to_string(site),
-          select: %{id: p.id, path: p.path, extra: p.extra}
-        )
-      )
-      |> Enum.filter(fn page ->
-        extra = page.extra || %{}
+      page_rows
+      |> Enum.filter(fn [_id, _path, extra] ->
+        extra = extra || %{}
         ds = Map.get(extra, "data_sources", [])
         is_list(ds) and ds != []
       end)
+      |> Enum.map(fn [id, path, extra] ->
+        %{id: id, path: path, data_sources: Map.get(extra || %{}, "data_sources", [])}
+      end)
 
-    # Find event handlers using elixir format (candidates for conversion)
+    %{rows: handler_rows} = repo.query!(
+      "SELECT id, name, format FROM beacon_event_handlers WHERE site = $1",
+      [to_string(site)]
+    )
+
     elixir_handlers =
-      repo.all(
-        Ecto.Query.from(eh in "beacon_event_handlers",
-          where: eh.site == ^to_string(site),
-          select: %{id: eh.id, name: eh.name, format: eh.format}
-        )
-      )
-      |> Enum.filter(fn h -> h.format == "elixir" or is_nil(h.format) end)
+      handler_rows
+      |> Enum.filter(fn [_id, _name, format] -> format == "elixir" or is_nil(format) end)
+      |> Enum.map(fn [id, name, _format] -> %{id: id, name: name} end)
 
     %{
       site: site,
       pages_with_legacy_data_sources: length(pages_with_data_sources),
-      pages: Enum.map(pages_with_data_sources, fn p ->
-        %{
-          id: p.id,
-          path: p.path,
-          data_sources: Map.get(p.extra || %{}, "data_sources", [])
-        }
-      end),
+      pages: pages_with_data_sources,
       elixir_event_handlers: length(elixir_handlers),
-      handlers: Enum.map(elixir_handlers, &%{id: &1.id, name: &1.name})
+      handlers: elixir_handlers
     }
   end
 
@@ -85,7 +80,6 @@ defmodule Beacon.Migrations.GraphQLMigrator do
         steps ++ [
           "== Legacy Data Sources ==",
           "#{report.pages_with_legacy_data_sources} page(s) have data_sources in their extra field.",
-          "These were configured via the old DataStore system and need to be converted to page queries.",
           "Steps:",
           "  1. Create a GraphQL endpoint in Beacon admin pointing to your host app's API",
           "  2. For each data source, create a page query with the equivalent GraphQL query",
@@ -104,8 +98,7 @@ defmodule Beacon.Migrations.GraphQLMigrator do
           "",
           "== Elixir Event Handlers ==",
           "#{report.elixir_event_handlers} handler(s) use raw Elixir code: #{handler_names}",
-          "These can optionally be converted to declarative actions format.",
-          "Use the Event Handler editor's format toggle to switch between Elixir and Actions."
+          "These can optionally be converted to declarative actions format."
         ]
       else
         steps
@@ -116,20 +109,16 @@ defmodule Beacon.Migrations.GraphQLMigrator do
 
   @doc """
   Clean up legacy data_sources from page extra fields.
-  This removes the data_sources key from the extra map of all pages on the site.
   """
   @spec clean_legacy_extra!(atom()) :: :ok
   def clean_legacy_extra!(site) do
     config = Beacon.Config.fetch!(site)
     repo = config.repo
 
-    {count, _} =
-      repo.update_all(
-        Ecto.Query.from(p in "beacon_pages",
-          where: p.site == ^to_string(site)
-        ),
-        set: [extra: Ecto.Query.dynamic([p], fragment("? - 'data_sources'", p.extra))]
-      )
+    %{num_rows: count} = repo.query!(
+      "UPDATE beacon_pages SET extra = extra - 'data_sources' WHERE site = $1 AND extra ? 'data_sources'",
+      [to_string(site)]
+    )
 
     Logger.info("[GraphQLMigrator] Cleaned data_sources from #{count} pages on site #{site}")
     :ok
