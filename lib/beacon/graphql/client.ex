@@ -85,12 +85,16 @@ defmodule Beacon.GraphQL.Client do
 
     headers = auth_headers(endpoint)
 
+    # Use a dedicated Finch pool for GraphQL requests to avoid connection
+    # pool exhaustion when the server calls its own GraphQL endpoint
+    # (self-call during page rendering).
     case Req.post(endpoint.url,
            json: body,
            headers: headers,
            receive_timeout: timeout,
            retry: :transient,
-           max_retries: endpoint.max_retries || 2
+           max_retries: endpoint.max_retries || 2,
+           finch: Beacon.Finch
          ) do
       {:ok, %{status: 200, body: %{"data" => data, "errors" => errors}}} when is_list(errors) and errors != [] ->
         {:partial, data, errors}
