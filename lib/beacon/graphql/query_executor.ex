@@ -128,36 +128,8 @@ defmodule Beacon.GraphQL.QueryExecutor do
   # top-level key, unwrap to just the value so templates get the data directly
   # (e.g., @featured_links = [...] instead of %{"featuredLinks" => [...]}).
   defp unwrap_response(%{} = data) when map_size(data) == 1 do
-    data |> Map.values() |> hd() |> parse_dates()
+    data |> Map.values() |> hd()
   end
 
-  defp unwrap_response(data), do: parse_dates(data)
-
-  # JSON has no date type. GraphQL responses serialize DateTime/NaiveDateTime
-  # to ISO 8601 strings. Parse them back so template code that expects
-  # DateTime structs (e.g., Date.to_iso8601, Calendar functions) works.
-  @iso_datetime ~r/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
-
-  defp parse_dates(%{} = map) do
-    Map.new(map, fn {k, v} -> {k, parse_dates(v)} end)
-  end
-
-  defp parse_dates(list) when is_list(list), do: Enum.map(list, &parse_dates/1)
-
-  defp parse_dates(value) when is_binary(value) do
-    if Regex.match?(@iso_datetime, value) do
-      case DateTime.from_iso8601(value) do
-        {:ok, dt, _offset} -> dt
-        _ ->
-          case NaiveDateTime.from_iso8601(value) do
-            {:ok, ndt} -> ndt
-            _ -> value
-          end
-      end
-    else
-      value
-    end
-  end
-
-  defp parse_dates(value), do: value
+  defp unwrap_response(data), do: data
 end
