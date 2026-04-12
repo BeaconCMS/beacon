@@ -4144,13 +4144,14 @@ defmodule Beacon.Content do
     Changeset.add_error(changeset, field, "can't be blank", compilation_error: nil)
   end
 
-  defp do_validate_template(changeset, field, :heex = _format, template, metadata, _, _) when is_binary(template) do
+  defp do_validate_template(changeset, field, :heex = _format, template, _metadata, _, _) when is_binary(template) do
     Changeset.validate_change(changeset, field, fn ^field, template ->
-      case Beacon.Template.HEEx.compile(metadata.site, metadata.path, template) do
-        {:ok, _ast} -> []
-        {:error, %{description: description}} -> [{field, {"invalid", compilation_error: description}}]
-        {:error, %_{} = exception} -> [{field, {"invalid", compilation_error: Exception.message(exception)}}]
-        {:error, _} -> [{field, "invalid"}]
+      try do
+        Beacon.Template.Parser.parse(template)
+        []
+      rescue
+        e in Beacon.Template.ParseError ->
+          [{field, {"invalid", compilation_error: Exception.message(e)}}]
       end
     end)
   end
@@ -4174,6 +4175,18 @@ defmodule Beacon.Content do
   end
 
   defp do_validate_template(changeset, _field, :text = _format, _template, _metadata, _, _), do: changeset
+
+  defp do_validate_template(changeset, field, :beacon = _format, template, _metadata, _, _) when is_binary(template) do
+    Changeset.validate_change(changeset, field, fn ^field, template ->
+      try do
+        Beacon.Template.Parser.parse(template)
+        []
+      rescue
+        e in Beacon.Template.ParseError ->
+          [{field, {"invalid", compilation_error: Exception.message(e)}}]
+      end
+    end)
+  end
 
   # TODO: expose template validation to custom template formats defined by users
   defp do_validate_template(changeset, _field, _format, _template, _metadata, _, _), do: changeset

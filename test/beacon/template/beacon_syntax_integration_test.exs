@@ -105,17 +105,6 @@ defmodule Beacon.Template.BeaconSyntaxIntegrationTest do
       assert rendered =~ ~s(phx-click="submit_form")
     end
 
-    test "heex format still works (backward compatible)" do
-      RuntimeRenderer.publish_page(@site, "heex_1", %{
-        template: ~S(<h1><%= assigns[:name] || "World" %></h1>),
-        path: "/heex-test",
-        format: :heex
-      })
-
-      {:ok, rendered} = RuntimeRenderer.render_to_string(@site, "heex_1", %{name: "Brian"})
-      assert rendered =~ "Brian"
-    end
-
     test "complex blog-like template" do
       RuntimeRenderer.publish_page(@site, "beacon_blog", %{
         template: """

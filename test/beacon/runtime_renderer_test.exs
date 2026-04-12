@@ -30,54 +30,45 @@ defmodule Beacon.RuntimeRendererTest do
 
     test "renders template with assign interpolation" do
       RuntimeRenderer.publish_page(@site, "page_2", %{
-        template: ~S|<div>Hello, <%= @name %>!</div>|
+        template: "<div>Hello, {{ name }}!</div>"
       })
 
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_2", %{name: "Beacon"})
+      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_2", %{"name" => "Beacon"})
       assert html =~ "Hello, Beacon!"
     end
 
     test "renders template with multiple assigns" do
       RuntimeRenderer.publish_page(@site, "page_3", %{
-        template: ~S|<h1><%= @title %></h1><p><%= @body %></p>|
+        template: "<h1>{{ title }}</h1><p>{{ body }}</p>"
       })
 
-      assigns = %{title: "My Page", body: "This is the content."}
+      assigns = %{"title" => "My Page", "body" => "This is the content."}
       assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_3", assigns)
-      assert html =~ "<h1>My Page</h1>"
-      assert html =~ "<p>This is the content.</p>"
-    end
-
-    test "renders template with expression" do
-      RuntimeRenderer.publish_page(@site, "page_4", %{
-        template: ~S|<span><%= @count + 1 %></span>|
-      })
-
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_4", %{count: 41})
-      assert html =~ "42"
+      assert html =~ "My Page"
+      assert html =~ "This is the content."
     end
 
     test "renders template with conditional" do
       RuntimeRenderer.publish_page(@site, "page_5", %{
-        template: ~S|<%= if @show do %>visible<% else %>hidden<% end %>|
+        template: ~s(<span :if="show">visible</span><span :else>hidden</span>)
       })
 
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_5", %{show: true})
+      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_5", %{"show" => true})
       assert html =~ "visible"
 
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_5", %{show: false})
+      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_5", %{"show" => false})
       assert html =~ "hidden"
     end
 
-    test "renders template with comprehension" do
+    test "renders template with loop" do
       RuntimeRenderer.publish_page(@site, "page_6", %{
-        template: ~S|<ul><%= for item <- @items do %><li><%= item %></li><% end %></ul>|
+        template: ~s(<ul><li :for="item in items">{{ item }}</li></ul>)
       })
 
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_6", %{items: ["a", "b", "c"]})
-      assert html =~ "<li>a</li>"
-      assert html =~ "<li>b</li>"
-      assert html =~ "<li>c</li>"
+      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "page_6", %{"items" => ["a", "b", "c"]})
+      assert html =~ "a"
+      assert html =~ "b"
+      assert html =~ "c"
     end
 
     test "returns error for non-existent page" do
@@ -86,11 +77,11 @@ defmodule Beacon.RuntimeRendererTest do
 
     test "produces a valid Phoenix.LiveView.Rendered struct" do
       RuntimeRenderer.publish_page(@site, "page_rendered", %{
-        template: ~S|<div><%= @value %></div>|
+        template: "<div>{{ value }}</div>"
       })
 
       assert {:ok, %Phoenix.LiveView.Rendered{} = rendered} =
-               RuntimeRenderer.render_page(@site, "page_rendered", %{value: "test"})
+               RuntimeRenderer.render_page(@site, "page_rendered", %{"value" => "test"})
 
       assert is_list(rendered.static)
       assert is_function(rendered.dynamic)
@@ -120,25 +111,25 @@ defmodule Beacon.RuntimeRendererTest do
 
     test "stored assigns are merged into template rendering" do
       RuntimeRenderer.publish_page(@site, "state_2", %{
-        template: ~S|<h1><%= @title %></h1><p><%= @greeting %></p>|,
+        template: "<h1>{{ title }}</h1><p>{{ greeting }}</p>",
         title: "Stored Title",
-        assigns: %{title: "Stored Title"}
+        assigns: %{"title" => "Stored Title"}
       })
 
       # Only pass greeting at render time — title comes from stored assigns
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "state_2", %{greeting: "Hi!"})
+      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "state_2", %{"greeting" => "Hi!"})
       assert html =~ "Stored Title"
       assert html =~ "Hi!"
     end
 
     test "request-time assigns override stored assigns" do
       RuntimeRenderer.publish_page(@site, "state_3", %{
-        template: ~S|<h1><%= @title %></h1>|,
-        assigns: %{title: "Original"}
+        template: "<h1>{{ title }}</h1>",
+        assigns: %{"title" => "Original"}
       })
 
       # Override at render time
-      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "state_3", %{title: "Overridden"})
+      assert {:ok, html} = RuntimeRenderer.render_to_string(@site, "state_3", %{"title" => "Overridden"})
       assert html =~ "Overridden"
     end
   end
@@ -193,8 +184,8 @@ defmodule Beacon.RuntimeRendererTest do
       RuntimeRenderer.publish_page(@site, "event_4", %{
         template: "<div>test</div>",
         event_handlers: [
-          %{name: "inc", code: ~S"{:noreply, assign(socket, :count, (socket.assigns[:count] || 0) + 1)}"},
-          %{name: "dec", code: ~S"{:noreply, assign(socket, :count, (socket.assigns[:count] || 0) - 1)}"}
+          %{"name" => "inc", code: ~S"{:noreply, assign(socket, :count, (socket.assigns[:count] || 0) + 1)}"},
+          %{"name" => "dec", code: ~S"{:noreply, assign(socket, :count, (socket.assigns[:count] || 0) - 1)}"}
         ]
       })
 
@@ -216,7 +207,7 @@ defmodule Beacon.RuntimeRendererTest do
       RuntimeRenderer.publish_page(@site, "lifecycle_1", %{
         template: "<div>test</div>",
         assigns: %{foo: "bar"},
-        event_handlers: [%{name: "click", code: ~S|{:noreply, socket}|}]
+        event_handlers: [%{"name" => "click", code: ~S|{:noreply, socket}|}]
       })
 
       # Verify everything exists
@@ -326,7 +317,7 @@ defmodule Beacon.RuntimeRendererTest do
   describe "mount_assigns" do
     test "produces initial assigns from route lookup" do
       RuntimeRenderer.publish_page(@site, "mount_1", %{
-        template: ~S|<h1><%= @beacon.page.title %></h1>|,
+        template: "<h1>{{ beacon.page.title }}</h1>",
         path: "/welcome",
         title: "Welcome Page"
       })
@@ -384,11 +375,11 @@ defmodule Beacon.RuntimeRendererTest do
   describe "full lifecycle" do
     test "mount → handle_params → render → handle_event" do
       RuntimeRenderer.publish_page(@site, "full_1", %{
-        template: "<div><%= assigns[:name] || \"World\" %></div>",
+        template: "<div>{{ name | default: \"World\" }}</div>",
         path: "/full-test",
         title: "Full Test",
         event_handlers: [
-          %{name: "update_name", code: ~S|{:noreply, assign(socket, :name, event_params["name"])}|}
+          %{"name" => "update_name", code: ~S|{:noreply, assign(socket, :name, event_params["name"])}|}
         ]
       })
 

@@ -41,17 +41,6 @@ defmodule Beacon.RuntimeRenderer do
   def publish_page(site, page_id, attrs) when is_atom(site) and is_binary(page_id) do
     template = Map.fetch!(attrs, :template)
     path = Map.get(attrs, :path, "/")
-    format = Map.get(attrs, :format, :heex)
-
-    if format == :beacon do
-      publish_page_beacon(site, page_id, template, attrs)
-    else
-      publish_page_heex(site, page_id, template, path, attrs)
-    end
-  end
-
-  defp publish_page_beacon(site, page_id, template, attrs) do
-    path = Map.get(attrs, :path, "/")
 
     # 1. Parse Beacon template syntax to platform-agnostic AST
     page_ast = Beacon.Template.Parser.parse(template)
@@ -83,34 +72,6 @@ defmodule Beacon.RuntimeRenderer do
     :ok
   end
 
-  defp publish_page_heex(site, page_id, template, path, attrs) do
-    # 1. Compile HEEx to AST via standard Phoenix pipeline
-    env = Beacon.Web.PageLive.make_env(site)
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
-
-    # 2. Transform AST into serializable IR (no closures, no module refs)
-    ir = extract_ir(ast, env)
-    :ets.insert(@table, {{site, page_id, :ir}, :erlang.term_to_binary(ir)})
-
-    # 3. Store metadata, handlers, CSS
-    store_page_metadata(site, page_id, attrs)
-    store_page_handlers(site, page_id, attrs)
-
-    candidates = Beacon.CSS.CandidateExtractor.extract(template)
-    :ets.insert(@table, {{site, page_id, :css_candidates}, candidates})
-    update_site_css_candidates(site, candidates)
-
-    # 4. Register page dependencies for cascade invalidation
-    component_names = Beacon.PageRenderCache.extract_component_names(ir)
-
-    Beacon.PageRenderCache.register_page_deps(site, page_id, %{
-      layout_id: Map.get(attrs, :layout_id),
-      components: component_names
-    })
-
-    :ok
-  end
-
   defp store_page_metadata(site, page_id, attrs) do
     path = Map.get(attrs, :path, "/")
 
@@ -137,12 +98,17 @@ defmodule Beacon.RuntimeRenderer do
   defp store_page_handlers(site, page_id, attrs) do
     handlers = Map.get(attrs, :event_handlers, [])
 
-    for %{name: name, code: code} <- handlers do
-      handler_ast = Code.string_to_quoted!(code)
-      :ets.insert(@table, {{site, page_id, :handler, name}, :erlang.term_to_binary(handler_ast)})
+    for handler <- handlers do
+      name = handler[:name] || handler["name"]
+      code = handler[:code] || handler["code"]
+
+      if name && code do
+        handler_ast = Code.string_to_quoted!(code)
+        :ets.insert(@table, {{site, page_id, :handler, name}, :erlang.term_to_binary(handler_ast)})
+      end
     end
 
-    handler_names = Enum.map(handlers, & &1.name)
+    handler_names = Enum.map(handlers, fn h -> h[:name] || h["name"] end) |> Enum.reject(&is_nil/1)
     :ets.insert(@table, {{site, page_id, :handler_index}, handler_names})
 
     helpers = Map.get(attrs, :helpers, [])
@@ -1125,7 +1091,6 @@ defmodule Beacon.RuntimeRenderer do
   # ---------------------------------------------------------------------------
 
   def render_page(site, page_id, assigns \\ %{}) when is_atom(site) do
-    # Try AST-based rendering first (new platform-agnostic format)
     case :ets.lookup(@table, {site, page_id, :ast}) do
       [{_, ast}] when is_list(ast) ->
         stored_assigns = fetch_assigns(site, page_id)
@@ -1134,17 +1099,7 @@ defmodule Beacon.RuntimeRenderer do
         {:ok, rendered}
 
       _ ->
-        # Fall back to legacy IR-based rendering (HEEx format)
-        case :ets.lookup(@table, {site, page_id, :ir}) do
-          [{_, serialized_ir}] ->
-            ir = :erlang.binary_to_term(serialized_ir)
-            stored_assigns = fetch_assigns(site, page_id)
-            full_assigns = Map.merge(stored_assigns, assigns) |> Map.delete(:__changed__)
-            {:ok, render_ir(ir, full_assigns)}
-
-          [] ->
-            {:error, :not_found}
-        end
+        {:error, :not_found}
     end
   end
 
@@ -1365,6 +1320,7 @@ defmodule Beacon.RuntimeRenderer do
     end
 
     :ets.delete(@table, {site, page_id, :ir})
+    :ets.delete(@table, {site, page_id, :ast})
     :ets.delete(@table, {site, page_id, :manifest})
     :ets.delete(@table, {site, page_id, :assigns})
     :ets.delete(@table, {site, page_id, :page_queries})

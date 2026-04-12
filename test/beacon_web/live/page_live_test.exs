@@ -19,7 +19,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       beacon_published_layout_fixture(
         template: """
         <header>Page header</header>
-        <%= @inner_content %>
+        {inner_content}
         <footer>Page footer</footer>
         """,
         meta_tags: [
@@ -44,24 +44,22 @@ defmodule Beacon.Web.Live.PageLiveTest do
         template: """
         <main>
           <h2>on_mount:</h2>
-          on_mount_var=<%= @on_mount_var %>
+          on_mount_var={{ on_mount_var }}
 
           <h2>Beacon:</h2>
-          @beacon.site=<%= @beacon.site %>
-          @beacon.path_params=<%= @beacon.path_params["greet"] %>
-          @beacon.query_params=<%= @beacon.query_params["query"] %>
+          beacon.site={{ beacon.site }}
+          beacon.path_params={{ beacon.path_params.greet }}
+          beacon.query_params={{ beacon.query_params.query }}
 
-          <.page_link path="/about">go_to_about_page</.page_link>
-          <.link navigate="/other">go_to_other_site</.link>
+          <a href="/about">go_to_about_page</a>
+          <a href="/other">go_to_other_site</a>
 
-          <.form :let={f} for={%{}} as={:greeting} phx-submit="hello">
-            Name: <%= text_input f, :name %>
-            <%= submit "Hello" %>
-          </.form>
+          <form @submit="hello">
+            Name: <input type="text" name="greeting[name]" />
+            <button type="submit">Hello</button>
+          </form>
 
-          <%= if assigns[:message], do: assigns.message %>
-
-          <%= dynamic_helper("upcase", %{name: "test_name"}) %>
+          <span :if="message">{{ message }}</span>
         </main>
         """,
         meta_tags: [

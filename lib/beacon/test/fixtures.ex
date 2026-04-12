@@ -213,9 +213,7 @@ defmodule Beacon.Test.Fixtures do
       title: "Sample Home Page",
       meta_tags: [],
       resource_links: [],
-      template: """
-      <%= @inner_content %>
-      """
+      template: "{inner_content}"
     })
     |> Content.create_layout!()
   end
@@ -406,6 +404,7 @@ defmodule Beacon.Test.Fixtures do
   end
 
   defp template_for(%{format: :heex} = _page), do: "<div><h1>My Site</h1></div>"
+  defp template_for(%{format: :beacon} = _page), do: "<div><h1>My Site</h1></div>"
   defp template_for(%{format: :markdown} = _page), do: "# My site"
 
   @doc """
