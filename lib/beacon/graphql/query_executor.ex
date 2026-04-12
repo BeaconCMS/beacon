@@ -91,11 +91,11 @@ defmodule Beacon.GraphQL.QueryExecutor do
           acc
 
         {result_alias, endpoint_name, {:ok, data}}, {acc, names} ->
-          {Map.put(acc, result_alias, data), [endpoint_name | names]}
+          {Map.put(acc, result_alias, unwrap_response(data)), [endpoint_name | names]}
 
         {result_alias, endpoint_name, {:partial, data, errors}}, {acc, names} ->
           Logger.warning("[Beacon.GraphQL] Partial response for #{result_alias}: #{inspect(errors)}")
-          {Map.put(acc, result_alias, data), [endpoint_name | names]}
+          {Map.put(acc, result_alias, unwrap_response(data)), [endpoint_name | names]}
 
         {result_alias, endpoint_name, {:error, reason}}, {acc, names} ->
           Logger.warning("[Beacon.GraphQL] Query #{result_alias} failed: #{inspect(reason)}")
@@ -123,4 +123,13 @@ defmodule Beacon.GraphQL.QueryExecutor do
       Client.execute(site, endpoint_name, query.query_string, variables)
     end)
   end
+
+  # GraphQL responses come as %{"queryName" => value}. When there's a single
+  # top-level key, unwrap to just the value so templates get the data directly
+  # (e.g., @featured_links = [...] instead of %{"featuredLinks" => [...]}).
+  defp unwrap_response(%{} = data) when map_size(data) == 1 do
+    data |> Map.values() |> hd()
+  end
+
+  defp unwrap_response(data), do: data
 end
