@@ -41,7 +41,49 @@ defmodule Beacon.RuntimeRenderer do
   def publish_page(site, page_id, attrs) when is_atom(site) and is_binary(page_id) do
     template = Map.fetch!(attrs, :template)
     path = Map.get(attrs, :path, "/")
+    format = Map.get(attrs, :format, :heex)
 
+    if format == :beacon do
+      publish_page_beacon(site, page_id, template, attrs)
+    else
+      publish_page_heex(site, page_id, template, path, attrs)
+    end
+  end
+
+  defp publish_page_beacon(site, page_id, template, attrs) do
+    path = Map.get(attrs, :path, "/")
+
+    # 1. Parse Beacon template syntax to platform-agnostic AST
+    page_ast = Beacon.Template.Parser.parse(template)
+
+    # 2. Expand components into the AST
+    component_registry = build_component_registry(site)
+    expanded_ast = Beacon.Template.ComponentExpander.expand(page_ast, component_registry)
+
+    # 3. Store the AST as JSON in ETS
+    :ets.insert(@table, {{site, page_id, :ast}, expanded_ast})
+
+    # 4. Store manifest and route
+    store_page_metadata(site, page_id, attrs)
+
+    # 5. Store event handlers
+    store_page_handlers(site, page_id, attrs)
+
+    # 6. CSS candidates from the template source
+    candidates = Beacon.CSS.CandidateExtractor.extract(template)
+    :ets.insert(@table, {{site, page_id, :css_candidates}, candidates})
+    update_site_css_candidates(site, candidates)
+
+    # 7. Register page dependencies
+    Beacon.PageRenderCache.register_page_deps(site, page_id, %{
+      layout_id: Map.get(attrs, :layout_id),
+      components: MapSet.new()
+    })
+
+    :ok
+  end
+
+  defp publish_page_heex(site, page_id, template, path, attrs) do
     # 1. Compile HEEx to AST via standard Phoenix pipeline
     env = Beacon.Web.PageLive.make_env(site)
     {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
@@ -50,7 +92,28 @@ defmodule Beacon.RuntimeRenderer do
     ir = extract_ir(ast, env)
     :ets.insert(@table, {{site, page_id, :ir}, :erlang.term_to_binary(ir)})
 
-    # 3. Store the page manifest — everything needed to mount and render
+    # 3. Store metadata, handlers, CSS
+    store_page_metadata(site, page_id, attrs)
+    store_page_handlers(site, page_id, attrs)
+
+    candidates = Beacon.CSS.CandidateExtractor.extract(template)
+    :ets.insert(@table, {{site, page_id, :css_candidates}, candidates})
+    update_site_css_candidates(site, candidates)
+
+    # 4. Register page dependencies for cascade invalidation
+    component_names = Beacon.PageRenderCache.extract_component_names(ir)
+
+    Beacon.PageRenderCache.register_page_deps(site, page_id, %{
+      layout_id: Map.get(attrs, :layout_id),
+      components: component_names
+    })
+
+    :ok
+  end
+
+  defp store_page_metadata(site, page_id, attrs) do
+    path = Map.get(attrs, :path, "/")
+
     manifest = %{
       id: page_id,
       site: site,
@@ -65,15 +128,13 @@ defmodule Beacon.RuntimeRenderer do
     }
 
     :ets.insert(@table, {{site, page_id, :manifest}, manifest})
-
-    # 4. Register route: path → page_id (for mount-time lookup)
     :ets.insert(@table, {{site, :route, path}, page_id})
 
-    # 5. Store custom page assigns
     static_assigns = Map.get(attrs, :assigns, %{})
     :ets.insert(@table, {{site, page_id, :assigns}, static_assigns})
+  end
 
-    # 6. Store event handlers — parse to AST at publish time, not runtime
+  defp store_page_handlers(site, page_id, attrs) do
     handlers = Map.get(attrs, :event_handlers, [])
 
     for %{name: name, code: code} <- handlers do
@@ -84,7 +145,6 @@ defmodule Beacon.RuntimeRenderer do
     handler_names = Enum.map(handlers, & &1.name)
     :ets.insert(@table, {{site, page_id, :handler_index}, handler_names})
 
-    # 8. Store page helpers (dynamic_helper calls)
     helpers = Map.get(attrs, :helpers, [])
 
     for helper <- helpers do
@@ -92,11 +152,9 @@ defmodule Beacon.RuntimeRenderer do
       args_ast = Code.string_to_quoted!(helper.args)
       :ets.insert(@table, {{site, page_id, :helper, helper.name}, :erlang.term_to_binary(%{code: helper_ast, args: args_ast})})
     end
+  end
 
-    # 9. Extract CSS candidates and track for conditional recompilation
-    candidates = Beacon.CSS.CandidateExtractor.extract(template)
-    :ets.insert(@table, {{site, page_id, :css_candidates}, candidates})
-
+  defp update_site_css_candidates(site, candidates) do
     known =
       case :ets.lookup(@table, {site, :css_candidates}) do
         [{_, existing}] -> existing
@@ -109,16 +167,25 @@ defmodule Beacon.RuntimeRenderer do
       updated = MapSet.union(known, new_classes)
       :ets.insert(@table, {{site, :css_candidates}, updated})
     end
+  end
 
-    # 10. Register page dependencies for cascade invalidation
-    component_names = Beacon.PageRenderCache.extract_component_names(ir)
+  defp build_component_registry(site) do
+    # Build a map of component name → AST from stored component templates
+    case :ets.match(@table, {{site, :component, :"$1"}, :"$2"}) do
+      matches when is_list(matches) ->
+        Map.new(matches, fn [name, binary] ->
+          component = :erlang.binary_to_term(binary)
+          component_ast =
+            case component do
+              %{ast: ast} when is_list(ast) -> ast
+              _ -> []
+            end
+          {to_string(name), component_ast}
+        end)
 
-    Beacon.PageRenderCache.register_page_deps(site, page_id, %{
-      layout_id: manifest.layout_id,
-      components: component_names
-    })
-
-    :ok
+      _ ->
+        %{}
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -1058,15 +1125,26 @@ defmodule Beacon.RuntimeRenderer do
   # ---------------------------------------------------------------------------
 
   def render_page(site, page_id, assigns \\ %{}) when is_atom(site) do
-    case :ets.lookup(@table, {site, page_id, :ir}) do
-      [{_, serialized_ir}] ->
-        ir = :erlang.binary_to_term(serialized_ir)
+    # Try AST-based rendering first (new platform-agnostic format)
+    case :ets.lookup(@table, {site, page_id, :ast}) do
+      [{_, ast}] when is_list(ast) ->
         stored_assigns = fetch_assigns(site, page_id)
         full_assigns = Map.merge(stored_assigns, assigns) |> Map.delete(:__changed__)
-        {:ok, render_ir(ir, full_assigns)}
+        rendered = Beacon.Client.LiveViewCompiler.render(ast, full_assigns)
+        {:ok, rendered}
 
-      [] ->
-        {:error, :not_found}
+      _ ->
+        # Fall back to legacy IR-based rendering (HEEx format)
+        case :ets.lookup(@table, {site, page_id, :ir}) do
+          [{_, serialized_ir}] ->
+            ir = :erlang.binary_to_term(serialized_ir)
+            stored_assigns = fetch_assigns(site, page_id)
+            full_assigns = Map.merge(stored_assigns, assigns) |> Map.delete(:__changed__)
+            {:ok, render_ir(ir, full_assigns)}
+
+          [] ->
+            {:error, :not_found}
+        end
     end
   end
 
