@@ -213,7 +213,7 @@ defmodule Beacon.Test.Fixtures do
       title: "Sample Home Page",
       meta_tags: [],
       resource_links: [],
-      template: "{inner_content}"
+      template: "{{ inner_content }}"
     })
     |> Content.create_layout!()
   end

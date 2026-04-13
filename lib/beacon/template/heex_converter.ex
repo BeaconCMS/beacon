@@ -54,6 +54,7 @@ defmodule Beacon.Template.HEExConverter do
     |> convert_simple_conditionals()
     |> convert_simple_loops()
     |> convert_eex_output_tags()
+    |> strip_heex_comments()
     |> cleanup_eex_remnants()
     |> flag_remaining_issues()
 
@@ -207,6 +208,16 @@ defmodule Beacon.Template.HEExConverter do
   end
 
   # Clean up remaining EEx tags
+  # Strip HEEx comments: <%!-- ... --%> and <%# ... %>
+  defp strip_heex_comments({template, warnings}) do
+    result =
+      template
+      |> String.replace(~r/<%!--.*?--%>/s, "")
+      |> String.replace(~r/<%#.*?%>/s, "")
+
+    {result, warnings}
+  end
+
   defp cleanup_eex_remnants({template, warnings}) do
     # <% end %> → remove (handled by :if/:for directives)
     result = Regex.replace(~r/\s*<%\s*end\s*%>\s*/, template, "\n")

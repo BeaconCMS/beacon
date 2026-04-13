@@ -18,6 +18,19 @@ defmodule Beacon.Template.ComponentExpander do
   Repeats expansion until no component references remain (handles nested components).
   Maximum 10 passes to prevent infinite recursion from circular component references.
   """
+  # Standard HTML tags that must never be treated as component references
+  @html_tags ~w(
+    a abbr address area article aside audio b base bdi bdo blockquote body br
+    button canvas caption cite code col colgroup data datalist dd del details
+    dfn dialog div dl dt em embed fieldset figcaption figure footer form
+    h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd
+    label legend li link main map mark menu meta meter nav noscript object
+    ol optgroup option output p param picture pre progress q rp rt ruby s
+    samp script search section select slot small source span strong style sub
+    summary sup table tbody td template textarea tfoot th thead time title
+    tr track u ul var video wbr
+  )
+
   @spec expand([map()], map()) :: [map()]
   def expand(ast, component_registry, depth \\ 0)
 
@@ -36,16 +49,21 @@ defmodule Beacon.Template.ComponentExpander do
   end
 
   defp expand_node(%{type: :element, tag: tag} = node, registry) do
-    case Map.get(registry, tag) do
-      nil ->
-        # Not a component — recurse into children
-        [%{node | children: Enum.flat_map(node.children, &expand_node(&1, registry))}]
+    if tag in @html_tags do
+      # Standard HTML tag — never expand, just recurse into children
+      [%{node | children: Enum.flat_map(node.children, &expand_node(&1, registry))}]
+    else
+      case Map.get(registry, tag) do
+        nil ->
+          # Not a component — recurse into children
+          [%{node | children: Enum.flat_map(node.children, &expand_node(&1, registry))}]
 
-      component_ast ->
-        # Component found — inline it
-        prop_map = build_prop_map(node.attrs)
-        inlined = rewrite_bindings(component_ast, prop_map)
-        inlined
+        component_ast ->
+          # Component found — inline it
+          prop_map = build_prop_map(node.attrs)
+          inlined = rewrite_bindings(component_ast, prop_map)
+          inlined
+      end
     end
   end
 
@@ -196,7 +214,8 @@ defmodule Beacon.Template.ComponentExpander do
   end
 
   defp node_has_component?(%{type: :element, tag: tag, children: children}, registry) do
-    Map.has_key?(registry, tag) or Enum.any?(children, &node_has_component?(&1, registry))
+    (tag not in @html_tags and Map.has_key?(registry, tag)) or
+      Enum.any?(children, &node_has_component?(&1, registry))
   end
 
   defp node_has_component?(%{type: :conditional, then: then_nodes, else: else_nodes}, registry) do

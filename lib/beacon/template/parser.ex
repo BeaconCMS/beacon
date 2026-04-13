@@ -136,14 +136,21 @@ defmodule Beacon.Template.Parser do
   defp build_element(tag, attrs_map, children) do
     {static_attrs, dynamic_attrs, events} = classify_attrs(attrs_map)
 
-    # Merge dynamic attrs into static attrs map
+    # Merge dynamic attrs into static attrs map.
+    # For "class", combine static and dynamic values.
+    parsed_dynamic = Map.new(dynamic_attrs, fn {name, expr} ->
+      {name, ExpressionParser.parse_interpolation(expr)}
+    end)
+
     all_attrs =
-      Map.merge(
-        static_attrs,
-        Map.new(dynamic_attrs, fn {name, expr} ->
-          {name, ExpressionParser.parse_interpolation(expr)}
-        end)
-      )
+      Map.merge(static_attrs, parsed_dynamic, fn
+        "class", static_val, dynamic_expr when is_binary(static_val) ->
+          # Store both: static base classes + dynamic expression
+          %{type: :class_merge, static: static_val, dynamic: dynamic_expr}
+
+        _key, _static, dynamic ->
+          dynamic
+      end)
 
     AST.element(tag, all_attrs, events, children)
   end
@@ -163,12 +170,6 @@ defmodule Beacon.Template.Parser do
       {name, value}, {static, dynamic, events} ->
         {Map.put(static, name, restore_interpolation(value)), dynamic, events}
     end)
-  end
-
-  defp extract_directive_attrs(attrs_map) do
-    directive_keys = Enum.filter(Map.keys(attrs_map), &String.starts_with?(&1, ":"))
-    rest = Map.drop(attrs_map, directive_keys)
-    {Map.take(attrs_map, directive_keys), rest}
   end
 
   # Parse text content, splitting on {{ }} interpolations

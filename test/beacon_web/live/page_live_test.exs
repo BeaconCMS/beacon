@@ -19,7 +19,7 @@ defmodule Beacon.Web.Live.PageLiveTest do
       beacon_published_layout_fixture(
         template: """
         <header>Page header</header>
-        {inner_content}
+        {{ inner_content }}
         <footer>Page footer</footer>
         """,
         meta_tags: [

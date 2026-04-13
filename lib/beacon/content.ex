@@ -742,6 +742,9 @@ defmodule Beacon.Content do
   def create_page_snapshot(page, event) do
     page = repo(page).preload(page, :variants)
 
+    # Generate the platform-agnostic AST from the template
+    ast = build_page_ast(page)
+
     attrs = %{
       "site" => page.site,
       "schema_version" => Page.version(),
@@ -752,15 +755,70 @@ defmodule Beacon.Content do
       "title" => page.title,
       "template" => page.template,
       "format" => page.format,
-      "extra" => page.extra
+      "extra" => page.extra,
+      "ast" => ast
     }
 
-    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra]
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast]
 
-    %PageSnapshot{}
-    |> Changeset.cast(attrs, fields)
-    |> Changeset.validate_required(fields)
-    |> repo(page).insert()
+    result =
+      %PageSnapshot{}
+      |> Changeset.cast(attrs, fields)
+      |> Changeset.validate_required([:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra])
+      |> repo(page).insert()
+
+    # Also update the page's ast column
+    case result do
+      {:ok, snapshot} ->
+        if ast do
+          page
+          |> Changeset.change(%{ast: ast})
+          |> repo(page).update()
+        end
+
+        {:ok, snapshot}
+
+      error ->
+        error
+    end
+  end
+
+  @doc false
+  def build_page_ast(page) do
+    template = Beacon.Lifecycle.Template.load_template(page)
+    page_ast = Beacon.Template.Parser.parse(template)
+    component_registry = build_component_registry_for_ast(page.site)
+    nodes = Beacon.Template.ComponentExpander.expand(page_ast, component_registry)
+    # Wrap in a map for JSONB storage (Ecto :map type requires a map)
+    %{"nodes" => nodes}
+  rescue
+    error ->
+      require Logger
+      Logger.warning("[Beacon.Content] Failed to build AST for page #{page.path}: #{Exception.message(error)}")
+      nil
+  end
+
+  @doc """
+  Unwraps AST from storage format. Returns the node list from the wrapper map.
+  """
+  def unwrap_ast(%{"nodes" => nodes}) when is_list(nodes), do: nodes
+  def unwrap_ast(nodes) when is_list(nodes), do: nodes
+  def unwrap_ast(_), do: nil
+
+  @doc false
+  def build_component_registry_for_ast(site) do
+    components = list_components(site, per_page: :infinity)
+
+    Map.new(components, fn component ->
+      ast =
+        try do
+          Beacon.Template.Parser.parse(component.template || "")
+        rescue
+          _ -> []
+        end
+
+      {component.name, ast}
+    end)
   end
 
   @doc """
@@ -805,10 +863,10 @@ defmodule Beacon.Content do
   Gets the platform-agnostic AST for a page, or nil if not stored.
   """
   @doc type: :pages
-  @spec get_page_ast(Site.t(), Ecto.UUID.t()) :: map() | nil
+  @spec get_page_ast(Site.t(), Ecto.UUID.t()) :: [map()] | nil
   def get_page_ast(site, page_id) do
     case repo(site).get(Page, page_id) do
-      %Page{ast: ast} when not is_nil(ast) -> ast
+      %Page{ast: ast} when not is_nil(ast) -> unwrap_ast(ast)
       _ -> nil
     end
   end
@@ -1161,6 +1219,14 @@ defmodule Beacon.Content do
     |> repo(page).reload()
     |> repo(page).preload([:variants], force: true)
     |> maybe_add_leading_slash()
+  end
+
+  defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page, ast: ast}) do
+    page = maybe_add_leading_slash(page)
+    case unwrap_ast(ast) do
+      nodes when is_list(nodes) -> %{page | ast: nodes}
+      _ -> page
+    end
   end
 
   defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page}) do

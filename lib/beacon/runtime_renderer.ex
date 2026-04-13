@@ -40,16 +40,20 @@ defmodule Beacon.RuntimeRenderer do
 
   def publish_page(site, page_id, attrs) when is_atom(site) and is_binary(page_id) do
     template = Map.fetch!(attrs, :template)
-    path = Map.get(attrs, :path, "/")
 
-    # 1. Parse Beacon template syntax to platform-agnostic AST
-    page_ast = Beacon.Template.Parser.parse(template)
+    # Use pre-computed AST if available (from DB snapshot), otherwise parse and expand
+    expanded_ast =
+      case Map.get(attrs, :ast) do
+        ast when is_list(ast) and ast != [] ->
+          ast
 
-    # 2. Expand components into the AST
-    component_registry = build_component_registry(site)
-    expanded_ast = Beacon.Template.ComponentExpander.expand(page_ast, component_registry)
+        _ ->
+          page_ast = Beacon.Template.Parser.parse(template)
+          component_registry = build_component_registry(site)
+          Beacon.Template.ComponentExpander.expand(page_ast, component_registry)
+      end
 
-    # 3. Store the AST as JSON in ETS
+    # Store the AST in ETS
     :ets.insert(@table, {{site, page_id, :ast}, expanded_ast})
 
     # 4. Store manifest and route
@@ -137,20 +141,32 @@ defmodule Beacon.RuntimeRenderer do
 
   defp build_component_registry(site) do
     # Build a map of component name → AST from stored component templates
-    case :ets.match(@table, {{site, :component, :"$1"}, :"$2"}) do
-      matches when is_list(matches) ->
-        Map.new(matches, fn [name, binary] ->
-          component = :erlang.binary_to_term(binary)
-          component_ast =
-            case component do
-              %{ast: ast} when is_list(ast) -> ast
-              _ -> []
-            end
-          {to_string(name), component_ast}
-        end)
+    registry =
+      case :ets.match(@table, {{site, :component, :"$1"}, :"$2"}) do
+        matches when is_list(matches) and matches != [] ->
+          Map.new(matches, fn [name, binary] ->
+            component = :erlang.binary_to_term(binary)
+            component_ast =
+              case component do
+                %{ast: ast} when is_list(ast) -> ast
+                _ -> []
+              end
+            {to_string(name), component_ast}
+          end)
 
-      _ ->
-        %{}
+        _ ->
+          %{}
+      end
+
+    # If no components in ETS (lazy loading), try loading from DB
+    if map_size(registry) == 0 do
+      try do
+        Beacon.Content.build_component_registry_for_ast(site)
+      rescue
+        _ -> %{}
+      end
+    else
+      registry
     end
   end
 
@@ -162,11 +178,13 @@ defmodule Beacon.RuntimeRenderer do
   Publishes a layout into the ETS store. Called during site boot.
   """
   def publish_layout(site, layout_id, template, opts \\ []) when is_atom(site) and is_binary(layout_id) do
-    path = "layout_#{layout_id}"
-    env = Beacon.Web.PageLive.make_env(site)
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
-    ir = extract_ir(ast, env)
-    :ets.insert(@table, {{site, :layout, layout_id}, :erlang.term_to_binary(ir)})
+    # Parse Beacon template syntax to AST and expand components
+    layout_ast = Beacon.Template.Parser.parse(template)
+    component_registry = build_component_registry(site)
+    expanded_ast = Beacon.Template.ComponentExpander.expand(layout_ast, component_registry)
+
+    # Store the expanded AST in ETS
+    :ets.insert(@table, {{site, :layout, layout_id}, expanded_ast})
 
     # Store layout metadata (meta_tags, resource_links) separately
     manifest = %{
@@ -195,15 +213,11 @@ defmodule Beacon.RuntimeRenderer do
   """
   def render_layout(site, layout_id, assigns) do
     case :ets.lookup(@table, {site, :layout, layout_id}) do
-      [{_, serialized_ir}] ->
-        ir = :erlang.binary_to_term(serialized_ir)
-        # Delete __changed__ so all dynamic expressions evaluate on first render.
-        # The layout references page-level assigns (like :post) that aren't in __changed__,
-        # which would cause them to be skipped by change tracking.
+      [{_, ast}] when is_list(ast) ->
         full_assigns = Map.delete(assigns, :__changed__)
-        {:ok, render_ir(ir, full_assigns)}
+        {:ok, render_layout_ast(ast, full_assigns)}
 
-      [] ->
+      _ ->
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :layouts)
 
         Beacon.Cache.fetch(@table, {site, :layout_load, layout_id}, fn ->
@@ -220,14 +234,46 @@ defmodule Beacon.RuntimeRenderer do
         end, ttl)
 
         case :ets.lookup(@table, {site, :layout, layout_id}) do
-          [{_, serialized_ir}] ->
-            ir = :erlang.binary_to_term(serialized_ir)
+          [{_, ast}] when is_list(ast) ->
             full_assigns = Map.delete(assigns, :__changed__)
-            {:ok, render_ir(ir, full_assigns)}
+            {:ok, render_layout_ast(ast, full_assigns)}
 
-          [] ->
+          _ ->
             {:error, :not_found}
         end
+    end
+  end
+
+  # Render a layout AST as a %Rendered{} with inner_content as a dynamic slot.
+  # We split the rendered HTML at a marker, then insert inner_content as a dynamic element.
+  @inner_content_marker "BEACON_INNER_CONTENT_SLOT"
+
+  defp render_layout_ast(ast, assigns) do
+    # Replace inner_content in assigns with a marker string so we can split on it
+    marker_assigns = Map.put(assigns, :inner_content, @inner_content_marker)
+    html = Beacon.Client.LiveViewCompiler.render_to_iodata(ast, marker_assigns) |> IO.iodata_to_binary()
+
+    inner_content = Map.get(assigns, :inner_content, "")
+
+    case String.split(html, @inner_content_marker, parts: 2) do
+      [before, after_html] ->
+        %Phoenix.LiveView.Rendered{
+          static: [before, after_html],
+          dynamic: fn _track_changes? -> [inner_content] end,
+          fingerprint: :erlang.phash2(ast),
+          root: false,
+          caller: :not_available
+        }
+
+      [whole] ->
+        # No inner_content expression found — return as static
+        %Phoenix.LiveView.Rendered{
+          static: [whole],
+          dynamic: fn _track_changes? -> [] end,
+          fingerprint: :erlang.phash2(ast),
+          root: false,
+          caller: :not_available
+        }
     end
   end
 
@@ -240,12 +286,8 @@ defmodule Beacon.RuntimeRenderer do
   Compiles the HEEx template to IR and stores it keyed by status code.
   """
   def publish_error_page(site, status_code, template) when is_atom(site) and is_integer(status_code) do
-    path = "error_page_#{status_code}"
-    env = Beacon.Web.PageLive.make_env(site)
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
-    ir = extract_ir(ast, env)
-    :ets.insert(@table, {{site, :error_page, status_code}, :erlang.term_to_binary(ir)})
-
+    error_ast = Beacon.Template.Parser.parse(template)
+    :ets.insert(@table, {{site, :error_page, status_code}, error_ast})
     :ok
   end
 
@@ -255,12 +297,11 @@ defmodule Beacon.RuntimeRenderer do
   """
   def render_error_page(site, status_code, assigns) do
     case :ets.lookup(@table, {site, :error_page, status_code}) do
-      [{_, serialized_ir}] ->
-        ir = :erlang.binary_to_term(serialized_ir)
+      [{_, ast}] when is_list(ast) ->
         full_assigns = Map.delete(assigns, :__changed__)
-        {:ok, render_ir(ir, full_assigns)}
+        {:ok, Beacon.Client.LiveViewCompiler.render(ast, full_assigns)}
 
-      [] ->
+      _ ->
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :error_pages)
 
         Beacon.Cache.fetch(@table, {site, :error_page_load, status_code}, fn ->
@@ -278,12 +319,11 @@ defmodule Beacon.RuntimeRenderer do
         end, ttl)
 
         case :ets.lookup(@table, {site, :error_page, status_code}) do
-          [{_, serialized_ir}] ->
-            ir = :erlang.binary_to_term(serialized_ir)
+          [{_, ast}] when is_list(ast) ->
             full_assigns = Map.delete(assigns, :__changed__)
-            {:ok, render_ir(ir, full_assigns)}
+            {:ok, Beacon.Client.LiveViewCompiler.render(ast, full_assigns)}
 
-          [] ->
+          _ ->
             {:error, :not_found}
         end
     end
@@ -297,10 +337,8 @@ defmodule Beacon.RuntimeRenderer do
   Publishes a component into the ETS store. Called during site boot.
   """
   def publish_component(site, name, template, body \\ "", opts \\ []) when is_atom(site) and is_binary(name) do
-    path = "component_#{name}"
-    env = Beacon.Web.PageLive.make_env(site)
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
-    ir = extract_ir(ast, env)
+    # Parse Beacon template syntax to AST
+    component_ast = Beacon.Template.Parser.parse(template)
 
     # Extract default attr values from component attrs
     attrs = Keyword.get(opts, :attrs, [])
@@ -314,7 +352,7 @@ defmodule Beacon.RuntimeRenderer do
         _, acc -> acc
       end)
 
-    :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ir: ir, body: body, defaults: defaults})})
+    :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ast: component_ast, body: body, defaults: defaults})})
 
     :ok
   end
@@ -336,13 +374,11 @@ defmodule Beacon.RuntimeRenderer do
     case :ets.lookup(@table, {site, :component, name}) do
       [{_, serialized}] ->
         data = :erlang.binary_to_term(serialized)
-        %{ir: ir, body: body} = data
         defaults = Map.get(data, :defaults, %{})
+        body = Map.get(data, :body, "")
+        ast = Map.get(data, :ast, [])
 
-        # Apply default attr values for missing assigns
         assigns = Map.merge(defaults, assigns)
-
-        # Execute the component body to produce local bindings
         body_bindings = execute_component_body(body, assigns)
 
         full_assigns =
@@ -352,7 +388,7 @@ defmodule Beacon.RuntimeRenderer do
           |> Map.put_new(:inner_block, [])
           |> Map.put_new(:beacon, %{site: site})
 
-        render_ir_with_bindings(ir, full_assigns, body_bindings)
+        Beacon.Client.LiveViewCompiler.render(ast, full_assigns)
 
       [] ->
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :components)
@@ -373,8 +409,10 @@ defmodule Beacon.RuntimeRenderer do
         case :ets.lookup(@table, {site, :component, name}) do
           [{_, serialized}] ->
             data = :erlang.binary_to_term(serialized)
-            %{ir: ir, body: body} = data
             defaults = Map.get(data, :defaults, %{})
+            body = Map.get(data, :body, "")
+            ast = Map.get(data, :ast, [])
+
             assigns = Map.merge(defaults, assigns)
             body_bindings = execute_component_body(body, assigns)
 
@@ -385,7 +423,7 @@ defmodule Beacon.RuntimeRenderer do
               |> Map.put_new(:inner_block, [])
               |> Map.put_new(:beacon, %{site: site})
 
-            render_ir_with_bindings(ir, full_assigns, body_bindings)
+            Beacon.Client.LiveViewCompiler.render(ast, full_assigns)
 
           [] ->
             require Logger
@@ -546,11 +584,8 @@ defmodule Beacon.RuntimeRenderer do
   to IR and stores it keyed by site and setting key.
   """
   def publish_site_setting(site, key, template) when is_atom(site) and is_binary(key) and is_binary(template) do
-    path = "site_setting_#{key}"
-    env = Beacon.Web.PageLive.make_env(site)
-    {:ok, ast} = Beacon.Template.HEEx.compile(site, path, template)
-    ir = extract_ir(ast, env)
-    :ets.insert(@table, {{site, :site_setting, key}, :erlang.term_to_binary(ir)})
+    setting_ast = Beacon.Template.Parser.parse(template)
+    :ets.insert(@table, {{site, :site_setting, key}, setting_ast})
     :ok
   end
 
@@ -561,29 +596,24 @@ defmodule Beacon.RuntimeRenderer do
   """
   def render_site_setting(site, key, assigns) when is_atom(site) and is_binary(key) do
     case :ets.lookup(@table, {site, :site_setting, key}) do
-      [{_, serialized_ir}] ->
-        ir = :erlang.binary_to_term(serialized_ir)
+      [{_, ast}] when is_list(ast) ->
         full_assigns = Map.delete(assigns, :__changed__)
-        {:ok, render_ir(ir, full_assigns)}
+        {:ok, Beacon.Client.LiveViewCompiler.render(ast, full_assigns)}
 
-      [] ->
+      _ ->
         # Lazy-load from DB
         case Beacon.Content.get_site_setting(site, key) do
-          %{value: template, format: :heex} ->
+          %{value: template} when is_binary(template) ->
             publish_site_setting(site, key, template)
 
             case :ets.lookup(@table, {site, :site_setting, key}) do
-              [{_, serialized_ir}] ->
-                ir = :erlang.binary_to_term(serialized_ir)
+              [{_, ast}] when is_list(ast) ->
                 full_assigns = Map.delete(assigns, :__changed__)
-                {:ok, render_ir(ir, full_assigns)}
+                {:ok, Beacon.Client.LiveViewCompiler.render(ast, full_assigns)}
 
-              [] ->
+              _ ->
                 {:error, :not_found}
             end
-
-          %{value: value} ->
-            {:ok, value}
 
           nil ->
             {:error, :not_found}

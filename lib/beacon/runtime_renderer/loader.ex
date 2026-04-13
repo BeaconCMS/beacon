@@ -104,6 +104,9 @@ defmodule Beacon.RuntimeRenderer.Loader do
           end)
       end
 
+    # Use pre-computed AST from snapshot/page if available
+    pre_computed_ast = Map.get(page, :ast)
+
     RuntimeRenderer.publish_page(site, page_id, %{
       template: template,
       path: page.path,
@@ -116,7 +119,8 @@ defmodule Beacon.RuntimeRenderer.Loader do
       raw_schema: page.raw_schema || [],
       assigns: %{},
       event_handlers: [],
-      helpers: helpers
+      helpers: helpers,
+      ast: pre_computed_ast
     })
   end
 

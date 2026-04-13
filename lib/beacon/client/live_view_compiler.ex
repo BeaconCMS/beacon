@@ -41,39 +41,43 @@ defmodule Beacon.Client.LiveViewCompiler do
     ast |> render_nodes(assigns) |> IO.iodata_to_binary()
   end
 
+  # Tags whose text content must NOT be HTML-escaped
+  @raw_text_tags ~w(script style)
+
   # -- Node rendering --
 
-  defp render_nodes(nodes, assigns) do
-    Enum.map(nodes, &render_node(&1, assigns))
+  defp render_nodes(nodes, assigns, opts \\ []) do
+    Enum.map(nodes, &render_node(&1, assigns, opts))
   end
 
-  defp render_node(%{"type" => "text", "value" => value}, _assigns) do
-    html_escape(value)
+  defp render_node(%{"type" => "text", "value" => value}, _assigns, opts) do
+    if opts[:raw], do: value, else: html_escape(value)
   end
 
-  defp render_node(%{type: :text, value: value}, _assigns) do
-    html_escape(value)
+  defp render_node(%{type: :text, value: value}, _assigns, opts) do
+    if opts[:raw], do: value, else: html_escape(value)
   end
 
-  defp render_node(%{"type" => "expression"} = node, assigns) do
+  defp render_node(%{"type" => "expression"} = node, assigns, _opts) do
     path = node["path"]
     filters = node["filters"] || []
     value = resolve_path(path, assigns)
     value = apply_filters(value, filters)
-    html_escape(to_display_string(value))
+    render_expression_value(value)
   end
 
-  defp render_node(%{type: :expression} = node, assigns) do
+  defp render_node(%{type: :expression} = node, assigns, _opts) do
     value = resolve_path(node.path, assigns)
     value = apply_filters(value, node.filters || [])
-    html_escape(to_display_string(value))
+    render_expression_value(value)
   end
 
-  defp render_node(%{"type" => "element"} = node, assigns) do
+  defp render_node(%{"type" => "element"} = node, assigns, _opts) do
     tag = node["tag"]
     attrs = render_attrs(node["attrs"] || %{}, assigns)
     events = render_events(node["events"] || %{})
-    children = render_nodes(node["children"] || [], assigns)
+    child_opts = if tag in @raw_text_tags, do: [raw: true], else: []
+    children = render_nodes(node["children"] || [], assigns, child_opts)
 
     if self_closing?(tag) do
       ["<", tag, attrs, events, "/>"]
@@ -82,11 +86,12 @@ defmodule Beacon.Client.LiveViewCompiler do
     end
   end
 
-  defp render_node(%{type: :element} = node, assigns) do
+  defp render_node(%{type: :element} = node, assigns, _opts) do
     tag = node.tag
     attrs = render_attrs(node.attrs || %{}, assigns)
     events = render_events(node.events || %{})
-    children = render_nodes(node.children || [], assigns)
+    child_opts = if tag in @raw_text_tags, do: [raw: true], else: []
+    children = render_nodes(node.children || [], assigns, child_opts)
 
     if self_closing?(tag) do
       ["<", tag, attrs, events, "/>"]
@@ -95,7 +100,7 @@ defmodule Beacon.Client.LiveViewCompiler do
     end
   end
 
-  defp render_node(%{"type" => "conditional"} = node, assigns) do
+  defp render_node(%{"type" => "conditional"} = node, assigns, _opts) do
     if evaluate_test(node["test"], assigns) do
       render_nodes(node["then"] || [], assigns)
     else
@@ -103,7 +108,7 @@ defmodule Beacon.Client.LiveViewCompiler do
     end
   end
 
-  defp render_node(%{type: :conditional} = node, assigns) do
+  defp render_node(%{type: :conditional} = node, assigns, _opts) do
     if evaluate_test(node.test, assigns) do
       render_nodes(node.then || [], assigns)
     else
@@ -111,7 +116,7 @@ defmodule Beacon.Client.LiveViewCompiler do
     end
   end
 
-  defp render_node(%{"type" => "loop"} = node, assigns) do
+  defp render_node(%{"type" => "loop"} = node, assigns, _opts) do
     iterator = node["iterator"]
     collection = resolve_path(node["iterable"], assigns)
     children = node["children"] || []
@@ -126,7 +131,7 @@ defmodule Beacon.Client.LiveViewCompiler do
     end
   end
 
-  defp render_node(%{type: :loop} = node, assigns) do
+  defp render_node(%{type: :loop} = node, assigns, _opts) do
     collection = resolve_path(node.iterable, assigns)
     children = node.children || []
 
@@ -140,15 +145,15 @@ defmodule Beacon.Client.LiveViewCompiler do
     end
   end
 
-  defp render_node(%{"type" => "fragment", "children" => children}, assigns) do
+  defp render_node(%{"type" => "fragment", "children" => children}, assigns, _opts) do
     render_nodes(children, assigns)
   end
 
-  defp render_node(%{type: :fragment, children: children}, assigns) do
+  defp render_node(%{type: :fragment, children: children}, assigns, _opts) do
     render_nodes(children, assigns)
   end
 
-  defp render_node(_, _assigns), do: []
+  defp render_node(_, _assigns, _opts), do: []
 
   # -- Attribute rendering --
 
@@ -164,8 +169,15 @@ defmodule Beacon.Client.LiveViewCompiler do
         value = apply_filters(value, expr.filters || [])
         [" ", name, "=\"", html_escape_attr(to_display_string(value)), "\""]
 
+      {name, %{type: :class_merge, static: static, dynamic: dynamic}} ->
+        dynamic_value = resolve_path(dynamic.path, assigns)
+        dynamic_str = to_display_string(dynamic_value)
+        combined = String.trim("#{static} #{dynamic_str}")
+        [" ", name, "=\"", html_escape_attr(combined), "\""]
+
       {name, value} when is_binary(value) ->
-        [" ", name, "=\"", html_escape_attr(value), "\""]
+        resolved = resolve_attr_interpolations(value, assigns)
+        [" ", name, "=\"", html_escape_attr(resolved), "\""]
 
       {_name, nil} ->
         []
@@ -272,6 +284,37 @@ defmodule Beacon.Client.LiveViewCompiler do
       %{"name" => name, "args" => args}, acc -> Filters.apply(name, acc, args)
       %{name: name, args: args}, acc -> Filters.apply(name, acc, args)
     end)
+  end
+
+  # -- Expression value rendering --
+  # Handles special types like Phoenix.LiveView.Rendered and {:safe, ...} tuples
+  # that should be rendered as raw HTML, not escaped.
+
+  defp render_expression_value(%Phoenix.LiveView.Rendered{} = rendered) do
+    Phoenix.HTML.Safe.to_iodata(rendered)
+  end
+
+  defp render_expression_value({:safe, iodata}) do
+    iodata
+  end
+
+  defp render_expression_value(value) do
+    html_escape(to_display_string(value))
+  end
+
+  # -- Attribute interpolation --
+
+  @attr_interpolation_regex ~r/\{\{(.+?)\}\}/s
+
+  defp resolve_attr_interpolations(value, assigns) do
+    if String.contains?(value, "{{") do
+      Regex.replace(@attr_interpolation_regex, value, fn _full, expr ->
+        path = String.trim(expr)
+        to_display_string(resolve_path(path, assigns))
+      end)
+    else
+      value
+    end
   end
 
   # -- HTML escaping --
