@@ -43,7 +43,6 @@ defmodule Beacon.Content do
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
-  alias Beacon.Content.Author
   alias Beacon.Content.InternalLink
   alias Beacon.Content.PageEvent
   alias Beacon.Content.Redirect
@@ -793,11 +792,11 @@ defmodule Beacon.Content do
       "extra" => page.extra,
       "ast" => ast,
       "date_modified" => page.date_modified,
-      "faq_items" => page.faq_items || [],
-      "author_id" => page.author_id
+      "template_type_id" => page.template_type_id,
+      "fields" => page.fields || %{}
     }
 
-    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast, :date_modified, :faq_items, :author_id]
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast, :date_modified, :template_type_id, :fields]
 
     result =
       %PageSnapshot{}
@@ -1294,6 +1293,19 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 5, page: %Page{} = page}) do
+    page
+    |> maybe_add_leading_slash()
+  end
+
+  defp extract_page_snapshot(%{schema_version: 6, page: %Page{} = page, ast: ast}) do
+    page = maybe_add_leading_slash(page)
+    case unwrap_ast(ast) do
+      nodes when is_list(nodes) -> %{page | ast: nodes}
+      _ -> page
+    end
+  end
+
+  defp extract_page_snapshot(%{schema_version: 6, page: %Page{} = page}) do
     page
     |> maybe_add_leading_slash()
   end
@@ -4383,11 +4395,28 @@ defmodule Beacon.Content do
     case insert_published_page(page) do
       {:ok, page} ->
         :ok = Beacon.PubSub.page_published(page)
+        # Async: extract internal links from the published page
+        maybe_rebuild_links_async(page)
         {:reply, {:ok, page}, config}
 
       error ->
         {:reply, error, config}
     end
+  end
+
+  defp maybe_rebuild_links_async(page) do
+    Task.start(fn ->
+      try do
+        template = Beacon.Lifecycle.Template.load_template(page)
+        ast = Beacon.Template.Parser.parse(template)
+        component_registry = build_component_registry_for_ast(page.site)
+        expanded = Beacon.Template.ComponentExpander.expand(ast, component_registry)
+        html = Beacon.Client.LiveViewCompiler.render_to_string(expanded, %{})
+        rebuild_links_for_page(page.site, page.id, html)
+      rescue
+        _ -> :ok
+      end
+    end)
   end
 
   @doc false
@@ -4846,53 +4875,65 @@ defmodule Beacon.Content do
   end
 
   # ---------------------------------------------------------------------------
-  # Authors
+  # Template Types
   # ---------------------------------------------------------------------------
 
-  @doc "Creates an author."
-  @doc type: :authors
-  @spec create_author(map()) :: {:ok, Author.t()} | {:error, Ecto.Changeset.t()}
-  def create_author(attrs) do
-    attrs = attrs |> Beacon.Types.Attrs.ensure_string_keys()
-    site = Beacon.Types.Attrs.get_site(attrs)
-    %Author{} |> Author.changeset(attrs) |> repo(site).insert()
+  alias Beacon.Content.TemplateType
+
+  @doc "Creates a template type. Pass `site` for site-specific, or set `site: nil` in attrs for global."
+  @doc type: :template_types
+  @spec create_template_type(Site.t(), map()) :: {:ok, TemplateType.t()} | {:error, Ecto.Changeset.t()}
+  def create_template_type(site, attrs) when is_atom(site) and is_map(attrs) do
+    %TemplateType{} |> TemplateType.changeset(attrs) |> repo(site).insert()
   end
 
-  @doc "Updates an author."
-  @doc type: :authors
-  @spec update_author(Author.t(), map()) :: {:ok, Author.t()} | {:error, Ecto.Changeset.t()}
-  def update_author(%Author{} = author, attrs) do
-    author |> Author.changeset(attrs) |> repo(author).update()
+  @doc "Updates a template type."
+  @doc type: :template_types
+  @spec update_template_type(TemplateType.t(), map()) :: {:ok, TemplateType.t()} | {:error, Ecto.Changeset.t()}
+  def update_template_type(%TemplateType{} = tt, attrs) do
+    tt |> TemplateType.changeset(attrs) |> repo(tt).update()
   end
 
-  @doc "Deletes an author."
-  @doc type: :authors
-  @spec delete_author(Author.t()) :: {:ok, Author.t()} | {:error, Ecto.Changeset.t()}
-  def delete_author(%Author{} = author) do
-    repo(author).delete(author)
+  @doc "Deletes a template type."
+  @doc type: :template_types
+  @spec delete_template_type(TemplateType.t()) :: {:ok, TemplateType.t()} | {:error, Ecto.Changeset.t()}
+  def delete_template_type(%TemplateType{} = tt) do
+    repo(tt).delete(tt)
   end
 
-  @doc "Lists all authors for a site."
-  @doc type: :authors
-  @spec list_authors(Site.t(), keyword()) :: [Author.t()]
-  def list_authors(site, opts \\ []) when is_atom(site) do
-    per_page = Keyword.get(opts, :per_page, 100)
-    query = from(a in Author, where: a.site == ^site, order_by: [asc: a.name])
-    query = if per_page == :infinity, do: query, else: limit(query, ^per_page)
-    repo(site).all(query)
+  @doc "Lists template types available to a site (includes global types where site is nil)."
+  @doc type: :template_types
+  @spec list_template_types(Site.t(), keyword()) :: [TemplateType.t()]
+  def list_template_types(site, opts \\ []) when is_atom(site) do
+    from(tt in TemplateType,
+      where: tt.site == ^site or is_nil(tt.site),
+      order_by: [asc: tt.name]
+    )
+    |> repo(site).all()
   end
 
-  @doc "Gets an author by ID."
-  @doc type: :authors
-  @spec get_author(Site.t(), String.t()) :: Author.t() | nil
-  def get_author(site, id) when is_atom(site) do
-    repo(site).get_by(Author, site: site, id: id)
+  @doc "Gets a template type by ID."
+  @doc type: :template_types
+  @spec get_template_type(Site.t(), String.t()) :: TemplateType.t() | nil
+  def get_template_type(site, id) when is_atom(site) do
+    repo(site).get(TemplateType, id)
   end
 
-  @doc "Returns a changeset for tracking author changes."
-  @doc type: :authors
-  def change_author(%Author{} = author, attrs \\ %{}) do
-    Author.changeset(author, attrs)
+  @doc "Gets a template type by slug (checks site-specific first, then global)."
+  @doc type: :template_types
+  @spec get_template_type_by_slug(Site.t(), String.t()) :: TemplateType.t() | nil
+  def get_template_type_by_slug(site, slug) when is_atom(site) do
+    # Prefer site-specific over global
+    case repo(site).get_by(TemplateType, site: site, slug: slug) do
+      nil -> repo(site).get_by(TemplateType, site: nil, slug: slug)
+      tt -> tt
+    end
+  end
+
+  @doc "Returns a changeset for tracking template type changes."
+  @doc type: :template_types
+  def change_template_type(%TemplateType{} = tt, attrs \\ %{}) do
+    TemplateType.changeset(tt, attrs)
   end
 
   # ---------------------------------------------------------------------------
@@ -4966,6 +5007,40 @@ defmodule Beacon.Content do
     |> repo(site).all()
   end
 
+  @doc "Returns per-page inbound and outbound link counts."
+  @doc type: :links
+  @spec list_link_stats(Site.t()) :: [%{page_id: String.t(), path: String.t(), inbound: integer(), outbound: integer()}]
+  def list_link_stats(site) when is_atom(site) do
+    inbound_q =
+      from(l in InternalLink,
+        where: l.site == ^site and not is_nil(l.target_page_id),
+        group_by: l.target_page_id,
+        select: %{page_id: l.target_page_id, count: count(l.id)}
+      )
+
+    outbound_q =
+      from(l in InternalLink,
+        where: l.site == ^site,
+        group_by: l.source_page_id,
+        select: %{page_id: l.source_page_id, count: count(l.id)}
+      )
+
+    inbound_map = repo(site).all(inbound_q) |> Map.new(&{&1.page_id, &1.count})
+    outbound_map = repo(site).all(outbound_q) |> Map.new(&{&1.page_id, &1.count})
+
+    list_published_pages(site, per_page: :infinity)
+    |> Enum.map(fn page ->
+      %{
+        page_id: page.id,
+        path: page.path,
+        title: page.title,
+        inbound: Map.get(inbound_map, page.id, 0),
+        outbound: Map.get(outbound_map, page.id, 0)
+      }
+    end)
+    |> Enum.sort_by(& &1.inbound)
+  end
+
   # ---------------------------------------------------------------------------
   # SEO Measurement
   # ---------------------------------------------------------------------------
@@ -5016,9 +5091,12 @@ defmodule Beacon.Content do
   """
   @doc type: :redirects
   @spec create_redirect(map()) :: {:ok, Redirect.t()} | {:error, Ecto.Changeset.t()}
-  def create_redirect(attrs) do
-    attrs = attrs |> Beacon.Types.Attrs.ensure_string_keys()
-    site = Beacon.Types.Attrs.get_site(attrs)
+  def create_redirect(attrs) when is_map(attrs) do
+    attrs = Map.new(attrs, fn
+      {key, val} when is_binary(key) -> {key, val}
+      {key, val} -> {Atom.to_string(key), val}
+    end)
+    {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
 
     # Flatten chains: if destination is another redirect's source, point to final destination
     attrs = flatten_redirect_chain(site, attrs)

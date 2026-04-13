@@ -25,7 +25,7 @@ defmodule Beacon.Content.Page do
   alias Beacon.Content
   alias Beacon.Content.Page.Helper
 
-  @version 5
+  @version 6
 
   @type t :: %__MODULE__{}
 
@@ -44,10 +44,9 @@ defmodule Beacon.Content.Page do
     field :og_description, :string
     field :og_image, :string
     field :twitter_card, :string
-    field :page_type, :string, default: "website"
     field :date_modified, :utc_datetime_usec
-    field :faq_items, {:array, :map}, default: []
-    field :author_id, Ecto.UUID
+    field :template_type_id, Ecto.UUID
+    field :fields, :map, default: %{}
     field :order, :integer, default: 1
     field :format, Beacon.Types.Atom, default: :heex
     field :extra, :map, default: %{}
@@ -91,10 +90,9 @@ defmodule Beacon.Content.Page do
         :og_description,
         :og_image,
         :twitter_card,
-        :page_type,
         :date_modified,
-        :faq_items,
-        :author_id,
+        :template_type_id,
+        :fields,
         :order,
         :layout_id,
         :format,
@@ -142,10 +140,9 @@ defmodule Beacon.Content.Page do
       :og_description,
       :og_image,
       :twitter_card,
-      :page_type,
       :date_modified,
-      :faq_items,
-      :author_id,
+      :template_type_id,
+      :fields,
       :format
     ])
     |> cast(attrs, [:path], empty_values: [])

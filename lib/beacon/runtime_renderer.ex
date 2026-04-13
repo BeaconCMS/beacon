@@ -98,10 +98,10 @@ defmodule Beacon.RuntimeRenderer do
       og_description: Map.get(attrs, :og_description),
       og_image: Map.get(attrs, :og_image),
       twitter_card: Map.get(attrs, :twitter_card),
-      page_type: Map.get(attrs, :page_type, "website"),
       date_modified: Map.get(attrs, :date_modified),
-      faq_items: Map.get(attrs, :faq_items, []),
-      author_id: Map.get(attrs, :author_id),
+      template_type_id: Map.get(attrs, :template_type_id),
+      template_type: Map.get(attrs, :template_type),
+      fields: Map.get(attrs, :fields, %{}),
       inserted_at: Map.get(attrs, :inserted_at),
       updated_at: Map.get(attrs, :updated_at)
     }

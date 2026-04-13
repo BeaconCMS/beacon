@@ -127,10 +127,10 @@ defmodule Beacon.RuntimeRenderer.Loader do
       og_description: Map.get(page, :og_description),
       og_image: Map.get(page, :og_image),
       twitter_card: Map.get(page, :twitter_card),
-      page_type: Map.get(page, :page_type, "website"),
       date_modified: Map.get(page, :date_modified),
-      faq_items: Map.get(page, :faq_items, []),
-      author_id: Map.get(page, :author_id),
+      template_type_id: Map.get(page, :template_type_id),
+      template_type: resolve_template_type(site, Map.get(page, :template_type_id)),
+      fields: Map.get(page, :fields, %{}),
       inserted_at: Map.get(page, :inserted_at),
       updated_at: Map.get(page, :updated_at),
       assigns: %{},
@@ -138,6 +138,20 @@ defmodule Beacon.RuntimeRenderer.Loader do
       helpers: helpers,
       ast: pre_computed_ast
     })
+  end
+
+  defp resolve_template_type(_site, nil), do: nil
+  defp resolve_template_type(site, template_type_id) do
+    case Content.get_template_type(site, template_type_id) do
+      nil -> nil
+      tt -> %{
+        name: tt.name,
+        slug: tt.slug,
+        field_definitions: tt.field_definitions,
+        json_ld_mapping: tt.json_ld_mapping,
+        meta_tag_mapping: tt.meta_tag_mapping
+      }
+    end
   end
 
   @doc """

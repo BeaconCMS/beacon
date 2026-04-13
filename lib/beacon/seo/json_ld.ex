@@ -25,20 +25,10 @@ defmodule Beacon.SEO.JsonLd do
     base_url = Beacon.RuntimeRenderer.public_site_url(config.site)
     schemas = []
 
-    schemas = if manifest[:page_type] == "article" do
-      [article_schema(manifest, config, base_url) | schemas]
-    else
-      schemas
-    end
-
+    # Universal schemas
     schemas = case breadcrumb_schema(manifest[:path], base_url) do
       nil -> schemas
       breadcrumb -> [breadcrumb | schemas]
-    end
-
-    schemas = case faq_page_schema(manifest) do
-      nil -> schemas
-      faq -> [faq | schemas]
     end
 
     schemas = if root_page?(manifest[:path]) do
@@ -55,45 +45,26 @@ defmodule Beacon.SEO.JsonLd do
       schemas
     end
 
+    # Template-type-defined JSON-LD
+    schemas = case resolve_template_type_json_ld(manifest, config) do
+      nil -> schemas
+      tt_schema -> [tt_schema | schemas]
+    end
+
     Enum.reverse(schemas)
   end
 
-  @doc """
-  Builds an Article schema from page metadata.
-  """
-  @spec article_schema(map(), Beacon.Config.t(), String.t()) :: map()
-  def article_schema(manifest, config, base_url) do
-    schema = %{
-      "@context" => "https://schema.org",
-      "@type" => "Article",
-      "headline" => manifest[:og_title] || manifest[:title] || "",
-      "url" => manifest[:canonical_url] || "#{base_url}#{manifest[:path] || "/"}"
-    }
-
-    schema = put_if(schema, "description", manifest[:meta_description] || manifest[:description])
-    schema = put_if(schema, "image", manifest[:og_image])
-
-    schema = if manifest[:inserted_at] do
-      Map.put(schema, "datePublished", format_datetime(manifest[:inserted_at]))
-    else
-      schema
+  defp resolve_template_type_json_ld(manifest, config) do
+    case manifest[:template_type] do
+      %{json_ld_mapping: mapping} when is_map(mapping) and map_size(mapping) > 0 ->
+        Beacon.TemplateType.JsonLdResolver.resolve(
+          mapping,
+          manifest[:fields] || %{},
+          manifest,
+          config
+        )
+      _ -> nil
     end
-
-    schema = case manifest[:date_modified] || manifest[:updated_at] do
-      nil -> schema
-      dt -> Map.put(schema, "dateModified", format_datetime(dt))
-    end
-
-    schema = if config.site_name do
-      Map.put(schema, "publisher", %{
-        "@type" => "Organization",
-        "name" => config.site_name
-      })
-    else
-      schema
-    end
-
-    schema
   end
 
   @doc """
@@ -190,64 +161,6 @@ defmodule Beacon.SEO.JsonLd do
   @doc """
   Builds a FAQPage schema from page FAQ items.
 
-  Returns `nil` if no valid FAQ items are present. Only includes items
-  where both question and answer are non-empty strings.
-  """
-  @spec faq_page_schema(map()) :: map() | nil
-  def faq_page_schema(manifest) do
-    items = manifest[:faq_items] || []
-
-    valid_items =
-      Enum.filter(items, fn item ->
-        q = item["question"] || item[:question]
-        a = item["answer"] || item[:answer]
-        is_binary(q) and q != "" and is_binary(a) and a != ""
-      end)
-
-    if valid_items == [] do
-      nil
-    else
-      %{
-        "@context" => "https://schema.org",
-        "@type" => "FAQPage",
-        "mainEntity" =>
-          Enum.map(valid_items, fn item ->
-            %{
-              "@type" => "Question",
-              "name" => item["question"] || item[:question],
-              "acceptedAnswer" => %{
-                "@type" => "Answer",
-                "text" => item["answer"] || item[:answer]
-              }
-            }
-          end)
-      }
-    end
-  end
-
-  @doc """
-  Builds a Person schema from an author record.
-  """
-  @spec person_schema(map(), String.t()) :: map()
-  def person_schema(author, base_url) when is_map(author) do
-    schema = %{
-      "@context" => "https://schema.org",
-      "@type" => "Person",
-      "name" => author[:name] || author["name"] || ""
-    }
-
-    schema = put_if(schema, "jobTitle", author[:job_title] || author["job_title"])
-    schema = put_if(schema, "description", author[:bio] || author["bio"])
-    schema = put_if(schema, "image", author[:avatar_url] || author["avatar_url"])
-
-    slug = author[:slug] || author["slug"]
-    schema = if slug, do: Map.put(schema, "url", "#{base_url}/blog/authors/#{slug}"), else: schema
-
-    same_as = author[:same_as] || author["same_as"] || []
-    schema = if same_as != [], do: Map.put(schema, "sameAs", same_as), else: schema
-
-    schema
-  end
 
   @doc """
   Merges auto-generated schemas with manual raw_schema entries.

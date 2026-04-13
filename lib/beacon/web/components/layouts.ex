@@ -161,7 +161,7 @@ defmodule Beacon.Web.Layouts do
 
     # Only generate auto-tags when at least one SEO field is explicitly configured
     has_page_seo = Enum.any?(~w(meta_description canonical_url og_title og_description og_image twitter_card)a,
-      fn field -> non_empty?(manifest[field]) end) or manifest[:page_type] == "article"
+      fn field -> non_empty?(manifest[field]) end)
     has_layout_seo = non_empty?(layout_manifest[:default_og_image]) or non_empty?(layout_manifest[:default_twitter_card])
     has_config_seo = non_empty?(config.site_name) or non_empty?(config.twitter_site) or
       non_empty?(config.fb_app_id) or non_empty?(config.default_og_image)
@@ -208,9 +208,8 @@ defmodule Beacon.Web.Layouts do
       tags
     end
 
-    # og:type
-    og_type = if manifest[:page_type] == "article", do: "article", else: "website"
-    tags = [%{"property" => "og:type", "content" => og_type} | tags]
+    # og:type — defaults to "website", template types override via meta_tag_mapping
+    tags = [%{"property" => "og:type", "content" => "website"} | tags]
 
     # og:url — canonical URL
     og_url = manifest[:canonical_url] || Beacon.RuntimeRenderer.public_page_url(config.site, %{path: manifest[:path]})
@@ -228,6 +227,14 @@ defmodule Beacon.Web.Layouts do
 
     # fb:app_id
     tags = if non_empty?(config.fb_app_id), do: [%{"property" => "fb:app_id", "content" => config.fb_app_id} | tags], else: tags
+
+    # Template type meta tags (resolved from mapping, integrated via dedup)
+    tags = case manifest[:template_type] do
+      %{meta_tag_mapping: mapping} when is_list(mapping) and length(mapping) > 0 ->
+        tt_tags = Beacon.TemplateType.MetaTagResolver.resolve(mapping, manifest[:fields] || %{}, manifest, config)
+        deduplicate_meta_tags(tt_tags, tags)
+      _ -> tags
+    end
 
     Enum.reverse(tags)
   end
