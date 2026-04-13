@@ -23,6 +23,7 @@ defmodule Beacon.ProxyEndpoint do
         websocket: [connect_info: [session: @session_options]],
         longpoll: [connect_info: [session: @session_options]]
 
+      plug Beacon.Plug.Redirect
       plug :robots
       plug :sitemap_index
       plug :proxy

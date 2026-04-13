@@ -226,6 +226,30 @@ defmodule Beacon.SEO.JsonLd do
   end
 
   @doc """
+  Builds a Person schema from an author record.
+  """
+  @spec person_schema(map(), String.t()) :: map()
+  def person_schema(author, base_url) when is_map(author) do
+    schema = %{
+      "@context" => "https://schema.org",
+      "@type" => "Person",
+      "name" => author[:name] || author["name"] || ""
+    }
+
+    schema = put_if(schema, "jobTitle", author[:job_title] || author["job_title"])
+    schema = put_if(schema, "description", author[:bio] || author["bio"])
+    schema = put_if(schema, "image", author[:avatar_url] || author["avatar_url"])
+
+    slug = author[:slug] || author["slug"]
+    schema = if slug, do: Map.put(schema, "url", "#{base_url}/blog/authors/#{slug}"), else: schema
+
+    same_as = author[:same_as] || author["same_as"] || []
+    schema = if same_as != [], do: Map.put(schema, "sameAs", same_as), else: schema
+
+    schema
+  end
+
+  @doc """
   Merges auto-generated schemas with manual raw_schema entries.
 
   Manual entries take precedence — if a manual schema has the same `@type`,

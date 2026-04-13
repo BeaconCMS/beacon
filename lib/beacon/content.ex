@@ -43,7 +43,11 @@ defmodule Beacon.Content do
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
+  alias Beacon.Content.Author
+  alias Beacon.Content.InternalLink
   alias Beacon.Content.PageEvent
+  alias Beacon.Content.Redirect
+  alias Beacon.Content.SEOSnapshot
   alias Beacon.Content.PageField
   alias Beacon.Content.PageQuery
   alias Beacon.Content.PageSnapshot
@@ -4482,6 +4486,9 @@ defmodule Beacon.Content do
     %{site: site} = page
     changeset = Page.update_changeset(page, %{})
 
+    # Auto-create redirect if page path changed since last publish
+    maybe_create_path_redirect(page)
+
     transact(repo(site), fn ->
       with {:ok, _changeset} <- validate_page_template(changeset),
            {:ok, event} <- create_page_event(page, "published"),
@@ -4836,6 +4843,345 @@ defmodule Beacon.Content do
   def handle_info(msg, config) do
     Logger.warning("Beacon.Content can not handle the message: #{inspect(msg)}")
     {:noreply, config}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Authors
+  # ---------------------------------------------------------------------------
+
+  @doc "Creates an author."
+  @doc type: :authors
+  @spec create_author(map()) :: {:ok, Author.t()} | {:error, Ecto.Changeset.t()}
+  def create_author(attrs) do
+    attrs = attrs |> Beacon.Types.Attrs.ensure_string_keys()
+    site = Beacon.Types.Attrs.get_site(attrs)
+    %Author{} |> Author.changeset(attrs) |> repo(site).insert()
+  end
+
+  @doc "Updates an author."
+  @doc type: :authors
+  @spec update_author(Author.t(), map()) :: {:ok, Author.t()} | {:error, Ecto.Changeset.t()}
+  def update_author(%Author{} = author, attrs) do
+    author |> Author.changeset(attrs) |> repo(author).update()
+  end
+
+  @doc "Deletes an author."
+  @doc type: :authors
+  @spec delete_author(Author.t()) :: {:ok, Author.t()} | {:error, Ecto.Changeset.t()}
+  def delete_author(%Author{} = author) do
+    repo(author).delete(author)
+  end
+
+  @doc "Lists all authors for a site."
+  @doc type: :authors
+  @spec list_authors(Site.t(), keyword()) :: [Author.t()]
+  def list_authors(site, opts \\ []) when is_atom(site) do
+    per_page = Keyword.get(opts, :per_page, 100)
+    query = from(a in Author, where: a.site == ^site, order_by: [asc: a.name])
+    query = if per_page == :infinity, do: query, else: limit(query, ^per_page)
+    repo(site).all(query)
+  end
+
+  @doc "Gets an author by ID."
+  @doc type: :authors
+  @spec get_author(Site.t(), String.t()) :: Author.t() | nil
+  def get_author(site, id) when is_atom(site) do
+    repo(site).get_by(Author, site: site, id: id)
+  end
+
+  @doc "Returns a changeset for tracking author changes."
+  @doc type: :authors
+  def change_author(%Author{} = author, attrs \\ %{}) do
+    Author.changeset(author, attrs)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Internal Link Graph
+  # ---------------------------------------------------------------------------
+
+  @doc "Rebuilds the internal link graph for a page from rendered HTML."
+  @doc type: :links
+  @spec rebuild_links_for_page(Site.t(), String.t(), String.t()) :: :ok
+  def rebuild_links_for_page(site, page_id, html) when is_atom(site) do
+    links = Beacon.SEO.LinkExtractor.extract(html)
+
+    # Delete existing links for this page
+    from(l in InternalLink, where: l.site == ^site and l.source_page_id == ^page_id)
+    |> repo(site).delete_all()
+
+    # Build a path→page_id lookup for resolving target_page_id
+    published_pages = list_published_pages(site, per_page: :infinity)
+    path_to_id = Map.new(published_pages, fn p -> {p.path, p.id} end)
+
+    # Insert new links
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    entries =
+      Enum.map(links, fn link ->
+        %{
+          id: Ecto.UUID.generate(),
+          site: Atom.to_string(site),
+          source_page_id: page_id,
+          target_page_id: Map.get(path_to_id, link.target_path),
+          target_path: link.target_path,
+          anchor_text: String.slice(link.anchor_text || "", 0..254),
+          inserted_at: now
+        }
+      end)
+
+    if entries != [] do
+      repo(site).insert_all("beacon_internal_links", entries, on_conflict: :nothing)
+    end
+
+    :ok
+  end
+
+  @doc "Lists published pages with zero inbound internal links (orphans)."
+  @doc type: :links
+  @spec list_orphan_pages(Site.t()) :: [Page.t()]
+  def list_orphan_pages(site) when is_atom(site) do
+    # Get all page IDs that are targets of at least one internal link
+    linked_ids =
+      from(l in InternalLink,
+        where: l.site == ^site and not is_nil(l.target_page_id),
+        select: l.target_page_id,
+        distinct: true
+      )
+
+    from(p in Page,
+      where: p.site == ^site and p.id not in subquery(linked_ids),
+      order_by: [asc: p.path]
+    )
+    |> repo(site).all()
+  end
+
+  @doc "Lists internal links where the target path doesn't match any published page."
+  @doc type: :links
+  @spec list_broken_links(Site.t()) :: [InternalLink.t()]
+  def list_broken_links(site) when is_atom(site) do
+    from(l in InternalLink,
+      where: l.site == ^site and is_nil(l.target_page_id),
+      order_by: [asc: l.target_path]
+    )
+    |> repo(site).all()
+  end
+
+  # ---------------------------------------------------------------------------
+  # SEO Measurement
+  # ---------------------------------------------------------------------------
+
+  @doc "Takes a snapshot of current SEO metrics for a site."
+  @doc type: :seo
+  @spec take_seo_snapshot(Site.t()) :: {:ok, SEOSnapshot.t()} | {:error, Ecto.Changeset.t()}
+  def take_seo_snapshot(site) when is_atom(site) do
+    metrics = Beacon.SEO.Metrics.compute(site)
+    today = Date.utc_today()
+
+    attrs = %{
+      "site" => site,
+      "snapshot_date" => today,
+      "metrics" => metrics
+    }
+
+    # Upsert: update if exists for today, insert if not
+    case repo(site).get_by(SEOSnapshot, site: site, snapshot_date: today) do
+      nil ->
+        %SEOSnapshot{} |> SEOSnapshot.changeset(attrs) |> repo(site).insert()
+
+      existing ->
+        existing |> SEOSnapshot.changeset(attrs) |> repo(site).update()
+    end
+  end
+
+  @doc "Lists SEO snapshots for a site within a date range."
+  @doc type: :seo
+  @spec list_seo_snapshots(Site.t(), keyword()) :: [SEOSnapshot.t()]
+  def list_seo_snapshots(site, opts \\ []) when is_atom(site) do
+    days = Keyword.get(opts, :days, 30)
+    since = Date.utc_today() |> Date.add(-days)
+
+    from(s in SEOSnapshot,
+      where: s.site == ^site and s.snapshot_date >= ^since,
+      order_by: [desc: s.snapshot_date]
+    )
+    |> repo(site).all()
+  end
+
+  # ---------------------------------------------------------------------------
+  # Redirects
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Creates a redirect, automatically flattening chains and rejecting circulars.
+  """
+  @doc type: :redirects
+  @spec create_redirect(map()) :: {:ok, Redirect.t()} | {:error, Ecto.Changeset.t()}
+  def create_redirect(attrs) do
+    attrs = attrs |> Beacon.Types.Attrs.ensure_string_keys()
+    site = Beacon.Types.Attrs.get_site(attrs)
+
+    # Flatten chains: if destination is another redirect's source, point to final destination
+    attrs = flatten_redirect_chain(site, attrs)
+
+    changeset = Redirect.changeset(%Redirect{}, attrs)
+
+    # Check for circular redirect through the chain
+    if circular_redirect?(site, attrs["source_path"], attrs["destination_path"]) do
+      {:error, Ecto.Changeset.add_error(changeset, :destination_path, "creates a circular redirect")}
+    else
+      case repo(site).insert(changeset) do
+        {:ok, redirect} ->
+          # Update any existing redirects that point to this source (flatten them)
+          update_existing_redirect_chains(site, redirect)
+          Beacon.Content.RedirectCache.put(redirect)
+          {:ok, redirect}
+
+        error ->
+          error
+      end
+    end
+  end
+
+  @doc "Updates an existing redirect."
+  @doc type: :redirects
+  @spec update_redirect(Redirect.t(), map()) :: {:ok, Redirect.t()} | {:error, Ecto.Changeset.t()}
+  def update_redirect(%Redirect{} = redirect, attrs) do
+    case redirect |> Redirect.changeset(attrs) |> repo(redirect).update() do
+      {:ok, updated} ->
+        Beacon.Content.RedirectCache.invalidate(updated.site)
+        {:ok, updated}
+
+      error ->
+        error
+    end
+  end
+
+  @doc "Deletes a redirect."
+  @doc type: :redirects
+  @spec delete_redirect(Redirect.t()) :: {:ok, Redirect.t()} | {:error, Ecto.Changeset.t()}
+  def delete_redirect(%Redirect{} = redirect) do
+    case repo(redirect).delete(redirect) do
+      {:ok, deleted} ->
+        Beacon.Content.RedirectCache.delete(deleted.site, deleted.source_path)
+        {:ok, deleted}
+
+      error ->
+        error
+    end
+  end
+
+  @doc "Lists all redirects for a site."
+  @doc type: :redirects
+  @spec list_redirects(Site.t(), keyword()) :: [Redirect.t()]
+  def list_redirects(site, opts \\ []) when is_atom(site) do
+    per_page = Keyword.get(opts, :per_page, 20)
+    page = Keyword.get(opts, :page, 1)
+    search = Keyword.get(opts, :search)
+
+    query = from(r in Redirect, where: r.site == ^site, order_by: [desc: r.inserted_at])
+
+    query = if per_page == :infinity, do: query, else: query |> limit(^per_page) |> offset(^((page - 1) * per_page))
+    query = if search, do: where(query, [r], ilike(r.source_path, ^"%#{search}%") or ilike(r.destination_path, ^"%#{search}%")), else: query
+
+    repo(site).all(query)
+  end
+
+  @doc "Gets a single redirect by ID."
+  @doc type: :redirects
+  @spec get_redirect(Site.t(), String.t()) :: Redirect.t() | nil
+  def get_redirect(site, id) when is_atom(site) do
+    repo(site).get_by(Redirect, site: site, id: id)
+  end
+
+  @doc "Gets a redirect by source path."
+  @doc type: :redirects
+  @spec get_redirect_by_source(Site.t(), String.t()) :: Redirect.t() | nil
+  def get_redirect_by_source(site, source_path) when is_atom(site) do
+    repo(site).get_by(Redirect, site: site, source_path: source_path)
+  end
+
+  @doc false
+  def increment_redirect_hit(site, source_path) do
+    from(r in Redirect,
+      where: r.site == ^site and r.source_path == ^source_path
+    )
+    |> repo(site).update_all(set: [hit_count: dynamic([r], r.hit_count + 1), last_hit_at: DateTime.utc_now()])
+  end
+
+  @doc false
+  def change_redirect(%Redirect{} = redirect, attrs \\ %{}) do
+    Redirect.changeset(redirect, attrs)
+  end
+
+  # Auto-create redirect when a page's path changes at publish time
+  @doc false
+  def maybe_create_path_redirect(page) do
+    old_path = get_last_published_path(page.site, page.id)
+
+    case old_path do
+      nil -> :ok
+      ^old_path when old_path == page.path -> :ok
+      old_path ->
+        create_redirect(%{
+          "site" => page.site,
+          "source_path" => old_path,
+          "destination_path" => page.path,
+          "status_code" => 301
+        })
+    end
+  end
+
+  defp get_last_published_path(site, page_id) do
+    from(s in PageSnapshot,
+      where: s.site == ^site and s.page_id == ^page_id,
+      order_by: [desc: s.inserted_at],
+      limit: 1,
+      select: s.path
+    )
+    |> repo(site).one()
+  end
+
+  defp flatten_redirect_chain(site, attrs) do
+    dest = attrs["destination_path"]
+
+    case get_redirect_by_source(site, dest) do
+      %Redirect{destination_path: final_dest} ->
+        Map.put(attrs, "destination_path", final_dest)
+
+      nil ->
+        attrs
+    end
+  end
+
+  defp circular_redirect?(site, source, destination) do
+    visited = MapSet.new([source])
+    check_circular(site, destination, visited)
+  end
+
+  defp check_circular(_site, nil, _visited), do: false
+
+  defp check_circular(site, path, visited) do
+    if MapSet.member?(visited, path) do
+      true
+    else
+      case get_redirect_by_source(site, path) do
+        %Redirect{destination_path: next} ->
+          check_circular(site, next, MapSet.put(visited, path))
+
+        nil ->
+          false
+      end
+    end
+  end
+
+  defp update_existing_redirect_chains(site, new_redirect) do
+    # Find redirects whose destination is the new redirect's source and update them
+    from(r in Redirect,
+      where: r.site == ^site and r.destination_path == ^new_redirect.source_path and r.id != ^new_redirect.id
+    )
+    |> repo(site).update_all(set: [destination_path: new_redirect.destination_path])
+
+    Beacon.Content.RedirectCache.invalidate(site)
   end
 
 end

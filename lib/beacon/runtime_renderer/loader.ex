@@ -31,6 +31,9 @@ defmodule Beacon.RuntimeRenderer.Loader do
     # route matching works from ETS without querying the DB on every request.
     load_route_index(site)
 
+    # Load redirects into ETS for fast request-path lookups
+    Beacon.Content.RedirectCache.load_redirects(site)
+
     :ok
   end
 

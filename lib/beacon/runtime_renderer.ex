@@ -30,6 +30,7 @@ defmodule Beacon.RuntimeRenderer do
     end
 
     Beacon.CircuitBreaker.init()
+    Beacon.Content.RedirectCache.init()
 
     :ok
   end
