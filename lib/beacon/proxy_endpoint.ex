@@ -29,13 +29,14 @@ defmodule Beacon.ProxyEndpoint do
 
       defp robots(%{path_info: ["robots.txt"]} = conn, _opts) do
         sitemap_index_url = String.Chars.URI.to_string(%{Beacon.ProxyEndpoint.public_uri(__MODULE__, conn.host) | path: "/sitemap_index.xml"})
+        ai_directives = Beacon.ProxyEndpoint.ai_crawler_directives(conn.host)
 
         conn
         |> accepts(["txt"])
         |> put_view(Beacon.Web.RobotsTxt)
         |> put_resp_content_type("text/txt")
         |> put_resp_header("cache-control", "public max-age=300")
-        |> render(:robots, sitemap_index_url: sitemap_index_url)
+        |> render(:robots, sitemap_index_url: sitemap_index_url, ai_directives: ai_directives)
         |> halt()
       end
 
@@ -210,5 +211,19 @@ defmodule Beacon.ProxyEndpoint do
         acc
       end
     end)
+  end
+
+  @doc false
+  def ai_crawler_directives(host) when is_binary(host) do
+    host
+    |> sites_per_host()
+    |> Enum.flat_map(fn site ->
+      config = Beacon.Config.fetch!(site)
+      Beacon.SEO.AICrawlers.robots_directives(
+        config.ai_crawler_policy,
+        config.ai_crawler_custom_rules
+      )
+    end)
+    |> Enum.uniq()
   end
 end

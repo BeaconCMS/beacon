@@ -3,11 +3,15 @@
   <head>
     <meta name="csrf-token" content={get_csrf_token()} />
     <%= Beacon.Web.Layouts.render_meta_tags(assigns) %>
+    <%= Beacon.Web.Layouts.render_robots_meta(assigns) %>
+    <%= Beacon.Web.Layouts.render_canonical_link(assigns) %>
     <%= Beacon.Web.Layouts.render_schema(assigns) %>
     <.live_title>
       <%= Beacon.Web.Layouts.render_page_title(assigns) %>
     </.live_title>
     <%= Beacon.Web.Layouts.render_resource_links(assigns) %>
+    <%= Beacon.Web.Layouts.render_pagination_links(assigns) %>
+    <%= Beacon.Web.Layouts.render_feed_links(assigns) %>
     <link id="beacon-runtime-stylesheet" rel="stylesheet" href={Beacon.Web.Layouts.asset_path(@conn, :css)} />
     <script defer src={Beacon.Web.Layouts.asset_path(@conn, :js)}>
     </script>

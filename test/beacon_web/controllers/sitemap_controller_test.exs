@@ -51,7 +51,7 @@ defmodule Beacon.Web.SitemapControllerTest do
            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
              <url>
                <loc>http://site_a.com/foo</loc>
-               <lastmod>#{DateTime.to_iso8601(page.updated_at)}</lastmod>
+               <lastmod>#{DateTime.to_iso8601(page.date_modified || page.updated_at)}</lastmod>
              </url>
            </urlset>
            """

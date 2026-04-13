@@ -1,3 +1,5 @@
 # http://www.robotstxt.org
-User-agent: *
+<%= for directive <- @ai_directives do %><%= directive %>
+<% end %>User-agent: *
+Allow: /
 Sitemap: <%= @sitemap_index_url %>

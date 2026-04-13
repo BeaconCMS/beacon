@@ -474,6 +474,10 @@ defmodule Beacon.Content do
     layout
   end
 
+  defp extract_layout_snapshot(%{schema_version: 4, layout: %Layout{} = layout}) do
+    layout
+  end
+
   defp extract_layout_snapshot(_snapshot), do: nil
 
   defp convert_body_to_template(layout) do
@@ -623,6 +627,33 @@ defmodule Beacon.Content do
   end
 
   @doc """
+  Marks a page as substantively updated by setting `date_modified` to now.
+  """
+  @doc type: :pages
+  @spec mark_page_updated(Page.t()) :: {:ok, Page.t()} | {:error, Ecto.Changeset.t()}
+  def mark_page_updated(%Page{} = page) do
+    page
+    |> Ecto.Changeset.change(%{date_modified: DateTime.utc_now() |> DateTime.truncate(:microsecond)})
+    |> repo(page).update()
+  end
+
+  @doc """
+  Lists published pages that have not been substantively updated in `days` days.
+  """
+  @doc type: :pages
+  @spec list_stale_pages(Site.t(), non_neg_integer()) :: [Page.t()]
+  def list_stale_pages(site, days \\ 90) when is_atom(site) do
+    cutoff = DateTime.utc_now() |> DateTime.add(-days * 86400, :second)
+
+    from(p in Page,
+      where: p.site == ^site and (is_nil(p.date_modified) or p.date_modified < ^cutoff),
+      order_by: [asc: p.date_modified],
+      select: p
+    )
+    |> repo(site).all()
+  end
+
+  @doc """
   Publish `page`.
 
   A new snapshot is automatically created to store the page data,
@@ -756,10 +787,13 @@ defmodule Beacon.Content do
       "template" => page.template,
       "format" => page.format,
       "extra" => page.extra,
-      "ast" => ast
+      "ast" => ast,
+      "date_modified" => page.date_modified,
+      "faq_items" => page.faq_items || [],
+      "author_id" => page.author_id
     }
 
-    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast]
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast, :date_modified, :faq_items, :author_id]
 
     result =
       %PageSnapshot{}
@@ -1230,6 +1264,32 @@ defmodule Beacon.Content do
   end
 
   defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page}) do
+    page
+    |> maybe_add_leading_slash()
+  end
+
+  defp extract_page_snapshot(%{schema_version: 4, page: %Page{} = page, ast: ast}) do
+    page = maybe_add_leading_slash(page)
+    case unwrap_ast(ast) do
+      nodes when is_list(nodes) -> %{page | ast: nodes}
+      _ -> page
+    end
+  end
+
+  defp extract_page_snapshot(%{schema_version: 4, page: %Page{} = page}) do
+    page
+    |> maybe_add_leading_slash()
+  end
+
+  defp extract_page_snapshot(%{schema_version: 5, page: %Page{} = page, ast: ast}) do
+    page = maybe_add_leading_slash(page)
+    case unwrap_ast(ast) do
+      nodes when is_list(nodes) -> %{page | ast: nodes}
+      _ -> page
+    end
+  end
+
+  defp extract_page_snapshot(%{schema_version: 5, page: %Page{} = page}) do
     page
     |> maybe_add_leading_slash()
   end
@@ -4448,7 +4508,9 @@ defmodule Beacon.Content do
 
     Beacon.RuntimeRenderer.publish_layout(site, to_string(id), layout.template,
       meta_tags: layout.meta_tags || [],
-      resource_links: layout.resource_links || []
+      resource_links: layout.resource_links || [],
+      default_og_image: layout.default_og_image,
+      default_twitter_card: layout.default_twitter_card
     )
 
     # Cascade invalidation to all pages using this layout

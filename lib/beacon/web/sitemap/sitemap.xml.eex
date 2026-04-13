@@ -2,6 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <%= for page <- @pages do %><url>
     <loc><%= page.loc %></loc>
-    <lastmod><%= page.lastmod %></lastmod>
+    <lastmod><%= page.lastmod %></lastmod><%= if page.changefreq do %>
+    <changefreq><%= page.changefreq %></changefreq><% end %><%= if page.priority do %>
+    <priority><%= page.priority %></priority><% end %>
   </url><% end %>
 </urlset>

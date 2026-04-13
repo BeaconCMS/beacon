@@ -117,6 +117,19 @@ defmodule Beacon.RuntimeRenderer.Loader do
       extra: page.extra || %{},
       meta_tags: page.meta_tags || [],
       raw_schema: page.raw_schema || [],
+      meta_description: Map.get(page, :meta_description),
+      canonical_url: Map.get(page, :canonical_url),
+      robots: Map.get(page, :robots),
+      og_title: Map.get(page, :og_title),
+      og_description: Map.get(page, :og_description),
+      og_image: Map.get(page, :og_image),
+      twitter_card: Map.get(page, :twitter_card),
+      page_type: Map.get(page, :page_type, "website"),
+      date_modified: Map.get(page, :date_modified),
+      faq_items: Map.get(page, :faq_items, []),
+      author_id: Map.get(page, :author_id),
+      inserted_at: Map.get(page, :inserted_at),
+      updated_at: Map.get(page, :updated_at),
       assigns: %{},
       event_handlers: [],
       helpers: helpers,
@@ -161,7 +174,9 @@ defmodule Beacon.RuntimeRenderer.Loader do
     for layout <- layouts do
       RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template,
         meta_tags: layout.meta_tags || [],
-        resource_links: layout.resource_links || []
+        resource_links: layout.resource_links || [],
+        default_og_image: Map.get(layout, :default_og_image),
+        default_twitter_card: Map.get(layout, :default_twitter_card)
       )
     end
 
@@ -290,7 +305,9 @@ defmodule Beacon.RuntimeRenderer.Loader do
       layout ->
         RuntimeRenderer.publish_layout(site, to_string(layout.id), layout.template,
           meta_tags: layout.meta_tags || [],
-          resource_links: layout.resource_links || []
+          resource_links: layout.resource_links || [],
+          default_og_image: Map.get(layout, :default_og_image),
+          default_twitter_card: Map.get(layout, :default_twitter_card)
         )
     end
   end

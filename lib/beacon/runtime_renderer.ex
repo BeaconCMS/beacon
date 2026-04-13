@@ -89,7 +89,20 @@ defmodule Beacon.RuntimeRenderer do
       layout_id: Map.get(attrs, :layout_id),
       extra: Map.get(attrs, :extra, %{}),
       meta_tags: Map.get(attrs, :meta_tags, []),
-      raw_schema: Map.get(attrs, :raw_schema, [])
+      raw_schema: Map.get(attrs, :raw_schema, []),
+      meta_description: Map.get(attrs, :meta_description),
+      canonical_url: Map.get(attrs, :canonical_url),
+      robots: Map.get(attrs, :robots),
+      og_title: Map.get(attrs, :og_title),
+      og_description: Map.get(attrs, :og_description),
+      og_image: Map.get(attrs, :og_image),
+      twitter_card: Map.get(attrs, :twitter_card),
+      page_type: Map.get(attrs, :page_type, "website"),
+      date_modified: Map.get(attrs, :date_modified),
+      faq_items: Map.get(attrs, :faq_items, []),
+      author_id: Map.get(attrs, :author_id),
+      inserted_at: Map.get(attrs, :inserted_at),
+      updated_at: Map.get(attrs, :updated_at)
     }
 
     :ets.insert(@table, {{site, page_id, :manifest}, manifest})
@@ -186,11 +199,13 @@ defmodule Beacon.RuntimeRenderer do
     # Store the expanded AST in ETS
     :ets.insert(@table, {{site, :layout, layout_id}, expanded_ast})
 
-    # Store layout metadata (meta_tags, resource_links) separately
+    # Store layout metadata (meta_tags, resource_links, SEO defaults) separately
     manifest = %{
       id: layout_id,
       meta_tags: Keyword.get(opts, :meta_tags, []),
-      resource_links: Keyword.get(opts, :resource_links, [])
+      resource_links: Keyword.get(opts, :resource_links, []),
+      default_og_image: Keyword.get(opts, :default_og_image),
+      default_twitter_card: Keyword.get(opts, :default_twitter_card)
     }
 
     :ets.insert(@table, {{site, :layout, layout_id, :manifest}, manifest})
@@ -228,7 +243,9 @@ defmodule Beacon.RuntimeRenderer do
             layout ->
               publish_layout(site, to_string(layout.id), layout.template,
                 meta_tags: layout.meta_tags || [],
-                resource_links: layout.resource_links || []
+                resource_links: layout.resource_links || [],
+                default_og_image: Map.get(layout, :default_og_image),
+                default_twitter_card: Map.get(layout, :default_twitter_card)
               )
           end
         end, ttl)

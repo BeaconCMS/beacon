@@ -254,6 +254,20 @@ defmodule Beacon.Config do
           extra_page_fields: extra_page_fields(),
           extra_asset_fields: extra_asset_fields(),
           default_meta_tags: default_meta_tags(),
+          site_name: binary() | nil,
+          title_template: binary() | nil,
+          default_og_image: binary() | nil,
+          default_og_image_dimensions: {pos_integer(), pos_integer()} | nil,
+          default_twitter_card: binary(),
+          twitter_site: binary() | nil,
+          fb_app_id: binary() | nil,
+          organization: map() | nil,
+          search_action_url_template: binary() | nil,
+          feeds: [map()],
+          index_now_enabled: boolean(),
+          index_now_key: binary() | nil,
+          ai_crawler_policy: :allow_search | :block_all | :allow_all | :custom,
+          ai_crawler_custom_rules: [{String.t(), :allow | :block}],
           page_warming: page_warming(),
           warming_concurrency: warming_concurrency(),
           cache_ttl: cache_ttl(),
@@ -312,6 +326,20 @@ defmodule Beacon.Config do
             extra_page_fields: [],
             extra_asset_fields: [],
             default_meta_tags: [],
+            site_name: nil,
+            title_template: nil,
+            default_og_image: nil,
+            default_og_image_dimensions: nil,
+            default_twitter_card: "summary_large_image",
+            twitter_site: nil,
+            fb_app_id: nil,
+            organization: nil,
+            search_action_url_template: nil,
+            feeds: [],
+            index_now_enabled: false,
+            index_now_key: nil,
+            ai_crawler_policy: :allow_search,
+            ai_crawler_custom_rules: [],
             page_warming: {:shortest_paths, 10},
             warming_concurrency: 4,
             cache_ttl: 60,
@@ -339,6 +367,20 @@ defmodule Beacon.Config do
           | {:extra_page_fields, extra_page_fields()}
           | {:extra_asset_fields, extra_asset_fields()}
           | {:default_meta_tags, default_meta_tags()}
+          | {:site_name, binary() | nil}
+          | {:title_template, binary() | nil}
+          | {:default_og_image, binary() | nil}
+          | {:default_og_image_dimensions, {pos_integer(), pos_integer()} | nil}
+          | {:default_twitter_card, binary()}
+          | {:twitter_site, binary() | nil}
+          | {:fb_app_id, binary() | nil}
+          | {:organization, map() | nil}
+          | {:search_action_url_template, binary() | nil}
+          | {:feeds, [map()]}
+          | {:index_now_enabled, boolean()}
+          | {:index_now_key, binary() | nil}
+          | {:ai_crawler_policy, :allow_search | :block_all | :allow_all | :custom}
+          | {:ai_crawler_custom_rules, [{String.t(), :allow | :block}]}
           | {:page_warming, page_warming()}
           | {:warming_concurrency, warming_concurrency()}
           | {:cache_ttl, cache_ttl()}
