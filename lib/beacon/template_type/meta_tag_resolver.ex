@@ -34,7 +34,7 @@ defmodule Beacon.TemplateType.MetaTagResolver do
       "canonical_url" => manifest[:canonical_url],
       "date_modified" => format_value(manifest[:date_modified]),
       "site_name" => config.site_name,
-      "site_url" => Beacon.RuntimeRenderer.public_site_url(config.site)
+      "site_url" => safe_site_url(config)
     }
   end
 
@@ -63,6 +63,18 @@ defmodule Beacon.TemplateType.MetaTagResolver do
   defp format_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp format_value(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_iso8601(ndt)
   defp format_value(value), do: value
+
+  defp safe_site_url(config) do
+    if config[:site] do
+      try do
+        Beacon.RuntimeRenderer.public_site_url(config.site)
+      rescue
+        _ -> ""
+      end
+    else
+      ""
+    end
+  end
 
   defp stringify_keys(nil), do: %{}
   defp stringify_keys(map) when is_map(map) do

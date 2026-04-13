@@ -4411,10 +4411,15 @@ defmodule Beacon.Content do
         ast = Beacon.Template.Parser.parse(template)
         component_registry = build_component_registry_for_ast(page.site)
         expanded = Beacon.Template.ComponentExpander.expand(ast, component_registry)
+        # Render with empty assigns — works for static pages.
+        # Pages with data bindings will fail here, which is expected.
+        # Their links are extracted when the client reports them (future feature).
         html = Beacon.Client.LiveViewCompiler.render_to_string(expanded, %{})
         rebuild_links_for_page(page.site, page.id, html)
       rescue
-        _ -> :ok
+        _error -> :ok
+      catch
+        _kind, _reason -> :ok
       end
     end)
   end
