@@ -84,8 +84,6 @@ defmodule Beacon.MixProject do
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:bcrypt_elixir, "~> 3.0"},
-      {:openid_connect, "~> 1.0"},
       {:postgrex, "~> 0.16"},
       {:safe_code, "~> 0.2"},
       {:solid, "~> 0.14"},
