@@ -208,10 +208,6 @@ defmodule Beacon.SEO.JsonLd do
     end)
   end
 
-  defp format_datetime(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
-  defp format_datetime(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_iso8601(ndt)
-  defp format_datetime(str) when is_binary(str), do: str
-  defp format_datetime(_), do: nil
 
   defp put_if(map, _key, nil), do: map
   defp put_if(map, _key, ""), do: map

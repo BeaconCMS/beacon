@@ -153,8 +153,8 @@ defmodule Beacon.SEO.IndexNow do
   end
 
   defp http_post(url, body) do
-    headers = [{'content-type', 'application/json; charset=utf-8'}]
-    :httpc.request(:post, {String.to_charlist(url), headers, 'application/json', String.to_charlist(body)}, [timeout: 10_000], [])
+    headers = [{~c"content-type", ~c"application/json; charset=utf-8"}]
+    :httpc.request(:post, {String.to_charlist(url), headers, ~c"application/json", String.to_charlist(body)}, [timeout: 10_000], [])
     |> handle_httpc_response()
   end
 

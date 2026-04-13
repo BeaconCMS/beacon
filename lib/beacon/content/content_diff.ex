@@ -67,8 +67,8 @@ defmodule Beacon.Content.ContentDiff do
 
   # Computes the percentage of tokens that differ using set-based comparison.
   defp token_change_percentage([], []), do: 0.0
-  defp token_change_percentage(current, []), do: 1.0
-  defp token_change_percentage([], previous), do: 1.0
+  defp token_change_percentage(_current, []), do: 1.0
+  defp token_change_percentage([], _previous), do: 1.0
 
   defp token_change_percentage(current, previous) do
     current_set = MapSet.new(current)

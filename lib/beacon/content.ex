@@ -4395,33 +4395,12 @@ defmodule Beacon.Content do
     case insert_published_page(page) do
       {:ok, page} ->
         :ok = Beacon.PubSub.page_published(page)
-        # Async: extract internal links from the published page
         maybe_rebuild_links_async(page)
         {:reply, {:ok, page}, config}
 
       error ->
         {:reply, error, config}
     end
-  end
-
-  defp maybe_rebuild_links_async(page) do
-    Task.start(fn ->
-      try do
-        template = Beacon.Lifecycle.Template.load_template(page)
-        ast = Beacon.Template.Parser.parse(template)
-        component_registry = build_component_registry_for_ast(page.site)
-        expanded = Beacon.Template.ComponentExpander.expand(ast, component_registry)
-        # Render with empty assigns — works for static pages.
-        # Pages with data bindings will fail here, which is expected.
-        # Their links are extracted when the client reports them (future feature).
-        html = Beacon.Client.LiveViewCompiler.render_to_string(expanded, %{})
-        rebuild_links_for_page(page.site, page.id, html)
-      rescue
-        _error -> :ok
-      catch
-        _kind, _reason -> :ok
-      end
-    end)
   end
 
   @doc false
@@ -4879,6 +4858,23 @@ defmodule Beacon.Content do
     {:noreply, config}
   end
 
+  defp maybe_rebuild_links_async(page) do
+    Task.start(fn ->
+      try do
+        template = Beacon.Lifecycle.Template.load_template(page)
+        ast = Beacon.Template.Parser.parse(template)
+        component_registry = build_component_registry_for_ast(page.site)
+        expanded = Beacon.Template.ComponentExpander.expand(ast, component_registry)
+        html = Beacon.Client.LiveViewCompiler.render_to_string(expanded, %{})
+        rebuild_links_for_page(page.site, page.id, html)
+      rescue
+        _error -> :ok
+      catch
+        _kind, _reason -> :ok
+      end
+    end)
+  end
+
   # ---------------------------------------------------------------------------
   # Template Types
   # ---------------------------------------------------------------------------
@@ -4909,7 +4905,7 @@ defmodule Beacon.Content do
   @doc "Lists template types available to a site (includes global types where site is nil)."
   @doc type: :template_types
   @spec list_template_types(Site.t(), keyword()) :: [TemplateType.t()]
-  def list_template_types(site, opts \\ []) when is_atom(site) do
+  def list_template_types(site, _opts \\ []) when is_atom(site) do
     from(tt in TemplateType,
       where: tt.site == ^site or is_nil(tt.site),
       order_by: [asc: tt.name]
