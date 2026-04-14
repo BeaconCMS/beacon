@@ -36,9 +36,9 @@ defmodule Beacon.Migrations.V012 do
       add :site, :text
       add :name, :text, null: false
       add :slug, :text, null: false
-      add :field_definitions, :map, null: false, default: "[]"
-      add :json_ld_mapping, :map, default: "{}"
-      add :meta_tag_mapping, :map, default: "{}"
+      add :field_definitions, {:array, :map}, null: false, default: []
+      add :json_ld_mapping, :map, default: %{}
+      add :meta_tag_mapping, {:array, :map}, default: []
 
       timestamps type: :utc_datetime_usec
     end
