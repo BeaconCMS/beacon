@@ -45,19 +45,19 @@ defmodule Beacon.SEO.JsonLd do
       schemas
     end
 
-    # Template-type-defined JSON-LD
-    schemas = case resolve_template_type_json_ld(manifest, config) do
+    # Collection-defined JSON-LD
+    schemas = case resolve_collection_json_ld(manifest, config) do
       nil -> schemas
-      tt_schema -> [tt_schema | schemas]
+      col_schema -> [col_schema | schemas]
     end
 
     Enum.reverse(schemas)
   end
 
-  defp resolve_template_type_json_ld(manifest, config) do
-    case manifest[:template_type] do
+  defp resolve_collection_json_ld(manifest, config) do
+    case manifest[:collection] do
       %{json_ld_mapping: mapping} when is_map(mapping) and map_size(mapping) > 0 ->
-        Beacon.TemplateType.JsonLdResolver.resolve(
+        Beacon.Collection.JsonLdResolver.resolve(
           mapping,
           manifest[:fields] || %{},
           manifest,

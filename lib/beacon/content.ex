@@ -792,11 +792,11 @@ defmodule Beacon.Content do
       "extra" => page.extra,
       "ast" => ast,
       "date_modified" => page.date_modified,
-      "template_type_id" => page.template_type_id,
+      "collection_id" => page.collection_id,
       "fields" => page.fields || %{}
     }
 
-    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast, :date_modified, :template_type_id, :fields]
+    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast, :date_modified, :collection_id, :fields]
 
     result =
       %PageSnapshot{}
@@ -4879,62 +4879,80 @@ defmodule Beacon.Content do
   # Template Types
   # ---------------------------------------------------------------------------
 
-  alias Beacon.Content.TemplateType
+  alias Beacon.Content.Collection
 
-  @doc "Creates a template type. Pass `site` for site-specific, or set `site: nil` in attrs for global."
-  @doc type: :template_types
-  @spec create_template_type(Site.t(), map()) :: {:ok, TemplateType.t()} | {:error, Ecto.Changeset.t()}
-  def create_template_type(site, attrs) when is_atom(site) and is_map(attrs) do
-    %TemplateType{} |> TemplateType.changeset(attrs) |> repo(site).insert()
+  @doc "Creates a collection."
+  @doc type: :collections
+  @spec create_collection(map()) :: {:ok, Collection.t()} | {:error, Ecto.Changeset.t()}
+  def create_collection(attrs) when is_map(attrs) do
+    site = attrs[:site] || attrs["site"]
+    %Collection{} |> Collection.changeset(attrs) |> repo(site).insert()
   end
 
-  @doc "Updates a template type."
-  @doc type: :template_types
-  @spec update_template_type(TemplateType.t(), map()) :: {:ok, TemplateType.t()} | {:error, Ecto.Changeset.t()}
-  def update_template_type(%TemplateType{} = tt, attrs) do
-    tt |> TemplateType.changeset(attrs) |> repo(tt).update()
+  @doc "Updates a collection."
+  @doc type: :collections
+  @spec update_collection(Collection.t(), map()) :: {:ok, Collection.t()} | {:error, Ecto.Changeset.t()}
+  def update_collection(%Collection{} = col, attrs) do
+    col |> Collection.changeset(attrs) |> repo(col).update()
   end
 
-  @doc "Deletes a template type."
-  @doc type: :template_types
-  @spec delete_template_type(TemplateType.t()) :: {:ok, TemplateType.t()} | {:error, Ecto.Changeset.t()}
-  def delete_template_type(%TemplateType{} = tt) do
-    repo(tt).delete(tt)
+  @doc "Deletes a collection."
+  @doc type: :collections
+  @spec delete_collection(Collection.t()) :: {:ok, Collection.t()} | {:error, Ecto.Changeset.t()}
+  def delete_collection(%Collection{} = col) do
+    repo(col).delete(col)
   end
 
-  @doc "Lists template types available to a site (includes global types where site is nil)."
-  @doc type: :template_types
-  @spec list_template_types(Site.t(), keyword()) :: [TemplateType.t()]
-  def list_template_types(site, _opts \\ []) when is_atom(site) do
-    from(tt in TemplateType,
-      where: tt.site == ^site or is_nil(tt.site),
-      order_by: [asc: tt.name]
-    )
+  @doc "Lists collections available to a site (includes global collections where site is nil)."
+  @doc type: :collections
+  @spec list_collections(Site.t(), keyword()) :: [Collection.t()]
+  def list_collections(site, opts \\ []) when is_atom(site) do
+    query =
+      cond do
+        opts[:globals_only] ->
+          from(c in Collection, where: is_nil(c.site))
+
+        opts[:mode] ->
+          mode = to_string(opts[:mode])
+          from(c in Collection, where: (c.site == ^site or is_nil(c.site)) and c.mode == ^mode)
+
+        true ->
+          from(c in Collection, where: c.site == ^site or is_nil(c.site))
+      end
+
+    query
+    |> order_by([c], [asc: c.sort_order, asc: c.name])
     |> repo(site).all()
   end
 
-  @doc "Gets a template type by ID."
-  @doc type: :template_types
-  @spec get_template_type(Site.t(), String.t()) :: TemplateType.t() | nil
-  def get_template_type(site, id) when is_atom(site) do
-    repo(site).get(TemplateType, id)
+  @doc "Gets a collection by ID."
+  @doc type: :collections
+  @spec get_collection(Site.t(), String.t()) :: Collection.t() | nil
+  def get_collection(site, id) when is_atom(site) do
+    repo(site).get(Collection, id)
   end
 
-  @doc "Gets a template type by slug (checks site-specific first, then global)."
-  @doc type: :template_types
-  @spec get_template_type_by_slug(Site.t(), String.t()) :: TemplateType.t() | nil
-  def get_template_type_by_slug(site, slug) when is_atom(site) do
-    # Prefer site-specific over global
-    case repo(site).get_by(TemplateType, site: site, slug: slug) do
-      nil -> repo(site).get_by(TemplateType, site: nil, slug: slug)
-      tt -> tt
+  @doc "Gets a collection by ID, raises if not found."
+  @doc type: :collections
+  @spec get_collection!(Site.t(), String.t()) :: Collection.t()
+  def get_collection!(site, id) when is_atom(site) do
+    repo(site).get!(Collection, id)
+  end
+
+  @doc "Gets a collection by slug (checks site-specific first, then global)."
+  @doc type: :collections
+  @spec get_collection_by_slug(Site.t(), String.t()) :: Collection.t() | nil
+  def get_collection_by_slug(site, slug) when is_atom(site) do
+    case repo(site).get_by(Collection, site: site, slug: slug) do
+      nil -> repo(site).get_by(Collection, site: nil, slug: slug)
+      col -> col
     end
   end
 
-  @doc "Returns a changeset for tracking template type changes."
-  @doc type: :template_types
-  def change_template_type(%TemplateType{} = tt, attrs \\ %{}) do
-    TemplateType.changeset(tt, attrs)
+  @doc "Returns a changeset for tracking collection changes."
+  @doc type: :collections
+  def change_collection(%Collection{} = col, attrs \\ %{}) do
+    Collection.changeset(col, attrs)
   end
 
   # ---------------------------------------------------------------------------

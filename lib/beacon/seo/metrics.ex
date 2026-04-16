@@ -25,7 +25,7 @@ defmodule Beacon.SEO.Metrics do
         twitter_card: p.twitter_card,
         robots: p.robots,
         date_modified: p.date_modified,
-        template_type_id: p.template_type_id,
+        collection_id: p.collection_id,
         title: p.title
       })
 
@@ -85,7 +85,7 @@ defmodule Beacon.SEO.Metrics do
       "pages_with_og_image" => count(pages, fn p -> non_empty?(p.og_image) end),
       "pages_with_structured_data" => structured_count,
       "pages_with_canonical" => count(pages, fn p -> non_empty?(p.canonical_url) end),
-      "pages_with_template_type" => count(pages, fn p -> p.template_type_id != nil end),
+      "pages_with_collection" => count(pages, fn p -> p.collection_id != nil end),
       "pages_with_twitter_card" => count(pages, fn p -> non_empty?(p.twitter_card) end),
       "avg_seo_score" => avg_score,
       "stale_pages_count" => count(pages, fn p ->

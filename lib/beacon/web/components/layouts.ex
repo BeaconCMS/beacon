@@ -228,11 +228,11 @@ defmodule Beacon.Web.Layouts do
     # fb:app_id
     tags = if non_empty?(config.fb_app_id), do: [%{"property" => "fb:app_id", "content" => config.fb_app_id} | tags], else: tags
 
-    # Template type meta tags (resolved from mapping, integrated via dedup)
-    tags = case manifest[:template_type] do
+    # Collection meta tags (resolved from mapping, integrated via dedup)
+    tags = case manifest[:collection] do
       %{meta_tag_mapping: mapping} when is_list(mapping) and length(mapping) > 0 ->
-        tt_tags = Beacon.TemplateType.MetaTagResolver.resolve(mapping, manifest[:fields] || %{}, manifest, config)
-        deduplicate_meta_tags(tt_tags, tags)
+        col_tags = Beacon.Collection.MetaTagResolver.resolve(mapping, manifest[:fields] || %{}, manifest, config)
+        deduplicate_meta_tags(col_tags, tags)
       _ -> tags
     end
 

@@ -128,8 +128,8 @@ defmodule Beacon.RuntimeRenderer.Loader do
       og_image: Map.get(page, :og_image),
       twitter_card: Map.get(page, :twitter_card),
       date_modified: Map.get(page, :date_modified),
-      template_type_id: Map.get(page, :template_type_id),
-      template_type: resolve_template_type(site, Map.get(page, :template_type_id)),
+      collection_id: Map.get(page, :collection_id),
+      collection: resolve_collection(site, Map.get(page, :collection_id)),
       fields: Map.get(page, :fields, %{}),
       inserted_at: Map.get(page, :inserted_at),
       updated_at: Map.get(page, :updated_at),
@@ -140,16 +140,17 @@ defmodule Beacon.RuntimeRenderer.Loader do
     })
   end
 
-  defp resolve_template_type(_site, nil), do: nil
-  defp resolve_template_type(site, template_type_id) do
-    case Content.get_template_type(site, template_type_id) do
+  defp resolve_collection(_site, nil), do: nil
+  defp resolve_collection(site, collection_id) do
+    case Content.get_collection(site, collection_id) do
       nil -> nil
-      tt -> %{
-        name: tt.name,
-        slug: tt.slug,
-        field_definitions: tt.field_definitions,
-        json_ld_mapping: tt.json_ld_mapping,
-        meta_tag_mapping: tt.meta_tag_mapping
+      col -> %{
+        name: col.name,
+        slug: col.slug,
+        mode: col.mode,
+        fields: col.fields,
+        json_ld_mapping: col.json_ld_mapping,
+        meta_tag_mapping: col.meta_tag_mapping
       }
     end
   end

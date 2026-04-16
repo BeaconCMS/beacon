@@ -25,7 +25,7 @@ defmodule Beacon.Content.Page do
   alias Beacon.Content
   alias Beacon.Content.Page.Helper
 
-  @version 6
+  @version 7
 
   @type t :: %__MODULE__{}
 
@@ -45,7 +45,7 @@ defmodule Beacon.Content.Page do
     field :og_image, :string
     field :twitter_card, :string
     field :date_modified, :utc_datetime_usec
-    field :template_type_id, Ecto.UUID
+    field :collection_id, Ecto.UUID
     field :fields, :map, default: %{}
     field :order, :integer, default: 1
     field :format, Beacon.Types.Atom, default: :heex
@@ -91,7 +91,7 @@ defmodule Beacon.Content.Page do
         :og_image,
         :twitter_card,
         :date_modified,
-        :template_type_id,
+        :collection_id,
         :fields,
         :order,
         :layout_id,
@@ -141,7 +141,7 @@ defmodule Beacon.Content.Page do
       :og_image,
       :twitter_card,
       :date_modified,
-      :template_type_id,
+      :collection_id,
       :fields,
       :format
     ])

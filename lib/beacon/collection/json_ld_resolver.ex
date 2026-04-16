@@ -1,6 +1,6 @@
-defmodule Beacon.TemplateType.JsonLdResolver do
+defmodule Beacon.Collection.JsonLdResolver do
   @moduledoc """
-  Resolves a template type's `json_ld_mapping` into a concrete JSON-LD map
+  Resolves a collection's `json_ld_mapping` into a concrete JSON-LD map
   by substituting `{field}` references with actual values from the page.
   """
 
@@ -10,7 +10,7 @@ defmodule Beacon.TemplateType.JsonLdResolver do
   Resolves a JSON-LD mapping template into a concrete JSON-LD map.
 
   Reference syntax: `{name}` where `name` is looked up in this order:
-  1. `fields[name]` — the page's template-type-defined fields
+  1. `fields[name]` — the page's collection-defined fields
   2. `manifest[name]` — page manifest fields (title, path, description, etc.)
   3. Config values: `site_name`, `site_url`
 

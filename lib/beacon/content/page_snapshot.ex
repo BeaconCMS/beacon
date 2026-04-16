@@ -38,7 +38,7 @@ defmodule Beacon.Content.PageSnapshot do
     field :og_image, :string
     field :twitter_card, :string
     field :date_modified, :utc_datetime_usec
-    field :template_type_id, Ecto.UUID
+    field :collection_id, Ecto.UUID
     field :fields, :map, default: %{}
     belongs_to :event, Beacon.Content.PageEvent
     timestamps updated_at: false

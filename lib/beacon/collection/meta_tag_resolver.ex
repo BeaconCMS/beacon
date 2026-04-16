@@ -1,6 +1,6 @@
-defmodule Beacon.TemplateType.MetaTagResolver do
+defmodule Beacon.Collection.MetaTagResolver do
   @moduledoc """
-  Resolves a template type's `meta_tag_mapping` into concrete meta tag maps
+  Resolves a collection's `meta_tag_mapping` into concrete meta tag maps
   by substituting `{field}` references with actual values from the page.
   """
 
@@ -9,7 +9,7 @@ defmodule Beacon.TemplateType.MetaTagResolver do
   @doc """
   Resolves a list of meta tag mapping templates into concrete meta tag maps.
 
-  Same reference syntax as `Beacon.TemplateType.JsonLdResolver`.
+  Same reference syntax as `Beacon.Collection.JsonLdResolver`.
   Returns an empty list if the mapping is empty.
   """
   @spec resolve([map()], map(), map(), Beacon.Config.t()) :: [map()]

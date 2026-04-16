@@ -99,8 +99,8 @@ defmodule Beacon.RuntimeRenderer do
       og_image: Map.get(attrs, :og_image),
       twitter_card: Map.get(attrs, :twitter_card),
       date_modified: Map.get(attrs, :date_modified),
-      template_type_id: Map.get(attrs, :template_type_id),
-      template_type: Map.get(attrs, :template_type),
+      collection_id: Map.get(attrs, :collection_id),
+      collection: Map.get(attrs, :collection),
       fields: Map.get(attrs, :fields, %{}),
       inserted_at: Map.get(attrs, :inserted_at),
       updated_at: Map.get(attrs, :updated_at)
@@ -2406,9 +2406,16 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_ir({:comprehension, %{static: static, fingerprint: fp, dynamics: dyn_expr}}, a, b) do
     dynamics = eval_comprehension_dynamics(dyn_expr, a, b)
 
+    # Convert dynamics (list of lists) to entries format for LiveView 1.1+
+    entries =
+      Enum.map(dynamics, fn dyn_parts ->
+        {nil, %{}, fn _vars, _track -> dyn_parts end}
+      end)
+
     %Phoenix.LiveView.Comprehension{
       static: static,
-      dynamics: dynamics,
+      has_key?: false,
+      entries: entries,
       fingerprint: fp,
       stream: nil
     }

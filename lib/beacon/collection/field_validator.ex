@@ -1,6 +1,6 @@
-defmodule Beacon.TemplateType.FieldValidator do
+defmodule Beacon.Collection.FieldValidator do
   @moduledoc """
-  Validates a page's `fields` JSONB against its template type's `field_definitions`.
+  Validates a page's `fields` JSONB against its collection's `field_definitions`.
   """
 
   @doc """
