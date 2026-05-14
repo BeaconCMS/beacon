@@ -16,8 +16,7 @@ defmodule Beacon.Template.Markdown do
 
   """
   @spec convert_to_html(Beacon.Template.t(), Beacon.Template.LoadMetadata.t()) :: {:cont, Beacon.Template.t()} | {:halt, Exception.t()}
-  def convert_to_html(template, _metadata, opts \\ []) do
-    syntax_highlight_theme = Keyword.get(opts, :syntax_highlight_theme, "onedark")
+  def convert_to_html(template, _metadata, _opts \\ []) do
 
     template =
       MDEx.to_html!(template,
@@ -40,9 +39,8 @@ defmodule Beacon.Template.Markdown do
         render: [
           unsafe_: true
         ],
-        features: [
-          syntax_highlight_theme: syntax_highlight_theme
-        ]
+        syntax_highlight: [formatter: {:html_inline, theme: "onedark"}],
+        sanitize: MDEx.Document.default_sanitize_options()
       )
 
     {:cont, template}
