@@ -153,23 +153,46 @@ defmodule Beacon.RuntimeRenderer do
     end
   end
 
+  defp component_ast_entry([name, binary]) do
+    ast =
+      case :erlang.binary_to_term(binary) do
+        %{ast: ast} when is_list(ast) -> ast
+        _ -> []
+      end
+
+    {to_string(name), ast}
+  end
+
+  defp publish_layout_from_db(site, layout_id) do
+    case Beacon.Content.get_published_layout(site, layout_id) do
+      nil ->
+        :not_found
+
+      layout ->
+        publish_layout(site, to_string(layout.id), layout.template,
+          meta_tags: layout.meta_tags || [],
+          resource_links: layout.resource_links || [],
+          default_og_image: Map.get(layout, :default_og_image),
+          default_twitter_card: Map.get(layout, :default_twitter_card)
+        )
+    end
+  end
+
+  defp publish_error_page_from_db(site, status_code) do
+    with error_pages when is_list(error_pages) <- Beacon.Content.list_error_pages(site, per_page: :infinity),
+         %{} = error_page <- Enum.find(error_pages, &(&1.status == status_code)) do
+      publish_error_page(site, error_page.status, error_page.template)
+    else
+      _ -> :not_found
+    end
+  end
+
   defp build_component_registry(site) do
     # Build a map of component name → AST from stored component templates
     registry =
       case :ets.match(@table, {{site, :component, :"$1"}, :"$2"}) do
-        matches when is_list(matches) and matches != [] ->
-          Map.new(matches, fn [name, binary] ->
-            component = :erlang.binary_to_term(binary)
-            component_ast =
-              case component do
-                %{ast: ast} when is_list(ast) -> ast
-                _ -> []
-              end
-            {to_string(name), component_ast}
-          end)
-
-        _ ->
-          %{}
+        matches when is_list(matches) and matches != [] -> Map.new(matches, &component_ast_entry/1)
+        _ -> %{}
       end
 
     # If no components in ETS (lazy loading), try loading from DB
@@ -236,20 +259,12 @@ defmodule Beacon.RuntimeRenderer do
       _ ->
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :layouts)
 
-        Beacon.Cache.fetch(@table, {site, :layout_load, layout_id}, fn ->
-          case Beacon.Content.get_published_layout(site, layout_id) do
-            nil ->
-              :not_found
-
-            layout ->
-              publish_layout(site, to_string(layout.id), layout.template,
-                meta_tags: layout.meta_tags || [],
-                resource_links: layout.resource_links || [],
-                default_og_image: Map.get(layout, :default_og_image),
-                default_twitter_card: Map.get(layout, :default_twitter_card)
-              )
-          end
-        end, ttl)
+        Beacon.Cache.fetch(
+          @table,
+          {site, :layout_load, layout_id},
+          fn -> publish_layout_from_db(site, layout_id) end,
+          ttl
+        )
 
         case :ets.lookup(@table, {site, :layout, layout_id}) do
           [{_, ast}] when is_list(ast) ->
@@ -322,19 +337,12 @@ defmodule Beacon.RuntimeRenderer do
       _ ->
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :error_pages)
 
-        Beacon.Cache.fetch(@table, {site, :error_page_load, status_code}, fn ->
-          case Beacon.Content.list_error_pages(site, per_page: :infinity) do
-            error_pages when is_list(error_pages) ->
-              Enum.find(error_pages, &(&1.status == status_code))
-              |> case do
-                nil -> :not_found
-                error_page -> publish_error_page(site, error_page.status, error_page.template)
-              end
-
-            _ ->
-              :not_found
-          end
-        end, ttl)
+        Beacon.Cache.fetch(
+          @table,
+          {site, :error_page_load, status_code},
+          fn -> publish_error_page_from_db(site, status_code) end,
+          ttl
+        )
 
         case :ets.lookup(@table, {site, :error_page, status_code}) do
           [{_, ast}] when is_list(ast) ->
@@ -360,6 +368,7 @@ defmodule Beacon.RuntimeRenderer do
 
     # Extract default attr values from component attrs
     attrs = Keyword.get(opts, :attrs, [])
+
     defaults =
       Enum.reduce(attrs, %{}, fn
         %{name: attr_name, opts: attr_opts}, acc ->
@@ -367,7 +376,9 @@ defmodule Beacon.RuntimeRenderer do
             nil -> acc
             default -> Map.put(acc, String.to_existing_atom(attr_name), default)
           end
-        _, acc -> acc
+
+        _, acc ->
+          acc
       end)
 
     :ets.insert(@table, {{site, :component, name}, :erlang.term_to_binary(%{ast: component_ast, body: body, defaults: defaults})})
@@ -388,66 +399,56 @@ defmodule Beacon.RuntimeRenderer do
       ""
   end
 
+  defp render_serialized_component(site, serialized, assigns) do
+    data = :erlang.binary_to_term(serialized)
+    assigns = Map.merge(Map.get(data, :defaults, %{}), assigns)
+    body_bindings = execute_component_body(Map.get(data, :body, ""), assigns)
+
+    full_assigns =
+      assigns
+      |> Map.merge(body_bindings)
+      |> Map.delete(:__changed__)
+      |> Map.put_new(:inner_block, [])
+      |> Map.put_new(:beacon, %{site: site})
+
+    Beacon.Client.LiveViewCompiler.render(Map.get(data, :ast, []), full_assigns)
+  end
+
   defp do_render_component(site, name, assigns) do
     case :ets.lookup(@table, {site, :component, name}) do
       [{_, serialized}] ->
-        data = :erlang.binary_to_term(serialized)
-        defaults = Map.get(data, :defaults, %{})
-        body = Map.get(data, :body, "")
-        ast = Map.get(data, :ast, [])
-
-        assigns = Map.merge(defaults, assigns)
-        body_bindings = execute_component_body(body, assigns)
-
-        full_assigns =
-          assigns
-          |> Map.merge(body_bindings)
-          |> Map.delete(:__changed__)
-          |> Map.put_new(:inner_block, [])
-          |> Map.put_new(:beacon, %{site: site})
-
-        Beacon.Client.LiveViewCompiler.render(ast, full_assigns)
+        render_serialized_component(site, serialized, assigns)
 
       [] ->
-        ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :components)
-
-        Beacon.Cache.fetch(@table, {site, :component_load, name}, fn ->
-          case Beacon.Content.get_component_by(site, [name: name], preloads: [:attrs]) do
-            nil ->
-              :not_found
-
-            component ->
-              component_attrs = (component.attrs || [])
-              attrs_list = Enum.map(component_attrs, fn a -> %{name: a.name, opts: a.opts || []} end)
-              publish_component(site, component.name, component.template, component.body || "", attrs: attrs_list)
-          end
-        end, ttl)
+        load_component(site, name)
 
         # Re-check after load
         case :ets.lookup(@table, {site, :component, name}) do
           [{_, serialized}] ->
-            data = :erlang.binary_to_term(serialized)
-            defaults = Map.get(data, :defaults, %{})
-            body = Map.get(data, :body, "")
-            ast = Map.get(data, :ast, [])
-
-            assigns = Map.merge(defaults, assigns)
-            body_bindings = execute_component_body(body, assigns)
-
-            full_assigns =
-              assigns
-              |> Map.merge(body_bindings)
-              |> Map.delete(:__changed__)
-              |> Map.put_new(:inner_block, [])
-              |> Map.put_new(:beacon, %{site: site})
-
-            Beacon.Client.LiveViewCompiler.render(ast, full_assigns)
+            render_serialized_component(site, serialized, assigns)
 
           [] ->
             require Logger
             Logger.warning("[RuntimeRenderer] Component #{name} not found for site #{site}")
             ""
         end
+    end
+  end
+
+  defp load_component(site, name) do
+    ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :components)
+
+    Beacon.Cache.fetch(@table, {site, :component_load, name}, fn -> publish_component_from_db(site, name) end, ttl)
+  end
+
+  defp publish_component_from_db(site, name) do
+    case Beacon.Content.get_component_by(site, [name: name], preloads: [:attrs]) do
+      nil ->
+        :not_found
+
+      component ->
+        attrs_list = Enum.map(component.attrs || [], fn a -> %{name: a.name, opts: a.opts || []} end)
+        publish_component(site, component.name, component.template, component.body || "", attrs: attrs_list)
     end
   end
 
@@ -466,23 +467,23 @@ defmodule Beacon.RuntimeRenderer do
     changed = if track_changes?, do: Map.get(assigns, :__changed__), else: nil
 
     {results, _bindings} =
-      Enum.reduce(dynamics, {[], bindings}, fn %{deps: deps, expr: expr}, {acc, b} ->
-        case expr do
-          {:bind, name, value_expr} ->
-            value = eval_ir(value_expr, assigns, b)
-            {acc, Map.put(b, name, value)}
-
-          _ ->
-            if changed != nil and deps != [] and not Enum.any?(deps, &Map.has_key?(changed, &1)) do
-              {[nil | acc], b}
-            else
-              result = eval_ir(expr, assigns, b)
-              {[safe_dynamic(result) | acc], b}
-            end
-        end
-      end)
+      Enum.reduce(dynamics, {[], bindings}, &evaluate_dynamic(&1, &2, assigns, changed))
 
     Enum.reverse(results)
+  end
+
+  # A `:bind` dynamic only adds to the bindings. Any other is skipped when
+  # change tracking says nothing it depends on changed.
+  defp evaluate_dynamic(%{expr: {:bind, name, value_expr}}, {acc, bindings}, assigns, _changed) do
+    {acc, Map.put(bindings, name, eval_ir(value_expr, assigns, bindings))}
+  end
+
+  defp evaluate_dynamic(%{deps: deps, expr: expr}, {acc, bindings}, assigns, changed) do
+    if changed != nil and deps != [] and not Enum.any?(deps, &Map.has_key?(changed, &1)) do
+      {[nil | acc], bindings}
+    else
+      {[safe_dynamic(eval_ir(expr, assigns, bindings)) | acc], bindings}
+    end
   end
 
   defp execute_component_body(nil, _assigns), do: %{}
@@ -561,15 +562,7 @@ defmodule Beacon.RuntimeRenderer do
         # Lazy-load snippet helpers for this site
         ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :snippets)
 
-        Beacon.Cache.fetch(@table, {site, :snippet_helpers_load}, fn ->
-          helpers = Beacon.Content.list_snippet_helpers(site)
-
-          for helper <- helpers do
-            publish_snippet_helper(site, helper.name, helper.body)
-          end
-
-          :loaded
-        end, ttl)
+        Beacon.Cache.fetch(@table, {site, :snippet_helpers_load}, fn -> publish_snippet_helpers(site) end, ttl)
 
         case :ets.lookup(@table, {site, :snippet_helper, helper_name}) do
           [{_, body}] ->
@@ -580,6 +573,14 @@ defmodule Beacon.RuntimeRenderer do
             {:error, :not_found}
         end
     end
+  end
+
+  defp publish_snippet_helpers(site) do
+    for helper <- Beacon.Content.list_snippet_helpers(site) do
+      publish_snippet_helper(site, helper.name, helper.body)
+    end
+
+    :loaded
   end
 
   defp eval_snippet_helper_body(body, assigns) when is_binary(body) do
@@ -619,23 +620,28 @@ defmodule Beacon.RuntimeRenderer do
         {:ok, Beacon.Client.LiveViewCompiler.render(ast, full_assigns)}
 
       _ ->
-        # Lazy-load from DB
-        case Beacon.Content.get_site_setting(site, key) do
-          %{value: template} when is_binary(template) ->
-            publish_site_setting(site, key, template)
+        load_and_render_site_setting(site, key, assigns)
+    end
+  end
 
-            case :ets.lookup(@table, {site, :site_setting, key}) do
-              [{_, ast}] when is_list(ast) ->
-                full_assigns = Map.delete(assigns, :__changed__)
-                {:ok, Beacon.Client.LiveViewCompiler.render(ast, full_assigns)}
+  defp load_and_render_site_setting(site, key, assigns) do
+    case Beacon.Content.get_site_setting(site, key) do
+      %{value: template} when is_binary(template) ->
+        publish_site_setting(site, key, template)
+        render_cached_site_setting(site, key, assigns)
 
-              _ ->
-                {:error, :not_found}
-            end
+      nil ->
+        {:error, :not_found}
+    end
+  end
 
-          nil ->
-            {:error, :not_found}
-        end
+  defp render_cached_site_setting(site, key, assigns) do
+    case :ets.lookup(@table, {site, :site_setting, key}) do
+      [{_, ast}] when is_list(ast) ->
+        {:ok, Beacon.Client.LiveViewCompiler.render(ast, Map.delete(assigns, :__changed__))}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 
@@ -682,21 +688,22 @@ defmodule Beacon.RuntimeRenderer do
     all_routes = :ets.match(@table, {{site, :route, :"$1"}, :"$2"})
 
     Enum.find_value(all_routes, :error, fn [route_path, page_id] ->
-      route_segments = String.split(route_path, "/", trim: true)
-
-      if length(route_segments) == length(request_segments) do
-        matches? =
-          Enum.zip(route_segments, request_segments)
-          |> Enum.all?(fn
-            {":" <> _, _} -> true
-            {"*" <> _, _} -> true
-            {a, b} -> a == b
-          end)
-
-        if matches?, do: {:ok, page_id}, else: nil
-      end
+      if route_matches?(route_path, request_segments), do: {:ok, page_id}
     end)
   end
+
+  # A route matches when it has the same number of segments and every one is a
+  # `:param`, a `*glob`, or literally equal.
+  defp route_matches?(route_path, request_segments) do
+    route_segments = String.split(route_path, "/", trim: true)
+
+    length(route_segments) == length(request_segments) and
+      route_segments |> Enum.zip(request_segments) |> Enum.all?(&segment_matches?/1)
+  end
+
+  defp segment_matches?({":" <> _, _}), do: true
+  defp segment_matches?({"*" <> _, _}), do: true
+  defp segment_matches?({route_segment, request_segment}), do: route_segment == request_segment
 
   defp load_page_by_path(site, path) do
     config = Beacon.Config.fetch!(site)
@@ -711,59 +718,50 @@ defmodule Beacon.RuntimeRenderer do
         _ -> Beacon.Config.effective_ttl(config, :pages)
       end
 
-    Beacon.Cache.fetch(@table, {site, :page_load, path}, fn ->
-      wait_for_load_slot(site)
+    Beacon.Cache.fetch(@table, {site, :page_load, path}, fn -> load_page_from_db(site, path) end, ttl)
+  end
 
-      try do
-        case Beacon.Content.list_published_pages_for_paths(site, [path]) do
-          [page] ->
-            Beacon.RuntimeRenderer.Loader.load_page(site, page)
-            {:ok, page.id}
+  defp load_page_from_db(site, path) do
+    wait_for_load_slot(site)
 
-          _ ->
-            # No exact match — try matching against dynamic route patterns in the DB
-            match_dynamic_route_from_db(site, path)
-        end
-      after
-        release_load_slot(site)
-      end
-    end, ttl)
+    case Beacon.Content.list_published_pages_for_paths(site, [path]) do
+      [page] ->
+        Beacon.RuntimeRenderer.Loader.load_page(site, page)
+        {:ok, page.id}
+
+      _ ->
+        # No exact match — try matching against dynamic route patterns in the DB
+        match_dynamic_route_from_db(site, path)
+    end
+  after
+    release_load_slot(site)
   end
 
   defp match_dynamic_route_from_db(site, path) do
     request_segments = String.split(path, "/", trim: true)
 
     # Query only paths (lightweight) to find a dynamic route pattern that matches
-    Beacon.Content.list_published_page_paths(site)
+    site
+    |> Beacon.Content.list_published_page_paths()
     |> Enum.find_value(:error, fn {_page_id, route_path} ->
-      route_segments = String.split(route_path, "/", trim: true)
-
-      if length(route_segments) == length(request_segments) do
-        matches? =
-          Enum.zip(route_segments, request_segments)
-          |> Enum.all?(fn
-            {":" <> _, _} -> true
-            {"*" <> _, _} -> true
-            {a, b} -> a == b
-          end)
-
-        if matches? do
-          # Found a matching dynamic route — load the page by its pattern path
-          case Beacon.Content.list_published_pages_for_paths(site, [route_path]) do
-            [page] ->
-              Beacon.RuntimeRenderer.Loader.load_page(site, page)
-              {:ok, page.id}
-
-            _ ->
-              nil
-          end
-        end
-      end
+      if route_matches?(route_path, request_segments), do: load_page_at_path(site, route_path)
     end)
   end
 
+  # Found a matching dynamic route — load the page by its pattern path.
+  defp load_page_at_path(site, route_path) do
+    case Beacon.Content.list_published_pages_for_paths(site, [route_path]) do
+      [page] ->
+        Beacon.RuntimeRenderer.Loader.load_page(site, page)
+        {:ok, page.id}
+
+      _ ->
+        nil
+    end
+  end
+
   @doc """
-  @doc """
+  @doc \"""
   Registers a route (path → page_id) in ETS without loading the page IR.
   Used at boot to populate the route index for dynamic route matching.
   """
@@ -799,18 +797,27 @@ defmodule Beacon.RuntimeRenderer do
     config = Beacon.Config.fetch!(site)
     ttl = Beacon.Config.effective_ttl(config, :pages)
 
-    Beacon.Cache.fetch(@table, {site, :page_load, page_id}, fn ->
-      wait_for_load_slot(site)
+    Beacon.Cache.fetch(
+      @table,
+      {site, :page_load, page_id},
+      fn ->
+        wait_for_load_slot(site)
 
-      try do
-        case Beacon.Content.get_published_page(site, page_id) do
-          nil -> :error
-          page -> Beacon.RuntimeRenderer.Loader.load_page(site, page); :ok
+        try do
+          case Beacon.Content.get_published_page(site, page_id) do
+            nil ->
+              :error
+
+            page ->
+              Beacon.RuntimeRenderer.Loader.load_page(site, page)
+              :ok
+          end
+        after
+          release_load_slot(site)
         end
-      after
-        release_load_slot(site)
-      end
-    end, ttl)
+      end,
+      ttl
+    )
   end
 
   defp wait_for_load_slot(site) do
@@ -1078,15 +1085,12 @@ defmodule Beacon.RuntimeRenderer do
         Beacon.GraphQL.QueryExecutor.execute_page_queries(site, page_queries, path_params, query_params)
 
       # Convert string keys to atoms for template assigns
-      atomized =
-        Map.new(assigns, fn {k, v} ->
-          key = if is_binary(k), do: safe_to_existing_atom(k), else: k
-          {key, v}
-        end)
-
-      {atomized, endpoint_names}
+      {Map.new(assigns, &atomize_assign_key/1), endpoint_names}
     end
   end
+
+  defp atomize_assign_key({key, value}) when is_binary(key), do: {safe_to_existing_atom(key), value}
+  defp atomize_assign_key({key, value}), do: {key, value}
 
   defp load_page_queries(site, page_id) do
     # Page queries use binary_id (UUID) foreign keys. If page_id is not a valid UUID
@@ -1333,31 +1337,32 @@ defmodule Beacon.RuntimeRenderer do
   # The pattern is a string like "{:incorrect_format, email}" that gets parsed
   # as an Elixir pattern and matched against the runtime message value.
   defp match_info_pattern(pattern_string, msg) when is_binary(pattern_string) do
-    try do
-      pattern_ast = Code.string_to_quoted!(pattern_string)
-      match_pattern(pattern_ast, msg, %{})
-    rescue
-      _ -> :no_match
-    end
+    pattern_ast = Code.string_to_quoted!(pattern_string)
+    match_pattern(pattern_ast, msg, %{})
+  rescue
+    _ -> :no_match
   end
 
   defp ensure_site_handlers_loaded(site, type) do
     ttl = Beacon.Config.effective_ttl(Beacon.Config.fetch!(site), :handlers)
 
-    Beacon.Cache.fetch(@table, {site, :handlers_load, type}, fn ->
-      handlers =
-        case type do
-          :event -> Beacon.Content.list_event_handlers(site)
-          :info -> Beacon.Content.list_info_handlers(site)
-        end
+    Beacon.Cache.fetch(@table, {site, :handlers_load, type}, fn -> store_site_handlers(site, type) end, ttl)
+  end
 
-      for handler <- handlers do
-        name = if type == :event, do: handler.name, else: handler.msg
-        store_site_handler(site, type, name, handler.code)
+  # Event handlers are keyed by name, info handlers by the message they match.
+  defp store_site_handlers(site, type) do
+    handlers =
+      case type do
+        :event -> Beacon.Content.list_event_handlers(site)
+        :info -> Beacon.Content.list_info_handlers(site)
       end
 
-      :loaded
-    end, ttl)
+    for handler <- handlers do
+      name = if type == :event, do: handler.name, else: handler.msg
+      store_site_handler(site, type, name, handler.code)
+    end
+
+    :loaded
   end
 
   def unpublish_page(site, page_id) do
@@ -1849,32 +1854,30 @@ defmodule Beacon.RuntimeRenderer do
     {:component_fun, nil, nil}
   end
 
+  # One key/value of a component's assigns map. `inner_block` carries the slots,
+  # each of which is itself a map whose `inner_block` is an expression.
+  defp transform_component_pair({:__changed__, _}), do: {:__changed__, {:literal, nil}}
+
+  defp transform_component_pair({:inner_block, slots}) when is_list(slots) do
+    {:inner_block, {:literal, Enum.map(slots, &transform_slot/1)}}
+  end
+
+  defp transform_component_pair({key, value}), do: {key, transform_expr(value)}
+
+  defp transform_slot({:%{}, _, slot_pairs}) do
+    Enum.into(slot_pairs, %{}, fn
+      {:__slot__, name} -> {:__slot__, name}
+      {:inner_block, block_ast} -> {:inner_block, transform_expr(block_ast)}
+      {k, v} -> {k, transform_expr(v)}
+    end)
+  end
+
+  defp transform_slot(other), do: other
+
   # Extract component assigns map, transforming inner_block slots
   defp extract_component_assigns({:%{}, _, pairs}) do
     transformed =
-      Enum.map(pairs, fn
-        {:__changed__, _} ->
-          {:__changed__, {:literal, nil}}
-
-        {:inner_block, slots} when is_list(slots) ->
-          slot_irs =
-            Enum.map(slots, fn
-              {:%{}, _, slot_pairs} ->
-                Enum.into(slot_pairs, %{}, fn
-                  {:__slot__, name} -> {:__slot__, name}
-                  {:inner_block, block_ast} -> {:inner_block, transform_expr(block_ast)}
-                  {k, v} -> {k, transform_expr(v)}
-                end)
-
-              other ->
-                other
-            end)
-
-          {:inner_block, {:literal, slot_irs}}
-
-        {key, value} ->
-          {key, transform_expr(value)}
-      end)
+      Enum.map(pairs, &transform_component_pair/1)
 
     {:component_assigns, transformed}
   end
@@ -1886,36 +1889,14 @@ defmodule Beacon.RuntimeRenderer do
     case args do
       [{:%{}, _, base_pairs} | rest_args] ->
         # Extract the base pairs just like the normal map case
-        transformed_base =
-          Enum.map(base_pairs, fn
-            {:__changed__, _} ->
-              {:__changed__, {:literal, nil}}
-
-            {:inner_block, slots} when is_list(slots) ->
-              slot_irs =
-                Enum.map(slots, fn
-                  {:%{}, _, slot_pairs} ->
-                    Enum.into(slot_pairs, %{}, fn
-                      {:__slot__, name} -> {:__slot__, name}
-                      {:inner_block, block_ast} -> {:inner_block, transform_expr(block_ast)}
-                      {k, v} -> {k, transform_expr(v)}
-                    end)
-
-                  other ->
-                    other
-                end)
-
-              {:inner_block, {:literal, slot_irs}}
-
-            {key, value} ->
-              {key, transform_expr(value)}
-          end)
+        transformed_base = Enum.map(base_pairs, &transform_component_pair/1)
 
         # The rest map is the second argument — transform it for runtime merge
-        rest_ir = case rest_args do
-          [rest_map_ast | _] -> transform_expr(rest_map_ast)
-          _ -> {:literal, %{}}
-        end
+        rest_ir =
+          case rest_args do
+            [rest_map_ast | _] -> transform_expr(rest_map_ast)
+            _ -> {:literal, %{}}
+          end
 
         {:component_assigns_dynamic, transformed_base, rest_ir}
 
@@ -2083,32 +2064,25 @@ defmodule Beacon.RuntimeRenderer do
 
   defp safe_to_map(_), do: %{}
 
+  # A component called with a single assigns argument; anything else has none.
+  defp single_arg_assigns([assigns_ir], a, b), do: safe_to_map(eval_ir(assigns_ir, a, b))
+  defp single_arg_assigns(_args, _a, _b), do: %{}
+
   # Build inner_block slot entries for CMS components from IR slot descriptors
+  # The assigns a CMS component receives: slots rendered, everything else
+  # evaluated, and `__changed__` cleared.
+  defp cms_component_assigns(pairs, a, b) do
+    Enum.reduce(pairs, %{}, fn
+      {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
+      {:inner_block, {:literal, slot_irs}}, acc -> Map.put(acc, :inner_block, build_cms_inner_block(slot_irs, a, b))
+      {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
+    end)
+  end
+
   defp build_cms_inner_block(slot_irs, a, b) when is_list(slot_irs) do
     Enum.map(slot_irs, fn
       %{__slot__: name, inner_block: block_ir} ->
-        inner_fn = fn _changed, slot_arg ->
-          case block_ir do
-            {:inner_block_ir, ir, let_var} when is_atom(let_var) and not is_nil(let_var) ->
-              inner_assigns =
-                Map.merge(a, b)
-                |> Map.put(let_var, slot_arg)
-                |> Map.delete(:__changed__)
-
-              render_ir(ir, inner_assigns)
-
-            {:inner_block_ir, ir, _} ->
-              render_ir(ir, Map.merge(a, b))
-
-            {:inner_block_ir, ir} ->
-              render_ir(ir, Map.merge(a, b))
-
-            _ ->
-              ""
-          end
-        end
-
-        %{__slot__: name, inner_block: inner_fn}
+        %{__slot__: name, inner_block: slot_inner_fn(block_ir, a, b)}
 
       slot ->
         slot
@@ -2116,6 +2090,26 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp build_cms_inner_block(_, _a, _b), do: []
+
+  # Phoenix calls `entry.inner_block.(changed, argument)`: the first parameter is
+  # change tracking and the second is the slot argument, e.g. a form struct.
+  defp slot_inner_fn(block_ir, a, b) do
+    fn _changed, slot_arg -> render_slot_block(block_ir, slot_arg, a, b) end
+  end
+
+  defp render_slot_block({:inner_block_ir, ir, let_var}, slot_arg, a, b) when is_atom(let_var) and not is_nil(let_var) do
+    inner_assigns =
+      a
+      |> Map.merge(b)
+      |> Map.put(let_var, slot_arg)
+      |> Map.delete(:__changed__)
+
+    render_ir(ir, inner_assigns)
+  end
+
+  defp render_slot_block({:inner_block_ir, ir, _let_var}, _slot_arg, a, b), do: render_ir(ir, Map.merge(a, b))
+  defp render_slot_block({:inner_block_ir, ir}, _slot_arg, a, b), do: render_ir(ir, Map.merge(a, b))
+  defp render_slot_block(_block_ir, _slot_arg, _a, _b), do: ""
 
   # Bind a for-loop variable, handling destructuring patterns
   defp destructure_binding(bindings, {:destructure, :tuple, names}, item) when is_tuple(item) do
@@ -2149,23 +2143,7 @@ defmodule Beacon.RuntimeRenderer do
   defp evaluate_dynamics(dynamics, assigns, track_changes?) do
     changed = if track_changes?, do: Map.get(assigns, :__changed__), else: nil
 
-    {results, _bindings} =
-      Enum.reduce(dynamics, {[], %{}}, fn %{deps: deps, expr: expr}, {acc, bindings} ->
-        case expr do
-          {:bind, name, value_expr} ->
-            value = eval_ir(value_expr, assigns, bindings)
-            {acc, Map.put(bindings, name, value)}
-
-          _ ->
-            if changed != nil and deps != [] and not Enum.any?(deps, &Map.has_key?(changed, &1)) do
-              {[nil | acc], bindings}
-            else
-              result = eval_ir(expr, assigns, bindings)
-              {[safe_dynamic(result) | acc], bindings}
-            end
-        end
-      end)
-
+    {results, _bindings} = Enum.reduce(dynamics, {[], %{}}, &evaluate_dynamic(&1, &2, assigns, changed))
     Enum.reverse(results)
   end
 
@@ -2222,32 +2200,29 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # Anonymous function: fn args -> body end
-  defp eval_ir({:anon_fn, clauses}, assigns, bindings) do
-    fn_clauses = clauses
+  #
+  # Only the first clause is built, which covers the common single-clause case;
+  # a multi-clause fn falls back to it. A single-clause fn additionally supports
+  # arity 2, which a multi-clause one does not.
+  defp eval_ir({:anon_fn, [{:clause, param_names, body_ir}]}, assigns, bindings) do
+    case length(param_names) do
+      2 ->
+        fn arg1, arg2 ->
+          bindings =
+            bindings
+            |> Map.put(Enum.at(param_names, 0), arg1)
+            |> Map.put(Enum.at(param_names, 1), arg2)
 
-    # Build a function that pattern-matches the first clause
-    # (simplified: supports single-clause fns which covers the common case)
-    case fn_clauses do
-      [{:clause, param_names, body_ir}] ->
-        case length(param_names) do
-          0 -> fn -> eval_ir(body_ir, assigns, bindings) end
-          1 -> fn arg1 -> eval_ir(body_ir, assigns, Map.put(bindings, hd(param_names), arg1)) end
-          2 -> fn arg1, arg2 ->
-            b = bindings |> Map.put(Enum.at(param_names, 0), arg1) |> Map.put(Enum.at(param_names, 1), arg2)
-            eval_ir(body_ir, assigns, b)
-          end
-          _ -> fn -> eval_ir(body_ir, assigns, bindings) end
+          eval_ir(body_ir, assigns, bindings)
         end
 
-      _ ->
-        # Multi-clause: use first clause as fallback
-        [{:clause, param_names, body_ir} | _] = fn_clauses
-        case length(param_names) do
-          0 -> fn -> eval_ir(body_ir, assigns, bindings) end
-          1 -> fn arg1 -> eval_ir(body_ir, assigns, Map.put(bindings, hd(param_names), arg1)) end
-          _ -> fn -> eval_ir(body_ir, assigns, bindings) end
-        end
+      arity ->
+        anon_fn(arity, param_names, body_ir, assigns, bindings)
     end
+  end
+
+  defp eval_ir({:anon_fn, [{:clause, param_names, body_ir} | _]}, assigns, bindings) do
+    anon_fn(length(param_names), param_names, body_ir, assigns, bindings)
   end
 
   # The bare `assigns` variable in HEEx refers to the entire assigns map
@@ -2286,46 +2261,15 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # Phoenix function component call — call the actual component function
-  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns, pairs}}, a, b) when is_atom(mod) and is_atom(fun) and not is_nil(mod) and not is_nil(fun) do
+  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns, pairs}}, a, b)
+       when is_atom(mod) and is_atom(fun) and not is_nil(mod) and not is_nil(fun) do
     component_assigns =
       Enum.reduce(pairs, %{}, fn
         {:__changed__, _}, acc ->
           Map.put(acc, :__changed__, nil)
 
         {:inner_block, {:literal, slot_irs}}, acc ->
-          rendered_slots =
-            Enum.map(slot_irs, fn
-              %{__slot__: name, inner_block: block_ir} ->
-                # Phoenix render_slot calls: entry.inner_block.(changed, argument)
-                # First param is change tracking, second is the slot argument (e.g. form struct)
-                inner_fn = fn _changed, slot_arg ->
-                  case block_ir do
-                    {:inner_block_ir, ir, let_var} when is_atom(let_var) and not is_nil(let_var) ->
-                      inner_assigns =
-                        Map.merge(a, b)
-                        |> Map.put(let_var, slot_arg)
-                        |> Map.delete(:__changed__)
-
-                      render_ir(ir, inner_assigns)
-
-                    {:inner_block_ir, ir, _} ->
-                      render_ir(ir, Map.merge(a, b))
-
-                    {:inner_block_ir, ir} ->
-                      render_ir(ir, Map.merge(a, b))
-
-                    _ ->
-                      ""
-                  end
-                end
-
-                %{__slot__: name, inner_block: inner_fn}
-
-              slot ->
-                slot
-            end)
-
-          Map.put(acc, :inner_block, rendered_slots)
+          Map.put(acc, :inner_block, build_cms_inner_block(slot_irs, a, b))
 
         {key, value_ir}, acc ->
           Map.put(acc, key, eval_ir(value_ir, a, b))
@@ -2346,13 +2290,7 @@ defmodule Beacon.RuntimeRenderer do
 
       if site do
         component_assigns =
-          Enum.reduce(pairs, %{}, fn
-            {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
-            {:inner_block, {:literal, slot_irs}}, acc ->
-              rendered_slots = build_cms_inner_block(slot_irs, a, b)
-              Map.put(acc, :inner_block, rendered_slots)
-            {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
-          end)
+          cms_component_assigns(pairs, a, b)
 
         render_component(site, component_name, component_assigns)
       else
@@ -2362,7 +2300,8 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   # Phoenix component call with dynamic assigns (@rest spread)
-  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns_dynamic, base_pairs, rest_ir}}, a, b) when is_atom(mod) and is_atom(fun) and not is_nil(mod) and not is_nil(fun) do
+  defp eval_ir({:component_call, {:component_fun, mod, fun}, {:component_assigns_dynamic, base_pairs, rest_ir}}, a, b)
+       when is_atom(mod) and is_atom(fun) and not is_nil(mod) and not is_nil(fun) do
     # Build base assigns from static pairs (handling inner_block slots)
     component_assigns =
       Enum.reduce(base_pairs, %{}, fn
@@ -2378,12 +2317,7 @@ defmodule Beacon.RuntimeRenderer do
       end)
       |> Map.put_new(:__changed__, nil)
 
-    # Merge rest assigns
-    rest = eval_ir(rest_ir, a, b)
-    rest_map = if is_map(rest), do: rest, else: if(is_list(rest), do: Map.new(rest), else: %{})
-    component_assigns = Map.merge(rest_map, component_assigns)
-
-    apply(mod, fun, [component_assigns])
+    apply(mod, fun, [merge_rest_assigns(component_assigns, rest_ir, a, b)])
   end
 
   # Unresolved component with dynamic assigns — try as CMS component
@@ -2396,17 +2330,9 @@ defmodule Beacon.RuntimeRenderer do
 
       if site do
         component_assigns =
-          Enum.reduce(base_pairs, %{}, fn
-            {:__changed__, _}, acc -> Map.put(acc, :__changed__, nil)
-            {:inner_block, {:literal, slot_irs}}, acc ->
-              rendered_slots = build_cms_inner_block(slot_irs, a, b)
-              Map.put(acc, :inner_block, rendered_slots)
-            {key, value_ir}, acc -> Map.put(acc, key, eval_ir(value_ir, a, b))
-          end)
-
-        rest = eval_ir(rest_ir, a, b)
-        rest_map = if is_map(rest), do: rest, else: if(is_list(rest), do: Map.new(rest), else: %{})
-        component_assigns = Map.merge(rest_map, component_assigns)
+          base_pairs
+          |> cms_component_assigns(a, b)
+          |> merge_rest_assigns(rest_ir, a, b)
 
         render_component(site, component_name, component_assigns)
       else
@@ -2554,24 +2480,10 @@ defmodule Beacon.RuntimeRenderer do
     if site do
       case :ets.lookup(@table, {site, :component, component_name}) do
         [{_, _}] ->
-          component_assigns =
-            case args do
-              [assigns_ir] ->
-                raw = eval_ir(assigns_ir, a, b)
-                safe_to_map(raw)
-
-              [] ->
-                %{}
-
-              _ ->
-                %{}
-            end
-
-          render_component(site, component_name, component_assigns)
+          render_component(site, component_name, single_arg_assigns(args, a, b))
 
         [] ->
-          evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
-          apply(mod, fun, evaluated_args)
+          apply(mod, fun, Enum.map(args, &eval_ir(&1, a, b)))
       end
     else
       evaluated_args = Enum.map(args, &eval_ir(&1, a, b))
@@ -2626,39 +2538,7 @@ defmodule Beacon.RuntimeRenderer do
     slot = eval_ir(slot_ir, a, b)
     slot_arg = if rest != [], do: eval_ir(hd(rest), a, b), else: nil
 
-    case slot do
-      nil -> ""
-      [] -> ""
-      content when is_binary(content) -> content
-      %Phoenix.LiveView.Rendered{} = rendered -> rendered
-      entries when is_list(entries) ->
-        # Standard Phoenix slot rendering: each entry has an :inner_block function
-        results =
-          Enum.map(entries, fn
-            %{inner_block: inner_fn} when is_function(inner_fn, 2) ->
-              inner_fn.(nil, slot_arg)
-            %{inner_block: inner_fn} when is_function(inner_fn, 1) ->
-              inner_fn.(slot_arg)
-            other ->
-              other
-          end)
-
-        # For a single slot entry, return the result directly
-        # (avoids wrapping Rendered structs in a list which Phoenix.HTML.Safe can't handle)
-        case results do
-          [single] -> single
-          multiple ->
-            # Multiple slots: concatenate their string representations
-            multiple
-            |> Enum.map(fn
-              %Phoenix.LiveView.Rendered{} = r -> r |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
-              bin when is_binary(bin) -> bin
-              other -> safe_to_string(other)
-            end)
-            |> IO.iodata_to_binary()
-        end
-      _ -> ""
-    end
+    render_slot_content(slot, slot_arg)
   end
 
   # Beacon helper calls — look up and execute page helpers from ETS
@@ -2672,21 +2552,8 @@ defmodule Beacon.RuntimeRenderer do
 
     if site && page_id do
       case :ets.lookup(@table, {site, page_id, :helper, name}) do
-        [{_, serialized}] ->
-          %{code: code_ast, args: args_pattern_ast} = :erlang.binary_to_term(serialized)
-
-          # Match the args pattern against the provided helper_args
-          case match_pattern(args_pattern_ast, helper_args, %{}) do
-            {:ok, bindings} ->
-              result = eval_ast(code_ast, bindings)
-              safe_to_string(result)
-
-            :no_match ->
-              ""
-          end
-
-        [] ->
-          ""
+        [{_, serialized}] -> eval_page_helper(serialized, helper_args)
+        [] -> ""
       end
     else
       ""
@@ -2707,28 +2574,75 @@ defmodule Beacon.RuntimeRenderer do
 
     if site do
       case :ets.lookup(@table, {site, :component, component_name}) do
-        [{_, _}] ->
-          component_assigns =
-            case args do
-              [assigns_ir] ->
-                raw = eval_ir(assigns_ir, a, b)
-                safe_to_map(raw)
-
-              [] ->
-                %{}
-
-              _ ->
-                %{}
-            end
-
-          render_component(site, component_name, component_assigns)
-
-        [] ->
-          apply_kernel_call(fun, args, a, b)
+        [{_, _}] -> render_component(site, component_name, single_arg_assigns(args, a, b))
+        [] -> apply_kernel_call(fun, args, a, b)
       end
     else
       apply_kernel_call(fun, args, a, b)
     end
+  end
+
+  # `@rest` spreads: the rest map is evaluated and merged under the base assigns.
+  defp merge_rest_assigns(component_assigns, rest_ir, a, b) do
+    rest_map =
+      case eval_ir(rest_ir, a, b) do
+        rest when is_map(rest) -> rest
+        rest when is_list(rest) -> Map.new(rest)
+        _ -> %{}
+      end
+
+    Map.merge(rest_map, component_assigns)
+  end
+
+  # A page helper is stored with the pattern its arguments must match.
+  defp eval_page_helper(serialized, helper_args) do
+    %{code: code_ast, args: args_pattern_ast} = :erlang.binary_to_term(serialized)
+
+    case match_pattern(args_pattern_ast, helper_args, %{}) do
+      {:ok, bindings} -> safe_to_string(eval_ast(code_ast, bindings))
+      :no_match -> ""
+    end
+  end
+
+  defp render_slot_content(nil, _slot_arg), do: ""
+  defp render_slot_content([], _slot_arg), do: ""
+  defp render_slot_content(content, _slot_arg) when is_binary(content), do: content
+  defp render_slot_content(%Phoenix.LiveView.Rendered{} = rendered, _slot_arg), do: rendered
+
+  defp render_slot_content(entries, slot_arg) when is_list(entries) do
+    entries
+    |> Enum.map(&render_slot_entry(&1, slot_arg))
+    |> join_slot_results()
+  end
+
+  defp render_slot_content(_slot, _slot_arg), do: ""
+
+  # Standard Phoenix slot rendering: each entry has an :inner_block function.
+  defp render_slot_entry(%{inner_block: inner_fn}, slot_arg) when is_function(inner_fn, 2), do: inner_fn.(nil, slot_arg)
+  defp render_slot_entry(%{inner_block: inner_fn}, slot_arg) when is_function(inner_fn, 1), do: inner_fn.(slot_arg)
+  defp render_slot_entry(other, _slot_arg), do: other
+
+  # A single entry is returned as-is, which keeps a Rendered struct out of a
+  # list that Phoenix.HTML.Safe cannot handle. Several are concatenated.
+  defp join_slot_results([single]), do: single
+
+  defp join_slot_results(multiple) do
+    Enum.map_join(multiple, &slot_result_to_string/1)
+  end
+
+  defp slot_result_to_string(%Phoenix.LiveView.Rendered{} = rendered) do
+    rendered |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
+  end
+
+  defp slot_result_to_string(bin) when is_binary(bin), do: bin
+  defp slot_result_to_string(other), do: safe_to_string(other)
+
+  defp anon_fn(1, param_names, body_ir, assigns, bindings) do
+    fn arg1 -> eval_ir(body_ir, assigns, Map.put(bindings, hd(param_names), arg1)) end
+  end
+
+  defp anon_fn(_arity, _param_names, body_ir, assigns, bindings) do
+    fn -> eval_ir(body_ir, assigns, bindings) end
   end
 
   # Safely call a Kernel function, handling macros that can't be apply'd
@@ -2763,15 +2677,18 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_kernel_macro(:unless, [cond, [do: body]]), do: if(!cond, do: body)
   defp eval_kernel_macro(:.., [a, b]), do: a..b
   defp eval_kernel_macro(:.., [a, b, step]), do: a..b//step
+
   defp eval_kernel_macro(:sigil_r, [pattern, modifiers]) do
     Regex.compile!(pattern, List.to_string(modifiers))
   end
+
   defp eval_kernel_macro(:sigil_w, [string, modifiers]) do
     case modifiers do
       ~c"a" -> String.split(string) |> Enum.map(&String.to_existing_atom/1)
       _ -> String.split(string)
     end
   end
+
   defp eval_kernel_macro(:sigil_s, [string, _modifiers]), do: string
   defp eval_kernel_macro(:sigil_S, [string, _modifiers]), do: string
   defp eval_kernel_macro(:hd, [list]), do: hd(list)
@@ -2796,6 +2713,7 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_kernel_macro(:inspect, [val]), do: inspect(val)
   defp eval_kernel_macro(:inspect, [val, opts]), do: inspect(val, opts)
   defp eval_kernel_macro(:throw, [val]), do: throw(val)
+
   defp eval_kernel_macro(fun, args) do
     require Logger
     Logger.warning("[RuntimeRenderer] Unhandled kernel macro: #{fun}/#{length(args)}")
@@ -2809,25 +2727,20 @@ defmodule Beacon.RuntimeRenderer do
       []
     else
       Enum.map(enum, fn item ->
-        inner_bindings = destructure_binding(b, var_name, item)
-        result = eval_ir(body_ir, a, inner_bindings)
-
-        case result do
-          list when is_list(list) -> Enum.map(list, &safe_dynamic/1)
-          single -> [safe_dynamic(single)]
-        end
+        b
+        |> destructure_binding(var_name, item)
+        |> then(&eval_ir(body_ir, a, &1))
+        |> safe_dynamics()
       end)
     end
   end
 
   defp eval_comprehension_dynamics(other, a, b) do
-    result = eval_ir(other, a, b)
-
-    case result do
-      list when is_list(list) -> Enum.map(list, &safe_dynamic/1)
-      single -> [safe_dynamic(single)]
-    end
+    other |> eval_ir(a, b) |> safe_dynamics()
   end
+
+  defp safe_dynamics(list) when is_list(list), do: Enum.map(list, &safe_dynamic/1)
+  defp safe_dynamics(single), do: [safe_dynamic(single)]
 
   defp eval_interpolation_part({:literal, value}, _a, _b), do: value
 
@@ -3068,25 +2981,7 @@ defmodule Beacon.RuntimeRenderer do
         apply(module, fun, [left_val | evaluated_args])
 
       {fun, _, args} when is_atom(fun) and is_list(args) ->
-        evaluated_args = Enum.map(args, &eval_ast(&1, bindings))
-        arity = length(evaluated_args) + 1
-
-        cond do
-          fun == :assign and arity in [2, 3] ->
-            apply(Phoenix.Component, :assign, [left_val | evaluated_args])
-          fun == :put_flash and arity == 3 ->
-            apply(Phoenix.LiveView, :put_flash, [left_val | evaluated_args])
-          fun == :push_event and arity == 3 ->
-            apply(Phoenix.LiveView, :push_event, [left_val | evaluated_args])
-          fun == :redirect and arity == 2 ->
-            apply(Phoenix.LiveView, :redirect, [left_val | evaluated_args])
-          fun == :push_navigate and arity == 2 ->
-            apply(Phoenix.LiveView, :push_navigate, [left_val | evaluated_args])
-          function_exported?(Kernel, fun, arity) ->
-            apply(Kernel, fun, [left_val | evaluated_args])
-          true ->
-            raise "unsupported pipe target: #{fun}/#{arity}"
-        end
+        apply_pipe(fun, left_val, Enum.map(args, &eval_ast(&1, bindings)))
 
       _ ->
         raise "unsupported pipe target: #{inspect(right)}"
@@ -3102,10 +2997,10 @@ defmodule Beacon.RuntimeRenderer do
 
   # unless expression
   defp eval_ast({:unless, _, [condition, clauses]}, bindings) do
-    unless eval_ast(condition, bindings) do
-      eval_ast(Keyword.fetch!(clauses, :do), bindings)
-    else
+    if eval_ast(condition, bindings) do
       eval_ast(Keyword.get(clauses, :else), bindings)
+    else
+      eval_ast(Keyword.fetch!(clauses, :do), bindings)
     end
   end
 
@@ -3131,12 +3026,7 @@ defmodule Beacon.RuntimeRenderer do
         eval_ast(do_body, final_bindings)
 
       {:error, unmatched} when is_list(else_clauses) ->
-        Enum.find_value(else_clauses, fn {:->, _, [[pattern], body]} ->
-          case match_pattern(pattern, unmatched, bindings) do
-            {:ok, new_bindings} -> eval_ast(body, new_bindings)
-            :no_match -> nil
-          end
-        end)
+        Enum.find_value(else_clauses, &eval_else_clause(&1, unmatched, bindings))
 
       {:error, _} ->
         nil
@@ -3187,19 +3077,7 @@ defmodule Beacon.RuntimeRenderer do
   defp eval_ast({:case, _, [expr, [do: clauses]]}, bindings) do
     value = eval_ast(expr, bindings)
 
-    Enum.find_value(clauses, fn {:->, _, [[pattern_or_guard], body]} ->
-      {pattern, guard} = extract_guard(pattern_or_guard)
-
-      case match_pattern(pattern, value, bindings) do
-        {:ok, new_bindings} ->
-          if guard == nil or eval_ast(guard, new_bindings) do
-            eval_ast(body, new_bindings)
-          end
-
-        :no_match ->
-          nil
-      end
-    end)
+    Enum.find_value(clauses, &eval_case_clause(&1, value, bindings))
   end
 
   # Assignment
@@ -3232,6 +3110,44 @@ defmodule Beacon.RuntimeRenderer do
     end)
   end
 
+  defp eval_else_clause({:->, _, [[pattern], body]}, unmatched, bindings) do
+    case match_pattern(pattern, unmatched, bindings) do
+      {:ok, new_bindings} -> eval_ast(body, new_bindings)
+      :no_match -> nil
+    end
+  end
+
+  # A clause is taken when its pattern matches and its guard, if any, holds.
+  defp eval_case_clause({:->, _, [[pattern_or_guard], body]}, value, bindings) do
+    {pattern, guard} = extract_guard(pattern_or_guard)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, new_bindings} ->
+        if guard == nil or eval_ast(guard, new_bindings), do: eval_ast(body, new_bindings)
+
+      :no_match ->
+        nil
+    end
+  end
+
+  # The module a bare piped call belongs to. `Phoenix.Component` and
+  # `Phoenix.LiveView` own the socket helpers; everything else falls to Kernel.
+  defp apply_pipe(fun, left_val, args) do
+    arity = length(args) + 1
+
+    case pipe_module(fun, arity) do
+      nil -> raise "unsupported pipe target: #{fun}/#{arity}"
+      module -> apply(module, fun, [left_val | args])
+    end
+  end
+
+  defp pipe_module(:assign, arity) when arity in [2, 3], do: Phoenix.Component
+  defp pipe_module(:put_flash, 3), do: Phoenix.LiveView
+  defp pipe_module(:push_event, 3), do: Phoenix.LiveView
+  defp pipe_module(:redirect, 2), do: Phoenix.LiveView
+  defp pipe_module(:push_navigate, 2), do: Phoenix.LiveView
+  defp pipe_module(fun, arity), do: if(function_exported?(Kernel, fun, arity), do: Kernel)
+
   defp eval_ast_with_bindings({:=, _, [pattern, value_ast]}, bindings) do
     value = eval_ast(value_ast, bindings)
 
@@ -3258,29 +3174,33 @@ defmodule Beacon.RuntimeRenderer do
     |> elem(1)
   end
 
+  # A clause is taken when its arity matches, its patterns bind, and its guard,
+  # if any, holds.
+  defp eval_fn_clause({:->, _, [patterns, body]}, args, bindings) do
+    {bare_patterns, guard} = extract_fn_guard(patterns)
+
+    if length(bare_patterns) == length(args) do
+      eval_fn_clause_body(bare_patterns, guard, body, args, bindings)
+    end
+  end
+
+  defp eval_fn_clause(_clause, _args, _bindings), do: nil
+
+  defp eval_fn_clause_body(bare_patterns, guard, body, args, bindings) do
+    case bind_patterns(bare_patterns, args, bindings) do
+      {:ok, clause_bindings} ->
+        if guard == nil or eval_ast(guard, clause_bindings), do: {:matched, eval_ast(body, clause_bindings)}
+
+      :no_match ->
+        nil
+    end
+  end
+
   defp fn_arity!([{:->, _, [patterns, _body]} | _rest]), do: length(patterns)
   defp fn_arity!(_), do: raise(ArgumentError, "anonymous functions must define at least one clause")
 
   defp eval_fn_clauses(clauses, args, bindings) do
-    Enum.find_value(clauses, fn
-      {:->, _, [patterns, body]} ->
-        {bare_patterns, guard} = extract_fn_guard(patterns)
-
-        if length(bare_patterns) == length(args) do
-          case bind_patterns(bare_patterns, args, bindings) do
-            {:ok, clause_bindings} ->
-              if guard == nil or eval_ast(guard, clause_bindings) do
-                {:matched, eval_ast(body, clause_bindings)}
-              end
-
-            :no_match ->
-              nil
-          end
-        end
-
-      _ ->
-        nil
-    end)
+    Enum.find_value(clauses, &eval_fn_clause(&1, args, bindings))
     |> case do
       {:matched, value} -> value
       nil -> raise FunctionClauseError, "no anonymous function clause matched #{inspect(args)}"
@@ -3349,20 +3269,7 @@ defmodule Beacon.RuntimeRenderer do
 
   # Map/struct pattern like %{name: name}
   defp match_pattern({:%{}, _, pairs}, value, bindings) when is_map(value) do
-    Enum.reduce_while(pairs, {:ok, bindings}, fn {k, v_pattern}, {:ok, acc} ->
-      key = if is_atom(k), do: k, else: eval_ast(k, acc)
-
-      case Map.fetch(value, key) do
-        {:ok, v} ->
-          case match_pattern(v_pattern, v, acc) do
-            {:ok, new_acc} -> {:cont, {:ok, new_acc}}
-            :no_match -> {:halt, :no_match}
-          end
-
-        :error ->
-          {:halt, :no_match}
-      end
-    end)
+    Enum.reduce_while(pairs, {:ok, bindings}, &match_map_pair(&1, &2, value))
   end
 
   # Pin operator: ^variable — match against existing binding value
@@ -3394,6 +3301,22 @@ defmodule Beacon.RuntimeRenderer do
   end
 
   defp match_pattern(_, _, _), do: :no_match
+
+  defp match_map_pair({k, v_pattern}, {:ok, acc}, value) do
+    key = if is_atom(k), do: k, else: eval_ast(k, acc)
+
+    case Map.fetch(value, key) do
+      {:ok, v} -> match_map_value(v_pattern, v, acc)
+      :error -> {:halt, :no_match}
+    end
+  end
+
+  defp match_map_value(v_pattern, v, acc) do
+    case match_pattern(v_pattern, v, acc) do
+      {:ok, new_acc} -> {:cont, {:ok, new_acc}}
+      :no_match -> {:halt, :no_match}
+    end
+  end
 
   defp match_pattern_sequence(patterns, values, bindings) when length(patterns) == length(values) do
     Enum.zip(patterns, values)

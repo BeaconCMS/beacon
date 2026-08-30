@@ -103,7 +103,9 @@ defmodule Beacon.Web.Layouts do
 
       true ->
         case Beacon.Config.fetch!(site).title_template do
-          nil -> rendered_title
+          nil ->
+            rendered_title
+
           template ->
             template
             |> String.replace("{page_title}", rendered_title)
@@ -153,90 +155,87 @@ defmodule Beacon.Web.Layouts do
   # layout, or config. When no SEO fields are configured, returns [].
   defp build_seo_meta_tags(%{beacon: %{site: site, private: %{page_id: page_id, layout_id: layout_id}}}) do
     manifest = Beacon.RuntimeRenderer.fetch_manifest!(site, page_id)
-    layout_manifest = case Beacon.RuntimeRenderer.fetch_layout_manifest(site, layout_id) do
-      {:ok, lm} -> lm
-      :error -> %{}
-    end
+    layout_manifest = fetch_layout_manifest(site, layout_id)
     config = Beacon.Config.fetch!(site)
 
-    # Only generate auto-tags when at least one SEO field is explicitly configured
-    has_page_seo = Enum.any?(~w(meta_description canonical_url og_title og_description og_image twitter_card)a,
-      fn field -> non_empty?(manifest[field]) end)
-    has_layout_seo = non_empty?(layout_manifest[:default_og_image]) or non_empty?(layout_manifest[:default_twitter_card])
-    has_config_seo = non_empty?(config.site_name) or non_empty?(config.twitter_site) or
-      non_empty?(config.fb_app_id) or non_empty?(config.default_og_image)
-
-    unless has_page_seo or has_layout_seo or has_config_seo do
-      return_empty()
-    else
+    if any_seo_configured?(manifest, layout_manifest, config) do
       do_build_seo_meta_tags(manifest, layout_manifest, config)
+    else
+      return_empty()
     end
   end
 
   defp build_seo_meta_tags(_assigns), do: []
 
+  defp fetch_layout_manifest(site, layout_id) do
+    case Beacon.RuntimeRenderer.fetch_layout_manifest(site, layout_id) do
+      {:ok, layout_manifest} -> layout_manifest
+      :error -> %{}
+    end
+  end
+
+  @seo_page_fields ~w(meta_description canonical_url og_title og_description og_image twitter_card)a
+
+  # Auto-tags are only generated when at least one SEO field is set somewhere.
+  defp any_seo_configured?(manifest, layout_manifest, config) do
+    Enum.any?(@seo_page_fields, &non_empty?(manifest[&1])) or
+      Enum.any?([layout_manifest[:default_og_image], layout_manifest[:default_twitter_card]], &non_empty?/1) or
+      Enum.any?([config.site_name, config.twitter_site, config.fb_app_id, config.default_og_image], &non_empty?/1)
+  end
+
   defp return_empty, do: []
 
   defp do_build_seo_meta_tags(manifest, layout_manifest, config) do
-    tags = []
-
-    # description — from meta_description or fallback to description
+    # Each cascade falls back page → layout → config.
     desc = manifest[:meta_description] || manifest[:description]
-    tags = if non_empty?(desc), do: [%{"name" => "description", "content" => desc} | tags], else: tags
-
-    # og:title — from og_title or fallback to title
-    og_title = manifest[:og_title] || manifest[:title]
-    tags = if non_empty?(og_title), do: [%{"property" => "og:title", "content" => og_title} | tags], else: tags
-
-    # og:description — from og_description or fallback to description
-    og_desc = manifest[:og_description] || desc
-    tags = if non_empty?(og_desc), do: [%{"property" => "og:description", "content" => og_desc} | tags], else: tags
-
-    # og:image — cascade: page → layout → config
     og_image = manifest[:og_image] || layout_manifest[:default_og_image] || config.default_og_image
-    tags = if non_empty?(og_image), do: [%{"property" => "og:image", "content" => og_image} | tags], else: tags
-
-    # og:image dimensions
-    tags = if non_empty?(og_image) do
-      case config.default_og_image_dimensions do
-        {w, h} ->
-          [%{"property" => "og:image:width", "content" => to_string(w)},
-           %{"property" => "og:image:height", "content" => to_string(h)} | tags]
-        _ -> tags
-      end
-    else
-      tags
-    end
-
-    # og:type — defaults to "website", template types override via meta_tag_mapping
-    tags = [%{"property" => "og:type", "content" => "website"} | tags]
-
-    # og:url — canonical URL
     og_url = manifest[:canonical_url] || Beacon.RuntimeRenderer.public_page_url(config.site, %{path: manifest[:path]})
-    tags = if non_empty?(og_url), do: [%{"property" => "og:url", "content" => og_url} | tags], else: tags
-
-    # og:site_name
-    tags = if non_empty?(config.site_name), do: [%{"property" => "og:site_name", "content" => config.site_name} | tags], else: tags
-
-    # twitter:card — cascade: page → layout → config
     twitter_card = manifest[:twitter_card] || layout_manifest[:default_twitter_card] || config.default_twitter_card
-    tags = if non_empty?(twitter_card), do: [%{"name" => "twitter:card", "content" => twitter_card} | tags], else: tags
 
-    # twitter:site
-    tags = if non_empty?(config.twitter_site), do: [%{"name" => "twitter:site", "content" => config.twitter_site} | tags], else: tags
+    []
+    |> put_tag("name", "description", desc)
+    |> put_tag("property", "og:title", manifest[:og_title] || manifest[:title])
+    |> put_tag("property", "og:description", manifest[:og_description] || desc)
+    |> put_tag("property", "og:image", og_image)
+    |> put_og_image_dimensions(og_image, config)
+    # og:type defaults to "website"; template types override via meta_tag_mapping
+    |> put_tag("property", "og:type", "website")
+    |> put_tag("property", "og:url", og_url)
+    |> put_tag("property", "og:site_name", config.site_name)
+    |> put_tag("name", "twitter:card", twitter_card)
+    |> put_tag("name", "twitter:site", config.twitter_site)
+    |> put_tag("property", "fb:app_id", config.fb_app_id)
+    |> put_collection_tags(manifest, config)
+    |> Enum.reverse()
+  end
 
-    # fb:app_id
-    tags = if non_empty?(config.fb_app_id), do: [%{"property" => "fb:app_id", "content" => config.fb_app_id} | tags], else: tags
+  defp put_tag(tags, key, name, content) do
+    if non_empty?(content), do: [%{key => name, "content" => content} | tags], else: tags
+  end
 
-    # Collection meta tags (resolved from mapping, integrated via dedup)
-    tags = case manifest[:collection] do
-      %{meta_tag_mapping: mapping} when is_list(mapping) and length(mapping) > 0 ->
-        col_tags = Beacon.Collection.MetaTagResolver.resolve(mapping, manifest[:fields] || %{}, manifest, config)
-        deduplicate_meta_tags(col_tags, tags)
-      _ -> tags
+  defp put_og_image_dimensions(tags, og_image, config) do
+    case {non_empty?(og_image), config.default_og_image_dimensions} do
+      {true, {width, height}} ->
+        [
+          %{"property" => "og:image:width", "content" => to_string(width)},
+          %{"property" => "og:image:height", "content" => to_string(height)} | tags
+        ]
+
+      _ ->
+        tags
     end
+  end
 
-    Enum.reverse(tags)
+  # Collection meta tags, resolved from the mapping and integrated via dedup.
+  defp put_collection_tags(tags, manifest, config) do
+    case manifest[:collection] do
+      %{meta_tag_mapping: [_ | _] = mapping} ->
+        collection_tags = Beacon.Collection.MetaTagResolver.resolve(mapping, manifest[:fields] || %{}, manifest, config)
+        deduplicate_meta_tags(collection_tags, tags)
+
+      _ ->
+        tags
+    end
   end
 
   defp non_empty?(nil), do: false
@@ -332,10 +331,13 @@ defmodule Beacon.Web.Layouts do
   """
   def render_schema(%{beacon: %{site: site, private: %{page_id: page_id, layout_id: layout_id}}} = assigns) do
     manifest = Beacon.RuntimeRenderer.fetch_manifest!(site, page_id)
-    layout_manifest = case Beacon.RuntimeRenderer.fetch_layout_manifest(site, layout_id) do
-      {:ok, lm} -> lm
-      :error -> %{}
-    end
+
+    layout_manifest =
+      case Beacon.RuntimeRenderer.fetch_layout_manifest(site, layout_id) do
+        {:ok, lm} -> lm
+        :error -> %{}
+      end
+
     config = Beacon.Config.fetch!(site)
 
     # Manual raw_schema from the page

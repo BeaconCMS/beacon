@@ -20,46 +20,17 @@ defmodule Beacon.Web.PageLive do
       :ok = Beacon.PubSub.subscribe_to_page(site, path)
     end
 
-    variant_roll =
-      case session["beacon_variant_roll"] do
-        nil ->
-          Logger.warning("""
-          Beacon.Plug is missing from the Router pipeline.
-
-          Page Variants will not be used.
-          """)
-
-          nil
-
-        roll ->
-          roll
-      end
+    variant_roll = variant_roll(session)
 
     # Check if CSS is ready before blocking on page rendering
     warming = not Beacon.RuntimeCSS.css_ready?(site)
-
-    if warming do
-      Beacon.RuntimeCSS.compile_async(site)
-
-      if connected?(socket) do
-        Beacon.PubSub.subscribe_to_css(site)
-      end
-    end
+    if warming, do: start_css_warming(site, socket)
 
     path_str = "/" <> Enum.join(path, "/")
     {:ok, assigns} = Beacon.RuntimeRenderer.mount_assigns(site, path_str, variant_roll: variant_roll)
 
-    # Subscribe to GraphQL cache invalidation topics
     if config.mode == :live and connected?(socket) do
-      for endpoint_name <- Map.get(assigns.beacon.private, :graphql_endpoint_names, []) do
-        Beacon.PubSub.subscribe_to_graphql(site, endpoint_name)
-      end
-    end
-
-    # Subscribe to page render cache updates
-    if config.mode == :live and connected?(socket) do
-      path_str = "/" <> Enum.join(path, "/")
-      Beacon.PubSub.subscribe_to_page_render(site, path_str)
+      subscribe_to_render_topics(site, path_str, assigns)
     end
 
     socket =
@@ -69,6 +40,36 @@ defmodule Beacon.Web.PageLive do
       |> Component.assign(:beacon_update_available, false)
 
     {:ok, socket, layout: {Beacon.Web.Layouts, :dynamic}}
+  end
+
+  defp variant_roll(session) do
+    case session["beacon_variant_roll"] do
+      nil ->
+        Logger.warning("""
+        Beacon.Plug is missing from the Router pipeline.
+
+        Page Variants will not be used.
+        """)
+
+        nil
+
+      roll ->
+        roll
+    end
+  end
+
+  defp start_css_warming(site, socket) do
+    Beacon.RuntimeCSS.compile_async(site)
+    if connected?(socket), do: Beacon.PubSub.subscribe_to_css(site)
+  end
+
+  # GraphQL cache invalidation and page render cache updates.
+  defp subscribe_to_render_topics(site, path_str, assigns) do
+    for endpoint_name <- Map.get(assigns.beacon.private, :graphql_endpoint_names, []) do
+      Beacon.PubSub.subscribe_to_graphql(site, endpoint_name)
+    end
+
+    Beacon.PubSub.subscribe_to_page_render(site, path_str)
   end
 
   def render(%{beacon_warming: true} = assigns) do
@@ -90,64 +91,78 @@ defmodule Beacon.Web.PageLive do
     if update_available, do: Logger.info("[PageLive] Rendering with update notification")
 
     if update_available do
-      config = Beacon.Config.fetch!(site)
-
-      case config.update_notification_component do
-        nil ->
-          notification_assigns = Map.put(assigns, :beacon_page_content, rendered)
-
-          case Beacon.RuntimeRenderer.render_site_setting(site, "notification_template", notification_assigns) do
-            {:ok, notification_rendered} ->
-              assigns =
-                assigns
-                |> Map.put(:beacon_page_content, rendered)
-                |> Map.put(:beacon_notification_rendered, notification_rendered)
-
-              ~H"""
-              <%= @beacon_page_content %>
-              <%= @beacon_notification_rendered %>
-              """
-
-            {:error, :not_found} ->
-              assigns = Map.put(assigns, :beacon_page_content, rendered)
-
-              ~H"""
-              <%= @beacon_page_content %>
-              <div
-                id="beacon-update-notification"
-                style="position:fixed;bottom:1rem;right:1rem;z-index:9999;background:#1a1a2e;color:white;padding:0.75rem 1.25rem;border-radius:0.5rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:0.75rem;font-family:system-ui,sans-serif;font-size:0.875rem;"
-              >
-                <span>This page has been updated</span>
-                <button
-                  phx-click="beacon:apply-update"
-                  style="background:#4361ee;color:white;border:none;padding:0.375rem 0.75rem;border-radius:0.25rem;cursor:pointer;font-size:0.875rem;"
-                >
-                  Refresh
-                </button>
-                <button
-                  phx-click="beacon:dismiss-update"
-                  style="background:transparent;color:#999;border:none;cursor:pointer;font-size:1rem;padding:0 0.25rem;"
-                >
-                  &times;
-                </button>
-              </div>
-              """
-          end
-
-        custom_mod ->
-          assigns =
-            assigns
-            |> Map.put(:beacon_page_content, rendered)
-            |> Map.put(:beacon_notification_component, custom_mod)
-
-          ~H"""
-          <%= @beacon_page_content %>
-          <%= @beacon_notification_component.render(assigns) %>
-          """
-      end
+      render_with_update_notification(assigns, site, rendered)
     else
       rendered
     end
+  end
+
+  # The site can supply its own notification component, or a
+  # `notification_template` site setting; the built-in banner is the fallback.
+  defp render_with_update_notification(assigns, site, rendered) do
+    case Beacon.Config.fetch!(site).update_notification_component do
+      nil -> render_notification_template(assigns, site, rendered)
+      custom_mod -> render_notification_component(assigns, custom_mod, rendered)
+    end
+  end
+
+  defp render_notification_template(assigns, site, rendered) do
+    notification_assigns = Map.put(assigns, :beacon_page_content, rendered)
+
+    case Beacon.RuntimeRenderer.render_site_setting(site, "notification_template", notification_assigns) do
+      {:ok, notification_rendered} -> render_custom_notification(assigns, rendered, notification_rendered)
+      {:error, :not_found} -> render_default_notification(assigns, rendered)
+    end
+  end
+
+  defp render_custom_notification(assigns, rendered, notification_rendered) do
+    assigns =
+      assigns
+      |> Map.put(:beacon_page_content, rendered)
+      |> Map.put(:beacon_notification_rendered, notification_rendered)
+
+    ~H"""
+    <%= @beacon_page_content %>
+    <%= @beacon_notification_rendered %>
+    """
+  end
+
+  defp render_default_notification(assigns, rendered) do
+    assigns = Map.put(assigns, :beacon_page_content, rendered)
+
+    ~H"""
+    <%= @beacon_page_content %>
+    <div
+      id="beacon-update-notification"
+      style="position:fixed;bottom:1rem;right:1rem;z-index:9999;background:#1a1a2e;color:white;padding:0.75rem 1.25rem;border-radius:0.5rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:0.75rem;font-family:system-ui,sans-serif;font-size:0.875rem;"
+    >
+      <span>This page has been updated</span>
+      <button
+        phx-click="beacon:apply-update"
+        style="background:#4361ee;color:white;border:none;padding:0.375rem 0.75rem;border-radius:0.25rem;cursor:pointer;font-size:0.875rem;"
+      >
+        Refresh
+      </button>
+      <button
+        phx-click="beacon:dismiss-update"
+        style="background:transparent;color:#999;border:none;cursor:pointer;font-size:1rem;padding:0 0.25rem;"
+      >
+        &times;
+      </button>
+    </div>
+    """
+  end
+
+  defp render_notification_component(assigns, custom_mod, rendered) do
+    assigns =
+      assigns
+      |> Map.put(:beacon_page_content, rendered)
+      |> Map.put(:beacon_notification_component, custom_mod)
+
+    ~H"""
+    <%= @beacon_page_content %>
+    <%= @beacon_notification_component.render(assigns) %>
+    """
   end
 
   def handle_info({:page_render_updated, %{site: msg_site, page_id: _page_id}}, socket) do
@@ -203,13 +218,7 @@ defmodule Beacon.Web.PageLive do
       {new_assigns, _} =
         Beacon.GraphQL.QueryExecutor.execute_page_queries(site, page_queries, path_params, query_params)
 
-      updated_socket =
-        Enum.reduce(new_assigns, socket, fn {key, value}, acc ->
-          assign_key = if is_binary(key), do: String.to_existing_atom(key), else: key
-          Component.assign(acc, assign_key, value)
-        end)
-
-      {:noreply, updated_socket}
+      {:noreply, Enum.reduce(new_assigns, socket, &assign_query_result/2)}
     else
       {:noreply, socket}
     end
@@ -245,6 +254,11 @@ defmodule Beacon.Web.PageLive do
         raise Beacon.Web.ServerError,
               "handle_info expected {:noreply, socket}, got #{inspect(other)}"
     end
+  end
+
+  defp assign_query_result({key, value}, socket) do
+    assign_key = if is_binary(key), do: String.to_existing_atom(key), else: key
+    Component.assign(socket, assign_key, value)
   end
 
   def handle_event("beacon:apply-update", _params, socket) do
@@ -292,24 +306,9 @@ defmodule Beacon.Web.PageLive do
 
         {:ok, params_assigns} = Beacon.RuntimeRenderer.handle_params_assigns(site, path_str, params)
 
-        # Update GraphQL subscriptions if navigating to a different page
-        old_endpoints = Map.get(socket.assigns.beacon.private, :graphql_endpoint_names, [])
-        new_endpoints = Map.get(params_assigns.beacon.private, :graphql_endpoint_names, [])
-
         if connected?(socket) do
-          for ep <- old_endpoints -- new_endpoints, do: Beacon.PubSub.unsubscribe_from_graphql(site, ep)
-          for ep <- new_endpoints -- old_endpoints, do: Beacon.PubSub.subscribe_to_graphql(site, ep)
-        end
-
-        # Update page render cache subscriptions when navigating between pages
-        if connected?(socket) do
-          old_path = "/" <> Enum.join(socket.assigns.beacon.private.live_path, "/")
-          new_path = "/" <> Enum.join(path_info, "/")
-
-          if old_path != new_path do
-            Beacon.PubSub.unsubscribe_from_page_render(site, old_path)
-            Beacon.PubSub.subscribe_to_page_render(site, new_path)
-          end
+          resubscribe_graphql(site, socket.assigns, params_assigns)
+          resubscribe_page_render(site, socket.assigns, path_info)
         end
 
         socket =
@@ -319,6 +318,25 @@ defmodule Beacon.Web.PageLive do
           |> Component.assign(:beacon_update_available, false)
 
         {:noreply, socket}
+    end
+  end
+
+  # Navigating to another page changes which GraphQL endpoints matter.
+  defp resubscribe_graphql(site, assigns, params_assigns) do
+    old_endpoints = Map.get(assigns.beacon.private, :graphql_endpoint_names, [])
+    new_endpoints = Map.get(params_assigns.beacon.private, :graphql_endpoint_names, [])
+
+    for ep <- old_endpoints -- new_endpoints, do: Beacon.PubSub.unsubscribe_from_graphql(site, ep)
+    for ep <- new_endpoints -- old_endpoints, do: Beacon.PubSub.subscribe_to_graphql(site, ep)
+  end
+
+  defp resubscribe_page_render(site, assigns, path_info) do
+    old_path = "/" <> Enum.join(assigns.beacon.private.live_path, "/")
+    new_path = "/" <> Enum.join(path_info, "/")
+
+    if old_path != new_path do
+      Beacon.PubSub.unsubscribe_from_page_render(site, old_path)
+      Beacon.PubSub.subscribe_to_page_render(site, new_path)
     end
   end
 
@@ -344,5 +362,4 @@ defmodule Beacon.Web.PageLive do
   def make_env(_site) do
     __ENV__
   end
-
 end

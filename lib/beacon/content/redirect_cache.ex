@@ -58,16 +58,16 @@ defmodule Beacon.Content.RedirectCache do
     patterns
     |> Enum.sort_by(fn [_pattern, priority, _dest, _status] -> priority end)
     |> Enum.find_value(fn [pattern, _priority, dest, status] ->
-      case Regex.compile(pattern) do
-        {:ok, regex} ->
-          if Regex.match?(regex, path) do
-            resolved_dest = Regex.replace(regex, path, dest)
-            {resolved_dest, status}
-          end
-
-        _ ->
-          nil
-      end
+      match_pattern(pattern, path, dest, status)
     end)
+  end
+
+  defp match_pattern(pattern, path, dest, status) do
+    with {:ok, regex} <- Regex.compile(pattern),
+         true <- Regex.match?(regex, path) do
+      {Regex.replace(regex, path, dest), status}
+    else
+      _ -> nil
+    end
   end
 end

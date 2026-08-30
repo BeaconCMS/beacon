@@ -1,4 +1,8 @@
 defmodule Beacon.Client.Filters do
+  # credo:disable-for-this-file Credo.Check.Refactor.Apply
+  #
+  # This module defines `apply/3` as its public entry point, and Credo reads the
+  # heads of the clauses whose third argument is a list as calls to `Kernel.apply/3`.
   @moduledoc """
   Built-in filter implementations for Beacon template rendering.
 
@@ -24,7 +28,9 @@ defmodule Beacon.Client.Filters do
 
   def apply("format_date", value, [format]) when is_binary(value) do
     case DateTime.from_iso8601(value) do
-      {:ok, dt, _} -> Calendar.strftime(dt, format)
+      {:ok, dt, _} ->
+        Calendar.strftime(dt, format)
+
       _ ->
         case NaiveDateTime.from_iso8601(value) do
           {:ok, ndt} -> Calendar.strftime(ndt, format)
@@ -108,7 +114,7 @@ defmodule Beacon.Client.Filters do
   def apply("first", [head | _], _), do: head
   def apply("first", _, _), do: nil
 
-  def apply("last", list, _) when is_list(list) and length(list) > 0, do: List.last(list)
+  def apply("last", [_ | _] = list, _), do: List.last(list)
   def apply("last", _, _), do: nil
 
   # -- Utility --
@@ -132,8 +138,8 @@ defmodule Beacon.Client.Filters do
     cond do
       diff < 60 -> "just now"
       diff < 3600 -> "#{div(diff, 60)} minutes ago"
-      diff < 86400 -> "#{div(diff, 3600)} hours ago"
-      diff < 2_592_000 -> "#{div(diff, 86400)} days ago"
+      diff < 86_400 -> "#{div(diff, 3600)} hours ago"
+      diff < 2_592_000 -> "#{div(diff, 86_400)} days ago"
       diff < 31_536_000 -> "#{div(diff, 2_592_000)} months ago"
       true -> "#{div(diff, 31_536_000)} years ago"
     end

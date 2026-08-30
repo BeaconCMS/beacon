@@ -29,19 +29,20 @@ defmodule Beacon.CircuitBreaker do
       :ok
     else
       case :ets.lookup(@table, {site, path}) do
-        [{_, tripped_at, ttl}] ->
-          elapsed = System.monotonic_time(:second) - tripped_at
-
-          if elapsed < ttl do
-            {:tripped, ttl - elapsed}
-          else
-            :ets.delete(@table, {site, path})
-            :ok
-          end
-
-        [] ->
-          :ok
+        [{_, tripped_at, ttl}] -> check_elapsed(site, path, tripped_at, ttl)
+        [] -> :ok
       end
+    end
+  end
+
+  defp check_elapsed(site, path, tripped_at, ttl) do
+    elapsed = System.monotonic_time(:second) - tripped_at
+
+    if elapsed < ttl do
+      {:tripped, ttl - elapsed}
+    else
+      :ets.delete(@table, {site, path})
+      :ok
     end
   end
 

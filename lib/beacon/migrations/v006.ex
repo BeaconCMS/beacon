@@ -40,13 +40,11 @@ defmodule Beacon.Migrations.V006 do
   defp safe_extract_template(nil), do: :error
 
   defp safe_extract_template(binary) when is_binary(binary) do
-    try do
-      case :erlang.binary_to_term(binary) do
-        %{template: t} when is_binary(t) -> {:ok, t}
-        _ -> :error
-      end
-    rescue
+    case :erlang.binary_to_term(binary) do
+      %{template: t} when is_binary(t) -> {:ok, t}
       _ -> :error
     end
+  rescue
+    _ -> :error
   end
 end

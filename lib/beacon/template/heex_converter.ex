@@ -44,28 +44,30 @@ defmodule Beacon.Template.HEExConverter do
 
   @spec convert(binary()) :: {binary(), [binary()]}
   def convert(template) when is_binary(template) do
-    {result, warnings} = {template, []}
-    |> replace_known_functions()
-    |> convert_eex_expressions()
-    |> convert_assigns()
-    |> convert_bracket_access()
-    |> convert_phoenix_links()
-    |> convert_phx_events()
-    |> convert_simple_conditionals()
-    |> convert_simple_loops()
-    |> convert_eex_output_tags()
-    |> strip_heex_comments()
-    |> cleanup_eex_remnants()
-    |> flag_remaining_issues()
+    {result, warnings} =
+      {template, []}
+      |> replace_known_functions()
+      |> convert_eex_expressions()
+      |> convert_assigns()
+      |> convert_bracket_access()
+      |> convert_phoenix_links()
+      |> convert_phx_events()
+      |> convert_simple_conditionals()
+      |> convert_simple_loops()
+      |> convert_eex_output_tags()
+      |> strip_heex_comments()
+      |> cleanup_eex_remnants()
+      |> flag_remaining_issues()
 
     {result, Enum.uniq(Enum.reverse(warnings))}
   end
 
   # Replace known function calls with enriched field references
   defp replace_known_functions({template, warnings}) do
-    result = Enum.reduce(@function_replacements, template, fn {pattern, replacement}, acc ->
-      Regex.replace(pattern, acc, replacement)
-    end)
+    result =
+      Enum.reduce(@function_replacements, template, fn {pattern, replacement}, acc ->
+        Regex.replace(pattern, acc, replacement)
+      end)
 
     {result, warnings}
   end
@@ -74,19 +76,21 @@ defmodule Beacon.Template.HEExConverter do
   defp convert_eex_expressions({template, warnings}) do
     # {expr} (HEEx expression tags) → {{ expr }}
     # But only for simple expressions, not control flow
-    result = Regex.replace(
-      ~r/\{([a-zA-Z_][a-zA-Z0-9_.| :"%-]+)\}/,
-      template,
-      fn full, expr ->
-        expr = String.trim(expr)
-        # Don't convert if it's an HTML attribute value, class expression, etc.
-        if String.contains?(expr, ":") and not String.contains?(expr, "|") do
-          full  # Leave as-is (likely a keyword list or map)
-        else
-          "{{ #{expr} }}"
+    result =
+      Regex.replace(
+        ~r/\{([a-zA-Z_][a-zA-Z0-9_.| :"%-]+)\}/,
+        template,
+        fn full, expr ->
+          expr = String.trim(expr)
+          # Don't convert if it's an HTML attribute value, class expression, etc.
+          if String.contains?(expr, ":") and not String.contains?(expr, "|") do
+            # Leave as-is (likely a keyword list or map)
+            full
+          else
+            "{{ #{expr} }}"
+          end
         end
-      end
-    )
+      )
 
     {result, warnings}
   end
@@ -100,11 +104,12 @@ defmodule Beacon.Template.HEExConverter do
 
   # var["key"] → var.key (nested bracket access to dot notation)
   defp convert_bracket_access({template, warnings}) do
-    result = template
-    |> do_bracket_to_dot()
-    |> do_bracket_to_dot()
-    |> do_bracket_to_dot()
-    |> do_bracket_to_dot()
+    result =
+      template
+      |> do_bracket_to_dot()
+      |> do_bracket_to_dot()
+      |> do_bracket_to_dot()
+      |> do_bracket_to_dot()
 
     {result, warnings}
   end
@@ -119,49 +124,41 @@ defmodule Beacon.Template.HEExConverter do
 
   # <.link navigate={...}>...</.link> → <a href="...">...</a>
   defp convert_phoenix_links({template, warnings}) do
-    result = template
-    # Handle various <.link> attribute orderings
-    |> then(fn t ->
-      Regex.replace(~r/<\.link\s+([^>]*?)navigate=\{([^}]+)\}([^>]*)>/, t, fn _, before, path, after_ ->
-        attrs = String.trim("#{before}#{after_}")
-        if attrs == "" do
-          "<a href=\"{{ #{String.trim(path)} }}\">"
-        else
-          "<a #{attrs} href=\"{{ #{String.trim(path)} }}\">"
-        end
-      end)
-    end)
-    |> then(fn t ->
-      Regex.replace(~r/<\.link\s+([^>]*?)navigate="([^"]+)"([^>]*)>/, t, fn _, before, path, after_ ->
-        attrs = String.trim("#{before}#{after_}")
-        if attrs == "" do
-          "<a href=\"#{path}\">"
-        else
-          "<a #{attrs} href=\"#{path}\">"
-        end
-      end)
-    end)
-    |> then(fn t ->
-      Regex.replace(~r/<\.link\s+([^>]*?)href=\{([^}]+)\}([^>]*)>/, t, fn _, before, path, after_ ->
-        attrs = String.trim("#{before}#{after_}")
-        if attrs == "" do
-          "<a href=\"{{ #{String.trim(path)} }}\">"
-        else
-          "<a #{attrs} href=\"{{ #{String.trim(path)} }}\">"
-        end
-      end)
-    end)
-    |> String.replace("</.link>", "</a>")
+    result =
+      template
+      # Handle various <.link> attribute orderings
+      |> then(fn t -> Regex.replace(~r/<\.link\s+([^>]*?)navigate=\{([^}]+)\}([^>]*)>/, t, &anchor_interpolated/4) end)
+      |> then(fn t -> Regex.replace(~r/<\.link\s+([^>]*?)navigate="([^"]+)"([^>]*)>/, t, &anchor_literal/4) end)
+      |> then(fn t -> Regex.replace(~r/<\.link\s+([^>]*?)href=\{([^}]+)\}([^>]*)>/, t, &anchor_interpolated/4) end)
+      |> String.replace("</.link>", "</a>")
 
     {result, warnings}
   end
 
+  # `<.link navigate={@x}>` becomes `<a href="{{ @x }}">`, keeping any other
+  # attributes the tag carried.
+  defp anchor_interpolated(_match, before, path, after_) do
+    anchor(before, after_, "{{ #{String.trim(path)} }}")
+  end
+
+  defp anchor_literal(_match, before, path, after_) do
+    anchor(before, after_, path)
+  end
+
+  defp anchor(before, after_, href) do
+    case String.trim("#{before}#{after_}") do
+      "" -> "<a href=\"#{href}\">"
+      attrs -> "<a #{attrs} href=\"#{href}\">"
+    end
+  end
+
   # phx-submit → @submit, phx-click → @click
   defp convert_phx_events({template, warnings}) do
-    result = template
-    |> then(&Regex.replace(~r/phx-submit="([^"]+)"/, &1, "@submit=\"\\1\""))
-    |> then(&Regex.replace(~r/phx-click="([^"]+)"/, &1, "@click=\"\\1\""))
-    |> then(&Regex.replace(~r/phx-change="([^"]+)"/, &1, "@change=\"\\1\""))
+    result =
+      template
+      |> then(&Regex.replace(~r/phx-submit="([^"]+)"/, &1, "@submit=\"\\1\""))
+      |> then(&Regex.replace(~r/phx-click="([^"]+)"/, &1, "@click=\"\\1\""))
+      |> then(&Regex.replace(~r/phx-change="([^"]+)"/, &1, "@change=\"\\1\""))
 
     {result, warnings}
   end
@@ -171,11 +168,12 @@ defmodule Beacon.Template.HEExConverter do
     # Count if/end blocks
     if_count = length(Regex.scan(~r/<%=?\s*if\s/, template))
 
-    new_warnings = if if_count > 0 do
-      ["#{if_count} if/end block(s) need manual conversion to :if/:else directives"]
-    else
-      []
-    end
+    new_warnings =
+      if if_count > 0 do
+        ["#{if_count} if/end block(s) need manual conversion to :if/:else directives"]
+      else
+        []
+      end
 
     {template, warnings ++ new_warnings}
   end
@@ -184,25 +182,27 @@ defmodule Beacon.Template.HEExConverter do
   defp convert_simple_loops({template, warnings}) do
     for_count = length(Regex.scan(~r/<%=?\s*for\s/, template))
 
-    new_warnings = if for_count > 0 do
-      ["#{for_count} for/end block(s) need manual conversion to :for directives"]
-    else
-      []
-    end
+    new_warnings =
+      if for_count > 0 do
+        ["#{for_count} for/end block(s) need manual conversion to :for directives"]
+      else
+        []
+      end
 
     {template, warnings ++ new_warnings}
   end
 
   # <%= expr %> → {{ expr }} for remaining output tags
   defp convert_eex_output_tags({template, warnings}) do
-    result = Regex.replace(
-      ~r/<%=\s*(.+?)\s*%>/s,
-      template,
-      fn _, expr ->
-        expr = String.trim(expr)
-        "{{ #{expr} }}"
-      end
-    )
+    result =
+      Regex.replace(
+        ~r/<%=\s*(.+?)\s*%>/s,
+        template,
+        fn _, expr ->
+          expr = String.trim(expr)
+          "{{ #{expr} }}"
+        end
+      )
 
     {result, warnings}
   end
@@ -225,11 +225,11 @@ defmodule Beacon.Template.HEExConverter do
     # <% code %> non-output tags → flag
     remaining = Regex.scan(~r/<%[^=](.+?)%>/s, result)
 
-    new_warnings = if length(remaining) > 0 do
-      ["#{length(remaining)} non-output EEx tag(s) (<% ... %>) need manual review"]
-    else
-      []
-    end
+    new_warnings =
+      case remaining do
+        [] -> []
+        tags -> ["#{length(tags)} non-output EEx tag(s) (<% ... %>) need manual review"]
+      end
 
     {result, warnings ++ new_warnings}
   end
@@ -240,15 +240,21 @@ defmodule Beacon.Template.HEExConverter do
 
     # Module function calls still present
     modules = Regex.scan(~r/([A-Z][a-zA-Z.]+\.[a-z_]+\([^)]*\))/, template)
-    new_warnings = new_warnings ++ Enum.map(modules, fn [full | _] ->
-      "Remaining function call: #{String.slice(full, 0, 80)}"
-    end)
+
+    new_warnings =
+      new_warnings ++
+        Enum.map(modules, fn [full | _] ->
+          "Remaining function call: #{String.slice(full, 0, 80)}"
+        end)
 
     # my_component calls
     components = Regex.scan(~r/my_component\("([^"]+)"/, template)
-    new_warnings = new_warnings ++ Enum.map(components, fn [_, name] ->
-      "my_component(\"#{name}\") needs component expansion"
-    end)
+
+    new_warnings =
+      new_warnings ++
+        Enum.map(components, fn [_, name] ->
+          "my_component(\"#{name}\") needs component expansion"
+        end)
 
     # raw() calls
     if Regex.match?(~r/raw\(/, template) do

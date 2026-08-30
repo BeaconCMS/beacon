@@ -38,19 +38,19 @@ defmodule Beacon.Content do
   alias Beacon.Content.EventHandler
   alias Beacon.Content.GraphQLEndpoint
   alias Beacon.Content.InfoHandler
+  alias Beacon.Content.InternalLink
   alias Beacon.Content.JSHook
   alias Beacon.Content.Layout
   alias Beacon.Content.LayoutEvent
   alias Beacon.Content.LayoutSnapshot
   alias Beacon.Content.Page
-  alias Beacon.Content.InternalLink
   alias Beacon.Content.PageEvent
-  alias Beacon.Content.Redirect
-  alias Beacon.Content.SEOSnapshot
   alias Beacon.Content.PageField
   alias Beacon.Content.PageQuery
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
+  alias Beacon.Content.Redirect
+  alias Beacon.Content.SEOSnapshot
   alias Beacon.Content.SiteSetting
   alias Beacon.Content.Snippets
   alias Beacon.Content.Stylesheet
@@ -646,7 +646,7 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec list_stale_pages(Site.t(), non_neg_integer()) :: [Page.t()]
   def list_stale_pages(site, days \\ 90) when is_atom(site) do
-    cutoff = DateTime.utc_now() |> DateTime.add(-days * 86400, :second)
+    cutoff = DateTime.utc_now() |> DateTime.add(-days * 86_400, :second)
 
     from(p in Page,
       where: p.site == ^site and (is_nil(p.date_modified) or p.date_modified < ^cutoff),
@@ -694,6 +694,15 @@ defmodule Beacon.Content do
   end
 
   # TODO: only publish if there were actual changes compared to the last snapshot
+  defp publish_page_snapshot(page) do
+    transact(repo(page), fn ->
+      with {:ok, event} <- create_page_event(page, "published"),
+           {:ok, _snapshot} <- create_page_snapshot(page, event) do
+        {:ok, page}
+      end
+    end)
+  end
+
   @doc """
   Publish multiple `pages`.
 
@@ -703,18 +712,9 @@ defmodule Beacon.Content do
   @doc type: :pages
   @spec publish_pages([Page.t()]) :: {:ok, [Page.t()]}
   def publish_pages(pages) when is_list(pages) do
-    publish = fn page ->
-      transact(repo(page), fn ->
-        with {:ok, event} <- create_page_event(page, "published"),
-             {:ok, _snapshot} <- create_page_snapshot(page, event) do
-          {:ok, page}
-        end
-      end)
-    end
-
     pages =
       pages
-      |> Enum.map(&publish.(&1))
+      |> Enum.map(&publish_page_snapshot/1)
       |> Enum.map(fn
         {:ok, %Page{} = page} -> Lifecycle.Page.after_publish_page(page)
         _ -> nil
@@ -796,7 +796,22 @@ defmodule Beacon.Content do
       "fields" => page.fields || %{}
     }
 
-    fields = [:site, :schema_version, :event_id, :page, :page_id, :path, :title, :template, :format, :extra, :ast, :date_modified, :collection_id, :fields]
+    fields = [
+      :site,
+      :schema_version,
+      :event_id,
+      :page,
+      :page_id,
+      :path,
+      :title,
+      :template,
+      :format,
+      :extra,
+      :ast,
+      :date_modified,
+      :collection_id,
+      :fields
+    ]
 
     result =
       %PageSnapshot{}
@@ -1260,6 +1275,7 @@ defmodule Beacon.Content do
 
   defp extract_page_snapshot(%{schema_version: 3, page: %Page{} = page, ast: ast}) do
     page = maybe_add_leading_slash(page)
+
     case unwrap_ast(ast) do
       nodes when is_list(nodes) -> %{page | ast: nodes}
       _ -> page
@@ -1273,6 +1289,7 @@ defmodule Beacon.Content do
 
   defp extract_page_snapshot(%{schema_version: 4, page: %Page{} = page, ast: ast}) do
     page = maybe_add_leading_slash(page)
+
     case unwrap_ast(ast) do
       nodes when is_list(nodes) -> %{page | ast: nodes}
       _ -> page
@@ -1286,6 +1303,7 @@ defmodule Beacon.Content do
 
   defp extract_page_snapshot(%{schema_version: 5, page: %Page{} = page, ast: ast}) do
     page = maybe_add_leading_slash(page)
+
     case unwrap_ast(ast) do
       nodes when is_list(nodes) -> %{page | ast: nodes}
       _ -> page
@@ -1299,6 +1317,7 @@ defmodule Beacon.Content do
 
   defp extract_page_snapshot(%{schema_version: 6, page: %Page{} = page, ast: ast}) do
     page = maybe_add_leading_slash(page)
+
     case unwrap_ast(ast) do
       nodes when is_list(nodes) -> %{page | ast: nodes}
       _ -> page
@@ -3303,15 +3322,17 @@ defmodule Beacon.Content do
         component
 
       {:error, changeset} ->
-        errors =
-          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-            Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-              opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-            end)
-          end)
-
-        raise "failed to create component: #{inspect(errors)}"
+        raise "failed to create component: #{inspect(traverse_interpolated_errors(changeset))}"
     end
+  end
+
+  # Ecto's `%{count}` placeholders resolved against the error's own options.
+  defp traverse_interpolated_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+      end)
+    end)
   end
 
   @doc """
@@ -3562,24 +3583,23 @@ defmodule Beacon.Content do
     cond do
       value == nil -> changeset
       type == "any" or type == "global" -> changeset
-      type == "string" and is_binary(value) -> changeset
-      type == "string" -> Changeset.add_error(changeset, field, "it must be a string when type is 'string'")
-      type == "atom" and is_atom(value) -> changeset
-      type == "atom" -> Changeset.add_error(changeset, field, "it must be an atom when type is 'atom'")
-      type == "boolean" and is_boolean(value) -> changeset
-      type == "boolean" -> Changeset.add_error(changeset, field, "it must be a boolean when type is 'boolean'")
-      type == "integer" and is_integer(value) -> changeset
-      type == "integer" -> Changeset.add_error(changeset, field, "it must be a integer when type is 'integer'")
-      type == "float" and is_float(value) -> changeset
-      type == "float" -> Changeset.add_error(changeset, field, "it must be a float when type is 'float'")
-      type == "list" and is_list(value) -> changeset
-      type == "list" -> Changeset.add_error(changeset, field, "it must be a list when type is 'list'")
-      type == "map" and is_map(value) -> changeset
-      type == "map" -> Changeset.add_error(changeset, field, "it must be a map when type is 'map'")
-      type == "struct" and is_struct(value) -> changeset
-      type == "struct" -> Changeset.add_error(changeset, field, "it must be a struct when type is 'struct'")
+      value_matches_type?(type, value) -> changeset
+      true -> Changeset.add_error(changeset, field, "it must be #{type_article(type)} when type is '#{type}'")
     end
   end
+
+  # An unknown type raises here, as it did when this was one long `cond`.
+  defp value_matches_type?("string", value), do: is_binary(value)
+  defp value_matches_type?("atom", value), do: is_atom(value)
+  defp value_matches_type?("boolean", value), do: is_boolean(value)
+  defp value_matches_type?("integer", value), do: is_integer(value)
+  defp value_matches_type?("float", value), do: is_float(value)
+  defp value_matches_type?("list", value), do: is_list(value)
+  defp value_matches_type?("map", value), do: is_map(value)
+  defp value_matches_type?("struct", value), do: is_struct(value)
+
+  defp type_article("atom"), do: "an atom"
+  defp type_article(type), do: "a #{type}"
 
   # COMPONENT SLOT ATTR
 
@@ -4534,7 +4554,9 @@ defmodule Beacon.Content do
     clear_cache(site, id)
 
     case get_published_page(site, id) do
-      nil -> :skip
+      nil ->
+        :skip
+
       page ->
         :ok = Beacon.RouterServer.add_page(page.site, page.id, page.path)
         Beacon.RuntimeRenderer.Loader.load_page(site, page)
@@ -4546,26 +4568,24 @@ defmodule Beacon.Content do
   end
 
   defp do_publish_layout(layout) do
-    %{site: site} = layout
-
-    publish = fn layout ->
-      changeset = Layout.changeset(layout, %{})
-
-      transact(repo(site), fn ->
-        with {:ok, _changeset} <- validate_layout_template(changeset),
-             {:ok, event} <- create_layout_event(layout, "published"),
-             {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
-          {:ok, layout}
-        end
-      end)
-    end
-
-    with {:ok, layout} <- publish.(layout),
+    with {:ok, layout} <- publish_layout_snapshot(layout),
          :ok <- Beacon.PubSub.layout_published(layout) do
       {:ok, layout}
     else
       error -> error
     end
+  end
+
+  defp publish_layout_snapshot(%{site: site} = layout) do
+    changeset = Layout.changeset(layout, %{})
+
+    transact(repo(site), fn ->
+      with {:ok, _changeset} <- validate_layout_template(changeset),
+           {:ok, event} <- create_layout_event(layout, "published"),
+           {:ok, _snapshot} <- create_layout_snapshot(layout, event) do
+        {:ok, layout}
+      end
+    end)
   end
 
   # SITE SETTINGS
@@ -4911,7 +4931,7 @@ defmodule Beacon.Content do
       end
 
     query
-    |> order_by([c], [asc: c.sort_order, asc: c.name])
+    |> order_by([c], asc: c.sort_order, asc: c.name)
     |> repo(site).all()
   end
 
@@ -5101,10 +5121,12 @@ defmodule Beacon.Content do
   @doc type: :redirects
   @spec create_redirect(map()) :: {:ok, Redirect.t()} | {:error, Ecto.Changeset.t()}
   def create_redirect(attrs) when is_map(attrs) do
-    attrs = Map.new(attrs, fn
-      {key, val} when is_binary(key) -> {key, val}
-      {key, val} -> {Atom.to_string(key), val}
-    end)
+    attrs =
+      Map.new(attrs, fn
+        {key, val} when is_binary(key) -> {key, val}
+        {key, val} -> {Atom.to_string(key), val}
+      end)
+
     {:ok, site} = Beacon.Types.Site.cast(attrs["site"])
 
     # Flatten chains: if destination is another redirect's source, point to final destination
@@ -5206,8 +5228,12 @@ defmodule Beacon.Content do
     old_path = get_last_published_path(page.site, page.id)
 
     case old_path do
-      nil -> :ok
-      ^old_path when old_path == page.path -> :ok
+      nil ->
+        :ok
+
+      ^old_path when old_path == page.path ->
+        :ok
+
       old_path ->
         create_redirect(%{
           "site" => page.site,
@@ -5270,5 +5296,4 @@ defmodule Beacon.Content do
 
     Beacon.Content.RedirectCache.invalidate(site)
   end
-
 end

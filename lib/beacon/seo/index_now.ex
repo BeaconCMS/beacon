@@ -35,18 +35,17 @@ defmodule Beacon.SEO.IndexNow do
   def notify(site, page_url) when is_atom(site) and is_binary(page_url) do
     config = Beacon.Config.fetch!(site)
 
-    unless config.index_now_enabled do
-      :ok
-    else
+    if config.index_now_enabled do
       key = config.index_now_key
 
-      unless key do
-        Logger.warning("[Beacon.SEO.IndexNow] index_now_enabled is true but index_now_key is not set for site #{site}")
-        {:error, :no_key}
-      else
+      if key do
         host = URI.parse(page_url).host || URI.parse(Beacon.RuntimeRenderer.public_site_url(site)).host
         do_notify(page_url, key, host)
+      else
+        warn_missing_key(site)
       end
+    else
+      :ok
     end
   end
 
@@ -57,18 +56,17 @@ defmodule Beacon.SEO.IndexNow do
   def notify_batch(site, page_urls) when is_atom(site) and is_list(page_urls) do
     config = Beacon.Config.fetch!(site)
 
-    unless config.index_now_enabled do
-      :ok
-    else
+    if config.index_now_enabled do
       key = config.index_now_key
 
-      unless key do
-        Logger.warning("[Beacon.SEO.IndexNow] index_now_enabled is true but index_now_key is not set for site #{site}")
-        {:error, :no_key}
-      else
+      if key do
         host = URI.parse(Beacon.RuntimeRenderer.public_site_url(site)).host
         do_notify_batch(page_urls, key, host)
+      else
+        warn_missing_key(site)
       end
+    else
+      :ok
     end
   end
 
@@ -87,7 +85,9 @@ defmodule Beacon.SEO.IndexNow do
 
     Task.start(fn ->
       case notify(site, page_url) do
-        :ok -> :ok
+        :ok ->
+          :ok
+
         {:error, reason} ->
           Logger.warning("[Beacon.SEO.IndexNow] Failed to notify for #{page_url}: #{inspect(reason)}")
       end
@@ -99,6 +99,11 @@ defmodule Beacon.SEO.IndexNow do
   def on_publish(_), do: :ok
 
   # -- Private --
+
+  defp warn_missing_key(site) do
+    Logger.warning("[Beacon.SEO.IndexNow] index_now_enabled is true but index_now_key is not set for site #{site}")
+    {:error, :no_key}
+  end
 
   defp do_notify(url, key, _host) do
     query = URI.encode_query(%{url: url, key: key})
@@ -122,12 +127,13 @@ defmodule Beacon.SEO.IndexNow do
   end
 
   defp do_notify_batch(urls, key, host) do
-    body = Jason.encode!(%{
-      host: host,
-      key: key,
-      keyLocation: "https://#{host}/#{key}.txt",
-      urlList: urls
-    })
+    body =
+      Jason.encode!(%{
+        host: host,
+        key: key,
+        keyLocation: "https://#{host}/#{key}.txt",
+        urlList: urls
+      })
 
     Logger.info("[Beacon.SEO.IndexNow] Batch notifying #{length(urls)} URLs")
 
@@ -154,6 +160,7 @@ defmodule Beacon.SEO.IndexNow do
 
   defp http_post(url, body) do
     headers = [{~c"content-type", ~c"application/json; charset=utf-8"}]
+
     :httpc.request(:post, {String.to_charlist(url), headers, ~c"application/json", String.to_charlist(body)}, [timeout: 10_000], [])
     |> handle_httpc_response()
   end

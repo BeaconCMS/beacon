@@ -1,4 +1,6 @@
 defmodule Beacon.Support.BypassHelpers do
+  @moduledoc false
+
   # port 5555 is selected because we are matching the aws test creds in test.exs
   def start_bypass(_) do
     bypass = Bypass.open(port: 5555)

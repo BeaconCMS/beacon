@@ -1,4 +1,6 @@
 defmodule Beacon.BeaconTest.Web do
+  @moduledoc false
+
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end

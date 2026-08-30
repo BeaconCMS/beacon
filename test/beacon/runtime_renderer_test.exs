@@ -371,7 +371,6 @@ defmodule Beacon.RuntimeRendererTest do
 
   end
 
-
   describe "full lifecycle" do
     test "mount → handle_params → render → handle_event" do
       RuntimeRenderer.publish_page(@site, "full_1", %{

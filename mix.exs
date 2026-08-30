@@ -90,6 +90,7 @@ defmodule Beacon.MixProject do
       {:tailwind_compiler, github: "BeaconCMS/tailwind_compiler", tag: "v0.0.7"},
       esbuild_version(),
       # Dev, Test, Docs
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:bandit, "~> 1.0", only: :dev, optional: true},
       {:phoenix_view, "~> 2.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.29", only: :dev},
@@ -127,7 +128,8 @@ defmodule Beacon.MixProject do
         "esbuild.install --if-missing",
         "cmd npm install --prefix assets"
       ],
-      "assets.build": ["esbuild cdn", "esbuild cdn_min", "esbuild tailwind_bundle"]
+      "assets.build": ["esbuild cdn", "esbuild cdn_min", "esbuild tailwind_bundle"],
+      "assets.lint": ["cmd --cd assets npm run lint"]
     ]
   end
 

@@ -11,9 +11,10 @@ defmodule Beacon.Web.DataSource do
       _ ->
         %{path: path, title: title} = page_assigns = page_assigns(page)
 
-        with {:ok, page_title} <- Beacon.Content.render_snippet(title, %{page: page_assigns, data: assigns}) do
-          page_title
-        else
+        case Beacon.Content.render_snippet(title, %{page: page_assigns, data: assigns}) do
+          {:ok, page_title} ->
+            page_title
+
           {:error, error} ->
             Logger.error("""
             failed to interpolate page title variables
@@ -37,7 +38,16 @@ defmodule Beacon.Web.DataSource do
 
   def meta_tags(%{beacon: %{site: site, private: %{page_id: page_id}}} = assigns) do
     manifest = Beacon.RuntimeRenderer.fetch_manifest!(site, page_id)
-    page_assigns = %{site: site, id: page_id, path: manifest.path, title: manifest.title, description: manifest.description, meta_tags: manifest.meta_tags, fields: manifest[:fields] || %{}}
+
+    page_assigns = %{
+      site: site,
+      id: page_id,
+      path: manifest.path,
+      title: manifest.title,
+      description: manifest.description,
+      meta_tags: manifest.meta_tags,
+      fields: manifest[:fields] || %{}
+    }
 
     assigns
     |> Beacon.Web.Layouts.meta_tags()

@@ -48,26 +48,30 @@ defmodule Beacon.CSS.ThemeParser do
     # v4 expects --text-3xl: 2rem and --text-3xl--line-height: 2.5rem
     theme =
       case Map.get(theme, "fontSize") do
-        nil ->
-          theme
-
-        font_sizes when is_map(font_sizes) ->
-          {split_sizes, _} =
-            Enum.reduce(font_sizes, {%{}, %{}}, fn {key, value}, {sizes, _} ->
-              case String.split(value, ",", parts: 2) do
-                [size, line_height] ->
-                  {sizes |> Map.put(key, String.trim(size)) |> Map.put("#{key}--line-height", String.trim(line_height)), %{}}
-
-                [_single] ->
-                  {Map.put(sizes, key, value), %{}}
-              end
-            end)
-
-          Map.put(theme, "fontSize", split_sizes)
+        nil -> theme
+        font_sizes when is_map(font_sizes) -> Map.put(theme, "fontSize", split_font_sizes(font_sizes))
       end
 
     if map_size(theme) > 0 do
       Jason.encode!(theme)
+    end
+  end
+
+  # v4 expects `--text-3xl: 2rem` and `--text-3xl--line-height: 2.5rem`, so an
+  # array value in the config becomes two entries.
+  defp split_font_sizes(font_sizes) do
+    Enum.reduce(font_sizes, %{}, fn {key, value}, sizes -> put_font_size(sizes, key, value) end)
+  end
+
+  defp put_font_size(sizes, key, value) do
+    case String.split(value, ",", parts: 2) do
+      [size, line_height] ->
+        sizes
+        |> Map.put(key, String.trim(size))
+        |> Map.put("#{key}--line-height", String.trim(line_height))
+
+      [_single] ->
+        Map.put(sizes, key, value)
     end
   end
 
@@ -119,6 +123,7 @@ defmodule Beacon.CSS.ThemeParser do
 
   defp parse_pairs(content, acc) do
     content = String.trim(content)
+
     if content == "" or content == "," do
       acc
     else
@@ -172,74 +177,88 @@ defmodule Beacon.CSS.ThemeParser do
     rest = String.trim(rest)
 
     cond do
-      # Nested object
-      String.starts_with?(rest, "{") ->
-        inner = extract_braced_content(rest, 0)
-        if inner do
-          consumed = 1 + byte_size(inner) + 1
-          remaining = String.slice(rest, consumed..-1//1)
-          value = parse_js_object(inner)
-          {key, flatten_nested_colors(value), remaining}
-        end
+      String.starts_with?(rest, "{") -> parse_object_value(key, rest)
+      String.starts_with?(rest, "[") -> parse_array_value(key, rest)
+      String.starts_with?(rest, "'") or String.starts_with?(rest, "\"") -> parse_quoted_value(key, rest)
+      String.starts_with?(rest, "var(") -> parse_var_value(key, rest)
+      Regex.match?(~r/^[0-9]/, rest) -> parse_number_value(key, rest)
+      true -> skip_to_next_comma(key, rest)
+    end
+  end
 
-      # Array value like ['Plus Jakarta Sans', 'sans-serif']
-      String.starts_with?(rest, "[") ->
-        case Regex.run(~r/^\[([^\]]*)\]/s, rest) do
-          [full, inner] ->
-            remaining = String.slice(rest, String.length(full)..-1//1)
-            # Join array into a single string (for fontFamily)
-            value =
-              inner
-              |> String.split(",")
-              |> Enum.map(&(&1 |> String.trim() |> String.trim("'") |> String.trim("\"")))
-              |> Enum.join(", ")
+  # Nested object
+  defp parse_object_value(key, rest) do
+    inner = extract_braced_content(rest, 0)
 
-            {key, value, remaining}
+    if inner do
+      consumed = 1 + byte_size(inner) + 1
+      remaining = String.slice(rest, consumed..-1//1)
+      value = parse_js_object(inner)
+      {key, flatten_nested_colors(value), remaining}
+    end
+  end
 
-          _ ->
-            nil
-        end
+  # Array value like ['Plus Jakarta Sans', 'sans-serif'], joined into a single
+  # string for fontFamily
+  defp parse_array_value(key, rest) do
+    case Regex.run(~r/^\[([^\]]*)\]/s, rest) do
+      [full, inner] ->
+        remaining = String.slice(rest, String.length(full)..-1//1)
 
-      # String value (single or double quoted)
-      String.starts_with?(rest, "'") or String.starts_with?(rest, "\"") ->
-        quote_char = String.at(rest, 0)
-        case Regex.run(~r/^#{Regex.escape(quote_char)}([^#{Regex.escape(quote_char)}]*)#{Regex.escape(quote_char)}/s, rest) do
-          [full, value] ->
-            remaining = String.slice(rest, String.length(full)..-1//1)
-            {key, value, remaining}
+        value =
+          inner
+          |> String.split(",")
+          |> Enum.map_join(", ", &(&1 |> String.trim() |> String.trim("'") |> String.trim("\"")))
 
-          _ ->
-            nil
-        end
+        {key, value, remaining}
 
-      # var(...) expression
-      String.starts_with?(rest, "var(") ->
-        case Regex.run(~r/^var\([^)]*\)/s, rest) do
-          [full] ->
-            remaining = String.slice(rest, String.length(full)..-1//1)
-            {key, full, remaining}
+      _ ->
+        nil
+    end
+  end
 
-          _ ->
-            nil
-        end
+  # String value, single or double quoted
+  defp parse_quoted_value(key, rest) do
+    quote_char = String.at(rest, 0)
 
-      # Bare number
-      Regex.match?(~r/^[0-9]/, rest) ->
-        case Regex.run(~r/^([0-9.]+)/s, rest) do
-          [full, value] ->
-            remaining = String.slice(rest, String.length(full)..-1//1)
-            {key, value, remaining}
+    case Regex.run(~r/^#{Regex.escape(quote_char)}([^#{Regex.escape(quote_char)}]*)#{Regex.escape(quote_char)}/s, rest) do
+      [full, value] ->
+        remaining = String.slice(rest, String.length(full)..-1//1)
+        {key, value, remaining}
 
-          _ ->
-            nil
-        end
+      _ ->
+        nil
+    end
+  end
 
-      true ->
-        # Skip to next comma
-        case String.split(rest, ",", parts: 2) do
-          [_, remaining] -> {key, nil, remaining}
-          _ -> nil
-        end
+  # var(...) expression
+  defp parse_var_value(key, rest) do
+    case Regex.run(~r/^var\([^)]*\)/s, rest) do
+      [full] ->
+        remaining = String.slice(rest, String.length(full)..-1//1)
+        {key, full, remaining}
+
+      _ ->
+        nil
+    end
+  end
+
+  # Bare number
+  defp parse_number_value(key, rest) do
+    case Regex.run(~r/^([0-9.]+)/s, rest) do
+      [full, value] ->
+        remaining = String.slice(rest, String.length(full)..-1//1)
+        {key, value, remaining}
+
+      _ ->
+        nil
+    end
+  end
+
+  defp skip_to_next_comma(key, rest) do
+    case String.split(rest, ",", parts: 2) do
+      [_, remaining] -> {key, nil, remaining}
+      _ -> nil
     end
   end
 

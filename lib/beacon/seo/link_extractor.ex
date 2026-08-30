@@ -32,25 +32,19 @@ defmodule Beacon.SEO.LinkExtractor do
     end
   end
 
+  # Anything that leaves the site, opens a client, or points within the page.
+  @external_prefixes ["#", "javascript:", "mailto:", "tel:", "http://", "https://", "//"]
+
   defp internal_link?(%{target_path: href}) do
-    cond do
-      href == "" -> false
-      String.starts_with?(href, "#") -> false
-      String.starts_with?(href, "javascript:") -> false
-      String.starts_with?(href, "mailto:") -> false
-      String.starts_with?(href, "tel:") -> false
-      String.starts_with?(href, "http://") -> false
-      String.starts_with?(href, "https://") -> false
-      String.starts_with?(href, "//") -> false
-      String.starts_with?(href, "/") -> true
-      true -> false
-    end
+    String.starts_with?(href, "/") and not String.starts_with?(href, @external_prefixes)
   end
 
   defp normalize_path(path) do
     path
-    |> String.split("?") |> List.first()
-    |> String.split("#") |> List.first()
+    |> String.split("?")
+    |> List.first()
+    |> String.split("#")
+    |> List.first()
     |> String.trim_trailing("/")
     |> case do
       "" -> "/"

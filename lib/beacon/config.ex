@@ -12,8 +12,8 @@ defmodule Beacon.Config do
   @doc false
   use GenServer
 
-  alias Beacon.Content
   alias Beacon.ConfigError
+  alias Beacon.Content
 
   @doc false
   def name(site) do
@@ -537,10 +537,7 @@ defmodule Beacon.Config do
   def new(opts) do
     # TODO: validate opts, maybe use nimble_options
 
-    opts[:site] || raise ConfigError, "missing required option :site"
-    opts[:endpoint] || raise ConfigError, "missing required option :endpoint"
-    opts[:router] || raise ConfigError, "missing required option :router"
-    ensure_repo(opts[:repo])
+    validate_required!(opts)
 
     tailwind_css = get_opt(opts, :tailwind_css, Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css"))
 
@@ -553,15 +550,7 @@ defmodule Beacon.Config do
         get_opt(opts, :template_formats, [])
       )
 
-    lifecycle = [
-      load_template: Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || []),
-      render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
-      after_create_page: get_in(opts, [:lifecycle, :after_create_page]) || [],
-      after_update_page: get_in(opts, [:lifecycle, :after_update_page]) || [],
-      after_publish_page: get_in(opts, [:lifecycle, :after_publish_page]) || [],
-      after_unpublish_page: get_in(opts, [:lifecycle, :after_unpublish_page]) || [],
-      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
-    ]
+    lifecycle = lifecycle_opts(opts)
 
     allowed_media_accept_types = get_opt(opts, :allowed_media_accept_types, @default_media_types)
     validate_allowed_media_accept_types!(allowed_media_accept_types)
@@ -596,6 +585,25 @@ defmodule Beacon.Config do
         max_cache_entries: max_cache_entries
       )
     )
+  end
+
+  defp validate_required!(opts) do
+    opts[:site] || raise ConfigError, "missing required option :site"
+    opts[:endpoint] || raise ConfigError, "missing required option :endpoint"
+    opts[:router] || raise ConfigError, "missing required option :router"
+    ensure_repo(opts[:repo])
+  end
+
+  defp lifecycle_opts(opts) do
+    [
+      load_template: Keyword.merge(@default_load_template, get_in(opts, [:lifecycle, :load_template]) || []),
+      render_template: Keyword.merge(@default_render_template, get_in(opts, [:lifecycle, :render_template]) || []),
+      after_create_page: get_in(opts, [:lifecycle, :after_create_page]) || [],
+      after_update_page: get_in(opts, [:lifecycle, :after_update_page]) || [],
+      after_publish_page: get_in(opts, [:lifecycle, :after_publish_page]) || [],
+      after_unpublish_page: get_in(opts, [:lifecycle, :after_unpublish_page]) || [],
+      upload_asset: get_in(opts, [:lifecycle, :upload_asset]) || [thumbnail: &Beacon.Lifecycle.Asset.thumbnail/2]
+    ]
   end
 
   # Get `key` from `opts` keyword, otherwise returns `default` even if the key is present but returns `nil`.

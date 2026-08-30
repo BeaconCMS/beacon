@@ -55,3 +55,5 @@ jobs:
       - run: mix compile --warnings-as-errors
 
       - run: mix deps.unlock --check-unused
+
+      - run: mix credo --strict

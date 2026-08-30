@@ -1,4 +1,6 @@
 defmodule Beacon.BeaconTest.ProxyEndpoint do
+  @moduledoc false
+
   use Beacon.ProxyEndpoint,
     otp_app: :beacon,
     session_options: Application.compile_env!(:beacon, :session_options),
@@ -18,6 +20,8 @@ defmodule Beacon.BeaconTest.Endpoint do
 end
 
 defmodule Beacon.BeaconTest.EndpointB do
+  @moduledoc false
+
   # The otp app needs to be beacon otherwise Phoenix LiveView will not be
   # able to build the static path since it tries to get from `Application.app_dir`
   # which expects that a real "application" is settled.

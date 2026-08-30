@@ -55,7 +55,7 @@ defmodule Beacon.Client.FiltersTest do
 
   describe "format_number" do
     test "integer with thousands separator" do
-      assert Filters.apply("format_number", 1234567, []) == "1,234,567"
+      assert Filters.apply("format_number", 1_234_567, []) == "1,234,567"
     end
 
     test "float with precision" do

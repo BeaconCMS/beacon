@@ -21,11 +21,13 @@ defmodule Beacon.Template do
   def render_path(site, path_info, query_params \\ %{}) when is_atom(site) and is_list(path_info) and is_map(query_params) do
     path = "/" <> Enum.join(path_info, "/")
 
-    with {:ok, page_id} <- Beacon.RuntimeRenderer.lookup_page(site, path) do
-      {:ok, params_assigns} = Beacon.RuntimeRenderer.handle_params_assigns(site, path, Map.drop(query_params, ["path"]))
-      Beacon.RuntimeRenderer.render_to_string(site, page_id, params_assigns)
-    else
-      :error -> :error
+    case Beacon.RuntimeRenderer.lookup_page(site, path) do
+      {:ok, page_id} ->
+        {:ok, params_assigns} = Beacon.RuntimeRenderer.handle_params_assigns(site, path, Map.drop(query_params, ["path"]))
+        Beacon.RuntimeRenderer.render_to_string(site, page_id, params_assigns)
+
+      :error ->
+        :error
     end
   end
 
@@ -45,12 +47,14 @@ defmodule Beacon.Template do
   @spec assigns(Beacon.Page.t()) :: map()
   def assigns(%Beacon.Content.Page{} = page) do
     path_info = for segment <- String.split(page.path, "/"), segment != "", do: segment
+
     beacon_assigns = %Beacon.Web.BeaconAssigns{
       site: page.site,
       path_params: Beacon.Router.path_params(page.path, path_info),
       query_params: %{},
       page: %{path: page.path, title: page.title}
     }
+
     route_assigns = Beacon.Private.route_assigns(page.site, page.path)
 
     route_assigns

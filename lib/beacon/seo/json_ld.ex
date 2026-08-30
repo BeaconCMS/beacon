@@ -23,36 +23,27 @@ defmodule Beacon.SEO.JsonLd do
   @spec build(map(), map(), Beacon.Config.t()) :: [map()]
   def build(manifest, _layout_manifest, config) do
     base_url = Beacon.RuntimeRenderer.public_site_url(config.site)
-    schemas = []
 
-    # Universal schemas
-    schemas = case breadcrumb_schema(manifest[:path], base_url) do
-      nil -> schemas
-      breadcrumb -> [breadcrumb | schemas]
-    end
+    []
+    |> prepend(breadcrumb_schema(manifest[:path], base_url))
+    |> prepend_root_schemas(manifest, config, base_url)
+    |> prepend(resolve_collection_json_ld(manifest, config))
+    |> Enum.reverse()
+  end
 
-    schemas = if root_page?(manifest[:path]) do
-      schemas = case organization_schema(config, base_url) do
-        nil -> schemas
-        org -> [org | schemas]
-      end
-
-      case website_schema(config, base_url) do
-        nil -> schemas
-        ws -> [ws | schemas]
-      end
+  # The organization and website schemas belong on the root page only.
+  defp prepend_root_schemas(schemas, manifest, config, base_url) do
+    if root_page?(manifest[:path]) do
+      schemas
+      |> prepend(organization_schema(config, base_url))
+      |> prepend(website_schema(config, base_url))
     else
       schemas
     end
-
-    # Collection-defined JSON-LD
-    schemas = case resolve_collection_json_ld(manifest, config) do
-      nil -> schemas
-      col_schema -> [col_schema | schemas]
-    end
-
-    Enum.reverse(schemas)
   end
+
+  defp prepend(schemas, nil), do: schemas
+  defp prepend(schemas, schema), do: [schema | schemas]
 
   defp resolve_collection_json_ld(manifest, config) do
     case manifest[:collection] do
@@ -63,7 +54,9 @@ defmodule Beacon.SEO.JsonLd do
           manifest,
           config
         )
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -83,16 +76,13 @@ defmodule Beacon.SEO.JsonLd do
       |> String.split("/")
       |> Enum.reject(&(&1 == ""))
 
-    if length(segments) < 1 do
+    if segments == [] do
       nil
     else
       items =
         [{"Home", base_url} | build_breadcrumb_items(segments, base_url)]
         |> Enum.with_index(1)
-        |> Enum.map(fn {{name, url}, position} ->
-          item = %{"@type" => "ListItem", "position" => position, "name" => name}
-          if url, do: Map.put(item, "item", url), else: item
-        end)
+        |> Enum.map(&list_item/1)
 
       %{
         "@context" => "https://schema.org",
@@ -142,15 +132,16 @@ defmodule Beacon.SEO.JsonLd do
         "url" => base_url
       }
 
-      schema = if search_url = Map.get(config, :search_action_url_template) do
-        Map.put(schema, "potentialAction", %{
-          "@type" => "SearchAction",
-          "target" => search_url,
-          "query-input" => "required name=search_term_string"
-        })
-      else
-        schema
-      end
+      schema =
+        if search_url = Map.get(config, :search_action_url_template) do
+          Map.put(schema, "potentialAction", %{
+            "@type" => "SearchAction",
+            "target" => search_url,
+            "query-input" => "required name=search_term_string"
+          })
+        else
+          schema
+        end
 
       schema
     else
@@ -162,7 +153,7 @@ defmodule Beacon.SEO.JsonLd do
   Builds a FAQPage schema from page FAQ items.
 
 
-  @doc """
+  @doc \"""
   Merges auto-generated schemas with manual raw_schema entries.
 
   Manual entries take precedence — if a manual schema has the same `@type`,
@@ -184,6 +175,11 @@ defmodule Beacon.SEO.JsonLd do
 
   defp root_page?("/"), do: true
   defp root_page?(_), do: false
+
+  defp list_item({{name, url}, position}) do
+    item = %{"@type" => "ListItem", "position" => position, "name" => name}
+    if url, do: Map.put(item, "item", url), else: item
+  end
 
   defp build_breadcrumb_items(segments, base_url) do
     segments
@@ -207,7 +203,6 @@ defmodule Beacon.SEO.JsonLd do
       end
     end)
   end
-
 
   defp put_if(map, _key, nil), do: map
   defp put_if(map, _key, ""), do: map

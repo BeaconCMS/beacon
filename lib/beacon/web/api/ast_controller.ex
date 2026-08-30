@@ -125,17 +125,20 @@ defmodule Beacon.Web.API.ASTController do
   defp fetch_event_handlers(site, table) do
     case :ets.lookup(table, {site, :site_handler_index, :event}) do
       [{_, names}] ->
-        Map.new(names, fn name ->
-          case :ets.lookup(table, {site, :site_handler, :event, name}) do
-            [{_, {:actions, action_doc}}] -> {name, action_doc}
-            _ -> {name, nil}
-          end
-        end)
-        |> Enum.reject(fn {_, v} -> is_nil(v) end)
+        names
+        |> Enum.map(&{&1, event_action_doc(site, table, &1)})
+        |> Enum.reject(fn {_name, doc} -> is_nil(doc) end)
         |> Map.new()
 
       _ ->
         %{}
+    end
+  end
+
+  defp event_action_doc(site, table, name) do
+    case :ets.lookup(table, {site, :site_handler, :event, name}) do
+      [{_, {:actions, action_doc}}] -> action_doc
+      _ -> nil
     end
   end
 

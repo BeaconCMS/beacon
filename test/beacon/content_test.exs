@@ -3,6 +3,7 @@ defmodule Beacon.ContentTest do
 
   use Beacon.Test
 
+  alias Beacon.BeaconTest.Repo
   alias Beacon.Content
   alias Beacon.Content.Component
   alias Beacon.Content.ErrorPage
@@ -16,7 +17,6 @@ defmodule Beacon.ContentTest do
   alias Beacon.Content.PageEvent
   alias Beacon.Content.PageSnapshot
   alias Beacon.Content.PageVariant
-  alias Beacon.BeaconTest.Repo
   alias Ecto.Changeset
 
   describe "layouts" do
@@ -180,7 +180,6 @@ defmodule Beacon.ContentTest do
 
       assert {:ok, _} =
                Content.update_page(page, %{"template" => "<div>invalid</span>"})
-
     end
 
     test "publish page creates a published event" do
@@ -940,7 +939,6 @@ defmodule Beacon.ContentTest do
       assert {:ok, %Component{template: "new_body"}} = Content.update_component(component, %{template: "new_body"})
     end
   end
-
 
   describe "info_handlers" do
     setup do

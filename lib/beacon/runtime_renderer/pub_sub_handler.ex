@@ -128,7 +128,6 @@ defmodule Beacon.RuntimeRenderer.PubSubHandler do
     {:noreply, schedule_css_recompilation(state, site)}
   end
 
-
   def handle_info({:content_updated, :info_handler, %{site: site}}, state) do
     RuntimeRenderer.Loader.reload_info_handlers(site)
     {:noreply, state}

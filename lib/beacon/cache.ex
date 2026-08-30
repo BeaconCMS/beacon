@@ -70,11 +70,15 @@ defmodule Beacon.Cache do
 
     :ets.foldl(
       fn
-        {_key, {:__loading__, _, _}}, acc -> acc
+        {_key, {:__loading__, _, _}}, acc ->
+          acc
+
         {key, {_value, inserted_at}}, acc when inserted_at < cutoff ->
           :ets.delete(table, key)
           acc + 1
-        _, acc -> acc
+
+        _, acc ->
+          acc
       end,
       0,
       table
@@ -90,16 +94,14 @@ defmodule Beacon.Cache do
   end
 
   defp run_load(table, key, ref, load_fun) do
-    try do
-      value = load_fun.()
-      :ets.insert(table, {key, {value, System.monotonic_time(:second)}})
-      value
-    catch
-      kind, reason ->
-        # Clean up only OUR sentinel
-        :ets.match_delete(table, {key, {:__loading__, ref, self()}})
-        :erlang.raise(kind, reason, __STACKTRACE__)
-    end
+    value = load_fun.()
+    :ets.insert(table, {key, {value, System.monotonic_time(:second)}})
+    value
+  catch
+    kind, reason ->
+      # Clean up only OUR sentinel
+      :ets.match_delete(table, {key, {:__loading__, ref, self()}})
+      :erlang.raise(kind, reason, __STACKTRACE__)
   end
 
   defp await_result(table, key, ref, loader_pid, load_fun, ttl) do

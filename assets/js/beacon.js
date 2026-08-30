@@ -5,18 +5,18 @@
 // 2. phoenix js loaded from the host application
 
 window.addEventListener("phx:beacon:css-ready", (e) => {
-  let link = document.getElementById("beacon-runtime-stylesheet")
+  let link = document.querySelector("#beacon-runtime-stylesheet")
   if (link) {
     link.href = e.detail.href
   }
 })
 
 window.addEventListener("phx:beacon:page-updated", (e) => {
-  if (e.detail.hasOwnProperty("runtime_css_path")) {
-    document.getElementById("beacon-runtime-stylesheet").href = e.detail.runtime_css_path
+  if (Object.prototype.hasOwnProperty.call(e.detail, "runtime_css_path")) {
+    document.querySelector("#beacon-runtime-stylesheet").href = e.detail.runtime_css_path
   }
 
-  if (e.detail.hasOwnProperty("meta_tags")) {
+  if (Object.prototype.hasOwnProperty.call(e.detail, "meta_tags")) {
     // remove current tags, except csrf-token
     document.querySelectorAll("meta:not([name='csrf-token'])").forEach((el) => el.remove())
 
@@ -28,7 +28,7 @@ window.addEventListener("phx:beacon:page-updated", (e) => {
         newMetaTag.setAttribute(key, metaTag[key])
       })
 
-      document.getElementsByTagName("head")[0].appendChild(newMetaTag)
+      document.head.append(newMetaTag)
     })
   }
 })

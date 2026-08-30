@@ -68,17 +68,23 @@ defmodule Beacon.Template.Helpers do
   def to_iso_date(value) when is_binary(value) do
     case DateTime.from_iso8601(value) do
       {:ok, dt, _} -> dt |> DateTime.to_date() |> Date.to_iso8601()
-      _ ->
-        case NaiveDateTime.from_iso8601(value) do
-          {:ok, ndt} -> ndt |> NaiveDateTime.to_date() |> Date.to_iso8601()
-          _ ->
-            case Date.from_iso8601(value) do
-              {:ok, d} -> Date.to_iso8601(d)
-              _ -> value
-            end
-        end
+      _ -> from_naive_or_date(value)
     end
   end
 
   def to_iso_date(_), do: ""
+
+  defp from_naive_or_date(value) do
+    case NaiveDateTime.from_iso8601(value) do
+      {:ok, ndt} -> ndt |> NaiveDateTime.to_date() |> Date.to_iso8601()
+      _ -> from_date(value)
+    end
+  end
+
+  defp from_date(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> Date.to_iso8601(date)
+      _ -> value
+    end
+  end
 end

@@ -306,20 +306,7 @@ defmodule Beacon.Actions.Interpreter do
   end
 
   defp evaluate_test(%{"path" => path, "op" => op, "value" => expected}, ctx) do
-    actual = resolve_value("$" <> path, ctx)
-
-    case op do
-      "eq" -> actual == expected
-      "neq" -> actual != expected
-      "gt" -> is_number(actual) and actual > expected
-      "lt" -> is_number(actual) and actual < expected
-      "gte" -> is_number(actual) and actual >= expected
-      "lte" -> is_number(actual) and actual <= expected
-      "contains" -> is_binary(actual) and String.contains?(actual, expected)
-      "exists" -> actual != nil
-      "not_exists" -> actual == nil
-      _ -> false
-    end
+    compare(op, resolve_value("$" <> path, ctx), expected)
   end
 
   defp evaluate_test(%{"field" => field, "op" => op, "value" => expected}, ctx) do
@@ -328,10 +315,23 @@ defmodule Beacon.Actions.Interpreter do
 
   defp evaluate_test(_, _ctx), do: false
 
+  defp compare("eq", actual, expected), do: actual == expected
+  defp compare("neq", actual, expected), do: actual != expected
+  defp compare("gt", actual, expected), do: is_number(actual) and actual > expected
+  defp compare("lt", actual, expected), do: is_number(actual) and actual < expected
+  defp compare("gte", actual, expected), do: is_number(actual) and actual >= expected
+  defp compare("lte", actual, expected), do: is_number(actual) and actual <= expected
+  defp compare("contains", actual, expected), do: is_binary(actual) and String.contains?(actual, expected)
+  defp compare("exists", actual, _expected), do: actual != nil
+  defp compare("not_exists", actual, _expected), do: actual == nil
+  defp compare(_op, _actual, _expected), do: false
+
   defp get_nested(nil, _), do: nil
   defp get_nested(value, []), do: value
+
   defp get_nested(value, [key | rest]) when is_map(value) do
     get_nested(Map.get(value, key) || Map.get(value, String.to_atom(key)), rest)
   end
+
   defp get_nested(_, _), do: nil
 end

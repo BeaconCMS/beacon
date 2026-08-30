@@ -25,20 +25,7 @@ defmodule Beacon.GraphQL.Client do
         with {:ok, endpoint} <- EndpointCache.get_endpoint(site, endpoint_name),
              :ok <- OperationAllowlist.check(site, endpoint_name, extract_operation_name(query)) do
           result = do_execute(endpoint, query, variables, opts)
-
-          # Trip circuit on network/server errors
-          case result do
-            {:error, {:network, _}} ->
-              ttl = endpoint.timeout_ms |> div(1000) |> max(30)
-              Beacon.CircuitBreaker.trip(site, breaker_key, ttl)
-
-            {:error, {:http, status, _}} when status >= 500 ->
-              Beacon.CircuitBreaker.trip(site, breaker_key, 30)
-
-            _ ->
-              :ok
-          end
-
+          maybe_trip_circuit(result, site, breaker_key, endpoint)
           result
         else
           :error -> {:error, {:endpoint_not_found, endpoint_name}}
@@ -77,6 +64,18 @@ defmodule Beacon.GraphQL.Client do
     do_execute(endpoint, query, variables, opts)
   end
 
+  # A network error, or a server error from the endpoint, opens the circuit.
+  defp maybe_trip_circuit({:error, {:network, _}}, site, breaker_key, endpoint) do
+    ttl = endpoint.timeout_ms |> div(1000) |> max(30)
+    Beacon.CircuitBreaker.trip(site, breaker_key, ttl)
+  end
+
+  defp maybe_trip_circuit({:error, {:http, status, _}}, site, breaker_key, _endpoint) when status >= 500 do
+    Beacon.CircuitBreaker.trip(site, breaker_key, 30)
+  end
+
+  defp maybe_trip_circuit(_result, _site, _breaker_key, _endpoint), do: :ok
+
   defp do_execute(%GraphQLEndpoint{} = endpoint, query, variables, opts) do
     timeout = Keyword.get(opts, :timeout, endpoint.timeout_ms || 10_000)
 
@@ -88,30 +87,27 @@ defmodule Beacon.GraphQL.Client do
     # Use a dedicated Finch pool for GraphQL requests to avoid connection
     # pool exhaustion when the server calls its own GraphQL endpoint
     # (self-call during page rendering).
-    case Req.post(endpoint.url,
-           json: body,
-           headers: headers,
-           receive_timeout: timeout,
-           retry: :transient,
-           max_retries: endpoint.max_retries || 2,
-           finch: Beacon.Finch
-         ) do
-      {:ok, %{status: 200, body: %{"data" => data, "errors" => errors}}} when is_list(errors) and errors != [] ->
-        {:partial, data, errors}
-
-      {:ok, %{status: 200, body: %{"data" => data}}} ->
-        {:ok, data}
-
-      {:ok, %{status: 200, body: %{"errors" => errors}}} ->
-        {:error, {:graphql, errors}}
-
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http, status, body}}
-
-      {:error, exception} ->
-        {:error, {:network, exception}}
-    end
+    endpoint.url
+    |> Req.post(
+      json: body,
+      headers: headers,
+      receive_timeout: timeout,
+      retry: :transient,
+      max_retries: endpoint.max_retries || 2,
+      finch: Beacon.Finch
+    )
+    |> handle_response()
   end
+
+  defp handle_response({:ok, %{status: 200, body: %{"data" => data, "errors" => errors}}})
+       when is_list(errors) and errors != [] do
+    {:partial, data, errors}
+  end
+
+  defp handle_response({:ok, %{status: 200, body: %{"data" => data}}}), do: {:ok, data}
+  defp handle_response({:ok, %{status: 200, body: %{"errors" => errors}}}), do: {:error, {:graphql, errors}}
+  defp handle_response({:ok, %{status: status, body: body}}), do: {:error, {:http, status, body}}
+  defp handle_response({:error, exception}), do: {:error, {:network, exception}}
 
   defp extract_operation_name(query) when is_binary(query) do
     case Regex.run(~r/(?:query|mutation|subscription)\s+(\w+)/, query) do

@@ -1,0 +1,27 @@
+{
+  // Every JavaScript file this repository authors, at oxlint's strict
+  // categories. `mix assets.lint` and the `javascript.yml` workflow both run
+  // oxlint from this directory, so a local run and the CI run report the same
+  // thing.
+  //
+  // Rules below are either configured (the rule stays on, with the option that
+  // matches how this repository writes) or waived, with the reason and the
+  // number of sites it fired on when it was written down. The waivers shrink.
+  "plugins": ["import", "node", "oxc", "promise", "unicorn"],
+  "categories": {
+    "correctness": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "suspicious": "error"
+  },
+  "ignorePatterns": ["node_modules/**", "vendor/**"],
+  "rules": {
+    // Classic McCabe complexity, at the ceiling `.credo.exs` enforces on the
+    // Elixir in this repository and every sibling project enforces on both.
+    "eslint/complexity": ["error", { "max": 9, "variant": "classic" }],
+    // A line count is not a complexity measure; `complexity` above is.
+    "eslint/max-lines": "off",
+    "eslint/max-lines-per-function": "off",
+    "eslint/no-inline-comments": "off"
+  }
+}

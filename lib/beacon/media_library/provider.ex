@@ -11,8 +11,8 @@ defmodule Beacon.MediaLibrary.Provider do
   See `Beacon.Config` and the provider module doc for more info.
   """
 
-  alias Beacon.MediaLibrary.UploadMetadata
   alias Beacon.MediaLibrary.Asset
+  alias Beacon.MediaLibrary.UploadMetadata
 
   import Ecto.Query
   import Beacon.Utils, only: [repo: 1]

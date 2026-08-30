@@ -1,4 +1,6 @@
 defmodule Beacon.BeaconTest.PageFields.TagsField do
+  @moduledoc false
+
   use Phoenix.Component
   import Beacon.Web.CoreComponents
   import Ecto.Changeset

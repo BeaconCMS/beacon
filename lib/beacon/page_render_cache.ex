@@ -51,11 +51,15 @@ defmodule Beacon.PageRenderCache do
       add_to_dep_set(site, :graphql_endpoint, endpoint_name, page_id)
     end
 
-    :ets.insert(@table, {{site, :dep, :page_deps, page_id}, %{
-      layout_id: layout_id,
-      components: components,
-      graphql_endpoints: graphql_endpoints
-    }})
+    :ets.insert(
+      @table,
+      {{site, :dep, :page_deps, page_id},
+       %{
+         layout_id: layout_id,
+         components: components,
+         graphql_endpoints: graphql_endpoints
+       }}
+    )
 
     :ok
   end
@@ -174,51 +178,37 @@ defmodule Beacon.PageRenderCache do
   # Page path lookup
   # ---------------------------------------------------------------------------
 
+  # The pages that still have a path recorded, paired with it.
+  defp page_paths(site, page_ids) do
+    Enum.flat_map(page_ids, fn page_id ->
+      case lookup_page_path(site, page_id) do
+        {:ok, path} -> [{page_id, path}]
+        :error -> []
+      end
+    end)
+  end
+
   @spec pages_for_layout(atom(), String.t()) :: [{String.t(), String.t()}]
   def pages_for_layout(site, layout_id) do
     case :ets.lookup(@table, {site, :dep, :layout, layout_id}) do
-      [{_, page_ids}] ->
-        Enum.flat_map(page_ids, fn page_id ->
-          case lookup_page_path(site, page_id) do
-            {:ok, path} -> [{page_id, path}]
-            :error -> []
-          end
-        end)
-
-      [] ->
-        []
+      [{_, page_ids}] -> page_paths(site, page_ids)
+      [] -> []
     end
   end
 
   @spec pages_for_component(atom(), atom()) :: [{String.t(), String.t()}]
   def pages_for_component(site, component_name) do
     case :ets.lookup(@table, {site, :dep, :component, component_name}) do
-      [{_, page_ids}] ->
-        Enum.flat_map(page_ids, fn page_id ->
-          case lookup_page_path(site, page_id) do
-            {:ok, path} -> [{page_id, path}]
-            :error -> []
-          end
-        end)
-
-      [] ->
-        []
+      [{_, page_ids}] -> page_paths(site, page_ids)
+      [] -> []
     end
   end
 
   @spec pages_for_graphql_endpoint(atom(), binary()) :: [{String.t(), String.t()}]
   def pages_for_graphql_endpoint(site, endpoint_name) do
     case :ets.lookup(@table, {site, :dep, :graphql_endpoint, endpoint_name}) do
-      [{_, page_ids}] ->
-        Enum.flat_map(page_ids, fn page_id ->
-          case lookup_page_path(site, page_id) do
-            {:ok, path} -> [{page_id, path}]
-            :error -> []
-          end
-        end)
-
-      [] ->
-        []
+      [{_, page_ids}] -> page_paths(site, page_ids)
+      [] -> []
     end
   end
 
@@ -255,6 +245,7 @@ defmodule Beacon.PageRenderCache do
   end
 
   defp extract_components({:eex, _expr}, acc), do: acc
+
   defp extract_components({:eex_block, _expr, children}, acc) do
     extract_components(children, acc)
   end

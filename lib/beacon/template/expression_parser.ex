@@ -96,16 +96,25 @@ defmodule Beacon.Template.ExpressionParser do
       str
       |> String.graphemes()
       |> Enum.reduce({[], "", nil}, fn
-        "\"", {parts, current, nil} -> {parts, current <> "\"", "\""}
-        "\"", {parts, current, "\""} -> {parts, current <> "\"", nil}
-        "'", {parts, current, nil} -> {parts, current <> "'", "'"}
-        "'", {parts, current, "'"} -> {parts, current <> "'", nil}
+        "\"", {parts, current, nil} ->
+          {parts, current <> "\"", "\""}
+
+        "\"", {parts, current, "\""} ->
+          {parts, current <> "\"", nil}
+
+        "'", {parts, current, nil} ->
+          {parts, current <> "'", "'"}
+
+        "'", {parts, current, "'"} ->
+          {parts, current <> "'", nil}
+
         char, {parts, current, nil} ->
           if char == delimiter do
             {[current | parts], "", nil}
           else
             {parts, current <> char, nil}
           end
+
         char, {parts, current, quote_char} ->
           {parts, current <> char, quote_char}
       end)
@@ -155,22 +164,26 @@ defmodule Beacon.Template.ExpressionParser do
   Parse a literal value from a string.
   """
   def parse_literal(str) do
-    str = String.trim(str)
-
-    cond do
-      str == "true" -> true
-      str == "false" -> false
-      str == "nil" or str == "null" -> nil
-      String.starts_with?(str, "\"") and String.ends_with?(str, "\"") ->
-        String.slice(str, 1..-2//1)
-      String.starts_with?(str, "'") and String.ends_with?(str, "'") ->
-        String.slice(str, 1..-2//1)
-      match?({_, ""}, Integer.parse(str)) ->
-        String.to_integer(str)
-      match?({_, ""}, Float.parse(str)) ->
-        String.to_float(str)
-      true ->
-        str
+    case String.trim(str) do
+      "true" -> true
+      "false" -> false
+      "nil" -> nil
+      "null" -> nil
+      trimmed -> parse_quoted_or_number(trimmed)
     end
+  end
+
+  defp parse_quoted_or_number(str) do
+    cond do
+      quoted?(str, "\"") -> String.slice(str, 1..-2//1)
+      quoted?(str, "'") -> String.slice(str, 1..-2//1)
+      match?({_, ""}, Integer.parse(str)) -> String.to_integer(str)
+      match?({_, ""}, Float.parse(str)) -> String.to_float(str)
+      true -> str
+    end
+  end
+
+  defp quoted?(str, quote_char) do
+    String.starts_with?(str, quote_char) and String.ends_with?(str, quote_char)
   end
 end

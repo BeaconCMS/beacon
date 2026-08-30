@@ -91,9 +91,8 @@ defmodule Beacon.Content.Component do
       try do
         module = Module.concat([String.to_existing_atom(struct_name)])
 
-        with {:module, ^module} <- Code.ensure_loaded(module) do
-          changeset
-        else
+        case Code.ensure_loaded(module) do
+          {:module, ^module} -> changeset
           _ -> add_error(changeset, :struct_name, "the struct #{struct_name} is undefined")
         end
       rescue
@@ -142,7 +141,7 @@ defmodule Beacon.Content.Component do
     not_allowed = Keyword.keys(opts) -- [:required, :default, :examples, :values, :doc]
 
     cond do
-      Enum.count(not_allowed) > 0 and type != "global" ->
+      not Enum.empty?(not_allowed) and type != "global" ->
         name = get_field(changeset, :name)
         add_error(changeset, :opts, "invalid opts for attribute #{inspect(name)}: #{inspect(not_allowed)}")
 

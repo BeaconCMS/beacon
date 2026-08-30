@@ -1,0 +1,33 @@
+name: JavaScript
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'assets/**'
+      - '.github/workflows/javascript.yml'
+  pull_request:
+    paths:
+      - 'assets/**'
+      - '.github/workflows/javascript.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Run straight from the registry: oxlint is a single binary, and nothing
+      # else in `assets/` is needed to lint it.
+      - run: npx --yes oxlint@1.80.0
+        working-directory: assets

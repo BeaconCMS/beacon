@@ -69,6 +69,8 @@ defmodule Beacon.BeaconTest.Router do
 end
 
 defmodule Beacon.BeaconTest.OnMount do
+  @moduledoc false
+
   import Phoenix.Component
 
   def on_mount(_scope, _params, _session, socket) do

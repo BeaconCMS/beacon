@@ -152,6 +152,7 @@ defmodule Beacon.GraphQL.Introspection do
     |> Enum.map(fn
       [_, name, args_str, return_type] ->
         args = extract_sdl_args(args_str)
+
         %{
           "name" => name,
           "description" => nil,
@@ -175,6 +176,7 @@ defmodule Beacon.GraphQL.Introspection do
 
   defp extract_sdl_args(""), do: []
   defp extract_sdl_args(nil), do: []
+
   defp extract_sdl_args(args_str) do
     # Strip parens
     inner = String.trim_leading(args_str, "(") |> String.trim_trailing(")")
@@ -262,6 +264,15 @@ defmodule Beacon.GraphQL.Introspection do
     end
   end
 
+  # The fields of the named type, normalized. Both queries and mutations are
+  # read this way; they differ only in which type they come from.
+  defp normalized_fields_of(types, type_name) do
+    case Enum.find(types, &(&1["name"] == type_name)) do
+      nil -> []
+      type -> Enum.map(type["fields"] || [], &normalize_field/1)
+    end
+  end
+
   defp normalize_schema(schema) do
     query_type_name = get_in(schema, ["queryType", "name"]) || "Query"
     mutation_type_name = get_in(schema, ["mutationType", "name"]) || "Mutation"
@@ -274,23 +285,8 @@ defmodule Beacon.GraphQL.Introspection do
       |> Enum.reject(&String.starts_with?(&1["name"] || "", "__"))
       |> Enum.map(&normalize_type/1)
 
-    # Extract queries (fields of the Query type)
-    queries =
-      types
-      |> Enum.find(&(&1["name"] == query_type_name))
-      |> case do
-        nil -> []
-        query_type -> Enum.map(query_type["fields"] || [], &normalize_field/1)
-      end
-
-    # Extract mutations (fields of the Mutation type)
-    mutations =
-      types
-      |> Enum.find(&(&1["name"] == mutation_type_name))
-      |> case do
-        nil -> []
-        mutation_type -> Enum.map(mutation_type["fields"] || [], &normalize_field/1)
-      end
+    queries = normalized_fields_of(types, query_type_name)
+    mutations = normalized_fields_of(types, mutation_type_name)
 
     %{
       "queries" => queries,

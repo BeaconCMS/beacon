@@ -69,28 +69,23 @@ defmodule Beacon.ProxyEndpoint do
 
       # TODO: cache endpoint resolver
       defp proxy(%{host: host} = conn, opts) do
-        matching_endpoint = fn ->
-          Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
-            %{endpoint: endpoint} = Beacon.Config.fetch!(site)
-
-            if endpoint.host() == host do
-              {:halt, endpoint}
-            else
-              {:cont, default}
-            end
-          end)
-        end
-
         # fallback endpoint has higher priority in case of conflicts,
         # for eg when all endpoints' host are localhost
         endpoint =
           if @__beacon_proxy_fallback__.host() == host do
             @__beacon_proxy_fallback__
           else
-            matching_endpoint.()
+            endpoint_for_host(host)
           end
 
         endpoint.call(conn, endpoint.init(opts))
+      end
+
+      defp endpoint_for_host(host) do
+        Enum.reduce_while(Beacon.Registry.running_sites(), @__beacon_proxy_fallback__, fn site, default ->
+          %{endpoint: endpoint} = Beacon.Config.fetch!(site)
+          if endpoint.host() == host, do: {:halt, endpoint}, else: {:cont, default}
+        end)
       end
 
       @doc """
@@ -131,12 +126,7 @@ defmodule Beacon.ProxyEndpoint do
     https = endpoint.config(:https)
     http = endpoint.config(:http)
 
-    {scheme, port} =
-      cond do
-        https -> {"https", https[:port] || 443}
-        http -> {"http", http[:port] || 80}
-        true -> {"http", 80}
-      end
+    {scheme, port} = scheme_and_port(https, http)
 
     scheme = url[:scheme] || scheme
     host = host_to_binary(host || "localhost")
@@ -161,12 +151,7 @@ defmodule Beacon.ProxyEndpoint do
     https = proxy_endpoint.config(:https)
     http = proxy_endpoint.config(:http)
 
-    {scheme, port} =
-      cond do
-        https -> {"https", https[:port] || 443}
-        http -> {"http", http[:port] || 80}
-        true -> {"http", 80}
-      end
+    {scheme, port} = scheme_and_port(https, http)
 
     scheme = proxy_url[:scheme] || scheme
     host = host_to_binary(site_url[:host] || "localhost")
@@ -179,6 +164,10 @@ defmodule Beacon.ProxyEndpoint do
 
     %URI{scheme: scheme, host: host, port: port, path: path}
   end
+
+  defp scheme_and_port(https, _http) when not is_nil(https) and https != false, do: {"https", https[:port] || 443}
+  defp scheme_and_port(_https, http) when not is_nil(http) and http != false, do: {"http", http[:port] || 80}
+  defp scheme_and_port(_https, _http), do: {"http", 80}
 
   @doc """
   Returns the public URL of a given `site`.
@@ -220,6 +209,7 @@ defmodule Beacon.ProxyEndpoint do
     |> sites_per_host()
     |> Enum.flat_map(fn site ->
       config = Beacon.Config.fetch!(site)
+
       Beacon.SEO.AICrawlers.robots_directives(
         config.ai_crawler_policy,
         config.ai_crawler_custom_rules

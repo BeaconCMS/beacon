@@ -106,42 +106,46 @@ defmodule Beacon do
         []
       end
 
-    site_children =
-      Enum.reduce(sites, [], fn opts, acc ->
-        config = Beacon.Config.new(opts)
-
-        if Beacon.Config.env_test?() do
-          [site_child_spec(config) | acc]
-        else
-          # we only care about starting sites that are valid and reachable
-          case Beacon.Router.reachable(config) do
-            {:ok, _} ->
-              [site_child_spec(config) | acc]
-
-            {:error, {endpoint, host}} ->
-              Logger.warning("""
-              site #{config.site} is not reachable on host #{host} and will not be started
-
-              Check both the Router and #{inspect(endpoint)} configuratation
-
-              See https://hexdocs.pm/beacon/troubleshooting.html for more info.
-              """)
-
-              acc
-
-            :error ->
-              Logger.warning("""
-              site #{config.site} is not reachable or is invalid, it will not be started
-
-              See https://hexdocs.pm/beacon/troubleshooting.html for more info.
-              """)
-
-              acc
-          end
-        end
-      end)
+    site_children = Enum.reduce(sites, [], &maybe_start_site/2)
 
     Supervisor.init(finch_children ++ vault_children ++ site_children, strategy: :one_for_one)
+  end
+
+  # We only care about starting sites that are valid and reachable.
+  defp maybe_start_site(opts, acc) do
+    config = Beacon.Config.new(opts)
+
+    if Beacon.Config.env_test?() do
+      [site_child_spec(config) | acc]
+    else
+      case Beacon.Router.reachable(config) do
+        {:ok, _} -> [site_child_spec(config) | acc]
+        {:error, {endpoint, host}} -> warn_unreachable(config, endpoint, host, acc)
+        :error -> warn_invalid(config, acc)
+      end
+    end
+  end
+
+  defp warn_unreachable(config, endpoint, host, acc) do
+    Logger.warning("""
+    site #{config.site} is not reachable on host #{host} and will not be started
+
+    Check both the Router and #{inspect(endpoint)} configuratation
+
+    See https://hexdocs.pm/beacon/troubleshooting.html for more info.
+    """)
+
+    acc
+  end
+
+  defp warn_invalid(config, acc) do
+    Logger.warning("""
+    site #{config.site} is not reachable or is invalid, it will not be started
+
+    See https://hexdocs.pm/beacon/troubleshooting.html for more info.
+    """)
+
+    acc
   end
 
   defp site_child_spec(%Beacon.Config{} = config) do

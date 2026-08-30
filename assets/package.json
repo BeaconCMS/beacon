@@ -5,9 +5,11 @@
   "repository": {},
   "scripts": {
     "format": "prettier --write .",
-    "format-check": "prettier --check ."
+    "format-check": "prettier --check .",
+    "lint": "oxlint"
   },
   "devDependencies": {
+    "oxlint": "^1.80",
     "prettier": "^3.2"
   },
   "dependencies": {
