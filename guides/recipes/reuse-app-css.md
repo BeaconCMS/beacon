@@ -21,7 +21,6 @@ config :beacon,
     endpoint: MyAppWeb.Endpoint,
     router: MyAppWeb.Router,
     tailwind_css: tailwind_css
-  ]
-```
+  ]```
 
 Note the path is different for development and production environments because deployment usually are packed as releases.

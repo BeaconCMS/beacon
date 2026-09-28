@@ -260,22 +260,15 @@ defmodule Beacon.RuntimeCSS do
         MapSet.union(acc, CandidateExtractor.extract(error_page.template))
       end)
 
-    safelist_candidates =
-      case Beacon.Config.fetch!(site) do
-        %{css_safelist_module: module} when not is_nil(module) ->
-          if Code.ensure_loaded?(module) and function_exported?(module, :list, 0) do
-            module.list() |> MapSet.new()
-          else
-            MapSet.new()
-          end
+    config = Beacon.Config.fetch!(site)
 
-        _ ->
-          MapSet.new()
-      end
+    safelist_candidates =
+      config.css_safelist
+      |> MapSet.new()
+      |> MapSet.union(safelist_module_candidates(config))
 
     m3 = mem_mb()
     t3 = System.monotonic_time(:millisecond)
-
     Logger.info("""
     [Beacon.CSS] Candidate extraction for #{site}
       load templates: #{length(templates)} pages, #{t1 - t0}ms, #{m0}MB → #{m1}MB (+#{m1 - m0}MB)
@@ -290,9 +283,18 @@ defmodule Beacon.RuntimeCSS do
     |> MapSet.union(safelist_candidates)
   end
 
+  defp safelist_module_candidates(%{css_safelist_module: module}) when not is_nil(module) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :list, 0) do
+      MapSet.new(module.list())
+    else
+      MapSet.new()
+    end
+  end
+
+  defp safelist_module_candidates(_config), do: MapSet.new()
+
   defp load_theme_json(site) do
     config = Beacon.Config.fetch!(site)
-
     if config.tailwind_config && File.exists?(config.tailwind_config) do
       Beacon.CSS.ThemeParser.parse_file(config.tailwind_config)
     end

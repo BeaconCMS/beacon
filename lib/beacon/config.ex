@@ -89,6 +89,30 @@ defmodule Beacon.Config do
   @type tailwind_css :: Path.t()
 
   @typedoc """
+  List of CSS class names that are always included in the generated stylesheet.
+
+  Beacon extracts class names from the templates it manages (pages, layouts, components,
+  and error pages), so classes used only in your application's own components are unknown
+  to Beacon and must be listed here to be generated.
+
+  ## Example
+
+      css_safelist: ["px-3", "bg-red-500"]
+
+  """
+  @type css_safelist :: [String.t()]
+
+  @typedoc """
+  Module that returns a list of CSS class names to always include in the generated stylesheet.
+
+  Use it instead of `t:css_safelist/0` to extract class names from your application source files,
+  see `mix beacon.gen.safelist` to generate such module.
+
+  The module must export `list/0` returning a list of class names.
+  """
+  @type css_safelist_module :: module() | nil
+
+  @typedoc """
   Path of a LiveView socket where Beacon should connect to.
   """
   @type live_socket_path :: String.t()
@@ -245,6 +269,8 @@ defmodule Beacon.Config do
           mode: mode(),
           tailwind_config: tailwind_config(),
           tailwind_css: tailwind_css(),
+          css_safelist: css_safelist(),
+          css_safelist_module: css_safelist_module(),
           live_socket_path: live_socket_path(),
           safe_code_check: safe_code_check(),
           template_formats: template_formats(),
@@ -358,6 +384,8 @@ defmodule Beacon.Config do
           | {:mode, mode()}
           | {:tailwind_config, tailwind_config()}
           | {:tailwind_css, tailwind_css()}
+          | {:css_safelist, css_safelist()}
+          | {:css_safelist_module, css_safelist_module()}
           | {:live_socket_path, live_socket_path()}
           | {:safe_code_check, safe_code_check()}
           | {:template_formats, template_formats()}
@@ -409,6 +437,10 @@ defmodule Beacon.Config do
     * `:tailwind_config` - `t:tailwind_config/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.config.bundle.js")`.
 
     * `:tailwind_css` - `t:tailwind_css/0` (optional). Defaults to `Path.join(Application.app_dir(:beacon, "priv"), "tailwind.css")`.
+
+    * `:css_safelist` - `t:css_safelist/0` (optional). Defaults to `[]`.
+
+    * `:css_safelist_module` - `t:css_safelist_module/0` (optional). Defaults to `nil`.
 
     * `:live_socket_path` - `t:live_socket_path/0` (optional). Defaults to `"/live"`.
 

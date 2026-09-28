@@ -33,5 +33,23 @@ defmodule Beacon.RuntimeCSSTest do
       css = RuntimeCSS.fetch(@site, :deflate)
       assert css =~ "underline"
     end
+
+    test "includes candidates from the css_safelist config" do
+      Beacon.Config.update_value(@site, :css_safelist, ["px-3"])
+      on_exit(fn -> Beacon.Config.update_value(@site, :css_safelist, []) end)
+
+      RuntimeCSS.load!(@site)
+      css = RuntimeCSS.fetch(@site, :deflate)
+      assert css =~ "px-3"
+    end
+
+    test "includes candidates from the css_safelist_module config" do
+      Beacon.Config.update_value(@site, :css_safelist_module, Beacon.BeaconTest.CSSSafelist)
+      on_exit(fn -> Beacon.Config.update_value(@site, :css_safelist_module, nil) end)
+
+      RuntimeCSS.load!(@site)
+      css = RuntimeCSS.fetch(@site, :deflate)
+      assert css =~ "mx-7"
+    end
   end
 end
